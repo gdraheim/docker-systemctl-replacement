@@ -79,11 +79,12 @@ class UnitConfigParser:
             self._dict[section][option].append(value)
         if not value:
             self._dict[section][option] = []
-    def get(self, section, option, default = None):
+    def get(self, section, option, default = None, allow_no_value = False):
+        allow_no_value = allow_no_value or self._allow_no_value
         if section not in self._dict:
             if default is not None:
                 return default
-            if self._allow_no_value:
+            if allow_no_value:
                 return None
             logg.error("section {} does not exist".format(section))
             logg.error("  have {}".format(self.sections()))
@@ -91,20 +92,21 @@ class UnitConfigParser:
         if option not in self._dict[section]:
             if default is not None:
                 return default
-            if self._allow_no_value:
+            if allow_no_value:
                 return None
             raise AttributeError("option {} in {} does not exist".format(option, section))
         if not self._dict[section][option]:
             if default is not None:
                 return default
-            if self._allow_no_value:
+            if allow_no_value:
                 return None
         return self._dict[section][option][0]
-    def getlist(self, section, option, default = None):
+    def getlist(self, section, option, default = None, allow_no_value = False):
+        allow_no_value = allow_no_value or self._allow_no_value
         if section not in self._dict:
             if default is not None:
                 return default
-            if self._allow_no_value:
+            if allow_no_value:
                 return []
             logg.error("section {} does not exist".format(section))
             logg.error("  have {}".format(self.sections()))
@@ -112,7 +114,7 @@ class UnitConfigParser:
         if option not in self._dict[section]:
             if default is not None:
                 return default
-            if self._allow_no_value:
+            if allow_no_value:
                 return None
             raise AttributeError("option {} in {} does not exist".format(option, section))
         return self._dict[section][option]
@@ -126,7 +128,16 @@ class UnitConfigParser:
         section = None
         if os.path.isfile(filename):
             self._files.append(filename)
+        nextline = False
+        name, text = "", ""
         for orig_line in open(filename):
+            if nextline:
+                text += orig_line
+                if text.endswith("\\"):
+                    text = text[:-1] + "\n"
+                else:
+                    self.set(section, name, text)
+                continue
             line = orig_line.strip()
             if not line:
                 continue
@@ -139,11 +150,15 @@ class UnitConfigParser:
                     self.add_section(section)
                 continue
             m = re.match(r"(\w+)=(.*)", line)
-            if m:
-                self.set(section, m.group(1), m.group(2).strip())
-            else:
+            if not m:
                 logg.warning("bad ini line: %s", line)
                 raise Exception("bad ini line")
+            name, text = m.group(1), m.group(2).strip()
+            if text.endswith("\\"):
+                nextline = True
+                text = text[:-1] + "\n"
+            else:
+                self.set(section, name, text)
     def sysv_read(self, filename):
         initscript = False
         initinfo = False
@@ -153,16 +168,35 @@ class UnitConfigParser:
         for orig_line in open(filename):
             line = orig_line.strip()
             if line.startswith("#"):
-                if " BEGIN INIT INFO": 
+                if " BEGIN INIT INFO" in line: 
                      initinfo = True
-                     section = "Unit"
-                if " END INIT INFO": 
+                     section = "init.d"
+                if " END INIT INFO" in line: 
                      initinfo = False
                 if initinfo:
                     m = re.match(r"^\S+\s*(\w+):(.*)", line)
                     if m:
                         self.set(section, m.group(1), m.group(2).strip())
                 continue
+        description = self.get("init.d", "Description", "")
+        self.set("Unit", "Description", description)
+        check = self.get("init.d", "Required-Start","")
+        for item in check.split(" "):
+            if item.strip() == "$network":
+                self.set("Unit", "After", "network.target")
+            if item.strip() == "$remote_fs":
+                self.set("Unit", "After", "remote-fs.target")
+            if item.strip() == "$local_fs":
+                self.set("Unit", "After", "local-fs.target")
+            if item.strip() == "$timer":
+                self.set("Unit", "Requires", "basic.target")
+        provides = self.get("init.d", "Provides", "")
+        if provides:
+            self.set("Install", "Alias", provides)
+        runlevels = self.get("init.d", "Default-Start","")
+        if "5" in runlevels:
+            self.set("Install", "WantedBy", "multi-user.target")
+        self.set("Service", "Type", "sysv")
 
 UnitParser = ConfigParser.RawConfigParser
 UnitParser = UnitConfigParser
@@ -173,6 +207,14 @@ def subprocess_nowait(cmd, env=None):
 
 def subprocess_wait(cmd, env=None, check = False):
     run = subprocess.Popen(cmd, shell=True, env=env)
+    run.wait()
+    if check and run.returncode: 
+        logg.error("returncode %i\n %s", run.returncode, cmd)
+        raise Exception("command failed")
+    return run
+
+def subprocess_output(cmd, env=None, check = False):
+    run = subprocess.Popen(cmd, shell=True, env=env, stdout = subprocess.PIPE)
     run.wait()
     if check and run.returncode: 
         logg.error("returncode %i\n %s", run.returncode, cmd)
@@ -201,24 +243,41 @@ class Systemctl:
         self._quiet = _quiet
         self._full = _full
     def unit_file(self, module):
+        path = self.unit_systemd_file(module)
+        if path is not None: return path
+        path = self.unit_sysv_file(module)
+        if path is not None: return path
+        return None
+    def unit_systemd_file(self, module):
         for systemfolder in (self._systemfolder1, self._systemfolder2):
             path = os.path.join(systemfolder, module)
             if os.path.isfile(path):
                 return path
         return None
+    def unit_sysv_file(self, module):
+        for systemfolder in (self._sysv_folder1, self._sysv_folder2):
+            path = os.path.join(systemfolder, module)
+            if path.endswith(".service"):
+                path = path[:-len(".service")]
+                if os.path.isfile(path):
+                    return path
+        return None
     def read_unit(self, module):
-        path = self.unit_file(module)
-        if not path:
-            logg.warning("unit file not found: %s", module)
-            raise Exception("unit file not found")
+        data = self.read_systemd_unit(module)
+        if data is not None: return data
+        data = self.read_sysv_unit(module)
+        if data is not None: return data
+        logg.warning("systemd unit file not found: %s", module)
+        raise Exception("unit file not found")
+    def read_systemd_unit(self, module):
+        path = self.unit_systemd_file(module)
+        if not path: return None
         unit = UnitParser()
         unit.read(path)
         return unit
     def read_sysv_unit(self, module):
-        path = self.unit_file(module)
-        if not path:
-            logg.warning("unit file not found: %s", module)
-            raise Exception("unit file not found")
+        path = self.unit_sysv_file(module)
+        if not path: return None
         unit = UnitParser()
         unit.sysv_read(path)
         return unit
@@ -228,6 +287,16 @@ class Systemctl:
         except Exception, e: 
             logg.debug("read unit '%s': %s", module, e)
     def units(self, modules, suffix=".service"):
+        found = []
+        for unit in self.systemd_units(modules, suffix):
+            if unit not in found:
+                found.append(unit)
+                yield unit
+        for unit in self.sysv_units(modules, suffix):
+            if unit not in found:
+                found.append(unit)
+                yield unit
+    def systemd_units(self, modules, suffix=".service"):
         if isinstance(modules, basestring):
             modules = [ modules ]
         for folder in (self._systemfolder1, self._systemfolder2):
@@ -240,7 +309,7 @@ class Systemctl:
                     yield item
                 elif item == module+".service":
                     yield item
-    def sysv_units(self, modules):
+    def sysv_units(self, modules, suffix=".service"):
         if isinstance(modules, basestring):
             modules = [ modules ]
         for folder in (self._sysv_folder1, self._sysv_folder2):
@@ -248,9 +317,9 @@ class Systemctl:
                 continue
             for item in os.listdir(folder):
                 if not modules: 
-                    yield item
+                    yield item + suffix
                 elif [ module for module in modules if fnmatch.fnmatch(item, module) ]:
-                    yield item
+                    yield item + suffix
     def list_units_of_host(self, *modules):
         result = {}
         description = {}
@@ -384,8 +453,9 @@ class Systemctl:
             if True:
                  exe = conf.filename()
                  cmd = "'%s' start" % exe
+                 env["SYSTEMCTL_SKIP_REDIRECT"] = "yes"
                  logg.info("(start) %s", cmd)
-                 run = subprocess_wait(cmd)
+                 run = subprocess_wait(cmd, env)
         elif runs in [ "simple", "oneshot", "notify" ]: 
             for cmd in conf.getlist("Service", "ExecStart", []):
                  pid_file = self.get_pid_file_from(conf)
@@ -475,8 +545,9 @@ class Systemctl:
             if True:
                  exe = conf.filename()
                  cmd = "'%s' stop" % exe
+                 env["SYSTEMCTL_SKIP_REDIRECT"] = "yes"
                  logg.info("(stop) %s", cmd)
-                 run = subprocess_wait(cmd)
+                 run = subprocess_wait(cmd, env)
         elif not conf.getlist("Service", "ExecStop", []):
             if True:
                  pid_file = self.get_pid_file_from(conf)
@@ -553,8 +624,9 @@ class Systemctl:
             if True:
                  exe = conf.filename()
                  cmd = "'%s' reload" % exe
+                 env["SYSTEMCTL_SKIP_REDIRECT"] = "yes"
                  logg.info("(reload) %s", cmd)
-                 run = subprocess_wait(cmd)
+                 run = subprocess_wait(cmd, env)
         elif runs in [ "simple", "oneshot", "notify" ]:
             for cmd in conf.getlist("Service", "ExecReload", []):
                  pid_file = self.get_pid_file_from(conf)
@@ -620,8 +692,9 @@ class Systemctl:
             if True:
                  exe = conf.filename()
                  cmd = "'%s' restart" % exe
+                 env["SYSTEMCTL_SKIP_REDIRECT"] = "yes"
                  logg.info("(restart) %s", cmd)
-                 run = subprocess_wait(cmd)
+                 run = subprocess_wait(cmd, env)
         elif not conf.getlist("Service", "ExceRestart", []):
             logg.info("(restart) => stop/start")
             self.do_stop_from(conf)
@@ -795,7 +868,7 @@ class Systemctl:
             self.do_cat(unit)
     def wanted_from(self, conf, default = None):
         if not conf: return default
-        return conf.get("Install", "WantedBy", default)
+        return conf.get("Install", "WantedBy", default, True)
     def enablefolder(self, wanted = None):
         if not wanted: return None
         if not wanted.endswith(".wants"):
@@ -814,6 +887,8 @@ class Systemctl:
         return result
     def do_enable(self, unit):
         unit_file = self.unit_file(unit)
+        if "/init.d/" in unit_file:
+            return self.do_enable_sysv(unit_file)
         wanted = self.wanted_from(self.try_read_unit(unit))
         folder = self.enablefolder(wanted)
         if not os.path.isdir(folder):
@@ -824,6 +899,15 @@ class Systemctl:
         if self._force and os.path.islink(target):
             os.remove(target)
         if not os.path.islink(target):
+            os.symlink(unit_file, target)
+        return True
+    def do_enable_sysv(self, unit_file):
+        name = os.path.basename(unit_file)
+        target = "/etc/rc5.d/S50%s" % name
+        if not os.path.exists(target):
+            os.symlink(unit_file, target)
+        target = "/etc/rc5.d/K50%s" % name
+        if not os.path.exists(target):
             os.symlink(unit_file, target)
         return True
     def disable_unit(self, *modules):
@@ -839,6 +923,8 @@ class Systemctl:
         return result
     def do_disable(self, unit):
         unit_file = self.unit_file(unit)
+        if "/init.d/" in unit_file:
+            return self.do_disable_sysv(unit_file)
         wanted = self.wanted_from(self.try_read_unit(unit))
         folder = self.enablefolder(wanted)
         if not os.path.isdir(folder):
@@ -849,6 +935,21 @@ class Systemctl:
                  print "rm %s '%s'" % (self._force and "-f" or "", target)
             os.remove(target)
         return True
+    def do_disable_sysv(self, unit_file):
+        name = os.path.basename(unit_file)
+        target = "/etc/rc5.d/S50%s" % name
+        if os.path.exists(target):
+           os.unlink(target)
+        target = "/etc/rc5.d/K50%s" % name
+        if os.path.exists(target):
+           os.unlink(target)
+        return True
+    def is_enabled_sysv(self, unit_file):
+        name = os.path.basename(unit_file)
+        target = "/etc/rc5.d/S50%s" % name
+        if os.path.exists(target):
+           return True
+        return False
     def is_enabled_unit(self, *modules):
         units = {}
         for unit in self.units(modules):
@@ -860,6 +961,8 @@ class Systemctl:
         return result
     def is_enabled(self, unit):
         unit_file = self.unit_file(unit)
+        if "/init.d/" in unit_file:
+            return self.is_enabled_sysv(unit_file)
         wanted = self.wanted_from(self.try_read_unit(unit))
         folder = self.enablefolder(wanted)
         if not wanted:
@@ -870,6 +973,8 @@ class Systemctl:
         return False
     def enabled_from(self, conf):
         unit_file = conf.filename()
+        if "/init.d/" in unit_file:
+            return self.is_enabled_sysv(unit_file)
         wanted = self.wanted_from(conf)
         folder = self.enablefolder(wanted)
         if not wanted:
