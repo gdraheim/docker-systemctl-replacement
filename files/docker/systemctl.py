@@ -339,6 +339,9 @@ class Systemctl:
         if not conf: return default or ""
         return conf.get("Unit", "Description", default or "")
     def write_pid_file(self, pid_file, pid):
+        if not pid_file: 
+            logg.debug("pid %s but no pid_file", pid)
+            return
         dirpath = os.path.dirname(os.path.abspath(pid_file))
         if not os.path.isdir(dirpath):
             os.makedirs(dirpath)
@@ -501,6 +504,8 @@ class Systemctl:
             logg.warning("bad read of pid file '%s'", pid_file)
         return pid
     def kill_pid(self, pid):
+        if not pid:
+            return
         for x in xrange(self._waitkillproc):
             os.kill(pid, signal.SIGTERM)
             if not self.pid_exists(pid):
@@ -754,9 +759,11 @@ class Systemctl:
             units[unit] = 1
         for unit in units:
             self.reload_or_start(unit)
-    def reload_or_restart(unit):
+    def reload_or_restart(self, unit):
         conf = self.read_unit(unit)
         if not self.is_active_from(conf):
+            # try: self.do_stop_from(conf)
+            # except Exception, e: pass
             self.do_start_from(conf)
         elif conf.getlist("Service", "ExecReload", []):
             self.do_reload_from(conf)
@@ -770,10 +777,10 @@ class Systemctl:
             self.reload_or_try_restart(unit)
     def reload_or_try_restart(unit):
         conf = self.read_unit(unit)
-        if not self.is_active_from(conf):
-            return
         if conf.getlist("Service", "ExecReload", []):
             self.do_reload_from(conf)
+        elif not self.is_active_from(conf):
+            return
         else:
             self.do_restart_from(conf)
     def kill_unit(self, *modules):
@@ -789,6 +796,7 @@ class Systemctl:
         if not conf: return
         pid_file = self.get_pid_file_from(conf)
         pid = self.read_pid_file(pid_file)
+        logg.debug("pid_file '%s' => PID %s", pid_file, pid)
         self.kill_pid(pid)
     def is_active_unit(self, *modules):
         units = {}
@@ -808,6 +816,7 @@ class Systemctl:
         if not conf: return False
         pid_file = self.get_pid_file_from(conf)
         pid = self.read_pid_file(pid_file)
+        logg.debug("pid_file '%s' => PID %s", pid_file, pid)
         exists = self.pid_exists(pid)
         if not exists:
            return None
@@ -840,6 +849,7 @@ class Systemctl:
         if not conf: return True
         pid_file = self.get_pid_file_from(conf)
         pid = self.read_pid_file(pid_file)
+        logg.debug("pid_file '%s' => PID %s", pid_file, pid)
         return not self.pid_exists(pid)
     def status_unit(self, *modules):
         units = {}
