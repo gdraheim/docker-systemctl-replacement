@@ -12,6 +12,8 @@ import errno
 import os
 import sys
 import subprocess
+import signal
+import time
 
 # http://stackoverflow.com/questions/568271/how-to-check-if-there-exists-a-process-with-a-given-pid
 def pid_exists(pid):
@@ -133,8 +135,8 @@ class UnitConfigParser:
         for orig_line in open(filename):
             if nextline:
                 text += orig_line
-                if text.endswith("\\"):
-                    text = text[:-1] + "\n"
+                if text.rstrip().endswith("\\"):
+                    text = text.rstrip() + "\n"
                 else:
                     self.set(section, name, text)
                 continue
@@ -156,7 +158,7 @@ class UnitConfigParser:
             name, text = m.group(1), m.group(2).strip()
             if text.endswith("\\"):
                 nextline = True
-                text = text[:-1] + "\n"
+                text = text + "\n"
             else:
                 self.set(section, name, text)
     def sysv_read(self, filename):
@@ -404,6 +406,9 @@ class Systemctl:
                     continue
         except Exception, e:
             logg.info("while reading %s: %s", env_part, e)
+    def sleep(self, seconds = None):
+        seconds = seconds or 1
+        time.sleep(seconds)
     def sudo_from(self, conf):
         runuser = conf.get("Service", "User", "")
         rungroup = conf.get("Service", "Group", "")
@@ -437,11 +442,11 @@ class Systemctl:
         runs = conf.get("Service", "Type", "simple").lower()
         sudo = self.sudo_from(conf)
         env = os.environ.copy()
-        for env_file in conf.getlist("Service", "EnvironmentFile", []):
-            for name, value in self.read_env_file(env_file):
-                env[name] = value
         for env_part in conf.getlist("Service", "Environment", []):
             for name, value in self.read_env_part(env_part):
+                env[name] = value
+        for env_file in conf.getlist("Service", "EnvironmentFile", []):
+            for name, value in self.read_env_file(env_file):
                 env[name] = value
         logg.info("env = %s", env)
         if True:
@@ -530,11 +535,11 @@ class Systemctl:
         runs = conf.get("Service", "Type", "simple").lower()
         sudo = self.sudo_from(conf)
         env = os.environ.copy()
-        for env_file in conf.getlist("Service", "EnvironmentFile", []):
-            for name, value in self.read_env_file(env_file):
-                env[name] = value
         for env_part in conf.getlist("Service", "Environment", []):
             for name, value in self.read_env_part(env_part):
+                env[name] = value
+        for env_file in conf.getlist("Service", "EnvironmentFile", []):
+            for name, value in self.read_env_file(env_file):
                 env[name] = value
         if True:
             for cmd in conf.getlist("Service", "ExecStopPre", []):
@@ -609,11 +614,11 @@ class Systemctl:
         runs = conf.get("Service", "Type", "simple").lower()
         sudo = self.sudo_from(conf)
         env = os.environ.copy()
-        for env_file in conf.getlist("Service", "EnvironmentFile", []):
-            for name, value in self.read_env_file(env_file):
-                env[name] = value
         for env_part in conf.getlist("Service", "Environment", []):
             for name, value in self.read_env_part(env_part):
+                env[name] = value
+        for env_file in conf.getlist("Service", "EnvironmentFile", []):
+            for name, value in self.read_env_file(env_file):
                 env[name] = value
         if True:
             for cmd in conf.getlist("Service", "ExecReloadPre", []):
@@ -677,11 +682,11 @@ class Systemctl:
         runs = conf.get("Service", "Type", "simple").lower()
         sudo = self.sudo_from(conf)
         env = os.environ.copy()
-        for env_file in conf.getlist("Service", "EnvironmentFile", []):
-            for name, value in self.read_env_file(env_file):
-                env[name] = value
         for env_part in conf.getlist("Service", "Environment", []):
             for name, value in self.read_env_part(env_part):
+                env[name] = value
+        for env_file in conf.getlist("Service", "EnvironmentFile", []):
+            for name, value in self.read_env_file(env_file):
                 env[name] = value
         if True:
             for cmd in conf.getlist("Service", "ExecRestartPre", []):
