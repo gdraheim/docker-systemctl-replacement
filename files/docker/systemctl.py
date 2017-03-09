@@ -265,7 +265,7 @@ class Systemctl:
                 logg.warning("list-units: %s", e)
         return [ (unit, result[unit] and "loaded" or "", description[unit]) for unit in sorted(result) ]
     def get_description_from(self, conf, default = None):
-        if not conf: return defualt or ""
+        if not conf: return default or ""
         return conf.get("Unit", "Description", default or "")
     def write_pid_file(self, pid_file, pid):
         dirpath = os.path.dirname(os.path.abspath(pid_file))
@@ -496,10 +496,16 @@ class Systemctl:
                  if runs in [ "oneshot" ]: run.wait()
         elif runs in [ "forking" ]:
             for cmd in conf.getlist("Service", "ExecStop", []):
+                 active = self.is_active_from(conf)
+                 pid_file = self.get_pid_file_from(conf)
+                 pid = self.read_pid_file(pid_file, "")
+                 env["MAINPID"] = str(pid)
                  check, cmd = checkstatus(cmd)
+                 logg.info(" {env} %s", env)
                  logg.info("{stop} %s", sudo+cmd)
                  run = subprocess_wait(sudo+cmd, env)
-                 if check and run.returncode: raise Exception("ExecStop")
+                 if active:
+                     if check and run.returncode: raise Exception("ExecStop")
                  pid_file = self.get_pid_file_from(conf)
                  self.wait_pid_file(pid_file)
         else:
@@ -554,14 +560,17 @@ class Systemctl:
                  pid_file = self.get_pid_file_from(conf)
                  pid = self.read_pid_file(pid_file, "")
                  env["MAINPID"] = str(pid)
-                 logg.info("[start] %s", sudo+cmd)
+                 logg.info("[reload] %s", sudo+cmd)
                  run = subprocess_nowait(sudo+cmd, env)
                  # self.write_pid_file(pid_file, run.pid)
                  if runs in [ "oneshot" ]: run.wait()
         elif runs in [ "forking" ]:
             for cmd in conf.getlist("Service", "ExecReload", []):
+                 pid_file = self.get_pid_file_from(conf)
+                 pid = self.read_pid_file(pid_file, "")
+                 env["MAINPID"] = str(pid)
                  check, cmd = checkstatus(cmd)
-                 logg.info("{start} %s", sudo+cmd)
+                 logg.info("{reload} %s", sudo+cmd)
                  run = subprocess_nowait(sudo+cmd, env)
                  if check and run.returncode: raise Exception("ExecReload")
                  pid_file = self.get_pid_file_from(conf)
@@ -717,18 +726,23 @@ class Systemctl:
         if not conf:
             logg.warning("no such unit '%s'", unit)
         return self.is_active_from(conf)
+    def active_pid_from(self, conf):
+        if not conf: return False
+        pid_file = self.get_pid_file_from(conf)
+        pid = self.read_pid_file(pid_file)
+        exists = self.pid_exists(pid)
+        if not exists:
+           return None
+        return pid # string!!
     def is_active_from(self, conf):
         if not conf: return False
-        pid_file = self.get_pid_file_from(conf)
-        pid = self.read_pid_file(pid_file)
-        exists = self.pid_exists(pid)
-        return exists
+        if self.active_pid_from(conf) is None:
+           return False
+        return True
     def active_from(self, conf):
         if not conf: return False
-        pid_file = self.get_pid_file_from(conf)
-        pid = self.read_pid_file(pid_file)
-        exists = self.pid_exists(pid)
-        if not exists: return "dead"
+        pid = self.active_pid_from(conf)
+        if pid is None: return "dead"
         return "PID %s" % pid
     def is_failed_unit(self, *modules):
         units = {}
@@ -864,6 +878,24 @@ class Systemctl:
         if os.path.isfile(target):
             return "enabled"
         return "disabled"
+    def show_unit(self, *modules):
+        units = {}
+        for unit in self.units(modules):
+            units[unit] = 1
+        result = ""
+        for unit in units:
+            if result: result += "\n\n"
+            for var, value in self.show_unit_items(unit):
+               result += "%s=%s\n" % (var, value)
+        return result
+    def show_unit_items(self, unit):
+        conf = self.try_read_unit(unit)
+        yield "Id", unit
+        yield "Names", unit
+        yield "Description", self.get_description_from(conf) # conf.get("Unit", "Description")
+        yield "MainPID", self.active_pid_from(conf) or "0"
+        yield "SubState", self.active_from(conf)
+        yield "ActiveState", self.is_active_from(conf) and "active" or "dead"
 
 if __name__ == "__main__":
     import optparse
