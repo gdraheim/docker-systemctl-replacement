@@ -988,6 +988,9 @@ class Systemctl:
         if os.path.isfile(target):
             return "enabled"
         return "disabled"
+    def daemon_reload_system(self):
+        logg.info("ignored daemon-reload")
+        return True
     def show_unit(self, *modules):
         units = {}
         for unit in self.units(modules):
@@ -1056,7 +1059,7 @@ if __name__ == "__main__":
     modules = args[1:]
     systemctl = Systemctl()
     found = False
-    for suffix in [ "_unit", "_of_units", "_host", "_of_host" ]:
+    for suffix in [ "_unit", "_of_units", "_host", "_of_host", "_system" ]:
         command_name = command.replace("-","_").replace(".","_")+suffix
         command_func = getattr(systemctl, command_name, None)
         if callable(command_func):
