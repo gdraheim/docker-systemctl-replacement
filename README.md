@@ -1,6 +1,6 @@
 # docker systemctl replacement
 
-This script may be used to overwrite "/usr/bin/systemctl"   
+This script may be used to overwrite "/usr/bin/systemctl".   
 It will execute the systemctl commands without SystemD!
 
 This is used to test deployment of services with a docker
@@ -118,10 +118,9 @@ run as PID 1 in a container.
 Based on that information the "systemctl" replacement script
 will also work as an "init" replacement script. It will
 automatically turn to that functionality if it is run without
-arguments and if it finds itself to be PID 1.
-
-If the script is run without arguments and it is NOT at PID 1
-the it will run "list-units" as the default command.
+arguments and if it finds itself to be PID 1. (NOTE: If the 
+script is run without arguments and it is NOT at PID 1 then
+it will run "list-units" as the default command.)
 
 The funcationality of the init-replacment can be forced by
 saying "systemctl 1". This is the combination of two 
