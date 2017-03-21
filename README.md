@@ -95,6 +95,10 @@ through a system update.
       copy: src="files/docker/systemctl.py" dest="/usr/bin/systemctl"
       when: ansible_connection == 'docker'
 
+Note that such a setup will also work when using Ansible's 
+service module to start/stop/enable services on a target host.
+On a systemd-controlled operating system the old "service" 
+script will delegate commands to systemctl anyway.
 
 ## The docker-init-replacement
 
