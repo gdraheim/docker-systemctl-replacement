@@ -79,6 +79,27 @@ limited if the deployment includes the configuration of
 services using their http-based API. Not so with a
 deployment tool like Ansible.
 
+## Installation
+
+Simply overwrite /usr/bin/systemctl - for an additional
+benefit you could try to lock updates of the systemd
+package so that no newer "systemctl" can be installed
+through a system update.
+
+    - name: docker files
+      copy: src="files/docker" dest="files/"
+      when: ansible_connection == 'docker'
+    - name: docker lock systemd
+      shell: |
+           test -d /run/systemd/system || mkdir /run/systemd/system # defeat newer ansible
+           yum update -y systemd; yum install -y yum-versionlock; yum versionlock systemd; 
+    - name: docker override systemctl
+      shell: |
+           cat files/docker/systemctl.py >/usr/bin/systemctl
+      become: yes
+      when: ansible_connection == 'docker'
+
+
 ## The docker-init-replacement
 
 The script was born as to only interpret *.service files
