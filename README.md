@@ -1,6 +1,6 @@
 # docker systemctl replacement
 
-This script may be used to overwrite "/usr/bin/systemctl"...
+This script may be used to overwrite "/usr/bin/systemctl"   
 It will execute the systemctl commands without SystemD!
 
 This is used to test deployment of services with a docker
