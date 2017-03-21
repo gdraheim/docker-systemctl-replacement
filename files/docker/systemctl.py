@@ -1,5 +1,5 @@
 #! /usr/bin/python
-__copyright__ = "(C) 2016-2017 Guido Draheim, for free usage."
+__copyright__ = "(C) 2016-2017 Guido U. Draheim, for free usage."
 __version__ = "0.3"
 
 import logging

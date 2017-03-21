@@ -1,7 +1,7 @@
 # docker systemctl replacement
 
 This script may be used to overwrite "/usr/bin/systemctl".
-It will execute the systemctl commands without systemd!
+It will execute the systemctl commands without SystemD!
 
 This is used to test deployment of services with a docker
 container as the target host. Just as on a real machine you 
@@ -10,7 +10,7 @@ commands to bring up services for further configuration and
 testing.
 
 This is achieved by reading and interpreting "*.service"
-files that have been deployed on the docker container. In
+files that have been deployed in the docker container. In
 many cases those will be in /etc/systemd/system/. Not only
 the "simple" but also "forking" service types are handled
 correctly, with the referenced PIDfile used to tell whether 
@@ -23,26 +23,32 @@ will reap all zombies from background processes in the container.
 When running a "docker stop" on such a container it will also 
 bring down all configured services correctly before exit.
 
-## Problems with System-D
+## Problems with SystemD
 
 The background for this script is the inability to run a
-System-D daemon easily inside a docker container. There have
+SystemD daemon easily inside a docker container. There have
 been multiple workarounds with varying complexity and actual
 functionality.
 
 Most people have come to take the easy path and to create a
 startup shell script for the docker container that will
 bring up the service processes one by one. Essentially one would
-read the documentation or the systemd *.service scripts of the
+read the documentation or the SystemD *.service scripts of the
 application to see how that would be done. By using this
 replacement script a programmer can skip that step.
 
 As a historic background this script was born when the
 deployment targets shifted from RHEL6 (with initscripts)
-to RHEL7 (with systemd) and suddenly even a simple call
+to RHEL7 (with SystemD) and suddenly even a simple call
 to "service app start" would result in errors from a missing
-systemd-daemon. By using this docker systemctl replacment
+SystemD-daemon. By using this docker systemctl replacment
 script one could continue with the original installers.
+
+Please note that this systemctl replacement will also
+read and interpret initscripts in /etc/init.d/. As such
+you can also deploy older applications with a classic 
+SysV-style start/stop script and they are handled similar 
+to how SystemD would care for them.
 
 ## Usage along with Ansible
 
@@ -73,7 +79,7 @@ limited if the deployment includes the configuration of
 services using their http-based API. Not so with a
 deployment tool like Ansible.
 
-## docker-init-replacement
+## The docker-init-replacement
 
 The script was born as to only interpret *.service files
 but it became soon obvious that some stopped service
@@ -99,7 +105,7 @@ the it will run "list-units" as the default command.
 The funcationality of the init-replacment can be forced by
 saying "systemctl 1". This is the combination of two 
 commands - the first is "systemctl default" which is a
-standard command of System-D's systemctl. The 'default' run
+standard command of SystemD's systemctl. The 'default' run
 level is assumed to be "multi-user.target" here - have a
 look at the *.system file if that is listed as a "WantedBy", 
 and wether it "is-enabled" which will result in a symlink 
@@ -113,7 +119,7 @@ or a "docker stop" it will execute "systemctl halt" which
 mimics the standard behaviour in running "stop" on each of
 the level's services.
 
-## stop grace timeout
+## Check stop grace timeout
 
 Note that the docker daemon will send a SIGTERM to the PID 1
 of a docker container that will result in the stop-behaviour
@@ -132,19 +138,33 @@ however, for example:
     docker run --stop-timeout 100 --name running image
     docker-compose.yml: stop_grace_period: 100
 
-## not implemented
+## Some not implemented
 
 Only a limited number of commands are implemented. They
-should produce a similar output compared to System-D's
+should produce a similar output compared to SystemD's
 systemctl as a number of tools are interpreting the
 output.
 
-Sadly the functionality of System-D's systemctl is badly
+Sadly the functionality of SystemD's systemctl is badly
 documented so that much of the current implementation is
 done by trial and fixing the errors. As most programmers
 tend to write very simple *.service files it works in a
 surprising number of cases however. But definitly not all.
 
 I take patches. ;)
+
+## The author
+
+Guido Draheim is working as a freelance consultant for
+multiple big companies in Germany (please ignore references
+in the Makefile relating them). This script is related to 
+the current surge of DevOps topics which often use docker 
+as a lightweight replacement for cloud containers or even 
+virtual machines. It makes it easier to test deployments
+in the standard build pipelines of development teams.
+
+
+
+
 
 
