@@ -52,6 +52,13 @@ def checkstatus(cmd):
     else:
         return True, cmd
 
+
+
+def ignore_signals_and_raise_keyboard_interrupt(signame):
+    signal.signal(signal.SIGTERM, signal.SIG_IGN)
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
+    raise KeyboardInterrupt(signame)
+
 class UnitConfigParser:
     def __init__(self, defaults=None, dict_type=None, allow_no_value=False):
         self._defaults = defaults or {}
@@ -126,6 +133,8 @@ class UnitConfigParser:
             return self._files[-1]
         return None
     def read(self, filename):
+        return self.read_sysd(filename)
+    def read_sysd(self, filename):
         initscript = False
         initinfo = False
         section = None
@@ -162,7 +171,7 @@ class UnitConfigParser:
                 text = text + "\n"
             else:
                 self.set(section, name, text)
-    def sysv_read(self, filename):
+    def read_sysv(self, filename):
         initscript = False
         initinfo = False
         section = None
@@ -224,6 +233,7 @@ def subprocess_output(cmd, env=None, check = False):
         raise Exception("command failed")
     return run
 
+_sysd_default = "multi-user.target"
 _sysd_folder1 = "/usr/lib/systemd/system"
 _sysd_folder2 = "/etc/systemd/system"
 _sysv_folder1 = "/etc/init.d"
@@ -319,7 +329,7 @@ class Systemctl:
         if path in self._loaded_file_sysd:
             return self._loaded_file_sysd[path]
         unit = UnitParser()
-        unit.read(path)
+        unit.read_sysd(path)
         self._loaded_file_sysd[path] = unit
         return unit
     def read_sysv_unit(self, module):
@@ -330,7 +340,7 @@ class Systemctl:
         if path in self._loaded_file_sysv:
             return self._loaded_file_sysv[path]
         unit = UnitParser()
-        unit.sysv_read(path)
+        unit.read_sysv(path)
         self._loaded_file_sysv[path] = unit
         return unit
     def try_read_unit(self, module):
@@ -370,14 +380,14 @@ class Systemctl:
                 yield item
             elif [ module for module in modules if module+suffix == item ]:
                 yield item
-    def list_services_of_system(self):
+    def sysem_list_services(self):
         filename = self.unit_file() # scan all
         for name, value in self._file_for_unit_sysd.items():
             print "SysD", name, "=>", value
         for name, value in self._file_for_unit_sysv.items():
             print "SysV", name, "=>", value
         return None
-    def list_units_of_host(self, *modules):
+    def show_list_units(self, *modules):
         result = {}
         description = {}
         for unit in self.units(modules):
@@ -484,18 +494,18 @@ class Systemctl:
             units[unit] = 1
         if units:
             for unit in units:
-                self.do_start(unit)
+                self.start_unit(unit)
         else:
             for unit in self.sysv_units(modules):
                 self.sysv_start(unit)
-    def do_start(self, unit):
+    def start_unit(self, unit):
         conf = self.read_unit(unit)
-        self.do_start_from(conf)
+        self.start_unit_from(conf)
     def sysv_start(self, unit):
         conf = self.read_sysv_unit(unit)
         conf.set("Service", "Type", "sysv")
-        self.do_start_from(conf)
-    def do_start_from(self, conf):
+        self.start_unit_from(conf)
+    def start_unit_from(self, conf):
         if not conf: return
         runs = conf.get("Service", "Type", "simple").lower()
         sudo = self.sudo_from(conf)
@@ -579,18 +589,18 @@ class Systemctl:
             units[unit] = 1
         if units:
             for unit in units:
-                self.do_stop(unit)
+                self.stop_unit(unit)
         else:
             for unit in self.sysv_units(modules):
                 self.sysv_stop(unit)
-    def do_stop(self, unit):
+    def stop_unit(self, unit):
         conf = self.read_unit(unit)
-        self.do_stop_from(conf)
+        self.stop_unit_from(conf)
     def sysv_stop(self, unit):
         conf = self.read_sysv_unit(unit)
         conf.set("Service", "Type", "sysv")
-        self.do_stop_from(conf)
-    def do_stop_from(self, conf):
+        self.stop_unit_from(conf)
+    def stop_unit_from(self, conf):
         if not conf: return
         runs = conf.get("Service", "Type", "simple").lower()
         sudo = self.sudo_from(conf)
@@ -658,18 +668,18 @@ class Systemctl:
             units[unit] = 1
         if units:
             for unit in units:
-                self.do_reload(unit)
+                self.reload_unit(unit)
         else:
             for unit in self.sysv_units(modules):
                 self.sysv_restart(unit)
-    def do_reload(self, unit):
+    def reload_unit(self, unit):
         conf = self.read_unit(unit)
-        self.do_reload_from(conf)
+        self.reload_unit_from(conf)
     def sysv_reload(self, unit):
         conf = self.read_sysv_unit(unit)
         conf.set("Service", "Type", "sysv")
-        self.do_reload_from(conf)
-    def do_reload_from(self, conf):
+        self.reload_unit_from(conf)
+    def reload_unit_from(self, conf):
         if not conf: return
         runs = conf.get("Service", "Type", "simple").lower()
         sudo = self.sudo_from(conf)
@@ -726,18 +736,18 @@ class Systemctl:
             units[unit] = 1
         if units:
             for unit in units:
-                self.do_restart(unit)
+                self.restart_unit(unit)
         else:
             for unit in self.sysv_units(modules):
                 self.sysv_restart(unit)
-    def do_restart(self, unit):
+    def restart_unit(self, unit):
         conf = self.read_unit(unit)
-        self.do_restart_from(conf)
+        self.restart_unit_from(conf)
     def sysv_restart(self, unit):
         conf = self.read_sysv_unit(unit)
         conf.set("Service", "Type", "sysv")
-        self.do_restart_from(conf)
-    def do_restart_from(self, conf):
+        self.restart_unit_from(conf)
+    def restart_unit_from(self, conf):
         if not conf: return
         runs = conf.get("Service", "Type", "simple").lower()
         sudo = self.sudo_from(conf)
@@ -762,8 +772,8 @@ class Systemctl:
                  run = subprocess_wait(cmd, env)
         elif not conf.getlist("Service", "ExceRestart", []):
             logg.info("(restart) => stop/start")
-            self.do_stop_from(conf)
-            self.do_start_from(conf)
+            self.stop_unit_from(conf)
+            self.start_unit_from(conf)
         elif runs in [ "simple", "oneshot", "notify" ]:
             for cmd in conf.getlist("Service", "ExecRestart", []):
                  pid_file = self.get_pid_file_from(conf)
@@ -807,7 +817,7 @@ class Systemctl:
     def try_restart(unit):
         conf = self.read_unit(unit)
         if self.is_active_from(conf):
-            self.do_restart_from(conf)
+            self.restart_unit_from(conf)
     def reload_or_restart_of_units(self, *modules):
         units = {}
         for unit in self.units(modules):
@@ -817,13 +827,13 @@ class Systemctl:
     def reload_or_restart(self, unit):
         conf = self.read_unit(unit)
         if not self.is_active_from(conf):
-            # try: self.do_stop_from(conf)
+            # try: self.stop_unit_from(conf)
             # except Exception, e: pass
-            self.do_start_from(conf)
+            self.start_unit_from(conf)
         elif conf.getlist("Service", "ExecReload", []):
-            self.do_reload_from(conf)
+            self.reload_unit_from(conf)
         else:
-            self.do_restart_from(conf)
+            self.restart_unit_from(conf)
     def reload_or_try_restart_of_units(self, *modules):
         units = {}
         for unit in self.units(modules):
@@ -833,21 +843,21 @@ class Systemctl:
     def reload_or_try_restart(unit):
         conf = self.read_unit(unit)
         if conf.getlist("Service", "ExecReload", []):
-            self.do_reload_from(conf)
+            self.reload_unit_from(conf)
         elif not self.is_active_from(conf):
             return
         else:
-            self.do_restart_from(conf)
+            self.restart_unit_from(conf)
     def kill_of_units(self, *modules):
         units = {}
         for unit in self.units(modules):
             units[unit] = 1
         for unit in units:
-            self.do_kill(unit)
-    def do_kill(self, unit):
+            self.kill_unit(unit)
+    def kill_unit(self, unit):
         conf = self.read_unit(unit)
-        self.do_kill_from(conf)
-    def do_kill_from(self, conf):
+        self.kill_unit_from(conf)
+    def kill_unit_from(self, conf):
         if not conf: return
         pid_file = self.get_pid_file_from(conf)
         pid = self.read_pid_file(pid_file)
@@ -912,8 +922,8 @@ class Systemctl:
         for unit in self.units(modules):
             units[unit] = 1
         for unit in units:
-            self.do_status(unit)
-    def do_status(self, unit):
+            self.status_unit(unit)
+    def status_unit(self, unit):
         conf = self.try_read_unit(unit)
         print unit, "-", self.get_description_from(conf)
         if conf:
@@ -930,7 +940,7 @@ class Systemctl:
         for unit in self.units(modules):
             units[unit] = 1
         for unit in units:
-            self.do_cat(unit)
+            self.cat_unit(unit)
     def wanted_from(self, conf, default = None):
         if not conf: return default
         return conf.get("Install", "WantedBy", default, True)
@@ -947,13 +957,13 @@ class Systemctl:
             return True
         result = False
         for unit in units:
-            if self.do_enable(unit):
+            if self.enable_unit(unit):
                 result = True
         return result
-    def do_enable(self, unit):
+    def enable_unit(self, unit):
         unit_file = self.unit_file(unit)
         if self.is_sysv_file(unit_file):
-            return self.do_enable_sysv(unit_file)
+            return self.enable_unit_sysv(unit_file)
         wanted = self.wanted_from(self.try_read_unit(unit))
         folder = self.enablefolder(wanted)
         if not os.path.isdir(folder):
@@ -966,7 +976,7 @@ class Systemctl:
         if not os.path.islink(target):
             os.symlink(unit_file, target)
         return True
-    def do_enable_sysv(self, unit_file):
+    def enable_unit_sysv(self, unit_file):
         name = os.path.basename(unit_file)
         target = "/etc/rc5.d/S50%s" % name
         if not os.path.exists(target):
@@ -983,13 +993,13 @@ class Systemctl:
             return True
         result = False
         for unit in units:
-            if self.do_disable(unit):
+            if self.disable_unit(unit):
                 result = True
         return result
-    def do_disable(self, unit):
+    def disable_unit(self, unit):
         unit_file = self.unit_file(unit)
         if self.is_sysv_file(unit_file):
-            return self.do_disable_sysv(unit_file)
+            return self.disable_unit_sysv(unit_file)
         wanted = self.wanted_from(self.try_read_unit(unit))
         folder = self.enablefolder(wanted)
         if not os.path.isdir(folder):
@@ -1000,7 +1010,7 @@ class Systemctl:
                  print "rm %s '%s'" % (self._force and "-f" or "", target)
             os.remove(target)
         return True
-    def do_disable_sysv(self, unit_file):
+    def disable_unit_sysv(self, unit_file):
         name = os.path.basename(unit_file)
         target = "/etc/rc5.d/S50%s" % name
         if os.path.exists(target):
@@ -1048,7 +1058,7 @@ class Systemctl:
         if os.path.isfile(target):
             return "enabled"
         return "disabled"
-    def daemon_reload_of_system(self):
+    def system_daemon_reload(self):
         logg.info("ignored daemon-reload")
         return True
     def show_of_units(self, *modules):
@@ -1081,6 +1091,68 @@ class Systemctl:
             env_files.append(env_file)
         if env_files:
             yield "EnvironmentFile", " ".join(env_files)
+    def system_default(self, arg = True):
+        """ start units for default system level """
+        logg.info("system default requested - %s", arg)
+        default_target = _sysd_default
+        wants_folder = os.path.join(_sysd_folder2, default_target + ".wants")
+        for unit in os.listdir(wants_folder):
+            if unit.endswith(".service"):
+                logg.info("%s => %s", default_target, unit)
+                self.start_unit(unit)
+        logg.info("system is up")
+    def system_halt(self, arg = True):
+        """ stop units from default system level """
+        logg.info("system halt requested - %s", arg)
+        default_target = _sysd_default
+        wants_folder = os.path.join(_sysd_folder2, default_target + ".wants")
+        for unit in os.listdir(wants_folder):
+            if unit.endswith(".service"):
+                logg.info("%s => %s", default_target, unit)
+                self.stop_unit(unit)
+        logg.info("system is down")
+    def system_0(self):
+        self.system_default("init 0")
+        return self.system_wait("init 1")
+    def system_1(self):
+        self.system_default("init 1")
+        return self.system_wait("init 1")
+    def system_wait(self, arg = True):
+        """ wait and reap children """
+        signal.signal(signal.SIGTERM, lambda signum, frame: ignore_signals_and_raise_keyboard_interrupt('SIGTERM'))
+        signal.signal(signal.SIGINT, lambda signum, frame: ignore_signals_and_raise_keyboard_interrupt('SIGINT'))
+        while True:
+            try:
+                time.sleep(10)
+                self.system_reap_zombies()
+            except KeyboardInterrupt:
+                signal.signal(signal.SIGTERM, signal.SIG_DFL)
+                signal.signal(signal.SIGINT, signal.SIG_DFL)
+                self.system_halt(arg)
+                return True
+        return False
+    def system_reap_zombies(self):
+	for pid in os.listdir("/proc"):
+	    status_file = "/proc/%s/status" % pid
+	    if os.path.isfile(status_file):
+	        zombie = False
+	        ppid = 0
+		for line in open(status_file):
+		    m = re.match(r"State:\s*Z.*", line)
+		    if m: zombie = True
+		    m = re.match(r"PPid:\s*(\d+)", line)
+		    if m: ppid = int(m.group(1))
+		if zombie:
+			if ppid == 1 and os.getpid() == 1:
+			    logg.info("reap zombie %s", pid)
+			    try: os.waitpid(pid, os.WNOHANG)
+			    except OSError, e: 
+				logg.info("reap zombie %s: %s", e.strerror)
+			else:
+			    logg.info("kill zombie %s", pid)
+			    try: signal.signal(pid, signal.KILL)
+			    except OSError, e: 
+				logg.info("kill zombie %s: %s", e.strerror)
 
 if __name__ == "__main__":
     import optparse
@@ -1127,7 +1199,13 @@ if __name__ == "__main__":
     _full = opt.full
     _property = getattr(opt, "property")
     #
-    if not args: args = [ "list-units" ]
+    if not args: 
+        args = [ "list-units" ]
+        if os.getpid() == 0:
+            args = [ "0" ]
+        if os.getpid() == 1:
+            args = [ "1" ]
+            logg.setLevel(logging.INFO)
     command = args[0]
     modules = args[1:]
     systemctl = Systemctl()
@@ -1143,16 +1221,22 @@ if __name__ == "__main__":
     if callable(command_func) and not found:
         found = True
         result = command_func(*modules)
-    command_name = command.replace("-","_").replace(".","_")+"_of_host"
+    command_name = "show_"+command.replace("-","_").replace(".","_")
     command_func = getattr(systemctl, command_name, None)
     if callable(command_func) and not found:
         found = True
         result = command_func(*modules)
-    command_name = command.replace("-","_").replace(".","_")+"_of_system"
+    command_name = "system_"+command.replace("-","_").replace(".","_")
     command_func = getattr(systemctl, command_name, None)
     if callable(command_func) and not found:
         found = True
         result = command_func()
+        for comm in modules:
+            comm_name = "system_"+comm.replace("-","_").replace(".","_")
+            comm_func = getattr(systemctl, comm_name, None)
+            if callable(comm_func):
+                found = True
+                result = comm_func()
     if not found:
         logg.error("no method for '%s'", command)
         sys.exit(1)
