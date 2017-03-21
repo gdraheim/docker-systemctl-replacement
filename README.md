@@ -86,17 +86,13 @@ benefit you could try to lock updates of the systemd
 package so that no newer "systemctl" can be installed
 through a system update.
 
-    - name: docker files
-      copy: src="files/docker" dest="files/"
-      when: ansible_connection == 'docker'
     - name: docker lock systemd
       shell: |
            test -d /run/systemd/system || mkdir /run/systemd/system # defeat newer ansible
            yum update -y systemd; yum install -y yum-versionlock; yum versionlock systemd; 
-    - name: docker override systemctl
-      shell: |
-           cat files/docker/systemctl.py >/usr/bin/systemctl
-      become: yes
+      when: ansible_connection == 'docker'
+    - name: docker files
+      copy: src="files/docker/systemctl.py" dest="/usr/bin/systemctl"
       when: ansible_connection == 'docker'
 
 
