@@ -1,4 +1,6 @@
 #! /usr/bin/python
+__copyright__ = "(C) 2016-2017 Guido Draheim, for free usage."
+__version__ = "0.3"
 
 import logging
 logg = logging.getLogger("systemctl")
@@ -52,8 +54,7 @@ def checkstatus(cmd):
     else:
         return True, cmd
 
-
-
+# https://github.com/phusion/baseimage-docker/blob/rel-0.9.16/image/bin/my_init
 def ignore_signals_and_raise_keyboard_interrupt(signame):
     signal.signal(signal.SIGTERM, signal.SIG_IGN)
     signal.signal(signal.SIGINT, signal.SIG_IGN)
@@ -1153,6 +1154,8 @@ class Systemctl:
 			    try: signal.signal(pid, signal.KILL)
 			    except OSError, e: 
 				logg.info("kill zombie %s: %s", e.strerror)
+    def system_version(self):
+        return [ ("Version", __version__), ("Copyright", __copyright__) ]
 
 if __name__ == "__main__":
     import optparse
@@ -1193,6 +1196,8 @@ if __name__ == "__main__":
     opt, args = _o.parse_args()
     logging.basicConfig(level = max(0, logging.FATAL - 10 * opt.verbose))
     logg.setLevel(max(0, logging.ERROR - 10 * opt.verbose))
+    if opt.version:
+       args = [ "version" ]
     #
     _force = opt.force
     _quiet = opt.quiet
