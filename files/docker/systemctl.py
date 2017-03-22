@@ -1134,26 +1134,23 @@ class Systemctl:
         return False
     def system_reap_zombies(self):
 	for pid in os.listdir("/proc"):
+	    try: pid = int(pid)
+	    except: continue
 	    status_file = "/proc/%s/status" % pid
 	    if os.path.isfile(status_file):
 	        zombie = False
-	        ppid = 0
+	        ppid = -1
 		for line in open(status_file):
 		    m = re.match(r"State:\s*Z.*", line)
 		    if m: zombie = True
 		    m = re.match(r"PPid:\s*(\d+)", line)
 		    if m: ppid = int(m.group(1))
-		if zombie:
-			if ppid == 1 and os.getpid() == 1:
+		    if zombie:
+			if ppid == os.getpid():
 			    logg.info("reap zombie %s", pid)
 			    try: os.waitpid(pid, os.WNOHANG)
 			    except OSError, e: 
 				logg.info("reap zombie %s: %s", e.strerror)
-			else:
-			    logg.info("kill zombie %s", pid)
-			    try: signal.signal(pid, signal.KILL)
-			    except OSError, e: 
-				logg.info("kill zombie %s: %s", e.strerror)
     def system_version(self):
         return [ ("Version", __version__), ("Copyright", __copyright__) ]
 
