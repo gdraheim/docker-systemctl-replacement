@@ -1145,12 +1145,11 @@ class Systemctl:
 		    if m: zombie = True
 		    m = re.match(r"PPid:\s*(\d+)", line)
 		    if m: ppid = int(m.group(1))
-		    if zombie:
-			if ppid == os.getpid():
-			    logg.info("reap zombie %s", pid)
-			    try: os.waitpid(pid, os.WNOHANG)
-			    except OSError, e: 
-				logg.info("reap zombie %s: %s", e.strerror)
+		if zombie and ppid == os.getpid():
+		    logg.info("reap zombie %s", pid)
+		    try: os.waitpid(pid, os.WNOHANG)
+		    except OSError, e: 
+			logg.warning("reap zombie %s: %s", e.strerror)
     def system_version(self):
         return [ ("Version", __version__), ("Copyright", __copyright__) ]
 
