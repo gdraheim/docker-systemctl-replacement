@@ -1,6 +1,8 @@
 # -*- makefile -*-
 PORT=8888
 
+alltests: CH CP UA
+
 CH: centos-httpd.dockerfile
 centos-httpd.dockerfile:
 	docker build . -f tests/$@ --tag localhost:5000/tests:$@
