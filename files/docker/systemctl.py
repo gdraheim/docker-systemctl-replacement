@@ -269,7 +269,7 @@ class Systemctl:
         path = self.unit_sysv_file(module)
         if path is not None: return path
         return None
-    def unit_sysd_file(self, module = None):
+    def scan_unit_sysd_files(self, module = None):
         """ reads all unit files, returns the last filename for the unit given """
         if self._file_for_unit_sysd is None:
             self._file_for_unit_sysd = {}
@@ -280,12 +280,15 @@ class Systemctl:
                     path = os.path.join(folder, name)
                     self._file_for_unit_sysd[name] = path
             logg.debug("found %s sysd files", len(self._file_for_unit_sysd))
+        return self._file_for_unit_sysd.keys()
+    def unit_sysd_file(self, module = None):
+        self.scan_unit_sysd_files()
         if module and module in self._file_for_unit_sysd:
             return self._file_for_unit_sysd[module]
         if module and module+".service" in self._file_for_unit_sysd:
             return self._file_for_unit_sysd[module+".service"]
         return None
-    def unit_sysv_file(self, module = None):
+    def scan_unit_sysv_files(self, module = None):
         """ reads all init.d files, returns the last filename when unit is a '.service' """
         if self._file_for_unit_sysv is None:
             self._file_for_unit_sysv = {}
@@ -296,6 +299,9 @@ class Systemctl:
                     path = os.path.join(folder, name)
                     self._file_for_unit_sysv[name+".service"] = path
             logg.debug("found %s sysv files", len(self._file_for_unit_sysv))
+        return self._file_for_unit_sysv.keys()
+    def unit_sysv_file(self, module = None):
+        self.scan_unit_sysd_files()
         if module and module in self._file_for_unit_sysv:
             return self._file_for_unit_sysv[module]
         if module and module+".service" in self._file_for_unit_sysv:
@@ -358,20 +364,19 @@ class Systemctl:
         except Exception, e: 
             logg.debug("read unit '%s': %s", module, e)
             return self.default_unit(module)
-    def units(self, modules, suffix=".service"):
+    def match_units(self, modules, suffix=".service"):
         found = []
-        for unit in self.sysd_units(modules, suffix):
+        for unit in self.match_sysd_units(modules, suffix):
             if unit not in found:
                 found.append(unit)
-                yield unit
-        for unit in self.sysv_units(modules, suffix):
+        for unit in self.match_sysv_units(modules, suffix):
             if unit not in found:
                 found.append(unit)
-                yield unit
-    def sysd_units(self, modules, suffix=".service"):
+        return found
+    def match_sysd_units(self, modules, suffix=".service"):
         if isinstance(modules, basestring):
             modules = [ modules ]
-        self.unit_sysd_file()
+        self.scan_unit_sysd_files()
         for item in sorted(self._file_for_unit_sysd.keys()):
             if not modules:
                 yield item
@@ -379,10 +384,10 @@ class Systemctl:
                 yield item
             elif [ module for module in modules if module+suffix == item ]:
                 yield item
-    def sysv_units(self, modules, suffix=".service"):
+    def match_sysv_units(self, modules, suffix=".service"):
         if isinstance(modules, basestring):
             modules = [ modules ]
-        self.unit_sysv_file()
+        self.scan_unit_sysv_files()
         for item in sorted(self._file_for_unit_sysv.keys()):
             if not modules:
                 yield item
@@ -400,7 +405,7 @@ class Systemctl:
     def show_list_units(self, *modules):
         result = {}
         description = {}
-        for unit in self.units(modules):
+        for unit in self.match_units(modules):
             result[unit] = None
             description[unit] = ""
             try: 
@@ -499,22 +504,14 @@ class Systemctl:
             sudo = "/usr/sbin/runuser -g %s -- " % (rungroup)
         return sudo
     def start_of_units(self, *modules):
-        units = {}
-        for unit in self.units(modules):
-            units[unit] = 1
-        if units:
-            for unit in units:
-                self.start_unit(unit)
-        else:
-            for unit in self.sysv_units(modules):
-                self.sysv_start(unit)
+        done = True
+        for unit in self.match_units(modules):
+            if not self.start_unit(unit):
+                done = False
+        return done
     def start_unit(self, unit):
         conf = self.read_unit(unit)
-        self.start_unit_from(conf)
-    def sysv_start(self, unit):
-        conf = self.read_sysv_unit(unit)
-        conf.set("Service", "Type", "sysv")
-        self.start_unit_from(conf)
+        return self.start_unit_from(conf)
     def start_unit_from(self, conf):
         if not conf: return
         runs = conf.get("Service", "Type", "simple").lower()
@@ -558,6 +555,7 @@ class Systemctl:
                 check, cmd = checkstatus(cmd)
                 logg.info("ExecStartPost:%s:%s", check, cmd)
                 subprocess_wait(cmd, env, check=check)
+        return True
     def read_pid_file(self, pid_file, default = None):
         pid = default
         if not pid_file:
@@ -587,23 +585,6 @@ class Systemctl:
                 break
             os.kill(pid, signal.SIGKILL)
             self.sleep(1)
-    def stop_of_units(self, *modules):
-        units = {}
-        for unit in self.units(modules):
-            units[unit] = 1
-        if units:
-            for unit in units:
-                self.stop_unit(unit)
-        else:
-            for unit in self.sysv_units(modules):
-                self.sysv_stop(unit)
-    def stop_unit(self, unit):
-        conf = self.read_unit(unit)
-        self.stop_unit_from(conf)
-    def sysv_stop(self, unit):
-        conf = self.read_sysv_unit(unit)
-        conf.set("Service", "Type", "sysv")
-        self.stop_unit_from(conf)
     def environment_of_unit(self, unit):
         conf = self.read_unit(unit)
         return self.get_env(conf)
@@ -616,6 +597,15 @@ class Systemctl:
             for name, value in self.read_env_file(env_file):
                 env[name] = value
         return env
+    def stop_of_units(self, *modules):
+        done = True
+        for unit in self.match_units(modules):
+            if not self.stop_unit(unit):
+                done = False
+        return done
+    def stop_unit(self, unit):
+        conf = self.read_unit(unit)
+        return self.stop_unit_from(conf)
     def stop_unit_from(self, conf):
         if not conf: return
         runs = conf.get("Service", "Type", "simple").lower()
@@ -672,23 +662,16 @@ class Systemctl:
                 check, cmd = checkstatus(cmd)
                 logg.info("ExecStopPost:%s:%s", check, cmd)
                 subprocess_wait(cmd, env, check=check)
+        return True
     def reload_of_units(self, *modules):
-        units = {}
-        for unit in self.units(modules):
-            units[unit] = 1
-        if units:
-            for unit in units:
-                self.reload_unit(unit)
-        else:
-            for unit in self.sysv_units(modules):
-                self.sysv_restart(unit)
+        done = True
+        for unit in self.match_units(modules):
+            if not self.reload_unit(unit):
+                done = False
+        return done
     def reload_unit(self, unit):
         conf = self.read_unit(unit)
-        self.reload_unit_from(conf)
-    def sysv_reload(self, unit):
-        conf = self.read_sysv_unit(unit)
-        conf.set("Service", "Type", "sysv")
-        self.reload_unit_from(conf)
+        return self.reload_unit_from(conf)
     def reload_unit_from(self, conf):
         if not conf: return
         runs = conf.get("Service", "Type", "simple").lower()
@@ -734,23 +717,16 @@ class Systemctl:
                 check, cmd = checkstatus(cmd)
                 logg.info("ExecReloadPost:%s:%s", check, cmd)
                 subprocess_wait(cmd, env, check=check)
+        return True
     def restart_of_units(self, *modules):
-        units = {}
-        for unit in self.units(modules):
-            units[unit] = 1
-        if units:
-            for unit in units:
-                self.restart_unit(unit)
-        else:
-            for unit in self.sysv_units(modules):
-                self.sysv_restart(unit)
+        done = True
+        for unit in self.match_units(modules):
+            if not self.restart_unit(unit):
+                 done = False
+        return done
     def restart_unit(self, unit):
         conf = self.read_unit(unit)
-        self.restart_unit_from(conf)
-    def sysv_restart(self, unit):
-        conf = self.read_sysv_unit(unit)
-        conf.set("Service", "Type", "sysv")
-        self.restart_unit_from(conf)
+        return self.restart_unit_from(conf)
     def restart_unit_from(self, conf):
         if not conf: return
         runs = conf.get("Service", "Type", "simple").lower()
@@ -797,6 +773,7 @@ class Systemctl:
                 check, cmd = checkstatus(cmd)
                 logg.info("ExecRestartPost:%s:%s", check, cmd)
                 subprocess_wait(cmd, env, check=check)
+        return True
     def get_pid_file(self, unit):
         conf = self.read_unit(unit)
         return self.get_pid_file_from(conf)
@@ -808,48 +785,49 @@ class Systemctl:
             default = self.default_pid_file(unit)
         return conf.get("Service", "PIDFile", default)
     def try_restart_of_units(self, *modules):
-        units = {}
-        for unit in self.units(modules):
-            units[unit] = 1
-        for unit in units:
-            self.try_restart(unit)
+        done = True
+        for unit in self.match_units(modules):
+            if not self.try_restart(unit):
+                done = False
+        return done
     def try_restart(unit):
         conf = self.read_unit(unit)
         if self.is_active_from(conf):
-            self.restart_unit_from(conf)
+            return self.restart_unit_from(conf)
+        return True
     def reload_or_restart_of_units(self, *modules):
-        units = {}
-        for unit in self.units(modules):
-            units[unit] = 1
-        for unit in units:
-            self.reload_or_start(unit)
+        done = True
+        for unit in self.match_units(modules):
+            if not self.reload_or_start(unit):
+                done = False
+        return done
     def reload_or_restart(self, unit):
         conf = self.read_unit(unit)
         if not self.is_active_from(conf):
             # try: self.stop_unit_from(conf)
             # except Exception, e: pass
-            self.start_unit_from(conf)
+            return self.start_unit_from(conf)
         elif conf.getlist("Service", "ExecReload", []):
-            self.reload_unit_from(conf)
+            return self.reload_unit_from(conf)
         else:
-            self.restart_unit_from(conf)
+            return self.restart_unit_from(conf)
     def reload_or_try_restart_of_units(self, *modules):
-        units = {}
-        for unit in self.units(modules):
-            units[unit] = 1
-        for unit in units:
-            self.reload_or_try_restart(unit)
+        done = True
+        for unit in self.match_units(modules):
+            if not self.reload_or_try_restart(unit):
+                done = False
+        return done
     def reload_or_try_restart(unit):
         conf = self.read_unit(unit)
         if conf.getlist("Service", "ExecReload", []):
-            self.reload_unit_from(conf)
+            return self.reload_unit_from(conf)
         elif not self.is_active_from(conf):
-            return
+            return True
         else:
-            self.restart_unit_from(conf)
+            return self.restart_unit_from(conf)
     def kill_of_units(self, *modules):
         units = {}
-        for unit in self.units(modules):
+        for unit in self.match_units(modules):
             units[unit] = 1
         for unit in units:
             self.kill_unit(unit)
@@ -865,7 +843,7 @@ class Systemctl:
     def is_active_of_units(self, *modules):
         """ implements True if any is-active = True """
         units = {}
-        for unit in self.units(modules):
+        for unit in self.match_units(modules):
             units[unit] = 1
         result = False
         for unit in units:
@@ -897,11 +875,8 @@ class Systemctl:
         if pid is None: return "dead"
         return "PID %s" % pid
     def is_failed_of_units(self, *modules):
-        units = {}
-        for unit in self.units(modules):
-            units[unit] = 1
         result = False
-        for unit in units:
+        for unit in self.match_units(modules):
             if self.is_failed(unit):
                 result = True
         return result
@@ -917,11 +892,11 @@ class Systemctl:
         logg.debug("pid_file '%s' => PID %s", pid_file, pid)
         return not self.pid_exists(pid)
     def status_of_units(self, *modules):
-        units = {}
-        for unit in self.units(modules):
-            units[unit] = 1
-        for unit in units:
-            self.status_unit(unit)
+        done = True
+        for unit in self.match_units(modules):
+            if not self.status_unit(unit):
+                done = False
+        return done
     def status_unit(self, unit):
         conf = self.try_read_unit(unit)
         print unit, "-", self.get_description_from(conf)
@@ -929,17 +904,27 @@ class Systemctl:
             print "    Loaded: loaded ({}, {})".format(conf.filename(), self.enabled_from(conf) )
         else:
             print "    Loaded: failed"
-            return
+            return False
         if self.is_active_from(conf):
             print "    Active: active ({})".format(self.active_from(conf))
         else:
             print "    Active: inactive ({})".format(self.active_from(conf))
+        return True
     def cat_of_units(self, *modules):
-        units = {}
-        for unit in self.units(modules):
-            units[unit] = 1
-        for unit in units:
-            self.cat_unit(unit)
+        done = True
+        for unit in self.match_units(modules):
+            if not self.cat_unit(unit):
+                done = False
+        return done
+    def cat_unit(self, unit):
+        try:
+            unit_file = self.unit_file(unit)
+            for line in open(unit_file):
+                print line
+            return True
+        except Exception, e:
+            print "Unit {} is not-loaded: {}".format(unit, e)
+            return False
     def wanted_from(self, conf, default = None):
         if not conf: return default
         return conf.get("Install", "WantedBy", default, True)
@@ -949,16 +934,11 @@ class Systemctl:
             wanted = wanted + ".wants"
         return "/etc/systemd/system/" + wanted
     def enable_of_units(self, *modules):
-        units = {}
-        for unit in self.units(modules):
-            units[unit] = 1
-        if not units:
-            return True
-        result = False
-        for unit in units:
-            if self.enable_unit(unit):
-                result = True
-        return result
+        done = True
+        for unit in self.match_units(modules):
+            if not self.enable_unit(unit):
+                done = False
+        return done
     def enable_unit(self, unit):
         unit_file = self.unit_file(unit)
         if self.is_sysv_file(unit_file):
@@ -997,16 +977,11 @@ class Systemctl:
             os.symlink(unit_file, target)
         return True
     def disable_of_units(self, *modules):
-        units = {}
-        for unit in self.units(modules):
-            units[unit] = 1
-        if not units:
-            return True
-        result = False
-        for unit in units:
-            if self.disable_unit(unit):
-                result = True
-        return result
+        done = True
+        for unit in self.match_units(modules):
+            if not self.disable_unit(unit):
+               done = False
+        return done
     def disable_unit(self, unit):
         unit_file = self.unit_file(unit)
         if self.is_sysv_file(unit_file):
@@ -1048,13 +1023,10 @@ class Systemctl:
            return True
         return False
     def is_enabled_of_units(self, *modules):
-        units = {}
-        for unit in self.units(modules):
-            units[unit] = 1
-        result = False
-        for unit in units:
-            if self.is_enabled(unit):
-               result = True
+        result = True
+        for unit in self.match_units(modules):
+            if not self.is_enabled(unit):
+               result = False
         return result
     def is_enabled(self, unit):
         unit_file = self.unit_file(unit)
@@ -1084,11 +1056,8 @@ class Systemctl:
         logg.info("ignored daemon-reload")
         return True
     def show_of_units(self, *modules):
-        units = {}
-        for unit in self.units(modules):
-            units[unit] = 1
         result = ""
-        for unit in units:
+        for unit in self.match_units(modules):
             if result: result += "\n\n"
             for var, value in self.show_unit_items(unit):
                if not _property or _property == var:
