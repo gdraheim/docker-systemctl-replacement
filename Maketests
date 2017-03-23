@@ -1,0 +1,13 @@
+
+CH: centos-httpd.dockerfile
+centos-httpd.dockerfile:
+	docker build . -f tests/$@ --tag localhost:5000/tests:$@
+	- docker rm --force $@
+	docker run -d -p 8888:80 --name $@ localhost:5000/tests:$@
+	- test -d tmp || mkdir tmp 
+	sleep 5; wget -O tmp/$@.txt http://127.0.0.1:8888
+	grep OK tmp/$@.txt
+	docker stop $@
+	docker rm --force $@
+
+
