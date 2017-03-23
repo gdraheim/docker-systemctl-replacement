@@ -100,6 +100,8 @@ service module to start/stop/enable services on a target host.
 On a systemd-controlled operating system the old "service" 
 script will delegate commands to systemctl anyway.
 
+---
+
 ## Problems with PID 1 in Docker
 
 The command listed as "CMD" in the docker image properties
@@ -222,9 +224,11 @@ however, for example:
     docker run --stop-timeout 100 --name running image
     docker-compose.yml: stop_grace_period: 100
 
+---
+
 ## Something is not implemented
 
-Although this script has been developed for quite a time,
+Although this script has been developed for quite a while,
 it does only implement a limited number of commands. And
 it should still be considered in a Beta state. In all the
 existing implementations the replacement should produce 
