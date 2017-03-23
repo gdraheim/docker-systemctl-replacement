@@ -128,6 +128,8 @@ class UnitConfigParser:
                 return None
             raise AttributeError("option {} in {} does not exist".format(option, section))
         return self._dict[section][option]
+    def loaded(self):
+        return len(self._files)
     def filename(self):
         """ returns the last filename that was parsed """
         if self._files:
@@ -344,11 +346,18 @@ class Systemctl:
         unit.read_sysv(path)
         self._loaded_file_sysv[path] = unit
         return unit
+    def default_unit(self, module):
+        conf = UnitParser()
+        conf.set("Unit","Id", module)
+        conf.set("Unit", "Names", module)
+        conf.set("Unit", "Description", "NOT-FOUND "+module)
+        return conf
     def try_read_unit(self, module):
         try: 
             return self.read_unit(module)
         except Exception, e: 
             logg.debug("read unit '%s': %s", module, e)
+            return self.default_unit(module)
     def units(self, modules, suffix=".service"):
         found = []
         for unit in self.sysd_units(modules, suffix):
@@ -793,6 +802,7 @@ class Systemctl:
         return self.get_pid_file_from(conf)
     def get_pid_file_from(self, conf, default = None):
         if not conf: return default
+        if not conf.filename(): return default
         unit = os.path.basename(conf.filename())
         if default is None:
             default = self.default_pid_file(unit)
@@ -864,7 +874,7 @@ class Systemctl:
         return result
     def is_active(self, unit):
         conf = self.try_read_unit(unit)
-        if not conf:
+        if not conf.loaded():
             logg.warning("no such unit '%s'", unit)
         return self.is_active_from(conf)
     def active_pid_from(self, conf):
@@ -897,7 +907,7 @@ class Systemctl:
         return result
     def is_failed(self, unit):
         conf = self.try_read_unit(unit)
-        if not conf:
+        if not conf.loaded():
             logg.warning("no such unit '%s'", unit)
         return self.is_failed_from(conf)
     def is_failed_from(self, conf):
@@ -915,6 +925,7 @@ class Systemctl:
     def status_unit(self, unit):
         conf = self.try_read_unit(unit)
         print unit, "-", self.get_description_from(conf)
+        loaded = conf.loaded() and "loaded" or "not-loaded"
         if conf:
             print "    Loaded: loaded ({}, {})".format( conf.filename(), self.enabled_from(conf) )
         else:
@@ -1060,16 +1071,25 @@ class Systemctl:
             for var, value in self.show_unit_items(unit):
                if not _property or _property == var:
                    result += "%s=%s\n" % (var, value)
+        if not result and modules:
+            unit = modules[0]
+            for var, value in self.show_unit_items(unit):
+               if not _property or _property == var:
+                   result += "%s=%s\n" % (var, value)
         return result
     def show_unit_items(self, unit):
         logg.info("try read unit %s", unit)
         conf = self.try_read_unit(unit)
+        for entry in self.each_unit_items(unit, conf):
+            yield entry
+    def each_unit_items(self, unit, conf):
         yield "Id", unit
         yield "Names", unit
         yield "Description", self.get_description_from(conf) # conf.get("Unit", "Description")
         yield "MainPID", self.active_pid_from(conf) or "0"
         yield "SubState", self.active_from(conf)
         yield "ActiveState", self.is_active_from(conf) and "active" or "dead"
+        yield "LoadState", conf.loaded() and "loaded" or "not-loaded"
         env_parts = []
         for env_part in conf.getlist("Service", "Environment", []):
             env_parts.append(env_part)
