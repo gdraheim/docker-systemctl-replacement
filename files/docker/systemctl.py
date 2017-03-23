@@ -611,6 +611,7 @@ class Systemctl:
         if not conf: return
         runs = conf.get("Service", "Type", "simple").lower()
         sudo = self.sudo_from(conf)
+        env = get_env(conf)
         if True:
             for cmd in conf.getlist("Service", "ExecStopPre", []):
                 check, cmd = checkstatus(cmd)
