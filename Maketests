@@ -1,12 +1,27 @@
+# -*- makefile -*-
+PORT=8888
 
 CH: centos-httpd.dockerfile
 centos-httpd.dockerfile:
 	docker build . -f tests/$@ --tag localhost:5000/tests:$@
 	- docker rm --force $@
-	docker run -d -p 8888:80 --name $@ localhost:5000/tests:$@
+	docker run -d -p $(PORT):80 --name $@ localhost:5000/tests:$@
 	- test -d tmp || mkdir tmp 
-	sleep 5; wget -O tmp/$@.txt http://127.0.0.1:8888
+	sleep 5; wget -O tmp/$@.txt http://127.0.0.1:$(PORT)
 	grep OK tmp/$@.txt
+	docker stop $@
+	docker rm --force $@
+
+CP: centos-postgres.dockerfile
+centos-postgres.dockerfile:
+	docker build . -f tests/$@ --tag localhost:5000/tests:$@
+	- docker rm --force $@
+	docker run -d -p $(PORT):5432 --name $@ localhost:5000/tests:$@
+	- test -d tmp || mkdir tmp 
+	sleep 5; export PGUSER=testuser_11; export PGPASSWORD=Testuser.11 \
+	; psql -p $(PORT) -h 127.0.0.1 -d postgres \
+	       -c "SELECT rolname FROM pg_roles" > tmp/$@.txt
+	grep testuser_ok tmp/$@.txt
 	docker stop $@
 	docker rm --force $@
 

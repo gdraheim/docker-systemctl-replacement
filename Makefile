@@ -8,3 +8,4 @@ version:
 	$F
 	@ grep ^__version__ $F
 
+-include Maketests

@@ -620,7 +620,7 @@ class Systemctl:
         if not conf: return
         runs = conf.get("Service", "Type", "simple").lower()
         sudo = self.sudo_from(conf)
-        env = get_env(conf)
+        env = self.get_env(conf)
         if True:
             for cmd in conf.getlist("Service", "ExecStopPre", []):
                 check, cmd = checkstatus(cmd)
@@ -1108,27 +1108,18 @@ class Systemctl:
         for unit in os.listdir(wants_folder):
             if unit.endswith(".service"):
                 will_start.append(unit)
-        while will_start:
-            some_started = []
-            # TODO: check 'After' dependencies
-            starting = will_start.copy()
-            for unit in will_start:
-                logg.info("%s => %s", default_target, unit)
-                self.start_unit(unit)
-                del will_start[unit]
-                some_started.append(unit)
-            if not some_started:
-                break
+        self.start_of_units(*will_start)
         logg.info("system is up")
     def system_halt(self, arg = True):
         """ stop units from default system level """
         logg.info("system halt requested - %s", arg)
         default_target = _sysd_default
         wants_folder = os.path.join(_sysd_folder2, default_target + ".wants")
+        will_start = []
         for unit in os.listdir(wants_folder):
             if unit.endswith(".service"):
-                logg.info("%s => %s", default_target, unit)
-                self.stop_unit(unit)
+                will_start.append(unit)
+        self.stop_of_units(*will_start)
         logg.info("system is down")
     def system_0(self):
         self.system_default("init 0")
