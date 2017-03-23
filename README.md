@@ -225,7 +225,7 @@ however, for example:
 ## Something is not implemented
 
 Although this script has been developed for quite a time,
-it does only implement a limited number of commands. At
+it does only implement a limited number of commands. And
 it should still be considered in a Beta state. In all the
 existing implementations the replacement should produce 
 a similar output compared to SystemD's systemctl as a number 
