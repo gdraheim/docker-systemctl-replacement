@@ -510,13 +510,7 @@ class Systemctl:
         if not conf: return
         runs = conf.get("Service", "Type", "simple").lower()
         sudo = self.sudo_from(conf)
-        env = os.environ.copy()
-        for env_part in conf.getlist("Service", "Environment", []):
-            for name, value in self.read_env_part(env_part):
-                env[name] = value
-        for env_file in conf.getlist("Service", "EnvironmentFile", []):
-            for name, value in self.read_env_file(env_file):
-                env[name] = value
+        env = self.get_env(conf)
         logg.info("env = %s", env)
         if True:
             for cmd in conf.getlist("Service", "ExecStartPre", []):
@@ -601,10 +595,10 @@ class Systemctl:
         conf = self.read_sysv_unit(unit)
         conf.set("Service", "Type", "sysv")
         self.stop_unit_from(conf)
-    def stop_unit_from(self, conf):
-        if not conf: return
-        runs = conf.get("Service", "Type", "simple").lower()
-        sudo = self.sudo_from(conf)
+    def environment_of_unit(self, unit):
+        conf = self.read_unit(unit)
+        return self.get_env(conf)
+    def get_env(self, conf):
         env = os.environ.copy()
         for env_part in conf.getlist("Service", "Environment", []):
             for name, value in self.read_env_part(env_part):
@@ -612,6 +606,11 @@ class Systemctl:
         for env_file in conf.getlist("Service", "EnvironmentFile", []):
             for name, value in self.read_env_file(env_file):
                 env[name] = value
+        return env
+    def stop_unit_from(self, conf):
+        if not conf: return
+        runs = conf.get("Service", "Type", "simple").lower()
+        sudo = self.sudo_from(conf)
         if True:
             for cmd in conf.getlist("Service", "ExecStopPre", []):
                 check, cmd = checkstatus(cmd)
@@ -684,13 +683,7 @@ class Systemctl:
         if not conf: return
         runs = conf.get("Service", "Type", "simple").lower()
         sudo = self.sudo_from(conf)
-        env = os.environ.copy()
-        for env_part in conf.getlist("Service", "Environment", []):
-            for name, value in self.read_env_part(env_part):
-                env[name] = value
-        for env_file in conf.getlist("Service", "EnvironmentFile", []):
-            for name, value in self.read_env_file(env_file):
-                env[name] = value
+        env = self.get_env(conf)
         if True:
             for cmd in conf.getlist("Service", "ExecReloadPre", []):
                 check, cmd = checkstatus(cmd)
@@ -752,13 +745,7 @@ class Systemctl:
         if not conf: return
         runs = conf.get("Service", "Type", "simple").lower()
         sudo = self.sudo_from(conf)
-        env = os.environ.copy()
-        for env_part in conf.getlist("Service", "Environment", []):
-            for name, value in self.read_env_part(env_part):
-                env[name] = value
-        for env_file in conf.getlist("Service", "EnvironmentFile", []):
-            for name, value in self.read_env_file(env_file):
-                env[name] = value
+        env = self.get_env(conf)
         if True:
             for cmd in conf.getlist("Service", "ExecRestartPre", []):
                 check, cmd = checkstatus(cmd)
@@ -1097,10 +1084,21 @@ class Systemctl:
         logg.info("system default requested - %s", arg)
         default_target = _sysd_default
         wants_folder = os.path.join(_sysd_folder2, default_target + ".wants")
+        will_start = []
         for unit in os.listdir(wants_folder):
             if unit.endswith(".service"):
+                will_start.append(unit)
+        while will_start:
+            some_started = []
+            # TODO: check 'After' dependencies
+            starting = will_start.copy()
+            for unit in will_start:
                 logg.info("%s => %s", default_target, unit)
                 self.start_unit(unit)
+                del will_start[unit]
+                some_started.append(unit)
+            if not some_started:
+                break
         logg.info("system is up")
     def system_halt(self, arg = True):
         """ stop units from default system level """
@@ -1216,7 +1214,7 @@ if __name__ == "__main__":
     command_func = getattr(systemctl, command_name, None)
     if callable(command_func) and not found:
         found = True
-        result = command_func(modules[1])
+        result = command_func(modules[0])
     command_name = command.replace("-","_").replace(".","_")+"_of_units"
     command_func = getattr(systemctl, command_name, None)
     if callable(command_func) and not found:
@@ -1255,6 +1253,13 @@ if __name__ == "__main__":
                 print "\t".join(element)
             else:
                 print element
+    elif hasattr(result, "keys"):
+        for key in sorted(result.keys()):
+            element = result[key]
+            if isinstance(element, tuple):
+                print key,"=","\t".join(element)
+            else:
+                print key,"=",element
     else:
         logg.warning("unknown result type %s", str(type(result)))
 
