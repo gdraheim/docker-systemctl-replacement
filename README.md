@@ -79,7 +79,7 @@ limited if the deployment includes the configuration of
 services using their http-based API. Not so with a
 deployment tool like Ansible.
 
-## Installation as systemctl-replacement
+## Installation as a systemctl-replacement
 
 Simply overwrite /usr/bin/systemctl - for an additional
 benefit you could try to lock updates of the systemd
@@ -100,7 +100,7 @@ service module to start/stop/enable services on a target host.
 On a systemd-controlled operating system the old "service" 
 script will delegate commands to systemctl anyway.
 
-## Problems with PID 1 in docker
+## Problems with PID 1 in Docker
 
 The command listed as "CMD" in the docker image properties
 or being given as docker-run argument will become the PID-1
@@ -179,7 +179,7 @@ as "systemctl.py 1" then pressing Control-C will result
 in an interpretation of "systemctl halt" as well, so
 one can test the correct interpretion of the "wants".
 
-## Installation as init-replacement
+## Installation as an init-replacement
 
 For the systemctl-replacement it is best to overwrite
 the original /usr/bin/systemctl because a number of
@@ -196,7 +196,7 @@ Ansible script for deployment to a docker container)
 then you can add the attribute upon the next 
 "docker commit" like this:
 
-    docker commit -c "CMD ['/usr/bin/systemctl.py'] \
+    docker commit -c "CMD ['/usr/bin/systemctl.py']" \
         -m "<comment>" <container> <new-image>
 
 If the script is being installed as /usr/bin/systemctl
@@ -222,12 +222,14 @@ however, for example:
     docker run --stop-timeout 100 --name running image
     docker-compose.yml: stop_grace_period: 100
 
-## Some not implemented
+## Something is not implemented
 
-Only a limited number of commands are implemented. They
-should produce a similar output compared to SystemD's
-systemctl as a number of tools are interpreting the
-output.
+Although this script has been developed for quite a time,
+it does only implement a limited number of commands. At
+it should still be considered in a Beta state. In all the
+existing implementations the replacement should produce 
+a similar output compared to SystemD's systemctl as a number 
+of tools are interpreting the output.
 
 Sadly the functionality of SystemD's systemctl is badly
 documented so that much of the current implementation is
