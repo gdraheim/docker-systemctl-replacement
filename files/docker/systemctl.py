@@ -925,9 +925,8 @@ class Systemctl:
     def status_unit(self, unit):
         conf = self.try_read_unit(unit)
         print unit, "-", self.get_description_from(conf)
-        loaded = conf.loaded() and "loaded" or "not-loaded"
-        if conf:
-            print "    Loaded: loaded ({}, {})".format( conf.filename(), self.enabled_from(conf) )
+        if conf.loaded():
+            print "    Loaded: loaded ({}, {})".format(conf.filename(), self.enabled_from(conf) )
         else:
             print "    Loaded: failed"
             return
