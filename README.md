@@ -118,9 +118,9 @@ The docker-stop command will send a SIGTERM to PID-1 in
 the container - but NOT to any other process. If the CMD
 is the actual application (java -jar whatever) then this
 works fine as it will also clean up its subprocesses. If
-you need multiple processes then most developers to write
-a shell script ("run.sh") to start them up but they forget
-to intercept the SIGTERM in the shell script including
+you need multiple processes then most developers tend to 
+write a shell script ("run.sh") to start them up but they 
+forget to intercept the SIGTERM in the shell script including
 a handler to shutdown started subprocesses. After a grace
 period (of 10 seconds by default) the docker-stop will
 turn to send SIGKILL to all remaining processes in the
