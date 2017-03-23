@@ -242,8 +242,7 @@ I take patches. ;)
 ## The author
 
 Guido Draheim is working as a freelance consultant for
-multiple big companies in Germany (please ignore references
-in the Makefile relating them). This script is related to 
+multiple big companies in Germany. This script is related to 
 the current surge of DevOps topics which often use docker 
 as a lightweight replacement for cloud containers or even 
 virtual machines. It makes it easier to test deployments
