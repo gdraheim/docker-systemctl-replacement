@@ -344,7 +344,8 @@ class Systemctl:
         override_d = path + ".d"
         if os.path.isdir(override_d):
             for name in os.listdir(override_d):
-                unit.read_sysd(os.path.join(override_d, name))
+                if name.endswith(".conf"):
+                    unit.read_sysd(os.path.join(override_d, name))
         self._loaded_file_sysd[path] = unit
         return unit
     def read_sysv_unit(self, module):
