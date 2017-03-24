@@ -209,8 +209,10 @@ class UnitConfigParser:
         if provides:
             self.set("Install", "Alias", provides)
         runlevels = self.get("init.d", "Default-Start","")
-        if "5" in runlevels:
+        if "3" in runlevels:
             self.set("Install", "WantedBy", "multi-user.target")
+        if "5" in runlevels:
+            self.set("Install", "WantedBy", "graphical.target")
         self.set("Service", "Type", "sysv")
 
 UnitParser = ConfigParser.RawConfigParser
@@ -339,6 +341,10 @@ class Systemctl:
             return self._loaded_file_sysd[path]
         unit = UnitParser()
         unit.read_sysd(path)
+        override_d = path + ".d"
+        if os.path.isdir(override_d):
+            for name in os.listdir(override_d):
+                unit.read_sysd(os.path.join(override_d, name))
         self._loaded_file_sysd[path] = unit
         return unit
     def read_sysv_unit(self, module):
