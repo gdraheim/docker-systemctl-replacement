@@ -27,6 +27,18 @@ centos-postgres.dockerfile:
 	docker stop $@
 	docker rm --force $@
 
+CL: centos-lamp.dockerfile
+centos-lamp.dockerfile:
+	docker build . -f tests/$@ --tag localhost:5000/tests:$@
+	- docker rm --force $@
+	docker run -d -p $(PORT):80 --name $@ localhost:5000/tests:$@
+	- test -d tmp || mkdir tmp 
+	sleep 5; wget -O tmp/$@.txt http://127.0.0.1:$(PORT)/phpMyAdmin
+	grep "<h1>.*>phpMyAdmin<" tmp/$@.txt
+	docker stop $@
+	docker rm --force $@
+
+
 UA: ubuntu-apache2.dockerfile
 ubuntu-apache2.dockerfile:
 	docker build . -f tests/$@ --tag localhost:5000/tests:$@
