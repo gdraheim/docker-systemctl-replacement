@@ -428,14 +428,15 @@ class Systemctl:
                 yield item
             elif [ module for module in modules if module+suffix == item ]:
                 yield item
-    def sysem_list_services(self):
+    def system_list_services(self):
         """ show all the services """
         filename = self.unit_file() # scan all
+        result = ""
         for name, value in self._file_for_unit_sysd.items():
-            print "SysD", name, "=>", value
+            result += "\nSysD {name} = {value}".format(**locals())
         for name, value in self._file_for_unit_sysv.items():
-            print "SysV", name, "=>", value
-        return None
+            result += "\nSysV {name} = {value}".format(**locals())
+        return result
     def show_list_units(self, *modules): # -> [ (unit,loaded,description) ]
         """ show all the units """
         result = {}
@@ -938,24 +939,27 @@ class Systemctl:
         logg.debug("pid_file '%s' => PID %s", pid_file, pid)
         return not self.pid_exists(pid)
     def status_of_units(self, *modules):
-        done = True
+        status, result = 0, ""
         for unit in self.match_units(modules):
-            if not self.status_unit(unit):
-                done = False
-        return done
+            status1, result1 = self.status_unit(unit)
+            if status1: status = status1
+            if result: result += "\n\n"
+            result += result1
+        return status, result
     def status_unit(self, unit):
         conf = self.try_read_unit(unit)
-        print unit, "-", self.get_description_from(conf)
+        result = "%s - %s" % (unit, self.get_description_from(conf))
         if conf.loaded():
-            print "    Loaded: loaded ({}, {})".format(conf.filename(), self.enabled_from(conf) )
+            result += "\n    Loaded: loaded ({}, {})".format(conf.filename(), self.enabled_from(conf) )
         else:
-            print "    Loaded: failed"
-            return False
+            result += "\n    Loaded: failed"
+            return 3, result
         if self.is_active_from(conf):
-            print "    Active: active ({})".format(self.active_from(conf))
+            result += "\n    Active: active ({})".format(self.active_from(conf))
+            return 0, result
         else:
-            print "    Active: inactive ({})".format(self.active_from(conf))
-        return True
+            result += "\n    Active: inactive ({})".format(self.active_from(conf))
+            return 3, result
     def cat_of_units(self, *modules):
         done = True
         for unit in self.match_units(modules):
@@ -965,9 +969,7 @@ class Systemctl:
     def cat_unit(self, unit):
         try:
             unit_file = self.unit_file(unit)
-            for line in open(unit_file):
-                print line
-            return True
+            return open(unit_file).read()
         except Exception, e:
             print "Unit {} is not-loaded: {}".format(unit, e)
             return False
@@ -995,8 +997,9 @@ class Systemctl:
         if not os.path.isdir(folder):
             os.makedirs(folder)
         target = os.path.join(folder, os.path.basename(unit_file))
-        if not self._quiet:
-            print "ln -s %s '%s' '%s'" % (self._force and "-f" or "", unit_file, target)
+        if True:
+            _f = self._force and "-f" or ""
+            logg.info("ln -s {_f} '{unit_file}' '{target}'".format(**locals()))
         if self._force and os.path.islink(target):
             os.remove(target)
         if not os.path.islink(target):
@@ -1038,8 +1041,8 @@ class Systemctl:
             return False
         target = os.path.join(folder, os.path.basename(unit_file))
         if os.path.isfile(target):
-            if not self._quiet:
-                 print "rm %s '%s'" % (self._force and "-f" or "", target)
+            _f = self._force and "-f" or ""
+            logg.info("rm {_f} '{target}'".format(**locals()))
             os.remove(target)
         return True
     def disable_unit_sysv(self, unit_file):
@@ -1249,6 +1252,12 @@ if __name__ == "__main__":
     opt, args = _o.parse_args()
     logging.basicConfig(level = max(0, logging.FATAL - 10 * opt.verbose))
     logg.setLevel(max(0, logging.ERROR - 10 * opt.verbose))
+    if os.path.exists("/var/log/systemctl.log"):
+       loggfile = logging.FileHandler("/var/log/systemctl.log")
+       loggfile.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
+       logg.addHandler(loggfile)
+       logg.setLevel(max(0, logging.INFO - 10 * opt.verbose))
+       logg.info("EXEC BEGIN %s %s", os.path.realpath(sys.argv[0]), " ".join(args))
     if opt.version:
        args = [ "version" ]
     #
@@ -1296,22 +1305,34 @@ if __name__ == "__main__":
                 found = True
                 result = comm_func()
     if not found:
-        logg.error("no method for '%s'", command)
+        logg.error("EXEC END no method for '%s'", command)
         sys.exit(1)
     if result is None:
+        logg.info("EXEC END None")
         sys.exit(0)
     elif result is True:
+        logg.info("EXEC END True")
         sys.exit(0)
     elif result is False:
+        logg.info("EXEC END False")
         sys.exit(1)
+    elif isinstance(result, tuple) and len(result) == 2:
+        exitcode, status = result
+        print status
+        logg.info("EXEC END %s '%s'", exitcode, status)
+        if exitcode is True: exitcode = 0
+        if exitcode is False: exitcode = 1
+        sys.exit(exitcode)
     elif isinstance(result, basestring):
         print result
+        logg.info("EXEC END '%s'", result)
     elif isinstance(result, list):
         for element in result:
             if isinstance(element, tuple):
                 print "\t".join(element)
             else:
                 print element
+        logg.info("EXEC END %s", result)
     elif hasattr(result, "keys"):
         for key in sorted(result.keys()):
             element = result[key]
@@ -1319,6 +1340,6 @@ if __name__ == "__main__":
                 print key,"=","\t".join(element)
             else:
                 print key,"=",element
+        logg.info("EXEC END %s", result)
     else:
-        logg.warning("unknown result type %s", str(type(result)))
-
+        logg.warning("EXEC END Unknown result type %s", str(type(result)))
