@@ -1,0 +1,6 @@
+# Copyright (C) 2017 Guido U. Draheim, All Rights Reserved
+
+- name: psmisc
+  package: name="psmisc" state="installed"
+- name: STOP software
+  shell: 'user=`id -un` ; killall -u "$user" firefox || true'

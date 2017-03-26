@@ -1,0 +1,16 @@
+[Unit]
+Name=Xvnc screen
+Description=Starting a headless Xvnc screen
+
+[Service]
+Type=forking
+Environment=XVNC_NUM=99
+Environment=XVNC_GEOMETRY=640x480
+Environment=XVNC_BITDEPTH=8
+Environment=XVNC_WINDOWMANAGER=metacity
+PIDFile=/var/lock/xvnc.pid
+ExecStart=/etc/init.d/xvnc start -p /var/lock/xvnc.pid -n $XVNC_NUM -c metacity -g $XVNC_GEOMETRY -b $XVNC_BITDEPTH -l -c $XVNC_WINDOWMANAGER
+ExecStop=/etc/init.d/xvnc stop -p /var/lock/xvnc.pid
+
+[Install]
+WantedBy=multi-user.target

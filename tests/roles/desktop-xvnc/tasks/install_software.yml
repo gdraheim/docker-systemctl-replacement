@@ -1,0 +1,9 @@
+# Copyright (C) 2017 Guido U. Draheim, All Rights Reserved
+
+- name: install packages
+  package: pkg="{{item}}" state="installed"
+  become: yes
+  with_items: "{{desktop_xvnc_packages}}"
+- name: systemctl.py
+  copy: src="files/docker/systemctl.py" dest="/usr/bin/systemctl"
+  when: ansible_connection == "docker"

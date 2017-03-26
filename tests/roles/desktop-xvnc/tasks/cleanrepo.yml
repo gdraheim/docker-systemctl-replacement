@@ -1,0 +1,12 @@
+# Copyright (C) 2017 Guido U. Draheim, All Rights Reserved
+
+- name: clean yum
+  shell: "if test -f /usr/bin/yum; then yum clean all || exit 2; echo CLEANED; fi; true"
+  become: yes
+  register: cleaned
+  changed_when: "'CLEANED' in cleaned.stdout"
+- name: clean zypper
+  shell: "if test -f /usr/bin/zypper; then zypper clean || exit 2; echo CLEANED; fi; true"
+  become: yes
+  register: cleaned
+  changed_when: "'CLEANED' in cleaned.stdout"

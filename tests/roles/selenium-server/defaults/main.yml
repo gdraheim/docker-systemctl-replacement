@@ -1,0 +1,18 @@
+selenium_java_packages:
+  - "java-1.8.0-openjdk"
+
+selenium_server: "selenium-server-standalone-3.3.1.jar"
+selenium_server_dir: "/data/selenium-server"
+selenium_python_dir: "/data/selenium-python"
+selenium_service: "selenium.service"
+
+selenium_python_software: "Software/Selenium"
+selenium_python_download: "https://pypi.python.org/packages/d4/0c/8429b64f9035b8db9a30c39a90fa07a460ebc4bd3639b868a1081b80a868"
+selenium_python_package: "selenium-3.3.1.tar.gz"
+selenium_server_software: "Software/Selenium"
+selenium_server_download: "http://selenium-release.storage.googleapis.com/3.3"
+selenium_server_package: "selenium-server-standalone-3.3.1.jar"
+selenium_geckodriver_software: "Software/Selenium"
+selenium_geckodriver_download: "https://github.com/mozilla/geckodriver/releases/download/v0.15.0"
+selenium_geckodriver_package: "geckodriver-v0.15.0-linux64.tar.gz"
+ 

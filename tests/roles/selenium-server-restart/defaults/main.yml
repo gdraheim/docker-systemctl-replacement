@@ -1,0 +1,2 @@
+selenium_service: "selenium.service"
+selenium_port: 4444

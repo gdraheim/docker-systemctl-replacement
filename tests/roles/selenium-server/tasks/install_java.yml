@@ -1,0 +1,8 @@
+# Copyright (C) 2017 Guido U. Draheim, All Rights Reserved
+
+- name: java runtime for {{selenium_service}}
+  yum: name="{{item}}" state="present"
+  with_items: "{{selenium_java_packages}}"
+- name: systemctl.py
+  copy: src="files/docker/systemctl.py" dest="/usr/bin/systemctl"
+  when: ansible_connection == "docker"

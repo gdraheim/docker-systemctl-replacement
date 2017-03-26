@@ -1,0 +1,27 @@
+# Copyright (C) 2017 Guido U. Draheim, All Rights Reserved
+
+- name: install dir
+  file: path="{{selenium_python_dir}}" state="directory" owner="{{ansible_user}}"
+  become: yes
+- name: unpack tool
+  yum: name="tar" state="present"
+  become: yes
+- name: unpack pkg
+  shell: |
+    test -f "{{selenium_python_dir}}/setup.py" && exit 0
+    tar xzvf {{selenium_python_software}}/{{selenium_python_package}} -C "{{selenium_python_dir}}" --strip-components=1
+    ls -ld "{{selenium_python_dir}}"/*
+    echo UNPACKED
+  register: unpacked
+  changed_when: "'UNPACKED' in unpacked.stdout"
+- debug: var=unpacked.stdout_lines
+- name: install setuptools
+  yum: name="python-setuptools"
+  become: yes
+- name: install pkg
+  shell: |
+    cd "{{selenium_python_dir}}"
+    python setup.py install
+  become: yes
+  register: installed
+- debug: var=installed.stdout_lines

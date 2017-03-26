@@ -1,0 +1,16 @@
+# Copyright (C) 2017 Guido U. Draheim, All Rights Reserved
+
+- name: start {{jenkins_service}}
+  service: name="{{jenkins_service}}" state="started" enabled="yes"
+- wait_for:
+    port: "{{jenkins_port}}"
+    timeout: 30
+- uri:
+    url: "http://localhost:{{jenkins_port}}{{jenkins_prefix}}"
+    return_content: yes
+    status_code: [ 200, 403 ]
+  register: statuspage
+  until: "statuspage.status in [ 200, 403 ]"
+  retries: 5
+  delay: 5
+- debug: var=statuspage.content

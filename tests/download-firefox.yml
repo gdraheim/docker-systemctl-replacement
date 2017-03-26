@@ -1,0 +1,4 @@
+- hosts: localhost
+  tasks:
+     - include_vars: "roles/desktop-firefox/defaults/main.yml"
+     - include: "roles/desktop-firefox/tasks/software_download.yml"

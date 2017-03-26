@@ -1,0 +1,14 @@
+version: "2"
+
+services:
+  virtualdesktop:
+    image: "localhost:5000/testingsystemctl:virtualdesktop"
+    expose: [ 5599, 4444 ]
+    ports:
+      - "5599:5599"
+      - "4444:4444"
+  serversystem:
+    image: "localhost:5000/testingsystemctl:serversystem"
+    expose: [ 8080 ]
+    ports:
+       - "8080:8080"

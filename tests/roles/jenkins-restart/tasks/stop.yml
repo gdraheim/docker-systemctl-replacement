@@ -1,0 +1,4 @@
+# Copyright (C) 2017 Guido U. Draheim, All Rights Reserved
+
+- name: STOP {{jenkins_service}}
+  service: name="{{jenkins_service}}" state="stopped" enabled="yes"

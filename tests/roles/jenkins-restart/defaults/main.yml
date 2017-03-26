@@ -1,0 +1,12 @@
+jenkins_download: "http://pkg.jenkins.io/redhat-stable"
+jenkins_software: "Software/Jenkins"
+jenkins_rpm: "jenkins-2.32.3-1.1.noarch.rpm"
+jenkins_args: "--sessionTimeout=120"
+jenkins_port: "8080"
+jenkins_prefix: "/linux"
+jenkins_options: "-Dhudson.DNSMultiCast.disabled=true"
+jenkins_sysconfig_file: "/etc/sysconfig/jenkins"
+jenkins_service: "jenkins"
+jenkins_user: "jenkins"
+jenkins_java_packages:
+ - "java-1.8.0-openjdk"

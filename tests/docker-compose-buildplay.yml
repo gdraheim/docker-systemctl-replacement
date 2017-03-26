@@ -1,0 +1,11 @@
+- hosts: serversystem
+  roles:
+    - jenkins
+    - jenkins-restart
+- hosts: virtualdesktop
+  roles:
+    - desktop-xvnc
+    - desktop-xvnc-restart
+    - desktop-firefox
+    - selenium-server
+

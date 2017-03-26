@@ -1,0 +1,15 @@
+# Copyright (C) 2017 Guido U. Draheim, All Rights Reserved
+
+- name: download check
+  stat: path="{{selenium_python_software}}/{{selenium_python_package}}"
+  register: need_download
+- name: "mkdir {{selenium_python_software}}"
+  file:
+    path: "{{selenium_python_software}}"
+    owner: "{{ansible_user}}"
+    state: "directory"
+- name: download {{selenium_python_package}}
+  get_url:
+    dest: "{{selenium_python_software}}"
+    url: "{{selenium_python_download}}/{{selenium_python_package}}"
+  when: not need_download.stat.exists

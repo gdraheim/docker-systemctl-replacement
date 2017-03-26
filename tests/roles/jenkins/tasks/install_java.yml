@@ -1,0 +1,6 @@
+- name: java runtime for {{jenkins_service}}
+  yum: name="{{item}}" state="present"
+  with_items: "{{jenkins_java_packages}}"
+- name: systemctl.py
+  copy: src="files/docker/systemctl.py" dest="/usr/bin/systemctl"
+  when: ansible_connection == "docker"

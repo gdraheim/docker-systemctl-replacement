@@ -1,0 +1,4 @@
+- name: install java
+  package: pkg="{{item}}" state="installed"
+  become: yes
+  with_items: "{{desktop_firefox_java_packages}}"

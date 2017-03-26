@@ -1,0 +1,13 @@
+# Copyright (C) 2017, Guido U. Draheim, All Rights Reserved
+
+- name: initscripts
+  package: pkg="initscripts" state="installed"
+  ignore_errors: yes
+- lineinfile:
+    dest: "/etc/init.d/{{jenkins_service}}"
+    regexp: '(.*ppid" = 1 \])( \|\| continue.*)'
+    line: '\1 || [ "$ppid" = 0 ] \2'
+    backrefs: yes
+  become: yes
+- name: start {{jenkins_service}}
+  service: name="{{jenkins_service}}" enabled="yes"

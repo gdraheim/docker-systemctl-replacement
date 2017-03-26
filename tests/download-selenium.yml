@@ -1,0 +1,6 @@
+- hosts: localhost
+  tasks:
+     - include_vars: "roles/selenium-server/defaults/main.yml"
+     - include: "roles/selenium-server/tasks/software_download-server.yml"
+     - include: "roles/selenium-server/tasks/software_download-python.yml"
+     - include: "roles/selenium-server/tasks/software_download-geckodriver.yml"

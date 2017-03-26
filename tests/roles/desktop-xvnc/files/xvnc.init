@@ -1,0 +1,86 @@
+#! /bin/bash
+# Copyright (C) 2017 Guido U. Draheim, All Rights Reserved
+
+NUM="99"
+AUTHFILE=""
+WINDOWMANAGER="metacity"
+BITDEPTH="8"
+GEOMETRY="640x480"
+RFBPORT=""
+
+if [ -f "/etc/sysconfig/xvfb" ]; then
+. "/etc/sysconfig/xvfb"
+fi
+
+authfile=""
+connect=""
+listen=""
+pidfile=""
+cmd=""
+
+[ -n "$AUTHFILE" ] && authfile="-f $AUTHFILE"
+
+while [ "$#" -gt 0 ]; do case "$1" in
+-n|--server-num) shift; NUM="$1"; shift ;;
+-a|-ac|--allow-connect) shift; connect="-ac" ;;
+-a-|-ac-|--no-allow-connect) shift; connect="" ;;
+-l|--listen-tcp) shift; listen="-listen tcp" ;;
+-l-|--no-listen-tcp) shift; listen="" ;;
+-f|--auth-file) shift; authfile="-f $1"; shift ;;
+-b|--bitdepth) shift; BITDEPTH="$1"; shift ;;
+-g|-geometry|--geometry) shift; GEOMETRY="$1"; shift ;;
+-p|--pidfile) shift; pidfile="$1" ; shift ;;
+-c|--windowmanager) shift; WINDOWMANAGER="$1" ; shift ;;
+-r|--rfbport) shift; RFBPORT="$1" ; shift ;;
+-*) echo "unknown option $1"; exit 1 ;;
+*) cmd="$1" ; shift ;;
+esac ; done
+
+if [ -z "$RFBPORT" ]; then
+  RFBPORT="$(expr 5500 + $NUM)"
+fi
+
+start() {
+    Xvnc ":$NUM" $connect $listen $authfile -s "0 ${GEOMETRY}x${BITDEPTH}" -rfbport $RFBPORT -securitytypes=None &
+    PID="$!"
+    if [ -n "$pidfile" ]; then
+       dirpath=`dirname "$pidfile"`
+       if [ -d "$dirpath" ]; then : ; else mkdir -p "$dirpath" ; fi
+       echo "$PID" > "$pidfile" 
+    fi
+    if [ -n "$WINDOWMANAGER" ]; then
+       export DISPLAY=":$NUM"
+       $WINDOWMANAGER &
+    fi
+}
+
+stop() {
+   if [ -n "$pidfile" ]; then
+      PID=`cat "$pidfile"`
+      if [ -n "$PID" ]; then kill $PID; fi
+      rm "$pidfile"
+   else
+     ps -ax | { 
+        while read pid line; do
+          case "$line" in *Xvnc\ :$NUM*) kill $pid ;;
+          esac
+        done
+     }
+   fi
+}
+
+status() {
+   if [ -n "$pidfile" ]; then
+     echo "running pid" `cat "$pidfile"`
+   else
+     echo "not running"
+   fi
+}
+
+case "$cmd" in
+start) start ;;
+stop) stop ;;
+restart) stop; start ;;
+reload) stop; start ;;
+status) status ;;
+esac

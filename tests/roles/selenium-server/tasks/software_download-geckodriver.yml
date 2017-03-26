@@ -1,0 +1,15 @@
+# Copyright (C) 2017 Guido U. Draheim, All Right Reserved
+
+- name: download check
+  stat: path="{{selenium_geckodriver_software}}/{{selenium_geckodriver_package}}"
+  register: need_download
+- name: "mkdir {{selenium_geckodriver_software}}"
+  file:
+    path: "{{selenium_geckodriver_software}}"
+    owner: "{{ansible_user}}"
+    state: "directory"
+- name: download {{selenium_geckodriver_package}}
+  get_url:
+    dest: "{{selenium_geckodriver_software}}"
+    url: "{{selenium_geckodriver_download}}/{{selenium_geckodriver_package}}"
+  when: not need_download.stat.exists

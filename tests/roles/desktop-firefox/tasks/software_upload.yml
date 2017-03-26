@@ -1,0 +1,10 @@
+# Copyright (C) 2017 Guido U. Draheim, All Rights Reserved
+
+- name: upload check
+  local_action: 'stat path="{{desktop_firefox_software}}/{{desktop_firefox_rpm}}"'
+  register: have_download
+- name: inst dir
+  file: path="{{desktop_firefox_software}}" state="directory" owner="{{ansible_user}}"
+- name: upload rpm
+  copy: src="{{desktop_firefox_software}}/{{desktop_firefox_rpm}}" dest="{{desktop_firefox_software}}"
+  when: have_download.stat.exists

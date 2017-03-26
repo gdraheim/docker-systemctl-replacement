@@ -1,0 +1,15 @@
+# Copyright (C) 2017 Guido U. Draheim, All Rights Reserved
+
+- name: download check
+  stat: path="{{selenium_server_software}}/{{selenium_server_package}}"
+  register: need_download
+- name: "mkdir {{selenium_server_software}}"
+  file:
+    path: "{{selenium_server_software}}"
+    owner: "{{ansible_user}}"
+    state: "directory"
+- name: download {{selenium_server_package}}
+  get_url:
+    dest: "{{selenium_server_software}}"
+    url: "{{selenium_server_download}}/{{selenium_server_package}}"
+  when: not need_download.stat.exists

@@ -1,0 +1,4 @@
+# Copyright (C) 2017 Guido U. Draheim, All Rights Reserved
+
+- name: STOP software
+  service: name="{{desktop_xvnc_service}}" state="stopped"

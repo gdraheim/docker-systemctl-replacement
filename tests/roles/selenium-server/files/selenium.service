@@ -1,0 +1,17 @@
+[Unit]
+Name=Selenium server
+Description=Starting a selenium server
+
+[Service]
+Type=forking
+PIDFile=/var/lock/selenium.pid
+Environment=PIDFILE=/var/lock/selenium.pid
+Environment=PORT=4444
+Environment=JAR=selenium-server-standalone.jar
+Environment=DIR=/usr/share/selenium
+Environment=DISPLAY=:99
+ExecStart=PATH=$PATH:$DIR java -jar $DIR/$JAR -port $PORT & echo $! > $PIDFILE
+ExecStop=pkill --pidfile $PIDFILE
+
+[Install]
+WantedBy=multi-user.target

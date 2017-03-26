@@ -1,0 +1,10 @@
+- hosts: serversystem
+  vars:
+   - STOP: yes
+  roles:
+    - jenkins-restart
+- hosts: virtualdesktop
+  vars:
+   - STOP: yes
+  roles:
+    - desktop-xvnc-restart

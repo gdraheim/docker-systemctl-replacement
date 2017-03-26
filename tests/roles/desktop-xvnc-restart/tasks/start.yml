@@ -1,0 +1,10 @@
+# Copyright (C) Guido U. Draheim, All Rights Reserved
+
+- name: start software
+  service: name="{{desktop_xvnc_service}}" state="started"
+- name: find port
+  set_fact:
+    desktop_xvnc_port: "{{ '55' ~ desktop_xvnc_server_num }}"
+- name: check port
+  wait_for:
+    port: "{{desktop_xvnc_port}}"

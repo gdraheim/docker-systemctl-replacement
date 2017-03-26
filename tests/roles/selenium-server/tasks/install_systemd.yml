@@ -1,0 +1,23 @@
+# Copyright (C) 2017 Guido U. Draheim, All Rights Reserved
+
+- name: systemd script
+  template: 
+    src: "files/{{selenium_service}}" 
+    dest: "/etc/systemd/system/{{selenium_service}}"
+    force: yes
+  become: yes
+- name: systemd reload
+  shell: systemctl daemon-reload
+  become: yes
+- name: set dir
+  replace:
+    dest: "/etc/systemd/system/{{selenium_service}}"
+    regexp: "(Environment=DIR)=.*"
+    replace: '\1={{selenium_server_dir}}'
+  become: yes
+- name: set jar
+  replace:
+    dest: "/etc/systemd/system/{{selenium_service}}"
+    regexp: "(Environment=JAR)=.*"
+    replace: '\1={{selenium_server}}'
+  become: yes

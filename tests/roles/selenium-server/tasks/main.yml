@@ -1,0 +1,13 @@
+- include: software_upload-server.yml
+- include: software_upload-python.yml
+- include: software_upload-geckodriver.yml
+- include: software_download-server.yml
+- include: software_download-python.yml
+- include: software_download-geckodriver.yml
+- include: install_java.yml
+- include: install_selenium-server.yml
+- include: install_selenium-python.yml
+- include: install_selenium-geckodriver.yml
+- include: install_systemd.yml
+- include: enable_software.yml
+- include: cleanrepo.yml

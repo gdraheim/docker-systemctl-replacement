@@ -1,0 +1,3 @@
+- name: STOP software
+  service: name="{{desktop_selenium_service}}" state="stopped"
+  become: yes

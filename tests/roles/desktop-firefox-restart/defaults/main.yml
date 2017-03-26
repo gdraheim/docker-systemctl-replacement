@@ -1,0 +1,3 @@
+desktop_xvnc_server_num: 99
+desktop_firefox_url: ""
+desktop_firefox_options: "http://localhost:4444/wd/hub/status"

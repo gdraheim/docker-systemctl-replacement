@@ -1,0 +1,15 @@
+# Copyright (C) 2017 Guido U. Draheim, All Rights Reserved
+
+- name: install firefox
+  package: pkg="{{item}}" state="installed"
+  become: yes
+  with_items: "{{desktop_firefox_packages}}"
+- name: replace firefox with older version
+  shell: |
+    yum erase -y firefox
+    yum install -y {{desktop_firefox_software}}/{{desktop_firefox_rpm}}
+  become: yes
+- name: check version
+  shell: "rpm -q --info firefox | grep Version"
+  register: firefoxversion
+- debug: var=firefoxversion.stdout

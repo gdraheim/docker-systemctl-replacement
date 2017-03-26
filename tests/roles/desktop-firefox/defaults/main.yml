@@ -1,0 +1,13 @@
+# install current firefox for its dependencies
+
+desktop_firefox_packages:
+  - "firefox"
+
+desktop_firefox_java_packages:
+  - "java-1.8.0-openjdk"
+
+# then go for an older version from the distro repository
+
+desktop_firefox_download: "http://mirror.eu.oneandone.net/linux/distributions/centos/7.3.1611/os/x86_64/Packages/"
+desktop_firefox_rpm: "firefox-45.4.0-1.el7.centos.x86_64.rpm"
+desktop_firefox_software: "Software/CentOS"

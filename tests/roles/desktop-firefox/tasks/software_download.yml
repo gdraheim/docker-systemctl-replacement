@@ -1,0 +1,15 @@
+# Copyright (C) 2017 Guido U. Draheim, All Rights Reserved
+
+- name: download check
+  stat: path="{{desktop_firefox_software}}/{{desktop_firefox_rpm}}"
+  register: need_download
+- name: "mkdir {{desktop_firefox_software}}"
+  file:
+    path: "{{desktop_firefox_software}}"
+    owner: "{{ansible_user}}"
+    state: "directory"
+- name: download {{desktop_firefox_package}}
+  get_url:
+    dest: "{{desktop_firefox_software}}"
+    url: "{{desktop_firefox_download}}/{{desktop_firefox_rpm}}"
+  when: not need_download.stat.exists

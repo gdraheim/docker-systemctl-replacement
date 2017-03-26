@@ -1,0 +1,14 @@
+desktop_xvnc_packages:
+  - "tigervnc-server-minimal"
+  - "metacity"
+
+desktop_xvnc_dir: "/data/xvnc"
+desktop_xvnc_authfile: "/data/xvnc/auth"
+
+desktop_xvnc_server_num: "99"
+desktop_xvnc_geometry: "1024x768"
+desktop_xvnc_bitdepth: "24"
+desktop_xvnc_windowmanager: "metacity"
+
+desktop_xvnc_initscript: "xvnc.init"
+desktop_xvnc_service: "xvnc.service"

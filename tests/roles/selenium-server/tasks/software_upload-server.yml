@@ -1,0 +1,10 @@
+# Copyright (C) 2017 Guido U. Draheim, All Rights Reserved
+
+- name: upload check
+  local_action: 'stat path="{{selenium_server_software}}/{{selenium_server_package}}"'
+  register: have_download
+- name: inst dir
+  file: path="{{selenium_server_software}}" state="directory" owner="{{ansible_user}}"
+- name: upload rpm
+  copy: src="../{{selenium_server_software}}/{{selenium_server_package}}" dest="{{selenium_server_software}}"
+  when: have_download.stat.exists

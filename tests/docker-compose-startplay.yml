@@ -1,0 +1,9 @@
+- hosts: virtualdesktop
+  roles:
+    - desktop-firefox-restart
+  tasks:
+    - debug: 
+       msg: |
+         :
+         : please run: vncviewer :5599
+         :

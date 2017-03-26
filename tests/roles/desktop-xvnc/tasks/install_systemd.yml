@@ -1,0 +1,42 @@
+# Copyright (C) 2017 Guido U. Draheim, All Rights Reserved
+
+- name: init.d script
+  template: 
+    src: "files/{{desktop_xvnc_initscript}}" 
+    dest: "/etc/init.d/{{desktop_xvnc_initscript | splitext | first}}"
+    mode: "0755"
+    force: yes
+  become: yes
+- name: systemd script
+  template: 
+    src: "files/{{desktop_xvnc_service}}" 
+    dest: "/etc/systemd/system/{{desktop_xvnc_service}}"
+    force: yes
+  become: yes
+- name: set geometry
+  replace:
+    dest: "/etc/systemd/system/{{desktop_xvnc_service}}"
+    regexp: "(Environment=XVNC_GEOMETRY)=.*"
+    replace: '\1={{desktop_xvnc_geometry}}'
+  become: yes
+- name: set bitdepth
+  replace:
+    dest: "/etc/systemd/system/{{desktop_xvnc_service}}"
+    regexp: "(Environment=XVNC_BITDEPTH)=.*"
+    replace: '\1={{desktop_xvnc_bitdepth}}'
+  become: yes
+- name: set server_num
+  replace:
+    dest: "/etc/systemd/system/{{desktop_xvnc_service}}"
+    regexp: "(Environment=XVNC_NUM)=.*"
+    replace: '\1={{desktop_xvnc_server_num}}'
+  become: yes
+- name: set windowmanager
+  replace:
+    dest: "/etc/systemd/system/{{desktop_xvnc_service}}"
+    regexp: "(Environment=XVNC_WINDOWMANAGER)=.*"
+    replace: '\1={{desktop_xvnc_windowmanager}}'
+  become: yes
+- name: systemd reload
+  shell: systemctl daemon-reload
+  become: yes

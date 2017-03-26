@@ -1,0 +1,6 @@
+- name: start software
+  service: name="{{selenium_service}}" state="started"
+  become: yes
+- name: check port
+  wait_for:
+    port: "{{selenium_port}}"

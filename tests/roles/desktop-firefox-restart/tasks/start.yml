@@ -1,0 +1,12 @@
+# Copyright (C) 2017 Guido U. Draheim, All Rights Reserved
+
+- name: check software
+  shell: "firefox --version"
+  register: firefox_version
+- debug: var=firefox_version.stdout_lines
+- name: start software
+  shell: |
+     export DISPLAY=":{{desktop_xvnc_server_num}}"
+     firefox {{desktop_firefox_options}} {{desktop_firefox_url}} &
+     disown
+  # become_user: '{{ansible_user}}'
