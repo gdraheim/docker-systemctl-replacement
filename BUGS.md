@@ -32,5 +32,9 @@ be defeated by
     # or /dev/.run/systemd or /dev/.systemd
 
 Sadly it must be done before calling "systemctl.py" so there
-is no help to make this just temporary.
+is no help to make this just temporary. If you have installed
+the "initscripts" package then it will work without such a
+workaround - although that package is only really used by the 
+old SysV style init.d service units.
+
 

@@ -7,3 +7,26 @@
          :
          : please run: vncviewer :5599
          :
+    - pause: seconds="3"
+
+- hosts: serversystem
+  tasks:
+    - fetch:
+        src: "/var/lib/jenkins/secrets/initialAdminPassword"
+        dest: "./"
+        flat: yes 
+- hosts: virtualdesktop
+  tasks:
+    - copy:
+        src: "./initialAdminPassword"
+        dest: "./"
+    - copy: 
+        src: "initialJenkinsSetup.py"
+        dest: "./"
+    - shell: |
+        python initialJenkinsSetup.py -f initialAdminPassword -vv
+    - fetch:
+        src: "initialJenkinsSetup.png"
+        dest: "./"
+        flat: yes
+

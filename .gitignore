@@ -1,2 +1,7 @@
 GNUmakefile
 tmp
+Software
+*.retry
+*.png
+initialAdminPassword
+

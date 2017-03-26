@@ -1,5 +1,8 @@
 FROM centos:centos7
 
+LABEL __copyright__="(C) Guido Draheim, for free use (CC-BY,GPL,BSD)" \
+      __version__="1.0.1127"
+
 ENV WEB_CONF /etc/httpd/conf.d/phpMyAdmin.conf
 ENV INC_CONF /etc/phpMyAdmin/config.inc.php
 
@@ -23,5 +26,6 @@ RUN sed -i -e "/'user'/s|=.*;|='testuser_OK';|" $INC_CONF
 RUN sed -i -e "/'password'/s|=.*;|='Testuser.OK';|" $INC_CONF
 RUN systemctl enable httpd
 RUN systemctl enable mariadb
+
 EXPOSE 80
 CMD /usr/bin/systemctl

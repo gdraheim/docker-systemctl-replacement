@@ -1,5 +1,8 @@
 FROM centos:centos7
 
+LABEL __copyright__="(C) Guido U. Draheim, for free use (CC-BY,GPL,BSD)" \
+      __version__="1.0.1127"
+
 ENV PG /var/lib/pgsql/data
 
 COPY files/docker/systemctl.py /usr/bin/systemctl
@@ -14,5 +17,6 @@ RUN systemctl start postgresql \
    ; echo "CREATE USER testuser_OK LOGIN ENCRYPTED PASSWORD 'Testuser.OK'" | runuser -u postgres /usr/bin/psql \
    ; systemctl stop postgresql
 RUN systemctl enable postgresql
+
 EXPOSE 5432
 CMD /usr/bin/systemctl
