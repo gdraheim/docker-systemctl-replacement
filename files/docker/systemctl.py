@@ -61,6 +61,12 @@ def ignore_signals_and_raise_keyboard_interrupt(signame):
     raise KeyboardInterrupt(signame)
 
 class UnitConfigParser:
+    """ A *.service files has a structure similar to an *.ini file but it is
+        actually not like it. Settings may occur multiple times in each section
+        and they create an implicit list. In reality all the settings are
+        globally uniqute, so that an 'environment' can be printed without
+        adding prefixes. Settings are continued with a backslash at the end
+        of the line.  """
     def __init__(self, defaults=None, dict_type=None, allow_no_value=False):
         self._defaults = defaults or {}
         self._dict_type = dict_type or collections.OrderedDict
@@ -175,6 +181,8 @@ class UnitConfigParser:
             else:
                 self.set(section, name, text)
     def read_sysv(self, filename):
+        """ an LSB header is scanned and converted to (almost)
+            equivalent settings of a SystemD ini-style input """
         initscript = False
         initinfo = False
         section = None
@@ -265,13 +273,14 @@ class Systemctl:
         self._loaded_file_sysd = {} # /etc/systemd/system/name.service => config data
         self._file_for_unit_sysv = None # name.service => /etc/init.d/name
         self._file_for_unit_sysd = None # name.service => /etc/systemd/system/name.service
-    def unit_file(self, module = None):
+    def unit_file(self, module = None): # -> filename?
+        """ file path for the given module (sysv or systemd) """
         path = self.unit_sysd_file(module)
         if path is not None: return path
         path = self.unit_sysv_file(module)
         if path is not None: return path
         return None
-    def scan_unit_sysd_files(self, module = None):
+    def scan_unit_sysd_files(self, module = None): # -> [ unit-names,... ]
         """ reads all unit files, returns the last filename for the unit given """
         if self._file_for_unit_sysd is None:
             self._file_for_unit_sysd = {}
@@ -283,14 +292,15 @@ class Systemctl:
                     self._file_for_unit_sysd[name] = path
             logg.debug("found %s sysd files", len(self._file_for_unit_sysd))
         return self._file_for_unit_sysd.keys()
-    def unit_sysd_file(self, module = None):
+    def unit_sysd_file(self, module = None): # -> filename?
+        """ file path for the given module (systemd) """
         self.scan_unit_sysd_files()
         if module and module in self._file_for_unit_sysd:
             return self._file_for_unit_sysd[module]
         if module and module+".service" in self._file_for_unit_sysd:
             return self._file_for_unit_sysd[module+".service"]
         return None
-    def scan_unit_sysv_files(self, module = None):
+    def scan_unit_sysv_files(self, module = None): # -> [ unit-names,... ]
         """ reads all init.d files, returns the last filename when unit is a '.service' """
         if self._file_for_unit_sysv is None:
             self._file_for_unit_sysv = {}
@@ -302,14 +312,15 @@ class Systemctl:
                     self._file_for_unit_sysv[name+".service"] = path
             logg.debug("found %s sysv files", len(self._file_for_unit_sysv))
         return self._file_for_unit_sysv.keys()
-    def unit_sysv_file(self, module = None):
-        self.scan_unit_sysd_files()
+    def unit_sysv_file(self, module = None): # -> filename?
+        """ file path for the given module (sysv) """
+        self.scan_unit_sysv_files()
         if module and module in self._file_for_unit_sysv:
             return self._file_for_unit_sysv[module]
         if module and module+".service" in self._file_for_unit_sysv:
             return self._file_for_unit_sysv[module+".service"]
         return None
-    def is_sysv_unit(self, module):
+    def is_sysv_unit(self, module): # -> bool?
         """ for routines that have a special treatment for init.d services """
         self.unit_file() # scan all
         if not filename: return None
@@ -323,7 +334,8 @@ class Systemctl:
         if filename in self._file_for_unit_sysd.values(): return False
         if filename in self._file_for_unit_sysv.values(): return True
         return None # not True
-    def read_unit(self, module):
+    def read_unit(self, module): # -> conf | not-found
+        """ read the unit file with a UnitParser (sysv or systemd) """
         data = self.read_sysd_unit(module)
         if data is not None: 
             return data
@@ -332,11 +344,14 @@ class Systemctl:
             return data
         logg.warning("unit file not found: %s", module)
         raise Exception("unit file not found")
-    def read_sysd_unit(self, module):
+    def read_sysd_unit(self, module): # -> conf?
+        """ read the unit file with a UnitParser (systemd) """
         path = self.unit_sysd_file(module)
         if not path: return None
         return self.read_sysd_file(path)
-    def read_sysd_file(self, path):
+    def read_sysd_file(self, path): # -> conf?
+        """ read the unit file with a UnitParser (systemd) """
+        if path is None: return None
         if path in self._loaded_file_sysd:
             return self._loaded_file_sysd[path]
         unit = UnitParser()
@@ -348,30 +363,39 @@ class Systemctl:
                     unit.read_sysd(os.path.join(override_d, name))
         self._loaded_file_sysd[path] = unit
         return unit
-    def read_sysv_unit(self, module):
+    def read_sysv_unit(self, module): # -> conf?
+        """ read the unit file with a UnitParser (sysv) """
         path = self.unit_sysv_file(module)
         if not path: return None
         return self.read_sysv_file(path)
-    def read_sysv_file(self, path):
+    def read_sysv_file(self, path): # -> conf?
+        """ read the unit file with a UnitParser (sysv) """
+        if path is None: return None
         if path in self._loaded_file_sysv:
             return self._loaded_file_sysv[path]
         unit = UnitParser()
         unit.read_sysv(path)
         self._loaded_file_sysv[path] = unit
         return unit
-    def default_unit(self, module):
+    def default_unit(self, module): # -> conf
+        """ a unit conf that can be printed to the user where
+            attributes are empty and loaded() is False """
         conf = UnitParser()
         conf.set("Unit","Id", module)
         conf.set("Unit", "Names", module)
         conf.set("Unit", "Description", "NOT-FOUND "+module)
         return conf
-    def try_read_unit(self, module):
+    def try_read_unit(self, module): # -> conf (conf | default-conf)
+        """ accept that a unit does not exist 
+            and return a unit conf that says 'not-loaded' """
         try: 
             return self.read_unit(module)
         except Exception, e: 
             logg.debug("read unit '%s': %s", module, e)
             return self.default_unit(module)
     def match_units(self, modules, suffix=".service"):
+        """ call for about any command with multiple units which can
+            actually be glob patterns on their respective filename. """
         found = []
         for unit in self.match_sysd_units(modules, suffix):
             if unit not in found:
@@ -381,6 +405,7 @@ class Systemctl:
                 found.append(unit)
         return found
     def match_sysd_units(self, modules, suffix=".service"):
+        """ make a file glob on all known units (systemd areas) """
         if isinstance(modules, basestring):
             modules = [ modules ]
         self.scan_unit_sysd_files()
@@ -392,6 +417,7 @@ class Systemctl:
             elif [ module for module in modules if module+suffix == item ]:
                 yield item
     def match_sysv_units(self, modules, suffix=".service"):
+        """ make a file glob on all known units (sysv areas) """
         if isinstance(modules, basestring):
             modules = [ modules ]
         self.scan_unit_sysv_files()
@@ -403,6 +429,7 @@ class Systemctl:
             elif [ module for module in modules if module+suffix == item ]:
                 yield item
     def sysem_list_services(self):
+        """ show all the services """
         filename = self.unit_file() # scan all
         for name, value in self._file_for_unit_sysd.items():
             print "SysD", name, "=>", value
@@ -410,6 +437,7 @@ class Systemctl:
             print "SysV", name, "=>", value
         return None
     def show_list_units(self, *modules):
+        """ show all the units """
         result = {}
         description = {}
         for unit in self.match_units(modules):
@@ -423,6 +451,7 @@ class Systemctl:
                 logg.warning("list-units: %s", e)
         return [ (unit, result[unit] and "loaded" or "", description[unit]) for unit in sorted(result) ]
     def get_description_from(self, conf, default = None):
+        """ Unit.Description could be empty sometimes """
         if not conf: return default or ""
         return conf.get("Unit", "Description", default or "")
     def write_pid_file(self, pid_file, pid):
