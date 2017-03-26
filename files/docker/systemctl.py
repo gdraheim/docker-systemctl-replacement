@@ -393,7 +393,7 @@ class Systemctl:
         except Exception, e: 
             logg.debug("read unit '%s': %s", module, e)
             return self.default_unit(module)
-    def match_units(self, modules, suffix=".service"):
+    def match_units(self, modules, suffix=".service"): # -> [ units,.. ]
         """ call for about any command with multiple units which can
             actually be glob patterns on their respective filename. """
         found = []
@@ -404,7 +404,7 @@ class Systemctl:
             if unit not in found:
                 found.append(unit)
         return found
-    def match_sysd_units(self, modules, suffix=".service"):
+    def match_sysd_units(self, modules, suffix=".service"): # -> generate[ unit ]
         """ make a file glob on all known units (systemd areas) """
         if isinstance(modules, basestring):
             modules = [ modules ]
@@ -416,7 +416,7 @@ class Systemctl:
                 yield item
             elif [ module for module in modules if module+suffix == item ]:
                 yield item
-    def match_sysv_units(self, modules, suffix=".service"):
+    def match_sysv_units(self, modules, suffix=".service"): # -> generate[ unit ]
         """ make a file glob on all known units (sysv areas) """
         if isinstance(modules, basestring):
             modules = [ modules ]
@@ -436,7 +436,7 @@ class Systemctl:
         for name, value in self._file_for_unit_sysv.items():
             print "SysV", name, "=>", value
         return None
-    def show_list_units(self, *modules):
+    def show_list_units(self, *modules): # -> [ (unit,loaded,description) ]
         """ show all the units """
         result = {}
         description = {}
@@ -450,23 +450,28 @@ class Systemctl:
             except Exception, e:
                 logg.warning("list-units: %s", e)
         return [ (unit, result[unit] and "loaded" or "", description[unit]) for unit in sorted(result) ]
-    def get_description_from(self, conf, default = None):
+    def get_description_from(self, conf, default = None): # -> text
         """ Unit.Description could be empty sometimes """
         if not conf: return default or ""
         return conf.get("Unit", "Description", default or "")
-    def write_pid_file(self, pid_file, pid):
+    def write_pid_file(self, pid_file, pid): # -> bool(written)
+        """ if a pid_file is known then path is created and the
+            give pid is written as the only content. """
         if not pid_file: 
             logg.debug("pid %s but no pid_file", pid)
-            return
+            return False
         dirpath = os.path.dirname(os.path.abspath(pid_file))
         if not os.path.isdir(dirpath):
             os.makedirs(dirpath)
         with open(pid_file, "w") as f:
             f.write("{}\n".format(pid))
-    def pid_exists(self, pid):
-        # return os.path.isdir("/proc/%s" % pid)
+        return True
+    def pid_exists(self, pid): # -> bool
+        """ check if a pid does still exist (unix standard) """
+        # return os.path.isdir("/proc/%s" % pid) # (linux standard) 
         return pid_exists(pid)
-    def wait_pid_file(self, pid_file):
+    def wait_pid_file(self, pid_file): # -> pid?
+        """ wait some seconds for the pid file to appear and return the pid """
         dirpath = os.path.dirname(os.path.abspath(pid_file))
         for x in xrange(self._waitprocfile):
             if not os.path.isdir(dirpath):
@@ -479,9 +484,11 @@ class Systemctl:
                 continue
             return pid
         return None
-    def default_pid_file(self, unit):
+    def default_pid_file(self, unit): # -> text
+        """ default file pattern where to store a pid """
         return "/var/run/%s.pid" % unit
-    def read_env_file(self, env_file):
+    def read_env_file(self, env_file): # -> generate[ (name,value) ]
+        """ EnvironmentFile=<name> is being scanned """
         if env_file.startswith("-"):
             env_file = env_file[1:]
             if not os.path.isfile(env_file):
@@ -505,7 +512,8 @@ class Systemctl:
                     continue
         except Exception, e:
             logg.info("while reading %s: %s", env_file, e)
-    def read_env_part(self, env_part):
+    def read_env_part(self, env_part): # -> generate[ (name, value) ]
+        """ Environment=<name>=<value> is being scanned """
         try:
             for real_line in env_part.split("\n"):
                 line = real_line.strip()
@@ -525,10 +533,12 @@ class Systemctl:
                     continue
         except Exception, e:
             logg.info("while reading %s: %s", env_part, e)
-    def sleep(self, seconds = None):
+    def sleep(self, seconds = None): 
+        """ just sleep """
         seconds = seconds or 1
         time.sleep(seconds)
     def sudo_from(self, conf):
+        """ calls runuser with a (non-priviledged) user """
         runuser = conf.get("Service", "User", "")
         rungroup = conf.get("Service", "Group", "")
         sudo = ""
