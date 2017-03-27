@@ -24,7 +24,7 @@
         src: "initialJenkinsSetup.py"
         dest: "./"
     - shell: |
-        python initialJenkinsSetup.py -f initialAdminPassword -vv
+        python initialJenkinsSetup.py -f initialAdminPassword -v
     - fetch:
         src: "initialJenkinsSetup.png"
         dest: "./"
