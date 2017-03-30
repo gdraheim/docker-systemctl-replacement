@@ -72,31 +72,31 @@ docker-compose-playbook.1:
 docker-compose-playbook.2:
 	test -d tests/files || mkdir tests/files 
 	cd tests/files && ln -sf ../../files/docker .
-	test -d tests/roles/jenkins/files || mkdir tests/roles/jenkins/files 
-	cd tests/roles/jenkins/files && ln -sf ../../../../files/docker .
-	test -d tests/roles/desktop-xvnc/files || mkdir tests/roles/desktop-xvnc/files 
-	cd tests/roles/desktop-xvnc/files && ln -sf ../../../../files/docker .
-	test -d tests/roles/selenium-server/files || mkdir tests/roles/selenium-server/files 
-	cd tests/roles/selenium-server/files && ln -sf ../../../../files/docker .
+	# test -d tests/roles/jenkins/files || mkdir tests/roles/jenkins/files 
+	# cd tests/roles/jenkins/files && ln -sf ../../../../files/docker .
+	# test -d tests/roles/desktop-xvnc/files || mkdir tests/roles/desktop-xvnc/files 
+	# cd tests/roles/desktop-xvnc/files && ln -sf ../../../../files/docker .
+	# test -d tests/roles/selenium-server/files || mkdir tests/roles/selenium-server/files 
+	# cd tests/roles/selenium-server/files && ln -sf ../../../../files/docker .
 docker-compose-playbook.3:
 	docker exec testingsystemctl_serversystem_1 bash -c 'touch /var/log/systemctl.log'
 	docker exec testingsystemctl_virtualdesktop_1 bash -c 'touch /var/log/systemctl.log'
 docker-compose-playbook.4:
-	test -d Software/Jenkins || ansible-playbook tests/download-jenkins.yml -vv
-	ansible-playbook tests/download-selenium.yml -vv
-	ansible-playbook tests/download-firefox.yml -vv
-	rm tests/Software; cd tests && ln -s ../Software .
+	cd tests && ansible-playbook download-jenkins.yml -vv
+	cd tests && ansible-playbook download-selenium.yml -vv
+	cd tests && ansible-playbook download-firefox.yml -vv
 DC..: docker-compose-playbook.4
 docker-compose-playbook.5:
-	ansible-playbook -i tests/docker-compose-build.ini tests/docker-compose-buildplay.yml -vv
+	ansible-playbook -i tests/docker-compose-build.ini \
+	       -e LOCAL=yes tests/docker-compose-buildplay.yml -vv
 docker-compose-playbook.6:
-	rm tests/Software
-	rm tests/roles/jenkins/files/docker
-	rm tests/roles/desktop-xvnc/files/docker
-	rm tests/roles/selenium-server/files/docker
+	# rm tests/roles/jenkins/files/docker
+	# rm tests/roles/desktop-xvnc/files/docker
+	# rm tests/roles/selenium-server/files/docker
 	rm tests/files/docker
 docker-compose-playbook.7:
-	ansible-playbook -i tests/docker-compose-build.ini tests/docker-compose-buildstop.yml -vv
+	ansible-playbook -i tests/docker-compose-build.ini \
+	       -e LOCAL=yes tests/docker-compose-buildstop.yml -vv
 	docker commit -c "CMD '/usr/bin/systemctl'" -m "`date '+%Y-%m-%d %H:%M'`" \
 	   testingsystemctl_serversystem_1 "localhost:5000/testingsystemctl:serversystem"
 	docker commit -c "CMD '/usr/bin/systemctl'" -m "`date '+%Y-%m-%d %H:%M'`" \
@@ -108,8 +108,8 @@ docker-compose-playbook.8:
 Y: docker-compose-playbook.9
 docker-compose-playbook.9:
 	- rm tests/*.png
-	: docker-compose -p testingsystemctl -f tests/docker-compose-build.yml down || true
-	ansible-playbook -i tests/docker-compose-start.ini tests/docker-compose-startplay.yml -vv
+	ansible-playbook -i tests/docker-compose-start.ini \
+	       -e LOCAL=yes tests/docker-compose-startplay.yml -vv
 	- ls -l tests/*.png
 docker-compose-playbook.X:
 	docker-compose -p testingsystemctl2 -f tests/docker-compose-start.yml down || true 

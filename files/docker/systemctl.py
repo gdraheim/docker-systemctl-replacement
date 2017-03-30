@@ -1,6 +1,6 @@
 #! /usr/bin/python
 __copyright__ = "(C) 2016-2017 Guido U. Draheim, for free use (CC-BY, GPL, BSD)"
-__version__ = "0.4.1127"
+__version__ = "0.5.1128"
 
 import logging
 logg = logging.getLogger("systemctl")
@@ -16,6 +16,7 @@ import sys
 import subprocess
 import signal
 import time
+
 
 # http://stackoverflow.com/questions/568271/how-to-check-if-there-exists-a-process-with-a-given-pid
 def pid_exists(pid):
@@ -216,11 +217,12 @@ class UnitConfigParser:
         provides = self.get("init.d", "Provides", "")
         if provides:
             self.set("Install", "Alias", provides)
+        # if already in multi-user.target then start it there.
         runlevels = self.get("init.d", "Default-Start","")
-        if "3" in runlevels:
-            self.set("Install", "WantedBy", "multi-user.target")
         if "5" in runlevels:
             self.set("Install", "WantedBy", "graphical.target")
+        if "3" in runlevels:
+            self.set("Install", "WantedBy", "multi-user.target")
         self.set("Service", "Type", "sysv")
 
 UnitParser = ConfigParser.RawConfigParser
@@ -412,7 +414,7 @@ class Systemctl:
         for item in sorted(self._file_for_unit_sysd.keys()):
             if not modules:
                 yield item
-            elif [ module for module in modules if fnmatch.fnmatch(item, module) ]:
+            elif [ module for module in modules if fnmatch.fnmatchcase(item, module) ]:
                 yield item
             elif [ module for module in modules if module+suffix == item ]:
                 yield item
@@ -424,7 +426,7 @@ class Systemctl:
         for item in sorted(self._file_for_unit_sysv.keys()):
             if not modules:
                 yield item
-            elif [ module for module in modules if fnmatch.fnmatch(item, module) ]:
+            elif [ module for module in modules if fnmatch.fnmatchcase(item, module) ]:
                 yield item
             elif [ module for module in modules if module+suffix == item ]:
                 yield item
@@ -1005,23 +1007,33 @@ class Systemctl:
         if not os.path.islink(target):
             os.symlink(unit_file, target)
         return True
+    def rc3_folder(self):
+        if os.path.isdir("/etc/rc3.d"): return "/etc/rc3.d"
+        return "/etc/init.d/rc3.d"
+    def rc5_folder(self):
+        if os.path.isdir("/etc/rc5.d"): return "/etc/rc5.d"
+        return "/etc/init.d/rc5.d"
     def enable_unit_sysv(self, unit_file):
+        # a "multi-user.target"/rc3 is also started in /rc5
+        rc3 = self.enable_unit_sysv_folder(unit_file, self.rc3_folder())
+        rc5 = self.enable_unit_sysv_folder(unit_file, self.rc5_folder())
+        return rc3 and rc5
+    def enable_unit_sysv_folder(self, unit_file, rc_folder):
         name = os.path.basename(unit_file)
         nameS = "S50"+name
         nameK = "K50"+name
-        rc5_d_folder = "/etc/rc5.d"
         # do not double existing entries
-        if found in os.listdir(rc5_d_folder):
+        if found in os.listdir(rc_folder):
             m = re.match("S\d\d(.*)", found)
             if m and m.group(1) == name:
                 nameS = found
             m = re.match("K\d\d(.*)", found)
             if m and m.group(1) == name:
                 nameK = found
-        target = os.path.join(rc5_d_folder, nameS)
+        target = os.path.join(rc_folder, nameS)
         if not os.path.exists(target):
             os.symlink(unit_file, target)
-        target = os.path.join(rc5_d_folder, nameK)
+        target = os.path.join(rc_folder, nameK)
         if not os.path.exists(target):
             os.symlink(unit_file, target)
         return True
@@ -1046,28 +1058,32 @@ class Systemctl:
             os.remove(target)
         return True
     def disable_unit_sysv(self, unit_file):
+        rc3 = self.disable_unit_sysv_folder(unit_file, self.rc3_folder())
+        rc5 = self.disable_unit_sysv_folder(unit_file, self.rc5_folder())
+        return rc3 and rc5
+    def disable_unit_sysv_folder(self, unit_file, rc_folder):
+        # a "multi-user.target"/rc3 is also started in /rc5
         name = os.path.basename(unit_file)
         nameS = "S50"+name
         nameK = "K50"+name
-        rc5_d_folder = "/etc/rc5.d"
         # do not forget the existing entries
-        if found in os.listdir(rc5_d_folder):
+        if found in os.listdir(rc_folder):
             m = re.match("S\d\d(.*)", found)
             if m and m.group(1) == name:
                 nameS = found
             m = re.match("K\d\d(.*)", found)
             if m and m.group(1) == name:
                 nameK = found
-        target = os.path.join(rc5_d_folder, nameS)
+        target = os.path.join(rc_folder, nameS)
         if os.path.exists(target):
            os.unlink(target)
-        target = os.path.join(rc5_d_folder, nameK)
+        target = os.path.join(rc_folder, nameK)
         if os.path.exists(target):
            os.unlink(target)
         return True
     def is_enabled_sysv(self, unit_file):
         name = os.path.basename(unit_file)
-        target = "/etc/rc5.d/S50%s" % name
+        target = os.path.join(self.rc3_folder(), "S50%s" % name)
         if os.path.exists(target):
            return True
         return False
@@ -1140,37 +1156,60 @@ class Systemctl:
             env_files.append(env_file)
         if env_files:
             yield "EnvironmentFile", " ".join(env_files)
-    def get_will_start(self, sysv="S", default_target = "multi-user.target"):
-        wants_folder = os.path.join(_sysd_folder2, default_target + ".wants")
-        rc5_d_folder = "/etc/rc5.d"
-        will_start = []
-        for unit in sorted(os.listdir(wants_folder)):
+    #
+    igno_centos = [ "netconsole", "network" ]
+    igno_opensuse = [ "raw", "pppoe", "*.local", "boot.*", "rpmconf*" ]
+    igno_ubuntu = [ "mount*", "umount*", "ondemand", "*.local" ]
+    igno_always = [ "network*", "dbus", "systemd-*" ]
+    def system_default_services(self, sysv="S", default_target = "multi-user.target"):
+        igno = self.igno_always
+        wants1_folder = os.path.join(_sysd_folder1, default_target + ".wants")
+        wants2_folder = os.path.join(_sysd_folder2, default_target + ".wants")
+        wants_services = []
+        for unit in sorted(os.listdir(wants1_folder)):
             if unit.endswith(".service"):
-                will_start.append(unit)
-        for unit in sorted(os.listdir(rc5_d_folder)):
+                pass # wants_services.append(unit)
+        for unit in sorted(os.listdir(wants2_folder)):
+            if unit.endswith(".service"):
+                wants_services.append(unit)
+        for unit in sorted(os.listdir(self.rc3_folder())):
             m = re.match(sysv+r"\d\d(.*)", unit)
             if m:
                 service = m.group(1)
-                if service in [ "networking", "ondemand", "dbus", "raw" ]:
-                    pass # ignore
-                elif service.startswith("boot") or service.endswith(".local"):
-                    pass # opensuse
-                else:
-                    will_start.append(service)
-        return will_start
+                for ignore in igno:
+                    if fnmatch.fnmatchcase(service, ignore):
+                        continue # ignore
+                wants_services.append(service)
+        return wants_services
+    def system_wants_services(self, sysv="S", default_target = "multi-user.target"):
+        igno = self.igno_centos + self.igno_opensuse + self.igno_ubuntu + self.igno_always
+        wants2_folder = os.path.join(_sysd_folder2, default_target + ".wants")
+        wants_services = []
+        for unit in sorted(os.listdir(wants2_folder)):
+            if unit.endswith(".service"):
+                wants_services.append(unit)
+        for unit in sorted(os.listdir(self.rc3_folder())):
+            m = re.match(sysv+r"\d\d(.*)", unit)
+            if m:
+                service = m.group(1)
+                for ignore in igno:
+                    if fnmatch.fnmatchcase(service, ignore):
+                        continue # ignore
+                wants_services.append(service)
+        return wants_services
     def system_default(self, arg = True):
         """ start units for default system level """
         logg.info("system default requested - %s", arg)
         default_target = "multi-user.target"
-        will_start = self.get_will_start("S", default_target)
-        self.start_of_units(*will_start)
+        wants_services = self.system_wants_services("S", default_target)
+        self.start_of_units(*wants_services)
         logg.info("system is up")
     def system_halt(self, arg = True):
         """ stop units from default system level """
         logg.info("system halt requested - %s", arg)
         default_target = "multi-user.target"
-        will_start = self.get_will_start("K", default_target)
-        self.stop_of_units(*will_start)
+        wants_services = self.system_wants_services("K", default_target)
+        self.stop_of_units(*wants_services)
         logg.info("system is down")
     def system_0(self):
         self.system_default("init 0")
