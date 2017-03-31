@@ -1,7 +1,7 @@
 # -*- makefile -*-
 PORT=8888
 
-alltests: CH CP UA DC
+alltests: CH CP UA DJ
 .PHONY: tests
 tests: alltests
 
@@ -53,23 +53,23 @@ ubuntu-apache2.dockerfile:
 	docker rm --force $@
 
 # FIXME: "-p testing_systemctl" makes containers like "testingsystemctl_<service>_1" ?!
-DC: docker-compose-playbook
-docker-compose-playbook:
-	$(MAKE) docker-compose-playbook.1
-	$(MAKE) docker-compose-playbook.2
-	$(MAKE) docker-compose-playbook.3
-	$(MAKE) docker-compose-playbook.4
-	$(MAKE) docker-compose-playbook.5
-	$(MAKE) docker-compose-playbook.6
-	$(MAKE) docker-compose-playbook.7
-	$(MAKE) docker-compose-playbook.8
-	$(MAKE) docker-compose-playbook.9
-	$(MAKE) docker-compose-playbook.X
-docker-compose-playbook.1:
-	docker-compose -p testingsystemctl -f tests/docker-compose-build.yml down || true
-	docker-compose -p testingsystemctl -f tests/docker-compose-build.yml up -d || \
-	docker-compose -p testingsystemctl -f tests/docker-compose-build.yml up -d
-docker-compose-playbook.2:
+DJ: docker-jenkins
+docker-jenkins:
+	$(MAKE) docker-jenkins.1
+	$(MAKE) docker-jenkins.2
+	$(MAKE) docker-jenkins.3
+	$(MAKE) docker-jenkins.4
+	$(MAKE) docker-jenkins.5
+	$(MAKE) docker-jenkins.6
+	$(MAKE) docker-jenkins.7
+	$(MAKE) docker-jenkins.8
+	$(MAKE) docker-jenkins.9
+	$(MAKE) docker-jenkins.X
+docker-jenkins.1:
+	docker-compose -p testingsystemctl -f tests/docker-build-compose.yml down || true
+	docker-compose -p testingsystemctl -f tests/docker-build-compose.yml up -d || \
+	docker-compose -p testingsystemctl -f tests/docker-build-compose.yml up -d
+docker-jenkins.2:
 	test -d tests/files || mkdir tests/files 
 	cd tests/files && ln -sf ../../files/docker .
 	# test -d tests/roles/jenkins/files || mkdir tests/roles/jenkins/files 
@@ -78,39 +78,39 @@ docker-compose-playbook.2:
 	# cd tests/roles/desktop-xvnc/files && ln -sf ../../../../files/docker .
 	# test -d tests/roles/selenium-server/files || mkdir tests/roles/selenium-server/files 
 	# cd tests/roles/selenium-server/files && ln -sf ../../../../files/docker .
-docker-compose-playbook.3:
+docker-jenkins.3:
 	docker exec testingsystemctl_serversystem_1 bash -c 'touch /var/log/systemctl.log'
 	docker exec testingsystemctl_virtualdesktop_1 bash -c 'touch /var/log/systemctl.log'
-docker-compose-playbook.4:
+docker-jenkins.4:
 	cd tests && ansible-playbook download-jenkins.yml -vv
 	cd tests && ansible-playbook download-selenium.yml -vv
 	cd tests && ansible-playbook download-firefox.yml -vv
-DC..: docker-compose-playbook.4
-docker-compose-playbook.5:
-	ansible-playbook -i tests/docker-compose-build.ini \
-	       -e LOCAL=yes tests/docker-compose-buildplay.yml -vv
-docker-compose-playbook.6:
+DJ..: docker-jenkins.4
+docker-jenkins.5:
+	ansible-playbook -i tests/docker-build-compose.ini \
+	       -e LOCAL=yes tests/docker-build-playbook.yml -vv
+docker-jenkins.6:
 	# rm tests/roles/jenkins/files/docker
 	# rm tests/roles/desktop-xvnc/files/docker
 	# rm tests/roles/selenium-server/files/docker
 	rm tests/files/docker
-docker-compose-playbook.7:
-	ansible-playbook -i tests/docker-compose-build.ini \
-	       -e LOCAL=yes tests/docker-compose-buildstop.yml -vv
+docker-jenkins.7:
+	ansible-playbook -i tests/docker-build-compose.ini \
+	       -e LOCAL=yes tests/docker-build-stop.yml -vv
 	docker commit -c "CMD '/usr/bin/systemctl'" -m "`date '+%Y-%m-%d %H:%M'`" \
 	   testingsystemctl_serversystem_1 "localhost:5000/testingsystemctl:serversystem"
 	docker commit -c "CMD '/usr/bin/systemctl'" -m "`date '+%Y-%m-%d %H:%M'`" \
 	   testingsystemctl_virtualdesktop_1 "localhost:5000/testingsystemctl:virtualdesktop"
-docker-compose-playbook.8:
-	docker-compose -p testingsystemctl2 -f tests/docker-compose-start.yml down || true
-	docker-compose -p testingsystemctl2 -f tests/docker-compose-start.yml up -d || \
-	docker-compose -p testingsystemctl2 -f tests/docker-compose-start.yml up -d
-Y: docker-compose-playbook.9
-docker-compose-playbook.9:
+docker-jenkins.8:
+	docker-compose -p testingsystemctl2 -f tests/docker-start-compose.yml down || true
+	docker-compose -p testingsystemctl2 -f tests/docker-start-compose.yml up -d || \
+	docker-compose -p testingsystemctl2 -f tests/docker-start-compose.yml up -d
+DJ9: docker-jenkins.9
+docker-jenkins.9:
 	- rm tests/*.png
-	ansible-playbook -i tests/docker-compose-start.ini \
-	       -e LOCAL=yes tests/docker-compose-startplay.yml -vv
+	ansible-playbook -i tests/docker-start-compose.ini \
+	       -e LOCAL=yes tests/docker-start-playbook.yml -vv
 	- ls -l tests/*.png
-docker-compose-playbook.X:
-	docker-compose -p testingsystemctl2 -f tests/docker-compose-start.yml down || true 
-	docker-compose -p testingsystemctl -f tests/docker-compose-build.yml down || true
+docker-jenkins.X:
+	docker-compose -p testingsystemctl2 -f tests/docker-start-compose.yml down || true 
+	docker-compose -p testingsystemctl -f tests/docker-build-compose.yml down || true
