@@ -16,6 +16,10 @@
         dest: "./"
         flat: yes 
 - hosts: virtualdesktop
+  vars:
+     j_username: install
+     j_password: install.1A
+     j_url: http://serversystem/build
   tasks:
     - copy:
         src: "./initialAdminPassword"
@@ -25,7 +29,8 @@
         dest: "./"
     - shell: |
         python initialJenkinsSetup.py -f initialAdminPassword \
-         --screenshot initialJenkinsSetup.png -v
+         --username "{{j_username}}" --password "{{j_password}}" \
+         --base_url "{{j_url}}" --screenshot initialJenkinsSetup.png -v
     - fetch:
         src: "initialJenkinsSetup.png"
         dest: "./"
