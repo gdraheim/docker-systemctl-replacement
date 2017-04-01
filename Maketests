@@ -55,62 +55,47 @@ ubuntu-apache2.dockerfile:
 # FIXME: "-p testing_systemctl" makes containers like "testingsystemctl_<service>_1" ?!
 DJ: docker-jenkins
 docker-jenkins:
-	$(MAKE) docker-jenkins.1
-	$(MAKE) docker-jenkins.2
-	$(MAKE) docker-jenkins.3
-	$(MAKE) docker-jenkins.4
-	$(MAKE) docker-jenkins.5
-	$(MAKE) docker-jenkins.6
-	$(MAKE) docker-jenkins.7
-	$(MAKE) docker-jenkins.8
-	$(MAKE) docker-jenkins.9
-	$(MAKE) docker-jenkins.X
+	$(MAKE) docker-jenkins.1 # download the software (will be done just once)
+	$(MAKE) docker-jenkins.2 # bring up the build-step deployment containers
+	$(MAKE) docker-jenkins.3 # run the build-playbook (using ansible roles)
+	$(MAKE) docker-jenkins.4 # save the build-step containers as images
+	$(MAKE) docker-jenkins.5 # use the new images for start-step containers
+	$(MAKE) docker-jenkins.6 # unlock jenkins as a post-build config-example
+	$(MAKE) docker-jenkins.7 # bring down build-step and start-step containers
 docker-jenkins.1:
-	docker-compose -p testingsystemctl -f tests/docker-build-compose.yml down || true
-	docker-compose -p testingsystemctl -f tests/docker-build-compose.yml up -d || \
-	docker-compose -p testingsystemctl -f tests/docker-build-compose.yml up -d
-docker-jenkins.2:
-	test -d tests/files || mkdir tests/files 
-	cd tests/files && ln -sf ../../files/docker .
-	# test -d tests/roles/jenkins/files || mkdir tests/roles/jenkins/files 
-	# cd tests/roles/jenkins/files && ln -sf ../../../../files/docker .
-	# test -d tests/roles/desktop-xvnc/files || mkdir tests/roles/desktop-xvnc/files 
-	# cd tests/roles/desktop-xvnc/files && ln -sf ../../../../files/docker .
-	# test -d tests/roles/selenium-server/files || mkdir tests/roles/selenium-server/files 
-	# cd tests/roles/selenium-server/files && ln -sf ../../../../files/docker .
-docker-jenkins.3:
-	docker exec testingsystemctl_serversystem_1 bash -c 'touch /var/log/systemctl.log'
-	docker exec testingsystemctl_virtualdesktop_1 bash -c 'touch /var/log/systemctl.log'
-docker-jenkins.4:
 	cd tests && ansible-playbook download-jenkins.yml -vv
 	cd tests && ansible-playbook download-selenium.yml -vv
 	cd tests && ansible-playbook download-firefox.yml -vv
+docker-jenkins.2:
+	docker-compose -p testingsystemctl1 -f tests/docker-build-compose.yml down || true
+	docker-compose -p testingsystemctl1 -f tests/docker-build-compose.yml up -d || \
+	docker-compose -p testingsystemctl1 -f tests/docker-build-compose.yml up -d
 DJ..: docker-jenkins.4
-docker-jenkins.5:
+docker-jenkins.3:
+	test -d tests/files || mkdir tests/files 
+	cd tests/files && ln -sf ../../files/docker .
+	docker exec testingsystemctl1_serversystem_1 bash -c 'touch /var/log/systemctl.log'
+	docker exec testingsystemctl1_virtualdesktop_1 bash -c 'touch /var/log/systemctl.log'
+	: ........ ready to run the deployment playbook
 	ansible-playbook -i tests/docker-build-compose.ini \
 	       -e LOCAL=yes tests/docker-build-playbook.yml -vv
-docker-jenkins.6:
-	# rm tests/roles/jenkins/files/docker
-	# rm tests/roles/desktop-xvnc/files/docker
-	# rm tests/roles/selenium-server/files/docker
 	rm tests/files/docker
-docker-jenkins.7:
+docker-jenkins.4:
 	ansible-playbook -i tests/docker-build-compose.ini \
 	       -e LOCAL=yes tests/docker-build-stop.yml -vv
 	docker commit -c "CMD '/usr/bin/systemctl'" -m "`date '+%Y-%m-%d %H:%M'`" \
-	   testingsystemctl_serversystem_1 "localhost:5000/testingsystemctl:serversystem"
+	   testingsystemctl1_serversystem_1 "localhost:5000/testingsystemctl:serversystem"
 	docker commit -c "CMD '/usr/bin/systemctl'" -m "`date '+%Y-%m-%d %H:%M'`" \
-	   testingsystemctl_virtualdesktop_1 "localhost:5000/testingsystemctl:virtualdesktop"
-docker-jenkins.8:
+	   testingsystemctl1_virtualdesktop_1 "localhost:5000/testingsystemctl:virtualdesktop"
+docker-jenkins.5:
 	docker-compose -p testingsystemctl2 -f tests/docker-start-compose.yml down || true
 	docker-compose -p testingsystemctl2 -f tests/docker-start-compose.yml up -d || \
 	docker-compose -p testingsystemctl2 -f tests/docker-start-compose.yml up -d
-DJ9: docker-jenkins.9
-docker-jenkins.9:
+docker-jenkins.6:
 	- rm tests/*.png
 	ansible-playbook -i tests/docker-start-compose.ini \
 	       -e LOCAL=yes tests/docker-start-playbook.yml -vv
-	- ls -l tests/*.png
-docker-jenkins.X:
+	ls -l tests/*.png
+docker-jenkins.7:
 	docker-compose -p testingsystemctl2 -f tests/docker-start-compose.yml down || true 
-	docker-compose -p testingsystemctl -f tests/docker-build-compose.yml down || true
+	docker-compose -p testingsystemctl1 -f tests/docker-build-compose.yml down || true
