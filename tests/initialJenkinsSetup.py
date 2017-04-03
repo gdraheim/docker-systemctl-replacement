@@ -9,11 +9,11 @@ for steps after unlocking Jenkins. The later steps will probably use the  API.
                                                                           .
 If the scripts runs on a Cloudbees product then it can automatically acquire
 a trial license - be sure to provide atleast a -T email@address to track the
-instance that have been used so far.
+instances that have been used so far.
 """
 
 __copyright__ = " (C) Guido U. Draheim, for free use (CC-BY,GPL,BSD)"
-__version__ = "1.1.1135"
+__version__ = "1.1.1136"
 
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
@@ -43,12 +43,10 @@ class Program:
     BASE_URL="http://testingsystemctl2_serversystem_1:8080/linux"
     SCREENSHOT=""
     SLOW = 2
-    SLOW_RESULT = 15
-    SLOW_PLUGINS = 300
+    LONGWAIT = 300
     LICENSE_FULLNAME = ""
     LICENSE_EMAIL = ""
     LICENSE_COMPANY = ""
-    ELASTIC_SERVERS = "http://local1:9200 http://local2:9200 http://local3:9200"
     ref_manual_license="#btn-com_cloudbees_jenkins_plugins_license_ManualRegistrar"
     ref_trial_license="#btn-com_cloudbees_opscenter_server_license_OperationsCenterEvaluationRegistrar"
     ref_plugins=".install-recommended"
@@ -67,7 +65,6 @@ class Program:
         self.description = "The {username} admin user is used by automation tools"
         self.screenshot = self.SCREENSHOT
         self.slow = int(self.SLOW)
-        self.slow_result = int(self.SLOW_RESULT)
         self.driver = None
     def sleep(self, seconds = None):
         time.sleep(seconds or self.SLOW)
@@ -134,9 +131,9 @@ class Program:
             desired_capabilities=firefox)
         logg.info("start at %s", self.base_url)
         self.driver.get(self.base_url)
-        self.sleep(self.slow)
+        self.sleep()
         logg.debug("wait for browser to come up")
-        self.sleep(self.slow)
+        self.sleep()
     def do_unlock(self):
         """ that's usually a blocker in the setup process """
         if self.initial_password_file:
@@ -147,7 +144,7 @@ class Program:
             initial_password = self.initial_password
             initial_username = self.initial_username
         logg.info("check initialAdminPassword")
-        self.sleep(self.slow)
+        self.sleep()
         if "initialAdminPassword" in self.driver.page_source:
             elem = self.find_element_by("#security-token")
             elem.clear()
@@ -232,21 +229,21 @@ class Program:
     def do_plugins(self):
         """ it does need internet access to download plugins """
         logg.info("check plugins")
-        self.sleep(self.slow)
+        self.sleep()
         if self.exists_element_by(self.ref_plugins):
             elem = self.find_element_by(self.ref_plugins)
             elem.click()
             logg.info("done install-recommended - wait for admin user")
-            for i in xrange(int(self.SLOW_PLUGINS) / int(self.slow)):
-                self.sleep(self.slow)
+            for i in xrange(int(self.LONGWAIT) / int(self.slow)):
+                self.sleep()
                 if self.exists_element_by(self.ref_firstuser):
-                    self.sleep(self.slow)
+                    self.sleep()
                     break
                 logg.info("waiting...")
     def do_firstuser(self):
         """ create the admin user for later automated config steps """
         logg.info("check First Admin User")
-        self.sleep(self.slow)
+        self.sleep()
         if self.exists_element_by(self.ref_firstuser):
             logg.info("ready for admin user")
             self.driver.switch_to.default_content()
@@ -288,28 +285,27 @@ class Program:
             self.driver.switch_to.default_content()
             elem = self.find_element_by(".save-first-user")
             elem.click()
-            self.sleep(self.slow)
+            self.sleep()
     def do_done(self):
         """ click away the message that we are done here. """
         logg.info("check for final screen")
         if self.exists_element_by(self.ref_done):
-            self.sleep(self.slow)
+            self.sleep()
             elem = self.find_element_by(self.ref_done)
             elem.click()
-            self.sleep(self.slow)
+            self.sleep()
         elif self.exists_element_by(self.ref_done_restart):
-            self.sleep(self.slow)
+            self.sleep()
             elem = self.find_element_by(self.ref_done_restart)
             elem.click()
-            self.sleep(self.slow)
+            self.sleep()
             self.do_waitlogin()
             self.do_login()
     def do_restart(self):
         """ optional: the Cloudbees products do it anyway. """
         logg.info("restart now")
-        self.sleep(self.slow)
+        self.sleep()
         if True:
-            username = self.username
             base_url = self.base_url
             url= "{base_url}/restart".format(**locals())
             self.driver.get(url)
@@ -338,11 +334,11 @@ class Program:
             elem.send_keys(password)
             elem = self.find_element_by("#yui-gen1-button")
             elem.click()
-            self.sleep(self.slow)
+            self.sleep()
     def do_description(self):
         """ and use it to update the user description. """
         logg.info("check user description")
-        self.sleep(self.slow)
+        self.sleep()
         if "Manage Jenkins" in self.driver.page_source:
             username = self.username
             description = self.description.format(**locals())
@@ -352,7 +348,7 @@ class Program:
             elem = self.find_element_by("=_.description")
             elem.clear()
             elem.send_keys(description)
-            self.sleep(self.slow)
+            self.sleep()
             if self.screenshot:
                 logg.info("screenshot into %s", self.screenshot)
                 self.driver.save_screenshot(self.screenshot)
@@ -360,10 +356,10 @@ class Program:
             elem.click()
     def do_sleep(self):
         """ optional: just for testing to a look """
-        self.sleep(300)
+        self.sleep(self.LONGWAIT)
     def do_end(self):
         """ tears down the browser we used since 'begin' """
-        self.sleep(self.slow_result)
+        self.sleep(self.slow * 5)
         self.driver.close()
         self.driver.quit()
         self.driver = None
@@ -392,6 +388,8 @@ if __name__ == "__main__":
            help="admin user email [%default]")
     _o.add_option("-T","--license_email", metavar="PASS", default=Program.LICENSE_EMAIL,
            help="trial license user email [%default]")
+    _o.add_option("--slow", metavar="SECONDS", default=Program.SLOW,
+           help="slow next step after clicks/checks [%default]")
     _o.add_option("--screenshot", metavar="FILE", default=Program.SCREENSHOT,
            help="save a final screenshot [%default]")
     _o.add_option("--logfile", metavar="FILE", default="/var/log/initialJenkinsSetup.log",
@@ -415,6 +413,7 @@ if __name__ == "__main__":
     exe.password = opt.password
     exe.fullname = opt.fullname
     exe.email = opt.email
+    exe.slow = int(opt.slow)
     exe.screenshot = opt.screenshot
     exe.LICENSE_EMAIL = opt.license_email
     if not args:
