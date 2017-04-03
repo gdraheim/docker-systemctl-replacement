@@ -249,8 +249,9 @@ def subprocess_output(cmd, env=None, check = False):
     return run
 
 _sysd_default = "multi-user.target"
-_sysd_folder1 = "/usr/lib/systemd/system"
-_sysd_folder2 = "/etc/systemd/system"
+_sysd_folder1 = "/etc/systemd/system"
+_sysd_folder2 = "/var/run/systemd/system"
+_sysd_folder3 = "/usr/lib/systemd/system"
 _sysv_folder1 = "/etc/init.d"
 _sysv_folder2 = "/var/run/init.d"
 _waitprocfile = 100
@@ -264,6 +265,7 @@ class Systemctl:
     def __init__(self):
         self._sysd_folder1 = _sysd_folder1
         self._sysd_folder2 = _sysd_folder2
+        self._sysd_folder3 = _sysd_folder3
         self._sysv_folder1 = _sysv_folder1
         self._sysv_folder2 = _sysv_folder2
         self._waitprocfile = _waitprocfile
@@ -283,15 +285,17 @@ class Systemctl:
         if path is not None: return path
         return None
     def scan_unit_sysd_files(self, module = None): # -> [ unit-names,... ]
-        """ reads all unit files, returns the last filename for the unit given """
+        """ reads all unit files, returns the first filename for the unit given """
         if self._file_for_unit_sysd is None:
             self._file_for_unit_sysd = {}
-            for folder in (self._sysd_folder1, self._sysd_folder2):
+            for folder in (self._sysd_folder1, self._sysd_folder2, self._sysd_folder3):
                 if not os.path.isdir(folder):
                     continue
                 for name in os.listdir(folder):
                     path = os.path.join(folder, name)
-                    self._file_for_unit_sysd[name] = path
+                    service_name = name
+                    if service_name not in self._file_for_unit_sysd:
+                        self._file_for_unit_sysd[service_name] = path
             logg.debug("found %s sysd files", len(self._file_for_unit_sysd))
         return self._file_for_unit_sysd.keys()
     def unit_sysd_file(self, module = None): # -> filename?
@@ -303,7 +307,7 @@ class Systemctl:
             return self._file_for_unit_sysd[module+".service"]
         return None
     def scan_unit_sysv_files(self, module = None): # -> [ unit-names,... ]
-        """ reads all init.d files, returns the last filename when unit is a '.service' """
+        """ reads all init.d files, returns the first filename when unit is a '.service' """
         if self._file_for_unit_sysv is None:
             self._file_for_unit_sysv = {}
             for folder in (self._sysv_folder1, self._sysv_folder2):
@@ -311,7 +315,9 @@ class Systemctl:
                     continue
                 for name in os.listdir(folder):
                     path = os.path.join(folder, name)
-                    self._file_for_unit_sysv[name+".service"] = path
+                    service_name = name+".service"
+                    if service_name not in self._file_for_unit_sysv:
+                        self._file_for_unit_sysv[service_name] = path
             logg.debug("found %s sysv files", len(self._file_for_unit_sysv))
         return self._file_for_unit_sysv.keys()
     def unit_sysv_file(self, module = None): # -> filename?
@@ -336,24 +342,19 @@ class Systemctl:
         if filename in self._file_for_unit_sysd.values(): return False
         if filename in self._file_for_unit_sysv.values(): return True
         return None # not True
-    def read_unit(self, module): # -> conf | not-found
+    def load_unit_conf(self, module): # -> conf | None(not-found)
         """ read the unit file with a UnitParser (sysv or systemd) """
-        data = self.read_sysd_unit(module)
+        data = self.load_sysd_unit_conf(module)
         if data is not None: 
             return data
-        data = self.read_sysv_unit(module)
+        data = self.load_sysv_unit_conf(module)
         if data is not None: 
             return data
-        logg.warning("unit file not found: %s", module)
-        raise Exception("unit file not found")
-    def read_sysd_unit(self, module): # -> conf?
+        return None
+    def load_sysd_unit_conf(self, module): # -> conf?
         """ read the unit file with a UnitParser (systemd) """
         path = self.unit_sysd_file(module)
         if not path: return None
-        return self.read_sysd_file(path)
-    def read_sysd_file(self, path): # -> conf?
-        """ read the unit file with a UnitParser (systemd) """
-        if path is None: return None
         if path in self._loaded_file_sysd:
             return self._loaded_file_sysd[path]
         unit = UnitParser()
@@ -365,21 +366,17 @@ class Systemctl:
                     unit.read_sysd(os.path.join(override_d, name))
         self._loaded_file_sysd[path] = unit
         return unit
-    def read_sysv_unit(self, module): # -> conf?
+    def load_sysv_unit_conf(self, module): # -> conf?
         """ read the unit file with a UnitParser (sysv) """
         path = self.unit_sysv_file(module)
         if not path: return None
-        return self.read_sysv_file(path)
-    def read_sysv_file(self, path): # -> conf?
-        """ read the unit file with a UnitParser (sysv) """
-        if path is None: return None
         if path in self._loaded_file_sysv:
             return self._loaded_file_sysv[path]
         unit = UnitParser()
         unit.read_sysv(path)
         self._loaded_file_sysv[path] = unit
         return unit
-    def default_unit(self, module): # -> conf
+    def default_unit_conf(self, module): # -> conf
         """ a unit conf that can be printed to the user where
             attributes are empty and loaded() is False """
         conf = UnitParser()
@@ -387,14 +384,13 @@ class Systemctl:
         conf.set("Unit", "Names", module)
         conf.set("Unit", "Description", "NOT-FOUND "+module)
         return conf
-    def try_read_unit(self, module): # -> conf (conf | default-conf)
+    def get_unit_conf(self, module): # -> conf (conf | default-conf)
         """ accept that a unit does not exist 
             and return a unit conf that says 'not-loaded' """
-        try: 
-            return self.read_unit(module)
-        except Exception, e: 
-            logg.debug("read unit '%s': %s", module, e)
-            return self.default_unit(module)
+        conf = self.load_unit_conf(module)
+        if conf is not None:
+            return conf
+        return self.default_unit_conf(module)
     def match_units(self, modules, suffix=".service"): # -> [ units,.. ]
         """ call for about any command with multiple units which can
             actually be glob patterns on their respective filename. """
@@ -447,7 +443,7 @@ class Systemctl:
             result[unit] = None
             description[unit] = ""
             try: 
-                conf = self.try_read_unit(unit)
+                conf = self.get_unit_conf(unit)
                 result[unit] = conf
                 description[unit] = self.get_description_from(conf)
             except Exception, e:
@@ -559,7 +555,10 @@ class Systemctl:
                 done = False
         return done
     def start_unit(self, unit):
-        conf = self.read_unit(unit)
+        conf = self.load_unit_conf(unit)
+        if conf is None:
+            logg.error("no such unit: '%s'", unit)
+            return False
         return self.start_unit_from(conf)
     def start_unit_from(self, conf):
         if not conf: return
@@ -635,7 +634,10 @@ class Systemctl:
             os.kill(pid, signal.SIGKILL)
             self.sleep(1)
     def environment_of_unit(self, unit):
-        conf = self.read_unit(unit)
+        conf = self.load_unit_conf(unit)
+        if conf is None:
+            logg.error("no such unit: '%s'", unit)
+            return False
         return self.get_env(conf)
     def get_env(self, conf):
         env = os.environ.copy()
@@ -653,7 +655,10 @@ class Systemctl:
                 done = False
         return done
     def stop_unit(self, unit):
-        conf = self.read_unit(unit)
+        conf = self.load_unit_conf(unit)
+        if conf is None:
+            logg.error("no such unit: '%s'", unit)
+            return False
         return self.stop_unit_from(conf)
     def stop_unit_from(self, conf):
         if not conf: return
@@ -719,7 +724,10 @@ class Systemctl:
                 done = False
         return done
     def reload_unit(self, unit):
-        conf = self.read_unit(unit)
+        conf = self.load_unit_conf(unit)
+        if conf is None:
+            logg.error("no such unit: '%s'", unit)
+            return False
         return self.reload_unit_from(conf)
     def reload_unit_from(self, conf):
         if not conf: return
@@ -774,7 +782,10 @@ class Systemctl:
                  done = False
         return done
     def restart_unit(self, unit):
-        conf = self.read_unit(unit)
+        conf = self.load_unit_conf(unit)
+        if conf is None:
+            logg.error("no such unit: '%s'", unit)
+            return False
         return self.restart_unit_from(conf)
     def restart_unit_from(self, conf):
         if not conf: return
@@ -824,7 +835,10 @@ class Systemctl:
                 subprocess_wait(cmd, env, check=check)
         return True
     def get_pid_file(self, unit):
-        conf = self.read_unit(unit)
+        conf = self.load_unit_conf(unit)
+        if conf is None:
+            logg.error("no such unit: '%s'", unit)
+            return None
         return self.get_pid_file_from(conf)
     def get_pid_file_from(self, conf, default = None):
         if not conf: return default
@@ -840,7 +854,10 @@ class Systemctl:
                 done = False
         return done
     def try_restart(unit):
-        conf = self.read_unit(unit)
+        conf = self.load_unit_conf(unit)
+        if conf is None:
+            logg.error("no such unit: '%s'", unit)
+            return False
         if self.is_active_from(conf):
             return self.restart_unit_from(conf)
         return True
@@ -851,7 +868,10 @@ class Systemctl:
                 done = False
         return done
     def reload_or_restart(self, unit):
-        conf = self.read_unit(unit)
+        conf = self.load_unit_conf(unit)
+        if conf is None:
+            logg.error("no such unit: '%s'", unit)
+            return False
         if not self.is_active_from(conf):
             # try: self.stop_unit_from(conf)
             # except Exception, e: pass
@@ -867,7 +887,10 @@ class Systemctl:
                 done = False
         return done
     def reload_or_try_restart(unit):
-        conf = self.read_unit(unit)
+        conf = self.load_unit_conf(unit)
+        if conf is None:
+            logg.error("no such unit: '%s'", unit)
+            return False
         if conf.getlist("Service", "ExecReload", []):
             return self.reload_unit_from(conf)
         elif not self.is_active_from(conf):
@@ -881,7 +904,10 @@ class Systemctl:
         for unit in units:
             self.kill_unit(unit)
     def kill_unit(self, unit):
-        conf = self.read_unit(unit)
+        conf = self.load_unit_conf(unit)
+        if conf is None:
+            logg.error("no such unit: '%s'", unit)
+            return False
         self.kill_unit_from(conf)
     def kill_unit_from(self, conf):
         if not conf: return
@@ -900,7 +926,7 @@ class Systemctl:
                 result = True
         return result
     def is_active(self, unit):
-        conf = self.try_read_unit(unit)
+        conf = self.get_unit_conf(unit)
         if not conf.loaded():
             logg.warning("no such unit '%s'", unit)
         return self.is_active_from(conf)
@@ -930,7 +956,7 @@ class Systemctl:
                 result = True
         return result
     def is_failed(self, unit):
-        conf = self.try_read_unit(unit)
+        conf = self.get_unit_conf(unit)
         if not conf.loaded():
             logg.warning("no such unit '%s'", unit)
         return self.is_failed_from(conf)
@@ -949,7 +975,7 @@ class Systemctl:
             result += result1
         return status, result
     def status_unit(self, unit):
-        conf = self.try_read_unit(unit)
+        conf = self.get_unit_conf(unit)
         result = "%s - %s" % (unit, self.get_description_from(conf))
         if conf.loaded():
             result += "\n    Loaded: loaded ({}, {})".format(conf.filename(), self.enabled_from(conf) )
@@ -993,7 +1019,7 @@ class Systemctl:
         unit_file = self.unit_file(unit)
         if self.is_sysv_file(unit_file):
             return self.enable_unit_sysv(unit_file)
-        wanted = self.wanted_from(self.try_read_unit(unit))
+        wanted = self.wanted_from(self.get_unit_conf(unit))
         if not wanted: return False # wanted = "multi-user.target"
         folder = self.enablefolder(wanted)
         if not os.path.isdir(folder):
@@ -1047,7 +1073,7 @@ class Systemctl:
         unit_file = self.unit_file(unit)
         if self.is_sysv_file(unit_file):
             return self.disable_unit_sysv(unit_file)
-        wanted = self.wanted_from(self.try_read_unit(unit))
+        wanted = self.wanted_from(self.get_unit_conf(unit))
         folder = self.enablefolder(wanted)
         if not os.path.isdir(folder):
             return False
@@ -1097,7 +1123,7 @@ class Systemctl:
         unit_file = self.unit_file(unit)
         if self.is_sysv_file(unit_file):
             return self.is_enabled_sysv(unit_file)
-        wanted = self.wanted_from(self.try_read_unit(unit))
+        wanted = self.wanted_from(self.get_unit_conf(unit))
         folder = self.enablefolder(wanted)
         if not wanted:
             return True
@@ -1135,7 +1161,7 @@ class Systemctl:
         return result
     def show_unit_items(self, unit):
         logg.info("try read unit %s", unit)
-        conf = self.try_read_unit(unit)
+        conf = self.get_unit_conf(unit)
         for entry in self.each_unit_items(unit, conf):
             yield entry
     def each_unit_items(self, unit, conf):
