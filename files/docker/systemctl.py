@@ -1,6 +1,6 @@
 #! /usr/bin/python
 __copyright__ = "(C) 2016-2017 Guido U. Draheim, for free use (CC-BY, GPL, BSD)"
-__version__ = "0.5.1135"
+__version__ = "0.6.1135"
 
 import logging
 logg = logging.getLogger("systemctl")
@@ -228,6 +228,30 @@ class UnitConfigParser:
 UnitParser = ConfigParser.RawConfigParser
 UnitParser = UnitConfigParser
 
+class PresetFile:
+    def __init__(self):
+        self._files = []
+        self._lines = []
+    def filename(self):
+        """ returns the last filename that was parsed """
+        if self._files:
+            return self._files[-1]
+        return None
+    def read(self, filename):
+        self._files.append(filename)
+        for line in open(filename):
+            self._lines.append(line.strip())
+        return self
+    def get_preset(self, unit):
+        for line in self._lines:
+            m = re.match(r"(enable|disable)\s+(\S+)", line)
+            if m:
+                status, pattern = m.group(1), m.group(2)
+                if fnmatch.fnmatchcase(unit, pattern):
+                    logg.debug("%s %s => %s [%s]", status, pattern, unit, self.filename())
+                    return status
+        return None
+
 def subprocess_nowait(cmd, env=None):
     run = subprocess.Popen(cmd, shell=True, env=env)
     return run
@@ -254,6 +278,9 @@ _sysd_folder2 = "/var/run/systemd/system"
 _sysd_folder3 = "/usr/lib/systemd/system"
 _sysv_folder1 = "/etc/init.d"
 _sysv_folder2 = "/var/run/init.d"
+_preset_folder1 = "/etc/systemd/system-preset"
+_preset_folder2 = "/var/run/systemd/system-preset"
+_preset_folder3 = "/usr/lib/systemd/system-preset"
 _waitprocfile = 100
 _waitkillproc = 10
 _force = False
@@ -268,6 +295,9 @@ class Systemctl:
         self._sysd_folder3 = _sysd_folder3
         self._sysv_folder1 = _sysv_folder1
         self._sysv_folder2 = _sysv_folder2
+        self._preset_folder1 = _preset_folder1
+        self._preset_folder2 = _preset_folder2
+        self._preset_folder3 = _preset_folder3
         self._waitprocfile = _waitprocfile
         self._waitkillproc = _waitkillproc
         self._force = _force
@@ -277,6 +307,7 @@ class Systemctl:
         self._loaded_file_sysd = {} # /etc/systemd/system/name.service => config data
         self._file_for_unit_sysv = None # name.service => /etc/init.d/name
         self._file_for_unit_sysd = None # name.service => /etc/systemd/system/name.service
+        self._preset_file_list = None # /etc/systemd/system-preset/* => file content
     def unit_file(self, module = None): # -> filename?
         """ file path for the given module (sysv or systemd) """
         path = self.unit_sysd_file(module)
@@ -449,6 +480,8 @@ class Systemctl:
             except Exception, e:
                 logg.warning("list-units: %s", e)
         return [ (unit, result[unit] and "loaded" or "", description[unit]) for unit in sorted(result) ]
+    ##
+    ##
     def get_description_from(self, conf, default = None): # -> text
         """ Unit.Description could be empty sometimes """
         if not conf: return default or ""
@@ -1001,6 +1034,54 @@ class Systemctl:
         except Exception, e:
             print "Unit {} is not-loaded: {}".format(unit, e)
             return False
+    ##
+    ##
+    def load_preset_files(self, module = None): # -> [ preset-file-names,... ]
+        """ reads all preset files, returns the scanned files """
+        if self._preset_file_list is None:
+            self._preset_file_list = {}
+            for folder in (self._preset_folder1, self._preset_folder2, self._preset_folder3):
+                if not os.path.isdir(folder):
+                        continue
+                for name in os.listdir(folder):
+                    if not name.endswith(".preset"):
+                        continue
+                    if name not in self._preset_file_list:
+                        path = os.path.join(folder, name)
+                        preset = PresetFile().read(path)
+                        self._preset_file_list[name] = preset
+            logg.debug("found %s preset files", len(self._preset_file_list))
+        return sorted(self._preset_file_list.keys())
+    def get_preset_of_unit(self, unit):
+        self.load_preset_files()
+        for filename in sorted(self._preset_file_list.keys()):
+            preset = self._preset_file_list[filename]
+            status = preset.get_preset(unit)
+            if status:
+                return status
+        return None
+    def preset_of_units(self, modules):
+        done = True
+        for unit in self.match_units(modules):
+            status = self.get_preset_of_unit(unit)
+            if status and status.startswith("enable"):
+                if not self.enable_unit(unit):
+                    done = False
+            if status and status.startswith("disable"):
+                if not self.disable_unit(unit):
+                    done = False
+        return done
+    def system_preset_all(self):
+        done = True
+        for unit in self.match_units():
+            status = self.get_preset_of_unit(unit)
+            if status and status.startswith("enable"):
+                if not self.enable_unit(unit):
+                    done = False
+            if status and status.startswith("disable"):
+                if not self.disable_unit(unit):
+                    done = False
+        return done
     def wanted_from(self, conf, default = None):
         if not conf: return default
         return conf.get("Install", "WantedBy", default, True)
