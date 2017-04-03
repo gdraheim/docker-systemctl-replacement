@@ -1313,44 +1313,58 @@ class Systemctl:
             yield "EnvironmentFile", " ".join(env_files)
     #
     igno_centos = [ "netconsole", "network" ]
-    igno_opensuse = [ "raw", "pppoe", "*.local", "boot.*", "rpmconf*" ]
+    igno_opensuse = [ "raw", "pppoe", "*.local", "boot.*", "rpmconf*", "purge-kernels*", "postfix*" ]
     igno_ubuntu = [ "mount*", "umount*", "ondemand", "*.local" ]
     igno_always = [ "network*", "dbus", "systemd-*" ]
+    def _ignored_unit(self, unit, ignore_list):
+        for ignore in ignore_list:
+            if fnmatch.fnmatchcase(unit, ignore):
+                return True # ignore
+            if fnmatch.fnmatchcase(unit, ignore+".service"):
+                return True # ignore
+        return False
     def system_default_services(self, sysv="S", default_target = "multi-user.target"):
         igno = self.igno_always
-        wants1_folder = os.path.join(_sysd_folder1, default_target + ".wants")
-        wants2_folder = os.path.join(_sysd_folder2, default_target + ".wants")
         wants_services = []
-        for unit in sorted(os.listdir(wants1_folder)):
-            if unit.endswith(".service"):
-                pass # wants_services.append(unit)
-        for unit in sorted(os.listdir(wants2_folder)):
-            if unit.endswith(".service"):
-                wants_services.append(unit)
-        for unit in sorted(os.listdir(self.rc3_folder())):
-            m = re.match(sysv+r"\d\d(.*)", unit)
-            if m:
-                service = m.group(1)
-                for ignore in igno:
-                    if fnmatch.fnmatchcase(service, ignore):
+        for folder in [ self._sysd_folder1, self._sysd_folder2 ]:
+            wants_folder = os.path.join(folder, default_target + ".wants")
+            if os.path.isdir(wants_folder):
+                for unit in sorted(os.listdir(wants_folder)):
+                    if self._ignored_unit(unit, igno):
                         continue # ignore
-                wants_services.append(service)
+                    if unit.endswith(".service"):
+                        wants_services.append(unit)
+        for folder in [ self.rc3_folder() ]:
+            for unit in sorted(os.listdir(folder)):
+                m = re.match(sysv+r"\d\d(.*)", unit)
+                if m:
+                    service = m.group(1)
+                    unit = service+".service"
+                    if self._ignored_unit(unit, igno):
+                        continue # ignore
+                    wants_services.append(unit)
         return wants_services
     def system_wants_services(self, sysv="S", default_target = "multi-user.target"):
         igno = self.igno_centos + self.igno_opensuse + self.igno_ubuntu + self.igno_always
-        wants2_folder = os.path.join(_sysd_folder2, default_target + ".wants")
+        logg.info("igno = %s", igno)
         wants_services = []
-        for unit in sorted(os.listdir(wants2_folder)):
-            if unit.endswith(".service"):
-                wants_services.append(unit)
-        for unit in sorted(os.listdir(self.rc3_folder())):
-            m = re.match(sysv+r"\d\d(.*)", unit)
-            if m:
-                service = m.group(1)
-                for ignore in igno:
-                    if fnmatch.fnmatchcase(service, ignore):
+        for folder in [ self._sysd_folder1, self._sysd_folder2 ]:
+            wants_folder = os.path.join(folder, default_target + ".wants")
+            if os.path.isdir(wants_folder):
+                for unit in sorted(os.listdir(wants_folder)):
+                    if self._ignored_unit(unit, igno):
                         continue # ignore
-                wants_services.append(service)
+                    if unit.endswith(".service"):
+                        wants_services.append(unit)
+        for folder in [ self.rc3_folder() ]:
+            for unit in sorted(os.listdir(folder)):
+                m = re.match(sysv+r"\d\d(.*)", unit)
+                if m:
+                    service = m.group(1)
+                    unit = service+".service"
+                    if self._ignored_unit(unit, igno):
+                        continue # ignore
+                    wants_services.append(unit)
         return wants_services
     def system_default(self, arg = True):
         """ start units for default system level """
