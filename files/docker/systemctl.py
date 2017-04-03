@@ -422,9 +422,17 @@ class Systemctl:
         if conf is not None:
             return conf
         return self.default_unit_conf(module)
+    def match_unit(self, module, suffix=".service"): # -> [ units,.. ]
+        """ call for about some commands with multiple units which can
+            actually be glob patterns on their respective service name. """
+        for unit in self.match_sysd_units([ module ], suffix):
+            return unit
+        for unit in self.match_sysv_units([ module ], suffix):
+            return unit
+        return None
     def match_units(self, modules, suffix=".service"): # -> [ units,.. ]
         """ call for about any command with multiple units which can
-            actually be glob patterns on their respective filename. """
+            actually be glob patterns on their respective unit name. """
         found = []
         for unit in self.match_sysd_units(modules, suffix):
             if unit not in found:
@@ -583,8 +591,12 @@ class Systemctl:
         return sudo
     def start_of_units(self, *modules):
         done = True
-        for unit in self.match_units(modules):
-            if not self.start_unit(unit):
+        for module in modules:
+            unit = self.match_unit(module)
+            if not unit:
+                logg.error("no such service '%s'", module)
+                done = False
+            elif not self.start_unit(unit):
                 done = False
         return done
     def start_unit(self, unit):
@@ -592,6 +604,7 @@ class Systemctl:
         if conf is None:
             logg.error("no such unit: '%s'", unit)
             return False
+        logg.info("%s => %s", conf, conf.filename())
         return self.start_unit_from(conf)
     def start_unit_from(self, conf):
         if not conf: return
@@ -653,19 +666,22 @@ class Systemctl:
         return pid
     def kill_pid(self, pid):
         if not pid:
-            return
-        for x in xrange(self._waitkillproc):
-            os.kill(pid, signal.SIGTERM)
-            if not self.pid_exists(pid):
-                break
-            self.sleep(1)
-            if not self.pid_exists(pid):
-                break
+            return None
+        #
+        os.kill(pid, signal.SIGTERM)
         for x in xrange(self._waitkillproc):
             if not self.pid_exists(pid):
                 break
-            os.kill(pid, signal.SIGKILL)
             self.sleep(1)
+        if not self.pid_exists(pid):
+            return True
+        #
+        os.kill(pid, signal.SIGKILL)
+        for x in xrange(self._waitkillproc):
+            if not self.pid_exists(pid):
+                break
+            self.sleep(1)
+        return not self.pid_exists(pid)
     def environment_of_unit(self, unit):
         conf = self.load_unit_conf(unit)
         if conf is None:
@@ -683,8 +699,12 @@ class Systemctl:
         return env
     def stop_of_units(self, *modules):
         done = True
-        for unit in self.match_units(modules):
-            if not self.stop_unit(unit):
+        for module in modules:
+            unit = self.match_unit(module)
+            if not unit:
+                logg.error("no such service '%s'", module)
+                done = False
+            elif not self.stop_unit(unit):
                 done = False
         return done
     def stop_unit(self, unit):
@@ -752,8 +772,12 @@ class Systemctl:
         return True
     def reload_of_units(self, *modules):
         done = True
-        for unit in self.match_units(modules):
-            if not self.reload_unit(unit):
+        for module in modules:
+            unit = self.match_unit(module)
+            if not unit:
+                logg.error("no such service '%s'", module)
+                done = False
+            elif not self.reload_unit(unit):
                 done = False
         return done
     def reload_unit(self, unit):
@@ -810,8 +834,12 @@ class Systemctl:
         return True
     def restart_of_units(self, *modules):
         done = True
-        for unit in self.match_units(modules):
-            if not self.restart_unit(unit):
+        for module in modules:
+            unit = self.match_unit(module)
+            if not unit:
+                logg.error("no such service '%s'", module)
+                done = False
+            elif not self.restart_unit(unit):
                  done = False
         return done
     def restart_unit(self, unit):
@@ -882,11 +910,15 @@ class Systemctl:
         return conf.get("Service", "PIDFile", default)
     def try_restart_of_units(self, *modules):
         done = True
-        for unit in self.match_units(modules):
-            if not self.try_restart(unit):
+        for module in modules:
+            unit = self.match_unit(module)
+            if not unit:
+                logg.error("no such service '%s'", module)
+                done = False
+            elif not self.try_restart_unit(unit):
                 done = False
         return done
-    def try_restart(unit):
+    def try_restart_unit(unit):
         conf = self.load_unit_conf(unit)
         if conf is None:
             logg.error("no such unit: '%s'", unit)
@@ -896,11 +928,15 @@ class Systemctl:
         return True
     def reload_or_restart_of_units(self, *modules):
         done = True
-        for unit in self.match_units(modules):
-            if not self.reload_or_start(unit):
+        for module in modules:
+            unit = self.match_unit(module)
+            if not unit:
+                logg.error("no such service '%s'", module)
+                done = False
+            elif not self.reload_or_restart_unit(unit):
                 done = False
         return done
-    def reload_or_restart(self, unit):
+    def reload_or_restart_unit(self, unit):
         conf = self.load_unit_conf(unit)
         if conf is None:
             logg.error("no such unit: '%s'", unit)
@@ -915,11 +951,15 @@ class Systemctl:
             return self.restart_unit_from(conf)
     def reload_or_try_restart_of_units(self, *modules):
         done = True
-        for unit in self.match_units(modules):
-            if not self.reload_or_try_restart(unit):
+        for module in modules:
+            unit = self.match_unit(module)
+            if not unit:
+                logg.error("no such service '%s'", module)
+                done = False
+            elif not self.reload_or_try_restart_unit(unit):
                 done = False
         return done
-    def reload_or_try_restart(unit):
+    def reload_or_try_restart_unit(unit):
         conf = self.load_unit_conf(unit)
         if conf is None:
             logg.error("no such unit: '%s'", unit)
@@ -932,22 +972,30 @@ class Systemctl:
             return self.restart_unit_from(conf)
     def kill_of_units(self, *modules):
         units = {}
-        for unit in self.match_units(modules):
-            units[unit] = 1
+        for module in modules:
+            unit = self.match_unit(module)
+            if not unit:
+                logg.error("no such service '%s'", module)
+                done = False
+            else:
+                units[unit] = 1
+        done = True
         for unit in units:
-            self.kill_unit(unit)
+            if not self.kill_unit(unit):
+                done = False
+        return done
     def kill_unit(self, unit):
         conf = self.load_unit_conf(unit)
         if conf is None:
             logg.error("no such unit: '%s'", unit)
             return False
-        self.kill_unit_from(conf)
+        return self.kill_unit_from(conf)
     def kill_unit_from(self, conf):
-        if not conf: return
+        if not conf: return None
         pid_file = self.get_pid_file_from(conf)
         pid = self.read_pid_file(pid_file)
         logg.debug("pid_file '%s' => PID %s", pid_file, pid)
-        self.kill_pid(pid)
+        return self.kill_pid(pid)
     def is_active_of_units(self, *modules):
         """ implements True if any is-active = True """
         units = {}
