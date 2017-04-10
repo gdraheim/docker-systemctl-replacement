@@ -596,7 +596,7 @@ class Systemctl:
                 sudo = "/usr/sbin/runuser -u %s -- " % (runuser)
             elif rungroup:
                 sudo = "/usr/sbin/runuser -g %s -- " % (rungroup)
-        else:
+        elif os.path.exists("/usr/bin/sudo"):
             if runuser and rungroup:
                 sudo = "/usr/bin/sudo -n -H -g %s -u %s -- " % (rungroup, runuser)
             elif runuser:
