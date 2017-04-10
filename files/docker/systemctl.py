@@ -324,6 +324,8 @@ class Systemctl:
                     continue
                 for name in os.listdir(folder):
                     path = os.path.join(folder, name)
+                    if os.path.isdir(path):
+                        continue
                     service_name = name
                     if service_name not in self._file_for_unit_sysd:
                         self._file_for_unit_sysd[service_name] = path
@@ -346,6 +348,8 @@ class Systemctl:
                     continue
                 for name in os.listdir(folder):
                     path = os.path.join(folder, name)
+                    if os.path.isdir(path):
+                        continue
                     service_name = name+".service"
                     if service_name not in self._file_for_unit_sysv:
                         self._file_for_unit_sysv[service_name] = path
@@ -393,8 +397,11 @@ class Systemctl:
         override_d = path + ".d"
         if os.path.isdir(override_d):
             for name in os.listdir(override_d):
+                path = os.path.join(override_d, name)
+                if os.path.isdir(path):
+                    continue
                 if name.endswith(".conf"):
-                    unit.read_sysd(os.path.join(override_d, name))
+                    unit.read_sysd(path)
         self._loaded_file_sysd[path] = unit
         return unit
     def load_sysv_unit_conf(self, module): # -> conf?
@@ -1096,6 +1103,8 @@ class Systemctl:
                         continue
                     if name not in self._preset_file_list:
                         path = os.path.join(folder, name)
+                        if os.path.isdir(path):
+                            continue
                         preset = PresetFile().read(path)
                         self._preset_file_list[name] = preset
             logg.debug("found %s preset files", len(self._preset_file_list))
@@ -1330,12 +1339,16 @@ class Systemctl:
             wants_folder = os.path.join(folder, default_target + ".wants")
             if os.path.isdir(wants_folder):
                 for unit in sorted(os.listdir(wants_folder)):
+                    path = os.path.join(wants_folder, unit)
+                    if os.path.isdir(path): continue
                     if self._ignored_unit(unit, igno):
                         continue # ignore
                     if unit.endswith(".service"):
                         wants_services.append(unit)
         for folder in [ self.rc3_folder() ]:
             for unit in sorted(os.listdir(folder)):
+                path = os.path.join(folder, unit)
+                if os.path.isdir(path): continue
                 m = re.match(sysv+r"\d\d(.*)", unit)
                 if m:
                     service = m.group(1)
@@ -1352,12 +1365,16 @@ class Systemctl:
             wants_folder = os.path.join(folder, default_target + ".wants")
             if os.path.isdir(wants_folder):
                 for unit in sorted(os.listdir(wants_folder)):
+                    path = os.path.join(wants_folder, unit)
+                    if os.path.isdir(path): continue
                     if self._ignored_unit(unit, igno):
                         continue # ignore
                     if unit.endswith(".service"):
                         wants_services.append(unit)
         for folder in [ self.rc3_folder() ]:
             for unit in sorted(os.listdir(folder)):
+                path = os.path.join(folder, unit)
+                if os.path.isdir(path): continue
                 m = re.match(sysv+r"\d\d(.*)", unit)
                 if m:
                     service = m.group(1)
@@ -1381,11 +1398,12 @@ class Systemctl:
         self.stop_of_units(*wants_services)
         logg.info("system is down")
     def system_0(self):
-        self.system_default("init 0")
-        return self.system_wait("init 1")
+        return self.system_init("init 0"))
     def system_1(self):
-        self.system_default("init 1")
-        return self.system_wait("init 1")
+        return self.system_init("init 1"))
+    def system_init(self, info = "init"):
+        self.system_default(info)
+        return self.system_wait(info)
     def system_wait(self, arg = True):
         """ wait and reap children """
         signal.signal(signal.SIGTERM, lambda signum, frame: ignore_signals_and_raise_keyboard_interrupt('SIGTERM'))
