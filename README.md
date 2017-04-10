@@ -165,7 +165,7 @@ docker-stop it will run its "systemctl halt" implementation.
 Additionally, if the script finds itself to be PID-1, it
 will keep running as a zombie-reaper (implemented as a
 new command "systemctl.py wait"). You can enforce the
-PID-1 functionality by running "systemctl.py 1" from
+PID-1 functionality by running "systemctl.py init" from
 the commandline for testing. (NOTE: if systemctl.py is 
 not PID-1 then it defaults "systemctl list-units").
 
@@ -177,7 +177,7 @@ be in /etc/systemd/system/multi-user.target.wants/.
 
 The docker-systemctl-replacement knows about that and
 it is used. And as another hint: if you run the script
-as "systemctl.py 1" then pressing Control-C will result
+as "systemctl.py init" then pressing Control-C will result
 in an interpretation of "systemctl halt" as well, so
 one can test the correct interpretion of the "wants".
 

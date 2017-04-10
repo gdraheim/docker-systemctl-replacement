@@ -597,6 +597,7 @@ class Systemctl:
             sudo = "/usr/sbin/runuser -g %s -- " % (rungroup)
         return sudo
     def start_of_units(self, *modules):
+        """ [UNIT]... -- start these units """
         done = True
         for module in modules:
             unit = self.match_unit(module)
@@ -690,6 +691,7 @@ class Systemctl:
             self.sleep(1)
         return not self.pid_exists(pid)
     def environment_of_unit(self, unit):
+        """ [UNIT]. -- show environment parts """
         conf = self.load_unit_conf(unit)
         if conf is None:
             logg.error("no such unit: '%s'", unit)
@@ -705,6 +707,7 @@ class Systemctl:
                 env[name] = value
         return env
     def stop_of_units(self, *modules):
+        """ [UNIT]... -- stop these units """
         done = True
         for module in modules:
             unit = self.match_unit(module)
@@ -778,6 +781,7 @@ class Systemctl:
                 subprocess_wait(cmd, env, check=check)
         return True
     def reload_of_units(self, *modules):
+        """ [UNIT]... -- reload these units """
         done = True
         for module in modules:
             unit = self.match_unit(module)
@@ -840,6 +844,7 @@ class Systemctl:
                 subprocess_wait(cmd, env, check=check)
         return True
     def restart_of_units(self, *modules):
+        """ [UNIT]... -- restart these units """
         done = True
         for module in modules:
             unit = self.match_unit(module)
@@ -916,6 +921,7 @@ class Systemctl:
             default = self.default_pid_file(unit)
         return conf.get("Service", "PIDFile", default)
     def try_restart_of_units(self, *modules):
+        """ [UNIT]... -- try-restart these units """
         done = True
         for module in modules:
             unit = self.match_unit(module)
@@ -934,6 +940,7 @@ class Systemctl:
             return self.restart_unit_from(conf)
         return True
     def reload_or_restart_of_units(self, *modules):
+        """ [UNIT]... -- reload-or-start these units """
         done = True
         for module in modules:
             unit = self.match_unit(module)
@@ -957,6 +964,7 @@ class Systemctl:
         else:
             return self.restart_unit_from(conf)
     def reload_or_try_restart_of_units(self, *modules):
+        """ [UNIT]... -- reload-or-try-restart these units """
         done = True
         for module in modules:
             unit = self.match_unit(module)
@@ -978,6 +986,7 @@ class Systemctl:
         else:
             return self.restart_unit_from(conf)
     def kill_of_units(self, *modules):
+        """ [UNIT]... -- kill these units """
         units = {}
         for module in modules:
             unit = self.match_unit(module)
@@ -1004,7 +1013,8 @@ class Systemctl:
         logg.debug("pid_file '%s' => PID %s", pid_file, pid)
         return self.kill_pid(pid)
     def is_active_of_units(self, *modules):
-        """ implements True if any is-active = True """
+        """ [UNIT]... check if these units are in active state
+        implements True if any is-active = True """
         units = {}
         for unit in self.match_units(modules):
             units[unit] = 1
@@ -1038,6 +1048,8 @@ class Systemctl:
         if pid is None: return "dead"
         return "PID %s" % pid
     def is_failed_of_units(self, *modules):
+        """ [UNIT]... check if these units are in failes state
+        implements True if any is-active = True """
         result = False
         for unit in self.match_units(modules):
             if self.is_failed(unit):
@@ -1055,6 +1067,8 @@ class Systemctl:
         logg.debug("pid_file '%s' => PID %s", pid_file, pid)
         return not self.pid_exists(pid)
     def status_of_units(self, *modules):
+        """ [UNIT]... check the status of these units.
+        """
         status, result = 0, ""
         for unit in self.match_units(modules):
             status1, result1 = self.status_unit(unit)
@@ -1077,6 +1091,8 @@ class Systemctl:
             result += "\n    Active: inactive ({})".format(self.active_from(conf))
             return 3, result
     def cat_of_units(self, *modules):
+        """ [UNIT]... show the *.system file for these"
+        """
         done = True
         for unit in self.match_units(modules):
             if not self.cat_unit(unit):
@@ -1110,6 +1126,8 @@ class Systemctl:
             logg.debug("found %s preset files", len(self._preset_file_list))
         return sorted(self._preset_file_list.keys())
     def get_preset_of_unit(self, unit):
+        """ [UNIT] check the *.preset of this unit
+        """
         self.load_preset_files()
         for filename in sorted(self._preset_file_list.keys()):
             preset = self._preset_file_list[filename]
@@ -1117,7 +1135,9 @@ class Systemctl:
             if status:
                 return status
         return None
-    def preset_of_units(self, modules):
+    def preset_of_units(self, *modules):
+        """ [UNIT]... -- set 'enabled' when in *.preset
+        """
         done = True
         for unit in self.match_units(modules):
             status = self.get_preset_of_unit(unit)
@@ -1148,6 +1168,7 @@ class Systemctl:
             wanted = wanted + ".wants"
         return "/etc/systemd/system/" + wanted
     def enable_of_units(self, *modules):
+        """ [UNIT]... -- enable these units """
         done = True
         for unit in self.match_units(modules):
             if not self.enable_unit(unit):
@@ -1202,6 +1223,7 @@ class Systemctl:
             os.symlink(unit_file, target)
         return True
     def disable_of_units(self, *modules):
+        """ [UNIT]... -- disable these units """
         done = True
         for unit in self.match_units(modules):
             if not self.disable_unit(unit):
@@ -1252,6 +1274,8 @@ class Systemctl:
            return True
         return False
     def is_enabled_of_units(self, *modules):
+        """ [UNIT]... -- check if these units are enabled 
+        returns True if all of them are enabled."""
         result = True
         for unit in self.match_units(modules):
             if not self.is_enabled(unit):
@@ -1285,6 +1309,7 @@ class Systemctl:
         logg.info("ignored daemon-reload")
         return True
     def show_of_units(self, *modules):
+        """ [UNIT]... -- show runtime status if these units"""
         result = ""
         for unit in self.match_units(modules):
             if result: result += "\n\n"
@@ -1358,6 +1383,7 @@ class Systemctl:
                     wants_services.append(unit)
         return wants_services
     def system_wants_services(self, sysv="S", default_target = "multi-user.target"):
+        """ show the names of the default services to be started """
         igno = self.igno_centos + self.igno_opensuse + self.igno_ubuntu + self.igno_always
         logg.info("igno = %s", igno)
         wants_services = []
@@ -1397,11 +1423,14 @@ class Systemctl:
         wants_services = self.system_wants_services("K", default_target)
         self.stop_of_units(*wants_services)
         logg.info("system is down")
-    def system_0(self):
-        return self.system_init("init 0"))
-    def system_1(self):
-        return self.system_init("init 1"))
+    def system_init0(self):
+        """ run as init process - when PID 0 """
+        return self.system_init("init 0")
+    def system_init1(self):
+        """ run as init process - when PID 1 """
+        return self.system_init("init 1")
     def system_init(self, info = "init"):
+        """ runs as init process => 'default' + 'wait' """
         self.system_default(info)
         return self.system_wait(info)
     def system_wait(self, arg = True):
@@ -1419,6 +1448,7 @@ class Systemctl:
                 return True
         return False
     def system_reap_zombies(self):
+        """ check to reap children """
 	for pid in os.listdir("/proc"):
 	    try: pid = int(pid)
 	    except: continue
@@ -1436,12 +1466,61 @@ class Systemctl:
 		    try: os.waitpid(pid, os.WNOHANG)
 		    except OSError, e: 
 			logg.warning("reap zombie %s: %s", e.strerror)
+    def show_help(self, *args):
+        """[command] -- show this help
+        """
+        prog = os.path.basename(sys.argv[0])
+        if not args:
+            argz = {}
+            for name in dir(self):
+                arg = None
+                if name.startswith("system_"):
+                   arg = name[len("system_"):]
+                if name.startswith("show_"):
+                   arg = name[len("show_"):]
+                if name.endswith("_of_unit"):
+                   arg = name[:-len("_of_unit")]
+                if name.endswith("_of_units"):
+                   arg = name[:-len("_of_units")]
+                if arg:
+                   argz[arg] = name
+            print prog, "command","[options]..."
+            print ""
+            print "Commands:"
+            for arg in sorted(argz):
+                name = argz[arg]
+                method = getattr(self, name)
+                doc = getattr(method, "__doc__")
+                doc = doc or "..."
+                firstline = doc.split("\n")[0]
+                if "--" not in firstline:
+                    print " ",arg,"--", firstline.strip()
+                else:
+                    print " ", arg, firstline.strip()
+            return True
+        for arg in args:
+            func1 = getattr(self.__class__, arg+"_of_units", None)
+            func2 = getattr(self.__class__, arg+"_of_unit", None)
+            func3 = getattr(self.__class__, "show_"+arg, None)
+            func4 = getattr(self.__class__, "system_"+arg, None)
+            func = func1 or func2 or func3 or func4
+            if func is None:
+                logg.debug("func '%s' is none", func_name)
+                self.show_help()
+            else:
+                doc = getattr(func, "__doc__", None)
+                if doc is None:
+                    logg.debug("__doc__ of %s is none", func_name)
+                    print prog, arg, "..."
+                else:
+                    print prog, arg, doc
     def system_version(self):
+        """ -- show the version and copyright info """
         return [ ("Version", __version__), ("Copyright", __copyright__) ]
 
 if __name__ == "__main__":
     import optparse
-    _o = optparse.OptionParser("%prog [options] command [name...]")
+    _o = optparse.OptionParser("%prog [options] command [name...]", epilog="use 'help' command for more information")
     _o.add_option("-t","--type", metavar="NAMES")
     _o.add_option("--state", metavar="STATES")
     _o.add_option("-p", "--property", metavar="PROPERTIES")
@@ -1495,9 +1574,9 @@ if __name__ == "__main__":
     if not args: 
         args = [ "list-units" ]
         if os.getpid() == 0:
-            args = [ "0" ]
+            args = [ "init0" ]
         if os.getpid() == 1:
-            args = [ "1" ]
+            args = [ "init1" ]
             logg.setLevel(logging.INFO)
     command = args[0]
     modules = args[1:]
