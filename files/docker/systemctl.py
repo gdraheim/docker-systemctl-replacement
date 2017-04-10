@@ -510,8 +510,11 @@ class Systemctl:
         dirpath = os.path.dirname(os.path.abspath(pid_file))
         if not os.path.isdir(dirpath):
             os.makedirs(dirpath)
-        with open(pid_file, "w") as f:
-            f.write("{}\n".format(pid))
+        try:
+            with open(pid_file, "w") as f:
+                f.write("{}\n".format(pid))
+        except IOError, e:
+            logg.error("PID %s -- %s", pid, e)
         return True
     def pid_exists(self, pid): # -> bool
         """ check if a pid does still exist (unix standard) """
