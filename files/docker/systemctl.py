@@ -589,12 +589,20 @@ class Systemctl:
         runuser = conf.get("Service", "User", "")
         rungroup = conf.get("Service", "Group", "")
         sudo = ""
-        if runuser and rungroup:
-            sudo = "/usr/sbin/runuser -g %s -u %s -- " % (rungroup, runuser)
-        elif runuser:
-            sudo = "/usr/sbin/runuser -u %s -- " % (runuser)
-        elif rungroup:
-            sudo = "/usr/sbin/runuser -g %s -- " % (rungroup)
+        if os.geteuid() == 0:
+            if runuser and rungroup:
+                sudo = "/usr/sbin/runuser -g %s -u %s -- " % (rungroup, runuser)
+            elif runuser:
+                sudo = "/usr/sbin/runuser -u %s -- " % (runuser)
+            elif rungroup:
+                sudo = "/usr/sbin/runuser -g %s -- " % (rungroup)
+        else:
+            if runuser and rungroup:
+                sudo = "/usr/bin/sudo -n -H -g %s -u %s -- " % (rungroup, runuser)
+            elif runuser:
+                sudo = "/usr/bin/sudo -n -H -u %s -- " % (runuser)
+            elif rungroup:
+                sudo = "/usr/bin/sudo -n -H -g %s -- " % (rungroup)
         return sudo
     def start_of_units(self, *modules):
         """ [UNIT]... -- start these units """
