@@ -603,6 +603,9 @@ class Systemctl:
                 sudo = "/usr/bin/sudo -n -H -u %s -- " % (runuser)
             elif rungroup:
                 sudo = "/usr/bin/sudo -n -H -g %s -- " % (rungroup)
+        else:
+            if runuser or rungroup:
+               logg.error("can not find sudo but it is required for runuser")
         return sudo
     def start_of_units(self, *modules):
         """ [UNIT]... -- start these units """
