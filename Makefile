@@ -14,4 +14,7 @@ version:
 	$$f; done; }
 	@ grep ^__version__ files/*/*.??*
 
+help:
+	python files/docker/systemctl.py help
+
 -include Maketests

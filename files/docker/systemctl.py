@@ -1013,7 +1013,7 @@ class Systemctl:
         logg.debug("pid_file '%s' => PID %s", pid_file, pid)
         return self.kill_pid(pid)
     def is_active_of_units(self, *modules):
-        """ [UNIT]... check if these units are in active state
+        """ [UNIT].. -- check if these units are in active state
         implements True if any is-active = True """
         units = {}
         for unit in self.match_units(modules):
@@ -1048,7 +1048,7 @@ class Systemctl:
         if pid is None: return "dead"
         return "PID %s" % pid
     def is_failed_of_units(self, *modules):
-        """ [UNIT]... check if these units are in failes state
+        """ [UNIT]... -- check if these units are in failes state
         implements True if any is-active = True """
         result = False
         for unit in self.match_units(modules):
@@ -1149,6 +1149,9 @@ class Systemctl:
                     done = False
         return done
     def system_preset_all(self):
+        """ 'preset' all services
+        enable or disable services according to *.preset files
+        """
         done = True
         for unit in self.match_units():
             status = self.get_preset_of_unit(unit)
@@ -1306,10 +1309,12 @@ class Systemctl:
             return "enabled"
         return "disabled"
     def system_daemon_reload(self):
+        """ reload does nothing here """
         logg.info("ignored daemon-reload")
         return True
     def show_of_units(self, *modules):
-        """ [UNIT]... -- show runtime status if these units"""
+        """ [UNIT]... -- show runtime status if these units
+        """
         result = ""
         for unit in self.match_units(modules):
             if result: result += "\n\n"
@@ -1323,6 +1328,8 @@ class Systemctl:
                    result += "%s=%s\n" % (var, value)
         return result
     def show_unit_items(self, unit):
+        """ [UNIT]... -- show runtime status if these units
+        """
         logg.info("try read unit %s", unit)
         conf = self.get_unit_conf(unit)
         for entry in self.each_unit_items(unit, conf):
@@ -1358,6 +1365,7 @@ class Systemctl:
                 return True # ignore
         return False
     def system_default_services(self, sysv="S", default_target = "multi-user.target"):
+        """ show the default services """
         igno = self.igno_always
         wants_services = []
         for folder in [ self._sysd_folder1, self._sysd_folder2 ]:
@@ -1430,7 +1438,13 @@ class Systemctl:
         """ run as init process - when PID 1 """
         return self.system_init("init 1")
     def system_init(self, info = "init"):
-        """ runs as init process => 'default' + 'wait' """
+        """ runs as init process => 'default' + 'wait' 
+        It will start the nabled services, then wait for any
+        zombies to be reaped or a SIGSTOP to initiate a
+        shutdown of the enabled services. A Control-C in
+        in interactive mode will also run 'stop' on all
+        the enabled services.
+        """
         self.system_default(info)
         return self.system_wait(info)
     def system_wait(self, arg = True):
@@ -1475,13 +1489,13 @@ class Systemctl:
             for name in dir(self):
                 arg = None
                 if name.startswith("system_"):
-                   arg = name[len("system_"):]
+                   arg = name[len("system_"):].replace("_","-")
                 if name.startswith("show_"):
-                   arg = name[len("show_"):]
+                   arg = name[len("show_"):].replace("_","-")
                 if name.endswith("_of_unit"):
-                   arg = name[:-len("_of_unit")]
+                   arg = name[:-len("_of_unit")].replace("_","-")
                 if name.endswith("_of_units"):
-                   arg = name[:-len("_of_units")]
+                   arg = name[:-len("_of_units")].replace("_","-")
                 if arg:
                    argz[arg] = name
             print prog, "command","[options]..."
@@ -1499,6 +1513,7 @@ class Systemctl:
                     print " ", arg, firstline.strip()
             return True
         for arg in args:
+            arg = arg.replace("-","_")
             func1 = getattr(self.__class__, arg+"_of_units", None)
             func2 = getattr(self.__class__, arg+"_of_unit", None)
             func3 = getattr(self.__class__, "show_"+arg, None)
@@ -1512,8 +1527,10 @@ class Systemctl:
                 if doc is None:
                     logg.debug("__doc__ of %s is none", func_name)
                     print prog, arg, "..."
+                elif "--" in doc:
+                    print prog, arg, doc.replace("\n","\n\n", 1)
                 else:
-                    print prog, arg, doc
+                    print prog, arg, "--", doc.replace("\n","\n\n", 1)
     def system_version(self):
         """ -- show the version and copyright info """
         return [ ("Version", __version__), ("Copyright", __copyright__) ]
