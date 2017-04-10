@@ -11,4 +11,4 @@ RUN systemctl enable apache2
 RUN echo TEST_OK > /var/www/html/index.html
 
 EXPOSE 80
-CMD ["/usr/bin/python","/usr/bin/systemctl","1"]
+CMD ["/usr/bin/python","/usr/bin/systemctl","init"]
