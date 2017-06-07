@@ -655,6 +655,7 @@ class Systemctl:
                  run = subprocess_nowait(sudo+cmd, env)
                  self.write_pid_file(pid_file, run.pid)
                  if runs in [ "oneshot" ]: run.wait()
+                 if runs in [ "notify" ]: time.sleep(10)
         elif runs in [ "forking" ]:
             for cmd in conf.getlist("Service", "ExecStart", []):
                  check, cmd = checkstatus(cmd)
@@ -771,6 +772,7 @@ class Systemctl:
                  run = subprocess_nowait(sudo+cmd, env)
                  # self.write_pid_file(pid_file, run.pid)
                  if runs in [ "oneshot" ]: run.wait()
+                 if runs in [ "notify" ]: time.sleep(10)
         elif runs in [ "forking" ]:
             for cmd in conf.getlist("Service", "ExecStop", []):
                  active = self.is_active_from(conf)
@@ -837,6 +839,7 @@ class Systemctl:
                  run = subprocess_nowait(sudo+cmd, env)
                  # self.write_pid_file(pid_file, run.pid)
                  if runs in [ "oneshot" ]: run.wait()
+                 if runs in [ "notify" ]: time.sleep(10)
         elif runs in [ "forking" ]:
             for cmd in conf.getlist("Service", "ExecReload", []):
                  pid_file = self.get_pid_file_from(conf)
@@ -891,7 +894,7 @@ class Systemctl:
                  env["SYSTEMCTL_SKIP_REDIRECT"] = "yes"
                  logg.info("(restart) %s", cmd)
                  run = subprocess_wait(cmd, env)
-        elif not conf.getlist("Service", "ExceRestart", []):
+        elif not conf.getlist("Service", "ExecRestart", []):
             logg.info("(restart) => stop/start")
             self.stop_unit_from(conf)
             self.start_unit_from(conf)
@@ -904,6 +907,7 @@ class Systemctl:
                  run = subprocess_nowait(sudo+cmd, env)
                  # self.write_pid_file(pid_file, run.pid)
                  if runs in [ "oneshot" ]: run.wait()
+                 if runs in [ "notify" ]: time.sleep(10)
         elif runs in [ "forking" ]:
             for cmd in conf.getlist("Service", "ExecRestart", []):
                  check, cmd = checkstatus(cmd)
