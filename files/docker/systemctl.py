@@ -548,15 +548,15 @@ class Systemctl:
                 line = real_line.strip()
                 if not line or line.startswith("#"):
                     continue
-                m = re.match(r"([\w_]+)[=]'([^']*)'", line)
+                m = re.match(r"(?:export +)?([\w_]+)[=]'([^']*)'", line)
                 if m:
                     yield m.group(1), m.group(2)
                     continue
-                m = re.match(r'([\w_]+)[=]"([^"]*)"', line)
+                m = re.match(r'(?:export +)?([\w_]+)[=]"([^"]*)"', line)
                 if m:
                     yield m.group(1), m.group(2)
                     continue
-                m = re.match(r'([\w_]+)[=](.*)', line)
+                m = re.match(r'(?:export +)?([\w_]+)[=](.*)', line)
                 if m:
                     yield m.group(1), m.group(2)
                     continue
@@ -569,15 +569,15 @@ class Systemctl:
                 line = real_line.strip()
                 if not line or line.startswith("#"):
                     continue
-                m = re.match(r"([\w_]+)[=]'([^']*)'", line)
+                m = re.match(r"(?:export +)?([\w_]+)[=]'([^']*)'", line)
                 if m:
                     yield m.group(1), m.group(2)
                     continue
-                m = re.match(r'([\w_]+)[=]"([^"]*)"', line)
+                m = re.match(r'(?:export +)?([\w_]+)[=]"([^"]*)"', line)
                 if m:
                     yield m.group(1), m.group(2)
                     continue
-                m = re.match(r'([\w_]+)[=](.*)', line)
+                m = re.match(r'(?:export +)?([\w_]+)[=](.*)', line)
                 if m:
                     yield m.group(1), m.group(2)
                     continue
