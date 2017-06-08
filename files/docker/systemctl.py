@@ -117,7 +117,7 @@ class UnitConfigParser:
                 return default
             if allow_no_value:
                 return None
-        return self._dict[section][option][0]
+        return self._dict[section][option][0] # the first line in the unit config
     def getlist(self, section, option, default = None, allow_no_value = False):
         allow_no_value = allow_no_value or self._allow_no_value
         if section not in self._dict:
@@ -290,6 +290,37 @@ _force = False
 _quiet = False
 _full = False
 _property = None
+
+DefaultTimeoutReloadSec = 1 # officially 0.1
+DefaultTimeoutRestartSec = 1 # officially 0.1
+DefaultTimeoutStartSec = 10 # officially 90
+DefaultTimeoutStopSec = 10 # officially 90
+DefaultMaximumTimeout = 200
+
+time_to_seconds(text, maximum = None):
+    if maximum is None:
+        maximum = DefaultMaximumTimeout
+    value = 0
+    for part in text.split(" "):
+        item = part.strip()
+        if not item: 
+            continue
+        if item == "infinity":
+            return maximum
+        if item.endswith("m"):
+            try: value += 60 * int(item[:-1])
+            except: pass
+        elif item.endswith("s"):
+            try: value += int(item[:-1])
+            except: pass
+        else:
+            try: value += int(item)
+            except: pass
+    if value > maximum:
+        return maximum
+    if not value:
+        return 1
+    return value
 
 class Systemctl:
     def __init__(self):
@@ -659,7 +690,10 @@ class Systemctl:
                  run = subprocess_notty(sudo+setsid+cmd, env)
                  self.write_pid_file(pid_file, run.pid)
                  logg.info("& started PID %s", run.pid)
-        elif runs in [ "notify" ]: 
+        elif runs in [ "notify" ]:
+            timeout = conf.get("Service", "TimeoutSec", DefaultTimeoutStartSec)
+            timeout = conf.get("Service", "TimeoutStartSec", timeout)
+            timeout = time_to_seconds(timeout, DefaultMaximumTimeout)
             for cmd in conf.getlist("Service", "ExecStart", []):
                  pid_file = self.get_pid_file_from(conf)
                  pid = self.read_pid_file(pid_file, "")
@@ -793,6 +827,9 @@ class Systemctl:
                  run = subprocess_notty(sudo+setsid+cmd, env)
                  # self.write_pid_file(pid_file, run.pid)
         elif runs in [ "notify" ]:
+            timeout = conf.get("Service", "TimeoutSec", DefaultTimeoutStopSec)
+            timeout = conf.get("Service", "TimeoutStopSec", timeout)
+            timeout = time_to_seconds(timeout, DefaultMaximumTimeout)
             for cmd in conf.getlist("Service", "ExecStop", []):
                  pid_file = self.get_pid_file_from(conf)
                  pid = self.read_pid_file(pid_file, "")
@@ -873,6 +910,9 @@ class Systemctl:
                  run = subprocess_notty(sudo+setsid+cmd, env)
                  # self.write_pid_file(pid_file, run.pid)
         elif runs in [ "notify" ]:
+            timeout = conf.get("Service", "TimeoutSec", DefaultTimeoutReloadSec)
+            timeout = conf.get("Service", "TimeoutReloadSec", timeout)
+            timeout = time_to_seconds(timeout, DefaultMaximumTimeout)
             for cmd in conf.getlist("Service", "ExecReload", []):
                  pid_file = self.get_pid_file_from(conf)
                  pid = self.read_pid_file(pid_file, "")
@@ -953,6 +993,9 @@ class Systemctl:
                  run = subprocess_notty(sudo+setsid+cmd, env)
                  # self.write_pid_file(pid_file, run.pid)
         elif runs in [ "notify" ]:
+            timeout = conf.get("Service", "TimeoutSec", DefaultTimeoutRestartSec)
+            timeout = conf.get("Service", "TimeoutRestartSec", timeout)
+            timeout = time_to_seconds(timeout, DefaultMaximumTimeout)
             for cmd in conf.getlist("Service", "ExecRestart", []):
                  pid_file = self.get_pid_file_from(conf)
                  pid = self.read_pid_file(pid_file, "")
