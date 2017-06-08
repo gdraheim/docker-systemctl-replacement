@@ -16,6 +16,20 @@ import sys
 import subprocess
 import signal
 import time
+import socket
+import tempfile
+
+def shutil_chown(name, user = None, group = None)
+    """ in python 3.3. there is shutil.chown """
+    uid = -1
+    gid = -1
+    if user:
+        import pwd
+        uid = pwd.getpwnam(user).pw_uid
+    if group:
+        import grp
+        uid = grp.getgrnam(user).gr_gid
+    os.chown(name, uid, gid)
 
 
 # http://stackoverflow.com/questions/568271/how-to-check-if-there-exists-a-process-with-a-given-pid
@@ -644,6 +658,39 @@ class Systemctl:
             if runuser or rungroup:
                logg.error("can not find sudo but it is required for runuser")
         return sudo
+    def notify_socket_from(self, conf):
+        """ creates a notify-socket for the (non-privileged) user """
+        NotifySocket = collections.namedtuple("NotifySocket", ["socket", "socketfile" ])
+        runuser = conf.get("Service", "User", "")
+        sudo = ""
+        if runuser and os.geteuid() != 0:
+           logg.error("can not exec notify-service from non-root caller")
+           return None
+        socketdir = tempfile.mkdtemp("systemctl")
+        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        socketfile = os.path.join(socketdir, "notify")
+        sock.bind(socketfile)
+        if runuser:
+           shutil_chown(socketfile, runuser)
+           shutil_chown(socketdir, runuser)
+        return SocketFile(sock, socketfile)
+    def read_notify_socket(notify, timeout):
+        notify.socket.setimeout(timeout or DefaultMaximumTimeout)
+        result = ""
+        try:
+            notify.socket.listen(1)
+            connection, client_address = sock.accept()
+            result = connection.recv(4096)
+        except socket.timeout:
+            pass
+        try:
+            notify.socket.close()
+        except: pass
+        try:
+            os.remove(notify.socket.socketfile)
+            os.rmdir(os.path.dirname(notify.socket.socketfile))
+        except: pass
+        return result
     def start_of_units(self, *modules):
         """ [UNIT]... -- start these units """
         done = True
@@ -695,13 +742,26 @@ class Systemctl:
             timeout = conf.get("Service", "TimeoutStartSec", timeout)
             timeout = time_to_seconds(timeout, DefaultMaximumTimeout)
             for cmd in conf.getlist("Service", "ExecStart", []):
-                 pid_file = self.get_pid_file_from(conf)
-                 pid = self.read_pid_file(pid_file, "")
-                 env["MAINPID"] = str(pid)
-                 logg.info("* start %s", sudo+cmd)
-                 run = subprocess_notty(sudo+setsid+cmd, env)
-                 self.write_pid_file(pid_file, run.pid)
-                 logg.info("* started PID %s", run.pid)
+                notify = self.notify_socket_from(conf)
+                if notify:
+                    env["NOTIFY_SOCKET"] = notify.socketfile
+                pid_file = self.get_pid_file_from(conf)
+                pid = self.read_pid_file(pid_file, "")
+                env["MAINPID"] = str(pid)
+                logg.info("* start %s", sudo+cmd)
+                run = subprocess_notty(sudo+setsid+cmd, env)
+                mainpid = run.pid
+                if notify:
+                    result = self.read_notify_socket(notify, timeout)
+                    for name, value in self.read_env_part(result):
+                        if name == "MAINPID":
+                            logg.info("notified MAINPID %s (was PID %s)", value, mainpid)
+                            mainpid = value
+                else:
+                    logg.warning("no $NOTIFY_SOCKET, waiting %s", timeout)
+                    time.sleep(timeout)
+                self.write_pid_file(pid_file, mainpid)
+                logg.info("* started PID %s", mainpid)
         elif runs in [ "oneshot" ]:
             for cmd in conf.getlist("Service", "ExecStart", []):
                  check, cmd = checkstatus(cmd)
@@ -831,12 +891,17 @@ class Systemctl:
             timeout = conf.get("Service", "TimeoutStopSec", timeout)
             timeout = time_to_seconds(timeout, DefaultMaximumTimeout)
             for cmd in conf.getlist("Service", "ExecStop", []):
-                 pid_file = self.get_pid_file_from(conf)
-                 pid = self.read_pid_file(pid_file, "")
-                 env["MAINPID"] = str(pid)
-                 logg.info("* stop %s", sudo+cmd)
-                 run = subprocess_notty(sudo+setsid+cmd, env)
-                 # self.write_pid_file(pid_file, run.pid)
+                pid_file = self.get_pid_file_from(conf)
+                pid = self.read_pid_file(pid_file, "")
+                env["MAINPID"] = str(pid)
+                logg.info("* stop %s", sudo+cmd)
+                if "kill" in cmd:
+                    run = subprocess_wait(sudo+cmd, env)
+                else:
+                    run = subprocess_notty(sudo+setsid+cmd, env)
+                    time.sleep(timeout)
+                run = subprocess_notty(sudo+setsid+cmd, env)
+                # self.write_pid_file(pid_file, run.pid)
         elif runs in [ "oneshot" ]:
             for cmd in conf.getlist("Service", "ExecStop", []):
                  check, cmd = checkstatus(cmd)
@@ -914,12 +979,16 @@ class Systemctl:
             timeout = conf.get("Service", "TimeoutReloadSec", timeout)
             timeout = time_to_seconds(timeout, DefaultMaximumTimeout)
             for cmd in conf.getlist("Service", "ExecReload", []):
-                 pid_file = self.get_pid_file_from(conf)
-                 pid = self.read_pid_file(pid_file, "")
-                 env["MAINPID"] = str(pid)
-                 logg.info("* reload %s", sudo+cmd)
-                 run = subprocess_notty(sudo+setsid+cmd, env)
-                 # self.write_pid_file(pid_file, run.pid)
+                pid_file = self.get_pid_file_from(conf)
+                pid = self.read_pid_file(pid_file, "")
+                env["MAINPID"] = str(pid)
+                logg.info("* reload %s", sudo+cmd)
+                if "kill" in cmd:
+                    run = subprocess_wait(sudo+cmd, env)
+                else:
+                    run = subprocess_notty(sudo+setsid+cmd, env)
+                    time.sleep(timeout)
+                # self.write_pid_file(pid_file, run.pid)
         elif runs in [ "oneshot" ]:
             for cmd in conf.getlist("Service", "ExecReload", []):
                  check, cmd = checkstatus(cmd)
@@ -997,12 +1066,16 @@ class Systemctl:
             timeout = conf.get("Service", "TimeoutRestartSec", timeout)
             timeout = time_to_seconds(timeout, DefaultMaximumTimeout)
             for cmd in conf.getlist("Service", "ExecRestart", []):
-                 pid_file = self.get_pid_file_from(conf)
-                 pid = self.read_pid_file(pid_file, "")
-                 env["MAINPID"] = str(pid)
-                 logg.info("* restart %s", sudo+cmd)
-                 run = subprocess_notty(sudo+setsid+cmd, env)
-                 # self.write_pid_file(pid_file, run.pid)
+                pid_file = self.get_pid_file_from(conf)
+                pid = self.read_pid_file(pid_file, "")
+                env["MAINPID"] = str(pid)
+                logg.info("* restart %s", sudo+cmd)
+                if "kill" in cmd:
+                    run = subprocess_notty(sudo+cmd, env)
+                else:
+                    run = subprocess_notty(sudo+setsid+cmd, env)
+                    time.sleep(timeout)
+                # self.write_pid_file(pid_file, run.pid)
         elif runs in [ "oneshot" ]:
             for cmd in conf.getlist("Service", "ExecRestart", []):
                  check, cmd = checkstatus(cmd)
