@@ -19,7 +19,9 @@ import time
 import socket
 import tempfile
 
-def shutil_chown(name, user = None, group = None)
+DISABLE_NOTIFY_SOCKET = True
+
+def shutil_chown(name, user = None, group = None):
     """ in python 3.3. there is shutil.chown """
     uid = -1
     gid = -1
@@ -310,12 +312,14 @@ DefaultTimeoutRestartSec = 1 # officially 0.1
 DefaultTimeoutStartSec = 10 # officially 90
 DefaultTimeoutStopSec = 10 # officially 90
 DefaultMaximumTimeout = 200
+if DISABLE_NOTIFY_SOCKET:
+    DefaultMaximumTimeout = 20
 
-time_to_seconds(text, maximum = None):
+def time_to_seconds(text, maximum = None):
     if maximum is None:
         maximum = DefaultMaximumTimeout
     value = 0
-    for part in text.split(" "):
+    for part in str(text).split(" "):
         item = part.strip()
         if not item: 
             continue
@@ -660,6 +664,8 @@ class Systemctl:
         return sudo
     def notify_socket_from(self, conf):
         """ creates a notify-socket for the (non-privileged) user """
+        if DISABLE_NOTIFY_SOCKET:
+            return None
         NotifySocket = collections.namedtuple("NotifySocket", ["socket", "socketfile" ])
         runuser = conf.get("Service", "User", "")
         sudo = ""
@@ -673,23 +679,26 @@ class Systemctl:
         if runuser:
            shutil_chown(socketfile, runuser)
            shutil_chown(socketdir, runuser)
-        return SocketFile(sock, socketfile)
-    def read_notify_socket(notify, timeout):
-        notify.socket.setimeout(timeout or DefaultMaximumTimeout)
+        sock.listen(1)
+        return NotifySocket(sock, socketfile)
+    def read_notify_socket(self, notify, timeout):
+        notify.socket.settimeout(timeout or DefaultMaximumTimeout)
         result = ""
         try:
-            notify.socket.listen(1)
-            connection, client_address = sock.accept()
+            connection, client_address = notify.socket.accept()
             result = connection.recv(4096)
-        except socket.timeout:
-            pass
+            logg.info("read_notify_socket(%s):\n%s", len(result), result)
+        except socket.timeout, e:
+            logg.info("socket.timeout %s", e)
         try:
             notify.socket.close()
-        except: pass
+        except Exception, e:
+            logg.info("socket.close %s", e)
         try:
-            os.remove(notify.socket.socketfile)
-            os.rmdir(os.path.dirname(notify.socket.socketfile))
-        except: pass
+            os.remove(notify.socketfile)
+            os.rmdir(os.path.dirname(notify.socketfile))
+        except Exception, e:
+            logg.info("socket.remove %s", e)
         return result
     def start_of_units(self, *modules):
         """ [UNIT]... -- start these units """
@@ -745,6 +754,7 @@ class Systemctl:
                 notify = self.notify_socket_from(conf)
                 if notify:
                     env["NOTIFY_SOCKET"] = notify.socketfile
+                    logg.info("use NOTIFY_SOCKET=%s", notify.socketfile)
                 pid_file = self.get_pid_file_from(conf)
                 pid = self.read_pid_file(pid_file, "")
                 env["MAINPID"] = str(pid)
