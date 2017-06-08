@@ -658,6 +658,7 @@ class Systemctl:
                  logg.info("& start %s", sudo+cmd)
                  run = subprocess_notty(sudo+setsid+cmd, env)
                  self.write_pid_file(pid_file, run.pid)
+                 logg.info("& started PID %s", run.pid)
         elif runs in [ "notify" ]: 
             for cmd in conf.getlist("Service", "ExecStart", []):
                  pid_file = self.get_pid_file_from(conf)
@@ -666,12 +667,14 @@ class Systemctl:
                  logg.info("* start %s", sudo+cmd)
                  run = subprocess_notty(sudo+setsid+cmd, env)
                  self.write_pid_file(pid_file, run.pid)
+                 logg.info("* started PID %s", run.pid)
         elif runs in [ "oneshot" ]:
             for cmd in conf.getlist("Service", "ExecStart", []):
                  check, cmd = checkstatus(cmd)
                  logg.info("! start %s", sudo+cmd)
                  run = subprocess_wait(sudo+cmd, env)
                  if check and run.returncode: raise Exception("ExecStart")
+                 logg.info("* done oneshot start")
         elif runs in [ "forking" ]:
             for cmd in conf.getlist("Service", "ExecStart", []):
                  check, cmd = checkstatus(cmd)
@@ -680,6 +683,7 @@ class Systemctl:
                  if check and run.returncode: raise Exception("ExecStart")
                  pid_file = self.get_pid_file_from(conf)
                  self.wait_pid_file(pid_file)
+                 logg.info(": done forking %s", pid_file)
         else:
             logg.error("unsupported run type '%s'", runs)
             raise Exception("unsupported run type")
