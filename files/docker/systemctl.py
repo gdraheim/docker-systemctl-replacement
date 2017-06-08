@@ -252,8 +252,11 @@ class PresetFile:
                     return status
         return None
 
-def subprocess_nowait(cmd, env=None):
-    run = subprocess.Popen(cmd, shell=True, env=env)
+def subprocess_notty(cmd, env=None, output="/dev/null"):
+    inp = open("/dev/zero")
+    out = open(output)
+    run = subprocess.Popen(cmd, shell=True, env=env, close_fds=True, 
+        stdin=inp, stdout=out, stderr=out)
     return run
 
 def subprocess_wait(cmd, env=None, check = False):
@@ -632,6 +635,7 @@ class Systemctl:
         if not conf: return
         runs = conf.get("Service", "Type", "simple").lower()
         sudo = self.sudo_from(conf)
+        setsid = "setsid "
         env = self.get_env(conf)
         logg.info("env = %s", env)
         if True:
@@ -652,7 +656,7 @@ class Systemctl:
                  pid = self.read_pid_file(pid_file, "")
                  env["MAINPID"] = str(pid)
                  logg.info("[start] %s", sudo+cmd)
-                 run = subprocess_nowait(sudo+cmd, env)
+                 run = subprocess_notty(sudo+setsid+cmd, env)
                  self.write_pid_file(pid_file, run.pid)
         elif runs in [ "notify" ]: 
             for cmd in conf.getlist("Service", "ExecStart", []):
@@ -660,7 +664,7 @@ class Systemctl:
                  pid = self.read_pid_file(pid_file, "")
                  env["MAINPID"] = str(pid)
                  logg.info("[start] %s", sudo+cmd)
-                 run = subprocess_nowait(sudo+cmd, env)
+                 run = subprocess_notty(sudo+setsid+cmd, env)
                  self.write_pid_file(pid_file, run.pid)
         elif runs in [ "oneshot" ]:
             for cmd in conf.getlist("Service", "ExecStart", []):
@@ -754,6 +758,7 @@ class Systemctl:
         if not conf: return
         runs = conf.get("Service", "Type", "simple").lower()
         sudo = self.sudo_from(conf)
+        setsid = "setsid "
         env = self.get_env(conf)
         if True:
             for cmd in conf.getlist("Service", "ExecStopPre", []):
@@ -781,7 +786,7 @@ class Systemctl:
                  pid = self.read_pid_file(pid_file, "")
                  env["MAINPID"] = str(pid)
                  logg.info("[stop] %s", sudo+cmd)
-                 run = subprocess_nowait(sudo+cmd, env)
+                 run = subprocess_notty(sudo+setsid+cmd, env)
                  # self.write_pid_file(pid_file, run.pid)
         elif runs in [ "notify" ]:
             for cmd in conf.getlist("Service", "ExecStop", []):
@@ -789,7 +794,7 @@ class Systemctl:
                  pid = self.read_pid_file(pid_file, "")
                  env["MAINPID"] = str(pid)
                  logg.info("[stop] %s", sudo+cmd)
-                 run = subprocess_nowait(sudo+cmd, env)
+                 run = subprocess_notty(sudo+setsid+cmd, env)
                  # self.write_pid_file(pid_file, run.pid)
         elif runs in [ "oneshot" ]:
             for cmd in conf.getlist("Service", "ExecStop", []):
@@ -841,6 +846,7 @@ class Systemctl:
         if not conf: return
         runs = conf.get("Service", "Type", "simple").lower()
         sudo = self.sudo_from(conf)
+        setsid = "setsid "
         env = self.get_env(conf)
         if True:
             for cmd in conf.getlist("Service", "ExecReloadPre", []):
@@ -860,7 +866,7 @@ class Systemctl:
                  pid = self.read_pid_file(pid_file, "")
                  env["MAINPID"] = str(pid)
                  logg.info("[reload] %s", sudo+cmd)
-                 run = subprocess_nowait(sudo+cmd, env)
+                 run = subprocess_notty(sudo+setsid+cmd, env)
                  # self.write_pid_file(pid_file, run.pid)
         elif runs in [ "notify" ]:
             for cmd in conf.getlist("Service", "ExecReload", []):
@@ -868,7 +874,7 @@ class Systemctl:
                  pid = self.read_pid_file(pid_file, "")
                  env["MAINPID"] = str(pid)
                  logg.info("[reload] %s", sudo+cmd)
-                 run = subprocess_nowait(sudo+cmd, env)
+                 run = subprocess_notty(sudo+setsid+cmd, env)
                  # self.write_pid_file(pid_file, run.pid)
         elif runs in [ "oneshot" ]:
             for cmd in conf.getlist("Service", "ExecReload", []):
@@ -882,7 +888,7 @@ class Systemctl:
                  env["MAINPID"] = str(pid)
                  check, cmd = checkstatus(cmd)
                  logg.info("{reload} %s", sudo+cmd)
-                 run = subprocess_nowait(sudo+cmd, env)
+                 run = subprocess_wait(sudo+cmd, env)
                  if check and run.returncode: raise Exception("ExecReload")
                  pid_file = self.get_pid_file_from(conf)
                  self.wait_pid_file(pid_file)
@@ -916,6 +922,7 @@ class Systemctl:
         if not conf: return
         runs = conf.get("Service", "Type", "simple").lower()
         sudo = self.sudo_from(conf)
+        setsid = "setsid "
         env = self.get_env(conf)
         if True:
             for cmd in conf.getlist("Service", "ExecRestartPre", []):
@@ -939,7 +946,7 @@ class Systemctl:
                  pid = self.read_pid_file(pid_file, "")
                  env["MAINPID"] = str(pid)
                  logg.info("[restart] %s", sudo+cmd)
-                 run = subprocess_nowait(sudo+cmd, env)
+                 run = subprocess_notty(sudo+setsid+cmd, env)
                  # self.write_pid_file(pid_file, run.pid)
         elif runs in [ "notify" ]:
             for cmd in conf.getlist("Service", "ExecRestart", []):
@@ -947,7 +954,7 @@ class Systemctl:
                  pid = self.read_pid_file(pid_file, "")
                  env["MAINPID"] = str(pid)
                  logg.info("[restart] %s", sudo+cmd)
-                 run = subprocess_nowait(sudo+cmd, env)
+                 run = subprocess_notty(sudo+setsid+cmd, env)
                  # self.write_pid_file(pid_file, run.pid)
         elif runs in [ "oneshot" ]:
             for cmd in conf.getlist("Service", "ExecRestart", []):
