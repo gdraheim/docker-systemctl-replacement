@@ -709,12 +709,12 @@ class Systemctl:
         def get_env1(m):
             if m.group(1) in env:
                 return env[m.group(1)]
-            logg.error("can not expand $%s", m.group(1))
+            logg.debug("can not expand $%s", m.group(1))
             return ""
         def get_env2(m):
             if m.group(1) in env:
                 return env[m.group(1)]
-            logg.error("can not expand ${%s}", m.group(1))
+            logg.debug("can not expand ${%s}", m.group(1))
             return "${"+m.group(1)+"}"
         expanded = re.sub("[$](\w+)", lambda m: get_env1(m), cmd.replace("\\\n",""))
         import shlex
@@ -747,13 +747,14 @@ class Systemctl:
         try:
             connection, client_address = notify.socket.accept()
             result = connection.recv(4096)
-            logg.info("read_notify_socket(%s):\n%s", len(result), result)
+            logg.debug("read_notify_socket(%s):\n%s", len(result), result)
         except socket.timeout, e:
-            logg.info("socket.timeout %s", e)
+            logg.debug("socket.timeout %s", e)
         try:
             notify.socket.close()
         except Exception, e:
-            logg.info("socket.close %s", e)
+            logg.debug("socket.close %s", e)
+        return result
     def execstart_of_unit(self, unit):
         conf = self.load_unit_conf(unit)
         cmdlist = conf.getlist("Service", "ExecStart", [])
@@ -798,6 +799,10 @@ class Systemctl:
                 run = subprocess_wait(cmd, env)
         elif runs in [ "simple" ]: 
             pid_file = self.get_pid_file_from(conf)
+            pid = self.read_pid_file(pid_file, "")
+            if pid and pid_exists(pid):
+                logg.error("the service is already running on PID %s", pid)
+                return False
             runuser = conf.get("Service", "User", "")
             rungroup = conf.get("Service", "Group", "")
             shutil_truncate(pid_file)
@@ -823,14 +828,23 @@ class Systemctl:
                     logg.info("> started PID %s", run.pid)
                     run.wait()
                     logg.info("> stopped PID %s EXIT %s", run.pid, run.returncode)
+                    pid = self.read_pid_file(pid_file, "")
+                    if str(pid) == str(run.pid):
+                        self.write_pid_file(pid_file, "")
             else:
                 # parent
                 self.wait_pid_file(pid_file)
                 logg.info("> done simple %s", pid_file)
                 time.sleep(1) # give it another second to come up
+                if not self.read_pid_file(pid_file, ""):
+                   raise Exception("could not start service")
         elif runs in [ "notify" ]:
             # same as "simple" but create $NOTIFY_SOCKET and check it
             pid_file = self.get_pid_file_from(conf)
+            pid = self.read_pid_file(pid_file, "")
+            if pid and pid_exists(pid):
+                logg.error("the service is already running on PID %s", pid)
+                return False
             runuser = conf.get("Service", "User", "")
             rungroup = conf.get("Service", "Group", "")
             shutil_truncate(pid_file)
@@ -863,20 +877,26 @@ class Systemctl:
                     logg.info("* started PID %s", run.pid)
                     run.wait()
                     logg.info("* stopped PID %s EXIT %s", run.pid, run.returncode)
+                    pid = self.read_pid_file(pid_file, "")
+                    if str(pid) == str(run.pid):
+                        self.write_pid_file(pid_file, "")
             else:
                 # parent
                 self.wait_pid_file(pid_file) # fork is running
                 mainpid = self.read_pid_file(pid_file, "")
                 if notify:
+                    logg.info("wait $NOTIFY_SOCKET, timeout %s", timeout)
                     result = self.read_notify_socket(notify, timeout)
                     for name, value in self.read_env_part(result):
                         if name == "MAINPID":
                             logg.info("notified MAINPID %s (was PID %s)", value, mainpid)
                             mainpid = value
                 else:
-                    logg.warning("no $NOTIFY_SOCKET, waiting %s", timeout)
+                    logg.info("no $NOTIFY_SOCKET, waiting %s", timeout)
                     time.sleep(timeout)
                 logg.info("* done notify %s", pid_file)
+                if not self.read_pid_file(pid_file, ""):
+                   raise Exception("could not start service")
         elif runs in [ "oneshot" ]:
             for cmd in conf.getlist("Service", "ExecStart", []):
                 check, cmd = checkstatus(cmd)
