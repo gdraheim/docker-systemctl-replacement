@@ -710,7 +710,7 @@ class Systemctl:
             if m.group(1) in env:
                 return env[m.group(1)]
             logg.error("can not expand $%s", m.group(1))
-            return "$"+m.group(1)
+            return ""
         def get_env2(m):
             if m.group(1) in env:
                 return env[m.group(1)]
@@ -827,24 +827,46 @@ class Systemctl:
                 # parent
                 self.wait_pid_file(pid_file)
                 logg.info("> done simple %s", pid_file)
+                time.sleep(1) # give it another second to come up
         elif runs in [ "notify" ]:
+            # same as "simple" but create $NOTIFY_SOCKET and check it
             pid_file = self.get_pid_file_from(conf)
+            runuser = conf.get("Service", "User", "")
+            rungroup = conf.get("Service", "Group", "")
+            shutil_truncate(pid_file)
+            shutil_chown(pid_file, runuser, rungroup)
+            notify = self.notify_socket_from(conf)
             timeout = conf.get("Service", "TimeoutSec", DefaultTimeoutStartSec)
             timeout = conf.get("Service", "TimeoutStartSec", timeout)
             timeout = time_to_seconds(timeout, DefaultMaximumTimeout)
-            cmdlist = conf.getlist("Service", "ExecStart", [])
-            for idx, cmd in enumerate(cmdlist):
-                logg.debug("ExecStart[%s]: %s", idx, cmd)
-            for cmd in cmdlist:
-                notify = self.notify_socket_from(conf)
-                if notify:
-                    env["NOTIFY_SOCKET"] = notify.socketfile
-                    logg.info("use NOTIFY_SOCKET=%s", notify.socketfile)
-                pid = self.read_pid_file(pid_file, "")
-                env["MAINPID"] = str(pid)
-                logg.info("* start %s", sudo+cmd)
-                run = subprocess_notty(sudo+setsid+cmd, env)
-                mainpid = run.pid
+            if notify:
+                env["NOTIFY_SOCKET"] = notify.socketfile
+                logg.info("use NOTIFY_SOCKET=%s", notify.socketfile)
+            if not os.fork():
+                logg.debug("> simple process for %s", conf.filename())
+                os.setsid() # detach from parent
+                shutil_setuid(runuser, rungroup)
+                self.chdir_workingdir(conf)
+                inp = open("/dev/zero")
+                out = open("/dev/null", "w")
+                cmdlist = conf.getlist("Service", "ExecStart", [])
+                for idx, cmd in enumerate(cmdlist):
+                    logg.debug("ExecStart[%s]: %s", idx, cmd)
+                for cmd in cmdlist:
+                    pid = self.read_pid_file(pid_file, "")
+                    env["MAINPID"] = str(pid)
+                    newcmd = self.non_shell_cmd(cmd, env)
+                    logg.info("* start %s", shell_cmd(newcmd))
+                    run = subprocess.Popen(newcmd, env=env, close_fds=True, 
+                        stdin=inp, stdout=out, stderr=out)
+                    self.write_pid_file(pid_file, run.pid)
+                    logg.info("* started PID %s", run.pid)
+                    run.wait()
+                    logg.info("* stopped PID %s EXIT %s", run.pid, run.returncode)
+            else:
+                # parent
+                self.wait_pid_file(pid_file) # fork is running
+                mainpid = self.read_pid_file(pid_file, "")
                 if notify:
                     result = self.read_notify_socket(notify, timeout)
                     for name, value in self.read_env_part(result):
@@ -854,8 +876,7 @@ class Systemctl:
                 else:
                     logg.warning("no $NOTIFY_SOCKET, waiting %s", timeout)
                     time.sleep(timeout)
-                self.write_pid_file(pid_file, mainpid)
-                logg.info("* started PID %s", mainpid)
+                logg.info("* done notify %s", pid_file)
         elif runs in [ "oneshot" ]:
             for cmd in conf.getlist("Service", "ExecStart", []):
                 check, cmd = checkstatus(cmd)
@@ -905,7 +926,14 @@ class Systemctl:
            sig = getattr(signal, kill_signal)
         else:
            sig = kill_signal or signal.SIGTERM
-        os.kill(pid, sig)
+        try: os.kill(pid, sig)
+        except OSError, e:
+            if e.errno == errno.ESRCH or e.errno == errno.ENOENT:
+                logg.info("kill PID %s => No such process", pid)
+                return True
+            else:
+                logg.error("kill PID %s => %s", pid, str(e))
+                return False
         for x in xrange(timeout):
             if not self.pid_exists(pid):
                 break
