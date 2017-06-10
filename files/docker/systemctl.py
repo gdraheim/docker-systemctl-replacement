@@ -862,10 +862,10 @@ class Systemctl:
             if not os.fork():
                 logg.debug("> simple process for %s", conf.filename())
                 os.setsid() # detach from parent
+                inp = open("/dev/zero")
+                out = self.open_journal_log(conf)
                 shutil_setuid(runuser, rungroup)
                 self.chdir_workingdir(conf)
-                inp = open("/dev/zero")
-                out = open("/dev/null", "w")
                 cmdlist = conf.getlist("Service", "ExecStart", [])
                 for idx, cmd in enumerate(cmdlist):
                     logg.debug("ExecStart[%s]: %s", idx, cmd)
