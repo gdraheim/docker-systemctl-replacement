@@ -340,6 +340,7 @@ class Program:
         logg.info("check user description")
         self.sleep()
         if "Manage Jenkins" in self.driver.page_source:
+            logg.info("ready for screenshot")
             username = self.username
             description = self.description.format(**locals())
             base_url = self.base_url
@@ -354,11 +355,16 @@ class Program:
                 self.driver.save_screenshot(self.screenshot)
             elem = self.find_element_by("#yui-gen3")
             elem.click()
+        else:
+            if self.screenshot:
+                logg.info("screenshot into %s", self.screenshot)
+                self.driver.save_screenshot(self.screenshot)
     def do_sleep(self):
         """ optional: just for testing to a look """
         self.sleep(self.LONGWAIT)
     def do_end(self):
         """ tears down the browser we used since 'begin' """
+        logg.info("done - tear down")
         self.sleep(self.slow * 5)
         self.driver.close()
         self.driver.quit()
