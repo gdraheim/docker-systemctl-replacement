@@ -870,6 +870,9 @@ class Systemctl:
                 os.setsid() # detach from parent
                 inp = open("/dev/zero")
                 out = self.open_journal_log(conf)
+                os.dup2(inp.fileno(), sys.stdin.fileno())
+                os.dup2(out.fileno(), sys.stdout.fileno())
+                os.dup2(out.fileno(), sys.stderr.fileno())
                 shutil_setuid(runuser, rungroup)
                 self.chdir_workingdir(conf)
                 cmdlist = conf.getlist("Service", "ExecStart", [])
@@ -919,6 +922,9 @@ class Systemctl:
                 os.setsid() # detach from parent
                 inp = open("/dev/zero")
                 out = self.open_journal_log(conf)
+                os.dup2(inp.fileno(), sys.stdin.fileno())
+                os.dup2(out.fileno(), sys.stdout.fileno())
+                os.dup2(out.fileno(), sys.stderr.fileno())
                 shutil_setuid(runuser, rungroup)
                 self.chdir_workingdir(conf)
                 cmdlist = conf.getlist("Service", "ExecStart", [])
