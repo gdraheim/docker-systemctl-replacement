@@ -794,11 +794,6 @@ class Systemctl:
             pid_file = self.get_pid_file_from(conf)
             runuser = conf.get("Service", "User", "")
             rungroup = conf.get("Service", "Group", "")
-            if runuser or rungroup:
-                if os.geteuid() != 0:
-                    logg.error("uid %s / runuser %s / rungroup %s for service %s", 
-                         os.geteuid(), runuser, rungroup, conf.filename())
-                    raise Exception("must be root to run service with diffent runuser/rungroup")
             shutil_truncate(pid_file)
             shutil_chown(pid_file, runuser, rungroup)
             if not os.fork():
@@ -810,7 +805,7 @@ class Systemctl:
                 out = open("/dev/null", "w")
                 cmdlist = conf.getlist("Service", "ExecStart", [])
                 for idx, cmd in enumerate(cmdlist):
-                    logg.info("ExecStart[%s]: %s", idx, cmd)
+                    logg.debug("ExecStart[%s]: %s", idx, cmd)
                 for cmd in cmdlist:
                     pid = self.read_pid_file(pid_file, "")
                     env["MAINPID"] = str(pid)
@@ -831,7 +826,10 @@ class Systemctl:
             timeout = conf.get("Service", "TimeoutSec", DefaultTimeoutStartSec)
             timeout = conf.get("Service", "TimeoutStartSec", timeout)
             timeout = time_to_seconds(timeout, DefaultMaximumTimeout)
-            for cmd in conf.getlist("Service", "ExecStart", []):
+            cmdlist = conf.getlist("Service", "ExecStart", [])
+            for idx, cmd in enumerate(cmdlist):
+                logg.debug("ExecStart[%s]: %s", idx, cmd)
+            for cmd in cmdlist:
                 notify = self.notify_socket_from(conf)
                 if notify:
                     env["NOTIFY_SOCKET"] = notify.socketfile
