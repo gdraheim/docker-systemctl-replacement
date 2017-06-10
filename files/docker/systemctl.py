@@ -738,8 +738,8 @@ class Systemctl:
                  logg.info("(start) %s", cmd)
                  run = subprocess_wait(cmd, env)
         elif runs in [ "simple" ]: 
+            pid_file = self.get_pid_file_from(conf)
             for cmd in conf.getlist("Service", "ExecStart", []):
-                 pid_file = self.get_pid_file_from(conf)
                  pid = self.read_pid_file(pid_file, "")
                  env["MAINPID"] = str(pid)
                  logg.info("& start %s", sudo+cmd)
@@ -747,6 +747,7 @@ class Systemctl:
                  self.write_pid_file(pid_file, run.pid)
                  logg.info("& started PID %s", run.pid)
         elif runs in [ "notify" ]:
+            pid_file = self.get_pid_file_from(conf)
             timeout = conf.get("Service", "TimeoutSec", DefaultTimeoutStartSec)
             timeout = conf.get("Service", "TimeoutStartSec", timeout)
             timeout = time_to_seconds(timeout, DefaultMaximumTimeout)
@@ -755,7 +756,6 @@ class Systemctl:
                 if notify:
                     env["NOTIFY_SOCKET"] = notify.socketfile
                     logg.info("use NOTIFY_SOCKET=%s", notify.socketfile)
-                pid_file = self.get_pid_file_from(conf)
                 pid = self.read_pid_file(pid_file, "")
                 env["MAINPID"] = str(pid)
                 logg.info("* start %s", sudo+cmd)
@@ -889,19 +889,19 @@ class Systemctl:
                  if os.path.isfile(pid_file):
                      os.remove(pid_file)
         elif runs in [ "simple" ]:
+            pid_file = self.get_pid_file_from(conf)
             for cmd in conf.getlist("Service", "ExecStop", []):
-                 pid_file = self.get_pid_file_from(conf)
                  pid = self.read_pid_file(pid_file, "")
                  env["MAINPID"] = str(pid)
                  logg.info("& stop %s", sudo+cmd)
                  run = subprocess_notty(sudo+setsid+cmd, env)
                  # self.write_pid_file(pid_file, run.pid)
         elif runs in [ "notify" ]:
+            pid_file = self.get_pid_file_from(conf)
             timeout = conf.get("Service", "TimeoutSec", DefaultTimeoutStopSec)
             timeout = conf.get("Service", "TimeoutStopSec", timeout)
             timeout = time_to_seconds(timeout, DefaultMaximumTimeout)
             for cmd in conf.getlist("Service", "ExecStop", []):
-                pid_file = self.get_pid_file_from(conf)
                 pid = self.read_pid_file(pid_file, "")
                 env["MAINPID"] = str(pid)
                 logg.info("* stop %s", sudo+cmd)
@@ -919,9 +919,9 @@ class Systemctl:
                  logg.info("! stop %s", sudo+cmd)
                  run = subprocess_wait(sudo+cmd, env)
         elif runs in [ "forking" ]:
+            pid_file = self.get_pid_file_from(conf)
             for cmd in conf.getlist("Service", "ExecStop", []):
                  active = self.is_active_from(conf)
-                 pid_file = self.get_pid_file_from(conf)
                  pid = self.read_pid_file(pid_file, "")
                  env["MAINPID"] = str(pid)
                  check, cmd = checkstatus(cmd)
@@ -985,11 +985,11 @@ class Systemctl:
                  run = subprocess_notty(sudo+setsid+cmd, env)
                  # self.write_pid_file(pid_file, run.pid)
         elif runs in [ "notify" ]:
+            pid_file = self.get_pid_file_from(conf)
             timeout = conf.get("Service", "TimeoutSec", DefaultTimeoutReloadSec)
             timeout = conf.get("Service", "TimeoutReloadSec", timeout)
             timeout = time_to_seconds(timeout, DefaultMaximumTimeout)
             for cmd in conf.getlist("Service", "ExecReload", []):
-                pid_file = self.get_pid_file_from(conf)
                 pid = self.read_pid_file(pid_file, "")
                 env["MAINPID"] = str(pid)
                 logg.info("* reload %s", sudo+cmd)
@@ -1005,8 +1005,8 @@ class Systemctl:
                  logg.info("! reload %s", sudo+cmd)
                  run = subprocess_wait(sudo+cmd, env)
         elif runs in [ "forking" ]:
+            pid_file = self.get_pid_file_from(conf)
             for cmd in conf.getlist("Service", "ExecReload", []):
-                 pid_file = self.get_pid_file_from(conf)
                  pid = self.read_pid_file(pid_file, "")
                  env["MAINPID"] = str(pid)
                  check, cmd = checkstatus(cmd)
@@ -1064,19 +1064,19 @@ class Systemctl:
             self.stop_unit_from(conf)
             self.start_unit_from(conf)
         elif runs in [ "simple" ]:
+            pid_file = self.get_pid_file_from(conf)
             for cmd in conf.getlist("Service", "ExecRestart", []):
-                 pid_file = self.get_pid_file_from(conf)
                  pid = self.read_pid_file(pid_file, "")
                  env["MAINPID"] = str(pid)
                  logg.info("& restart %s", sudo+cmd)
                  run = subprocess_notty(sudo+setsid+cmd, env)
                  # self.write_pid_file(pid_file, run.pid)
         elif runs in [ "notify" ]:
+            pid_file = self.get_pid_file_from(conf)
             timeout = conf.get("Service", "TimeoutSec", DefaultTimeoutRestartSec)
             timeout = conf.get("Service", "TimeoutRestartSec", timeout)
             timeout = time_to_seconds(timeout, DefaultMaximumTimeout)
             for cmd in conf.getlist("Service", "ExecRestart", []):
-                pid_file = self.get_pid_file_from(conf)
                 pid = self.read_pid_file(pid_file, "")
                 env["MAINPID"] = str(pid)
                 logg.info("* restart %s", sudo+cmd)
