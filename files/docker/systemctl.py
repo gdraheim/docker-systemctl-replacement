@@ -1413,6 +1413,9 @@ class Systemctl:
         timeout = conf.get("Service", "TimeoutStopSec", timeout)
         pid_file = self.get_pid_file_from(conf)
         pid = self.read_pid_file(pid_file)
+        if not pid:
+            logg.info("no main PID [%s]", conf.filename())
+            return False
         logg.info("stop kill PID %s (%s)", pid, pid_file)
         if not self.kill_pid(pid, timeout, kill_signal):
             if "y" in sendSIGKILL:
