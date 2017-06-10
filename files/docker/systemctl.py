@@ -19,8 +19,6 @@ import time
 import socket
 import tempfile
 
-DISABLE_NOTIFY_SOCKET = False
-
 def shell_cmd(cmd):
     return " ".join(["'%s'" % part for part in cmd])
 
@@ -359,8 +357,6 @@ DefaultTimeoutRestartSec = 1 # officially 0.1
 DefaultTimeoutStartSec = 10 # officially 90
 DefaultTimeoutStopSec = 10 # officially 90
 DefaultMaximumTimeout = 200
-if DISABLE_NOTIFY_SOCKET:
-    DefaultMaximumTimeout = 20
 
 def time_to_seconds(text, maximum = None):
     if maximum is None:
@@ -751,8 +747,6 @@ class Systemctl:
         return newcmd
     def notify_socket_from(self, conf):
         """ creates a notify-socket for the (non-privileged) user """
-        if DISABLE_NOTIFY_SOCKET:
-            return None
         NotifySocket = collections.namedtuple("NotifySocket", ["socket", "socketfile" ])
         runuser = conf.get("Service", "User", "")
         sudo = ""
@@ -760,8 +754,7 @@ class Systemctl:
            logg.error("can not exec notify-service from non-root caller")
            return None
         socketdir = tempfile.mkdtemp("systemctl")
-        #@ sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        sock = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM) #@
+        sock = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
         socketfile = os.path.join(socketdir, "notify")
         sock.bind(socketfile)
         if runuser:
@@ -773,9 +766,7 @@ class Systemctl:
         notify.socket.settimeout(timeout or DefaultMaximumTimeout)
         result = ""
         try:
-            #@ connection, client_address = notify.socket.accept()
-            #@ result = connection.recv(4096)
-            result, client_address = notify.socket.recvfrom(4096) #@
+            result, client_address = notify.socket.recvfrom(4096)
             logg.debug("read_notify_socket(%s):\n%s", len(result), result)
         except socket.timeout, e:
             logg.debug("socket.timeout %s", e)
