@@ -891,12 +891,20 @@ class Systemctl:
                 # parent
                 mainpid = self.wait_pid_file(pid_file) # fork is running
                 if notify:
-                    logg.info("wait $NOTIFY_SOCKET, timeout %s", timeout)
-                    result = self.read_notify_socket(notify, timeout)
-                    for name, value in self.read_env_part(result):
-                        if name == "MAINPID":
-                            logg.info("notified MAINPID %s (was PID %s)", value, mainpid)
-                            mainpid = value
+                    seenREADY = None
+                    for attempt in [1,2,3]:
+                        logg.info("[%s] wait $NOTIFY_SOCKET, timeout %s", attempt, timeout)
+                        result = self.read_notify_socket(notify, timeout)
+                        if not result: # timeout
+                            break
+                        for name, value in self.read_env_part(result):
+                            if name == "MAINPID":
+                                logg.info("notified MAINPID %s (was PID %s)", value, mainpid)
+                                mainpid = value
+                            if name == "READY"
+                                seenREADY = value
+                        if seenREADY:
+                            break
                 else:
                     logg.info("no $NOTIFY_SOCKET, waiting %s", timeout)
                     time.sleep(timeout)
