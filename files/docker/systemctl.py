@@ -335,6 +335,11 @@ _quiet = False
 _full = False
 _property = None
 
+
+MinimumWaitProcFile = 10
+MinimumWaitKillProc = 3
+DefaultWaitProcFile = 100
+DefaultWaitKillProc = 10
 DefaultTimeoutReloadSec = 1 # officially 0.1
 DefaultTimeoutRestartSec = 1 # officially 0.1
 DefaultTimeoutStartSec = 10 # officially 90
@@ -378,8 +383,8 @@ class Systemctl:
         self._preset_folder1 = _preset_folder1
         self._preset_folder2 = _preset_folder2
         self._preset_folder3 = _preset_folder3
-        self._waitprocfile = _waitprocfile
-        self._waitkillproc = _waitkillproc
+        self._WaitProcFile = DefaultWaitProcFile
+        self._WaitKillProc = DefaultWaitKillProc
         self._force = _force
         self._quiet = _quiet
         self._full = _full
@@ -602,7 +607,8 @@ class Systemctl:
         return pid_exists(pid)
     def wait_pid_file(self, pid_file, timeout = None): # -> pid?
         """ wait some seconds for the pid file to appear and return the pid """
-        timeout = int(timeout or self._waitprocfile)
+        timeout = int(timeout or self._WaitProcFile)
+        timeout = max(timeout, MinimumWaitProcFile)        
         dirpath = os.path.dirname(os.path.abspath(pid_file))
         for x in xrange(timeout):
             if not os.path.isdir(dirpath):
@@ -889,20 +895,18 @@ class Systemctl:
         except:
             logg.warning("bad read of pid file '%s'", pid_file)
         return pid
-    def kill_pid(self, pid):
+    def kill_pid(self, pid, timeout = None, kill_signal = None):
         if not pid:
             return None
         #
-        os.kill(pid, signal.SIGTERM)
-        for x in xrange(self._waitkillproc):
-            if not self.pid_exists(pid):
-                break
-            self.sleep(1)
-        if not self.pid_exists(pid):
-            return True
-        #
-        os.kill(pid, signal.SIGKILL)
-        for x in xrange(self._waitkillproc):
+        timeout = int(timeout or self._WaitKillProc)
+        timeout = max(timeout, MinimumWaitKillProc)
+        if isinstance(kill_signal, basestring):
+           sig = getattr(signal, kill_signal)
+        else:
+           sig = kill_signal or signal.SIGTERM
+        os.kill(pid, sig)
+        for x in xrange(timeout):
             if not self.pid_exists(pid):
                 break
             self.sleep(1)
@@ -961,9 +965,7 @@ class Systemctl:
         elif not conf.getlist("Service", "ExecStop", []):
             if True:
                 pid_file = self.get_pid_file_from(conf)
-                pid = self.read_pid_file(pid_file)
-                logg.info("(stop) kill %s (%s)", pid, pid_file)
-                self.kill_pid(pid)
+                self.kill_unit_from(conf)
                 if os.path.isfile(pid_file):
                     os.remove(pid_file)
         elif runs in [ "simple" ]:
@@ -1287,10 +1289,23 @@ class Systemctl:
         return self.kill_unit_from(conf)
     def kill_unit_from(self, conf):
         if not conf: return None
+        sendSIGKILL = conf.get("Service", "SendSIGKILL", "yes")
+        kill_signal = conf.get("Service", "KillSignal", signal.SIGTERM)
+        timeout = conf.get("Service", "TimeoutSec", DefaultTimeoutStopSec)
+        timeout = conf.get("Service", "TimeoutStopSec", timeout)
         pid_file = self.get_pid_file_from(conf)
         pid = self.read_pid_file(pid_file)
-        logg.debug("pid_file '%s' => PID %s", pid_file, pid)
-        return self.kill_pid(pid)
+        logg.info("stop kill PID %s (%s)", pid, pid_file)
+        if not self.kill_pid(pid, timeout, kill_signal):
+            if "y" in sendSIGKILL:
+                logg.info("hard kill PID %s (%s)", pid, pid_file)
+                return self.kill_pid(pid, timeout, signal.SIGKILL)
+            else:
+                logg.info("no hard kill PID %s (no SendSIGKILL)", pid)
+                return False
+        else:
+            logg.info("done kill PID %s", pid)
+            return True
     def is_active_of_units(self, *modules):
         """ [UNIT].. -- check if these units are in active state
         implements True if any is-active = True """
