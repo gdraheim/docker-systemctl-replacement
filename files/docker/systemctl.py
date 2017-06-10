@@ -45,18 +45,18 @@ def shutil_chown(name, user = None, group = None):
         uid = pwd.getpwnam(user).pw_uid
     os.chown(name, uid, gid)
 
-def shutil_setuid(name, user = None, group = None):
+def shutil_setuid(user = None, group = None):
     """ set fork-child uid/gid """
     if group:
         import grp
-        gid = grp.getgrnam(user).gr_gid
+        gid = grp.getgrnam(group).gr_gid
         os.setgid(gid)
-        logg.debug("setgid %s", gid)
+        logg.debug("setgid %s '%s'", gid, group)
     if user:
         import pwd
         uid = pwd.getpwnam(user).pw_uid
         os.setuid(uid)
-        logg.debug("setuid %s", uid)
+        logg.debug("setuid %s '%s'", uid, user)
 
 def shutil_truncate(name):
     """ truncate file """
