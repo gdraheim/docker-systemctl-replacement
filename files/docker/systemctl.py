@@ -901,7 +901,7 @@ class Systemctl:
                             if name == "MAINPID":
                                 logg.info("notified MAINPID %s (was PID %s)", value, mainpid)
                                 mainpid = value
-                            if name == "READY"
+                            if name == "READY":
                                 seenREADY = value
                         if seenREADY:
                             break
