@@ -21,6 +21,11 @@ import tempfile
 
 def shell_cmd(cmd):
     return " ".join(["'%s'" % part for part in cmd])
+def to_int(value, default = 0):
+    try:
+        return int(value)
+    except:
+        return default
 
 def homedir_user(user = None, default = None):
     if user:
@@ -352,11 +357,12 @@ MinimumWaitProcFile = 10
 MinimumWaitKillProc = 3
 DefaultWaitProcFile = 100
 DefaultWaitKillProc = 10
-DefaultTimeoutReloadSec = 1 # officially 0.1
-DefaultTimeoutRestartSec = 1 # officially 0.1
+DefaultTimeoutReloadSec = 2 # officially 0.1
+DefaultTimeoutRestartSec = 2 # officially 0.1
 DefaultTimeoutStartSec = 10 # officially 90
 DefaultTimeoutStopSec = 10 # officially 90
 DefaultMaximumTimeout = 200
+DefaultNotifySocket = "/var/run/systemd/notify"
 
 def time_to_seconds(text, maximum = None):
     if maximum is None:
@@ -745,7 +751,7 @@ class Systemctl:
         for part in shlex.split(expanded):
             newcmd += [ re.sub("[$][{](\w+)[}]", lambda m: get_env2(m), part) ]
         return newcmd
-    def notify_socket_from(self, conf):
+    def notify_socket_from(self, conf, socketfile = None):
         """ creates a notify-socket for the (non-privileged) user """
         NotifySocket = collections.namedtuple("NotifySocket", ["socket", "socketfile" ])
         runuser = conf.get("Service", "User", "")
@@ -753,28 +759,61 @@ class Systemctl:
         if runuser and os.geteuid() != 0:
            logg.error("can not exec notify-service from non-root caller")
            return None
-        socketdir = tempfile.mkdtemp("systemctl")
+        socketfile = socketfile or DefaultNotifySocket
+        if not os.path.isdir(os.path.dirname(socketfile)):
+            os.makedirs(os.path.dirname(socketfile))
+        if os.path.exists(socketfile):
+           os.unlink(socketfile)
         sock = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
-        socketfile = os.path.join(socketdir, "notify")
         sock.bind(socketfile)
-        if runuser:
-           shutil_chown(socketfile, runuser)
-           shutil_chown(socketdir, runuser)
-        #@ sock.listen(1)
+        os.chmod(socketfile, 0777)
         return NotifySocket(sock, socketfile)
     def read_notify_socket(self, notify, timeout):
         notify.socket.settimeout(timeout or DefaultMaximumTimeout)
         result = ""
         try:
             result, client_address = notify.socket.recvfrom(4096)
-            logg.debug("read_notify_socket(%s):\n%s", len(result), result)
+            if result:
+                logg.debug("read_notify_socket(%s):%s", len(result), result.replace("\n","|"))
         except socket.timeout, e:
-            logg.debug("socket.timeout %s", e)
+            if timeout > 2:
+                logg.debug("socket.timeout %s", e)
         try:
             notify.socket.close()
         except Exception, e:
             logg.debug("socket.close %s", e)
         return result
+    def wait_notify_socket(self, notify, timeout, pid = None):
+        if not notify:
+            logg.info("no $NOTIFY_SOCKET, waiting %s", timeout)
+            time.sleep(timeout)
+            return {}
+        #
+        logg.info("wait $NOTIFY_SOCKET, timeout %s", timeout)
+        results = {}
+        seenREADY = None
+        for attempt in xrange(timeout+1):
+            if pid:
+               if not pid_exists(pid) or pid_zombie(pid):
+                   logg.info("dead PID %s", pid)
+                   return results
+            if not attempt: # first one
+                time.sleep(1)
+                continue
+            result = self.read_notify_socket(notify, 1) # sleep max 1 second
+            if not result: # timeout
+                time.sleep(1)
+                continue
+            for name, value in self.read_env_part(result):
+                results[name] = value
+                if name == "READY":
+                    seenREADY = value
+                if name == "STATUS":
+                    logg.debug("STATUS: %s", value)
+            if seenREADY:
+                break
+        logg.debug("notify = %s", results)
+        return results
     def execstart_of_unit(self, unit):
         conf = self.load_unit_conf(unit)
         cmdlist = conf.getlist("Service", "ExecStart", [])
@@ -868,13 +907,13 @@ class Systemctl:
             rungroup = conf.get("Service", "Group", "")
             shutil_truncate(pid_file)
             shutil_chown(pid_file, runuser, rungroup)
-            notify = self.notify_socket_from(conf)
             timeout = conf.get("Service", "TimeoutSec", DefaultTimeoutStartSec)
             timeout = conf.get("Service", "TimeoutStartSec", timeout)
             timeout = time_to_seconds(timeout, DefaultMaximumTimeout)
+            notify = self.notify_socket_from(conf)
             if notify:
                 env["NOTIFY_SOCKET"] = notify.socketfile
-                logg.info("use NOTIFY_SOCKET=%s", notify.socketfile)
+                logg.debug("use NOTIFY_SOCKET=%s", notify.socketfile)
             if not os.fork():
                 logg.debug("> simple process for %s", conf.filename())
                 os.setsid() # detach from parent
@@ -902,24 +941,12 @@ class Systemctl:
             else:
                 # parent
                 mainpid = self.wait_pid_file(pid_file) # fork is running
-                if notify:
-                    seenREADY = None
-                    for attempt in [1,2,3]:
-                        logg.info("[%s] wait $NOTIFY_SOCKET, timeout %s", attempt, timeout)
-                        result = self.read_notify_socket(notify, timeout)
-                        if not result: # timeout
-                            break
-                        for name, value in self.read_env_part(result):
-                            if name == "MAINPID":
-                                logg.info("notified MAINPID %s (was PID %s)", value, mainpid)
-                                mainpid = value
-                            if name == "READY":
-                                seenREADY = value
-                        if seenREADY:
-                            break
-                else:
-                    logg.info("no $NOTIFY_SOCKET, waiting %s", timeout)
-                    time.sleep(timeout)
+                results = self.wait_notify_socket(notify, timeout, mainpid)
+                if "MAINPID" in results:
+                    new_pid = results["MAINPID"]
+                    if new_pid and to_int(new_pid) != mainpid:
+                        logg.info("NEW PID %s from sd_notify (was PID %s)", new_pid, mainpid)
+                        self.write_pid_file(pid_file, new_pid)
                 logg.info("* done notify %s", pid_file)
                 if not self.read_pid_file(pid_file, ""):
                    raise Exception("could not start service")
@@ -957,7 +984,7 @@ class Systemctl:
         try:
             for line in open(pid_file):
                 if line.strip(): 
-                    pid = int(line.strip())
+                    pid = to_int(line.strip())
                     break
         except:
             logg.warning("bad read of pid file '%s'", pid_file)
@@ -1054,12 +1081,23 @@ class Systemctl:
             timeout = conf.get("Service", "TimeoutSec", DefaultTimeoutStopSec)
             timeout = conf.get("Service", "TimeoutStopSec", timeout)
             timeout = time_to_seconds(timeout, DefaultMaximumTimeout)
+            notify = self.notify_socket_from(conf)
+            if notify:
+                env["NOTIFY_SOCKET"] = notify.socketfile
+                logg.debug("use NOTIFY_SOCKET=%s", notify.socketfile)
             for cmd in conf.getlist("Service", "ExecStop", []):
                 pid = self.read_pid_file(pid_file, "")
                 env["MAINPID"] = str(pid)
                 logg.info("* stop %s", sudo+cmd)
                 run = subprocess_wait(sudo+cmd, env)
                 # self.write_pid_file(pid_file, run.pid)
+                mainpid = self.wait_pid_file(pid_file) # fork is running
+                results = self.wait_notify_socket(notify, timeout, mainpid)
+                if "MAINPID" in results:
+                    new_pid = results["MAINPID"]
+                    if new_pid and new_pid.strip() != mainpid:
+                        logg.info("NEW PID %s from sd_notify", new_pid)
+                        self.write_pid_file(pid_file, new_pid)
         elif runs in [ "oneshot" ]:
             for cmd in conf.getlist("Service", "ExecStop", []):
                 check, cmd = checkstatus(cmd)
@@ -1136,12 +1174,23 @@ class Systemctl:
             timeout = conf.get("Service", "TimeoutSec", DefaultTimeoutReloadSec)
             timeout = conf.get("Service", "TimeoutReloadSec", timeout)
             timeout = time_to_seconds(timeout, DefaultMaximumTimeout)
+            notify = self.notify_socket_from(conf)
+            if notify:
+                env["NOTIFY_SOCKET"] = notify.socketfile
+                logg.debug("use NOTIFY_SOCKET=%s", notify.socketfile)
             for cmd in conf.getlist("Service", "ExecReload", []):
                 pid = self.read_pid_file(pid_file, "")
                 env["MAINPID"] = str(pid)
                 logg.info("* reload %s", sudo+cmd)
                 run = subprocess_wait(sudo+cmd, env)
                 # self.write_pid_file(pid_file, run.pid)
+                mainpid = self.wait_pid_file(pid_file) # fork is running
+                results = self.wait_notify_socket(notify, timeout, mainpid)
+                if "MAINPID" in results:
+                    new_pid = results["MAINPID"]
+                    if new_pid and new_pid.strip() != mainpid:
+                        logg.info("NEW PID %s from sd_notify", new_pid)
+                        self.write_pid_file(pid_file, new_pid)
         elif runs in [ "oneshot" ]:
             for cmd in conf.getlist("Service", "ExecReload", []):
                 check, cmd = checkstatus(cmd)
@@ -1218,12 +1267,23 @@ class Systemctl:
             timeout = conf.get("Service", "TimeoutSec", DefaultTimeoutRestartSec)
             timeout = conf.get("Service", "TimeoutRestartSec", timeout)
             timeout = time_to_seconds(timeout, DefaultMaximumTimeout)
+            notify = self.notify_socket_from(conf)
+            if notify:
+                env["NOTIFY_SOCKET"] = notify.socketfile
+                logg.debug("use NOTIFY_SOCKET=%s", notify.socketfile)
             for cmd in conf.getlist("Service", "ExecRestart", []):
                 pid = self.read_pid_file(pid_file, "")
                 env["MAINPID"] = str(pid)
                 logg.info("* restart %s", sudo+cmd)
                 run = subprocess_wait(sudo+cmd, env)
                 # self.write_pid_file(pid_file, run.pid)
+                mainpid = self.wait_pid_file(pid_file) # fork is running
+                results = self.wait_notify_socket(notify, timeout, mainpid)
+                if "MAINPID" in results:
+                    new_pid = results["MAINPID"]
+                    if new_pid:
+                        logg.info("NEW PID %s from sd_notify", new_pid)
+                        self.write_pid_file(pid_file, new_pid)
         elif runs in [ "oneshot" ]:
             for cmd in conf.getlist("Service", "ExecRestart", []):
                 check, cmd = checkstatus(cmd)
