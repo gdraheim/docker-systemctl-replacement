@@ -21,18 +21,45 @@ import tempfile
 
 DISABLE_NOTIFY_SOCKET = True
 
+def shell_cmd(cmd):
+    return " ".join(["'%s'" % part for part in cmd])
+
+def homedir_user(user = None, default = None):
+    if user:
+        import pwd
+        return pwd.getpwnam(user).pw_dir
+    return default
+
 def shutil_chown(name, user = None, group = None):
     """ in python 3.3. there is shutil.chown """
     uid = -1
     gid = -1
+    if group:
+        import grp
+        gid = grp.getgrnam(user).gr_gid
     if user:
         import pwd
         uid = pwd.getpwnam(user).pw_uid
-    if group:
-        import grp
-        uid = grp.getgrnam(user).gr_gid
     os.chown(name, uid, gid)
 
+def shutil_setuid(name, user = None, group = None):
+    """ set fork-child uid/gid """
+    if group:
+        import grp
+        gid = grp.getgrnam(user).gr_gid
+        os.setgid(gid)
+        logg.debug("setgid %s", gid)
+    if user:
+        import pwd
+        uid = pwd.getpwnam(user).pw_uid
+        os.setuid(uid)
+        logg.debug("setuid %s", uid)
+
+def shutil_truncate(name):
+    """ truncate file """
+    f = open(name, "w")
+    f.write("")
+    f.close()
 
 # http://stackoverflow.com/questions/568271/how-to-check-if-there-exists-a-process-with-a-given-pid
 def pid_exists(pid):
@@ -175,6 +202,7 @@ class UnitConfigParser:
                     text = text.rstrip() + "\n"
                 else:
                     self.set(section, name, text)
+                    nextline = False
                 continue
             line = orig_line.strip()
             if not line:
@@ -572,10 +600,11 @@ class Systemctl:
         """ check if a pid does still exist (unix standard) """
         # return os.path.isdir("/proc/%s" % pid) # (linux standard) 
         return pid_exists(pid)
-    def wait_pid_file(self, pid_file): # -> pid?
+    def wait_pid_file(self, pid_file, timeout = None): # -> pid?
         """ wait some seconds for the pid file to appear and return the pid """
+        timeout = int(timeout or self._waitprocfile)
         dirpath = os.path.dirname(os.path.abspath(pid_file))
-        for x in xrange(self._waitprocfile):
+        for x in xrange(timeout):
             if not os.path.isdir(dirpath):
                 self.sleep(1)
                 continue
@@ -662,6 +691,31 @@ class Systemctl:
             if runuser or rungroup:
                logg.error("can not find sudo but it is required for runuser")
         return sudo
+    def chdir_workingdir(self, conf):
+        runuser = conf.get("Service", "User", "")
+        workingdir = conf.get("Service", "WorkingDirectory", "")
+        if workingdir: return os.chdir(workingdir)
+        if runuser: return os.chdir(homedir_user(runuser))
+        return None
+    def non_shell_cmd(self, cmd, env):
+        # according to documentation, when bar="one two" then the expansion
+        # of '$bar' is ["one","two"] and '${bar}' becomes ["one two"]
+        def get_env1(m):
+            if m.group(1) in env:
+                return env[m.group(1)]
+            logg.error("can not expand $%s", m.group(1))
+            return "$"+m.group(1)
+        def get_env2(m):
+            if m.group(1) in env:
+                return env[m.group(1)]
+            logg.error("can not expand ${%s}", m.group(1))
+            return "${"+m.group(1)+"}"
+        expanded = re.sub("[$](\w+)", lambda m: get_env1(m), cmd.replace("\\\n",""))
+        import shlex
+        newcmd = []
+        for part in shlex.split(expanded):
+            newcmd += [ re.sub("[$][{](\w+)[}]", lambda m: get_env2(m), part) ]
+        return newcmd
     def notify_socket_from(self, conf):
         """ creates a notify-socket for the (non-privileged) user """
         if DISABLE_NOTIFY_SOCKET:
@@ -694,12 +748,11 @@ class Systemctl:
             notify.socket.close()
         except Exception, e:
             logg.info("socket.close %s", e)
-        try:
-            os.remove(notify.socketfile)
-            os.rmdir(os.path.dirname(notify.socketfile))
-        except Exception, e:
-            logg.info("socket.remove %s", e)
-        return result
+    def execstart_of_unit(self, unit):
+        conf = self.load_unit_conf(unit)
+        cmdlist = conf.getlist("Service", "ExecStart", [])
+        for idx, cmd in enumerate(cmdlist):
+            print "ExecStart[%s]: %s" % (idx, cmd)
     def start_of_units(self, *modules):
         """ [UNIT]... -- start these units """
         done = True
@@ -739,13 +792,40 @@ class Systemctl:
                 run = subprocess_wait(cmd, env)
         elif runs in [ "simple" ]: 
             pid_file = self.get_pid_file_from(conf)
-            for cmd in conf.getlist("Service", "ExecStart", []):
-                pid = self.read_pid_file(pid_file, "")
-                env["MAINPID"] = str(pid)
-                logg.info("& start %s", sudo+cmd)
-                run = subprocess_notty(sudo+setsid+cmd, env)
-                self.write_pid_file(pid_file, run.pid)
-                logg.info("& started PID %s", run.pid)
+            runuser = conf.get("Service", "User", "")
+            rungroup = conf.get("Service", "Group", "")
+            if runuser or rungroup:
+                if os.geteuid() != 0:
+                    logg.error("uid %s / runuser %s / rungroup %s for service %s", 
+                         os.geteuid(), runuser, rungroup, conf.filename())
+                    raise Exception("must be root to run service with diffent runuser/rungroup")
+            shutil_truncate(pid_file)
+            shutil_chown(pid_file, runuser, rungroup)
+            if not os.fork():
+                logg.debug("> simple process for %s", conf.filename())
+                os.setsid() # detach from parent
+                shutil_setuid(runuser, rungroup)
+                self.chdir_workingdir(conf)
+                inp = open("/dev/zero")
+                out = open("/dev/null", "w")
+                cmdlist = conf.getlist("Service", "ExecStart", [])
+                for idx, cmd in enumerate(cmdlist):
+                    logg.info("ExecStart[%s]: %s", idx, cmd)
+                for cmd in cmdlist:
+                    pid = self.read_pid_file(pid_file, "")
+                    env["MAINPID"] = str(pid)
+                    newcmd = self.non_shell_cmd(cmd, env)
+                    logg.info("> start %s", shell_cmd(newcmd))
+                    run = subprocess.Popen(newcmd, env=env, close_fds=True, 
+                        stdin=inp, stdout=out, stderr=out)
+                    self.write_pid_file(pid_file, run.pid)
+                    logg.info("> started PID %s", run.pid)
+                    run.wait()
+                    logg.info("> stopped PID %s EXIT %s", run.pid, run.returncode)
+            else:
+                # parent
+                self.wait_pid_file(pid_file)
+                logg.info("> done simple %s", pid_file)
         elif runs in [ "notify" ]:
             pid_file = self.get_pid_file_from(conf)
             timeout = conf.get("Service", "TimeoutSec", DefaultTimeoutStartSec)
