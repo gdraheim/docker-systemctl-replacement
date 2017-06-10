@@ -19,7 +19,7 @@ import time
 import socket
 import tempfile
 
-DISABLE_NOTIFY_SOCKET = True
+DISABLE_NOTIFY_SOCKET = False
 
 def shell_cmd(cmd):
     return " ".join(["'%s'" % part for part in cmd])
