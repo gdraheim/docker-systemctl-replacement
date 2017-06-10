@@ -91,6 +91,27 @@ def pid_exists(pid):
             raise
     else:
         return True
+def pid_zombie(pid):
+    if pid is None:
+        return False
+    if pid < 0:
+        return False
+    if pid == 0:
+        # According to "man 2 kill" PID 0 refers to every process
+        # in the process group of the calling process.
+        # On certain systems 0 is a valid PID but we have no way
+        # to know that in a portable fashion.
+        raise ValueError('invalid PID 0')
+    check = "/proc/%s/status" % pid
+    try:
+        for line in open(check):
+            if line.startswith("State:"):
+                return "Z" in line
+    except IOError, e:
+        if e.errno == errno.ENOENT:
+            return False
+        raise
+    return False
 
 def checkstatus(cmd):
     if cmd.startswith("-"):
@@ -807,7 +828,7 @@ class Systemctl:
         elif runs in [ "simple" ]: 
             pid_file = self.get_pid_file_from(conf)
             pid = self.read_pid_file(pid_file, "")
-            if pid and pid_exists(pid):
+            if pid and pid_exists(pid) and not pid_zombie(pid):
                 logg.error("the service is already running on PID %s", pid)
                 return False
             runuser = conf.get("Service", "User", "")
@@ -849,7 +870,7 @@ class Systemctl:
             # same as "simple" but create $NOTIFY_SOCKET and check it
             pid_file = self.get_pid_file_from(conf)
             pid = self.read_pid_file(pid_file, "")
-            if pid and pid_exists(pid):
+            if pid and pid_exists(pid) and not pid_zombie(pid):
                 logg.error("the service is already running on PID %s", pid)
                 return False
             runuser = conf.get("Service", "User", "")
