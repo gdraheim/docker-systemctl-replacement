@@ -775,7 +775,6 @@ class Systemctl:
         if not conf: return
         runs = conf.get("Service", "Type", "simple").lower()
         sudo = self.sudo_from(conf)
-        setsid = "setsid "
         env = self.get_env(conf)
         logg.info("env = %s", env)
         if True:
@@ -989,7 +988,6 @@ class Systemctl:
         if not conf: return
         runs = conf.get("Service", "Type", "simple").lower()
         sudo = self.sudo_from(conf)
-        setsid = "setsid "
         env = self.get_env(conf)
         if True:
             for cmd in conf.getlist("Service", "ExecStopPre", []):
@@ -1015,7 +1013,7 @@ class Systemctl:
                 pid = self.read_pid_file(pid_file, "")
                 env["MAINPID"] = str(pid)
                 logg.info("& stop %s", sudo+cmd)
-                run = subprocess_wait(sudo+setsid+cmd, env)
+                run = subprocess_wait(sudo+cmd, env)
                 # self.write_pid_file(pid_file, run.pid)
         elif runs in [ "notify" ]:
             pid_file = self.get_pid_file_from(conf)
@@ -1078,7 +1076,6 @@ class Systemctl:
         if not conf: return
         runs = conf.get("Service", "Type", "simple").lower()
         sudo = self.sudo_from(conf)
-        setsid = "setsid "
         env = self.get_env(conf)
         if True:
             for cmd in conf.getlist("Service", "ExecReloadPre", []):
@@ -1157,7 +1154,6 @@ class Systemctl:
         if not conf: return
         runs = conf.get("Service", "Type", "simple").lower()
         sudo = self.sudo_from(conf)
-        setsid = "setsid "
         env = self.get_env(conf)
         if True:
             for cmd in conf.getlist("Service", "ExecRestartPre", []):
