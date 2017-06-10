@@ -609,8 +609,10 @@ class Systemctl:
                 continue
             pid = self.read_pid_file(pid_file)
             if not pid:
+                self.sleep(1)
                 continue
             if not pid_exists(pid):
+                self.sleep(1)
                 continue
             return pid
         return None
@@ -737,20 +739,22 @@ class Systemctl:
            logg.error("can not exec notify-service from non-root caller")
            return None
         socketdir = tempfile.mkdtemp("systemctl")
-        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        #@ sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        sock = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM) #@
         socketfile = os.path.join(socketdir, "notify")
         sock.bind(socketfile)
         if runuser:
            shutil_chown(socketfile, runuser)
            shutil_chown(socketdir, runuser)
-        sock.listen(1)
+        #@ sock.listen(1)
         return NotifySocket(sock, socketfile)
     def read_notify_socket(self, notify, timeout):
         notify.socket.settimeout(timeout or DefaultMaximumTimeout)
         result = ""
         try:
-            connection, client_address = notify.socket.accept()
-            result = connection.recv(4096)
+            #@ connection, client_address = notify.socket.accept()
+            #@ result = connection.recv(4096)
+            result, client_address = notify.socket.recvfrom(4096) #@
             logg.debug("read_notify_socket(%s):\n%s", len(result), result)
         except socket.timeout, e:
             logg.debug("socket.timeout %s", e)
@@ -836,8 +840,8 @@ class Systemctl:
                         self.write_pid_file(pid_file, "")
             else:
                 # parent
-                self.wait_pid_file(pid_file)
-                logg.info("> done simple %s", pid_file)
+                pid = self.wait_pid_file(pid_file)
+                logg.info("> done simple PID %s [%s]", pid, pid_file)
                 time.sleep(1) # give it another second to come up
                 if not self.read_pid_file(pid_file, ""):
                    raise Exception("could not start service")
@@ -885,8 +889,7 @@ class Systemctl:
                         self.write_pid_file(pid_file, "")
             else:
                 # parent
-                self.wait_pid_file(pid_file) # fork is running
-                mainpid = self.read_pid_file(pid_file, "")
+                mainpid = self.wait_pid_file(pid_file) # fork is running
                 if notify:
                     logg.info("wait $NOTIFY_SOCKET, timeout %s", timeout)
                     result = self.read_notify_socket(notify, timeout)
@@ -914,8 +917,8 @@ class Systemctl:
                 run = subprocess_wait(sudo+cmd, env)
                 if check and run.returncode: raise Exception("ExecStart")
                 pid_file = self.get_pid_file_from(conf)
-                self.wait_pid_file(pid_file)
-                logg.info(": done forking %s", pid_file)
+                pid = self.wait_pid_file(pid_file)
+                logg.info(": done forking PID %s [%s]", pid, pid_file)
         else:
             logg.error("unsupported run type '%s'", runs)
             raise Exception("unsupported run type")
@@ -1056,7 +1059,7 @@ class Systemctl:
                 if active:
                     if check and run.returncode: raise Exception("ExecStop")
                 pid_file = self.get_pid_file_from(conf)
-                self.wait_pid_file(pid_file)
+                pid = self.wait_pid_file(pid_file)
         else:
             logg.error("unsupported run type '%s'", runs)
             raise Exception("unsupported run type")
@@ -1134,7 +1137,7 @@ class Systemctl:
                 run = subprocess_wait(sudo+cmd, env)
                 if check and run.returncode: raise Exception("ExecReload")
                 pid_file = self.get_pid_file_from(conf)
-                self.wait_pid_file(pid_file)
+                pid = self.wait_pid_file(pid_file)
         else:
             logg.error("unsupported run type '%s'", runs)
             raise Exception("unsupported run type")
@@ -1213,7 +1216,7 @@ class Systemctl:
                 run = subprocess_wait(sudo+cmd, env)
                 if check and run.returncode: raise Exception("ExecRestart")
                 pid_file = self.get_pid_file_from(conf)
-                self.wait_pid_file(pid_file)
+                pid = self.wait_pid_file(pid_file)
         else:
             logg.error("unsupported run type '%s'", runs)
             raise Exception("unsupported run type")
