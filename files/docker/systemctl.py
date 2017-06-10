@@ -690,6 +690,17 @@ class Systemctl:
             if runuser or rungroup:
                logg.error("can not find sudo but it is required for runuser")
         return sudo
+    def open_journal_log(self, conf):
+        name = conf.filename()
+        if name:
+            log_dir = "/var/log/journal"
+            log_file = name.replace(os.path.sep,".") + ".log"
+            x = log_file.find(".", 1)
+            if x > 0: log_file = log_file[x+1:]
+            if not os.path.isdir(log_dir):
+                os.makedirs(log_dir)
+            return open(os.path.join(log_dir, log_file), "w")
+        return open("/dev/null", "w")
     def chdir_workingdir(self, conf):
         runuser = conf.get("Service", "User", "")
         workingdir = conf.get("Service", "WorkingDirectory", "")
@@ -802,10 +813,10 @@ class Systemctl:
             if not os.fork():
                 logg.debug("> simple process for %s", conf.filename())
                 os.setsid() # detach from parent
+                inp = open("/dev/zero")
+                out = self.open_journal_log(conf)
                 shutil_setuid(runuser, rungroup)
                 self.chdir_workingdir(conf)
-                inp = open("/dev/zero")
-                out = open("/dev/null", "w")
                 cmdlist = conf.getlist("Service", "ExecStart", [])
                 for idx, cmd in enumerate(cmdlist):
                     logg.debug("ExecStart[%s]: %s", idx, cmd)
