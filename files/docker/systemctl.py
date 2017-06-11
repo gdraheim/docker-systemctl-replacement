@@ -726,11 +726,26 @@ class Systemctl:
                 os.makedirs(log_dir)
             return open(os.path.join(log_dir, log_file), "w")
         return open("/dev/null", "w")
-    def chdir_workingdir(self, conf):
+    def chdir_workingdir(self, conf, check = True):
         runuser = conf.get("Service", "User", "")
         workingdir = conf.get("Service", "WorkingDirectory", "")
-        if workingdir: return os.chdir(workingdir)
-        if runuser: return os.chdir(homedir_user(runuser))
+        if workingdir: 
+            try: return os.chdir(workingdir)
+            except Exception, e:
+               logg.error("chdir workingdir '%s': %s", workingdir, e)
+               if check: raise
+        if runuser: 
+            homedir = homedir_user(runuser)
+            try: return os.chdir(homedir)
+            except Exception, e:
+               logg.error("chdir %s home '%s': %s", runuser, homedir, e)
+               if check: raise
+        tempdir = tempfile.gettempdir()
+        if tempdir:
+            try: return os.chdir(tempdir)
+            except Exception, e:
+               logg.error("chdir tempdir '%s': %s", tempdir, e)
+               if check: raise
         return None
     def non_shell_cmd(self, cmd, env):
         # according to documentation, when bar="one two" then the expansion
@@ -874,10 +889,12 @@ class Systemctl:
                 os.dup2(out.fileno(), sys.stdout.fileno())
                 os.dup2(out.fileno(), sys.stderr.fileno())
                 shutil_setuid(runuser, rungroup)
-                self.chdir_workingdir(conf)
+                self.chdir_workingdir(conf, check = False)
+                logg.info("=========>")
                 cmdlist = conf.getlist("Service", "ExecStart", [])
                 for idx, cmd in enumerate(cmdlist):
                     logg.debug("ExecStart[%s]: %s", idx, cmd)
+                logg.info("=========>")
                 for cmd in cmdlist:
                     pid = self.read_pid_file(pid_file, "")
                     env["MAINPID"] = str(pid)
@@ -926,7 +943,7 @@ class Systemctl:
                 os.dup2(out.fileno(), sys.stdout.fileno())
                 os.dup2(out.fileno(), sys.stderr.fileno())
                 shutil_setuid(runuser, rungroup)
-                self.chdir_workingdir(conf)
+                self.chdir_workingdir(conf, check = False)
                 cmdlist = conf.getlist("Service", "ExecStart", [])
                 for idx, cmd in enumerate(cmdlist):
                     logg.debug("ExecStart[%s]: %s", idx, cmd)
@@ -1995,7 +2012,13 @@ if __name__ == "__main__":
     opt, args = _o.parse_args()
     logging.basicConfig(level = max(0, logging.FATAL - 10 * opt.verbose))
     logg.setLevel(max(0, logging.ERROR - 10 * opt.verbose))
-    if os.path.exists("/var/log/systemctl.log"):
+    if os.path.exists("/var/log/systemctl.debug.log"):
+       loggfile = logging.FileHandler("/var/log/systemctl.debug.log")
+       loggfile.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
+       logg.addHandler(loggfile)
+       logg.setLevel(logging.DEBUG)
+       logg.info("EXEC BEGIN %s %s", os.path.realpath(sys.argv[0]), " ".join(args))
+    elif os.path.exists("/var/log/systemctl.log"):
        loggfile = logging.FileHandler("/var/log/systemctl.log")
        loggfile.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
        logg.addHandler(loggfile)

@@ -37,6 +37,12 @@ def grep(pattern, lines):
 def greps(lines, pattern):
     return list(grep(pattern, lines))
 
+def download(base_url, filename, into):
+    if not os.path.isdir(into):
+        os.makedirs(into)
+    if not os.path.exists(os.path.join(into, filename)):
+        sh____("cd {into} && wget {base_url}/{filename}".format(**locals()))
+
 class DockerSystemctlReplacementTest(unittest.TestCase):
     def testdir(self, testname):
         newdir = "tests/tmp."+testname
@@ -203,6 +209,45 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(build_new_image.format(**locals()))
         drop_old_container = "docker rm --force {name}"
         start_as_container = "docker run -d -p {port}:80 --name {name} {images}:{name}"
+        sx____(drop_old_container.format(**locals()))
+        sh____(start_as_container.format(**locals()))
+        # THEN
+        tmp = self.testdir(testname)
+        read_index_html = "sleep 5; wget -O {tmp}/{name}.txt http://127.0.0.1:{port}"
+        grep_index_html = "grep OK {tmp}/{name}.txt"
+        sh____(read_index_html.format(**locals()))
+        sh____(grep_index_html.format(**locals()))
+        # CLEAN
+        stop_new_container = "docker stop {name}"
+        drop_new_container = "docker rm --force {name}"
+        sh____(stop_new_container.format(**locals()))
+        sh____(drop_new_container.format(**locals()))
+    def test_6006_centos_elasticsearch_dockerfile(self):
+        """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
+            THEN we can setup a specific ElasticSearch version 
+                 as being downloaded from the company.
+            Without a special startup.sh script or container-cmd 
+            one can just start the image and in the container
+            expecting that the service is started. Therefore,
+            WHEN we start the image as a docker container
+            THEN we can see the ok-status from elastic."""
+        base_url = "https://download.elastic.co/elasticsearch/elasticsearch"
+        filename = "elasticsearch-1.7.3.noarch.rpm"
+        into_dir = "Software/ElasticSearch"
+        download(base_url, filename, into_dir)
+        self.assertTrue(greps(os.listdir("Software/ElasticSearch"), filename))
+        #
+        testname="test_6006"
+        port=6006
+        name="centos-elasticsearch"
+        dockerfile="centos-elasticsearch.dockerfile"
+        images = IMAGES
+        # WHEN
+        build_new_image = "docker build . -f tests/{dockerfile} --tag {images}:{name}"
+        sh____(build_new_image.format(**locals()))
+        return 1
+        drop_old_container = "docker rm --force {name}"
+        start_as_container = "docker run -d -p {port}:9200 --name {name} {images}:{name}"
         sx____(drop_old_container.format(**locals()))
         sh____(start_as_container.format(**locals()))
         # THEN
