@@ -281,8 +281,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                  being installed and enabled.
             WHEN we start the image as a docker container
             THEN we can download the root html showing 'OK'
-            and in the systemctl.log we can see NOTIFY_SOCKET
-            messages."""
+            and in the systemctl.debug.log we can see NOTIFY_SOCKET
+            messages with Apache sending a READY and MAINPID value."""
         testname="test_6011"
         port=6011
         name="centos-httpd"
