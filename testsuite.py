@@ -3,7 +3,7 @@
 """ Testcases for docker-systemctl-replacement functionality """
 
 __copyright__ = "(C) Guido Draheim, for free use (CC-BY,GPL) """
-__version__ = "0.6.1135"
+__version__ = "0.6.1142"
 
 import subprocess
 import os.path
@@ -12,14 +12,30 @@ import datetime
 import unittest
 import shutil
 import logging
+import re
 from fnmatch import fnmatchcase as fnmatch
+from glob import glob
 
 logg = logging.getLogger("tests")
+
+IMAGES = "localhost:5000/testingsystemctl"
 
 def sh____(cmd, shell=True):
     return subprocess.check_call(cmd, shell=shell)
 def sx____(cmd, shell=True):
     return subprocess.call(cmd, shell=shell)
+def output(cmd, shell=True):
+    run = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE)
+    out, err = run.communicate()
+    return out
+def grep(pattern, lines):
+    if isinstance(lines, basestring):
+        lines = lines.split("\n")
+    for line in lines:
+       if re.search(pattern, line.rstrip()):
+           yield line.rstrip()
+def greps(lines, pattern):
+    return list(grep(pattern, lines))
 
 class DockerSystemctlReplacementTest(unittest.TestCase):
     def testdir(self, testname):
@@ -43,11 +59,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         port=6001
         name="centos-httpd"
         dockerfile="centos-httpd.dockerfile"
+        images = IMAGES
         # WHEN
-        build_new_image = "docker build . -f tests/{dockerfile} --tag localhost:5000/tests:{name}"
+        build_new_image = "docker build . -f tests/{dockerfile} --tag {images}:{name}"
         sh____(build_new_image.format(**locals()))
         drop_old_container = "docker rm --force {name}"
-        start_as_container = "docker run -d -p {port}:80 --name {name} localhost:5000/tests:{name}"
+        start_as_container = "docker run -d -p {port}:80 --name {name} {images}:{name}"
         sx____(drop_old_container.format(**locals()))
         sh____(start_as_container.format(**locals()))
         # THEN
@@ -76,11 +93,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         port=6002
         name="centos-postgres"
         dockerfile="centos-postgres.dockerfile"
+        images = IMAGES
         # WHEN
-        build_new_image = "docker build . -f tests/{dockerfile} --tag localhost:5000/tests:{name}"
+        build_new_image = "docker build . -f tests/{dockerfile} --tag {images}:{name}"
         sh____(build_new_image.format(**locals()))
         drop_old_container = "docker rm --force {name}"
-        start_as_container = "docker run -d -p {port}:5432 --name {name} localhost:5000/tests:{name}"
+        start_as_container = "docker run -d -p {port}:5432 --name {name} {images}:{name}"
         sx____(drop_old_container.format(**locals()))
         sh____(start_as_container.format(**locals()))
         # THEN
@@ -111,11 +129,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         port=6003
         name="centos-lamp"
         dockerfile="centos-lamp.dockerfile"
+        images = IMAGES
         # WHEN
-        build_new_image = "docker build . -f tests/{dockerfile} --tag localhost:5000/tests:{name}"
+        build_new_image = "docker build . -f tests/{dockerfile} --tag {images}:{name}"
         sh____(build_new_image.format(**locals()))
         drop_old_container = "docker rm --force {name}"
-        start_as_container = "docker run -d -p {port}:80 --name {name} localhost:5000/tests:{name}"
+        start_as_container = "docker run -d -p {port}:80 --name {name} {images}:{name}"
         sx____(drop_old_container.format(**locals()))
         sh____(start_as_container.format(**locals()))
         # THEN
@@ -144,11 +163,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         port=6004
         name="opensuse-lamp"
         dockerfile="opensuse-lamp.dockerfile"
+        images = IMAGES
         # WHEN
-        build_new_image = "docker build . -f tests/{dockerfile} --tag localhost:5000/tests:{name}"
+        build_new_image = "docker build . -f tests/{dockerfile} --tag {images}:{name}"
         sh____(build_new_image.format(**locals()))
         drop_old_container = "docker rm --force {name}"
-        start_as_container = "docker run -d -p {port}:80 --name {name} localhost:5000/tests:{name}"
+        start_as_container = "docker run -d -p {port}:80 --name {name} {images}:{name}"
         sx____(drop_old_container.format(**locals()))
         sh____(start_as_container.format(**locals()))
         # THEN
@@ -177,11 +197,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         port=6005
         name="ubuntu-apache2"
         dockerfile="ubuntu-apache2.dockerfile"
+        images = IMAGES
         # WHEN
-        build_new_image = "docker build . -f tests/{dockerfile} --tag localhost:5000/tests:{name}"
+        build_new_image = "docker build . -f tests/{dockerfile} --tag {images}:{name}"
         sh____(build_new_image.format(**locals()))
         drop_old_container = "docker rm --force {name}"
-        start_as_container = "docker run -d -p {port}:80 --name {name} localhost:5000/tests:{name}"
+        start_as_container = "docker run -d -p {port}:80 --name {name} {images}:{name}"
         sx____(drop_old_container.format(**locals()))
         sh____(start_as_container.format(**locals()))
         # THEN
@@ -212,14 +233,23 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____("cd tests && ansible-playbook download-jenkins.yml -vv")
         sh____("cd tests && ansible-playbook download-selenium.yml -vv")
         sh____("cd tests && ansible-playbook download-firefox.yml -vv")
+        # CHECK
+        self.assertTrue(greps(os.listdir("Software/Jenkins"), "^jenkins.*[.]rpm"))
+        self.assertTrue(greps(os.listdir("Software/Selenium"), "^selenium-.*[.]tar.gz"))
+        self.assertTrue(greps(os.listdir("Software/Selenium"), "^selenium-server.*[.]jar"))
+        self.assertTrue(greps(os.listdir("Software/CentOS"), "^firefox.*[.]centos[.]x86_64[.]rpm"))
     def test_9002_ansible_restart_docker_build_compose(self):
         """ bring up the build-step deployment containers """
         drop_old_containers = "docker-compose -p testingsystemctl1 -f tests/docker-build-compose.yml down"
         make_new_containers = "docker-compose -p testingsystemctl1 -f tests/docker-build-compose.yml up -d"
         sx____("{drop_old_containers}".format(**locals()))
         sh____("{make_new_containers} || {make_new_containers} || {make_new_containers}".format(**locals()))
+        # CHECK
+        self.assertTrue(greps(output("docker ps"), " testingsystemctl1_virtualdesktop_1$"))
+        self.assertTrue(greps(output("docker ps"), " testingsystemctl1_serversystem_1$"))
     def test_9003_ansible_run_build_step_playbooks(self):
         """ run the build-playbook (using ansible roles) """
+        testname = "test_9003"
         # WHEN environment is prepared
         make_files_dir = "test -d tests/files || mkdir tests/files"
         make_script_link = "cd tests/files && ln -sf ../../files/docker"
@@ -238,6 +268,25 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # CLEAN
         drop_files_dir = "rm tests/files/docker"
         sh____(drop_files_dir)
+        #
+        # CHECK
+        tmp = self.testdir(testname)
+        read_logfile_1 = "docker cp testingsystemctl1_serversystem_1:/var/log/systemctl.log {tmp}/systemctl.server.log"
+        read_logfile_2 = "docker cp testingsystemctl1_virtualdesktop_1:/var/log/systemctl.log {tmp}/systemctl.desktop.log"
+        sh____(read_logfile_1.format(**locals()))
+        sh____(read_logfile_2.format(**locals()))
+        self.assertFalse(greps(open(tmp+"/systemctl.server.log"), " ERROR "))
+        self.assertFalse(greps(open(tmp+"/systemctl.desktop.log"), " ERROR "))
+        self.assertGreater(len(greps(open(tmp+"/systemctl.server.log"), " INFO ")), 22)
+        self.assertGreater(len(greps(open(tmp+"/systemctl.desktop.log"), " INFO ")), 22)
+        self.assertTrue(greps(open(tmp+"/systemctl.server.log"), "/systemctl daemon-reload"))
+        self.assertTrue(greps(open(tmp+"/systemctl.server.log"), "/systemctl status jenkins.service"))
+        self.assertTrue(greps(open(tmp+"/systemctl.server.log"), "/systemctl show jenkins.service"))
+        self.assertTrue(greps(open(tmp+"/systemctl.desktop.log"), "/systemctl show xvnc.service"))
+        self.assertTrue(greps(open(tmp+"/systemctl.desktop.log"), "/systemctl enable xvnc.service"))
+        self.assertTrue(greps(open(tmp+"/systemctl.desktop.log"), "/systemctl enable selenium.service"))
+        self.assertTrue(greps(open(tmp+"/systemctl.desktop.log"), "/systemctl is-enabled selenium.service"))
+        self.assertTrue(greps(open(tmp+"/systemctl.desktop.log"), "/systemctl daemon-reload"))
     def test_9004_ansible_save_build_step_as_new_images(self):
         # stop the containers but keep them around
         inventory = "tests/docker-build-compose.ini"
@@ -255,6 +304,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         commit2 = 'docker commit -c "{startup}" -m "{message}" {container2} "{new_image2}"'
         sh____(commit1.format(**locals()))
         sh____(commit2.format(**locals()))
+        # CHECK
+        self.assertTrue(greps(output("docker images"), IMAGES+".* serversystem "))
+        self.assertTrue(greps(output("docker images"), IMAGES+".* virtualdesktop "))
     def test_9005_ansible_restart_docker_start_compose(self):
         """ bring up the start-step runtime containers from the new images"""
         drop_old_build_step = "docker-compose -p testingsystemctl1 -f tests/docker-build-compose.yml down"
@@ -263,6 +315,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____("{drop_old_build_step}".format(**locals()))
         sx____("{drop_old_containers}".format(**locals()))
         sh____("{make_new_containers} || {make_new_containers} || {make_new_containers}".format(**locals()))
+        # CHECK
+        self.assertFalse(greps(output("docker ps"), " testingsystemctl1_virtualdesktop_1$"))
+        self.assertFalse(greps(output("docker ps"), " testingsystemctl1_serversystem_1$"))
+        self.assertTrue(greps(output("docker ps"), " testingsystemctl2_virtualdesktop_1$"))
+        self.assertTrue(greps(output("docker ps"), " testingsystemctl2_serversystem_1$"))
     def test_9006_ansible_unlock_jenkins(self):
         """ unlock jenkins as a post-build config-example using selenium-server """
         inventory = "tests/docker-start-compose.ini"
@@ -271,7 +328,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         vartarget = "-e j_url=http://serversystem:8080/buildserver"
         ansible = "ansible-playbook -i {inventory} {variables} {vartarget} {playbooks} -vv"
         sh____(ansible.format(**locals()))
-        # TEST
+        # CHECK
         test_screenshot = "ls -l tests/*.png"
         sh____(test_screenshot)
     def test_9007_ansible_check_jenkins_login(self):
@@ -285,12 +342,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(grep_jenkins_html.format(**locals()))
     def test_9008_ansible_stop_all_containers(self):
         """ bring up the start-step runtime containers from the new images"""
-        time.sleep(4)
+        time.sleep(3)
         drop_old_build_step = "docker-compose -p testingsystemctl1 -f tests/docker-build-compose.yml down"
         drop_old_start_step = "docker-compose -p testingsystemctl2 -f tests/docker-start-compose.yml down"
         sx____("{drop_old_build_step}".format(**locals()))
         sx____("{drop_old_start_step}".format(**locals()))
-
+        # CHECK
+        self.assertFalse(greps(output("docker ps"), " testingsystemctl1_virtualdesktop_1$"))
+        self.assertFalse(greps(output("docker ps"), " testingsystemctl1_serversystem_1$"))
+        self.assertFalse(greps(output("docker ps"), " testingsystemctl2_virtualdesktop_1$"))
+        self.assertFalse(greps(output("docker ps"), " testingsystemctl2_serversystem_1$"))
 
 if __name__ == "__main__":
     from optparse import OptionParser
