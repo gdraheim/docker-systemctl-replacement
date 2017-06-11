@@ -3,7 +3,7 @@
 """ Testcases for docker-systemctl-replacement functionality """
 
 __copyright__ = "(C) Guido Draheim, for free use (CC-BY,GPL) """
-__version__ = "0.6.1142"
+__version__ = "0.7.0"
 
 import subprocess
 import os.path
@@ -275,6 +275,54 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(open(tmp+"/systemctl.log"), "done simple PID"))
         self.assertTrue(greps(open(tmp+"/systemctl.log"), "stop kill PID .*elasticsearch.service"))
         self.assertTrue(greps(open(tmp+"/systemctl.log"), "stopped PID .* EXIT 143"))
+    def test_6011_centos_httpd_socket_notify(self):
+        """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
+            THEN we can create an image with an Apache HTTP service 
+                 being installed and enabled.
+            WHEN we start the image as a docker container
+            THEN we can download the root html showing 'OK'
+            and in the systemctl.log we can see NOTIFY_SOCKET
+            messages."""
+        testname="test_6011"
+        port=6011
+        name="centos-httpd"
+        dockerfile="centos-httpd.dockerfile"
+        images = IMAGES
+        # WHEN
+        # test_6001: build_new_image = "docker build . -f tests/{dockerfile} --tag {images}:{name}"
+        # test_6001: sh____(build_new_image.format(**locals()))
+        drop_old_container = "docker rm --force {name}"
+        start_as_container = "docker run -d -p {port}:80 --name {name} {images}:{name} sleep 9999"
+        sx____(drop_old_container.format(**locals()))
+        sh____(start_as_container.format(**locals()))
+        make_info_log = "touch /var/log/systemctl.debug.log"
+        start_httpd = "systemctl start httpd"
+        sh____("docker exec {name} {make_info_log}".format(**locals()))
+        sh____("docker exec {name} {start_httpd}".format(**locals()))
+        # THEN
+        tmp = self.testdir(testname)
+        read_index_html = "sleep 5; wget -O {tmp}/{name}.txt http://127.0.0.1:{port}"
+        grep_index_html = "grep OK {tmp}/{name}.txt"
+        sh____(read_index_html.format(**locals()))
+        sh____(grep_index_html.format(**locals()))
+        # STOP
+        status_elasticsearch = "systemctl status httpd"
+        stop_elasticsearch = "systemctl stop httpd"
+        sh____("docker exec {name} {status_elasticsearch}".format(**locals()))
+        sh____("docker exec {name} {stop_elasticsearch}".format(**locals()))
+        sh____("docker cp {name}:/var/log/systemctl.debug.log {tmp}/systemctl.debug.log".format(**locals()))
+        stop_new_container = "docker stop {name}"
+        drop_new_container = "docker rm --force {name}"
+        sh____(stop_new_container.format(**locals()))
+        sh____(drop_new_container.format(**locals()))
+        # CHECK
+        self.assertEqual(len(greps(open(tmp+"/systemctl.debug.log"), " ERROR ")), 0)
+        self.assertTrue(greps(open(tmp+"/systemctl.debug.log"), "use NOTIFY_SOCKET="))
+        self.assertTrue(greps(open(tmp+"/systemctl.debug.log"), "read_notify.*READY=1.*MAINPID="))
+        self.assertTrue(greps(open(tmp+"/systemctl.debug.log"), "done notify"))
+        self.assertTrue(greps(open(tmp+"/systemctl.debug.log"), "stop /bin/kill"))
+        self.assertTrue(greps(open(tmp+"/systemctl.debug.log"), "wait [$]NOTIFY_SOCKET"))
+        self.assertTrue(greps(open(tmp+"/systemctl.debug.log"), "dead PID"))
     def test_9000_ansible_test(self):
         """ FIXME: "-p testing_systemctl" makes containers like "testingsystemctl_<service>_1" ?! """
         sh____("ansible-playbook --version | grep ansible-playbook.2") # atleast version2
