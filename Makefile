@@ -17,4 +17,11 @@ version:
 help:
 	python files/docker/systemctl.py help
 
--include Maketests
+alltests: CH CP UA DJ
+.PHONY: tests
+tests: alltests
+
+CH centos-httpd.dockerfile: ; ./testsuite.py test_6001
+CP centos-postgres.dockerfile: ; ./testsuite.py test_6002
+UA ubuntu-apache2.dockerfile: ; ./testsuite.py test_6005
+DJ docker-jenkins: ; ./testsuite.py test_900*
