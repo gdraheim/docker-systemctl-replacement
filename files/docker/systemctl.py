@@ -890,11 +890,9 @@ class Systemctl:
                 os.dup2(out.fileno(), sys.stderr.fileno())
                 shutil_setuid(runuser, rungroup)
                 self.chdir_workingdir(conf, check = False)
-                logg.info("=========>")
                 cmdlist = conf.getlist("Service", "ExecStart", [])
                 for idx, cmd in enumerate(cmdlist):
                     logg.debug("ExecStart[%s]: %s", idx, cmd)
-                logg.info("=========>")
                 for cmd in cmdlist:
                     pid = self.read_pid_file(pid_file, "")
                     env["MAINPID"] = str(pid)

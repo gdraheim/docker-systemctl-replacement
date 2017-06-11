@@ -245,22 +245,36 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # WHEN
         build_new_image = "docker build . -f tests/{dockerfile} --tag {images}:{name}"
         sh____(build_new_image.format(**locals()))
-        return 1
         drop_old_container = "docker rm --force {name}"
-        start_as_container = "docker run -d -p {port}:9200 --name {name} {images}:{name}"
+        start_as_container = "docker run -d -p {port}:9200 --name {name} {images}:{name} sleep 9999"
         sx____(drop_old_container.format(**locals()))
         sh____(start_as_container.format(**locals()))
+        make_info_log = "touch /var/log/systemctl.log"
+        start_elasticsearch = "systemctl start elasticsearch"
+        sh____("docker exec {name} {make_info_log}".format(**locals()))
+        sh____("docker exec {name} {start_elasticsearch}".format(**locals()))
         # THEN
         tmp = self.testdir(testname)
-        read_index_html = "sleep 5; wget -O {tmp}/{name}.txt http://127.0.0.1:{port}"
-        grep_index_html = "grep OK {tmp}/{name}.txt"
+        read_index_html = "sleep 5; wget -O {tmp}/{name}.txt http://127.0.0.1:{port}/?pretty"
+        grep_index_html = "grep 'You Know, for Search' {tmp}/{name}.txt"
         sh____(read_index_html.format(**locals()))
         sh____(grep_index_html.format(**locals()))
-        # CLEAN
+        # STOP
+        status_elasticsearch = "systemctl status elasticsearch"
+        stop_elasticsearch = "systemctl stop elasticsearch"
+        sh____("docker exec {name} {status_elasticsearch}".format(**locals()))
+        sh____("docker exec {name} {stop_elasticsearch}".format(**locals()))
+        sh____("docker cp {name}:/var/log/systemctl.log {tmp}/systemctl.log".format(**locals()))
         stop_new_container = "docker stop {name}"
         drop_new_container = "docker rm --force {name}"
         sh____(stop_new_container.format(**locals()))
         sh____(drop_new_container.format(**locals()))
+        # CHECK
+        self.assertEqual(len(greps(open(tmp+"/systemctl.log"), " ERROR ")), 1)
+        self.assertTrue(greps(open(tmp+"/systemctl.log"), "ERROR chdir .* '/home/elasticsearch': .* No such file or directory"))
+        self.assertTrue(greps(open(tmp+"/systemctl.log"), "done simple PID"))
+        self.assertTrue(greps(open(tmp+"/systemctl.log"), "stop kill PID .*elasticsearch.service"))
+        self.assertTrue(greps(open(tmp+"/systemctl.log"), "stopped PID .* EXIT 143"))
     def test_9000_ansible_test(self):
         """ FIXME: "-p testing_systemctl" makes containers like "testingsystemctl_<service>_1" ?! """
         sh____("ansible-playbook --version | grep ansible-playbook.2") # atleast version2
