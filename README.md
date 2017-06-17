@@ -159,15 +159,13 @@ Of course it would be possible to write a second script to
 implement the docker-init-replacement functionality but it
 is integrated here. Just run the systemctl.py as the PID-1
 process and it will implicitly call its functionality of
-"systemctl default", and upon receiving a SIGTERM from
+"systemctl -1 default", and upon receiving a SIGTERM from
 docker-stop it will run its "systemctl halt" implementation.
 
-Additionally, if the script finds itself to be PID-1, it
-will keep running as a zombie-reaper (implemented as a
-new command "systemctl.py wait"). You can enforce the
-PID-1 functionality by running "systemctl.py init" from
-the commandline for testing. (NOTE: if systemctl.py is 
-not PID-1 then it defaults "systemctl list-units").
+Here "default" is the standard command to start all services 
+in the multi-user target. The new option "-1" (or --init) 
+will keep the script running as a zombie reaper. (NOTE: if 
+it is not PID-1 then it defaults "systemctl list-units").
 
 As a hint: the SystemD "systemctl enable" command will
 read the "WantedBy" of the referenced *.service script.
@@ -203,7 +201,12 @@ then you can add the attribute upon the next
 
 If the script is being installed as /usr/bin/systemctl
 anyway then you may just want to reference that. (Left
-for an excercise here).
+for an excercise here). If only a specific set of
+services shall be run then one can exchange the "default"
+command with an explicit start list (and be sure to 
+activate the continued execution as an --init process):
+
+    /usr/bin/systemctl.py --init start mongodb myapp
 
 ## Remember the stop grace timeout
 

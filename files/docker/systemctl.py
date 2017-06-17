@@ -2007,6 +2007,8 @@ if __name__ == "__main__":
     _o.add_option("--no-pager", action="store_true")
     _o.add_option("--version", action="store_true")
     _o.add_option("-v","--verbose", action="count", default=0)
+    _o.add_option("-1","--init", action="store_true", default=False,
+        help="keep running as init-process (default if PID 1)")
     opt, args = _o.parse_args()
     logging.basicConfig(level = max(0, logging.FATAL - 10 * opt.verbose))
     logg.setLevel(max(0, logging.ERROR - 10 * opt.verbose))
@@ -2029,14 +2031,17 @@ if __name__ == "__main__":
     _quiet = opt.quiet
     _full = opt.full
     _property = getattr(opt, "property")
+    _init = opt.init
     #
     if not args: 
-        args = [ "list-units" ]
         if os.getpid() == 0:
-            args = [ "init0" ]
+            _init = True
         if os.getpid() == 1:
-            args = [ "init1" ]
-            logg.setLevel(logging.INFO)
+            _init = True
+        if _init:
+            args = [ "default" ]
+        else:
+            args = [ "list-units" ]
     command = args[0]
     modules = args[1:]
     systemctl = Systemctl()
@@ -2107,3 +2112,6 @@ if __name__ == "__main__":
         logg.info("EXEC END %s", result)
     else:
         logg.warning("EXEC END Unknown result type %s", str(type(result)))
+    if _init:
+        logg.info("continue as init process")
+        systemctl.system_wait()
