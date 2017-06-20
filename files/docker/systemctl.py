@@ -2076,6 +2076,9 @@ if __name__ == "__main__":
     if not found:
         logg.error("EXEC END no method for '%s'", command)
         sys.exit(1)
+    if _init:
+        logg.info("continue as init process")
+        systemctl.system_wait()
     if result is None:
         logg.info("EXEC END None")
         sys.exit(0)
@@ -2112,6 +2115,3 @@ if __name__ == "__main__":
         logg.info("EXEC END %s", result)
     else:
         logg.warning("EXEC END Unknown result type %s", str(type(result)))
-    if _init:
-        logg.info("continue as init process")
-        systemctl.system_wait()
