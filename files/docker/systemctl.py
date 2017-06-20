@@ -1916,6 +1916,36 @@ class Systemctl:
 		    try: os.waitpid(pid, os.WNOHANG)
 		    except OSError, e: 
 			logg.warning("reap zombie %s: %s", e.strerror)
+    def system_ipv4(self, *args):
+        """ only ipv4 localhost in /etc/hosts """
+        logg.debug("checking /etc/hosts for '::1 localhost'")
+        lines = []
+        for line in open("/etc/hosts"):
+            if "::1" in line:
+                newline = re.sub("\\slocalhost\\s", " ", line)
+                if line != newline:
+                    logg.info("/etc/hosts: '%s' => '%s'", line.rstrip(), newline.rstrip())
+                    line = newline
+            lines.append(line)
+        f = open("/etc/hosts", "w")
+        for line in lines:
+            f.write(line)
+        f.close()
+    def system_ipv6(self, *args):
+        """ only ipv4 localhost in /etc/hosts """
+        logg.debug("checking /etc/hosts for '127.0.0.1 localhost'")
+        lines = []
+        for line in open("/etc/hosts"):
+            if "127.0.0.1" in line:
+                newline = re.sub("\\slocalhost\\s", " ", line)
+                if line != newline:
+                    logg.info("/etc/hosts: '%s' => '%s'", line.rstrip(), newline.rstrip())
+                    line = newline
+            lines.append(line)
+        f = open("/etc/hosts", "w")
+        for line in lines:
+            f.write(line)
+        f.close()
     def show_help(self, *args):
         """[command] -- show this help
         """
@@ -2007,6 +2037,10 @@ if __name__ == "__main__":
     _o.add_option("--no-pager", action="store_true")
     _o.add_option("--version", action="store_true")
     _o.add_option("-v","--verbose", action="count", default=0)
+    _o.add_option("-4","--ipv4", action="store_true", default=False,
+        help="only keep ipv4 localhost in /etc/hosts")
+    _o.add_option("-6","--ipv6", action="store_true", default=False,
+        help="only keep ipv6 localhost in /etc/hosts")
     _o.add_option("-1","--init", action="store_true", default=False,
         help="keep running as init-process (default if PID 1)")
     opt, args = _o.parse_args()
@@ -2045,6 +2079,10 @@ if __name__ == "__main__":
     command = args[0]
     modules = args[1:]
     systemctl = Systemctl()
+    if opt.ipv4:
+        systemctl.system_ipv4()
+    elif opt.ipv6:
+        systemctl.system_ipv6()
     found = False
     # command NAME
     command_name = command.replace("-","_").replace(".","_")+"_of_unit"
