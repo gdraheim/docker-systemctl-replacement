@@ -1505,12 +1505,15 @@ class Systemctl:
     def status_of_units(self, *modules):
         """ [UNIT]... check the status of these units.
         """
+        found = False
         status, result = 0, ""
         for unit in self.match_units(modules):
             status1, result1 = self.status_unit(unit)
             if status1: status = status1
             if result: result += "\n\n"
             result += result1
+            found = True
+        if not found: status = 1
         return status, result
     def status_unit(self, unit):
         conf = self.get_unit_conf(unit)
