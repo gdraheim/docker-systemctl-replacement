@@ -1714,11 +1714,11 @@ class Systemctl:
         return False
     def is_enabled_of_units(self, *modules):
         """ [UNIT]... -- check if these units are enabled 
-        returns True if all of them are enabled."""
-        result = True
+        returns True if any of them is enabled."""
+        result = False
         for unit in self.match_units(modules):
-            if not self.is_enabled(unit):
-               result = False
+            if self.is_enabled(unit):
+               result = True
         return result
     def is_enabled(self, unit):
         unit_file = self.unit_file(unit)
