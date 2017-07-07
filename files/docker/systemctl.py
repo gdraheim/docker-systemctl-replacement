@@ -350,8 +350,13 @@ _waitkillproc = 10
 _force = False
 _quiet = False
 _full = False
+_now = False
 _property = None
-
+_no_legend = False
+_no_block = False
+_no_wall = False
+_globally = False
+_no_ask_password = False
 
 MinimumWaitProcFile = 10
 MinimumWaitKillProc = 3
@@ -705,6 +710,8 @@ class Systemctl:
             elif rungroup:
                 sudo = "/usr/sbin/runuser -g %s -- " % (rungroup)
         elif os.path.exists("/usr/bin/sudo"):
+            if not _no_ask_password:
+                logg.warning("non-root execution without --no-ask-password (not supported)")
             if runuser and rungroup:
                 sudo = "/usr/bin/sudo -n -H -g %s -u %s -- " % (rungroup, runuser)
             elif runuser:
@@ -1615,6 +1622,8 @@ class Systemctl:
         for unit in self.match_units(modules):
             if not self.enable_unit(unit):
                 done = False
+            elif _now:
+               self.start_unit(unit)
         return done
     def enable_unit(self, unit):
         unit_file = self.unit_file(unit)
@@ -2006,46 +2015,78 @@ class Systemctl:
 
 if __name__ == "__main__":
     import optparse
-    _o = optparse.OptionParser("%prog [options] command [name...]", epilog="use 'help' command for more information")
-    _o.add_option("-t","--type", metavar="NAMES")
-    _o.add_option("--state", metavar="STATES")
-    _o.add_option("-p", "--property", metavar="PROPERTIES")
-    _o.add_option("-a", "--all", action="store_true")
-    _o.add_option("--reverse", action="store_true")
-    _o.add_option("--after", action="store_true")
-    _o.add_option("--before", action="store_true")
-    _o.add_option("-l","--full", action="store_true", default=_full)
-    _o.add_option("--show-types", action="store_true")
-    _o.add_option("--job-mode", metavar="JOBTYPE")    
-    _o.add_option("-i","--ignore-inhibitors", action="store_true")
-    _o.add_option("-q","--quiet", action="store_true", default=_quiet)
-    _o.add_option("--no-block", action="store_true")
-    _o.add_option("--no-legend", action="store_true")
-    _o.add_option("--user", action="store_true")
-    _o.add_option("--system", action="store_true")
-    _o.add_option("--no-wall", action="store_true")
-    _o.add_option("--global", action="store_true")
-    _o.add_option("--no-reload", action="store_true")
-    _o.add_option("--no-ask-password", action="store_true")
-    _o.add_option("--kill-who", metavar="ALL")
-    _o.add_option("-s", "--signal", metavar="KILLSIG")
-    _o.add_option("--force", action="store_true", default=_force)
-    _o.add_option("--root", metavar="PATH")
-    _o.add_option("--runtime", metavar="PROPERTY")
-    _o.add_option("-n","--lines", metavar="NUMBER")
-    _o.add_option("-o","--output", metavar="SHORT")
-    _o.add_option("--plain", action="store_true")
-    _o.add_option("-H","--host", metavar="NAME")
-    _o.add_option("-M","--machine", metavar="CONTAINER")
-    _o.add_option("--no-pager", action="store_true")
-    _o.add_option("--version", action="store_true")
-    _o.add_option("-v","--verbose", action="count", default=0)
+    _o = optparse.OptionParser("%prog [options] command [name...]", 
+        epilog="use 'help' command for more information \n [option* are not implemented]")
+    _o.add_option("--version", action="store_true",
+        help="Show package version")
+    _o.add_option("--system", action="store_true",
+        help="Connect to system manager (only possibility!)")
+    # _o.add_option("--user", action="store_true",
+    #     help="Connect to user service manager*")
+    # _o.add_option("-H", "--host", metavar="[USER@]HOST",
+    #     help="Operate on remote host*")
+    # _o.add_option("-M", "--machine", metavar="CONTAINER",
+    #     help="Operate on local container*")
+    _o.add_option("-t","--type", metavar="TYPE",
+        help="List units of a particual type*")
+    _o.add_option("--state", metavar="STATE",
+        help="List units with particular LOAD or SUB or ACTIVE state*")
+    _o.add_option("-p", "--property", metavar="NAME",
+        help="Show only properties by this name*")
+    _o.add_option("-a", "--all", action="store_true",
+        help="Show all loaded units/properties, including dead empty ones. To list all units installed on the system, use the 'list-unit-files' command instead*")
+    _o.add_option("-l","--full", action="store_true", default=_full,
+        help="Don't ellipsize unit names on output*")
+    _o.add_option("--reverse", action="store_true",
+        help="Show reverse dependencies with 'list-dependencies'*")
+    _o.add_option("--job-mode", metavar="MODE",
+        help="Specifiy how to deal with already queued jobs, when queuing a new job*")    
+    _o.add_option("--show-types", action="store_true",
+        help="When showing sockets, explicitly show their type*")
+    _o.add_option("-i","--ignore-inhibitors", action="store_true",
+        help="When shutting down or sleeping, ignore inhibitors*")
+    _o.add_option("--kill-who", metavar="WHO",
+        help="Who to send signal to*")
+    _o.add_option("-s", "--signal", metavar="SIGNAL",
+        help="Which signal to send*")
+    _o.add_option("--now", action="store_true", default=_now,
+        help="Start or stop unit in addition to enabling or disabling it")
+    _o.add_option("-q","--quiet", action="store_true", default=_quiet,
+        help="Suppress output")
+    _o.add_option("--no-block", action="store_true", default=_no_block,
+        help="Do not wait until operation finished*")
+    _o.add_option("--no-legend", action="store_true", default=_no_legend,
+        help="Do not print a legend (column headers and hints)")
+    _o.add_option("--no-wall", action="store_true", default=_no_wall,
+        help="Don't send wall message before halt/power-off/reboot")
+    _o.add_option("--no-reload", action="store_true",
+        help="Don't reload daemon after en-/dis-abling unit files*")
+    _o.add_option("--no-ask-password", action="store_true", default=_no_ask_password,
+        help="Do not ask for system passwords")
+    _o.add_option("--global", action="store_true", dest="globally", default=_globally,
+        help="Enable/disable unit files globally")
+    _o.add_option("--runtime", action="store_true",
+        help="Enable unit files only temporarily until next reboot*")
+    _o.add_option("--force", action="store_true", default=_force,
+        help="When enabling unit files, override existing symblinks / When shutting down, execute action immediately")
+    _o.add_option("--root", metavar="PATH",
+        help="Enable unit files in the specified root directory*")
+    _o.add_option("-n","--lines", metavar="NUMBER",
+        help="Number of journal entries to show*")
+    _o.add_option("-o","--output", metavar="STRING",
+        help="change journal output mode (short, ..., cat)*")
+    _o.add_option("--plain", action="store_true",
+        help="Print unit dependencies as a list instead of a tree*")
+    _o.add_option("--no-pager", action="store_true",
+        help="Do not pipe output into pager*")
+    _o.add_option("-v","--verbose", action="count", default=0,
+        help="..increase debugging information level")
     _o.add_option("-4","--ipv4", action="store_true", default=False,
-        help="only keep ipv4 localhost in /etc/hosts")
+        help="..only keep ipv4 localhost in /etc/hosts")
     _o.add_option("-6","--ipv6", action="store_true", default=False,
-        help="only keep ipv6 localhost in /etc/hosts")
+        help="..only keep ipv6 localhost in /etc/hosts")
     _o.add_option("-1","--init", action="store_true", default=False,
-        help="keep running as init-process (default if PID 1)")
+        help="..keep running as init-process (default if PID 1)")
     opt, args = _o.parse_args()
     logging.basicConfig(level = max(0, logging.FATAL - 10 * opt.verbose))
     logg.setLevel(max(0, logging.ERROR - 10 * opt.verbose))
@@ -2069,6 +2110,12 @@ if __name__ == "__main__":
     _full = opt.full
     _property = getattr(opt, "property")
     _init = opt.init
+    _now = opt.now
+    _no_legend = opt.no_legend
+    _no_block = opt.no_block
+    _no_wall = opt.no_wall
+    _globally = opt.globally
+    _no_ask_password = opt.no_ask_password
     #
     if not args: 
         if os.getpid() == 0:
