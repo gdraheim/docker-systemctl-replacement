@@ -362,7 +362,7 @@ DefaultTimeoutRestartSec = 2 # officially 0.1
 DefaultTimeoutStartSec = 10 # officially 90
 DefaultTimeoutStopSec = 10 # officially 90
 DefaultMaximumTimeout = 200
-DefaultNotifySocket = "/var/run/systemd/notify"
+DefaultNotifySocket = "/run/systemd/notify"
 
 def time_to_seconds(text, maximum = None):
     if maximum is None:
