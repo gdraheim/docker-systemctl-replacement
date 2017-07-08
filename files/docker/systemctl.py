@@ -2048,18 +2048,28 @@ class Systemctl:
         wants_services = self.system_default_services("K", default_target)
         self.stop_of_units(*wants_services)
         logg.info("system is down")
-    def system_init(self):
-        """ runs as init process => 'default' + 'wait' 
-        It will start the nabled services, then wait for any
-        zombies to be reaped or a SIGSTOP to initiate a
-        shutdown of the enabled services. A Control-C in
-        in interactive mode will also run 'stop' on all
-        the enabled services.
+    def init_of_units(self, *units):
+        """ [UNIT*] -- init process, i.e. '--init default' ('--init start UNIT') 
+        The systemctl init service will start the enabled 'default' services, 
+        and then wait for any  zombies to be reaped. When a SIGINT is received
+        then a clean shutdown of the enabled services is ensured. A Control-C in
+        in interactive mode will also run 'stop' on all the enabled services.
+        When a UNIT name is given then only that one is started instead of 'default'.
+        Using 'init UNIT' is better than '--init start UNIT' because the UNIT
+        is also stopped cleanly when it was never enabled in the system.
         """
-        self.system_default("init")
-        return self.system_wait("init")
-    def system_wait(self, arg = True):
-        """ wait and reap children """
+        if units:
+            self.start_of_units(*units)
+        else:
+            self.system_default("init")
+        return self.wait_of_units(*units)
+    def wait_of_units(self, *units):
+        """ [UNIT*] -- wait for stop and reap zombies meanwhile
+        This is the main functionality of an init process in that it will 
+        constantly check if there is some zombie process to be reaped.
+        When a SIGINT is received (or Control-C in interactive mode)
+        then the services are stopped - either all enabled services or
+        just the one that was given as an argument. """
         signal.signal(signal.SIGTERM, lambda signum, frame: ignore_signals_and_raise_keyboard_interrupt('SIGTERM'))
         signal.signal(signal.SIGINT, lambda signum, frame: ignore_signals_and_raise_keyboard_interrupt('SIGINT'))
         while True:
@@ -2069,7 +2079,10 @@ class Systemctl:
             except KeyboardInterrupt:
                 signal.signal(signal.SIGTERM, signal.SIG_DFL)
                 signal.signal(signal.SIGINT, signal.SIG_DFL)
-                self.system_halt(arg)
+                if units:
+                    self.stop_of_units(*units)
+                else:
+                    self.system_halt("wait")
                 return True
         return False
     def system_reap_zombies(self):
@@ -2355,7 +2368,7 @@ if __name__ == "__main__":
         sys.exit(1)
     if _init:
         logg.info("continue as init process")
-        systemctl.system_wait()
+        systemctl.wait_of_units()
     exitcode = 0
     if result is None:
         logg.info("EXEC END None")

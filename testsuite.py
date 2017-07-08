@@ -141,7 +141,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "%s help" % _systemctl_py
         out = output(cmd)
         logg.info("\n> %s\n%s", cmd, out)
-        self.assertFalse(greps(out, "--init"))
+        self.assertFalse(greps(out, "--verbose"))
         self.assertTrue(greps(out, "reload-or-try-restart"))
     def test_1004_systemctl_daemon_reload(self):
         """ daemon-reload always succeeds (does nothing) """
