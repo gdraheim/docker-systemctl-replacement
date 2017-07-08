@@ -2335,6 +2335,7 @@ if __name__ == "__main__":
             args = [ "default" ]
         else:
             args = [ "list-units" ]
+    logg.debug("======= systemctl.py " + " ".join(args))
     command = args[0]
     modules = args[1:]
     systemctl = Systemctl()

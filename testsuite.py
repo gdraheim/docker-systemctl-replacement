@@ -981,6 +981,66 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target""")
         #
+        shell_file(os_path(testdir, "killall"),"""
+            #! /bin/sh
+            ps -eo pid,comm | { while read pid comm; do
+               if [ "$comm" = "$1" ]; then
+                  echo kill $pid
+                  kill $pid
+               fi done } """)   
+        stop_container = "docker rm --force {testname}"
+        sx____(stop_container.format(**locals()))
+        start_container = "docker run --detach --name={testname} {image} sleep 50"
+        sh____(start_container.format(**locals()))
+        install_systemctl = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(install_systemctl.format(**locals()))
+        install_systemctl = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
+        sh____(install_systemctl.format(**locals()))
+        install_killall = "docker cp {testdir}/killall {testname}:/usr/bin/killall"
+        sh____(install_killall.format(**locals()))
+        install_service = "docker cp {testdir}/zzz.service {testname}:/etc/systemd/system/zzz.service"
+        sh____(install_service.format(**locals()))
+        enable_service = "docker exec {testname} systemctl enable zzz.service"
+        sh____(enable_service.format(**locals()))
+        version_systemctl = "docker exec {testname} systemctl --version"
+        sh____(version_systemctl.format(**locals()))
+        list_units_systemctl = "docker exec {testname} systemctl default-services -vv"
+        # sh____(list_units_systemctl.format(**locals()))
+        out = output(list_units_systemctl.format(**locals()))
+        logg.info("\n>\n%s", out)
+        self.assertTrue(greps(out, "zzz.service"))
+        self.assertEqual(len(lines(out)), 1)
+        #
+        start_service = "docker exec {testname} systemctl start zzz.service -vv"
+        sh____(start_service.format(**locals()))
+        top_container = "docker top {testname} -eo pid,ppid,comm,args"
+        top = output(top_container.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, "testsleep"))
+        #
+        start_service = "docker exec {testname} systemctl stop zzz.service -vv"
+        sh____(start_service.format(**locals()))
+        top_container = "docker top {testname} -eo pid,ppid,comm,args"
+        top = output(top_container.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, "testsleep"))
+        #
+        sx____(stop_container.format(**locals()))
+    def test_5011_systemctl_py_start_extra_simple(self):
+        """ check that we can start simple services in a container"""
+        testname = self.testname()
+        testdir = self.testdir()
+        image= "centos:centos7"
+        systemctl_py = _systemctl_py
+        text_file(os_path(testdir, "zzz.service"),"""
+            [Unit]
+            Description=Testing Z
+            [Service]
+            Type=simple
+            ExecStart=testsleep 50
+            [Install]
+            WantedBy=multi-user.target""")
+        #
         stop_container = "docker rm --force {testname}"
         sx____(stop_container.format(**locals()))
         start_container = "docker run --detach --name={testname} {image} sleep 50"
@@ -1017,7 +1077,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(top, "testsleep"))
         #
         sx____(stop_container.format(**locals()))
-    def test_5011_systemctl_py_start_forking(self):
+    def test_5012_systemctl_py_start_forking(self):
         """ check that we can start forking services in a container w/ PIDFile"""
         testname = self.testname()
         testdir = self.testdir()
@@ -1085,7 +1145,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(top, "testsleep"))
         #
         sx____(stop_container.format(**locals()))
-    def test_5012_systemctl_py_start_forking_without_pid_file(self):
+    def test_5013_systemctl_py_start_forking_without_pid_file(self):
         """ check that we can start forking services in a container without PIDFile"""
         testname = self.testname()
         testdir = self.testdir()
@@ -1125,8 +1185,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(start_container.format(**locals()))
         install_systemctl = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(install_systemctl.format(**locals()))
-        install_systemctl = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
-        sh____(install_systemctl.format(**locals()))
+        install_testsleep = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
+        sh____(install_testsleep.format(**locals()))
         install_service = "docker cp {testdir}/zzz.service {testname}:/etc/systemd/system/zzz.service"
         sh____(install_service.format(**locals()))
         install_initscript = "docker cp {testdir}/zzz.init {testname}:/usr/bin/zzz.init"
@@ -1210,6 +1270,322 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(top, "testsleep"))
         #
         sx____(stop_container.format(**locals()))
+    def test_5031_systemctl_py_run_default_services_in_container(self):
+        """ check that we can enable services in a docker container to be run as default-services"""
+        testname = self.testname()
+        testdir = self.testdir()
+        image= "centos:centos7"
+        systemctl_py = _systemctl_py
+        text_file(os_path(testdir, "zza.service"),"""
+            [Unit]
+            Description=Testing A""")
+        text_file(os_path(testdir, "zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            Type=simple
+            ExecStart=testsleep 40
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(testdir, "zzc.service"),"""
+            [Unit]
+            Description=Testing C
+            [Service]
+            Type=simple
+            ExecStart=testsleep 50
+            [Install]
+            WantedBy=multi-user.target""")
+        #
+        stop_container = "docker rm --force {testname}"
+        sx____(stop_container.format(**locals()))
+        start_container = "docker run --detach --name={testname} {image} sleep 50"
+        sh____(start_container.format(**locals()))
+        install_systemctl = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(install_systemctl.format(**locals()))
+        install_testsleep = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
+        sh____(install_testsleep.format(**locals()))
+        install_service = "docker cp {testdir}/zza.service {testname}:/etc/systemd/system/zza.service"
+        sh____(install_service.format(**locals()))
+        install_service = "docker cp {testdir}/zzb.service {testname}:/etc/systemd/system/zzb.service"
+        sh____(install_service.format(**locals()))
+        install_service = "docker cp {testdir}/zzc.service {testname}:/etc/systemd/system/zzc.service"
+        sh____(install_service.format(**locals()))
+        enable_service = "docker exec {testname} systemctl enable zzb.service"
+        sh____(enable_service.format(**locals()))
+        enable_service = "docker exec {testname} systemctl enable zzc.service"
+        sh____(enable_service.format(**locals()))
+        version_systemctl = "docker exec {testname} systemctl --version"
+        sh____(version_systemctl.format(**locals()))
+        list_units_systemctl = "docker exec {testname} systemctl default-services -vv"
+        # sh____(list_units_systemctl.format(**locals()))
+        out2 = output(list_units_systemctl.format(**locals()))
+        logg.info("\n>\n%s", out2)
+        list_units_systemctl = "docker exec {testname} systemctl default -vvvv"
+        # sh____(list_units_systemctl.format(**locals()))
+        out3 = output(list_units_systemctl.format(**locals()))
+        logg.info("\n>\n%s", out3)
+        #
+        top_container = "docker top {testname} -eo pid,ppid,args"
+        top = output(top_container.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, "testsleep 40"))
+        self.assertTrue(greps(top, "testsleep 50"))
+        #
+        list_units_systemctl = "docker exec {testname} systemctl halt -vvvv"
+        # sh____(list_units_systemctl.format(**locals()))
+        out3 = output(list_units_systemctl.format(**locals()))
+        logg.info("\n>\n%s", out3)
+        #
+        top_container = "docker top {testname} -eo pid,ppid,args"
+        top = output(top_container.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, "testsleep 40"))
+        self.assertFalse(greps(top, "testsleep 50"))
+        #
+        sx____(stop_container.format(**locals()))
+    def test_5032_systemctl_py_run_default_services_from_saved_container(self):
+        """ check that we can enable services in a docker container to be run as default-services
+            after it has been restarted from a commit-saved container image"""
+        testname = self.testname()
+        testdir = self.testdir()
+        image= "centos:centos7"
+        systemctl_py = _systemctl_py
+        images = IMAGES
+        text_file(os_path(testdir, "zza.service"),"""
+            [Unit]
+            Description=Testing A""")
+        text_file(os_path(testdir, "zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            Type=simple
+            ExecStart=testsleep 40
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(testdir, "zzc.service"),"""
+            [Unit]
+            Description=Testing C
+            [Service]
+            Type=simple
+            ExecStart=testsleep 50
+            [Install]
+            WantedBy=multi-user.target""")
+        #
+        stop_container = "docker rm --force {testname}"
+        sx____(stop_container.format(**locals()))
+        start_container = "docker run --detach --name={testname} {image} sleep 50"
+        sh____(start_container.format(**locals()))
+        install_systemctl = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(install_systemctl.format(**locals()))
+        install_testsleep = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
+        sh____(install_testsleep.format(**locals()))
+        install_service = "docker cp {testdir}/zza.service {testname}:/etc/systemd/system/zza.service"
+        sh____(install_service.format(**locals()))
+        install_service = "docker cp {testdir}/zzb.service {testname}:/etc/systemd/system/zzb.service"
+        sh____(install_service.format(**locals()))
+        install_service = "docker cp {testdir}/zzc.service {testname}:/etc/systemd/system/zzc.service"
+        sh____(install_service.format(**locals()))
+        enable_service = "docker exec {testname} systemctl enable zzb.service"
+        sh____(enable_service.format(**locals()))
+        enable_service = "docker exec {testname} systemctl enable zzc.service"
+        sh____(enable_service.format(**locals()))
+        version_systemctl = "docker exec {testname} systemctl --version"
+        sh____(version_systemctl.format(**locals()))
+        list_units_systemctl = "docker exec {testname} systemctl default-services -v"
+        # sh____(list_units_systemctl.format(**locals()))
+        out2 = output(list_units_systemctl.format(**locals()))
+        logg.info("\n>\n%s", out2)
+        #
+        commit_container = "docker commit -c 'CMD [\"/usr/bin/systemctl\",\"--init\",\"default\",\"-vv\"]'  {testname} {images}:{testname}"
+        sh____(commit_container.format(**locals()))
+        stop_container2 = "docker rm --force {testname}x"
+        sx____(stop_container2.format(**locals()))
+        start_container2 = "docker run --detach --name {testname}x {images}:{testname}"
+        sh____(start_container2.format(**locals()))
+        time.sleep(3)
+        #
+        #
+        top_container2 = "docker top {testname}x -eo pid,ppid,args"
+        top = output(top_container2.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, "testsleep 40"))
+        self.assertTrue(greps(top, "testsleep 50"))
+        #
+        list_units_systemctl = "docker exec {testname} systemctl halt -vvvv"
+        # sh____(list_units_systemctl.format(**locals()))
+        out3 = output(list_units_systemctl.format(**locals()))
+        logg.info("\n>\n%s", out3)
+        #
+        top_container = "docker top {testname} -eo pid,ppid,args"
+        top = output(top_container.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, "testsleep 40"))
+        self.assertFalse(greps(top, "testsleep 50"))
+        #
+        sx____(stop_container.format(**locals()))
+        sx____(stop_container2.format(**locals()))
+    def test_5033_systemctl_py_run_default_services_from_simple_saved_container(self):
+        """ check that we can enable services in a docker container to be run as default-services
+            after it has been restarted from a commit-saved container image"""
+        testname = self.testname()
+        testdir = self.testdir()
+        image= "centos:centos7"
+        systemctl_py = _systemctl_py
+        images = IMAGES
+        text_file(os_path(testdir, "zza.service"),"""
+            [Unit]
+            Description=Testing A""")
+        text_file(os_path(testdir, "zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            Type=simple
+            ExecStart=testsleep 40
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(testdir, "zzc.service"),"""
+            [Unit]
+            Description=Testing C
+            [Service]
+            Type=simple
+            ExecStart=testsleep 50
+            [Install]
+            WantedBy=multi-user.target""")
+        #
+        stop_container = "docker rm --force {testname}"
+        sx____(stop_container.format(**locals()))
+        start_container = "docker run --detach --name={testname} {image} sleep 50"
+        sh____(start_container.format(**locals()))
+        install_systemctl = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(install_systemctl.format(**locals()))
+        install_testsleep = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
+        sh____(install_testsleep.format(**locals()))
+        install_service = "docker cp {testdir}/zza.service {testname}:/etc/systemd/system/zza.service"
+        sh____(install_service.format(**locals()))
+        install_service = "docker cp {testdir}/zzb.service {testname}:/etc/systemd/system/zzb.service"
+        sh____(install_service.format(**locals()))
+        install_service = "docker cp {testdir}/zzc.service {testname}:/etc/systemd/system/zzc.service"
+        sh____(install_service.format(**locals()))
+        enable_service = "docker exec {testname} systemctl enable zzb.service"
+        sh____(enable_service.format(**locals()))
+        enable_service = "docker exec {testname} systemctl enable zzc.service"
+        sh____(enable_service.format(**locals()))
+        version_systemctl = "docker exec {testname} systemctl --version"
+        sh____(version_systemctl.format(**locals()))
+        list_units_systemctl = "docker exec {testname} systemctl default-services -v"
+        # sh____(list_units_systemctl.format(**locals()))
+        out2 = output(list_units_systemctl.format(**locals()))
+        logg.info("\n>\n%s", out2)
+        #
+        commit_container = "docker commit -c 'CMD \"/usr/bin/systemctl\"'  {testname} {images}:{testname}"
+        sh____(commit_container.format(**locals()))
+        stop_container2 = "docker rm --force {testname}x"
+        sx____(stop_container2.format(**locals()))
+        start_container2 = "docker run --detach --name {testname}x {images}:{testname}"
+        sh____(start_container2.format(**locals()))
+        time.sleep(3)
+        #
+        #
+        top_container2 = "docker top {testname}x -eo pid,ppid,args"
+        top = output(top_container2.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, "testsleep 40"))
+        self.assertTrue(greps(top, "testsleep 50"))
+        #
+        list_units_systemctl = "docker exec {testname} systemctl halt -vvvv"
+        # sh____(list_units_systemctl.format(**locals()))
+        out3 = output(list_units_systemctl.format(**locals()))
+        logg.info("\n>\n%s", out3)
+        #
+        top_container = "docker top {testname} -eo pid,ppid,args"
+        top = output(top_container.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, "testsleep 40"))
+        self.assertFalse(greps(top, "testsleep 50"))
+        #
+        sx____(stop_container.format(**locals()))
+        sx____(stop_container2.format(**locals()))
+    def test_5034_systemctl_py_run_default_services_from_single_service_saved_container(self):
+        """ check that we can enable services in a docker container to be run as default-services
+            after it has been restarted from a commit-saved container image"""
+        testname = self.testname()
+        testdir = self.testdir()
+        image= "centos:centos7"
+        systemctl_py = _systemctl_py
+        images = IMAGES
+        text_file(os_path(testdir, "zza.service"),"""
+            [Unit]
+            Description=Testing A""")
+        text_file(os_path(testdir, "zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            Type=simple
+            ExecStart=testsleep 40
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(testdir, "zzc.service"),"""
+            [Unit]
+            Description=Testing C
+            [Service]
+            Type=simple
+            ExecStart=testsleep 50
+            [Install]
+            WantedBy=multi-user.target""")
+        #
+        stop_container = "docker rm --force {testname}"
+        sx____(stop_container.format(**locals()))
+        start_container = "docker run --detach --name={testname} {image} sleep 50"
+        sh____(start_container.format(**locals()))
+        install_systemctl = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(install_systemctl.format(**locals()))
+        install_testsleep = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
+        sh____(install_testsleep.format(**locals()))
+        install_service = "docker cp {testdir}/zza.service {testname}:/etc/systemd/system/zza.service"
+        sh____(install_service.format(**locals()))
+        install_service = "docker cp {testdir}/zzb.service {testname}:/etc/systemd/system/zzb.service"
+        sh____(install_service.format(**locals()))
+        install_service = "docker cp {testdir}/zzc.service {testname}:/etc/systemd/system/zzc.service"
+        sh____(install_service.format(**locals()))
+        enable_service = "docker exec {testname} systemctl enable zzb.service"
+        sh____(enable_service.format(**locals()))
+        enable_service = "docker exec {testname} systemctl enable zzc.service"
+        sh____(enable_service.format(**locals()))
+        version_systemctl = "docker exec {testname} systemctl --version"
+        sh____(version_systemctl.format(**locals()))
+        list_units_systemctl = "docker exec {testname} systemctl default-services -v"
+        # sh____(list_units_systemctl.format(**locals()))
+        out2 = output(list_units_systemctl.format(**locals()))
+        logg.info("\n>\n%s", out2)
+        # .........................................vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+        commit_container = "docker commit -c 'CMD [\"/usr/bin/systemctl\",\"init\",\"zzc.service\"]'  {testname} {images}:{testname}"
+        sh____(commit_container.format(**locals()))
+        stop_container2 = "docker rm --force {testname}x"
+        sx____(stop_container2.format(**locals()))
+        start_container2 = "docker run --detach --name {testname}x {images}:{testname}"
+        sh____(start_container2.format(**locals()))
+        time.sleep(3)
+        #
+        #
+        top_container2 = "docker top {testname}x -eo pid,ppid,args"
+        top = output(top_container2.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, "testsleep 40")) # <<<<<<<<<< difference to 5033
+        self.assertTrue(greps(top, "testsleep 50"))
+        #
+        list_units_systemctl = "docker stop {testname}x" # <<<
+        # sh____(list_units_systemctl.format(**locals()))
+        out3 = output(list_units_systemctl.format(**locals()))
+        logg.info("\n>\n%s", out3)
+        #
+        top_container = "docker top {testname} -eo pid,ppid,args"
+        top = output(top_container.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, "testsleep 40"))
+        self.assertFalse(greps(top, "testsleep 50"))
+        #
+        sx____(stop_container.format(**locals()))
+        sx____(stop_container2.format(**locals()))
 
     def test_6001_centos_httpd_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
