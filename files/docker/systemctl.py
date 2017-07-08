@@ -629,23 +629,30 @@ class Systemctl:
         for name, value in self._file_for_unit_sysv.items():
             result += "\nSysV {name} = {value}".format(**locals())
         return result
-    def list_units(self, *modules): # -> [ (unit,loaded,description) ]
-        """ show all the units """
+    def list_service_units(self, *modules): # -> [ (unit,loaded+active+substate,description) ]
+        """ show all the service units """
         result = {}
+        active = {}
+        substate = {}
         description = {}
         for unit in self.match_units(modules):
-            result[unit] = None
+            result[unit] = "not-found"
+            active[unit] = "inactive"
+            substate[unit] = "dead"
             description[unit] = ""
             try: 
                 conf = self.get_unit_conf(unit)
-                result[unit] = conf
+                result[unit] = "loaded"
                 description[unit] = self.get_description_from(conf)
+                if self.is_active_from(conf):
+                    active[unit] = "active"
+                    substate[unit] = "undead" # TODO
             except Exception, e:
                 logg.warning("list-units: %s", e)
-        return [ (unit, result[unit] and "loaded" or "", description[unit]) for unit in sorted(result) ]
+        return [ (unit, result[unit] + " " + active[unit] + " " + substate[unit], description[unit]) for unit in sorted(result) ]
     def show_list_units(self, *modules): # -> [ (unit,loaded,description) ]
         hint = "To show all installed unit files use 'systemctl list-unit-files'."
-        result = self.list_units(*modules)
+        result = self.list_service_units(*modules)
         if _no_legend:
             return result
         found = "%s loaded units listed." % len(result)
