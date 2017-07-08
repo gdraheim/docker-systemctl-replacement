@@ -206,7 +206,7 @@ services shall be run then one can exchange the "default"
 command with an explicit start list (and be sure to 
 activate the continued execution as an --init process):
 
-    /usr/bin/systemctl.py --init start mongodb myapp
+    /usr/bin/systemctl.py init mongodb myapp
 
 ## Remember the stop grace timeout
 
