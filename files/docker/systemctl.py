@@ -43,6 +43,7 @@ _no_block = False
 _no_wall = False
 _no_ask_password = False
 
+MinimumSleep = 2
 MinimumWaitProcFile = 10
 MinimumWaitKillProc = 3
 DefaultWaitProcFile = 100
@@ -809,7 +810,7 @@ class Systemctl:
             logg.info("while reading %s: %s", env_part, e)
     def sleep(self, seconds = None): 
         """ just sleep """
-        seconds = seconds or 1
+        seconds = seconds or MinimumSleep
         time.sleep(seconds)
     def sudo_from(self, conf):
         """ calls runuser with a (non-priviledged) user """
@@ -1101,14 +1102,19 @@ class Systemctl:
                 if check and run.returncode: raise Exception("ExecStart")
                 logg.info("* done oneshot start")
         elif runs in [ "forking" ]:
+            pid_file = self.pid_file_from(conf)
             for cmd in conf.getlist("Service", "ExecStart", []):
                 check, cmd = checkstatus(cmd)
                 logg.info(": start %s", sudo+cmd)
                 run = subprocess_wait(sudo+cmd, env)
                 if check and run.returncode: raise Exception("ExecStart")
-                pid_file = self.get_pid_file_from(conf)
-                pid = self.wait_pid_file(pid_file)
-                logg.info(": done forking PID %s [%s]", pid, pid_file)
+                if pid_file:
+                    pid = self.wait_pid_file(pid_file)
+                    logg.info(": done forking PID %s [%s]", pid, pid_file)
+                else:
+                    logg.warning("No PIDFile for forking %s", conf.filename())
+            if not pid_file:
+                self.sleep()
         else:
             logg.error("unsupported run type '%s'", runs)
             raise Exception("unsupported run type")
@@ -1248,19 +1254,22 @@ class Systemctl:
                 logg.info("! stop %s", sudo+cmd)
                 run = subprocess_wait(sudo+cmd, env)
         elif runs in [ "forking" ]:
-            pid_file = self.get_pid_file_from(conf)
+            pid_file = self.pid_file_from(conf)
             for cmd in conf.getlist("Service", "ExecStop", []):
                 active = self.is_active_from(conf)
-                pid = self.read_pid_file(pid_file, "")
-                env["MAINPID"] = str(pid)
+                if pid_file:
+                    pid = self.read_pid_file(pid_file, "")
+                    env["MAINPID"] = str(pid)
                 check, cmd = checkstatus(cmd)
                 logg.info(" {env} %s", env)
                 logg.info(": stop %s", sudo+cmd)
                 run = subprocess_wait(sudo+cmd, env)
                 if active:
                     if check and run.returncode: raise Exception("ExecStop")
-                pid_file = self.get_pid_file_from(conf)
-                pid = self.wait_pid_file(pid_file)
+                if pid_file:
+                    pid = self.wait_pid_file(pid_file)
+            if not pid_file:
+                self.sleep()
         else:
             logg.error("unsupported run type '%s'", runs)
             raise Exception("unsupported run type")
@@ -1340,16 +1349,19 @@ class Systemctl:
                 logg.info("! reload %s", sudo+cmd)
                 run = subprocess_wait(sudo+cmd, env)
         elif runs in [ "forking" ]:
-            pid_file = self.get_pid_file_from(conf)
+            pid_file = self.pid_file_from(conf)
             for cmd in conf.getlist("Service", "ExecReload", []):
-                pid = self.read_pid_file(pid_file, "")
-                env["MAINPID"] = str(pid)
+                if pid_file:
+                    pid = self.read_pid_file(pid_file, "")
+                    env["MAINPID"] = str(pid)
                 check, cmd = checkstatus(cmd)
                 logg.info(": reload %s", sudo+cmd)
                 run = subprocess_wait(sudo+cmd, env)
                 if check and run.returncode: raise Exception("ExecReload")
-                pid_file = self.get_pid_file_from(conf)
-                pid = self.wait_pid_file(pid_file)
+                if pid_file:
+                    pid = self.wait_pid_file(pid_file)
+            if not pid_file:
+                self.sleep()
         else:
             logg.error("unsupported run type '%s'", runs)
             raise Exception("unsupported run type")
@@ -1433,13 +1445,16 @@ class Systemctl:
                 logg.info("! restart %s", sudo+cmd)
                 run = subprocess_wait(sudo+cmd, env)
         elif runs in [ "forking" ]:
+            pid_file = self.pid_file_from(conf)
             for cmd in conf.getlist("Service", "ExecRestart", []):
                 check, cmd = checkstatus(cmd)
                 logg.info(": restart %s", sudo+cmd)
                 run = subprocess_wait(sudo+cmd, env)
                 if check and run.returncode: raise Exception("ExecRestart")
-                pid_file = self.get_pid_file_from(conf)
-                pid = self.wait_pid_file(pid_file)
+                if pid_file:
+                    pid = self.wait_pid_file(pid_file)
+            if not pid_file:
+                self.sleep()
         else:
             logg.error("unsupported run type '%s'", runs)
             raise Exception("unsupported run type")

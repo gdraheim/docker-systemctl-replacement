@@ -1018,7 +1018,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         sx____(stop_container.format(**locals()))
     def test_5011_systemctl_py_start_forking(self):
-        """ check that we can start simple services in a container"""
+        """ check that we can start forking services in a container w/ PIDFile"""
         testname = self.testname()
         testdir = self.testdir()
         image= "centos:centos7"
@@ -1044,6 +1044,78 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             PIDFile=/zzz.init.pid
             ExecStart=/usr/bin/zzz.init start
             ExceStop=/usr/bin/zzz.init stop
+            [Install]
+            WantedBy=multi-user.target""")
+        #
+        stop_container = "docker rm --force {testname}"
+        sx____(stop_container.format(**locals()))
+        start_container = "docker run --detach --name={testname} {image} sleep 50"
+        sh____(start_container.format(**locals()))
+        install_systemctl = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(install_systemctl.format(**locals()))
+        install_systemctl = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
+        sh____(install_systemctl.format(**locals()))
+        install_service = "docker cp {testdir}/zzz.service {testname}:/etc/systemd/system/zzz.service"
+        sh____(install_service.format(**locals()))
+        install_initscript = "docker cp {testdir}/zzz.init {testname}:/usr/bin/zzz.init"
+        sh____(install_initscript.format(**locals()))
+        enable_service = "docker exec {testname} systemctl enable zzz.service"
+        sh____(enable_service.format(**locals()))
+        version_systemctl = "docker exec {testname} systemctl --version"
+        sh____(version_systemctl.format(**locals()))
+        list_units_systemctl = "docker exec {testname} systemctl default-services -vv"
+        # sh____(list_units_systemctl.format(**locals()))
+        out = output(list_units_systemctl.format(**locals()))
+        logg.info("\n>\n%s", out)
+        self.assertTrue(greps(out, "zzz.service"))
+        self.assertEqual(len(lines(out)), 1)
+        #
+        start_service = "docker exec {testname} systemctl start zzz.service -vv"
+        sx____(start_service.format(**locals()))
+        top_container = "docker top {testname} -eo pid,ppid,args"
+        top = output(top_container.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, "testsleep"))
+        #
+        start_service = "docker exec {testname} systemctl stop zzz.service -vv"
+        sh____(start_service.format(**locals()))
+        top_container = "docker top {testname} -eo pid,ppid,args"
+        top = output(top_container.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, "testsleep"))
+        #
+        sx____(stop_container.format(**locals()))
+    def test_5012_systemctl_py_start_forking_without_pid_file(self):
+        """ check that we can start forking services in a container without PIDFile"""
+        testname = self.testname()
+        testdir = self.testdir()
+        image= "centos:centos7"
+        systemctl_py = _systemctl_py
+        shell_file(os_path(testdir, "zzz.init"), """
+            #! /bin/bash
+            case "$1" in start) 
+               (testsleep 50 0<&- &>/dev/null &) &
+               wait %1
+               ps -o pid,ppid,args >&2
+            ;; stop)
+               # killall testsleep
+               ps -eo pid,comm | { while read pid comm; do
+                   if [ "$comm" = "testsleep" ]; then
+                       echo kill $pid >&2
+                       kill $pid 
+                   fi done }
+               echo killed all testsleep >&2
+               sleep 1
+            ;; esac 
+            echo "done$1" >&2
+            exit 0""")
+        text_file(os_path(testdir, "zzz.service"),"""
+            [Unit]
+            Description=Testing Z
+            [Service]
+            Type=forking
+            ExecStart=/usr/bin/zzz.init start
+            ExecStop=/usr/bin/zzz.init stop
             [Install]
             WantedBy=multi-user.target""")
         #
