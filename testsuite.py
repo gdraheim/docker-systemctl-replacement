@@ -1907,6 +1907,45 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(top, "testsleep"))
         #
         sx____(stop_container.format(**locals()))
+    def test_8002_issue_1_start_rsyslog_centos_7_0(self):
+        """ issue 2: rsyslog on centos 7 does not start"""
+        testname = self.testname()
+        testdir = self.testdir()
+        image= "centos:centos7"
+        systemctl_py = _systemctl_py
+        stop_container = "docker rm --force {testname}"
+        sx____(stop_container.format(**locals()))
+        start_container = "docker run --detach --name={testname} {image} sleep 50"
+        sh____(start_container.format(**locals()))
+        install_systemctl = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(install_systemctl.format(**locals()))
+        install_software = "docker exec {testname} yum install -y rsyslog"
+        sh____(install_software.format(**locals()))
+        ## enable_service = "docker exec {testname} systemctl enable mysql"
+        ## sh____(enable_service.format(**locals()))
+        version_systemctl = "docker exec {testname} systemctl --version"
+        sh____(version_systemctl.format(**locals()))
+        list_unit_files = "docker exec {testname} systemctl list-unit-files --type=service"
+        sh____(list_unit_files.format(**locals()))
+        out = output(list_unit_files.format(**locals()))
+        self.assertTrue(greps(out,"rsyslog.service.*enabled"))
+        #
+        start_service = "docker exec {testname} systemctl start rsyslog -vv"
+        sh____(start_service.format(**locals()))
+        #
+        top_container = "docker top {testname} -eo pid,ppid,args"
+        top = output(top_container.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, "/usr/sbin/rsyslog"))
+        #
+        start_service = "docker exec {testname} systemctl stop rsyslog -vv"
+        sh____(start_service.format(**locals()))
+        top_container = "docker top {testname} -eo pid,ppid,args"
+        top = output(top_container.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, "/usr/sbin/rsyslog"))
+        #
+        sx____(stop_container.format(**locals()))
 
     def test_9000_ansible_test(self):
         """ FIXME: "-p testing_systemctl" makes containers like "testingsystemctl_<service>_1" ?! """

@@ -306,6 +306,8 @@ class UnitConfigParser:
                 continue
             if line.startswith("#"):
                 continue
+            if line.startswith(";"):
+                continue
             if line.startswith("["):
                 x = line.find("]")
                 if x > 0:
