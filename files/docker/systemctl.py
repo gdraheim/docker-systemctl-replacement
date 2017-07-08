@@ -336,6 +336,7 @@ def subprocess_output(cmd, env=None, check = False):
         raise Exception("command failed")
     return run
 
+_root = ""
 _sysd_default = "multi-user.target"
 _sysd_folder1 = "/etc/systemd/system"
 _sysd_folder2 = "/var/run/systemd/system"
@@ -395,6 +396,7 @@ def time_to_seconds(text, maximum = None):
 
 class Systemctl:
     def __init__(self):
+        self._root = _root
         self._sysd_folder1 = _sysd_folder1
         self._sysd_folder2 = _sysd_folder2
         self._sysd_folder3 = _sysd_folder3
@@ -408,6 +410,7 @@ class Systemctl:
         self._force = _force
         self._quiet = _quiet
         self._full = _full
+        self._now = _now
         self._loaded_file_sysv = {} # /etc/init.d/name => config data
         self._loaded_file_sysd = {} # /etc/systemd/system/name.service => config data
         self._file_for_unit_sysv = None # name.service => /etc/init.d/name
@@ -1621,7 +1624,7 @@ class Systemctl:
         for unit in self.match_units(modules):
             if not self.enable_unit(unit):
                 done = False
-            elif _now:
+            elif self._now:
                self.start_unit(unit)
         return done
     def enable_unit(self, unit):
@@ -2068,7 +2071,7 @@ if __name__ == "__main__":
     #     help="Enable unit files only temporarily until next reboot*")
     _o.add_option("--force", action="store_true", default=_force,
         help="When enabling unit files, override existing symblinks / When shutting down, execute action immediately")
-    _o.add_option("--root", metavar="PATH",
+    _o.add_option("--root", metavar="PATH", default=_root,
         help="Enable unit files in the specified root directory*")
     _o.add_option("-n","--lines", metavar="NUM",
         help="Number of journal entries to show*")
@@ -2104,6 +2107,7 @@ if __name__ == "__main__":
     if opt.version:
        args = [ "version" ]
     #
+    _root = opt.root
     _force = opt.force
     _quiet = opt.quiet
     _full = opt.full
