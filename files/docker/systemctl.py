@@ -429,6 +429,8 @@ class Systemctl:
         if self._file_for_unit_sysd is None:
             self._file_for_unit_sysd = {}
             for folder in (self._sysd_folder1, self._sysd_folder2, self._sysd_folder3):
+                if self._root:
+                    folder = os.path.join(self._root, folder)
                 if not os.path.isdir(folder):
                     continue
                 for name in os.listdir(folder):
@@ -453,6 +455,8 @@ class Systemctl:
         if self._file_for_unit_sysv is None:
             self._file_for_unit_sysv = {}
             for folder in (self._sysv_folder1, self._sysv_folder2):
+                if self._root:
+                    folder = os.path.join(self._root, folder)
                 if not os.path.isdir(folder):
                     continue
                 for name in os.listdir(folder):
@@ -1561,6 +1565,8 @@ class Systemctl:
         if self._preset_file_list is None:
             self._preset_file_list = {}
             for folder in (self._preset_folder1, self._preset_folder2, self._preset_folder3):
+                if self._root:
+                    folder = os.path.join(self._root, folder)
                 if not os.path.isdir(folder):
                         continue
                 for name in os.listdir(folder):
@@ -1615,10 +1621,11 @@ class Systemctl:
         if not conf: return default
         return conf.get("Install", "WantedBy", default, True)
     def enablefolder(self, wanted = None):
-        if not wanted: return None
+        if not wanted: 
+            return None
         if not wanted.endswith(".wants"):
             wanted = wanted + ".wants"
-        return "/etc/systemd/system/" + wanted
+        return os.path.join("/etc/system/systemd", wanted)
     def enable_of_units(self, *modules):
         """ [UNIT]... -- enable these units """
         done = True
@@ -1635,6 +1642,8 @@ class Systemctl:
         wanted = self.wanted_from(self.get_unit_conf(unit))
         if not wanted: return False # wanted = "multi-user.target"
         folder = self.enablefolder(wanted)
+        if self._root.
+            folder = os.path.join(self._root, folder)
         if not os.path.isdir(folder):
             os.makedirs(folder)
         target = os.path.join(folder, os.path.basename(unit_file))
@@ -1646,18 +1655,30 @@ class Systemctl:
         if not os.path.islink(target):
             os.symlink(unit_file, target)
         return True
-    def rc3_folder(self):
-        if os.path.isdir("/etc/rc3.d"): return "/etc/rc3.d"
-        return "/etc/init.d/rc3.d"
-    def rc5_folder(self):
-        if os.path.isdir("/etc/rc5.d"): return "/etc/rc5.d"
-        return "/etc/init.d/rc5.d"
+    def rc3_root_folder(self):
+        old_folder = "/etc/rc3.d"
+        new_folder = "/etc/init.d/rc3.d"
+        if self._root:
+            old_folder = os.path.join(self._root, old_folder)
+            new_folder = os.path.join(self._root, new_folder)
+        if os.path.isdir(old_folder): 
+            return old_folder
+        return new_folder
+    def rc5_root_folder(self):
+        old_folder = "/etc/rc5.d"
+        new_folder = "/etc/init.d/rc5.d"
+        if self._root:
+            old_folder = os.path.join(self._root, old_folder)
+            new_folder = os.path.join(self._root, new_folder)
+        if os.path.isdir(old_folder): 
+            return old_folder
+        return new_folder
     def enable_unit_sysv(self, unit_file):
         # a "multi-user.target"/rc3 is also started in /rc5
-        rc3 = self.enable_unit_sysv_folder(unit_file, self.rc3_folder())
-        rc5 = self.enable_unit_sysv_folder(unit_file, self.rc5_folder())
+        rc3 = self._enable_unit_sysv(unit_file, self.rc3_root_folder())
+        rc5 = self._enable_unit_sysv(unit_file, self.rc5_root_folder())
         return rc3 and rc5
-    def enable_unit_sysv_folder(self, unit_file, rc_folder):
+    def _enable_unit_sysv(self, unit_file, rc_folder):
         name = os.path.basename(unit_file)
         nameS = "S50"+name
         nameK = "K50"+name
@@ -1689,6 +1710,8 @@ class Systemctl:
             return self.disable_unit_sysv(unit_file)
         wanted = self.wanted_from(self.get_unit_conf(unit))
         folder = self.enablefolder(wanted)
+        if self._root:
+            folder = os.path.join(self._root, folder)
         if not os.path.isdir(folder):
             return False
         target = os.path.join(folder, os.path.basename(unit_file))
@@ -1698,10 +1721,10 @@ class Systemctl:
             os.remove(target)
         return True
     def disable_unit_sysv(self, unit_file):
-        rc3 = self.disable_unit_sysv_folder(unit_file, self.rc3_folder())
-        rc5 = self.disable_unit_sysv_folder(unit_file, self.rc5_folder())
+        rc3 = self.disable_unit_sysv(unit_file, self.rc3_root_folder())
+        rc5 = self.disable_unit_sysv(unit_file, self.rc5_root_folder())
         return rc3 and rc5
-    def disable_unit_sysv_folder(self, unit_file, rc_folder):
+    def _disable_unit_sysv(self, unit_file, rc_folder):
         # a "multi-user.target"/rc3 is also started in /rc5
         name = os.path.basename(unit_file)
         nameS = "S50"+name
@@ -1723,7 +1746,7 @@ class Systemctl:
         return True
     def is_enabled_sysv(self, unit_file):
         name = os.path.basename(unit_file)
-        target = os.path.join(self.rc3_folder(), "S50%s" % name)
+        target = os.path.join(self.rc3_root_folder(), "S50%s" % name)
         if os.path.exists(target):
            return True
         return False
@@ -1741,6 +1764,8 @@ class Systemctl:
             return self.is_enabled_sysv(unit_file)
         wanted = self.wanted_from(self.get_unit_conf(unit))
         folder = self.enablefolder(wanted)
+        if self._root:
+            folder = os.path.join(self._root, folder)
         if not wanted:
             return True
         target = os.path.join(folder, os.path.basename(unit_file))
@@ -1752,9 +1777,11 @@ class Systemctl:
         if self.is_sysv_file(unit_file):
             return self.is_enabled_sysv(unit_file)
         wanted = self.wanted_from(conf)
-        folder = self.enablefolder(wanted)
         if not wanted:
             return "static"
+        folder = self.enablefolder(wanted)
+        if self._root:
+            folder = os.path.join(self._root, folder)
         target = os.path.join(folder, os.path.basename(unit_file))
         if os.path.isfile(target):
             return "enabled"
@@ -1820,6 +1847,8 @@ class Systemctl:
         igno = self.igno_always
         wants_services = []
         for folder in [ self._sysd_folder1, self._sysd_folder2 ]:
+            if self._root:
+                folder = os.path.join(self._root, folder)
             wants_folder = os.path.join(folder, default_target + ".wants")
             if os.path.isdir(wants_folder):
                 for unit in sorted(os.listdir(wants_folder)):
@@ -1829,7 +1858,7 @@ class Systemctl:
                         continue # ignore
                     if unit.endswith(".service"):
                         wants_services.append(unit)
-        for folder in [ self.rc3_folder() ]:
+        for folder in [ self.rc3_root_folder() ]:
             for unit in sorted(os.listdir(folder)):
                 path = os.path.join(folder, unit)
                 if os.path.isdir(path): continue
@@ -1847,6 +1876,8 @@ class Systemctl:
         logg.info("igno = %s", igno)
         wants_services = []
         for folder in [ self._sysd_folder1, self._sysd_folder2 ]:
+            if self._root:
+                folder = os.path.join(self._root, folder)
             wants_folder = os.path.join(folder, default_target + ".wants")
             if os.path.isdir(wants_folder):
                 for unit in sorted(os.listdir(wants_folder)):
@@ -1856,7 +1887,7 @@ class Systemctl:
                         continue # ignore
                     if unit.endswith(".service"):
                         wants_services.append(unit)
-        for folder in [ self.rc3_folder() ]:
+        for folder in [ self.rc3_root_folder() ]:
             for unit in sorted(os.listdir(folder)):
                 path = os.path.join(folder, unit)
                 if os.path.isdir(path): continue
