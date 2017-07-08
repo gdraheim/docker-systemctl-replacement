@@ -69,6 +69,13 @@ def homedir_user(user = None, default = None):
         return pwd.getpwnam(user).pw_dir
     return default
 
+def os_path(root, path):
+    if not root:
+        return path
+    while path.startswith(os.path.sep):
+       path = path[1:]
+    return os.path.join(root, path)
+
 def shutil_chown(name, user = None, group = None):
     """ in python 3.3. there is shutil.chown """
     uid = -1
@@ -436,7 +443,7 @@ class Systemctl:
             self._file_for_unit_sysd = {}
             for folder in (self._sysd_folder1, self._sysd_folder2, self._sysd_folder3):
                 if self._root:
-                    folder = os.path.join(self._root, folder)
+                    folder = os_path(self._root, folder)
                 if not os.path.isdir(folder):
                     continue
                 for name in os.listdir(folder):
@@ -462,7 +469,7 @@ class Systemctl:
             self._file_for_unit_sysv = {}
             for folder in (self._sysv_folder1, self._sysv_folder2):
                 if self._root:
-                    folder = os.path.join(self._root, folder)
+                    folder = os_path(self._root, folder)
                 if not os.path.isdir(folder):
                     continue
                 for name in os.listdir(folder):
@@ -661,7 +668,7 @@ class Systemctl:
         """ default file pattern where to store a pid """
         folder = self._pid_file_folder
         if self._root:
-            folder = os.path.join(self._root, folder)
+            folder = os_path(self._root, folder)
         name = "%s.pid" % unit
         return os.path.join(folder, name)
     def read_env_file(self, env_file): # -> generate[ (name,value) ]
@@ -744,7 +751,7 @@ class Systemctl:
         if name:
             log_folder = "/var/log/journal"
             if self._root:
-                log_folder = os.path.join(self._root, log_folder)
+                log_folder = os_path(self._root, log_folder)
             log_file = name.replace(os.path.sep,".") + ".log"
             x = log_file.find(".", 1)
             if x > 0: log_file = log_file[x+1:]
@@ -802,7 +809,7 @@ class Systemctl:
            return None
         notify_socket_folder = self._notify_socket_folder
         if self._root:
-           notify_socket_folder = os.path.join(self._root, notify_socket_folder)
+           notify_socket_folder = os_path(self._root, notify_socket_folder)
         notify_socket = os.path.join(notify_socket_folder, self._notify_socket_name)
         socketfile = socketfile or notify_socket
         if not os.path.isdir(os.path.dirname(socketfile)):
@@ -1582,7 +1589,7 @@ class Systemctl:
             self._preset_file_list = {}
             for folder in (self._preset_folder1, self._preset_folder2, self._preset_folder3):
                 if self._root:
-                    folder = os.path.join(self._root, folder)
+                    folder = os_path(self._root, folder)
                 if not os.path.isdir(folder):
                         continue
                 for name in os.listdir(folder):
@@ -1659,7 +1666,7 @@ class Systemctl:
         if not wanted: return False # wanted = "multi-user.target"
         folder = self.enablefolder(wanted)
         if self._root.
-            folder = os.path.join(self._root, folder)
+            folder = os_path(self._root, folder)
         if not os.path.isdir(folder):
             os.makedirs(folder)
         target = os.path.join(folder, os.path.basename(unit_file))
@@ -1675,8 +1682,8 @@ class Systemctl:
         old_folder = "/etc/rc3.d"
         new_folder = "/etc/init.d/rc3.d"
         if self._root:
-            old_folder = os.path.join(self._root, old_folder)
-            new_folder = os.path.join(self._root, new_folder)
+            old_folder = os_path(self._root, old_folder)
+            new_folder = os_path(self._root, new_folder)
         if os.path.isdir(old_folder): 
             return old_folder
         return new_folder
@@ -1684,8 +1691,8 @@ class Systemctl:
         old_folder = "/etc/rc5.d"
         new_folder = "/etc/init.d/rc5.d"
         if self._root:
-            old_folder = os.path.join(self._root, old_folder)
-            new_folder = os.path.join(self._root, new_folder)
+            old_folder = os_path(self._root, old_folder)
+            new_folder = os_path(self._root, new_folder)
         if os.path.isdir(old_folder): 
             return old_folder
         return new_folder
@@ -1727,7 +1734,7 @@ class Systemctl:
         wanted = self.wanted_from(self.get_unit_conf(unit))
         folder = self.enablefolder(wanted)
         if self._root:
-            folder = os.path.join(self._root, folder)
+            folder = os_path(self._root, folder)
         if not os.path.isdir(folder):
             return False
         target = os.path.join(folder, os.path.basename(unit_file))
@@ -1781,7 +1788,7 @@ class Systemctl:
         wanted = self.wanted_from(self.get_unit_conf(unit))
         folder = self.enablefolder(wanted)
         if self._root:
-            folder = os.path.join(self._root, folder)
+            folder = os_path(self._root, folder)
         if not wanted:
             return True
         target = os.path.join(folder, os.path.basename(unit_file))
@@ -1797,7 +1804,7 @@ class Systemctl:
             return "static"
         folder = self.enablefolder(wanted)
         if self._root:
-            folder = os.path.join(self._root, folder)
+            folder = os_path(self._root, folder)
         target = os.path.join(folder, os.path.basename(unit_file))
         if os.path.isfile(target):
             return "enabled"
@@ -1864,7 +1871,7 @@ class Systemctl:
         wants_services = []
         for folder in [ self._sysd_folder1, self._sysd_folder2 ]:
             if self._root:
-                folder = os.path.join(self._root, folder)
+                folder = os_path(self._root, folder)
             wants_folder = os.path.join(folder, default_target + ".wants")
             if os.path.isdir(wants_folder):
                 for unit in sorted(os.listdir(wants_folder)):
@@ -1893,7 +1900,7 @@ class Systemctl:
         wants_services = []
         for folder in [ self._sysd_folder1, self._sysd_folder2 ]:
             if self._root:
-                folder = os.path.join(self._root, folder)
+                folder = os_path(self._root, folder)
             wants_folder = os.path.join(folder, default_target + ".wants")
             if os.path.isdir(wants_folder):
                 for unit in sorted(os.listdir(wants_folder)):
@@ -1981,7 +1988,7 @@ class Systemctl:
     def etc_hosts(self):
         path = "/etc/hosts"
         if self._root:
-            return os.path.join(self._root, path)
+            return os_path(self._root, path)
         return path
     def system_ipv4(self, *args):
         """ only ipv4 localhost in /etc/hosts """
