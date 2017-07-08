@@ -11,12 +11,14 @@ import time
 import datetime
 import unittest
 import shutil
+import inspect
 import logging
 import re
 from fnmatch import fnmatchcase as fnmatch
 from glob import glob
 
 logg = logging.getLogger("tests")
+_systemctl_py = "files/docker/systemctl.py"
 
 IMAGES = "localhost:5000/testingsystemctl"
 
@@ -43,13 +45,56 @@ def download(base_url, filename, into):
     if not os.path.exists(os.path.join(into, filename)):
         sh____("cd {into} && wget {base_url}/{filename}".format(**locals()))
 
+def get_caller_name():
+    frame = inspect.currentframe().f_back.f_back
+    return frame.f_code.co_name
+def get_caller_caller_name():
+    frame = inspect.currentframe().f_back.f_back.f_back
+    return frame.f_code.co_name
+def os_path(root, path):
+    if not root:
+        return path
+    while path.startswith(os.path.sep):
+       path = path[1:]
+    return os.path.join(root, path)
+
 class DockerSystemctlReplacementTest(unittest.TestCase):
-    def testdir(self, testname):
+    def testname(self):
+        return self.caller_testname()
+    def caller_testname(self):
+        name = get_caller_caller_name()
+        x1 = name.find("_")
+        if x1 < 0: return name
+        x2 = name.find("_", x1+1)
+        if x2 < 0: return name
+        return name[:x2]
+    def testdir(self, testname = None):
+        testname = testname or self.caller_testname()
         newdir = "tests/tmp."+testname
         if os.path.isdir(newdir):
             shutil.rmtree(newdir)
         os.makedirs(newdir)
         return newdir
+    def root(self, testdir):
+        root_folder = os.path.join(testdir, "root")
+        if not os.path.isdir(root_folder):
+            os.makedirs(root_folder)
+        return os.path.abspath(root_folder)
+    def test_1001_systemctl_testfile(self):
+        """ the systemctl.py file to be tested does exist """
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        logg.info("...")
+        logg.info("testname %s", testname)
+        logg.info(" testdir %s", testdir)
+        logg.info("and root %s",  root)
+        target = "/usr/bin/systemctl"
+        target_folder = os_path(root, os.path.dirname(target))
+        os.makedirs(target_folder)
+        target_systemctl = os_path(root, target)
+        shutil.copy(_systemctl_py, target_systemctl)
+        self.assertTrue(os.path.isfile(target_systemctl))
     def test_6001_centos_httpd_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
             THEN we can create an image with an Apache HTTP service 
@@ -466,12 +511,16 @@ if __name__ == "__main__":
        epilog=__doc__.strip().split("\n")[0])
     _o.add_option("-v","--verbose", action="count", default=0,
        help="increase logging level (%default)")
+    _o.add_option("--with", metavar="FILE", dest="systemctl_py", default=_systemctl_py,
+       help="systemctl.py file to be tested (%default)")
     _o.add_option("-l","--logfile", metavar="FILE", default="",
        help="additionally save the output log to a file (%default)")
     _o.add_option("--xmlresults", metavar="FILE", default=None,
        help="capture results as a junit xml file (%default)")
     opt, args = _o.parse_args()
     logging.basicConfig(level = logging.WARNING - opt.verbose * 5)
+    #
+    _systemctl_py = opt.systemctl_py
     #
     logfile = None
     if opt.logfile:
