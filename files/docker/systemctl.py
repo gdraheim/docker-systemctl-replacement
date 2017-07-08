@@ -609,7 +609,7 @@ class Systemctl:
         for name, value in self._file_for_unit_sysv.items():
             result += "\nSysV {name} = {value}".format(**locals())
         return result
-    def show_list_units(self, *modules): # -> [ (unit,loaded,description) ]
+    def list_units(self, *modules): # -> [ (unit,loaded,description) ]
         """ show all the units """
         result = {}
         description = {}
@@ -623,6 +623,13 @@ class Systemctl:
             except Exception, e:
                 logg.warning("list-units: %s", e)
         return [ (unit, result[unit] and "loaded" or "", description[unit]) for unit in sorted(result) ]
+    def show_list_units(self, *modules): # -> [ (unit,loaded,description) ]
+        hint = "To show all installed unit files use 'systemctl list-unit-files'."
+        result = self.list_units(*modules)
+        if _no_legend:
+            return result
+        found = "%s loaded units listed." % len(result)
+        return result + [ "", found, hint ]
     ##
     ##
     def get_description_from(self, conf, default = None): # -> text

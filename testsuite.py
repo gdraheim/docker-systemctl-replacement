@@ -30,10 +30,16 @@ def output(cmd, shell=True):
     run = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE)
     out, err = run.communicate()
     return out
-def grep(pattern, lines):
+def _lines(lines):
     if isinstance(lines, basestring):
         lines = lines.split("\n")
-    for line in lines:
+        if len(lines) and lines[-1] == "":
+            lines = lines[:-1]
+    return lines
+def lines(text):
+    return _lines(text)
+def grep(pattern, lines):
+    for line in _lines(lines):
        if re.search(pattern, line.rstrip()):
            yield line.rstrip()
 def greps(lines, pattern):
@@ -44,6 +50,21 @@ def download(base_url, filename, into):
         os.makedirs(into)
     if not os.path.exists(os.path.join(into, filename)):
         sh____("cd {into} && wget {base_url}/{filename}".format(**locals()))
+def text_file(filename, content):
+    filedir = os.path.dirname(filename)
+    if not os.path.isdir(filedir):
+        os.makedirs(filedir)
+    f = open(filename, "w")
+    if content.startswith("\n"):
+        x = re.match("(?s)\n( *)", content)
+        indent = x.group(1)
+        for line in content[1:].split("\n"):
+            if line.startswith(indent):
+                line = line[len(indent):]
+            f.write(line+"\n")
+    else:
+        f.write(content)
+    f.close()
 
 def get_caller_name():
     frame = inspect.currentframe().f_back.f_back
@@ -116,6 +137,50 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n> %s\n%s", cmd, out)
         self.assertFalse(greps(out, "--init"))
         self.assertTrue(greps(out, "reload-or-try-restart"))
+    def test_2001_can_create_test_services(self):
+        """ check that two unit files can be created for testing """
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        text_file(os_path(root, "/etc/systemd/system/a.service"),"""
+            [Unit]
+            Description=Testing A""")
+        text_file(os_path(root, "/etc/systemd/system/b.service"),"""
+            [Unit]
+            Description=Testing B""")
+        textA = file(os_path(root, "/etc/systemd/system/a.service")).read()
+        textB = file(os_path(root, "/etc/systemd/system/b.service")).read()
+        self.assertTrue(greps(textA, "Testing A"))
+        self.assertTrue(greps(textB, "Testing B"))
+        self.assertIn("\nDescription", textA)
+        self.assertIn("\nDescription", textB)
+    def test_2002_list_units(self):
+        """ check that two unit files can be found for 'list-units' """
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        text_file(os_path(root, "/etc/systemd/system/a.service"),"""
+            [Unit]
+            Description=Testing A""")
+        text_file(os_path(root, "/etc/systemd/system/b.service"),"""
+            [Unit]
+            Description=Testing B""")
+        cmd = "%s --root=%s list-units" % (_systemctl_py, root)
+        out = output(cmd)
+        logg.info("\n> %s\n%s", cmd, out)
+        self.assertTrue(greps(out, r"a.service\s+loaded\s+.*Testing A"))
+        self.assertTrue(greps(out, r"b.service\s+loaded\s+.*Testing B"))
+        self.assertIn("loaded units listed.", out)
+        self.assertIn("To show all installed unit files use", out)
+        self.assertEqual(len(lines(out)), 5)
+        cmd = "%s --root=%s --no-legend list-units" % (_systemctl_py, root)
+        out = output(cmd)
+        logg.info("\n> %s\n%s", cmd, out)
+        self.assertTrue(greps(out, r"a.service\s+loaded\s+.*Testing A"))
+        self.assertTrue(greps(out, r"b.service\s+loaded\s+.*Testing B"))
+        self.assertNotIn("loaded units listed.", out)
+        self.assertNotIn("To show all installed unit files use", out)
+        self.assertEqual(len(lines(out)), 2)
     def test_6001_centos_httpd_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
             THEN we can create an image with an Apache HTTP service 
