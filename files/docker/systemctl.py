@@ -651,6 +651,9 @@ class Systemctl:
                 logg.warning("list-units: %s", e)
         return [ (unit, result[unit] + " " + active[unit] + " " + substate[unit], description[unit]) for unit in sorted(result) ]
     def show_list_units(self, *modules): # -> [ (unit,loaded,description) ]
+        """ [PATTERN]... -- List loaded units.
+        If one or more PATTERNs are specified, only units matching one of 
+        them are shown. NOTE: This is the default command."""
         hint = "To show all installed unit files use 'systemctl list-unit-files'."
         result = self.list_service_units(*modules)
         if _no_legend:
@@ -684,7 +687,13 @@ class Systemctl:
                 enabled[unit] = "enabled"
         return [ (unit, enabled[unit]) for unit in sorted(result) ]
     def show_list_unit_files(self, *modules): # -> [ (unit,enabled) ]
-        if _now:
+        """[PATTERN]... -- List installed unit files
+        List installed unit files and their enablement state (as reported
+        by is-enabled). If one or more PATTERNs are specified, only units
+        whose filename (just the last component of the path) matches one of
+        them are shown. This command reacts to limitations of --type being
+        --type=service or --type=target (and --now for some basics)."""
+        if self._now:
             result = self.list_service_unit_basics()
         elif _unit_type == "target":
             result = self.list_target_unit_files()
