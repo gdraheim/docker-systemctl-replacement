@@ -35,6 +35,7 @@ _force = False
 _quiet = False
 _full = False
 _now = False
+_show_all = False
 _unit_type = None
 _unit_property = None
 _no_legend = False
@@ -447,6 +448,7 @@ class Systemctl:
         self._quiet = _quiet
         self._full = _full
         self._now = _now
+        self._show_all = _show_all
         self._loaded_file_sysv = {} # /etc/init.d/name => config data
         self._loaded_file_sysd = {} # /etc/systemd/system/name.service => config data
         self._file_for_unit_sysv = None # name.service => /etc/init.d/name
@@ -1464,6 +1466,8 @@ class Systemctl:
         unit = os.path.basename(conf.filename())
         if default is None:
             default = self.default_pid_file(unit)
+        return self.pid_file_from(conf, default)
+    def pid_file_from(self, conf, default = ""):
         return conf.get("Service", "PIDFile", default)
     def try_restart_of_units(self, *modules):
         """ [UNIT]... -- try-restart these units """
@@ -1910,22 +1914,42 @@ class Systemctl:
         logg.info("ignored daemon-reload")
         return True
     def show_of_units(self, *modules):
-        """ [UNIT]... -- show runtime status if these units
-        """
-        result = ""
+        """ [PATTERN]... -- Show properties of one or more units
+           Show properties of one or more units (or the manager itself).
+           If no argument is specified, properties of the manager will be
+           shown. If a unit name is specified, properties of the unit is
+           shown. By default, empty properties are suppressed. Use --all to
+           show those too. To select specific properties to show, use
+           --property=. This command is intended to be used whenever
+           computer-parsable output is required. Use status if you are looking
+           for formatted human-readable output.
+  
+           NOTE: only a subset of properties is implemented """
+        logg.info("--property=%s", _unit_property)
+        result = []
         for unit in self.match_units(modules):
-            if result: result += "\n\n"
+            if result: result += [ "", "" ]
             for var, value in self.show_unit_items(unit):
-               if not _unit_property or _unit_property == var:
-                   result += "%s=%s\n" % (var, value)
+                if _unit_property:
+                    if _unit_property != var:
+                        continue
+                else:
+                    if not value and not self._show_all:
+                        continue
+                result += [ "%s=%s" % (var, value) ]
         if not result and modules:
             unit = modules[0]
             for var, value in self.show_unit_items(unit):
-               if not _unit_property or _unit_property == var:
-                   result += "%s=%s\n" % (var, value)
+                if _unit_property:
+                    if _unit_property != var:
+                        continue
+                else:
+                    if not value and not self._show_all:
+                        continue
+                result += [ "%s=%s" % (var, value) ]
         return result
     def show_unit_items(self, unit):
-        """ [UNIT]... -- show runtime status if these units
+        """ [UNIT]... -- show properties of a unit.
         """
         logg.info("try read unit %s", unit)
         conf = self.get_unit_conf(unit)
@@ -1935,10 +1959,12 @@ class Systemctl:
         yield "Id", unit
         yield "Names", unit
         yield "Description", self.get_description_from(conf) # conf.get("Unit", "Description")
+        yield "PIDFile", self.pid_file_from(conf) # not self.get_pid_file_from w/ default location
         yield "MainPID", self.active_pid_from(conf) or "0"
         yield "SubState", self.active_from(conf)
         yield "ActiveState", self.is_active_from(conf) and "active" or "dead"
         yield "LoadState", conf.loaded() and "loaded" or "not-loaded"
+        yield "UnitFileState", self.enabled_from(conf)
         env_parts = []
         for env_part in conf.getlist("Service", "Environment", []):
             env_parts.append(env_part)
@@ -2199,7 +2225,7 @@ if __name__ == "__main__":
         help="List units with particular LOAD or SUB or ACTIVE state*")
     _o.add_option("-p", "--property", metavar="NAME", dest="unit_property", default=_unit_property,
         help="Show only properties by this name*")
-    _o.add_option("-a", "--all", action="store_true",
+    _o.add_option("-a", "--all", action="store_true", dest="show_all", default=_show_all,
         help="Show all loaded units/properties, including dead empty ones. To list all units installed on the system, use the 'list-unit-files' command instead*")
     _o.add_option("-l","--full", action="store_true", default=_full,
         help="Don't ellipsize unit names on output*")
@@ -2261,6 +2287,7 @@ if __name__ == "__main__":
     _force = opt.force
     _quiet = opt.quiet
     _full = opt.full
+    _show_all = opt.show_all
     _unit_type = opt.unit_type
     _unit_property = opt.unit_property
     _init = opt.init

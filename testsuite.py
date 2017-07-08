@@ -361,7 +361,142 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(out, r"multi-user.target"))
         self.assertFalse(greps(out, r"enabled"))
         self.assertEqual(len(lines(out)), 2)
-
+    def test_2020_show_unit_is_parseable(self):
+        """ check that 'show UNIT' is machine-readable """
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        text_file(os_path(root, "/etc/systemd/system/a.service"),"""
+            [Unit]
+            Description=Testing A""")
+        cmd = "%s --root=%s show a.service" % (_systemctl_py, root)
+        out = output(cmd)
+        logg.info("\n> %s\n%s", cmd, out)
+        self.assertTrue(greps(out, r"^Id="))
+        self.assertTrue(greps(out, r"^Names="))
+        self.assertTrue(greps(out, r"^Description="))
+        self.assertTrue(greps(out, r"^MainPID="))
+        self.assertTrue(greps(out, r"^LoadState="))
+        self.assertTrue(greps(out, r"^ActiveState="))
+        self.assertTrue(greps(out, r"^SubState="))
+        self.assertTrue(greps(out, r"^UnitFileState="))
+        num_lines = len(lines(out))
+        #
+        cmd = "%s --root=%s --all show a.service" % (_systemctl_py, root)
+        out = output(cmd)
+        logg.info("\n> %s\n%s", cmd, out)
+        self.assertTrue(greps(out, r"^Id="))
+        self.assertTrue(greps(out, r"^Names="))
+        self.assertTrue(greps(out, r"^Description="))
+        self.assertTrue(greps(out, r"^MainPID="))
+        self.assertTrue(greps(out, r"^LoadState="))
+        self.assertTrue(greps(out, r"^ActiveState="))
+        self.assertTrue(greps(out, r"^SubState="))
+        self.assertTrue(greps(out, r"^UnitFileState="))
+        self.assertTrue(greps(out, r"^PIDFile="))
+        self.assertGreater(len(lines(out)), num_lines)
+        #
+        for line in lines(out):
+            m = re.match(r"^\w+=", line)
+            if not m:
+                # found non-machine readable property line
+                self.assertEqual("word=value", line)
+    def test_2021_show_unit_can_be_restricted_to_one_property(self):
+        """ check that 'show UNIT' may return just one value if asked for"""
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        text_file(os_path(root, "/etc/systemd/system/a.service"),"""
+            [Unit]
+            Description=Testing A""")
+        cmd = "%s --root=%s show a.service --property=Description" % (_systemctl_py, root)
+        out = output(cmd)
+        logg.info("\n> %s\n%s", cmd, out)
+        self.assertTrue(greps(out, r"^Description="))
+        self.assertEqual(len(lines(out)), 1)
+        #
+        cmd = "%s --root=%s show a.service --property=Description --all" % (_systemctl_py, root)
+        out = output(cmd)
+        logg.info("\n> %s\n%s", cmd, out)
+        self.assertTrue(greps(out, r"^Description="))
+        self.assertEqual(len(lines(out)), 1)
+        #
+        cmd = "%s --root=%s show a.service --property=PIDFile" % (_systemctl_py, root)
+        out = output(cmd)
+        logg.info("\n> %s\n%s", cmd, out)
+        self.assertTrue(greps(out, r"^PIDFile="))
+        self.assertEqual(len(lines(out)), 1)
+        #
+        cmd = "%s --root=%s show a.service --property=PIDFile --all" % (_systemctl_py, root)
+        out = output(cmd)
+        logg.info("\n> %s\n%s", cmd, out)
+        self.assertTrue(greps(out, r"^PIDFile="))
+        self.assertEqual(len(lines(out)), 1)
+        #
+        self.assertEqual(lines(out), [ "PIDFile=" ])
+    def test_2025_show_unit_for_multiple_matches(self):
+        """ check that the result of 'show UNIT' for multiple services is 
+            concatenated but still machine readable. """
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        text_file(os_path(root, "/etc/systemd/system/a.service"),"""
+            [Unit]
+            Description=Testing A""")
+        text_file(os_path(root, "/etc/systemd/system/b.service"),"""
+            [Unit]
+            Description=Testing B
+            [Install]
+            WantedBy=multi-user.target""")
+        cmd = "%s --root=%s show a.service" % (_systemctl_py, root)
+        out = output(cmd)
+        logg.info("\n> %s\n%s", cmd, out)
+        self.assertTrue(greps(out, r"^Id="))
+        self.assertTrue(greps(out, r"^Names="))
+        self.assertTrue(greps(out, r"^Description="))
+        self.assertTrue(greps(out, r"^MainPID="))
+        self.assertTrue(greps(out, r"^LoadState="))
+        self.assertTrue(greps(out, r"^ActiveState="))
+        self.assertTrue(greps(out, r"^SubState="))
+        self.assertTrue(greps(out, r"^UnitFileState="))
+        a_lines = len(lines(out))
+        #
+        cmd = "%s --root=%s show b.service" % (_systemctl_py, root)
+        out = output(cmd)
+        logg.info("\n> %s\n%s", cmd, out)
+        self.assertTrue(greps(out, r"^Id="))
+        self.assertTrue(greps(out, r"^Names="))
+        self.assertTrue(greps(out, r"^Description="))
+        self.assertTrue(greps(out, r"^MainPID="))
+        self.assertTrue(greps(out, r"^LoadState="))
+        self.assertTrue(greps(out, r"^ActiveState="))
+        self.assertTrue(greps(out, r"^SubState="))
+        self.assertTrue(greps(out, r"^UnitFileState="))
+        b_lines = len(lines(out))
+        #
+        cmd = "%s --root=%s show a.service b.service" % (_systemctl_py, root)
+        out = output(cmd)
+        logg.info("\n> %s\n%s", cmd, out)
+        self.assertTrue(greps(out, r"^Id="))
+        self.assertTrue(greps(out, r"^Names="))
+        self.assertTrue(greps(out, r"^Description="))
+        self.assertTrue(greps(out, r"^MainPID="))
+        self.assertTrue(greps(out, r"^LoadState="))
+        self.assertTrue(greps(out, r"^ActiveState="))
+        self.assertTrue(greps(out, r"^SubState="))
+        self.assertTrue(greps(out, r"^UnitFileState="))
+        all_lines = len(lines(out))
+        #
+        self.assertGreater(all_lines, a_lines + b_lines)
+        #
+        for line in lines(out):
+            if not line.strip():
+                # empty lines are okay now
+                continue
+            m = re.match(r"^\w+=", line)
+            if not m:
+                # found non-machine readable property line
+                self.assertEqual("word=value", line)
     def test_3002_enable_service_creates_a_symlink(self):
         """ check that a service can be enabled """
         testname = self.testname()
