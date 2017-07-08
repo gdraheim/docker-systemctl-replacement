@@ -2047,7 +2047,7 @@ if __name__ == "__main__":
         help="When shutting down or sleeping, ignore inhibitors*")
     _o.add_option("--kill-who", metavar="WHO",
         help="Who to send signal to*")
-    _o.add_option("-s", "--signal", metavar="SIGNAL",
+    _o.add_option("-s", "--signal", metavar="SIG",
         help="Which signal to send*")
     _o.add_option("--now", action="store_true", default=_now,
         help="Start or stop unit in addition to enabling or disabling it")
@@ -2071,9 +2071,9 @@ if __name__ == "__main__":
         help="When enabling unit files, override existing symblinks / When shutting down, execute action immediately")
     _o.add_option("--root", metavar="PATH",
         help="Enable unit files in the specified root directory*")
-    _o.add_option("-n","--lines", metavar="NUMBER",
+    _o.add_option("-n","--lines", metavar="NUM",
         help="Number of journal entries to show*")
-    _o.add_option("-o","--output", metavar="STRING",
+    _o.add_option("-o","--output", metavar="CAT",
         help="change journal output mode (short, ..., cat)*")
     _o.add_option("--plain", action="store_true",
         help="Print unit dependencies as a list instead of a tree*")
