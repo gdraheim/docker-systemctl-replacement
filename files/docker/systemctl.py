@@ -2369,8 +2369,11 @@ if __name__ == "__main__":
         logg.info("EXEC END None")
     elif result is True:
         logg.info("EXEC END True")
+        result = None
+        exitcode = 0
     elif result is False:
         logg.info("EXEC END False")
+        result = None
         exitcode = 1
     elif isinstance(result, tuple) and len(result) == 2:
         exitcode, status = result
@@ -2379,7 +2382,9 @@ if __name__ == "__main__":
         if exitcode is False: exitcode = 1
         result = status
     #
-    if isinstance(result, basestring):
+    if result is None:
+        pass
+    elif isinstance(result, basestring):
         print result
         logg.info("EXEC END '%s'", result)
     elif isinstance(result, list):
