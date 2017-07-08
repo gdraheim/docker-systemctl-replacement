@@ -2158,12 +2158,17 @@ class Systemctl:
                     print prog, arg, doc.replace("\n","\n\n", 1)
                 else:
                     print prog, arg, "--", doc.replace("\n","\n\n", 1)
-    def system_version(self):
-        """ -- show the version and copyright info """
+    def systemd_version(self):
+        """ the the version line for systemd compatibility """
+        return "systemd 0 (systemctl.py %s)" % __version__
+    def systemd_features(self):
+        """ the the info line for systemd features """
         features1 = "-PAM -AUDIT -SELINUX -IMA -APPARMOR -SMACK"
         features2 = " +SYSVINIT -UTMP -LIBCRYPTSETUP -GCRYPT -GNUTLS"
         features3 = " -ACL -XZ -LZ4 -SECCOMP -BLKID -ELFUTILS -KMOD -IDN"
-        return [ "systemd 0 (systemctl.py %s)" % __version__, features1+features2+features3 ]
+        return features1+features2+features3
+    def systemctl_version(self):
+        return [ self.systemd_version(), self.systemd_features() ]
 
 if __name__ == "__main__":
     import optparse
@@ -2275,7 +2280,7 @@ if __name__ == "__main__":
        logg.info("EXEC BEGIN %s %s", os.path.realpath(sys.argv[0]), " ".join(args))
     #
     if opt.version:
-       args = [ "version" ]
+       args = [ "_version" ]
     if not args: 
         if os.getpid() == 0:
             _init = True
@@ -2320,6 +2325,11 @@ if __name__ == "__main__":
             if callable(comm_func):
                 found = True
                 result = comm_func()
+    command_name = "systemctl"+command.replace("-","_").replace(".","_")
+    command_func = getattr(systemctl, command_name, None)
+    if callable(command_func) and not found:
+        found = True
+        result = command_func()
     if not found:
         logg.error("EXEC END no method for '%s'", command)
         sys.exit(1)
