@@ -921,15 +921,13 @@ class Systemctl:
         except socket.timeout, e:
             if timeout > 2:
                 logg.debug("socket.timeout %s", e)
-        try:
-            notify.socket.close()
-        except Exception, e:
-            logg.debug("socket.close %s", e)
-        return result
     def wait_notify_socket(self, notify, timeout, pid = None):
         if not notify:
             logg.info("no $NOTIFY_SOCKET, waiting %s", timeout)
             time.sleep(timeout)
+            return {}
+        if not os.path.exists(notify.socketfile):
+            logg.info("no $NOTIFY_SOCKET exists")
             return {}
         #
         logg.info("wait $NOTIFY_SOCKET, timeout %s", timeout)
@@ -956,6 +954,10 @@ class Systemctl:
             if seenREADY:
                 break
         logg.debug("notify = %s", results)
+        try:
+            notify.socket.close()
+        except Exception, e:
+            logg.debug("socket.close %s", e)
         return results
     def start_of_units(self, *modules):
         """ [UNIT]... -- start these units """
