@@ -102,6 +102,20 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "systemd 0"))
         self.assertTrue(greps(out, "[(]systemctl.py"))
         self.assertTrue(greps(out, "[+]SYSVINIT"))
+    def test_1003_systemctl_help(self):
+        cmd = "%s --help" % _systemctl_py
+        out = output(cmd)
+        logg.info("\n> %s\n%s", cmd, out)
+        self.assertTrue(greps(out, "--root=PATH"))
+        self.assertTrue(greps(out, "--verbose"))
+        self.assertTrue(greps(out, "--init"))
+        self.assertTrue(greps(out, "for more information"))
+        self.assertFalse(greps(out, "reload-or-try-restart"))
+        cmd = "%s help" % _systemctl_py
+        out = output(cmd)
+        logg.info("\n> %s\n%s", cmd, out)
+        self.assertFalse(greps(out, "--init"))
+        self.assertTrue(greps(out, "reload-or-try-restart"))
     def test_6001_centos_httpd_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
             THEN we can create an image with an Apache HTTP service 
