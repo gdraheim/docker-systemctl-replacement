@@ -1988,7 +1988,20 @@ class Systemctl:
                 return True # ignore
         return False
     def system_default_services(self, sysv="S", default_target = "multi-user.target"):
-        """ show the default services """
+        """ show the default services 
+            This is used internally to know the list of service to be started in 'default'
+            runlevel when the container is started through default initialisation. It will
+            ignore a number of services - use '--all' to show a longer list of services and
+            use '--all --force' if not even a minimal filter shall be used.
+        """
+        igno = self.igno_centos + self.igno_opensuse + self.igno_ubuntu + self.igno_always
+        if self._show_all:
+            igno = self.igno_always
+            if self._force:
+                igno = []
+        logg.info("igno = %s", igno)
+        return self.default_services(sysv, default_target, igno)
+    def default_services(self, sysv, default_target, igno = []):
         igno = self.igno_always
         wants_services = []
         for folder in [ self._sysd_folder1, self._sysd_folder2 ]:
@@ -2015,47 +2028,22 @@ class Systemctl:
                         continue # ignore
                     wants_services.append(unit)
         return wants_services
-    def system_wants_services(self, sysv="S", default_target = "multi-user.target"):
-        """ show the names of the default services to be started """
-        igno = self.igno_centos + self.igno_opensuse + self.igno_ubuntu + self.igno_always
-        logg.info("igno = %s", igno)
-        wants_services = []
-        for folder in [ self._sysd_folder1, self._sysd_folder2 ]:
-            if self._root:
-                folder = os_path(self._root, folder)
-            wants_folder = os.path.join(folder, default_target + ".wants")
-            if os.path.isdir(wants_folder):
-                for unit in sorted(os.listdir(wants_folder)):
-                    path = os.path.join(wants_folder, unit)
-                    if os.path.isdir(path): continue
-                    if self._ignored_unit(unit, igno):
-                        continue # ignore
-                    if unit.endswith(".service"):
-                        wants_services.append(unit)
-        for folder in [ self.rc3_root_folder() ]:
-            for unit in sorted(os.listdir(folder)):
-                path = os.path.join(folder, unit)
-                if os.path.isdir(path): continue
-                m = re.match(sysv+r"\d\d(.*)", unit)
-                if m:
-                    service = m.group(1)
-                    unit = service+".service"
-                    if self._ignored_unit(unit, igno):
-                        continue # ignore
-                    wants_services.append(unit)
-        return wants_services
     def system_default(self, arg = True):
-        """ start units for default system level """
+        """ start units for default system level
+            This will go through the enabled services in the default 'multi-user.target'.
+            However some services are ignored as being known to be installation garbage
+            from unintended services. Use '--all' so start all of the installed services
+            and with '--all --force' even those services that are otherwise wrong. """
         logg.info("system default requested - %s", arg)
         default_target = "multi-user.target"
-        wants_services = self.system_wants_services("S", default_target)
+        wants_services = self.system_default_services("S", default_target)
         self.start_of_units(*wants_services)
         logg.info("system is up")
     def system_halt(self, arg = True):
         """ stop units from default system level """
         logg.info("system halt requested - %s", arg)
         default_target = "multi-user.target"
-        wants_services = self.system_wants_services("K", default_target)
+        wants_services = self.system_default_services("K", default_target)
         self.stop_of_units(*wants_services)
         logg.info("system is down")
     def system_init0(self):
