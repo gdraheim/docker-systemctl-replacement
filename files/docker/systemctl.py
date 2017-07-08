@@ -54,6 +54,7 @@ DefaultMaximumTimeout = 200
 _notify_socket_folder = "/var/run/systemd" # alias /run/systemd
 _notify_socket_name = "notify" # NOTIFY_SOCKET="/var/run/systemd/notify"
 _pid_file_folder = "/var/run"
+_journal_log_folder = "/var/log/journal"
 
 def shell_cmd(cmd):
     return " ".join(["'%s'" % part for part in cmd])
@@ -419,6 +420,7 @@ class Systemctl:
         self._notify_socket_folder = _notify_socket_folder
         self._notify_socket_name = _notify_socket_name
         self._pid_file_folder = _pid_file_folder 
+        self._journal_log_folder = _journal_log_folder
         self._WaitProcFile = DefaultWaitProcFile
         self._WaitKillProc = DefaultWaitKillProc
         self._force = _force
@@ -749,7 +751,7 @@ class Systemctl:
     def open_journal_log(self, conf):
         name = conf.filename()
         if name:
-            log_folder = "/var/log/journal"
+            log_folder = self._journal_log_folder
             if self._root:
                 log_folder = os_path(self._root, log_folder)
             log_file = name.replace(os.path.sep,".") + ".log"
