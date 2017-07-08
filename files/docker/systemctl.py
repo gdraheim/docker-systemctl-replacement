@@ -355,7 +355,6 @@ _property = None
 _no_legend = False
 _no_block = False
 _no_wall = False
-_globally = False
 _no_ask_password = False
 
 MinimumWaitProcFile = 10
@@ -2063,8 +2062,8 @@ if __name__ == "__main__":
         help="Don't reload daemon after en-/dis-abling unit files*")
     _o.add_option("--no-ask-password", action="store_true", default=_no_ask_password,
         help="Do not ask for system passwords")
-    _o.add_option("--global", action="store_true", dest="globally", default=_globally,
-        help="Enable/disable unit files globally")
+    # _o.add_option("--global", action="store_true", dest="globally", default=_globally,
+    #    help="Enable/disable unit files globally") # for all user logins
     # _o.add_option("--runtime", action="store_true",
     #     help="Enable unit files only temporarily until next reboot*")
     _o.add_option("--force", action="store_true", default=_force,
@@ -2114,7 +2113,6 @@ if __name__ == "__main__":
     _no_legend = opt.no_legend
     _no_block = opt.no_block
     _no_wall = opt.no_wall
-    _globally = opt.globally
     _no_ask_password = opt.no_ask_password
     #
     if not args: 
