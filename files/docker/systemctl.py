@@ -630,6 +630,26 @@ class Systemctl:
             return result
         found = "%s loaded units listed." % len(result)
         return result + [ "", found, hint ]
+    def list_unit_files(self, *modules): # -> [ (unit,enabled) ]
+        """ show all the units and the enabled status"""
+        result = {}
+        enabled = {}
+        for unit in self.match_units(modules):
+            result[unit] = None
+            enabled[unit] = ""
+            try: 
+                conf = self.get_unit_conf(unit)
+                result[unit] = conf
+                enabled[unit] = self.enabled_from(conf)
+            except Exception, e:
+                logg.warning("list-units: %s", e)
+        return [ (unit, enabled[unit]) for unit in sorted(result) ]
+    def show_list_unit_files(self, *modules): # -> [ (unit,enabled) ]
+        result = self.list_unit_files(*modules)
+        if _no_legend:
+            return result
+        found = "%s unit files listed." % len(result)
+        return result + [ "", found ]
     ##
     ##
     def get_description_from(self, conf, default = None): # -> text

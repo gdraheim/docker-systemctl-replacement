@@ -181,6 +181,31 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertNotIn("loaded units listed.", out)
         self.assertNotIn("To show all installed unit files use", out)
         self.assertEqual(len(lines(out)), 2)
+    def test_2003_list_unit_files(self):
+        """ check that two unit files can be found for 'list-unit-files' """
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        text_file(os_path(root, "/etc/systemd/system/a.service"),"""
+            [Unit]
+            Description=Testing A""")
+        text_file(os_path(root, "/etc/systemd/system/b.service"),"""
+            [Unit]
+            Description=Testing B""")
+        cmd = "%s --root=%s list-unit-files" % (_systemctl_py, root)
+        out = output(cmd)
+        logg.info("\n> %s\n%s", cmd, out)
+        self.assertTrue(greps(out, r"a.service\s+static"))
+        self.assertTrue(greps(out, r"b.service\s+static"))
+        self.assertIn("unit files listed.", out)
+        self.assertEqual(len(lines(out)), 4)
+        cmd = "%s --root=%s --no-legend list-unit-files" % (_systemctl_py, root)
+        out = output(cmd)
+        logg.info("\n> %s\n%s", cmd, out)
+        self.assertTrue(greps(out, r"a.service\s+static"))
+        self.assertTrue(greps(out, r"b.service\s+static"))
+        self.assertNotIn("unit files listed.", out)
+        self.assertEqual(len(lines(out)), 2)
     def test_6001_centos_httpd_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
             THEN we can create an image with an Apache HTTP service 
