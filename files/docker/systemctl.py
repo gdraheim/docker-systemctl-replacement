@@ -50,7 +50,10 @@ DefaultTimeoutRestartSec = 2 # officially 0.1
 DefaultTimeoutStartSec = 10 # officially 90
 DefaultTimeoutStopSec = 10 # officially 90
 DefaultMaximumTimeout = 200
-DefaultNotifySocket = "/run/systemd/notify"
+
+_notify_socket_folder = "/var/run/systemd" # alias /run/systemd
+_notify_socket_name = "notify" # NOTIFY_SOCKET="/var/run/systemd/notify"
+_pid_file_folder = "/var/run"
 
 def shell_cmd(cmd):
     return " ".join(["'%s'" % part for part in cmd])
@@ -406,6 +409,9 @@ class Systemctl:
         self._preset_folder1 = _preset_folder1
         self._preset_folder2 = _preset_folder2
         self._preset_folder3 = _preset_folder3
+        self._notify_socket_folder = _notify_socket_folder
+        self._notify_socket_name = _notify_socket_name
+        self._pid_file_folder = _pid_file_folder 
         self._WaitProcFile = DefaultWaitProcFile
         self._WaitKillProc = DefaultWaitKillProc
         self._force = _force
@@ -653,7 +659,11 @@ class Systemctl:
         return None
     def default_pid_file(self, unit): # -> text
         """ default file pattern where to store a pid """
-        return "/var/run/%s.pid" % unit
+        folder = self._pid_file_folder
+        if self._root:
+            folder = os.path.join(self._root, folder)
+        name = "%s.pid" % unit
+        return os.path.join(folder, name)
     def read_env_file(self, env_file): # -> generate[ (name,value) ]
         """ EnvironmentFile=<name> is being scanned """
         if env_file.startswith("-"):
@@ -732,13 +742,15 @@ class Systemctl:
     def open_journal_log(self, conf):
         name = conf.filename()
         if name:
-            log_dir = "/var/log/journal"
+            log_folder = "/var/log/journal"
+            if self._root:
+                log_folder = os.path.join(self._root, log_folder)
             log_file = name.replace(os.path.sep,".") + ".log"
             x = log_file.find(".", 1)
             if x > 0: log_file = log_file[x+1:]
-            if not os.path.isdir(log_dir):
-                os.makedirs(log_dir)
-            return open(os.path.join(log_dir, log_file), "w")
+            if not os.path.isdir(log_folder):
+                os.makedirs(log_folder)
+            return open(os.path.join(log_folder, log_file), "w")
         return open("/dev/null", "w")
     def chdir_workingdir(self, conf, check = True):
         runuser = conf.get("Service", "User", "")
@@ -788,7 +800,11 @@ class Systemctl:
         if runuser and os.geteuid() != 0:
            logg.error("can not exec notify-service from non-root caller")
            return None
-        socketfile = socketfile or DefaultNotifySocket
+        notify_socket_folder = self._notify_socket_folder
+        if self._root:
+           notify_socket_folder = os.path.join(self._root, notify_socket_folder)
+        notify_socket = os.path.join(notify_socket_folder, self._notify_socket_name)
+        socketfile = socketfile or notify_socket
         if not os.path.isdir(os.path.dirname(socketfile)):
             os.makedirs(os.path.dirname(socketfile))
         if os.path.exists(socketfile):
@@ -1962,18 +1978,23 @@ class Systemctl:
 		    try: os.waitpid(pid, os.WNOHANG)
 		    except OSError, e: 
 			logg.warning("reap zombie %s: %s", e.strerror)
+    def etc_hosts(self):
+        path = "/etc/hosts"
+        if self._root:
+            return os.path.join(self._root, path)
+        return path
     def system_ipv4(self, *args):
         """ only ipv4 localhost in /etc/hosts """
         logg.debug("checking /etc/hosts for '::1 localhost'")
         lines = []
-        for line in open("/etc/hosts"):
+        for line in open(self.etc_hosts()):
             if "::1" in line:
                 newline = re.sub("\\slocalhost\\s", " ", line)
                 if line != newline:
                     logg.info("/etc/hosts: '%s' => '%s'", line.rstrip(), newline.rstrip())
                     line = newline
             lines.append(line)
-        f = open("/etc/hosts", "w")
+        f = open(self.etc_hosts(), "w")
         for line in lines:
             f.write(line)
         f.close()
@@ -1981,14 +2002,14 @@ class Systemctl:
         """ only ipv4 localhost in /etc/hosts """
         logg.debug("checking /etc/hosts for '127.0.0.1 localhost'")
         lines = []
-        for line in open("/etc/hosts"):
+        for line in open(self.etc_hosts()):
             if "127.0.0.1" in line:
                 newline = re.sub("\\slocalhost\\s", " ", line)
                 if line != newline:
                     logg.info("/etc/hosts: '%s' => '%s'", line.rstrip(), newline.rstrip())
                     line = newline
             lines.append(line)
-        f = open("/etc/hosts", "w")
+        f = open(self.etc_hosts(), "w")
         for line in lines:
             f.write(line)
         f.close()
@@ -2124,20 +2145,6 @@ if __name__ == "__main__":
     opt, args = _o.parse_args()
     logging.basicConfig(level = max(0, logging.FATAL - 10 * opt.verbose))
     logg.setLevel(max(0, logging.ERROR - 10 * opt.verbose))
-    if os.path.exists("/var/log/systemctl.debug.log"):
-       loggfile = logging.FileHandler("/var/log/systemctl.debug.log")
-       loggfile.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
-       logg.addHandler(loggfile)
-       logg.setLevel(logging.DEBUG)
-       logg.info("EXEC BEGIN %s %s", os.path.realpath(sys.argv[0]), " ".join(args))
-    elif os.path.exists("/var/log/systemctl.log"):
-       loggfile = logging.FileHandler("/var/log/systemctl.log")
-       loggfile.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
-       logg.addHandler(loggfile)
-       logg.setLevel(max(0, logging.INFO - 10 * opt.verbose))
-       logg.info("EXEC BEGIN %s %s", os.path.realpath(sys.argv[0]), " ".join(args))
-    if opt.version:
-       args = [ "version" ]
     #
     _root = opt.root
     _force = opt.force
@@ -2151,6 +2158,26 @@ if __name__ == "__main__":
     _no_wall = opt.no_wall
     _no_ask_password = opt.no_ask_password
     #
+    _systemctl_debug_log = "/var/log/systemctl.debug.log"
+    _systemctl_extra_log = "/var/log/systemctl.log"
+    if _root:
+       _systemctl_debug_log = os.path.join(_root, _systemctl_debug_log)
+       _systemctl_extra_log = os.path.join(_root, _systemctl_extra_log)
+    if os.path.exists(_systemctl_debug_log):
+       loggfile = logging.FileHandler(_systemctl_debug_log)
+       loggfile.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
+       logg.addHandler(loggfile)
+       logg.setLevel(logging.DEBUG)
+       logg.info("EXEC BEGIN %s %s", os.path.realpath(sys.argv[0]), " ".join(args))
+    elif os.path.exists(_systemctl_extra_log):
+       loggfile = logging.FileHandler(_systemctl_extra_log)
+       loggfile.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
+       logg.addHandler(loggfile)
+       logg.setLevel(max(0, logging.INFO - 10 * opt.verbose))
+       logg.info("EXEC BEGIN %s %s", os.path.realpath(sys.argv[0]), " ".join(args))
+    #
+    if opt.version:
+       args = [ "version" ]
     if not args: 
         if os.getpid() == 0:
             _init = True
