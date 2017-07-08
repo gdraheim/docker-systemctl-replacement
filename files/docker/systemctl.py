@@ -1882,7 +1882,10 @@ class Systemctl:
     def enabled_from(self, conf):
         unit_file = conf.filename()
         if self.is_sysv_file(unit_file):
-            return self.is_enabled_sysv(unit_file)
+            state = self.is_enabled_sysv(unit_file)
+            if state: 
+                return "enabled"
+            return "disabled"
         wanted = self.wanted_from(conf)
         if not wanted:
             return "static"
@@ -2344,7 +2347,7 @@ if __name__ == "__main__":
     elif isinstance(result, list):
         for element in result:
             if isinstance(element, tuple):
-                print "\t".join(element)
+                print "\t".join([ str(elem) for elem in element] )
             else:
                 print element
         logg.info("EXEC END %s", result)
@@ -2352,7 +2355,7 @@ if __name__ == "__main__":
         for key in sorted(result.keys()):
             element = result[key]
             if isinstance(element, tuple):
-                print key,"=","\t".join(element)
+                print key,"=","\t".join([ str(elem) for elem in element])
             else:
                 print key,"=",element
         logg.info("EXEC END %s", result)
