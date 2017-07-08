@@ -843,6 +843,72 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(lines(out)), 4)
         self.assertEqual(end, 0)
         #
+    def test_5001_systemctl_py_inside_container(self):
+        """ check that we can run systemctl.py inside a docker container """
+        testname = self.testname()
+        testdir = self.testdir()
+        image= "centos:centos7"
+        systemctl_py = _systemctl_py
+        #
+        stop_container = "docker rm --force {testname}"
+        sx____(stop_container.format(**locals()))
+        start_container = "docker run --detach --name={testname} {image} sleep 50"
+        sh____(start_container.format(**locals()))
+        install_systemctl = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(install_systemctl.format(**locals()))
+        version_systemctl = "docker exec {testname} systemctl --version"
+        sh____(version_systemctl.format(**locals()))
+        out = output(version_systemctl.format(**locals()))
+        logg.info("\n>\n%s", out)
+        #
+        sx____(stop_container.format(**locals()))
+        self.assertTrue(greps(out, "systemctl.py"))
+    def test_5002_systemctl_py_enable_in_container(self):
+        """ check that we can enable services in a docker container """
+        testname = self.testname()
+        testdir = self.testdir()
+        image= "centos:centos7"
+        systemctl_py = _systemctl_py
+        text_file(os_path(testdir, "zza.service"),"""
+            [Unit]
+            Description=Testing A""")
+        text_file(os_path(testdir, "zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(testdir, "zzc.service"),"""
+            [Unit]
+            Description=Testing C
+            [Install]
+            WantedBy=multi-user.target""")
+        #
+        stop_container = "docker rm --force {testname}"
+        sx____(stop_container.format(**locals()))
+        start_container = "docker run --detach --name={testname} {image} sleep 50"
+        sh____(start_container.format(**locals()))
+        install_systemctl = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(install_systemctl.format(**locals()))
+        install_service = "docker cp {testdir}/zza.service {testname}:/etc/systemd/system/zza.service"
+        sh____(install_service.format(**locals()))
+        install_service = "docker cp {testdir}/zzb.service {testname}:/etc/systemd/system/zzb.service"
+        sh____(install_service.format(**locals()))
+        install_service = "docker cp {testdir}/zzc.service {testname}:/etc/systemd/system/zzc.service"
+        sh____(install_service.format(**locals()))
+        enable_service = "docker exec {testname} systemctl enable zzc.service"
+        sh____(enable_service.format(**locals()))
+        version_systemctl = "docker exec {testname} systemctl --version"
+        sh____(version_systemctl.format(**locals()))
+        list_units_systemctl = "docker exec {testname} systemctl list-unit-files"
+        # sh____(list_units_systemctl.format(**locals()))
+        out = output(list_units_systemctl.format(**locals()))
+        logg.info("\n>\n%s", out)
+        #
+        sx____(stop_container.format(**locals()))
+        self.assertTrue(greps(out, "zza.service.*static"))
+        self.assertTrue(greps(out, "zzb.service.*disabled"))
+        self.assertTrue(greps(out, "zzc.service.*enabled"))
+
     def test_6001_centos_httpd_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
             THEN we can create an image with an Apache HTTP service 
