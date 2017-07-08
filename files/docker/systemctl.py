@@ -35,7 +35,8 @@ _force = False
 _quiet = False
 _full = False
 _now = False
-_property = None
+_unit_type = None
+_unit_property = None
 _no_legend = False
 _no_block = False
 _no_wall = False
@@ -55,6 +56,30 @@ _notify_socket_folder = "/var/run/systemd" # alias /run/systemd
 _notify_socket_name = "notify" # NOTIFY_SOCKET="/var/run/systemd/notify"
 _pid_file_folder = "/var/run"
 _journal_log_folder = "/var/log/journal"
+
+_runlevel_targets = [ "runlevel0.target", "runlevel1.target", "runlevel2.target", "runlevel3.target", "runlevel4.target", "runlevel5.target", "runlevel6.target" ]
+_default_targets = [ "poweroff.target", "rescue.target", "sysinit.target", "basic.target", "multi-user.target", "graphical.target", "reboot.target" ]
+_feature_targets = [ "network.target", "remote-fs.target", "local-fs.target", "timers.target", "nfs-client.target" ]
+_all_common_targets = [ "default.target" ] + _default_targets + _runlevel_targets + _feature_targets
+
+# inside a docker we pretend the following
+_all_common_enabled = [ "default.target", "runlevel3.target", "multi-user.target", "remote-fs.target" ]
+_all_common_disabled = [ "graphical.target", "resue.target", "nfs-client.target" ]
+
+_runlevel_mappings = {} # the official list
+_runlevel_mappings["0"] = "poweroff.target"
+_runlevel_mappings["1"] = "rescue.target"
+_runlevel_mappings["2"] = "multi-user.target"
+_runlevel_mappings["3"] = "multi-user.target"
+_runlevel_mappings["4"] = "multi-user.target"
+_runlevel_mappings["5"] = "graphical.target"
+_runlevel_mappings["6"] = "reboot.target"
+
+_sysv_mappings = {} # by rule of thumb
+_sysv_mappings["$network"] = "network.target"
+_sysv_mappings["$remote_fs"] = "remote-fs.target"
+_sysv_mappings["$local_fs"] = "local-fs.target"
+_sysv_mappings["$timer"] = "timers.target"
 
 def shell_cmd(cmd):
     return " ".join(["'%s'" % part for part in cmd])
@@ -320,23 +345,16 @@ class UnitConfigParser:
         self.set("Unit", "Description", description)
         check = self.get("init.d", "Required-Start","")
         for item in check.split(" "):
-            if item.strip() == "$network":
-                self.set("Unit", "After", "network.target")
-            if item.strip() == "$remote_fs":
-                self.set("Unit", "After", "remote-fs.target")
-            if item.strip() == "$local_fs":
-                self.set("Unit", "After", "local-fs.target")
-            if item.strip() == "$timer":
-                self.set("Unit", "Requires", "basic.target")
+            if item.strip() in _sysv_mappings:
+                self.set("Unit", "Requires", _sysv_mappings[item.strip()])
         provides = self.get("init.d", "Provides", "")
         if provides:
             self.set("Install", "Alias", provides)
         # if already in multi-user.target then start it there.
         runlevels = self.get("init.d", "Default-Start","")
-        if "5" in runlevels:
-            self.set("Install", "WantedBy", "graphical.target")
-        if "3" in runlevels:
-            self.set("Install", "WantedBy", "multi-user.target")
+        for item in runlevels.split(" "):
+            if item.strip() in _runlevel_mappings:
+                self.set("Install", "WantedBy", _runlevel_mappings[item.strip()])
         self.set("Service", "Type", "sysv")
 
 UnitParser = ConfigParser.RawConfigParser
@@ -632,8 +650,8 @@ class Systemctl:
             return result
         found = "%s loaded units listed." % len(result)
         return result + [ "", found, hint ]
-    def list_unit_files(self, *modules): # -> [ (unit,enabled) ]
-        """ show all the units and the enabled status"""
+    def list_service_unit_files(self, *modules): # -> [ (unit,enabled) ]
+        """ show all the service units and the enabled status"""
         result = {}
         enabled = {}
         for unit in self.match_units(modules):
@@ -646,12 +664,33 @@ class Systemctl:
             except Exception, e:
                 logg.warning("list-units: %s", e)
         return [ (unit, enabled[unit]) for unit in sorted(result) ]
+    def list_target_unit_files(self, *modules): # -> [ (unit,enabled) ]
+        """ show all the target units and the enabled status"""
+        result = {}
+        enabled = {}
+        for unit in _all_common_targets:
+            result[unit] = None
+            enabled[unit] = "static"
+            if unit in _all_common_enabled:
+                enabled[unit] = "enabled"
+            if unit in _all_common_disabled:
+                enabled[unit] = "enabled"
+        return [ (unit, enabled[unit]) for unit in sorted(result) ]
     def show_list_unit_files(self, *modules): # -> [ (unit,enabled) ]
-        result = self.list_unit_files(*modules)
+        if _unit_type == "target":
+            result = self.list_target_unit_files()
+        elif _unit_type == "service":
+            result = self.list_service_unit_files()
+        elif _unit_type:
+            logg.error("unsupported unit --type=%s", _unit_type)
+            result = []
+        else:
+            result = self.list_target_unit_files()
+            result += self.list_service_unit_files(*modules)
         if _no_legend:
             return result
         found = "%s unit files listed." % len(result)
-        return result + [ "", found ]
+        return [ ("UNIT FILE", "STATE") ] + result + [ "", found ]
     ##
     ##
     def get_description_from(self, conf, default = None): # -> text
@@ -1856,12 +1895,12 @@ class Systemctl:
         for unit in self.match_units(modules):
             if result: result += "\n\n"
             for var, value in self.show_unit_items(unit):
-               if not _property or _property == var:
+               if not _unit_property or _unit_property == var:
                    result += "%s=%s\n" % (var, value)
         if not result and modules:
             unit = modules[0]
             for var, value in self.show_unit_items(unit):
-               if not _property or _property == var:
+               if not _unit_property or _unit_property == var:
                    result += "%s=%s\n" % (var, value)
         return result
     def show_unit_items(self, unit):
@@ -2128,11 +2167,11 @@ if __name__ == "__main__":
     #     help="Operate on remote host*")
     # _o.add_option("-M", "--machine", metavar="CONTAINER",
     #     help="Operate on local container*")
-    _o.add_option("-t","--type", metavar="TYPE",
+    _o.add_option("-t","--type", metavar="TYPE", dest="unit_type", default=_unit_type,
         help="List units of a particual type*")
     _o.add_option("--state", metavar="STATE",
         help="List units with particular LOAD or SUB or ACTIVE state*")
-    _o.add_option("-p", "--property", metavar="NAME",
+    _o.add_option("-p", "--property", metavar="NAME", dest="unit_property", default=_unit_property,
         help="Show only properties by this name*")
     _o.add_option("-a", "--all", action="store_true",
         help="Show all loaded units/properties, including dead empty ones. To list all units installed on the system, use the 'list-unit-files' command instead*")
@@ -2196,7 +2235,8 @@ if __name__ == "__main__":
     _force = opt.force
     _quiet = opt.quiet
     _full = opt.full
-    _property = getattr(opt, "property")
+    _unit_type = opt.unit_type
+    _unit_property = opt.unit_property
     _init = opt.init
     _now = opt.now
     _no_legend = opt.no_legend

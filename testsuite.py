@@ -207,7 +207,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertNotIn("To show all installed unit files use", out)
         self.assertEqual(len(lines(out)), 2)
     def test_2003_list_unit_files(self):
-        """ check that two unit files can be found for 'list-unit-files' """
+        """ check that two unit service files can be found for 'list-unit-files' """
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
@@ -217,14 +217,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(os_path(root, "/etc/systemd/system/b.service"),"""
             [Unit]
             Description=Testing B""")
-        cmd = "%s --root=%s list-unit-files" % (_systemctl_py, root)
+        cmd = "%s --root=%s --type=service list-unit-files" % (_systemctl_py, root)
         out = output(cmd)
         logg.info("\n> %s\n%s", cmd, out)
         self.assertTrue(greps(out, r"a.service\s+static"))
         self.assertTrue(greps(out, r"b.service\s+static"))
         self.assertIn("unit files listed.", out)
-        self.assertEqual(len(lines(out)), 4)
-        cmd = "%s --root=%s --no-legend list-unit-files" % (_systemctl_py, root)
+        self.assertEqual(len(lines(out)), 5)
+        cmd = "%s --root=%s --no-legend --type=service list-unit-files" % (_systemctl_py, root)
         out = output(cmd)
         logg.info("\n> %s\n%s", cmd, out)
         self.assertTrue(greps(out, r"a.service\s+static"))
@@ -245,20 +245,54 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing B
             [Install]
             WantedBy=multi-user.target""")
-        cmd = "%s --root=%s list-unit-files" % (_systemctl_py, root)
+        cmd = "%s --root=%s --type=service list-unit-files" % (_systemctl_py, root)
         out = output(cmd)
         logg.info("\n> %s\n%s", cmd, out)
         self.assertTrue(greps(out, r"a.service\s+static"))
         self.assertTrue(greps(out, r"b.service\s+disabled"))
         self.assertIn("unit files listed.", out)
-        self.assertEqual(len(lines(out)), 4)
-        cmd = "%s --root=%s --no-legend list-unit-files" % (_systemctl_py, root)
+        self.assertEqual(len(lines(out)), 5)
+        cmd = "%s --root=%s --no-legend --type=service list-unit-files" % (_systemctl_py, root)
         out = output(cmd)
         logg.info("\n> %s\n%s", cmd, out)
         self.assertTrue(greps(out, r"a.service\s+static"))
         self.assertTrue(greps(out, r"b.service\s+disabled"))
         self.assertNotIn("unit files listed.", out)
         self.assertEqual(len(lines(out)), 2)
+    def test_2013_list_unit_files_common_targets(self):
+        """ check that some unit target files can be found for 'list-unit-files' """
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        text_file(os_path(root, "/etc/systemd/system/a.service"),"""
+            [Unit]
+            Description=Testing A""")
+        text_file(os_path(root, "/etc/systemd/system/b.service"),"""
+            [Unit]
+            Description=Testing B""")
+        cmd = "%s --root=%s --no-legend --type=service list-unit-files" % (_systemctl_py, root)
+        out = output(cmd)
+        logg.info("\n> %s\n%s", cmd, out)
+        self.assertTrue(greps(out, r"a.service\s+static"))
+        self.assertTrue(greps(out, r"b.service\s+static"))
+        self.assertFalse(greps(out, r"multi-user.target\s+enabled"))
+        self.assertEqual(len(lines(out)), 2)
+        cmd = "%s --root=%s --no-legend --type=target list-unit-files" % (_systemctl_py, root)
+        out = output(cmd)
+        logg.info("\n> %s\n%s", cmd, out)
+        self.assertFalse(greps(out, r"a.service\s+static"))
+        self.assertFalse(greps(out, r"b.service\s+static"))
+        self.assertTrue(greps(out, r"multi-user.target\s+enabled"))
+        self.assertGreater(len(lines(out)), 10)
+        num_targets = len(lines(out))
+        cmd = "%s --root=%s --no-legend list-unit-files" % (_systemctl_py, root)
+        out = output(cmd)
+        logg.info("\n> %s\n%s", cmd, out)
+        self.assertTrue(greps(out, r"a.service\s+static"))
+        self.assertTrue(greps(out, r"b.service\s+static"))
+        self.assertTrue(greps(out, r"multi-user.target\s+enabled"))
+        self.assertEqual(len(lines(out)), num_targets + 2)
+
     def test_3002_enable_service_creates_a_symlink(self):
         """ check that a service can be enabled """
         testname = self.testname()
@@ -320,7 +354,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing B
             [Install]
             WantedBy=multi-user.target""")
-        cmd = "%s --root=%s --no-legend list-unit-files" % (_systemctl_py, root)
+        cmd = "%s --root=%s --no-legend --type=service list-unit-files" % (_systemctl_py, root)
         out = output(cmd)
         logg.info("\n> %s\n%s", cmd, out)
         self.assertTrue(greps(out, r"a.service\s+static"))
@@ -333,7 +367,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         enabled_file = os_path(root, "/etc/systemd/system/multi-user.target.wants/b.service")
         self.assertTrue(os.path.islink(enabled_file))
         #
-        cmd = "%s --root=%s --no-legend list-unit-files" % (_systemctl_py, root)
+        cmd = "%s --root=%s --no-legend --type=service list-unit-files" % (_systemctl_py, root)
         out = output(cmd)
         logg.info("\n> %s\n%s", cmd, out)
         self.assertTrue(greps(out, r"a.service\s+static"))
@@ -346,7 +380,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         enabled_file = os_path(root, "/etc/systemd/system/multi-user.target.wants/b.service")
         self.assertFalse(os.path.exists(enabled_file))
         #
-        cmd = "%s --root=%s --no-legend list-unit-files" % (_systemctl_py, root)
+        cmd = "%s --root=%s --no-legend --type=service list-unit-files" % (_systemctl_py, root)
         out = output(cmd)
         logg.info("\n> %s\n%s", cmd, out)
         self.assertTrue(greps(out, r"a.service\s+static"))
