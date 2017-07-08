@@ -908,7 +908,60 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "zza.service.*static"))
         self.assertTrue(greps(out, "zzb.service.*disabled"))
         self.assertTrue(greps(out, "zzc.service.*enabled"))
-
+    def test_5003_systemctl_py_default_services_in_container(self):
+        """ check that we can enable services in a docker container to have default-services"""
+        testname = self.testname()
+        testdir = self.testdir()
+        image= "centos:centos7"
+        systemctl_py = _systemctl_py
+        text_file(os_path(testdir, "zza.service"),"""
+            [Unit]
+            Description=Testing A""")
+        text_file(os_path(testdir, "zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(testdir, "zzc.service"),"""
+            [Unit]
+            Description=Testing C
+            [Install]
+            WantedBy=multi-user.target""")
+        #
+        stop_container = "docker rm --force {testname}"
+        sx____(stop_container.format(**locals()))
+        start_container = "docker run --detach --name={testname} {image} sleep 50"
+        sh____(start_container.format(**locals()))
+        install_systemctl = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(install_systemctl.format(**locals()))
+        install_service = "docker cp {testdir}/zza.service {testname}:/etc/systemd/system/zza.service"
+        sh____(install_service.format(**locals()))
+        install_service = "docker cp {testdir}/zzb.service {testname}:/etc/systemd/system/zzb.service"
+        sh____(install_service.format(**locals()))
+        install_service = "docker cp {testdir}/zzc.service {testname}:/etc/systemd/system/zzc.service"
+        sh____(install_service.format(**locals()))
+        enable_service = "docker exec {testname} systemctl enable zzb.service"
+        sh____(enable_service.format(**locals()))
+        enable_service = "docker exec {testname} systemctl enable zzc.service"
+        sh____(enable_service.format(**locals()))
+        version_systemctl = "docker exec {testname} systemctl --version"
+        sh____(version_systemctl.format(**locals()))
+        list_units_systemctl = "docker exec {testname} systemctl default-services -vv"
+        # sh____(list_units_systemctl.format(**locals()))
+        out2 = output(list_units_systemctl.format(**locals()))
+        logg.info("\n>\n%s", out2)
+        list_units_systemctl = "docker exec {testname} systemctl --all default-services -vv"
+        # sh____(list_units_systemctl.format(**locals()))
+        out3 = output(list_units_systemctl.format(**locals()))
+        logg.info("\n>\n%s", out3)
+        #
+        sx____(stop_container.format(**locals()))
+        self.assertTrue(greps(out2, "zzb.service"))
+        self.assertTrue(greps(out2, "zzc.service"))
+        self.assertEqual(len(lines(out2)), 2)
+        self.assertTrue(greps(out3, "zzb.service"))
+        self.assertTrue(greps(out3, "zzc.service"))
+        # self.assertGreater(len(lines(out2)), 2)
     def test_6001_centos_httpd_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
             THEN we can create an image with an Apache HTTP service 
