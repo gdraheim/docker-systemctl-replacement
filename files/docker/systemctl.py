@@ -1677,7 +1677,7 @@ class Systemctl:
             return None
         if not wanted.endswith(".wants"):
             wanted = wanted + ".wants"
-        return os.path.join("/etc/system/systemd", wanted)
+        return os.path.join("/etc/systemd/system", wanted)
     def enable_of_units(self, *modules):
         """ [UNIT]... -- enable these units """
         done = True
