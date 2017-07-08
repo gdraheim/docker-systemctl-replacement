@@ -234,6 +234,27 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, r"b.service\s+disabled"))
         self.assertNotIn("unit files listed.", out)
         self.assertEqual(len(lines(out)), 2)
+    def test_3002_enable_service_creates_a_symlink(self):
+        """ check that a service can be enabled """
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        text_file(os_path(root, "/etc/systemd/system/a.service"),"""
+            [Unit]
+            Description=Testing A""")
+        text_file(os_path(root, "/etc/systemd/system/b.service"),"""
+            [Unit]
+            Description=Testing B
+            [Install]
+            WantedBy=multi-user.target""")
+        cmd = "%s --root=%s enable b.service" % (_systemctl_py, root)
+        out = output(cmd)
+        logg.info("\n> %s\n%s", cmd, out)
+        enabled_file = os_path(root, "/etc/systemd/system/multi-user.target.wants/b.service")
+        self.assertTrue(os.path.islink(enabled_file))
+        textB = file(enabled_file).read()
+        self.assertTrue(greps(textB, "Testing B"))
+        self.assertIn("\nDescription", textB)
     def test_3004_list_unit_files_when_enabled(self):
         """ check that two unit files can be found for 'list-unit-files'
             with an enabled status """
