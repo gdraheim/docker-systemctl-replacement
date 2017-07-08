@@ -956,11 +956,6 @@ class Systemctl:
                 break
         logg.debug("notify = %s", results)
         return results
-    def execstart_of_unit(self, unit):
-        conf = self.load_unit_conf(unit)
-        cmdlist = conf.getlist("Service", "ExecStart", [])
-        for idx, cmd in enumerate(cmdlist):
-            print "ExecStart[%s]: %s" % (idx, cmd)
     def start_of_units(self, *modules):
         """ [UNIT]... -- start these units """
         done = True
