@@ -2077,7 +2077,7 @@ class Systemctl:
         if self._root:
             return os_path(self._root, path)
         return path
-    def system_ipv4(self, *args):
+    def force_ipv4(self, *args):
         """ only ipv4 localhost in /etc/hosts """
         logg.debug("checking /etc/hosts for '::1 localhost'")
         lines = []
@@ -2092,7 +2092,7 @@ class Systemctl:
         for line in lines:
             f.write(line)
         f.close()
-    def system_ipv6(self, *args):
+    def force_ipv6(self, *args):
         """ only ipv4 localhost in /etc/hosts """
         logg.debug("checking /etc/hosts for '127.0.0.1 localhost'")
         lines = []
@@ -2289,9 +2289,9 @@ if __name__ == "__main__":
     modules = args[1:]
     systemctl = Systemctl()
     if opt.ipv4:
-        systemctl.system_ipv4()
+        systemctl.force_ipv4()
     elif opt.ipv6:
-        systemctl.system_ipv6()
+        systemctl.force_ipv6()
     found = False
     # command NAME
     command_name = command.replace("-","_").replace(".","_")+"_of_unit"
