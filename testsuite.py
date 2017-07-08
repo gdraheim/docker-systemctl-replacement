@@ -292,6 +292,25 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, r"b.service\s+static"))
         self.assertTrue(greps(out, r"multi-user.target\s+enabled"))
         self.assertEqual(len(lines(out)), num_targets + 2)
+    def test_2014_list_unit_files_now(self):
+        """ check that 'list-unit-files --now' presents a special debug list """
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        text_file(os_path(root, "/etc/systemd/system/a.service"),"""
+            [Unit]
+            Description=Testing A""")
+        text_file(os_path(root, "/etc/systemd/system/b.service"),"""
+            [Unit]
+            Description=Testing B""")
+        cmd = "%s --root=%s --no-legend --now list-unit-files" % (_systemctl_py, root)
+        out = output(cmd)
+        logg.info("\n> %s\n%s", cmd, out)
+        self.assertTrue(greps(out, r"a.service\s+SysD\s+.*systemd/system/a.service"))
+        self.assertTrue(greps(out, r"b.service\s+SysD\s+.*systemd/system/b.service"))
+        self.assertFalse(greps(out, r"multi-user.target"))
+        self.assertFalse(greps(out, r"enabled"))
+        self.assertEqual(len(lines(out)), 2)
 
     def test_3002_enable_service_creates_a_symlink(self):
         """ check that a service can be enabled """

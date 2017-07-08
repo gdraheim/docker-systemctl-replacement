@@ -620,14 +620,14 @@ class Systemctl:
                 yield item
             elif [ module for module in modules if module+suffix == item ]:
                 yield item
-    def system_list_services(self):
-        """ show all the services """
+    def list_service_unit_basics(self):
+        """ show all the basic loading state of services """
         filename = self.unit_file() # scan all
-        result = ""
+        result = []
         for name, value in self._file_for_unit_sysd.items():
-            result += "\nSysD {name} = {value}".format(**locals())
+            result += [ (name, "SysD", value) ]
         for name, value in self._file_for_unit_sysv.items():
-            result += "\nSysV {name} = {value}".format(**locals())
+            result += [ (name, "SysV", value) ]
         return result
     def list_service_units(self, *modules): # -> [ (unit,loaded+active+substate,description) ]
         """ show all the service units """
@@ -684,7 +684,9 @@ class Systemctl:
                 enabled[unit] = "enabled"
         return [ (unit, enabled[unit]) for unit in sorted(result) ]
     def show_list_unit_files(self, *modules): # -> [ (unit,enabled) ]
-        if _unit_type == "target":
+        if _now:
+            result = self.list_service_unit_basics()
+        elif _unit_type == "target":
             result = self.list_target_unit_files()
         elif _unit_type == "service":
             result = self.list_service_unit_files()
