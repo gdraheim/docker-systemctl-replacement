@@ -2065,8 +2065,8 @@ if __name__ == "__main__":
         help="Do not ask for system passwords")
     _o.add_option("--global", action="store_true", dest="globally", default=_globally,
         help="Enable/disable unit files globally")
-    _o.add_option("--runtime", action="store_true",
-        help="Enable unit files only temporarily until next reboot*")
+    # _o.add_option("--runtime", action="store_true",
+    #     help="Enable unit files only temporarily until next reboot*")
     _o.add_option("--force", action="store_true", default=_force,
         help="When enabling unit files, override existing symblinks / When shutting down, execute action immediately")
     _o.add_option("--root", metavar="PATH",
