@@ -73,6 +73,8 @@ def homedir_user(user = None, default = None):
 def os_path(root, path):
     if not root:
         return path
+    if not path:
+        return path
     while path.startswith(os.path.sep):
        path = path[1:]
     return os.path.join(root, path)
@@ -1806,10 +1808,12 @@ class Systemctl:
         """ [UNIT]... -- check if these units are enabled 
         returns True if any of them is enabled."""
         result = False
+        infos = []
         for unit in self.match_units(modules):
+            infos += [ self.enabled_unit(unit) ]
             if self.is_enabled(unit):
                result = True
-        return result
+        return result, infos
     def is_enabled(self, unit):
         unit_file = self.unit_file(unit)
         if self.is_sysv_file(unit_file):
@@ -1824,6 +1828,9 @@ class Systemctl:
         if os.path.isfile(target):
             return True
         return False
+    def enabled_unit(self, unit):
+        conf = self.get_unit_conf(unit)
+        return self.enabled_from(conf)
     def enabled_from(self, conf):
         unit_file = conf.filename()
         if self.is_sysv_file(unit_file):
@@ -2267,23 +2274,22 @@ if __name__ == "__main__":
     if _init:
         logg.info("continue as init process")
         systemctl.system_wait()
+    exitcode = 0
     if result is None:
         logg.info("EXEC END None")
-        sys.exit(0)
     elif result is True:
         logg.info("EXEC END True")
-        sys.exit(0)
     elif result is False:
         logg.info("EXEC END False")
-        sys.exit(1)
+        exitcode = 1
     elif isinstance(result, tuple) and len(result) == 2:
         exitcode, status = result
-        print status
         logg.info("EXEC END %s '%s'", exitcode, status)
         if exitcode is True: exitcode = 0
         if exitcode is False: exitcode = 1
-        sys.exit(exitcode)
-    elif isinstance(result, basestring):
+        result = status
+    #
+    if isinstance(result, basestring):
         print result
         logg.info("EXEC END '%s'", result)
     elif isinstance(result, list):
@@ -2303,3 +2309,5 @@ if __name__ == "__main__":
         logg.info("EXEC END %s", result)
     else:
         logg.warning("EXEC END Unknown result type %s", str(type(result)))
+    if exitcode:
+        sys.exit(exitcode)

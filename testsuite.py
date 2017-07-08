@@ -30,6 +30,10 @@ def output(cmd, shell=True):
     run = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE)
     out, err = run.communicate()
     return out
+def output2(cmd, shell=True):
+    run = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE)
+    out, err = run.communicate()
+    return out, run.returncode
 def _lines(lines):
     if isinstance(lines, basestring):
         lines = lines.split("\n")
@@ -74,6 +78,8 @@ def get_caller_caller_name():
     return frame.f_code.co_name
 def os_path(root, path):
     if not root:
+        return path
+    if not path:
         return path
     while path.startswith(os.path.sep):
        path = path[1:]
@@ -327,6 +333,136 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, r"a.service\s+static"))
         self.assertTrue(greps(out, r"b.service\s+disabled"))
         self.assertEqual(len(lines(out)), 2)
+    def test_3005_is_enabled_result_when_enabled(self):
+        """ check that 'is-enabled' reports correctly for enabled/disabled """
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        text_file(os_path(root, "/etc/systemd/system/a.service"),"""
+            [Unit]
+            Description=Testing A""")
+        text_file(os_path(root, "/etc/systemd/system/b.service"),"""
+            [Unit]
+            Description=Testing B
+            [Install]
+            WantedBy=multi-user.target""")
+        #
+        cmd = "%s --root=%s is-enabled a.service" % (_systemctl_py, root)
+        out, end = output2(cmd)
+        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        self.assertTrue(greps(out, r"^static"))
+        self.assertEqual(len(lines(out)), 1)
+        self.assertEqual(end, 0)
+        cmd = "%s --root=%s is-enabled b.service" % (_systemctl_py, root)
+        out, end = output2(cmd)
+        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        self.assertTrue(greps(out, r"^disabled"))
+        self.assertEqual(len(lines(out)), 1)
+        self.assertEqual(end, 1)
+        #
+        cmd = "%s --root=%s --no-legend enable b.service" % (_systemctl_py, root)
+        out, end = output2(cmd)
+        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        self.assertEqual(end, 0)
+        #
+        cmd = "%s --root=%s is-enabled b.service" % (_systemctl_py, root)
+        out, end = output2(cmd)
+        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        self.assertTrue(greps(out, r"^enabled"))
+        self.assertEqual(len(lines(out)), 1)
+        self.assertEqual(end, 0)
+        #
+        cmd = "%s --root=%s --no-legend disable b.service" % (_systemctl_py, root)
+        out, end = output2(cmd)
+        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        self.assertEqual(end, 0)
+        #
+        cmd = "%s --root=%s is-enabled b.service" % (_systemctl_py, root)
+        out, end = output2(cmd)
+        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        self.assertTrue(greps(out, r"^disabled"))
+        self.assertEqual(len(lines(out)), 1)
+        self.assertEqual(end, 1)
+    def test_3006_is_enabled_is_true_when_any_is_enabled(self):
+        """ check that 'is-enabled' reports correctly for enabled/disabled """
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        text_file(os_path(root, "/etc/systemd/system/a.service"),"""
+            [Unit]
+            Description=Testing A""")
+        text_file(os_path(root, "/etc/systemd/system/b.service"),"""
+            [Unit]
+            Description=Testing B
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/system/c.service"),"""
+            [Unit]
+            Description=Testing C
+            [Install]
+            WantedBy=multi-user.target""")
+        #
+        cmd = "%s --root=%s is-enabled a.service" % (_systemctl_py, root)
+        out, end = output2(cmd)
+        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        self.assertTrue(greps(out, r"^static"))
+        self.assertEqual(len(lines(out)), 1)
+        self.assertEqual(end, 0)
+        cmd = "%s --root=%s is-enabled b.service" % (_systemctl_py, root)
+        out, end = output2(cmd)
+        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        self.assertTrue(greps(out, r"^disabled"))
+        self.assertEqual(len(lines(out)), 1)
+        self.assertEqual(end, 1)
+        cmd = "%s --root=%s is-enabled c.service" % (_systemctl_py, root)
+        out, end = output2(cmd)
+        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        self.assertTrue(greps(out, r"^disabled"))
+        self.assertEqual(len(lines(out)), 1)
+        self.assertEqual(end, 1)
+        cmd = "%s --root=%s is-enabled b.service c.service" % (_systemctl_py, root)
+        out, end = output2(cmd)
+        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        self.assertTrue(greps(out, r"^disabled"))
+        self.assertFalse(greps(out, r"^enabled"))
+        self.assertEqual(len(lines(out)), 2)
+        self.assertEqual(end, 1)
+        cmd = "%s --root=%s is-enabled a.service b.service c.service" % (_systemctl_py, root)
+        out, end = output2(cmd)
+        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        self.assertTrue(greps(out, r"^disabled"))
+        self.assertFalse(greps(out, r"^enabled"))
+        self.assertEqual(len(lines(out)), 3)
+        self.assertEqual(end, 0)
+        #
+        cmd = "%s --root=%s --no-legend enable b.service" % (_systemctl_py, root)
+        out, end = output2(cmd)
+        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        self.assertEqual(end, 0)
+        #
+        cmd = "%s --root=%s is-enabled b.service c.service" % (_systemctl_py, root)
+        out, end = output2(cmd)
+        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        self.assertTrue(greps(out, r"^disabled"))
+        self.assertTrue(greps(out, r"^enabled"))
+        self.assertEqual(len(lines(out)), 2)
+        self.assertEqual(end, 0)
+        #
+        cmd = "%s --root=%s is-enabled b.service a.service" % (_systemctl_py, root)
+        out, end = output2(cmd)
+        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        self.assertTrue(greps(out, r"^static"))
+        self.assertTrue(greps(out, r"^enabled"))
+        self.assertEqual(len(lines(out)), 2)
+        self.assertEqual(end, 0)
+        #
+        cmd = "%s --root=%s is-enabled c.service a.service" % (_systemctl_py, root)
+        out, end = output2(cmd)
+        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        self.assertTrue(greps(out, r"^static"))
+        self.assertTrue(greps(out, r"^disabled"))
+        self.assertEqual(len(lines(out)), 2)
+        self.assertEqual(end, 0)
     def test_6001_centos_httpd_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
             THEN we can create an image with an Apache HTTP service 
