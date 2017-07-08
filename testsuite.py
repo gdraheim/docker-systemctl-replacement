@@ -143,6 +143,25 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n> %s\n%s", cmd, out)
         self.assertFalse(greps(out, "--init"))
         self.assertTrue(greps(out, "reload-or-try-restart"))
+    def test_1004_systemctl_daemon_reload(self):
+        """ daemon-reload always succeeds (does nothing) """
+        cmd = "%s daemon-reload" % _systemctl_py
+        out,end = output2(cmd)
+        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        self.assertEqual(lines(out), [])
+        self.assertEqual(end, 0)
+    def test_1005_systemctl_daemon_reload_root_ignored(self):
+        """ daemon-reload always succeeds (does nothing) """
+        testdir = self.testdir()
+        root = self.root(testdir)
+        text_file(os_path(root, "/etc/systemd/system/a.service"),"""
+            [Unit]
+            Description=Testing A""")
+        cmd = "%s --root=%s daemon-reload" % (_systemctl_py, root)
+        out,end = output2(cmd)
+        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        self.assertEqual(lines(out), [])
+        self.assertEqual(end, 0)
     def test_2001_can_create_test_services(self):
         """ check that two unit files can be created for testing """
         testname = self.testname()
