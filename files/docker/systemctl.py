@@ -1667,7 +1667,7 @@ class Systemctl:
         wanted = self.wanted_from(self.get_unit_conf(unit))
         if not wanted: return False # wanted = "multi-user.target"
         folder = self.enablefolder(wanted)
-        if self._root.
+        if self._root:
             folder = os_path(self._root, folder)
         if not os.path.isdir(folder):
             os.makedirs(folder)
@@ -2075,7 +2075,10 @@ class Systemctl:
                     print prog, arg, "--", doc.replace("\n","\n\n", 1)
     def system_version(self):
         """ -- show the version and copyright info """
-        return [ ("Version", __version__), ("Copyright", __copyright__) ]
+        features1 = "-PAM -AUDIT -SELINUX -IMA -APPARMOR -SMACK"
+        features2 = " +SYSVINIT -UTMP -LIBCRYPTSETUP -GCRYPT -GNUTLS"
+        features3 = " -ACL -XZ -LZ4 -SECCOMP -BLKID -ELFUTILS -KMOD -IDN"
+        return [ "systemd 0 (systemctl.py %s)" % __version__, features1+features2+features3 ]
 
 if __name__ == "__main__":
     import optparse
