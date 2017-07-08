@@ -2048,13 +2048,7 @@ class Systemctl:
         wants_services = self.system_default_services("K", default_target)
         self.stop_of_units(*wants_services)
         logg.info("system is down")
-    def system_init0(self):
-        """ run as init process - when PID 0 """
-        return self.system_init("init 0")
-    def system_init1(self):
-        """ run as init process - when PID 1 """
-        return self.system_init("init 1")
-    def system_init(self, info = "init"):
+    def system_init(self):
         """ runs as init process => 'default' + 'wait' 
         It will start the nabled services, then wait for any
         zombies to be reaped or a SIGSTOP to initiate a
@@ -2062,8 +2056,8 @@ class Systemctl:
         in interactive mode will also run 'stop' on all
         the enabled services.
         """
-        self.system_default(info)
-        return self.system_wait(info)
+        self.system_default("init")
+        return self.system_wait("init")
     def system_wait(self, arg = True):
         """ wait and reap children """
         signal.signal(signal.SIGTERM, lambda signum, frame: ignore_signals_and_raise_keyboard_interrupt('SIGTERM'))
