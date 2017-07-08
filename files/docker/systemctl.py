@@ -19,6 +19,39 @@ import time
 import socket
 import tempfile
 
+_root = ""
+_sysd_default = "multi-user.target"
+_sysd_folder1 = "/etc/systemd/system"
+_sysd_folder2 = "/var/run/systemd/system"
+_sysd_folder3 = "/usr/lib/systemd/system"
+_sysv_folder1 = "/etc/init.d"
+_sysv_folder2 = "/var/run/init.d"
+_preset_folder1 = "/etc/systemd/system-preset"
+_preset_folder2 = "/var/run/systemd/system-preset"
+_preset_folder3 = "/usr/lib/systemd/system-preset"
+_waitprocfile = 100
+_waitkillproc = 10
+_force = False
+_quiet = False
+_full = False
+_now = False
+_property = None
+_no_legend = False
+_no_block = False
+_no_wall = False
+_no_ask_password = False
+
+MinimumWaitProcFile = 10
+MinimumWaitKillProc = 3
+DefaultWaitProcFile = 100
+DefaultWaitKillProc = 10
+DefaultTimeoutReloadSec = 2 # officially 0.1
+DefaultTimeoutRestartSec = 2 # officially 0.1
+DefaultTimeoutStartSec = 10 # officially 90
+DefaultTimeoutStopSec = 10 # officially 90
+DefaultMaximumTimeout = 200
+DefaultNotifySocket = "/run/systemd/notify"
+
 def shell_cmd(cmd):
     return " ".join(["'%s'" % part for part in cmd])
 def to_int(value, default = 0):
@@ -336,38 +369,6 @@ def subprocess_output(cmd, env=None, check = False):
         raise Exception("command failed")
     return run
 
-_root = ""
-_sysd_default = "multi-user.target"
-_sysd_folder1 = "/etc/systemd/system"
-_sysd_folder2 = "/var/run/systemd/system"
-_sysd_folder3 = "/usr/lib/systemd/system"
-_sysv_folder1 = "/etc/init.d"
-_sysv_folder2 = "/var/run/init.d"
-_preset_folder1 = "/etc/systemd/system-preset"
-_preset_folder2 = "/var/run/systemd/system-preset"
-_preset_folder3 = "/usr/lib/systemd/system-preset"
-_waitprocfile = 100
-_waitkillproc = 10
-_force = False
-_quiet = False
-_full = False
-_now = False
-_property = None
-_no_legend = False
-_no_block = False
-_no_wall = False
-_no_ask_password = False
-
-MinimumWaitProcFile = 10
-MinimumWaitKillProc = 3
-DefaultWaitProcFile = 100
-DefaultWaitKillProc = 10
-DefaultTimeoutReloadSec = 2 # officially 0.1
-DefaultTimeoutRestartSec = 2 # officially 0.1
-DefaultTimeoutStartSec = 10 # officially 90
-DefaultTimeoutStopSec = 10 # officially 90
-DefaultMaximumTimeout = 200
-DefaultNotifySocket = "/run/systemd/notify"
 
 def time_to_seconds(text, maximum = None):
     if maximum is None:
