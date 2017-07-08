@@ -2017,6 +2017,9 @@ class Systemctl:
                     if unit.endswith(".service"):
                         wants_services.append(unit)
         for folder in [ self.rc3_root_folder() ]:
+            if not os.path.isdir(folder):
+                logg.warning("non-existant %s", folder)
+                continue
             for unit in sorted(os.listdir(folder)):
                 path = os.path.join(folder, unit)
                 if os.path.isdir(path): continue
