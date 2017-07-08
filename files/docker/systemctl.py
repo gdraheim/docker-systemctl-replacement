@@ -2002,7 +2002,6 @@ class Systemctl:
         logg.info("igno = %s", igno)
         return self.default_services(sysv, default_target, igno)
     def default_services(self, sysv, default_target, igno = []):
-        igno = self.igno_always
         wants_services = []
         for folder in [ self._sysd_folder1, self._sysd_folder2 ]:
             if self._root:

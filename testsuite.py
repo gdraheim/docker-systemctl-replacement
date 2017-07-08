@@ -770,6 +770,79 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(out, "a.service"))
         self.assertTrue(greps(out, "b.service"))
         self.assertTrue(greps(out, "c.service"))
+    def test_3021_default_services(self):
+        """ check that 'default-services' skips some known services """
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        text_file(os_path(root, "/etc/systemd/system/a.service"),"""
+            [Unit]
+            Description=Testing A""")
+        text_file(os_path(root, "/etc/systemd/system/b.service"),"""
+            [Unit]
+            Description=Testing B
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/system/c.service"),"""
+            [Unit]
+            Description=Testing C
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/system/mount-disks.service"),"""
+            [Unit]
+            Description=Testing C
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/system/network.service"),"""
+            [Unit]
+            Description=Testing C
+            [Install]
+            WantedBy=multi-user.target""")
+        #
+        cmd = "%s --root=%s default-services" % (_systemctl_py, root)
+        out, end = output2(cmd)
+        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        self.assertEqual(len(lines(out)), 0)
+        self.assertEqual(end, 0)
+        #
+        cmd = "%s --root=%s --no-legend enable b.service" % (_systemctl_py, root)
+        out, end = output2(cmd)
+        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        self.assertEqual(end, 0)
+        #
+        cmd = "%s --root=%s --no-legend enable c.service" % (_systemctl_py, root)
+        out, end = output2(cmd)
+        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        self.assertEqual(end, 0)
+        #
+        cmd = "%s --root=%s --no-legend enable mount-disks.service" % (_systemctl_py, root)
+        out, end = output2(cmd)
+        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        self.assertEqual(end, 0)
+        #
+        cmd = "%s --root=%s --no-legend enable network.service" % (_systemctl_py, root)
+        out, end = output2(cmd)
+        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        self.assertEqual(end, 0)
+        #
+        cmd = "%s --root=%s default-services" % (_systemctl_py, root)
+        out, end = output2(cmd)
+        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        self.assertEqual(len(lines(out)), 2)
+        self.assertEqual(end, 0)
+        #
+        cmd = "%s --root=%s default-services --all" % (_systemctl_py, root)
+        out, end = output2(cmd)
+        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        self.assertEqual(len(lines(out)), 3)
+        self.assertEqual(end, 0)
+        #
+        cmd = "%s --root=%s default-services --all --force" % (_systemctl_py, root)
+        out, end = output2(cmd)
+        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        self.assertEqual(len(lines(out)), 4)
+        self.assertEqual(end, 0)
+        #
     def test_6001_centos_httpd_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
             THEN we can create an image with an Apache HTTP service 
