@@ -38,4 +38,16 @@ package then it will work without such a workaround because
 chkconfig exists and handles the "enabled" thing correctly 
 (but only for the existing SysV style init.d services).
 
+## Restart=on-failure
+
+Because the "systemctl.py" program is not a daemon it will not
+watch over the started applications. As such any option in a
+service unit file like "Restart=on-failure" is disregarded.
+
+As a designer of a docker application container one should
+take that as a warning - the process is buggy and it may
+break. And so will your containered service.
+
+
+
 
