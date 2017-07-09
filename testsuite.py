@@ -1848,10 +1848,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         start_as_container = "docker run -d -p {port}:9200 --name {name} {images}:{name} sleep 9999"
         sx____(drop_old_container.format(**locals()))
         sh____(start_as_container.format(**locals()))
-        make_info_log = "touch /var/log/systemctl.log"
-        start_elasticsearch = "systemctl start elasticsearch"
-        sh____("docker exec {name} {make_info_log}".format(**locals()))
-        sh____("docker exec {name} {start_elasticsearch}".format(**locals()))
+        make_info_log = "docker exec {name} touch /var/log/systemctl.log"
+        start_elasticsearch = "docker exec {name} systemctl start elasticsearch"
+        sh____(make_info_log.format(**locals()))
+        sh____(start_elasticsearch.format(**locals()))
         # THEN
         tmp = self.testdir(testname)
         read_index_html = "sleep 5; wget -O {tmp}/{name}.txt http://127.0.0.1:{port}/?pretty"
@@ -1859,11 +1859,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(read_index_html.format(**locals()))
         sh____(grep_index_html.format(**locals()))
         # STOP
-        status_elasticsearch = "systemctl status elasticsearch"
-        stop_elasticsearch = "systemctl stop elasticsearch"
-        sh____("docker exec {name} {status_elasticsearch}".format(**locals()))
-        sh____("docker exec {name} {stop_elasticsearch}".format(**locals()))
-        sh____("docker cp {name}:/var/log/systemctl.log {tmp}/systemctl.log".format(**locals()))
+        status_elasticsearch = "docker exec {name} systemctl status elasticsearch"
+        stop_elasticsearch = "docker exec {name} systemctl stop elasticsearch"
+        sh____(status_elasticsearch.format(**locals()))
+        sh____(stop_elasticsearch.format(**locals()))
+        fetch_systemctl_log = "docker cp {name}:/var/log/systemctl.log {tmp}/systemctl.log"
+        sh____(fetch_systemctl_log.format(**locals()))
         stop_new_container = "docker stop {name}"
         drop_new_container = "docker rm --force {name}"
         sh____(stop_new_container.format(**locals()))
@@ -1894,10 +1895,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         start_as_container = "docker run -d -p {port}:80 --name {name} {images}:{name} sleep 9999"
         sx____(drop_old_container.format(**locals()))
         sh____(start_as_container.format(**locals()))
-        make_info_log = "touch /var/log/systemctl.debug.log"
-        start_httpd = "systemctl start httpd"
-        sh____("docker exec {name} {make_info_log}".format(**locals()))
-        sh____("docker exec {name} {start_httpd}".format(**locals()))
+        make_info_log = "docker exec {name} touch /var/log/systemctl.debug.log"
+        start_httpd = "docker exec {name} systemctl start httpd"
+        sh____(make_info_log.format(**locals()))
+        sh____(start_httpd.format(**locals()))
         # THEN
         tmp = self.testdir(testname)
         read_index_html = "sleep 5; wget -O {tmp}/{name}.txt http://127.0.0.1:{port}"
@@ -1905,11 +1906,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(read_index_html.format(**locals()))
         sh____(grep_index_html.format(**locals()))
         # STOP
-        status_elasticsearch = "systemctl status httpd"
-        stop_elasticsearch = "systemctl stop httpd"
-        sh____("docker exec {name} {status_elasticsearch}".format(**locals()))
-        sh____("docker exec {name} {stop_elasticsearch}".format(**locals()))
-        sh____("docker cp {name}:/var/log/systemctl.debug.log {tmp}/systemctl.debug.log".format(**locals()))
+        status_elasticsearch = "docker exec {name} systemctl status httpd"
+        stop_elasticsearch = "docker exec {name} systemctl stop httpd"
+        sh____(status_elasticsearch.format(**locals()))
+        sh____(stop_elasticsearch.format(**locals()))
+        fetch_systemctl_log = "docker cp {name}:/var/log/systemctl.debug.log {tmp}/systemctl.debug.log"
+        sh____(fetch_systemctl_log.format(**locals()))
         stop_new_container = "docker stop {name}"
         drop_new_container = "docker rm --force {name}"
         sh____(stop_new_container.format(**locals()))
