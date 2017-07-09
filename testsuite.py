@@ -1883,12 +1883,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(open(tmp+"/systemctl.debug.log"), "stop /bin/kill"))
         self.assertTrue(greps(open(tmp+"/systemctl.debug.log"), "wait [$]NOTIFY_SOCKET"))
         self.assertTrue(greps(open(tmp+"/systemctl.debug.log"), "dead PID"))
+    @unittest.expectedFailure
     def test_8001_issue_1_start_mariadb_centos_7_0(self):
         """ issue 1: mariadb on centos 7.0 does not start"""
         testname = self.testname()
         testdir = self.testdir()
-        image= "centos:centos7.0.1406" # <<<< can not yum-install mariadb-server
+        # image= "centos:centos7.0.1406" # <<<< can not yum-install mariadb-server ?
         # image= "centos:centos7.1.1503"
+        image = "centos:centos7"
         systemctl_py = _systemctl_py
         stop_container = "docker rm --force {testname}"
         sx____(stop_container.format(**locals()))
@@ -1898,21 +1900,23 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(install_systemctl.format(**locals()))
         install_software = "docker exec {testname} yum install -y mariadb"
         sh____(install_software.format(**locals()))
-        ## enable_service = "docker exec {testname} systemctl enable mysql"
-        ## sh____(enable_service.format(**locals()))
+        if False:
+            # expected in bug report but that one can not work:
+            enable_service = "docker exec {testname} systemctl enable mysql"
+            sh____(enable_service.format(**locals()))
         version_systemctl = "docker exec {testname} systemctl --version"
         sh____(version_systemctl.format(**locals()))
         list_unit_files = "docker exec {testname} systemctl list-unit-files --type=service"
         sh____(list_unit_files.format(**locals()))
         out = output(list_unit_files.format(**locals()))
-        #self.assertFalse(greps(out,"mysql"))
+        self.assertFalse(greps(out,"mysql"))
         #
         install_software2 = "docker exec {testname} yum install -y mariadb-server"
         sh____(install_software2.format(**locals()))
         list_unit_files = "docker exec {testname} systemctl list-unit-files --type=service"
         sh____(list_unit_files.format(**locals()))
         out = output(list_unit_files.format(**locals()))
-        #self.assertTrue(greps(out,"mysql"))
+        self.assertTrue(greps(out,"mysql"))
         #
         start_service = "docker exec {testname} systemctl start mysql -vv"
         sh____(start_service.format(**locals()))
@@ -1920,17 +1924,17 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top_container = "docker exec {testname} ps -eo pid,ppid,args"
         top = output(top_container.format(**locals()))
         logg.info("\n>>>\n%s", top)
-        self.assertTrue(greps(top, "testsleep"))
+        self.assertTrue(greps(top, "maria"))
         #
         start_service = "docker exec {testname} systemctl stop mysql -vv"
         sh____(start_service.format(**locals()))
         top_container = "docker exec {testname} ps -eo pid,ppid,args"
         top = output(top_container.format(**locals()))
         logg.info("\n>>>\n%s", top)
-        self.assertFalse(greps(top, "testsleep"))
+        self.assertFalse(greps(top, "maria"))
         #
         sx____(stop_container.format(**locals()))
-    def test_8002_issue_1_start_rsyslog_centos_7_0(self):
+    def test_8002_issue_2_start_rsyslog_centos_7_0(self):
         """ issue 2: rsyslog on centos 7 does not start"""
         testname = self.testname()
         testdir = self.testdir()
@@ -1944,8 +1948,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(install_systemctl.format(**locals()))
         install_software = "docker exec {testname} yum install -y rsyslog"
         sh____(install_software.format(**locals()))
-        ## enable_service = "docker exec {testname} systemctl enable mysql"
-        ## sh____(enable_service.format(**locals()))
         version_systemctl = "docker exec {testname} systemctl --version"
         sh____(version_systemctl.format(**locals()))
         list_unit_files = "docker exec {testname} systemctl list-unit-files --type=service"
