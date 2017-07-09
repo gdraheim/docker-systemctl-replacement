@@ -1925,6 +1925,82 @@ class Systemctl:
         if os.path.isfile(target):
             return "enabled"
         return "disabled"
+    def list_dependencies_of_units(self, *modules):
+        """ [UNIT]... show the dependency tree"
+        """
+        result = []
+        for unit in self.match_units(modules):
+            if result:
+                result += [ "", "" ]
+            result += self.list_dependencies_unit(unit)
+        return result
+    def list_dependencies_unit(self, unit):
+        result = []
+        for line in self.list_dependencies(unit, ""):
+            result += [ line ]
+        return result
+    def list_dependencies(self, unit, indent = None, mark = None, loop = []):
+        mapping = {}
+        mapping["Requires"] = "required to start"
+        mapping["Wants"] = "wanted to start"
+        mapping["Requisite"] = "required started"
+        mapping["Bindsto"] = "binds to start"
+        mapping["PartOf"] = "part of started"
+        mapping[".requires"] = ".required to start"
+        mapping[".wants"] = ".wanted to start"
+        mapping["PropagateReloadTo"] = "(to be reloaded as well)"
+        mapping["Conflicts"] = "(to be stopped on conflict)"
+        restrict = ["Requires", "Requisite", "ConsistsOf", "Wants", 
+            "BindsTo", ".requires", ".wants"]
+        indent = indent or ""
+        mark = mark or ""
+        deps = self.get_dependencies_unit(unit)
+        conf = self.get_unit_conf(unit)
+        if not conf.loaded():
+            if not self._show_all:
+                return
+            yield "%s(%s): %s" % (indent, unit, mark)
+        else:
+            yield "%s%s: %s" % (indent, unit, mark)
+            for stop_recursion in [ "Conflict", "conflict", "reloaded", "Propagate" ]:
+                if stop_recursion in mark:
+                    return
+            for dep in deps:
+                if dep in loop:
+                    logg.debug("detected loop at %s", dep)
+                    continue
+                new_loop = loop + deps.keys()
+                new_indent = indent + "| "
+                new_mark = deps[dep]
+                if not self._show_all:
+                    if new_mark not in restrict:
+                        continue
+                if new_mark in mapping:
+                    new_mark = mapping[new_mark]
+                restrict = ["Requires", "Requisite", "ConsistsOf", "Wants", 
+                    "BindsTo", ".requires", ".wants"]
+                for line in self.list_dependencies(dep, new_indent, new_mark, new_loop):
+                    yield line
+    def get_dependencies_unit(self, unit):
+        conf = self.get_unit_conf(unit)
+        deps = {}
+        for style in [ "Requires", "Wants", "Requisite", "BindsTo", "PartOf",
+            ".requires", ".wants", "PropagateReloadTo", "Conflicts",  ]:
+            if style.startswith("."):
+                for folder in [ _sysd_folder1, _sysd_folder2, _sysd_folder3 ]:
+                    require_path = os.path.join(folder, unit + style)
+                    if self._root:
+                        require_path = os_path(self._root, require_path)
+                    if os.path.isdir(require_path):
+                        for required in os.listdir(require_path):
+                            if required not in deps:
+                                deps[required] = style
+            else:
+                for requirelist in conf.getlist("Unit", style, []):
+                    for required in requirelist.strip().split(" "):
+                        deps[required.strip()] = style
+        return deps
+
     def system_daemon_reload(self):
         """ reload does nothing here """
         logg.info("ignored daemon-reload")
