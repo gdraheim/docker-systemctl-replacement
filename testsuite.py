@@ -1871,7 +1871,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # CHECK
         self.assertEqual(len(greps(open(tmp+"/systemctl.log"), " ERROR ")), 1)
         self.assertTrue(greps(open(tmp+"/systemctl.log"), "ERROR chdir .* '/home/elasticsearch': .* No such file or directory"))
-        self.assertTrue(greps(open(tmp+"/systemctl.log"), "done simple PID"))
+        self.assertTrue(greps(open(tmp+"/systemctl.log"), "simp start done PID"))
         self.assertTrue(greps(open(tmp+"/systemctl.log"), "stop kill PID .*elasticsearch.service"))
         self.assertTrue(greps(open(tmp+"/systemctl.log"), "stopped PID .* EXIT 143"))
     def test_6011_centos_httpd_socket_notify(self):
@@ -1918,7 +1918,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(greps(open(tmp+"/systemctl.debug.log"), " ERROR ")), 0)
         self.assertTrue(greps(open(tmp+"/systemctl.debug.log"), "use NOTIFY_SOCKET="))
         self.assertTrue(greps(open(tmp+"/systemctl.debug.log"), "read_notify.*READY=1.*MAINPID="))
-        self.assertTrue(greps(open(tmp+"/systemctl.debug.log"), "done notify"))
+        self.assertTrue(greps(open(tmp+"/systemctl.debug.log"), "ntfy start done"))
         self.assertTrue(greps(open(tmp+"/systemctl.debug.log"), "stop /bin/kill"))
         self.assertTrue(greps(open(tmp+"/systemctl.debug.log"), "wait [$]NOTIFY_SOCKET"))
         self.assertTrue(greps(open(tmp+"/systemctl.debug.log"), "dead PID"))
