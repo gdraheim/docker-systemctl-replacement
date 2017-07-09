@@ -971,6 +971,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         image= "centos:centos7"
         systemctl_py = _systemctl_py
+        shell_file(os_path(testdir, "killall"),"""
+            #! /bin/sh
+            ps -eo pid,comm | { while read pid comm; do
+               if [ "$comm" = "$1" ]; then
+                  echo kill $pid
+                  kill $pid
+               fi done } """)   
         text_file(os_path(testdir, "zzz.service"),"""
             [Unit]
             Description=Testing Z
@@ -981,13 +988,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target""")
         #
-        shell_file(os_path(testdir, "killall"),"""
-            #! /bin/sh
-            ps -eo pid,comm | { while read pid comm; do
-               if [ "$comm" = "$1" ]; then
-                  echo kill $pid
-                  kill $pid
-               fi done } """)   
         stop_container = "docker rm --force {testname}"
         sx____(stop_container.format(**locals()))
         start_container = "docker run --detach --name={testname} {image} sleep 50"
@@ -1083,11 +1083,19 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         image= "centos:centos7"
         systemctl_py = _systemctl_py
+        shell_file(os_path(testdir, "killall"),"""
+            #! /bin/sh
+            ps -eo pid,comm | { while read pid comm; do
+               if [ "$comm" = "$1" ]; then
+                  echo kill $pid
+                  kill $pid
+               fi done } """)   
         shell_file(os_path(testdir, "zzz.init"), """
             #! /bin/bash
             case "$1" in start) 
+               [ -d /var/run ] || mkdir -p /var/run
                (testsleep 50 0<&- &>/dev/null &
-                echo $! > /zzz.init.pid
+                echo $! > /var/run/zzz.init.pid
                ) &
                wait %1
                ps -o pid,ppid,args
@@ -1101,7 +1109,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing Z
             [Service]
             Type=forking
-            PIDFile=/zzz.init.pid
+            PIDFile=/var/run/zzz.init.pid
             ExecStart=/usr/bin/zzz.init start
             ExceStop=/usr/bin/zzz.init stop
             [Install]
@@ -1115,6 +1123,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(install_systemctl.format(**locals()))
         install_systemctl = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
         sh____(install_systemctl.format(**locals()))
+        install_killall = "docker cp {testdir}/killall {testname}:/usr/bin/killall"
+        sh____(install_killall.format(**locals()))
         install_service = "docker cp {testdir}/zzz.service {testname}:/etc/systemd/system/zzz.service"
         sh____(install_service.format(**locals()))
         install_initscript = "docker cp {testdir}/zzz.init {testname}:/usr/bin/zzz.init"
@@ -1151,6 +1161,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         image= "centos:centos7"
         systemctl_py = _systemctl_py
+        shell_file(os_path(testdir, "killall"),"""
+            #! /bin/sh
+            ps -eo pid,comm | { while read pid comm; do
+               if [ "$comm" = "$1" ]; then
+                  echo kill $pid
+                  kill $pid
+               fi done } """)   
         shell_file(os_path(testdir, "zzz.init"), """
             #! /bin/bash
             case "$1" in start) 
@@ -1158,12 +1175,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                wait %1
                ps -o pid,ppid,args >&2
             ;; stop)
-               # killall testsleep
-               ps -eo pid,comm | { while read pid comm; do
-                   if [ "$comm" = "testsleep" ]; then
-                       echo kill $pid >&2
-                       kill $pid 
-                   fi done }
+               killall testsleep
                echo killed all testsleep >&2
                sleep 1
             ;; esac 
@@ -1187,6 +1199,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(install_systemctl.format(**locals()))
         install_testsleep = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
         sh____(install_testsleep.format(**locals()))
+        install_killall = "docker cp {testdir}/killall {testname}:/usr/bin/killall"
+        sh____(install_killall.format(**locals()))
         install_service = "docker cp {testdir}/zzz.service {testname}:/etc/systemd/system/zzz.service"
         sh____(install_service.format(**locals()))
         install_initscript = "docker cp {testdir}/zzz.init {testname}:/usr/bin/zzz.init"
@@ -1223,6 +1237,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         image= "centos:centos7"
         systemctl_py = _systemctl_py
+        shell_file(os_path(testdir, "killall"),"""
+            #! /bin/sh
+            ps -eo pid,comm | { while read pid comm; do
+               if [ "$comm" = "$1" ]; then
+                  echo kill $pid
+                  kill $pid
+               fi done } """)   
         text_file(os_path(testdir, "zzz.service"),"""
             [Unit]
             Description=Testing Z
@@ -1242,6 +1263,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(install_systemctl.format(**locals()))
         install_systemctl = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
         sh____(install_systemctl.format(**locals()))
+        install_killall = "docker cp {testdir}/killall {testname}:/usr/bin/killall"
+        sh____(install_killall.format(**locals()))
         install_service = "docker cp {testdir}/zzz.service {testname}:/etc/systemd/system/zzz.service"
         sh____(install_service.format(**locals()))
         enable_service = "docker exec {testname} systemctl enable zzz.service"
