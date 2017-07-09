@@ -1216,6 +1216,7 @@ class Systemctl:
                 logg.info("(stop) %s", cmd)
                 run = subprocess_wait(cmd, env)
         elif not conf.getlist("Service", "ExecStop", []):
+            logg.info("no ExecStop => systemctl kill")
             if True:
                 pid_file = self.get_pid_file_from(conf)
                 self.kill_unit_from(conf)
