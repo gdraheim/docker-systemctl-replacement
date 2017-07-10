@@ -277,6 +277,13 @@ class UnitConfigParser:
         return self._dict[section][option]
     def loaded(self):
         return len(self._files)
+    def name(self):
+        filename = self.filename()
+        if filename:
+            name = os.path.basename(filename)
+        else:
+            name = ""
+        return self.get("Unit", "Id", name)
     def filename(self):
         """ returns the last filename that was parsed """
         if self._files:
@@ -1928,6 +1935,8 @@ class Systemctl:
     def list_dependencies_of_units(self, *modules):
         """ [UNIT]... show the dependency tree"
         """
+        if self._now:
+            return self.list_start_dependencies(*modules)
         result = []
         for unit in self.match_units(modules):
             if result:
@@ -2000,7 +2009,66 @@ class Systemctl:
                     for required in requirelist.strip().split(" "):
                         deps[required.strip()] = style
         return deps
-
+    def list_start_dependencies(self, *modules):
+        unit_order = []
+        deps = {}
+        for unit in self.match_units(modules):
+            unit_order += [ unit ]
+            unit_deps = self.get_dependencies_unit(unit)
+            for dep_unit, dep_style in unit_deps.items():
+                restrict = ["Requires", "Requisite", "ConsistsOf", "Wants", 
+                    "BindsTo", ".requires", ".wants"]
+                if dep_style in restrict:
+                    if dep_unit in deps:
+                        if dep_style not in deps[dep_unit]:
+                            deps[dep_unit].append( dep_style)
+                    else:
+                        deps[dep_unit] = [ dep_style ]
+        deps_conf = []
+        for unit in unit_order:
+            deps[unit] = [ "Requested" ]
+            conf = self.get_unit_conf(unit)
+            if conf.loaded():
+                deps_conf.append(conf)
+        for dep in deps:
+            if dep in unit_order:
+                continue
+            conf = self.get_unit_conf(dep)
+            if conf.loaded():
+                deps_conf.append(conf)
+        def compares(confA, confB):
+            idA = confA.name()
+            idB = confB.name()
+            afterA = confA.getlist("Unit", "After", [])
+            afterB = confB.getlist("Unit", "After", [])
+            beforeA = confA.getlist("Unit", "Before", [])
+            beforeB = confB.getlist("Unit", "Before", [])
+            for afterX in afterA:
+                for after in afterX.split(" "):
+                    if after == idB:
+                        logg.info("%s After %s", idA, idB)
+                        return -1
+            for afterX in afterB:
+                for after in afterX.split(" "):
+                    if after == idA:
+                        logg.info("%s After %s", idB, idA)
+                        return 1
+            for beforeX in beforeA:
+                for before in beforeX.split(" "):
+                    if before == idB:
+                        logg.info("%s Before %s", idA, idB)
+                        return 1
+            for beforeX in beforeB:
+                for before in beforeX.split(" "):
+                    if before == idA:
+                        logg.info("%s Before %s", idB, idA)
+                        return -1
+            return 0
+        result = []
+        for dep in sorted(deps_conf, cmp=compares):
+            line = (dep.name(),  "(%s)" % (" ".join(deps[dep.name()])))
+            result.append(line)
+        return result
     def system_daemon_reload(self):
         """ reload does nothing here """
         logg.info("ignored daemon-reload")
