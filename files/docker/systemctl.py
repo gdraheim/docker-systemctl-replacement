@@ -2009,16 +2009,38 @@ class Systemctl:
                     for required in requirelist.strip().split(" "):
                         deps[required.strip()] = style
         return deps
+    def get_start_dependencies(self, unit):
+        deps = {}
+        unit_deps = self.get_dependencies_unit(unit)
+        for dep_unit, dep_style in unit_deps.items():
+            restrict = ["Requires", "Requisite", "ConsistsOf", "Wants", 
+                "BindsTo", ".requires", ".wants"]
+            if dep_style in restrict:
+                if dep_unit in deps:
+                    if dep_style not in deps[dep_unit]:
+                        deps[dep_unit].append( dep_style)
+                else:
+                    deps[dep_unit] = [ dep_style ]
+                next_deps = self.get_start_dependencies(dep_unit)
+                for dep, styles in next_deps.items():
+                    for style in styles:
+                        if dep in deps:
+                            if style not in deps[dep]:
+                                deps[dep].append(style)
+                        else:
+                            deps[dep] = [ style ]
+        return deps
     def list_start_dependencies(self, *modules):
         unit_order = []
         deps = {}
         for unit in self.match_units(modules):
             unit_order += [ unit ]
+            # unit_deps = self.get_start_dependencies(unit) # TODO
             unit_deps = self.get_dependencies_unit(unit)
-            for dep_unit, dep_style in unit_deps.items():
-                restrict = ["Requires", "Requisite", "ConsistsOf", "Wants", 
-                    "BindsTo", ".requires", ".wants"]
-                if dep_style in restrict:
+            for dep_unit, styles in unit_deps.items():
+                if isinstance(styles, basestring):
+                    styles = [ styles ]
+                for dep_style in styles:
                     if dep_unit in deps:
                         if dep_style not in deps[dep_unit]:
                             deps[dep_unit].append( dep_style)
