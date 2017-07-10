@@ -513,6 +513,12 @@ def sortedBefore(conflist, cmp = compareBefore):
         if not changed:
             logg.info("done in check %s of %s", check, len(sortlist))
             break
+            # because Requires is almost always the same as the After clauses
+            # we are mostly done in round 1 as the list is in required order
+    for item in sorted(conflist, cmp=compareBefore):
+        logg.debug("    %s", item.name())
+    for item in sortlist:
+        logg.info("(%s) %s", item.rank, item.conf.name())
     sortedlist = sorted(sortlist, cmp = lambda x, y: x.rank - y.rank)
     for item in sortedlist:
         logg.info("[%s] %s", item.rank, item.conf.name())
@@ -2128,7 +2134,7 @@ class Systemctl:
                     else:
                         deps[dep_unit] = [ dep_style ]
         deps_conf = []
-        for unit in unit_order:
+        for unit in reversed(unit_order):
             deps[unit] = [ "Requested" ]
             conf = self.get_unit_conf(unit)
             if conf.loaded():
