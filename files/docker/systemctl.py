@@ -2627,14 +2627,20 @@ if __name__ == "__main__":
         pass
     elif isinstance(result, basestring):
         print result
-        logg.info("EXEC END '%s'", result)
+        result1 = result.split("\n")[0][:-20]
+        if result == result1:
+            logg.info("EXEC END '%s'", result)
+        else:
+            logg.info("EXEC END '%s...'", result1)
+            logg.debug("    END '%s'", result)
     elif isinstance(result, list):
         for element in result:
             if isinstance(element, tuple):
                 print "\t".join([ str(elem) for elem in element] )
             else:
                 print element
-        logg.info("EXEC END %s", result)
+        logg.info("EXEC END %s items", len(result))
+        logg.debug("    END %s", result)
     elif hasattr(result, "keys"):
         for key in sorted(result.keys()):
             element = result[key]
@@ -2642,7 +2648,8 @@ if __name__ == "__main__":
                 print key,"=","\t".join([ str(elem) for elem in element])
             else:
                 print key,"=",element
-        logg.info("EXEC END %s", result)
+        logg.info("EXEC END %s items", len(result))
+        logg.debug("    END %s", result)
     else:
         logg.warning("EXEC END Unknown result type %s", str(type(result)))
     if exitcode:
