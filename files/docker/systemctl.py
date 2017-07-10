@@ -437,33 +437,45 @@ def time_to_seconds(text, maximum = None):
         return 1
     return value
 
+def getBefore(conf):
+    result = []
+    beforelist = conf.getlist("Unit", "Before", [])
+    for befores in beforelist:
+        for before in befores.split(" "):
+            name = before.strip()
+            if name and name not in result:
+                result.append(name)
+    return result
+
+def getAfter(conf):
+    result = []
+    afterlist = conf.getlist("Unit", "After", [])
+    for afters in afterlist:
+        for after in afters.split(" "):
+            name = after.strip()
+            if name and name not in result:
+                result.append(name)
+    return result
+
 def compareBefore(confA, confB):
     idA = confA.name()
     idB = confB.name()
-    afterA = confA.getlist("Unit", "After", [])
-    afterB = confB.getlist("Unit", "After", [])
-    beforeA = confA.getlist("Unit", "Before", [])
-    beforeB = confB.getlist("Unit", "Before", [])
-    for afterX in afterA:
-        for after in afterX.split(" "):
-            if after == idB:
-                logg.info("%s After %s", idA, idB)
-                return -1
-    for afterX in afterB:
-        for after in afterX.split(" "):
-            if after == idA:
-                logg.info("%s After %s", idB, idA)
-                return 1
-    for beforeX in beforeA:
-        for before in beforeX.split(" "):
-            if before == idB:
-                logg.info("%s Before %s", idA, idB)
-                return 1
-    for beforeX in beforeB:
-        for before in beforeX.split(" "):
-            if before == idA:
-                logg.info("%s Before %s", idB, idA)
-                return -1
+    for after in getAfter(confA):
+        if after == idB:
+            logg.debug("%s After %s", idA, idB)
+            return -1
+    for after in getAfter(confB):
+        if after == idA:
+            logg.debug("%s After %s", idB, idA)
+            return 1
+    for before in getBefore(confA):
+        if before == idB:
+            logg.debug("%s Before %s", idA, idB)
+            return 1
+    for before in getBefore(confB):
+        if before == idA:
+            logg.debug("%s Before %s", idB, idA)
+            return -1
     return 0
 
 def sortedBefore(conflist, cmp = compareBefore):
@@ -477,7 +489,34 @@ def sortedBefore(conflist, cmp = compareBefore):
     # It only works when 'after' has a direction, so
     # anything without 'before' is a 'after'. In that
     # case we find that "C before B".
-    return sorted(conflist, cmp = cmp)
+    class SortTuple:
+        def __init__(self, rank, conf):
+            self.rank = rank
+            self.conf = conf
+    sortlist = [ SortTuple(0, conf) for conf in conflist]
+    for check in xrange(len(sortlist)): # maxrank = len(sortlist)
+        changed = 0
+        for A in xrange(len(sortlist)):
+            for B in xrange(len(sortlist)):
+                if A != B:
+                    itemA = sortlist[A]
+                    itemB = sortlist[B]
+                    before = compareBefore(itemA.conf, itemB.conf)
+                    if before > 0 and itemB.rank <= itemA.rank:
+                        logg.info("  %s before %s", itemA.conf.name(), itemB.conf.name())
+                        itemB.rank = itemA.rank + 1
+                        changed += 1
+                    if before < 0 and itemB.rank >= itemA.rank:
+                        logg.info("  %s before %s", itemB.conf.name(), itemA.conf.name())
+                        itemA.rank = itemB.rank + 1
+                        changed += 1
+        if not changed:
+            logg.info("done in check %s of %s", check, len(sortlist))
+            break
+    sortedlist = sorted(sortlist, cmp = lambda x, y: y.rank - x.rank)
+    for item in sortedlist:
+        logg.info("[%s] %s", item.rank, item.conf.name())
+    return [ item.conf for item in sortedlist ]
 
 class Systemctl:
     def __init__(self):
