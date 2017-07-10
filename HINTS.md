@@ -15,14 +15,15 @@ for systemd-relevant unit information.
 
 ## systemctl.py list-dependencies --now
 
-Shows the start-order of services. The first item is
-started as the last item and the item on the bottom
-is the first that will get a real "start <unit>".
+Shows the start-order of services. Use -v debugging to 
+see how the start-rank is computed from the Before/After 
+clauses in the unit files.
 
-Use -v debugging to see how the start-rank is computed
-from the Before/After clauses in the unit files.
+Note that upon a "<stop> operation" the start order is
+run through in reverse order.
 
-The reversed-order is based on the fact that initially
-the Required items are added to the list at the end.
-The real execution order on "start" must be inversed 
-while upon "stop" it is run in the listed order.
+The current 'default' target does not filter the list.
+Instead it only uses Before/After on the units in the
+'multi-user.target' but it does not process any of
+its required units.
+

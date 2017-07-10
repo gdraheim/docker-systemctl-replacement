@@ -457,7 +457,7 @@ def getAfter(conf):
                 result.append(name)
     return result
 
-def compareBefore(confA, confB):
+def compareAfter(confA, confB):
     idA = confA.name()
     idB = confB.name()
     for after in getAfter(confA):
@@ -478,9 +478,9 @@ def compareBefore(confA, confB):
             return -1
     return 0
 
-def sortedBefore(conflist, cmp = compareBefore):
+def sortedAfter(conflist, cmp = compareAfter):
     # the normal sorted() does only look at two items
-    # so if "C before A" and a list [A, B, C] then
+    # so if "A after C" and a list [A, B, C] then
     # it will see "A = B" and "B = C" assuming that
     # "A = C" and the list is already sorted.
     #
@@ -488,7 +488,7 @@ def sortedBefore(conflist, cmp = compareBefore):
     # that informs sorted() that also B has a relation.
     # It only works when 'after' has a direction, so
     # anything without 'before' is a 'after'. In that
-    # case we find that "C before B".
+    # case we find that "B after C".
     class SortTuple:
         def __init__(self, rank, conf):
             self.rank = rank
@@ -501,13 +501,13 @@ def sortedBefore(conflist, cmp = compareBefore):
                 if A != B:
                     itemA = sortlist[A]
                     itemB = sortlist[B]
-                    before = compareBefore(itemA.conf, itemB.conf)
+                    before = compareAfter(itemA.conf, itemB.conf)
                     if before > 0 and itemA.rank <= itemB.rank:
-                        logg.info("  %s before %s", itemA.conf.name(), itemB.conf.name())
+                        logg.info("  %-30s before %s", itemA.conf.name(), itemB.conf.name())
                         itemA.rank = itemB.rank + 1
                         changed += 1
                     if before < 0 and itemB.rank <= itemA.rank:
-                        logg.info("  %s before %s", itemB.conf.name(), itemA.conf.name())
+                        logg.info("  %-30s before %s", itemB.conf.name(), itemA.conf.name())
                         itemB.rank = itemA.rank + 1
                         changed += 1
         if not changed:
@@ -515,11 +515,11 @@ def sortedBefore(conflist, cmp = compareBefore):
             break
             # because Requires is almost always the same as the After clauses
             # we are mostly done in round 1 as the list is in required order
-    for item in sorted(conflist, cmp=compareBefore):
-        logg.debug("    %s", item.name())
+    for item in conflist:
+        logg.debug(".. %s", item.name())
     for item in sortlist:
         logg.info("(%s) %s", item.rank, item.conf.name())
-    sortedlist = sorted(sortlist, cmp = lambda x, y: x.rank - y.rank)
+    sortedlist = sorted(sortlist, cmp = lambda x, y: y.rank - x.rank)
     for item in sortedlist:
         logg.info("[%s] %s", item.rank, item.conf.name())
     return [ item.conf for item in sortedlist ]
@@ -2121,7 +2121,7 @@ class Systemctl:
         unit_order = []
         deps = {}
         for unit in self.match_units(modules):
-            unit_order += [ unit ]
+            unit_order.append(unit)
             # unit_deps = self.get_start_dependencies(unit) # TODO
             unit_deps = self.get_dependencies_unit(unit)
             for dep_unit, styles in unit_deps.items():
@@ -2134,19 +2134,19 @@ class Systemctl:
                     else:
                         deps[dep_unit] = [ dep_style ]
         deps_conf = []
-        for unit in reversed(unit_order):
-            deps[unit] = [ "Requested" ]
-            conf = self.get_unit_conf(unit)
-            if conf.loaded():
-                deps_conf.append(conf)
         for dep in deps:
             if dep in unit_order:
                 continue
             conf = self.get_unit_conf(dep)
             if conf.loaded():
                 deps_conf.append(conf)
+        for unit in unit_order:
+            deps[unit] = [ "Requested" ]
+            conf = self.get_unit_conf(unit)
+            if conf.loaded():
+                deps_conf.append(conf)
         result = []
-        for dep in sortedBefore(deps_conf, cmp=compareBefore):
+        for dep in sortedAfter(deps_conf, cmp=compareAfter):
             line = (dep.name(),  "(%s)" % (" ".join(deps[dep.name()])))
             result.append(line)
         return result
