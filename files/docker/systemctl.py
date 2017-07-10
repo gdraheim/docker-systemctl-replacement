@@ -502,18 +502,18 @@ def sortedBefore(conflist, cmp = compareBefore):
                     itemA = sortlist[A]
                     itemB = sortlist[B]
                     before = compareBefore(itemA.conf, itemB.conf)
-                    if before > 0 and itemB.rank <= itemA.rank:
+                    if before > 0 and itemA.rank <= itemB.rank:
                         logg.info("  %s before %s", itemA.conf.name(), itemB.conf.name())
-                        itemB.rank = itemA.rank + 1
-                        changed += 1
-                    if before < 0 and itemB.rank >= itemA.rank:
-                        logg.info("  %s before %s", itemB.conf.name(), itemA.conf.name())
                         itemA.rank = itemB.rank + 1
+                        changed += 1
+                    if before < 0 and itemB.rank <= itemA.rank:
+                        logg.info("  %s before %s", itemB.conf.name(), itemA.conf.name())
+                        itemB.rank = itemA.rank + 1
                         changed += 1
         if not changed:
             logg.info("done in check %s of %s", check, len(sortlist))
             break
-    sortedlist = sorted(sortlist, cmp = lambda x, y: y.rank - x.rank)
+    sortedlist = sorted(sortlist, cmp = lambda x, y: x.rank - y.rank)
     for item in sortedlist:
         logg.info("[%s] %s", item.rank, item.conf.name())
     return [ item.conf for item in sortedlist ]
