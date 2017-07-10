@@ -437,6 +437,48 @@ def time_to_seconds(text, maximum = None):
         return 1
     return value
 
+def compareAfter(confA, confB):
+    idA = confA.name()
+    idB = confB.name()
+    afterA = confA.getlist("Unit", "After", [])
+    afterB = confB.getlist("Unit", "After", [])
+    beforeA = confA.getlist("Unit", "Before", [])
+    beforeB = confB.getlist("Unit", "Before", [])
+    for afterX in afterA:
+        for after in afterX.split(" "):
+            if after == idB:
+                logg.info("%s After %s", idA, idB)
+                return -1
+    for afterX in afterB:
+        for after in afterX.split(" "):
+            if after == idA:
+                logg.info("%s After %s", idB, idA)
+                return 1
+    for beforeX in beforeA:
+        for before in beforeX.split(" "):
+            if before == idB:
+                logg.info("%s Before %s", idA, idB)
+                return 1
+    for beforeX in beforeB:
+        for before in beforeX.split(" "):
+            if before == idA:
+                logg.info("%s Before %s", idB, idA)
+                return -1
+    return 0
+
+def sortedAfter(conflist, cmp = compareAfter):
+    # the normal sorted() does only look at two items
+    # so if "C after A" and a list [A, B, C] then
+    # it will see "A = B" and "B = C" assuming that
+    # "A = C" and the list is already sorted.
+    #
+    # To make a totalsorted we have to create a marker
+    # that informs sorted() that also B has a relation.
+    # It only works when 'after' has a direction, so
+    # anything without 'after' is a 'before'. In that
+    # case we find that "C after B".
+    return sorted(conflist, cmp = cmp)
+
 class Systemctl:
     def __init__(self):
         self._root = _root
@@ -2058,36 +2100,8 @@ class Systemctl:
             conf = self.get_unit_conf(dep)
             if conf.loaded():
                 deps_conf.append(conf)
-        def compares(confA, confB):
-            idA = confA.name()
-            idB = confB.name()
-            afterA = confA.getlist("Unit", "After", [])
-            afterB = confB.getlist("Unit", "After", [])
-            beforeA = confA.getlist("Unit", "Before", [])
-            beforeB = confB.getlist("Unit", "Before", [])
-            for afterX in afterA:
-                for after in afterX.split(" "):
-                    if after == idB:
-                        logg.info("%s After %s", idA, idB)
-                        return -1
-            for afterX in afterB:
-                for after in afterX.split(" "):
-                    if after == idA:
-                        logg.info("%s After %s", idB, idA)
-                        return 1
-            for beforeX in beforeA:
-                for before in beforeX.split(" "):
-                    if before == idB:
-                        logg.info("%s Before %s", idA, idB)
-                        return 1
-            for beforeX in beforeB:
-                for before in beforeX.split(" "):
-                    if before == idA:
-                        logg.info("%s Before %s", idB, idA)
-                        return -1
-            return 0
         result = []
-        for dep in sorted(deps_conf, cmp=compares):
+        for dep in sortedAfter(deps_conf, cmp=compareAfter):
             line = (dep.name(),  "(%s)" % (" ".join(deps[dep.name()])))
             result.append(line)
         return result
