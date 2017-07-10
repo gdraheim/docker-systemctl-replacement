@@ -437,7 +437,7 @@ def time_to_seconds(text, maximum = None):
         return 1
     return value
 
-def compareAfter(confA, confB):
+def compareBefore(confA, confB):
     idA = confA.name()
     idB = confB.name()
     afterA = confA.getlist("Unit", "After", [])
@@ -466,17 +466,17 @@ def compareAfter(confA, confB):
                 return -1
     return 0
 
-def sortedAfter(conflist, cmp = compareAfter):
+def sortedBefore(conflist, cmp = compareBefore):
     # the normal sorted() does only look at two items
-    # so if "C after A" and a list [A, B, C] then
+    # so if "C before A" and a list [A, B, C] then
     # it will see "A = B" and "B = C" assuming that
     # "A = C" and the list is already sorted.
     #
     # To make a totalsorted we have to create a marker
     # that informs sorted() that also B has a relation.
     # It only works when 'after' has a direction, so
-    # anything without 'after' is a 'before'. In that
-    # case we find that "C after B".
+    # anything without 'before' is a 'after'. In that
+    # case we find that "C before B".
     return sorted(conflist, cmp = cmp)
 
 class Systemctl:
@@ -2101,7 +2101,7 @@ class Systemctl:
             if conf.loaded():
                 deps_conf.append(conf)
         result = []
-        for dep in sortedAfter(deps_conf, cmp=compareAfter):
+        for dep in sortedBefore(deps_conf, cmp=compareBefore):
             line = (dep.name(),  "(%s)" % (" ".join(deps[dep.name()])))
             result.append(line)
         return result
