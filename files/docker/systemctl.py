@@ -2150,6 +2150,14 @@ class Systemctl:
             line = (dep.name(),  "(%s)" % (" ".join(deps[dep.name()])))
             result.append(line)
         return result
+    def sortedAfter(self, unitlist):
+        conflist = [ self.get_unit_conf(unit) for unit in unitlist ]
+        sortlist = sortedAfter(conflist)
+        return [ item.name() for item in sortlist ]
+    def sortedBefore(self, unitlist):
+        conflist = [ self.get_unit_conf(unit) for unit in unitlist ]
+        sortlist = sortedAfter(conflist)
+        return [ item.name() for item in reversed(sortlist) ]
     def system_daemon_reload(self):
         """ reload does nothing here """
         logg.info("ignored daemon-reload")
