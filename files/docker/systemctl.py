@@ -1055,7 +1055,7 @@ class Systemctl:
         except Exception, e:
             logg.debug("socket.close %s", e)
         return results
-    def start_of_units(self, *modules):
+    def start_modules(self, *modules):
         """ [UNIT]... -- start these units """
         done = True
         for module in modules:
@@ -1276,7 +1276,7 @@ class Systemctl:
             for name, value in self.read_env_file(env_file):
                 env[name] = value
         return env
-    def stop_of_units(self, *modules):
+    def stop_modules(self, *modules):
         """ [UNIT]... -- stop these units """
         done = True
         for module in modules:
@@ -1379,7 +1379,7 @@ class Systemctl:
                 logg.info("ExecStopPost:%s:%s", check, cmd)
                 subprocess_wait(cmd, env, check=check)
         return True
-    def reload_of_units(self, *modules):
+    def reload_modules(self, *modules):
         """ [UNIT]... -- reload these units """
         done = True
         for module in modules:
@@ -1471,7 +1471,7 @@ class Systemctl:
                 logg.info("ExecReloadPost:%s:%s", check, cmd)
                 subprocess_wait(cmd, env, check=check)
         return True
-    def restart_of_units(self, *modules):
+    def restart_modules(self, *modules):
         """ [UNIT]... -- restart these units """
         done = True
         for module in modules:
@@ -1579,7 +1579,7 @@ class Systemctl:
         return self.pid_file_from(conf, default)
     def pid_file_from(self, conf, default = ""):
         return conf.get("Service", "PIDFile", default)
-    def try_restart_of_units(self, *modules):
+    def try_restart_modules(self, *modules):
         """ [UNIT]... -- try-restart these units """
         done = True
         for module in modules:
@@ -1598,7 +1598,7 @@ class Systemctl:
         if self.is_active_from(conf):
             return self.restart_unit_from(conf)
         return True
-    def reload_or_restart_of_units(self, *modules):
+    def reload_or_restart_modules(self, *modules):
         """ [UNIT]... -- reload-or-start these units """
         done = True
         for module in modules:
@@ -1622,7 +1622,7 @@ class Systemctl:
             return self.reload_unit_from(conf)
         else:
             return self.restart_unit_from(conf)
-    def reload_or_try_restart_of_units(self, *modules):
+    def reload_or_try_restart_modules(self, *modules):
         """ [UNIT]... -- reload-or-try-restart these units """
         done = True
         for module in modules:
@@ -1644,7 +1644,7 @@ class Systemctl:
             return True
         else:
             return self.restart_unit_from(conf)
-    def kill_of_units(self, *modules):
+    def kill_modules(self, *modules):
         """ [UNIT]... -- kill these units """
         units = {}
         for module in modules:
@@ -1687,7 +1687,7 @@ class Systemctl:
         else:
             logg.info("done kill PID %s", pid)
             return True
-    def is_active_of_units(self, *modules):
+    def is_active_modules(self, *modules):
         """ [UNIT].. -- check if these units are in active state
         implements True if any is-active = True """
         units = {}
@@ -1722,7 +1722,7 @@ class Systemctl:
         pid = self.active_pid_from(conf)
         if pid is None: return "dead"
         return "PID %s" % pid
-    def is_failed_of_units(self, *modules):
+    def is_failed_modules(self, *modules):
         """ [UNIT]... -- check if these units are in failes state
         implements True if any is-active = True """
         result = False
@@ -1741,7 +1741,7 @@ class Systemctl:
         pid = self.read_pid_file(pid_file)
         logg.debug("pid_file '%s' => PID %s", pid_file, pid)
         return not self.pid_exists(pid)
-    def status_of_units(self, *modules):
+    def status_modules(self, *modules):
         """ [UNIT]... check the status of these units.
         """
         found = False
@@ -1768,7 +1768,7 @@ class Systemctl:
         else:
             result += "\n    Active: inactive ({})".format(self.active_from(conf))
             return 3, result
-    def cat_of_units(self, *modules):
+    def cat_modules(self, *modules):
         """ [UNIT]... show the *.system file for these"
         """
         done = True
@@ -1815,7 +1815,7 @@ class Systemctl:
             if status:
                 return status
         return None
-    def preset_of_units(self, *modules):
+    def preset_modules(self, *modules):
         """ [UNIT]... -- set 'enabled' when in *.preset
         """
         done = True
@@ -1851,7 +1851,7 @@ class Systemctl:
         if not wanted.endswith(".wants"):
             wanted = wanted + ".wants"
         return os.path.join("/etc/systemd/system", wanted)
-    def enable_of_units(self, *modules):
+    def enable_modules(self, *modules):
         """ [UNIT]... -- enable these units """
         done = True
         for unit in self.match_units(modules):
@@ -1922,7 +1922,7 @@ class Systemctl:
         if not os.path.exists(target):
             os.symlink(unit_file, target)
         return True
-    def disable_of_units(self, *modules):
+    def disable_modules(self, *modules):
         """ [UNIT]... -- disable these units """
         done = True
         for unit in self.match_units(modules):
@@ -1975,7 +1975,7 @@ class Systemctl:
         if os.path.exists(target):
            return True
         return False
-    def is_enabled_of_units(self, *modules):
+    def is_enabled_modules(self, *modules):
         """ [UNIT]... -- check if these units are enabled 
         returns True if any of them is enabled."""
         result = False
@@ -2019,7 +2019,7 @@ class Systemctl:
         if os.path.isfile(target):
             return "enabled"
         return "disabled"
-    def list_dependencies_of_units(self, *modules):
+    def list_dependencies_modules(self, *modules):
         """ [UNIT]... show the dependency tree"
         """
         if self._now:
@@ -2162,7 +2162,7 @@ class Systemctl:
         """ reload does nothing here """
         logg.info("ignored daemon-reload")
         return True
-    def show_of_units(self, *modules):
+    def show_modules(self, *modules):
         """ [PATTERN]... -- Show properties of one or more units
            Show properties of one or more units (or the manager itself).
            If no argument is specified, properties of the manager will be
@@ -2288,16 +2288,16 @@ class Systemctl:
         logg.info("system default requested - %s", arg)
         default_target = "multi-user.target"
         wants_services = self.system_default_services("S", default_target)
-        self.start_of_units(*wants_services)
+        self.start_modules(*wants_services)
         logg.info("system is up")
     def system_halt(self, arg = True):
         """ stop units from default system level """
         logg.info("system halt requested - %s", arg)
         default_target = "multi-user.target"
         wants_services = self.system_default_services("K", default_target)
-        self.stop_of_units(*wants_services)
+        self.stop_modules(*wants_services)
         logg.info("system is down")
-    def init_of_units(self, *units):
+    def init_modules(self, *modules):
         """ [UNIT*] -- init process, i.e. '--init default' ('--init start UNIT') 
         The systemctl init service will start the enabled 'default' services, 
         and then wait for any  zombies to be reaped. When a SIGINT is received
@@ -2307,12 +2307,12 @@ class Systemctl:
         Using 'init UNIT' is better than '--init start UNIT' because the UNIT
         is also stopped cleanly when it was never enabled in the system.
         """
-        if units:
-            self.start_of_units(*units)
+        if modules:
+            self.start_modules(*modules)
         else:
             self.system_default("init")
-        return self.wait_of_units(*units)
-    def wait_of_units(self, *units):
+        return self.wait_modules(*modules)
+    def wait_modules(self, *modules):
         """ [UNIT*] -- wait for stop and reap zombies meanwhile
         This is the main functionality of an init process in that it will 
         constantly check if there is some zombie process to be reaped.
@@ -2329,7 +2329,7 @@ class Systemctl:
                 signal.signal(signal.SIGTERM, signal.SIG_DFL)
                 signal.signal(signal.SIGINT, signal.SIG_DFL)
                 if units:
-                    self.stop_of_units(*units)
+                    self.stop_modules(*modules)
                 else:
                     self.system_halt("wait")
                 return True
@@ -2402,8 +2402,8 @@ class Systemctl:
                    arg = name[len("show_"):].replace("_","-")
                 if name.endswith("_of_unit"):
                    arg = name[:-len("_of_unit")].replace("_","-")
-                if name.endswith("_of_units"):
-                   arg = name[:-len("_of_units")].replace("_","-")
+                if name.endswith("_modules"):
+                   arg = name[:-len("_modules")].replace("_","-")
                 if arg:
                    argz[arg] = name
             print prog, "command","[options]..."
@@ -2422,7 +2422,7 @@ class Systemctl:
             return True
         for arg in args:
             arg = arg.replace("-","_")
-            func1 = getattr(self.__class__, arg+"_of_units", None)
+            func1 = getattr(self.__class__, arg+"_modules", None)
             func2 = getattr(self.__class__, arg+"_of_unit", None)
             func3 = getattr(self.__class__, "show_"+arg, None)
             func4 = getattr(self.__class__, "system_"+arg, None)
@@ -2587,7 +2587,7 @@ if __name__ == "__main__":
     if callable(command_func) and not found:
         found = True
         result = command_func(modules[0])
-    command_name = command.replace("-","_").replace(".","_")+"_of_units"
+    command_name = command.replace("-","_").replace(".","_")+"_modules"
     command_func = getattr(systemctl, command_name, None)
     if callable(command_func) and not found:
         found = True
@@ -2618,7 +2618,7 @@ if __name__ == "__main__":
         sys.exit(1)
     if _init:
         logg.info("continue as init process")
-        systemctl.wait_of_units()
+        systemctl.wait_modules()
     exitcode = 0
     if result is None:
         logg.info("EXEC END None")
