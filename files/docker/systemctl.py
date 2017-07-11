@@ -1057,13 +1057,21 @@ class Systemctl:
         return results
     def start_modules(self, *modules):
         """ [UNIT]... -- start these units """
-        done = True
+        found_all = True
+        units = []
         for module in modules:
             unit = self.match_unit(module)
             if not unit:
                 logg.error("no such service '%s'", module)
-                done = False
-            elif not self.start_unit(unit):
+                found_all = False
+                continue
+            units += [ unit ]
+        return self.start_units(units) and found_all
+    def start_units(self, units):
+        """ fails if any unit does not start """
+        done = True
+        for unit in units:
+            if not self.start_unit(unit):
                 done = False
         return done
     def start_unit(self, unit):
@@ -1278,13 +1286,21 @@ class Systemctl:
         return env
     def stop_modules(self, *modules):
         """ [UNIT]... -- stop these units """
-        done = True
+        found_all = True
+        units = []
         for module in modules:
             unit = self.match_unit(module)
             if not unit:
                 logg.error("no such service '%s'", module)
-                done = False
-            elif not self.stop_unit(unit):
+                found_all = False
+                continue
+            units += [ unit ]
+        return self.stop_units(units) and found_all
+    def stop_units(self, units):
+        """ fails if any unit fails to stop """
+        done = True
+        for unit in units:
+            if not self.stop_unit(unit):
                 done = False
         return done
     def stop_unit(self, unit):
@@ -1381,13 +1397,21 @@ class Systemctl:
         return True
     def reload_modules(self, *modules):
         """ [UNIT]... -- reload these units """
-        done = True
+        found_all = True
+        units = []
         for module in modules:
             unit = self.match_unit(module)
             if not unit:
                 logg.error("no such service '%s'", module)
-                done = False
-            elif not self.reload_unit(unit):
+                found_all = False
+                continue
+            units += [ unit ]
+        return self.reload_units(units) and found_all
+    def reload_units(self, units):
+        """ fails if any unit fails to reload """
+        done = True
+        for unit in units:
+            if not self.reload_unit(unit):
                 done = False
         return done
     def reload_unit(self, unit):
@@ -1473,13 +1497,21 @@ class Systemctl:
         return True
     def restart_modules(self, *modules):
         """ [UNIT]... -- restart these units """
-        done = True
+        found_all = True
+        units = []
         for module in modules:
             unit = self.match_unit(module)
             if not unit:
                 logg.error("no such service '%s'", module)
-                done = False
-            elif not self.restart_unit(unit):
+                found_all = False
+                continue
+            units += [ unit ]
+        return self.restart_units(units) and found_all
+    def restart_units(self, units):
+        """ fails if any unit fails to restart """
+        done = True
+        for unit in units:
+            if not self.restart_unit(unit):
                 done = False
         return done
     def restart_unit(self, unit):
@@ -1581,13 +1613,21 @@ class Systemctl:
         return conf.get("Service", "PIDFile", default)
     def try_restart_modules(self, *modules):
         """ [UNIT]... -- try-restart these units """
-        done = True
+        found_all = True
+        units = []
         for module in modules:
             unit = self.match_unit(module)
             if not unit:
                 logg.error("no such service '%s'", module)
-                done = False
-            elif not self.try_restart_unit(unit):
+                found_all = False
+                continue
+            units += [ unit ]
+        return self.try_restart_units(units) and found_all
+    def try_restart_units(self, units):
+        """ fails if any module fails to try-restart """
+        done = True
+        if unit in units:
+            if not self.try_restart_unit(unit):
                 done = False
         return done
     def try_restart_unit(unit):
@@ -1600,13 +1640,21 @@ class Systemctl:
         return True
     def reload_or_restart_modules(self, *modules):
         """ [UNIT]... -- reload-or-start these units """
-        done = True
+        found_all = True
+        units = []
         for module in modules:
             unit = self.match_unit(module)
             if not unit:
                 logg.error("no such service '%s'", module)
-                done = False
-            elif not self.reload_or_restart_unit(unit):
+                found_all = False
+                continue
+            units += [ unit ]
+        return self.reload_or_restart_units(units) and found_all
+    def reload_or_restart_units(self, units):
+        """ fails if any unit does not reload-or-restart """
+        done = True
+        for unit in units:
+            if not self.reload_or_restart_unit(unit):
                 done = False
         return done
     def reload_or_restart_unit(self, unit):
@@ -1624,13 +1672,21 @@ class Systemctl:
             return self.restart_unit_from(conf)
     def reload_or_try_restart_modules(self, *modules):
         """ [UNIT]... -- reload-or-try-restart these units """
-        done = True
+        found_all = True
+        units = []
         for module in modules:
             unit = self.match_unit(module)
             if not unit:
                 logg.error("no such service '%s'", module)
-                done = False
-            elif not self.reload_or_try_restart_unit(unit):
+                found_all = False
+                continue
+            units += [ unit ]
+        return self.reload_or_try_restart_units(units) and found_all
+    def reload_or_try_restart_units(self, units):
+        """ fails if any unit fails to reload-or-try-restart """
+        done = True
+        for unit in units:
+            if not self.reload_or_try_restart_unit(unit):
                 done = False
         return done
     def reload_or_try_restart_unit(unit):
@@ -1646,14 +1702,18 @@ class Systemctl:
             return self.restart_unit_from(conf)
     def kill_modules(self, *modules):
         """ [UNIT]... -- kill these units """
-        units = {}
+        found_all = True
+        units = []
         for module in modules:
             unit = self.match_unit(module)
             if not unit:
                 logg.error("no such service '%s'", module)
-                done = False
-            else:
-                units[unit] = 1
+                found_all = False
+                continue
+            units += [ unit ]
+        return self.kill_units(units) and found_all
+    def kill_units(self, units):
+        """ fails if any unit could not be killed """
         done = True
         for unit in units:
             if not self.kill_unit(unit):
@@ -1690,9 +1750,18 @@ class Systemctl:
     def is_active_modules(self, *modules):
         """ [UNIT].. -- check if these units are in active state
         implements True if any is-active = True """
-        units = {}
-        for unit in self.match_units(modules):
-            units[unit] = 1
+        found_all = True
+        units = []
+        for module in modules:
+            unit = self.match_unit(module)
+            if not unit:
+                logg.error("no such service '%s'", module)
+                found_all = False
+                continue
+            units += [ unit ]
+        return self.is_active_units(units) # and found_all
+    def is_active_units(self, *modules):
+        """ true if any unit was active """
         result = False
         for unit in units:
             if self.is_active(unit):
@@ -1725,8 +1794,20 @@ class Systemctl:
     def is_failed_modules(self, *modules):
         """ [UNIT]... -- check if these units are in failes state
         implements True if any is-active = True """
+        found_all = True
+        units = []
+        for module in modules:
+            unit = self.match_unit(module)
+            if not unit:
+                logg.error("no such service '%s'", module)
+                found_all = False
+                continue
+            units += [ unit ]
+        return self.is_failed_units(units) # and found_all
+    def is_failed_units(self, units):
+        """ true if any unit is-failed """
         result = False
-        for unit in self.match_units(modules):
+        for unit in units:
             if self.is_failed(unit):
                 result = True
         return result
@@ -1744,15 +1825,25 @@ class Systemctl:
     def status_modules(self, *modules):
         """ [UNIT]... check the status of these units.
         """
-        found = False
+        found_all = True
+        units = []
+        for module in modules:
+            unit = self.match_unit(module)
+            if not unit:
+                logg.error("no such service '%s'", module)
+                found_all = False
+                continue
+            units += [ unit ]
+        status, result = self.status_units(units)
+        return (status and found_all, result)
+    def status_units(self, units):
+        """ concatenates the status output of all units """
         status, result = 0, ""
-        for unit in self.match_units(modules):
+        for unit in units:
             status1, result1 = self.status_unit(unit)
             if status1: status = status1
             if result: result += "\n\n"
             result += result1
-            found = True
-        if not found: status = 1
         return status, result
     def status_unit(self, unit):
         conf = self.get_unit_conf(unit)
@@ -1771,11 +1862,29 @@ class Systemctl:
     def cat_modules(self, *modules):
         """ [UNIT]... show the *.system file for these"
         """
+        found_all = True
+        units = []
+        for module in modules:
+            unit = self.match_unit(module)
+            if not unit:
+                logg.error("no such service '%s'", module)
+                found_all = False
+                continue
+            units += [ unit ]
+        status, result = self.cat_units(units)
+        return (status and found_all, result)
+    def cat_units(self, units):
         done = True
-        for unit in self.match_units(modules):
-            if not self.cat_unit(unit):
+        result = ""
+        for unit in units:
+            text = self.cat_unit(unit)
+            if not text:
                 done = False
-        return done
+            else:
+               if result:
+                   result += "\n\n"
+               result += text
+        return done, result
     def cat_unit(self, unit):
         try:
             unit_file = self.unit_file(unit)
@@ -1818,8 +1927,20 @@ class Systemctl:
     def preset_modules(self, *modules):
         """ [UNIT]... -- set 'enabled' when in *.preset
         """
+        found_all = True
+        units = []
+        for module in modules:
+            unit = self.match_unit(module)
+            if not unit:
+                logg.error("no such service '%s'", module)
+                found_all = False
+                continue
+            units += [ unit ]
+        return self.preset_units(units) and found_all
+    def preset_units(self, units):
+        """ fails if any unit could not be changed """
         done = True
-        for unit in self.match_units(modules):
+        for unit in units:
             status = self.get_preset_of_unit(unit)
             if status and status.startswith("enable"):
                 if not self.enable_unit(unit):
@@ -1853,8 +1974,19 @@ class Systemctl:
         return os.path.join("/etc/systemd/system", wanted)
     def enable_modules(self, *modules):
         """ [UNIT]... -- enable these units """
+        found_all = True
+        units = []
+        for module in modules:
+            unit = self.match_unit(module)
+            if not unit:
+                logg.error("no such service '%s'", module)
+                found_all = False
+                continue
+            units += [ unit ]
+        return self.enable_units(units) and found_all
+    def enable_units(self, units):
         done = True
-        for unit in self.match_units(modules):
+        for unit in units:
             if not self.enable_unit(unit):
                 done = False
             elif self._now:
@@ -1924,8 +2056,19 @@ class Systemctl:
         return True
     def disable_modules(self, *modules):
         """ [UNIT]... -- disable these units """
+        found_all = True
+        units = []
+        for module in modules:
+            unit = self.match_unit(module)
+            if not unit:
+                logg.error("no such service '%s'", module)
+                found_all = False
+                continue
+            units += [ unit ]
+        return self.disable_units(units) and found_all
+    def disable_units(self, units):
         done = True
-        for unit in self.match_units(modules):
+        for unit in units:
             if not self.disable_unit(unit):
                done = False
         return done
@@ -1978,9 +2121,21 @@ class Systemctl:
     def is_enabled_modules(self, *modules):
         """ [UNIT]... -- check if these units are enabled 
         returns True if any of them is enabled."""
+        found_all = True
+        units = []
+        for module in modules:
+            unit = self.match_unit(module)
+            if not unit:
+                logg.error("no such service '%s'", module)
+                found_all = False
+                continue
+            units += [ unit ]
+        return self.is_enabled_units(units) # and found_all
+    def is_enabled_units(self, units):
+        """ true if any is enabled, and a list of infos """
         result = False
         infos = []
-        for unit in self.match_units(modules):
+        for unit in units:
             infos += [ self.enabled_unit(unit) ]
             if self.is_enabled(unit):
                result = True
@@ -2022,10 +2177,21 @@ class Systemctl:
     def list_dependencies_modules(self, *modules):
         """ [UNIT]... show the dependency tree"
         """
+        found_all = True
+        units = []
+        for module in modules:
+            unit = self.match_unit(module)
+            if not unit:
+                logg.error("no such service '%s'", module)
+                found_all = False
+                continue
+            units += [ unit ]
+        return self.list_dependencies_units(units) # and found_all
+    def list_dependencies_units(self, units):
         if self._now:
-            return self.list_start_dependencies(*modules)
+            return self.list_start_dependencies_units(units)
         result = []
-        for unit in self.match_units(modules):
+        for unit in units:
             if result:
                 result += [ "", "" ]
             result += self.list_dependencies_unit(unit)
@@ -2117,10 +2283,10 @@ class Systemctl:
                         else:
                             deps[dep] = [ style ]
         return deps
-    def list_start_dependencies(self, *modules):
+    def list_start_dependencies_units(self, units):
         unit_order = []
         deps = {}
-        for unit in self.match_units(modules):
+        for unit in units:
             unit_order.append(unit)
             # unit_deps = self.get_start_dependencies(unit) # TODO
             unit_deps = self.get_dependencies_unit(unit)
@@ -2174,9 +2340,20 @@ class Systemctl:
            for formatted human-readable output.
   
            NOTE: only a subset of properties is implemented """
+        found_all = True
+        units = []
+        for module in modules:
+            unit = self.match_unit(module)
+            if not unit:
+                logg.error("no such service '%s'", module)
+                found_all = False
+                continue
+            units += [ unit ]
+        return self.show_units(units) # and found_all
+    def show_units(self, units):
         logg.info("--property=%s", _unit_property)
         result = []
-        for unit in self.match_units(modules):
+        for unit in units:
             if result: result += [ "", "" ]
             for var, value in self.show_unit_items(unit):
                 if _unit_property:
@@ -2186,8 +2363,8 @@ class Systemctl:
                     if not value and not self._show_all:
                         continue
                 result += [ "%s=%s" % (var, value) ]
-        if not result and modules:
-            unit = modules[0]
+        if not result and units:
+            unit = units[0]
             for var, value in self.show_unit_items(unit):
                 if _unit_property:
                     if _unit_property != var:
@@ -2288,14 +2465,14 @@ class Systemctl:
         logg.info("system default requested - %s", arg)
         default_target = "multi-user.target"
         wants_services = self.system_default_services("S", default_target)
-        self.start_modules(*wants_services)
+        self.start_units(wants_services)
         logg.info("system is up")
     def system_halt(self, arg = True):
         """ stop units from default system level """
         logg.info("system halt requested - %s", arg)
         default_target = "multi-user.target"
         wants_services = self.system_default_services("K", default_target)
-        self.stop_modules(*wants_services)
+        self.stop_units(wants_services)
         logg.info("system is down")
     def init_modules(self, *modules):
         """ [UNIT*] -- init process, i.e. '--init default' ('--init start UNIT') 
@@ -2328,7 +2505,7 @@ class Systemctl:
             except KeyboardInterrupt:
                 signal.signal(signal.SIGTERM, signal.SIG_DFL)
                 signal.signal(signal.SIGINT, signal.SIG_DFL)
-                if units:
+                if modules:
                     self.stop_modules(*modules)
                 else:
                     self.system_halt("wait")
