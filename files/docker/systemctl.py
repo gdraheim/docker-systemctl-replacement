@@ -1081,7 +1081,7 @@ class Systemctl:
                 done = False
         if init:
             logg.info("init-loop start")
-            sig = self.init_loop_for_interrupt()
+            sig = self.init_loop_until_stop()
             logg.info("init-loop %s", sig)
             for unit in units:
                 self.stop_unit(unit)
