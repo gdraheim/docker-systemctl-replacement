@@ -1153,7 +1153,10 @@ class Systemctl:
                 pid = self.wait_pid_file(pid_file)
                 logg.info("simp start done PID %s [%s]", pid, pid_file)
                 time.sleep(1) # give it another second to come up
-                if not self.read_pid_file(pid_file, ""):
+                pid = self.read_pid_file(pid_file, "")
+                if pid:
+                   env["MAINPID"] = pid
+                else:
                    raise Exception("could not start service")
         elif runs in [ "notify" ]:
             # "notify" is the same as "simple" but we create a $NOTIFY_SOCKET 
@@ -1211,8 +1214,11 @@ class Systemctl:
                         logg.info("NEW PID %s from sd_notify (was PID %s)", new_pid, mainpid)
                         self.write_pid_file(pid_file, new_pid)
                 logg.info("ntfy start done %s", pid_file)
-                if not self.read_pid_file(pid_file, ""):
-                   raise Exception("could not start service")
+                pid = self.read_pid_file(pid_file, "")
+                if pid:
+                    env["MAINPID"] = pid
+                else:
+                    raise Exception("could not start service")
         elif runs in [ "oneshot" ]:
             for cmd in conf.getlist("Service", "ExecStart", []):
                 check, cmd = checkstatus(cmd)
@@ -1230,6 +1236,8 @@ class Systemctl:
                 if pid_file:
                     pid = self.wait_pid_file(pid_file)
                     logg.info("fork start done PID %s [%s]", pid, pid_file)
+                    if pid:
+                        env["MAINPID"] = pid
                 else:
                     logg.warning("No PIDFile for forking %s", conf.filename())
             if not pid_file:
