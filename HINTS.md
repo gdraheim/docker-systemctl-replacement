@@ -43,3 +43,18 @@ whereas filter by name is just an argument "docker images <name>"
     docker images --format "{{.ID}}: {{.Repository}}\t{{.Size}}"
     and "{{.Tag}} {{.Digest}} {{.CreatedSince}} {{.CreatedAt}}"
 
+## IPv4 -vs- IPv6
+
+For java / tomcat applications one can add a java-option to use ipv4
+
+    -Djava.net.preferIPv4Stack=true
+
+For docker-compose 2.1+ one can add a sysctl to disable ipv6.
+
+    sysctls:
+       - net.ipv6.conf.eth0.disable_ipv6=1
+       - net.ipv6.conf.all.disable_ipv6=1
+
+And there is an option to disable '::1 localhost' with systemctl.py
+
+    systemctl.py --ipv4 daemon-reload
