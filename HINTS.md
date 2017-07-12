@@ -27,3 +27,19 @@ Instead it only uses Before/After on the units in the
 'multi-user.target' but it does not process any of
 its required units.
 
+# Implementation helpers
+
+## docker images --filter
+
+https://github.com/moby/moby/blob/10c0af083544460a2ddc2218f37dc24a077f7d90/docs/reference/commandline/images.md#filtering
+
+    docker images --filter dangling=true || dangling=false
+    docker images --filter label=<key> || label=<key>=<value>
+
+whereas filter by name is just an argument "docker images <name>"
+
+## docker images --format
+
+    docker images --format "{{.ID}}: {{.Repository}}\t{{.Size}}"
+    and "{{.Tag}} {{.Digest}} {{.CreatedSince}} {{.CreatedAt}}"
+
