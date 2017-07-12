@@ -1835,9 +1835,12 @@ class Systemctl:
                 continue
             units += [ unit ]
         status, result = self.status_units(units)
-        return (status and found_all, result)
+        if not found_all:
+            status = 3 # same as (dead) # original behaviour
+        return (status, result)
     def status_units(self, units):
-        """ concatenates the status output of all units """
+        """ concatenates the status output of all units
+            and the last non-successful statuscode """
         status, result = 0, ""
         for unit in units:
             status1, result1 = self.status_unit(unit)
@@ -1871,8 +1874,8 @@ class Systemctl:
                 found_all = False
                 continue
             units += [ unit ]
-        status, result = self.cat_units(units)
-        return (status and found_all, result)
+        done, result = self.cat_units(units)
+        return (done and found_all, result)
     def cat_units(self, units):
         done = True
         result = ""
