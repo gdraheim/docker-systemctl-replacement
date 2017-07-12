@@ -1091,14 +1091,14 @@ class Systemctl:
         if conf is None:
             logg.error("no such unit: '%s'", unit)
             return False
-        logg.info("%s => %s", conf, conf.filename())
+        logg.info(" start unit %s => %s", unit, conf.filename())
         return self.start_unit_from(conf)
     def start_unit_from(self, conf):
         if not conf: return
         runs = conf.get("Service", "Type", "simple").lower()
         sudo = self.sudo_from(conf)
         env = self.get_env(conf)
-        logg.info("env = %s", env)
+        logg.debug("start env = %s", env)
         if True:
             for cmd in conf.getlist("Service", "ExecStartPre", []):
                 check, cmd = checkstatus(cmd)
@@ -1320,6 +1320,7 @@ class Systemctl:
         if conf is None:
             logg.error("no such unit: '%s'", unit)
             return False
+        logg.info(" stop unit %s => %s", unit, conf.filename())
         return self.stop_unit_from(conf)
     def stop_unit_from(self, conf):
         if not conf: return
@@ -1431,6 +1432,7 @@ class Systemctl:
         if conf is None:
             logg.error("no such unit: '%s'", unit)
             return False
+        logg.info(" reload unit %s => %s", unit, conf.filename())
         return self.reload_unit_from(conf)
     def reload_unit_from(self, conf):
         if not conf: return
@@ -1531,6 +1533,7 @@ class Systemctl:
         if conf is None:
             logg.error("no such unit: '%s'", unit)
             return False
+        logg.info(" restart unit %s => %s", unit, conf.filename())
         return self.restart_unit_from(conf)
     def restart_unit_from(self, conf):
         if not conf: return
@@ -1674,6 +1677,9 @@ class Systemctl:
         if conf is None:
             logg.error("no such unit: '%s'", unit)
             return False
+        logg.info(" reload-or-restart unit %s => %s", unit, conf.filename())
+        return self.reload_or_restart_unit_from(conf)
+    def reload_or_restart_unit_from(self, conf):
         if not self.is_active_from(conf):
             # try: self.stop_unit_from(conf)
             # except Exception, e: pass
@@ -1706,6 +1712,9 @@ class Systemctl:
         if conf is None:
             logg.error("no such unit: '%s'", unit)
             return False
+        logg.info(" reload-or-try-restart unit %s => %s", unit, conf.filename())
+        return self.reload_or_try_restart_unit_from(conf)
+    def reload_or_try_restart_unit_from(self, conf):
         if conf.getlist("Service", "ExecReload", []):
             return self.reload_unit_from(conf)
         elif not self.is_active_from(conf):
@@ -1736,6 +1745,7 @@ class Systemctl:
         if conf is None:
             logg.error("no such unit: '%s'", unit)
             return False
+        logg.info(" kill unit %s => %s", unit, conf.filename())
         return self.kill_unit_from(conf)
     def kill_unit_from(self, conf):
         if not conf: return None
@@ -2440,7 +2450,7 @@ class Systemctl:
             igno = self.igno_always
             if self._force:
                 igno = []
-        logg.info("igno = %s", igno)
+        logg.debug("ignored services filter for default.target:\n\t%s", igno)
         return self.default_services(sysv, default_target, igno)
     def default_services(self, sysv, default_target, igno = []):
         wants_services = []
