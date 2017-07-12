@@ -1017,6 +1017,7 @@ class Systemctl:
         except socket.timeout, e:
             if timeout > 2:
                 logg.debug("socket.timeout %s", e)
+        return result
     def wait_notify_socket(self, notify, timeout, pid = None):
         if not notify:
             logg.info("no $NOTIFY_SOCKET, waiting %s", timeout)
