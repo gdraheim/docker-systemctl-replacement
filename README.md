@@ -212,7 +212,7 @@ activate the continued execution as an --init process):
 
 Note that the docker daemon will send a SIGTERM to the PID 1
 of a docker container that will result in the stop-behaviour
-of the "systemctl wait" loop. However the docker daemon will
+of the "systemctl init" loop. However the docker daemon will
 only wait 10 seconds by default and when the container has
 not stopped completely it will send a SIGKILL to all the
 remaining process in the container.

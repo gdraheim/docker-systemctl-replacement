@@ -1056,7 +1056,9 @@ class Systemctl:
             logg.debug("socket.close %s", e)
         return results
     def start_modules(self, *modules):
-        """ [UNIT]... -- start these units """
+        """ [UNIT]... -- start these units
+        /// SPECIAL: with --now or --init it will
+            run the init-loop and stop the units afterwards """
         found_all = True
         units = []
         for module in modules:
@@ -1066,13 +1068,22 @@ class Systemctl:
                 found_all = False
                 continue
             units += [ unit ]
-        return self.start_units(units) and found_all
-    def start_units(self, units):
-        """ fails if any unit does not start """
+        init = self._now or _init
+        return self.start_units(units, init) and found_all
+    def start_units(self, units, init = None):
+        """ fails if any unit does not start
+        /// SPECIAL: may run the init-loop and 
+            stop the named units afterwards """
         done = True
         for unit in units:
             if not self.start_unit(unit):
                 done = False
+        if init:
+            logg.info("init-loop start")
+            sig = self.init_loop_for_interrupt()
+            logg.info("init-loop %s", sig)
+            for unit in units:
+                self.stop_unit(unit)
         return done
     def start_unit(self, unit):
         conf = self.load_unit_conf(unit)
@@ -2464,56 +2475,83 @@ class Systemctl:
             This will go through the enabled services in the default 'multi-user.target'.
             However some services are ignored as being known to be installation garbage
             from unintended services. Use '--all' so start all of the installed services
-            and with '--all --force' even those services that are otherwise wrong. """
+            and with '--all --force' even those services that are otherwise wrong. 
+            /// SPECIAL: with --now or --init the init-loop is run and afterwards
+                a system_halt is performed with the enabled services to be stopped."""
         logg.info("system default requested - %s", arg)
+        init = self._now or _init
+        self.start_system_default(init = init)
+    def start_system_default(self, init = False):
+        """ detect the default.target services and start them.
+            When --init is given then the init-loop is run and
+            the services are stopped again by 'systemctl halt'."""
         default_target = "multi-user.target"
         wants_services = self.system_default_services("S", default_target)
         self.start_units(wants_services)
         logg.info("system is up")
-    def system_halt(self, arg = True):
-        """ stop units from default system level """
-        logg.info("system halt requested - %s", arg)
+        if init:
+            logg.info("init-loop start")
+            sig = self.init_loop_until_stop()
+            logg.info("init-loop %s", sig)
+            self.stop_system_default()
+    def stop_system_default(self):
+        """ detect the default.target services and stop them.
+            This is commonly run through 'systemctl halt' or
+            at the end of a 'systemctl --init default' loop."""
         default_target = "multi-user.target"
         wants_services = self.system_default_services("K", default_target)
         self.stop_units(wants_services)
         logg.info("system is down")
+    def system_halt(self, arg = True):
+        """ stop units from default system level """
+        logg.info("system halt requested - %s", arg)
+        self.stop_system_default()
     def init_modules(self, *modules):
-        """ [UNIT*] -- init process, i.e. '--init default' ('--init start UNIT') 
+        """ [UNIT*] -- init loop: '--init default' or '--init start UNIT*'
         The systemctl init service will start the enabled 'default' services, 
         and then wait for any  zombies to be reaped. When a SIGINT is received
         then a clean shutdown of the enabled services is ensured. A Control-C in
-        in interactive mode will also run 'stop' on all the enabled services.
-        When a UNIT name is given then only that one is started instead of 'default'.
-        Using 'init UNIT' is better than '--init start UNIT' because the UNIT
-        is also stopped cleanly when it was never enabled in the system.
+        in interactive mode will also run 'stop' on all the enabled services. //
+        When a UNIT name is given then only that one is started instead of the
+        services in the 'default.target'. Using 'init UNIT' is better than 
+        '--init start UNIT' because the UNIT is also stopped cleanly even when 
+        it was never enabled in the system.
+        /// SPECIAL: when using --now then only the init-loop is started, 
+        with the reap-zombies function and waiting for an interrupt.
+        (and no unit is started/stoppped wether given or not).
         """
-        if modules:
-            self.start_modules(*modules)
-        else:
-            self.system_default("init")
-        return self.wait_modules(*modules)
-    def wait_modules(self, *modules):
-        """ [UNIT*] -- wait for stop and reap zombies meanwhile
-        This is the main functionality of an init process in that it will 
-        constantly check if there is some zombie process to be reaped.
-        When a SIGINT is received (or Control-C in interactive mode)
-        then the services are stopped - either all enabled services or
-        just the one that was given as an argument. """
-        signal.signal(signal.SIGTERM, lambda signum, frame: ignore_signals_and_raise_keyboard_interrupt('SIGTERM'))
-        signal.signal(signal.SIGINT, lambda signum, frame: ignore_signals_and_raise_keyboard_interrupt('SIGINT'))
+        if self._now:
+            return self.init_loop_until_stop()
+        if not modules:
+            # alias 'systemctl --init default'
+            return self.start_system_default(init = True)
+        #
+        found_all = True
+        units = []
+        for module in modules:
+            unit = self.match_unit(module)
+            if not unit:
+                logg.error("no such service '%s'", module)
+                found_all = False
+                continue
+            units += [ unit ]
+        return self.start_units(units, init = True) # and found_all
+    def init_loop_until_stop(self):
+        """ this is the init-loop - it checks for any zombies to be reaped and
+            waits for an interrupt. When a SIGTERM /SIGINT /Control-C signal
+            is received then the signal name is returned. Any other signal will 
+            just raise an Exception like one would normally expect. """
+        signal.signal(signal.SIGINT, lambda signum, frame: ignore_signals_and_raise_keyboard_interrupt("SIGINT"))
+        signal.signal(signal.SIGTERM, lambda signum, frame: ignore_signals_and_raise_keyboard_interrupt("SIGTERM"))
         while True:
             try:
-                time.sleep(10)
+                time.sleep(5)
                 self.system_reap_zombies()
-            except KeyboardInterrupt:
+            except KeyboardInterrupt, e:
                 signal.signal(signal.SIGTERM, signal.SIG_DFL)
                 signal.signal(signal.SIGINT, signal.SIG_DFL)
-                if modules:
-                    self.stop_modules(*modules)
-                else:
-                    self.system_halt("wait")
-                return True
-        return False
+                return e.message or "STOPPED"
+        return None
     def system_reap_zombies(self):
         """ check to reap children """
 	for pid in os.listdir("/proc"):
@@ -2749,7 +2787,7 @@ if __name__ == "__main__":
         if os.getpid() == 1:
             _init = True
         if _init:
-            args = [ "default" ]
+            args = [ "init" ] # alias "--init default"
         else:
             args = [ "list-units" ]
     logg.debug("======= systemctl.py " + " ".join(args))
@@ -2796,9 +2834,6 @@ if __name__ == "__main__":
     if not found:
         logg.error("EXEC END no method for '%s'", command)
         sys.exit(1)
-    if _init:
-        logg.info("continue as init process")
-        systemctl.wait_modules()
     exitcode = 0
     if result is None:
         logg.info("EXEC END None")
