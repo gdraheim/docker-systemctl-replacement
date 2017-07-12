@@ -58,3 +58,15 @@ For docker-compose 2.1+ one can add a sysctl to disable ipv6.
 And there is an option to disable '::1 localhost' with systemctl.py
 
     systemctl.py --ipv4 daemon-reload
+
+## oneshoot services
+
+https://www.freedesktop.org/software/systemd/man/systemd.service.html
+
+There is a note that after "start unit" the unit is considered to be
+active. A second "start unit" shall NOT run the execs again.
+
+Indirectly it hints to the detail that a "start unit" does not run
+any execs when "is-active unit" true. See issue #6.
+
+
