@@ -1041,7 +1041,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # self.assertGreater(len(lines(out2)), 2)
         #
         self.rm_testdir()
-    def test_5010_systemctl_py_start_simple(self):
+    def test_5030_systemctl_py_start_simple(self):
         """ check that we can start simple services in a container"""
         testname = self.testname()
         testdir = self.testdir()
@@ -1103,7 +1103,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         sx____(stop_container.format(**locals()))
         self.rm_testdir()
-    def test_5011_systemctl_py_start_extra_simple(self):
+    def test_5031_systemctl_py_start_extra_simple(self):
         """ check that we can start simple services in a container"""
         testname = self.testname()
         testdir = self.testdir()
@@ -1155,7 +1155,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         sx____(stop_container.format(**locals()))
         self.rm_testdir()
-    def test_5012_systemctl_py_start_forking(self):
+    def test_5032_systemctl_py_start_forking(self):
         """ check that we can start forking services in a container w/ PIDFile"""
         testname = self.testname()
         testdir = self.testdir()
@@ -1234,7 +1234,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         sx____(stop_container.format(**locals()))
         self.rm_testdir()
-    def test_5013_systemctl_py_start_forking_without_pid_file(self):
+    def test_5033_systemctl_py_start_forking_without_pid_file(self):
         """ check that we can start forking services in a container without PIDFile"""
         testname = self.testname()
         testdir = self.testdir()
