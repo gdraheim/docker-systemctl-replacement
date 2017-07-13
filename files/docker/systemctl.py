@@ -1012,14 +1012,14 @@ class Systemctl:
             elif rungroup:
                 sudo = ["/usr/sbin/runuser", "-g", rungroup, "--"]
         elif os.path.exists("/usr/bin/sudo"):
-            if not _no_ask_password:
-                logg.warning("non-root execution without --no-ask-password (not supported)")
             if runuser and rungroup:
                 sudo = ["/usr/bin/sudo", "-n", "-H", "-g", rungroup, "-u", runuser, "--"]
             elif runuser:
                 sudo = ["/usr/bin/sudo", "-n", "-H", "-u", runuser, "--"]
             elif rungroup:
                 sudo = ["/usr/bin/sudo", "-n", "-H", "-g", rungroup, "--"]
+            if sudo and not _no_ask_password:
+                logg.warning("non-root execution, better use --no-ask-password")
         else:
             if runuser or rungroup:
                logg.error("can not find sudo but it is required for runuser")
