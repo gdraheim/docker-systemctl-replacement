@@ -106,7 +106,7 @@ def os_path(root, path):
        path = path[1:]
     return os.path.join(root, path)
 
-def shutil_chown(name, user = None, group = None):
+def shutil_chown(filename, user = None, group = None):
     """ in python 3.3. there is shutil.chown """
     uid = -1
     gid = -1
@@ -116,7 +116,8 @@ def shutil_chown(name, user = None, group = None):
     if user:
         import pwd
         uid = pwd.getpwnam(user).pw_uid
-    os.chown(name, uid, gid)
+    if os.path.exists(filename):
+        os.chown(filename, uid, gid)
 
 def shutil_setuid(user = None, group = None):
     """ set fork-child uid/gid """
@@ -131,11 +132,12 @@ def shutil_setuid(user = None, group = None):
         os.setuid(uid)
         logg.debug("setuid %s '%s'", uid, user)
 
-def shutil_truncate(name):
+def shutil_truncate(filename):
     """ truncate file """
-    f = open(name, "w")
-    f.write("")
-    f.close()
+    if os.path.exists(filename):
+        f = open(filename, "w")
+        f.write("")
+        f.close()
 
 # http://stackoverflow.com/questions/568271/how-to-check-if-there-exists-a-process-with-a-given-pid
 def pid_exists(pid):
