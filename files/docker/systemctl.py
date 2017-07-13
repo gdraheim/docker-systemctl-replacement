@@ -1,6 +1,6 @@
 #! /usr/bin/python
 __copyright__ = "(C) 2016-2017 Guido U. Draheim, for free use (CC-BY, GPL, BSD)"
-__version__ = "0.8.1276"
+__version__ = "0.8.1284"
 
 import logging
 logg = logging.getLogger("systemctl")
@@ -961,7 +961,7 @@ class Systemctl:
             confs["f"] = conf.filename()
             confs["t"] = os_path(self._root, "/var")
             unit_name = conf.name()
-            suffix = conf.rfind(".")
+            suffix = unit_name.rfind(".")
             if suffix > 0: unit_name = unit_name[:suffix]
             prefix, instance = unit_name, ""
             if "@" in unit_name:

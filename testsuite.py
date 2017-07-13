@@ -3,7 +3,7 @@
 """ Testcases for docker-systemctl-replacement functionality """
 
 __copyright__ = "(C) Guido Draheim, for free use (CC-BY,GPL) """
-__version__ = "0.8.1276"
+__version__ = "0.8.1284"
 
 import subprocess
 import os.path

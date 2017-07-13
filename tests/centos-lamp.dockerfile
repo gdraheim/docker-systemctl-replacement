@@ -1,7 +1,7 @@
 FROM centos:centos7
 
 LABEL __copyright__="(C) Guido Draheim, for free use (CC-BY,GPL,BSD)" \
-      __version__="1.0.1276"
+      __version__="1.0.1284"
 
 ENV WEB_CONF /etc/httpd/conf.d/phpMyAdmin.conf
 ENV INC_CONF /etc/phpMyAdmin/config.inc.php
@@ -14,13 +14,13 @@ RUN echo "<?php phpinfo(); ?>" > /var/www/html/index.php
 RUN sed -i "s|ip 127.0.0.1|ip 172.0.0.0/8|" $WEB_CONF
 RUN systemctl start mariadb \
   ; mysqladmin -uroot password 'N0.secret' \
-  ; systemctl stop mariadb \
+  ; systemctl stop mariadb -vv \
   ; sleep 3
-RUN systemctl start mariadb \
+RUN systemctl start mariadb -vv \
   ; sleep 3 \
   ; echo "CREATE USER testuser_OK IDENTIFIED BY 'Testuser.OK'" | mysql -uroot -pN0.secret \
   ; sleep 3 \
-  ; systemctl stop mariadb \
+  ; systemctl stop mariadb -vv \
   ; sleep 3
 RUN sed -i -e "/'user'/s|=.*;|='testuser_OK';|" $INC_CONF
 RUN sed -i -e "/'password'/s|=.*;|='Testuser.OK';|" $INC_CONF
