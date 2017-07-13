@@ -1032,7 +1032,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
-        systemctl = _systemctl_py + " -vv --root=" + root
+        systemctl = _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         os.makedirs(os_path(root, "/var/run"))
@@ -1059,6 +1059,70 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             PIDFile={root}/var/run/zzz.init.pid
             ExecStart={root}/usr/bin/zzz.init start
             ExceStop={root}/usr/bin/zzz.init stop
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/usr/bin/zzz.init"))
+        copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
+        #
+        enable_service = "{systemctl} enable zzz.service"
+        sh____(enable_service.format(**locals()))
+        version_systemctl = "{systemctl} --version"
+        sh____(version_systemctl.format(**locals()))
+        list_units_systemctl = "{systemctl} default-services -vv"
+        sh____(list_units_systemctl.format(**locals()))
+        out = output(list_units_systemctl.format(**locals()))
+        logg.info("\n>\n%s", out)
+        self.assertTrue(greps(out, "zzz.service"))
+        self.assertEqual(len(lines(out)), 1)
+        #
+        start_service = "{systemctl} start zzz.service -vv"
+        sh____(start_service.format(**locals()))
+        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
+        top = output(top_recent.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        #
+        stop_service = "{systemctl} stop zzz.service -vv"
+        sh____(stop_service.format(**locals()))
+        top = output(top_recent.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, testsleep))
+        kill_testsleep = "killall {testsleep}"
+        sx____(kill_testsleep.format(**locals()))
+        self.rm_testdir()
+    def test_3033_systemctl_py_start_forking_without_pid_file(self):
+        """ check that we can start forking services with root env without PIDFile"""
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = _systemctl_py + " --root=" + root
+        testsleep = self.testname("sleep")
+        bindir = os_path(root, "/usr/bin")
+        os.makedirs(os_path(root, "/var/run"))
+        shell_file(os_path(testdir, "zzz.init"), """
+            #! /bin/bash
+            case "$1" in start) 
+               ({bindir}/{testsleep} 50 0<&- &>/dev/null &) &
+               wait %1
+               # ps -o pid,ppid,args >&2
+            ;; stop)
+               killall {testsleep}
+               echo killed all {testsleep} >&2
+               sleep 1
+            ;; esac 
+            echo "done$1" >&2
+            exit 0
+            """.format(**locals()))
+        text_file(os_path(testdir, "zzz.service"),"""
+            [Unit]
+            Description=Testing Z
+            [Service]
+            Type=forking
+            ExecStart={root}/usr/bin/zzz.init start
+            ExecStop={root}/usr/bin/zzz.init stop
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
