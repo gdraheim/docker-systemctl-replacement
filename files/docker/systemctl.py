@@ -395,8 +395,6 @@ class PresetFile:
                     return status
         return None
 
-def subprocess_shell(cmd, env=None, check = False, shell=True):
-    return subprocess_wait(cmd, env, check=check, shell=shell)
 def subprocess_wait(cmd, env=None, check = False, shell=False):
     logg.warning("running = %s", cmd)
     run = subprocess.Popen(cmd, shell=shell, env=env)
@@ -1174,15 +1172,17 @@ class Systemctl:
         if True:
             for cmd in conf.getlist("Service", "ExecStartPre", []):
                 check, cmd = checkstatus(cmd)
-                logg.info("ExecStartPre:%s:%s", check, cmd)
-                subprocess_shell(cmd, env, check=check)
+                newcmd = self.exec_cmd(cmd, env, conf)
+                logg.info(" pre-start %s", shell_cmd(sudo+newcmd))
+                run = subprocess_wait(sudo+newcmd, env)
         if runs in [ "sysv" ]:
             if True:
                 exe = conf.filename()
                 cmd = "'%s' start" % exe
                 env["SYSTEMCTL_SKIP_REDIRECT"] = "yes"
-                logg.info("sysv start %s", cmd)
-                run = subprocess_shell(cmd, env)
+                newcmd = self.exec_cmd(cmd, env, conf)
+                logg.info("sysv start %s", shell_cmd(sudo+newcmd))
+                run = subprocess_wait(sudo+newcmd, env)
         elif runs in [ "simple" ]: 
             pid_file = self.get_pid_file_from(conf)
             pid = self.read_pid_file(pid_file, "")
@@ -1322,8 +1322,9 @@ class Systemctl:
         if True:
             for cmd in conf.getlist("Service", "ExecStartPost", []):
                 check, cmd = checkstatus(cmd)
-                logg.info("ExecStartPost:%s:%s", check, cmd)
-                subprocess_shell(cmd, env, check=check)
+                newcmd = self.exec_cmd(cmd, env, conf)
+                logg.info("post-start %s", shell_cmd(sudo+newcmd))
+                run = subprocess_wait(sudo+newcmd, env)
         return True
     def read_pid_file(self, pid_file, default = None):
         pid = default
@@ -1396,15 +1397,17 @@ class Systemctl:
         if True:
             for cmd in conf.getlist("Service", "ExecStopPre", []):
                 check, cmd = checkstatus(cmd)
-                logg.info("ExecStopPre:%s:%s", check, cmd)
-                subprocess_shell(cmd, env, check=check)
+                newcmd = self.exec_cmd(cmd, env, conf)
+                logg.info(" pre-stop %s", shell_cmd(sudo+newcmd))
+                run = subprocess_wait(sudo+newcmd, env)
         if runs in [ "sysv" ]:
             if True:
                 exe = conf.filename()
                 cmd = "'%s' stop" % exe
                 env["SYSTEMCTL_SKIP_REDIRECT"] = "yes"
-                logg.info("sysv stop %s", cmd)
-                run = subprocess_shell(cmd, env)
+                newcmd = self.exec_cmd(cmd, env, conf)
+                logg.info("sysv stop %s", shell_cmd(sudo+newcmd))
+                run = subprocess_wait(sudo+newcmd, env)
         elif not conf.getlist("Service", "ExecStop", []):
             logg.info("no ExecStop => systemctl kill")
             if True:
@@ -1475,8 +1478,9 @@ class Systemctl:
         if True:
             for cmd in conf.getlist("Service", "ExecStopPost", []):
                 check, cmd = checkstatus(cmd)
-                logg.info("ExecStopPost:%s:%s", check, cmd)
-                subprocess_shell(cmd, env, check=check)
+                newcmd = self.exec_cmd(cmd, env, conf)
+                logg.info("post-stop %s", shell_cmd(sudo+newcmd))
+                run = subprocess_wait(sudo+newcmd, env)
         return True
     def reload_modules(self, *modules):
         """ [UNIT]... -- reload these units """
@@ -1512,15 +1516,17 @@ class Systemctl:
         if True:
             for cmd in conf.getlist("Service", "ExecReloadPre", []):
                 check, cmd = checkstatus(cmd)
-                logg.info("ExecReloadPre:%s:%s", check, cmd)
-                subprocess_shell(cmd, env, check=check)
+                newcmd = self.exec_cmd(cmd, env, conf)
+                logg.info(" pre-reload %s", shell_cmd(sudo+newcmd))
+                run = subprocess_wait(sudo+newcmd, env)
         if runs in [ "sysv" ]:
             if True:
                 exe = conf.filename()
                 cmd = "'%s' reload" % exe
                 env["SYSTEMCTL_SKIP_REDIRECT"] = "yes"
-                logg.info("sysv reload %s", cmd)
-                run = subprocess_shell(cmd, env)
+                newcmd = self.exec_cmd(cmd, env, conf)
+                logg.info("sysv reload %s", shell_cmd(sudo+newcmd))
+                run = subprocess_wait(sudo+newcmd, env)
         elif runs in [ "simple" ]:
             for cmd in conf.getlist("Service", "ExecReload", []):
                 pid_file = self.get_pid_file_from(conf)
@@ -1580,8 +1586,9 @@ class Systemctl:
         if True:
             for cmd in conf.getlist("Service", "ExecReloadPost", []):
                 check, cmd = checkstatus(cmd)
-                logg.info("ExecReloadPost:%s:%s", check, cmd)
-                subprocess_shell(cmd, env, check=check)
+                newcmd = self.exec_cmd(cmd, env, conf)
+                logg.info("post-reload %s", shell_cmd(sudo+newcmd))
+                run = subprocess_wait(sudo+newcmd, env)
         return True
     def restart_modules(self, *modules):
         """ [UNIT]... -- restart these units """
@@ -1617,15 +1624,17 @@ class Systemctl:
         if True:
             for cmd in conf.getlist("Service", "ExecRestartPre", []):
                 check, cmd = checkstatus(cmd)
-                logg.info("ExecRestartPre:%s:%s", check, cmd)
-                subprocess_shell(cmd, env, check=check)
+                newcmd = self.exec_cmd(cmd, env, conf)
+                logg.info(" pre-restart %s", shell_cmd(sudo+newcmd))
+                run = subprocess_wait(sudo+newcmd, env)
         if runs in [ "sysv" ]:
             if True:
                 exe = conf.filename()
                 cmd = "'%s' restart" % exe
                 env["SYSTEMCTL_SKIP_REDIRECT"] = "yes"
-                logg.info("sysv restart %s", cmd)
-                run = subprocess_shell(cmd, env)
+                newcmd = self.exec_cmd(cmd, env, conf)
+                logg.info("sysv restart %s", shell_cmd(sudo+newcmd))
+                run = subprocess_wait(sudo+newcmd, env)
         elif not conf.getlist("Service", "ExecRestart", []):
             logg.info("(restart) => stop/start")
             self.stop_unit_from(conf)
@@ -1686,8 +1695,9 @@ class Systemctl:
         if True:
             for cmd in conf.getlist("Service", "ExecRestartPost", []):
                 check, cmd = checkstatus(cmd)
-                logg.info("ExecRestartPost:%s:%s", check, cmd)
-                subprocess_shell(cmd, env, check=check)
+                newcmd = self.exec_cmd(cmd, env, conf)
+                logg.info("post-restart %s", shell_cmd(sudo+newcmd))
+                run = subprocess_wait(sudo+newcmd, env)
         return True
     def get_pid_file(self, unit):
         conf = self.load_unit_conf(unit)
