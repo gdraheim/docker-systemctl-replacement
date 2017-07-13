@@ -395,8 +395,11 @@ class PresetFile:
                     return status
         return None
 
-def subprocess_wait(cmd, env=None, check = False):
-    run = subprocess.Popen(cmd, shell=True, env=env)
+def subprocess_shell(cmd, env=None, check = False, shell=True):
+    return subprocess_wait(cmd, env, check=check, shell=shell)
+def subprocess_wait(cmd, env=None, check = False, shell=False):
+    logg.error("cmd = %s", cmd)
+    run = subprocess.Popen(cmd, shell=shell, env=env)
     run.wait()
     if check and run.returncode: 
         logg.error("returncode %i\n %s", run.returncode, cmd)
@@ -912,23 +915,23 @@ class Systemctl:
         """ calls runuser with a (non-priviledged) user """
         runuser = conf.get("Service", "User", "")
         rungroup = conf.get("Service", "Group", "")
-        sudo = ""
+        sudo = []
         if os.geteuid() == 0:
             if runuser and rungroup:
-                sudo = "/usr/sbin/runuser -g %s -u %s -- " % (rungroup, runuser)
+                sudo = ["/usr/sbin/runuser", "-g", rungroup, "-u", runuser, "--"]
             elif runuser:
-                sudo = "/usr/sbin/runuser -u %s -- " % (runuser)
+                sudo = ["/usr/sbin/runuser", "-u", runuser, "--"]
             elif rungroup:
-                sudo = "/usr/sbin/runuser -g %s -- " % (rungroup)
+                sudo = ["/usr/sbin/runuser", "-g", rungroup, "--"]
         elif os.path.exists("/usr/bin/sudo"):
             if not _no_ask_password:
                 logg.warning("non-root execution without --no-ask-password (not supported)")
             if runuser and rungroup:
-                sudo = "/usr/bin/sudo -n -H -g %s -u %s -- " % (rungroup, runuser)
+                sudo = ["/usr/bin/sudo", "-n", "-H", "-g", rungroup, "-u", runuser, "--"]
             elif runuser:
-                sudo = "/usr/bin/sudo -n -H -u %s -- " % (runuser)
+                sudo = ["/usr/bin/sudo", "-n", "-H", "-u", runuser, "--"]
             elif rungroup:
-                sudo = "/usr/bin/sudo -n -H -g %s -- " % (rungroup)
+                sudo = ["/usr/bin/sudo", "-n", "-H", "-g", rungroup, "--"]
         else:
             if runuser or rungroup:
                logg.error("can not find sudo but it is required for runuser")
@@ -1103,14 +1106,14 @@ class Systemctl:
             for cmd in conf.getlist("Service", "ExecStartPre", []):
                 check, cmd = checkstatus(cmd)
                 logg.info("ExecStartPre:%s:%s", check, cmd)
-                subprocess_wait(cmd, env, check=check)
+                subprocess_shell(cmd, env, check=check)
         if runs in [ "sysv" ]:
             if True:
                 exe = conf.filename()
                 cmd = "'%s' start" % exe
                 env["SYSTEMCTL_SKIP_REDIRECT"] = "yes"
                 logg.info("sysv start %s", cmd)
-                run = subprocess_wait(cmd, env)
+                run = subprocess_shell(cmd, env)
         elif runs in [ "simple" ]: 
             pid_file = self.get_pid_file_from(conf)
             pid = self.read_pid_file(pid_file, "")
@@ -1222,16 +1225,18 @@ class Systemctl:
         elif runs in [ "oneshot" ]:
             for cmd in conf.getlist("Service", "ExecStart", []):
                 check, cmd = checkstatus(cmd)
-                logg.info("shot start %s", sudo+cmd)
-                run = subprocess_wait(sudo+cmd, env)
+                newcmd = self.non_shell_cmd(cmd, env)
+                logg.info("shot start %s", shell_cmd(sudo+newcmd))
+                run = subprocess_wait(sudo+newcmd, env)
                 if check and run.returncode: raise Exception("ExecStart")
                 logg.info("shot start done")
         elif runs in [ "forking" ]:
             pid_file = self.pid_file_from(conf)
             for cmd in conf.getlist("Service", "ExecStart", []):
                 check, cmd = checkstatus(cmd)
-                logg.info("fork start %s", sudo+cmd)
-                run = subprocess_wait(sudo+cmd, env)
+                newcmd = self.non_shell_cmd(cmd, env)
+                logg.info("fork start %s", shell_cmd(sudo+newcmd))
+                run = subprocess_wait(sudo+newcmd, env)
                 if check and run.returncode: raise Exception("ExecStart")
                 if pid_file:
                     pid = self.wait_pid_file(pid_file)
@@ -1249,7 +1254,7 @@ class Systemctl:
             for cmd in conf.getlist("Service", "ExecStartPost", []):
                 check, cmd = checkstatus(cmd)
                 logg.info("ExecStartPost:%s:%s", check, cmd)
-                subprocess_wait(cmd, env, check=check)
+                subprocess_shell(cmd, env, check=check)
         return True
     def read_pid_file(self, pid_file, default = None):
         pid = default
@@ -1339,14 +1344,14 @@ class Systemctl:
             for cmd in conf.getlist("Service", "ExecStopPre", []):
                 check, cmd = checkstatus(cmd)
                 logg.info("ExecStopPre:%s:%s", check, cmd)
-                subprocess_wait(cmd, env, check=check)
+                subprocess_shell(cmd, env, check=check)
         if runs in [ "sysv" ]:
             if True:
                 exe = conf.filename()
                 cmd = "'%s' stop" % exe
                 env["SYSTEMCTL_SKIP_REDIRECT"] = "yes"
                 logg.info("sysv stop %s", cmd)
-                run = subprocess_wait(cmd, env)
+                run = subprocess_shell(cmd, env)
         elif not conf.getlist("Service", "ExecStop", []):
             logg.info("no ExecStop => systemctl kill")
             if True:
@@ -1359,8 +1364,9 @@ class Systemctl:
             for cmd in conf.getlist("Service", "ExecStop", []):
                 pid = self.read_pid_file(pid_file, "")
                 env["MAINPID"] = str(pid)
-                logg.info("simp stop %s", sudo+cmd)
-                run = subprocess_wait(sudo+cmd, env)
+                newcmd = self.non_shell_cmd(cmd, env)
+                logg.info("simp stop %s", shell_cmd(sudo+newcmd))
+                run = subprocess_wait(sudo+newcmd, env)
                 # self.write_pid_file(pid_file, run.pid)
         elif runs in [ "notify" ]:
             pid_file = self.get_pid_file_from(conf)
@@ -1374,8 +1380,9 @@ class Systemctl:
             for cmd in conf.getlist("Service", "ExecStop", []):
                 pid = self.read_pid_file(pid_file, "")
                 env["MAINPID"] = str(pid)
-                logg.info("ntfy stop %s", sudo+cmd)
-                run = subprocess_wait(sudo+cmd, env)
+                newcmd = self.non_shell_cmd(cmd, env)
+                logg.info("ntfy stop %s", shell_cmd(sudo+newcmd))
+                run = subprocess_wait(sudo+newcmd, env)
                 # self.write_pid_file(pid_file, run.pid)
                 mainpid = self.wait_pid_file(pid_file) # fork is running
                 results = self.wait_notify_socket(notify, timeout, mainpid)
@@ -1388,8 +1395,9 @@ class Systemctl:
             for cmd in conf.getlist("Service", "ExecStop", []):
                 check, cmd = checkstatus(cmd)
                 logg.info(" {env} %s", env)
-                logg.info("shot stop %s", sudo+cmd)
-                run = subprocess_wait(sudo+cmd, env)
+                newcmd = self.non_shell_cmd(cmd, env)
+                logg.info("shot stop %s", shell_cmd(sudo+newcmd))
+                run = subprocess_wait(sudo+newcmd, env)
         elif runs in [ "forking" ]:
             pid_file = self.pid_file_from(conf)
             for cmd in conf.getlist("Service", "ExecStop", []):
@@ -1399,8 +1407,9 @@ class Systemctl:
                     env["MAINPID"] = str(pid)
                 check, cmd = checkstatus(cmd)
                 logg.info(" {env} %s", env)
-                logg.info("fork stop %s", sudo+cmd)
-                run = subprocess_wait(sudo+cmd, env)
+                newcmd = self.non_shell_cmd(cmd, env)
+                logg.info("fork stop %s", shell_cmd(sudo+newcmd))
+                run = subprocess_wait(sudo+newcmd, env)
                 if active:
                     if check and run.returncode: raise Exception("ExecStop")
                 if pid_file:
@@ -1414,7 +1423,7 @@ class Systemctl:
             for cmd in conf.getlist("Service", "ExecStopPost", []):
                 check, cmd = checkstatus(cmd)
                 logg.info("ExecStopPost:%s:%s", check, cmd)
-                subprocess_wait(cmd, env, check=check)
+                subprocess_shell(cmd, env, check=check)
         return True
     def reload_modules(self, *modules):
         """ [UNIT]... -- reload these units """
@@ -1451,21 +1460,22 @@ class Systemctl:
             for cmd in conf.getlist("Service", "ExecReloadPre", []):
                 check, cmd = checkstatus(cmd)
                 logg.info("ExecReloadPre:%s:%s", check, cmd)
-                subprocess_wait(cmd, env, check=check)
+                subprocess_shell(cmd, env, check=check)
         if runs in [ "sysv" ]:
             if True:
                 exe = conf.filename()
                 cmd = "'%s' reload" % exe
                 env["SYSTEMCTL_SKIP_REDIRECT"] = "yes"
                 logg.info("sysv reload %s", cmd)
-                run = subprocess_wait(cmd, env)
+                run = subprocess_shell(cmd, env)
         elif runs in [ "simple" ]:
             for cmd in conf.getlist("Service", "ExecReload", []):
                 pid_file = self.get_pid_file_from(conf)
                 pid = self.read_pid_file(pid_file, "")
                 env["MAINPID"] = str(pid)
-                logg.info("simp reload %s", sudo+cmd)
-                run = subprocess_wait(sudo+cmd, env)
+                newcmd = self.non_shell_cmd(cmd, env)
+                logg.info("shot reload %s", shell_cmd(sudo+newcmd))
+                run = subprocess_wait(sudo+newcmd, env)
                 # self.write_pid_file(pid_file, run.pid)
         elif runs in [ "notify" ]:
             pid_file = self.get_pid_file_from(conf)
@@ -1479,8 +1489,9 @@ class Systemctl:
             for cmd in conf.getlist("Service", "ExecReload", []):
                 pid = self.read_pid_file(pid_file, "")
                 env["MAINPID"] = str(pid)
-                logg.info("ntfy reload %s", sudo+cmd)
-                run = subprocess_wait(sudo+cmd, env)
+                newcmd = self.non_shell_cmd(cmd, env)
+                logg.info("ntfy reload %s", shell_cmd(sudo+newcmd))
+                run = subprocess_wait(sudo+newcmd, env)
                 # self.write_pid_file(pid_file, run.pid)
                 mainpid = self.wait_pid_file(pid_file) # fork is running
                 results = self.wait_notify_socket(notify, timeout, mainpid)
@@ -1492,8 +1503,9 @@ class Systemctl:
         elif runs in [ "oneshot" ]:
             for cmd in conf.getlist("Service", "ExecReload", []):
                 check, cmd = checkstatus(cmd)
-                logg.info("shot reload %s", sudo+cmd)
-                run = subprocess_wait(sudo+cmd, env)
+                newcmd = self.non_shell_cmd(cmd, env)
+                logg.info("shot reload %s", shell_cmd(sudo+newcmd))
+                run = subprocess_wait(sudo+newcmd, env)
         elif runs in [ "forking" ]:
             pid_file = self.pid_file_from(conf)
             for cmd in conf.getlist("Service", "ExecReload", []):
@@ -1501,8 +1513,9 @@ class Systemctl:
                     pid = self.read_pid_file(pid_file, "")
                     env["MAINPID"] = str(pid)
                 check, cmd = checkstatus(cmd)
-                logg.info("fork reload %s", sudo+cmd)
-                run = subprocess_wait(sudo+cmd, env)
+                newcmd = self.non_shell_cmd(cmd, env)
+                logg.info("fork reload %s", shell_cmd(sudo+newcmd))
+                run = subprocess_wait(sudo+newcmd, env)
                 if check and run.returncode: raise Exception("ExecReload")
                 if pid_file:
                     pid = self.wait_pid_file(pid_file)
@@ -1515,7 +1528,7 @@ class Systemctl:
             for cmd in conf.getlist("Service", "ExecReloadPost", []):
                 check, cmd = checkstatus(cmd)
                 logg.info("ExecReloadPost:%s:%s", check, cmd)
-                subprocess_wait(cmd, env, check=check)
+                subprocess_shell(cmd, env, check=check)
         return True
     def restart_modules(self, *modules):
         """ [UNIT]... -- restart these units """
@@ -1552,14 +1565,14 @@ class Systemctl:
             for cmd in conf.getlist("Service", "ExecRestartPre", []):
                 check, cmd = checkstatus(cmd)
                 logg.info("ExecRestartPre:%s:%s", check, cmd)
-                subprocess_wait(cmd, env, check=check)
+                subprocess_shell(cmd, env, check=check)
         if runs in [ "sysv" ]:
             if True:
                 exe = conf.filename()
                 cmd = "'%s' restart" % exe
                 env["SYSTEMCTL_SKIP_REDIRECT"] = "yes"
                 logg.info("sysv restart %s", cmd)
-                run = subprocess_wait(cmd, env)
+                run = subprocess_shell(cmd, env)
         elif not conf.getlist("Service", "ExecRestart", []):
             logg.info("(restart) => stop/start")
             self.stop_unit_from(conf)
@@ -1569,8 +1582,9 @@ class Systemctl:
             for cmd in conf.getlist("Service", "ExecRestart", []):
                 pid = self.read_pid_file(pid_file, "")
                 env["MAINPID"] = str(pid)
-                logg.info("simp restart %s", sudo+cmd)
-                run = subprocess_wait(sudo+cmd, env)
+                newcmd = self.non_shell_cmd(cmd, env)
+                logg.info("simp restart %s", shell_cmd(sudo+newcmd))
+                run = subprocess_wait(sudo+newcmd, env)
                 # self.write_pid_file(pid_file, run.pid)
         elif runs in [ "notify" ]:
             pid_file = self.get_pid_file_from(conf)
@@ -1584,8 +1598,9 @@ class Systemctl:
             for cmd in conf.getlist("Service", "ExecRestart", []):
                 pid = self.read_pid_file(pid_file, "")
                 env["MAINPID"] = str(pid)
-                logg.info("ntfy restart %s", sudo+cmd)
-                run = subprocess_wait(sudo+cmd, env)
+                newcmd = self.non_shell_cmd(cmd, env)
+                logg.info("ntfy restart %s", shell_cmd(sudo+newcmd))
+                run = subprocess_wait(sudo+newcmd, env)
                 # self.write_pid_file(pid_file, run.pid)
                 mainpid = self.wait_pid_file(pid_file) # fork is running
                 results = self.wait_notify_socket(notify, timeout, mainpid)
@@ -1597,14 +1612,16 @@ class Systemctl:
         elif runs in [ "oneshot" ]:
             for cmd in conf.getlist("Service", "ExecRestart", []):
                 check, cmd = checkstatus(cmd)
-                logg.info("shot restart %s", sudo+cmd)
-                run = subprocess_wait(sudo+cmd, env)
+                newcmd = self.non_shell_cmd(cmd, env)
+                logg.info("shot restart %s", shell_cmd(sudo+newcmd))
+                run = subprocess_wait(sudo+newcmd, env)
         elif runs in [ "forking" ]:
             pid_file = self.pid_file_from(conf)
             for cmd in conf.getlist("Service", "ExecRestart", []):
                 check, cmd = checkstatus(cmd)
-                logg.info("fork restart %s", sudo+cmd)
-                run = subprocess_wait(sudo+cmd, env)
+                newcmd = self.non_shell_cmd(cmd, env)
+                logg.info("fork restart %s", shell_cmd(sudo+newcmd))
+                run = subprocess_wait(sudo+newcmd, env)
                 if check and run.returncode: raise Exception("ExecRestart")
                 if pid_file:
                     pid = self.wait_pid_file(pid_file)
@@ -1617,7 +1634,7 @@ class Systemctl:
             for cmd in conf.getlist("Service", "ExecRestartPost", []):
                 check, cmd = checkstatus(cmd)
                 logg.info("ExecRestartPost:%s:%s", check, cmd)
-                subprocess_wait(cmd, env, check=check)
+                subprocess_shell(cmd, env, check=check)
         return True
     def get_pid_file(self, unit):
         conf = self.load_unit_conf(unit)
