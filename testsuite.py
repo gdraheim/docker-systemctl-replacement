@@ -163,7 +163,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             sh____(start_repo.format(**locals()))
         running = output("docker ps")
         if greps(running, rep+ver):
-            ip_a = ip_container(rep+ver)
+            ip_a = self.ip_container(rep+ver)
             logg.info("%s%s => %s", rep, ver, ip_a)
             result = "mirrorlist.centos.org:%s" % ip_a
             logg.info("--add-host %s", result)
@@ -188,7 +188,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             sh____(start_repo.format(**locals()))
         running = output("docker ps")
         if greps(running, rep+ver):
-            ip_a = ip_container(rep+":"+ver)
+            ip_a = self.ip_container(rep+":"+ver)
             logg.info("%s%s => %s", rep, ver, ip_a)
             result = "download.opensuse.org:%s" % ip_a
             logg.info("--add-host %s", result)
@@ -2246,10 +2246,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         testname=self.testname()
         testdir = self.testdir(testname)
-        port=self.testport()
+        testport=self.testport()
         images = IMAGES
         image = self.local_image("centos:centos7")
         systemctl_py = _systemctl_py
+        logg.info("%s:%s %s", testname, testport, image)
         #
         stop_container = "docker rm --force {testname}"
         sx____(stop_container.format(**locals()))
