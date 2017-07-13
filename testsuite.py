@@ -1690,7 +1690,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(stop_new_container.format(**locals()))
         sh____(drop_new_container.format(**locals()))
         drop_image_container = "docker rmi {images}:{name}"
-        sx____(drop_image_container.format(**locals()))
+        ## sx____(drop_image_container.format(**locals())) # TODO: still needed for test_6011
     def test_6002_centos_postgres_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
             THEN we can create an image with an PostgreSql DB service 
