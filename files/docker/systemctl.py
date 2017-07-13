@@ -398,7 +398,7 @@ class PresetFile:
 def subprocess_shell(cmd, env=None, check = False, shell=True):
     return subprocess_wait(cmd, env, check=check, shell=shell)
 def subprocess_wait(cmd, env=None, check = False, shell=False):
-    logg.error("cmd = %s", cmd)
+    logg.warning("running = %s", cmd)
     run = subprocess.Popen(cmd, shell=shell, env=env)
     run.wait()
     if check and run.returncode: 
@@ -861,6 +861,10 @@ class Systemctl:
             folder = os_path(self._root, folder)
         name = "%s.pid" % unit
         return os.path.join(folder, name)
+    def sleep(self, seconds = None): 
+        """ just sleep """
+        seconds = seconds or MinimumSleep
+        time.sleep(seconds)
     def read_env_file(self, env_file): # -> generate[ (name,value) ]
         """ EnvironmentFile=<name> is being scanned """
         if env_file.startswith("-"):
@@ -907,10 +911,6 @@ class Systemctl:
                     continue
         except Exception, e:
             logg.info("while reading %s: %s", env_part, e)
-    def sleep(self, seconds = None): 
-        """ just sleep """
-        seconds = seconds or MinimumSleep
-        time.sleep(seconds)
     def environment_of_unit(self, unit):
         """ [UNIT]. -- show environment parts """
         conf = self.load_unit_conf(unit)
@@ -932,12 +932,12 @@ class Systemctl:
             if m.group(1) in env:
                 return env[m.group(1)]
             logg.debug("can not expand $%s", m.group(1))
-            return ""
+            return "" # empty string
         def get_env2(m):
             if m.group(1) in env:
                 return env[m.group(1)]
             logg.debug("can not expand ${%s}", m.group(1))
-            return "${"+m.group(1)+"}"
+            return "" # empty string
         #
         maxdepth = 20
         expanded = re.sub("[$](\w+)", lambda m: get_env1(m), cmd.replace("\\\n",""))
@@ -948,23 +948,55 @@ class Systemctl:
             expanded = new_text
         logg.error("shell variable expansion exceeded maxdepth %s", maxdepth)
         return expanded
-    def non_shell_cmd(self, cmd, env):
+    def non_shell_cmd(self, cmd, env, conf = None):
+        cmd1 = cmd.replace("\\\n","")
+        # according to documentation the %n / %% need to be expanded where in
+        # most cases they are shell-escaped values. So we do it before shlex.
+        def sh_escape(value):
+            return "'" + value.replace("'","\\'") + "'"
+        def get_confs(conf):
+            confs={ "%": "%" }
+            if not conf:
+                return confs
+            confs["N"] = conf.name()
+            confs["n"] = sh_escape(conf.name())
+            confs["f"] = conf.filename()
+            confs["t"] = os_path(self._root, "/var")
+            unit_name = conf.name()
+            suffix = conf.rfind(".")
+            if suffix > 0: unit_name = unit_name[:suffix]
+            prefix, instance = unit_name, ""
+            if "@" in unit_name:
+                prefix, instance = unit_name.split("@", 1)
+            confs["P"] = prefix
+            confs["p"] = sh_escape(prefix)
+            confs["I"] = instance
+            confs["i"] = sh_escape(instance)
+            return confs
+        def get_conf1(m):
+            confs = get_confs(conf)
+            if m.group(1) in confs:
+                return confs[m.group(1)]
+            logg.warning("can not expand %%%s", m.group(1))
+            return "''" # empty escaped string
+        cmd2 = re.sub("[%](.)", lambda m: get_conf1(m), cmd1)
         # according to documentation, when bar="one two" then the expansion
-        # of '$bar' is ["one","two"] and '${bar}' becomes ["one two"]
+        # of '$bar' is ["one","two"] and '${bar}' becomes ["one two"]. We
+        # tackle that by expand $bar before shlex, and the rest thereafter.
         def get_env1(m):
             if m.group(1) in env:
                 return env[m.group(1)]
             logg.debug("can not expand $%s", m.group(1))
-            return ""
+            return "" # empty string
         def get_env2(m):
             if m.group(1) in env:
                 return env[m.group(1)]
             logg.debug("can not expand ${%s}", m.group(1))
-            return "${"+m.group(1)+"}"
-        expanded = re.sub("[$](\w+)", lambda m: get_env1(m), cmd.replace("\\\n",""))
+            return "" # empty string
+        cmd3 = re.sub("[$](\w+)", lambda m: get_env1(m), cmd2)
         import shlex
         newcmd = []
-        for part in shlex.split(expanded):
+        for part in shlex.split(cmd3):
             newcmd += [ re.sub("[$][{](\w+)[}]", lambda m: get_env2(m), part) ]
         return newcmd
     def sudo_from(self, conf):
