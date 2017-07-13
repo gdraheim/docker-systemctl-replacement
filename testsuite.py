@@ -1486,6 +1486,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         sx____(stop_container.format(**locals()))
         sx____(stop_container2.format(**locals()))
+        drop_image_container = "docker rmi {images}:{testname}"
+        sx____(drop_image_container.format(**locals()))
     def test_5033_systemctl_py_run_default_services_from_simple_saved_container(self):
         """ check that we can enable services in a docker container to be run as default-services
             after it has been restarted from a commit-saved container image"""
@@ -1567,6 +1569,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         sx____(stop_container.format(**locals()))
         sx____(stop_container2.format(**locals()))
+        drop_image_container = "docker rmi {images}:{testname}"
+        sx____(drop_image_container.format(**locals()))
     def test_5034_systemctl_py_run_default_services_from_single_service_saved_container(self):
         """ check that we can enable services in a docker container to be run as default-services
             after it has been restarted from a commit-saved container image"""
@@ -1648,6 +1652,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         sx____(stop_container.format(**locals()))
         sx____(stop_container2.format(**locals()))
+        drop_image_container = "docker rmi {images}:{testname}"
+        sx____(drop_image_container.format(**locals()))
 
     def test_6001_centos_httpd_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
@@ -1683,6 +1689,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         drop_new_container = "docker rm --force {name}"
         sh____(stop_new_container.format(**locals()))
         sh____(drop_new_container.format(**locals()))
+        drop_image_container = "docker rmi {images}:{name}"
+        sx____(drop_image_container.format(**locals()))
     def test_6002_centos_postgres_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
             THEN we can create an image with an PostgreSql DB service 
@@ -1719,6 +1727,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         drop_new_container = "docker rm --force {name}"
         sh____(stop_new_container.format(**locals()))
         sh____(drop_new_container.format(**locals()))
+        drop_image_container = "docker rmi {images}:{name}"
+        sx____(drop_image_container.format(**locals()))
     def test_6003_centos_lamp_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
             THEN we can create an image with an full LAMP stack 
@@ -1753,6 +1763,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         drop_new_container = "docker rm --force {name}"
         sh____(stop_new_container.format(**locals()))
         sh____(drop_new_container.format(**locals()))
+        drop_image_container = "docker rmi {images}:{name}"
+        sx____(drop_image_container.format(**locals()))
     def test_6004_opensuse_lamp_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled OpenSUSE, 
             THEN we can create an image with an full LAMP stack 
@@ -1787,6 +1799,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         drop_new_container = "docker rm --force {name}"
         sh____(stop_new_container.format(**locals()))
         sh____(drop_new_container.format(**locals()))
+        drop_image_container = "docker rmi {images}:{name}"
+        sx____(drop_image_container.format(**locals()))
     def test_6005_ubuntu_apache2_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled Ubuntu, 
             THEN we can create an image with an Apache HTTP service 
@@ -1821,6 +1835,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         drop_new_container = "docker rm --force {name}"
         sh____(stop_new_container.format(**locals()))
         sh____(drop_new_container.format(**locals()))
+        drop_image_container = "docker rmi {images}:{name}"
+        sx____(drop_image_container.format(**locals()))
     def test_6006_centos_elasticsearch_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
             THEN we can setup a specific ElasticSearch version 
@@ -1869,6 +1885,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         drop_new_container = "docker rm --force {name}"
         sh____(stop_new_container.format(**locals()))
         sh____(drop_new_container.format(**locals()))
+        drop_image_container = "docker rmi {images}:{name}"
+        sx____(drop_image_container.format(**locals()))
         # CHECK
         self.assertEqual(len(greps(open(tmp+"/systemctl.log"), " ERROR ")), 1)
         self.assertTrue(greps(open(tmp+"/systemctl.log"), "ERROR chdir .* '/home/elasticsearch': .* No such file or directory"))
@@ -1921,7 +1939,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(open(tmp+"/systemctl.debug.log"), "use NOTIFY_SOCKET="))
         self.assertTrue(greps(open(tmp+"/systemctl.debug.log"), "read_notify.*READY=1.*MAINPID="))
         self.assertTrue(greps(open(tmp+"/systemctl.debug.log"), "ntfy start done"))
-        self.assertTrue(greps(open(tmp+"/systemctl.debug.log"), "stop /bin/kill"))
+        self.assertTrue(greps(open(tmp+"/systemctl.debug.log"), "stop '/bin/kill' '-WINCH'"))
         self.assertTrue(greps(open(tmp+"/systemctl.debug.log"), "wait [$]NOTIFY_SOCKET"))
         self.assertTrue(greps(open(tmp+"/systemctl.debug.log"), "dead PID"))
     # @unittest.expectedFailure
@@ -2030,6 +2048,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_9000_ansible_test(self):
         """ FIXME: "-p testing_systemctl" makes containers like "testingsystemctl_<service>_1" ?! """
         sh____("ansible-playbook --version | grep ansible-playbook.2") # atleast version2
+        new_image1 = "localhost:5000/testingsystemctl:serversystem"
+        new_image2 = "localhost:5000/testingsystemctl:virtualdesktop"
+        rmi_commit1 = 'docker rmi "{new_image1}"'
+        rmi_commit2 = 'docker rmi "{new_image2}"'
+        sx____(rmi_commit1.format(**locals()))
+        sx____(rmi_commit2.format(**locals()))
         if False:
             self.test_9001_ansible_download_software()
             self.test_9002_ansible_restart_docker_build_compose()
@@ -2126,6 +2150,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____("{drop_old_build_step}".format(**locals()))
         sx____("{drop_old_containers}".format(**locals()))
         sh____("{make_new_containers} || {make_new_containers} || {make_new_containers}".format(**locals()))
+        time.sleep(2) # sometimes the container dies early
         # CHECK
         self.assertFalse(greps(output("docker ps"), " testingsystemctl1_virtualdesktop_1$"))
         self.assertFalse(greps(output("docker ps"), " testingsystemctl1_serversystem_1$"))
