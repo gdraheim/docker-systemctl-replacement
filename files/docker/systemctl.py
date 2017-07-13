@@ -1158,7 +1158,7 @@ class Systemctl:
                 time.sleep(1) # give it another second to come up
                 pid = self.read_pid_file(pid_file, "")
                 if pid:
-                   env["MAINPID"] = pid
+                   env["MAINPID"] = str(pid)
                 else:
                    raise Exception("could not start service")
         elif runs in [ "notify" ]:
@@ -1219,7 +1219,7 @@ class Systemctl:
                 logg.info("ntfy start done %s", pid_file)
                 pid = self.read_pid_file(pid_file, "")
                 if pid:
-                    env["MAINPID"] = pid
+                    env["MAINPID"] = str(pid)
                 else:
                     raise Exception("could not start service")
         elif runs in [ "oneshot" ]:
@@ -1242,7 +1242,7 @@ class Systemctl:
                     pid = self.wait_pid_file(pid_file)
                     logg.info("fork start done PID %s [%s]", pid, pid_file)
                     if pid:
-                        env["MAINPID"] = pid
+                        env["MAINPID"] = str(pid)
                 else:
                     logg.warning("No PIDFile for forking %s", conf.filename())
             if not pid_file:
