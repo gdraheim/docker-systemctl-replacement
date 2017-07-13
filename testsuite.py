@@ -99,11 +99,6 @@ def os_path(root, path):
 
 
 class DockerSystemctlReplacementTest(unittest.TestCase):
-    def testname(self, suffix = None):
-        name = self.caller_testname()
-        if suffix:
-            return name + "_" + suffix
-        return name
     def caller_testname(self):
         name = get_caller_caller_name()
         x1 = name.find("_")
@@ -111,6 +106,20 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         x2 = name.find("_", x1+1)
         if x2 < 0: return name
         return name[:x2]
+    def testname(self, suffix = None):
+        name = self.caller_testname()
+        if suffix:
+            return name + "_" + suffix
+        return name
+    def testport(self):
+        testname = self.caller_testname()
+        m = re.match("test_([0123456789]+)", testname)
+        if m:
+            port = int(m.group(1))
+            if 5000 <= port and port <= 9999:
+                return port
+        seconds = int(str(int(time.time()))[-4:])
+        return 6000 + (seconds % 2000)
     def testdir(self, testname = None):
         testname = testname or self.caller_testname()
         newdir = "tests/tmp."+testname
@@ -132,11 +141,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def user(self):
         import getpass
         getpass.getuser()
+    def ip_container(self, name):
+        values = output("docker inspect "+name)
+        values = json.loads(values)
+        return values[0]["NetworkSettings"]["IPAddress"]    
     def with_local_centos_mirror(self, ver = None):
         """ detects a local centos mirror or starts a local
             docker container with a centos repo mirror. It
-            will return the extra_hosts setting to start
-            other docker containers"""
+            will return the setting for extrahosts"""
         rmi = "localhost:5000"
         rep = "centos-repo"
         ver = ver or "7.3"
@@ -151,19 +163,46 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             sh____(start_repo.format(**locals()))
         running = output("docker ps")
         if greps(running, rep+ver):
-            values = output("docker inspect "+rep+ver)
-            values = json.loads(values)
-            ip_a = values[0]["NetworkSettings"]["IPAddress"]
+            ip_a = ip_container(rep+ver)
             logg.info("%s%s => %s", rep, ver, ip_a)
-            result = "--add-host 'mirrorlist.centos.org:%s'" % ip_a
-            logg.info("using %s", result)
+            result = "mirrorlist.centos.org:%s" % ip_a
+            logg.info("--add-host %s", result)
+            return result
+        return ""
+    def with_local_opensuse_mirror(self, ver = None):
+        """ detects a local opensuse mirror or starts a local
+            docker container with a centos repo mirror. It
+            will return the extra_hosts setting to start
+            other docker containers"""
+        rmi = "localhost:5000"
+        rep = "opensuse-repo"
+        ver = ver or "42.2"
+        find_repo_image = "docker images {rmi}/{rep}:{ver}"
+        images = output(find_repo_image.format(**locals()))
+        running = output("docker ps")
+        if greps(images, rep) and not greps(running, rep+":"+ver):
+            stop_repo = "docker rm --force {rep}{ver}"
+            sx____(stop_repo.format(**locals()))
+            start_repo = "docker run --detach --name {rep}:{ver} {rmi}/{rep}:{ver}"
+            logg.info("!! %s", start_repo.format(**locals()))
+            sh____(start_repo.format(**locals()))
+        running = output("docker ps")
+        if greps(running, rep+ver):
+            ip_a = ip_container(rep+":"+ver)
+            logg.info("%s%s => %s", rep, ver, ip_a)
+            result = "download.opensuse.org:%s" % ip_a
+            logg.info("--add-host %s", result)
             return result
         return ""
     def local_image(self, image):
         if image == "centos:centos7":
             add_hosts = self.with_local_centos_mirror()
             if add_hosts:
-                return add_hosts + " " + image
+                return "--add-host '{add_hosts}' {image}".format(**locals())
+        if image == "opensuse:42.2":
+            add_hosts = self.with_local_opensuse_mirror()
+            if add_hosts:
+                return "--add-host '{add_hosts}' {image}".format(**locals())
         return image
     def test_1000(self):
         self.with_local_centos_mirror()
@@ -2191,9 +2230,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         drop_image_container = "docker rmi {images}:{name}"
         sx____(drop_image_container.format(**locals()))
         self.rm_testdir()
-    def test_6006_centos_elasticsearch_dockerfile(self):
-        """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
-            THEN we can setup a specific ElasticSearch version 
+    def test_6006_centos_elasticsearch(self):
+        """ WHEN we can setup a specific ElasticSearch version 
                  as being downloaded from the company.
             Without a special startup.sh script or container-cmd 
             one can just start the image and in the container
@@ -2206,47 +2244,71 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         download(base_url, filename, into_dir)
         self.assertTrue(greps(os.listdir("Software/ElasticSearch"), filename))
         #
-        testname="test_6006"
-        port=6006
-        name="centos-elasticsearch"
-        dockerfile="centos-elasticsearch.dockerfile"
+        testname=self.testname()
+        testdir = self.testdir(testname)
+        port=self.testport()
         images = IMAGES
-        # WHEN
-        build_new_image = "docker build . -f tests/{dockerfile} --tag {images}:{name}"
-        sh____(build_new_image.format(**locals()))
-        drop_old_container = "docker rm --force {name}"
-        start_as_container = "docker run -d -p {port}:9200 --name {name} {images}:{name} sleep 9999"
-        sx____(drop_old_container.format(**locals()))
-        sh____(start_as_container.format(**locals()))
-        make_info_log = "docker exec {name} touch /var/log/systemctl.log"
-        start_elasticsearch = "docker exec {name} systemctl start elasticsearch"
+        image = self.local_image("centos:centos7")
+        systemctl_py = _systemctl_py
+        #
+        stop_container = "docker rm --force {testname}"
+        sx____(stop_container.format(**locals()))
+        start_container = "docker run --detach --name={testname} {image} sleep 200"
+        sh____(start_container.format(**locals()))
+        install_systemctl = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(install_systemctl.format(**locals()))
+        install_java = "docker exec {testname} yum install -y java" # required
+        sh____(install_java.format(**locals()))
+        install_extras = "docker exec {testname} yum install -y which" # TODO: missing requirement of elasticsearch
+        sh____(install_extras.format(**locals()))
+        uploads_software = "docker cp Software/ElasticSearch {testname}:/srv/"
+        sh____(uploads_software.format(**locals()))
+        install_software = "docker exec {testname} bash -c 'yum install -y /srv/ElasticSearch/*.rpm'"
+        sh____(install_software.format(**locals()))
+        enable_software = "docker exec {testname} systemctl enable elasticsearch"
+        sh____(enable_software.format(**locals()))
+        #
+        ## commit_container = "docker commit -c 'CMD [\"/usr/bin/systemctl\",\"init\",\"-vv\"]'  {testname} {images}:{testname}"
+        ## sh____(commit_container.format(**locals()))
+        ## stop_container = "docker rm --force {testname}"
+        ## sx____(stop_container.format(**locals()))
+        ## start_container = "docker run --detach --name {testname} {images}:{testname} sleep 200"
+        ## sh____(start_container.format(**locals()))
+        ## time.sleep(3)
+        #
+        container = self.ip_container(testname)
+        logg.info("========================>>>>>>>>")
+        make_info_log = "docker exec {testname} touch /var/log/systemctl.log"
         sh____(make_info_log.format(**locals()))
-        sh____(start_elasticsearch.format(**locals()))
+        start_software = "docker exec {testname} systemctl start elasticsearch -vvv"
+        sh____(start_software.format(**locals()))
         # THEN
-        tmp = self.testdir(testname)
-        read_index_html = "sleep 5; wget -O {tmp}/{name}.txt http://127.0.0.1:{port}/?pretty"
-        grep_index_html = "grep 'You Know, for Search' {tmp}/{name}.txt"
+        testdir = self.testdir(testname)
+        read_index_html = "sleep 5; wget -O {testdir}/result.txt http://{container}:9200/?pretty"
+        grep_index_html = "grep 'You Know, for Search' {testdir}/result.txt"
         sh____(read_index_html.format(**locals()))
         sh____(grep_index_html.format(**locals()))
         # STOP
-        status_elasticsearch = "docker exec {name} systemctl status elasticsearch"
-        stop_elasticsearch = "docker exec {name} systemctl stop elasticsearch"
+        status_elasticsearch = "docker exec {testname} systemctl status elasticsearch"
+        stop_elasticsearch = "docker exec {testname} systemctl stop elasticsearch"
         sh____(status_elasticsearch.format(**locals()))
         sh____(stop_elasticsearch.format(**locals()))
-        fetch_systemctl_log = "docker cp {name}:/var/log/systemctl.log {tmp}/systemctl.log"
+        fetch_systemctl_log = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         sh____(fetch_systemctl_log.format(**locals()))
-        stop_new_container = "docker stop {name}"
-        drop_new_container = "docker rm --force {name}"
-        sh____(stop_new_container.format(**locals()))
-        sh____(drop_new_container.format(**locals()))
-        drop_image_container = "docker rmi {images}:{name}"
-        sx____(drop_image_container.format(**locals()))
+        stop_container = "docker stop {testname}"
+        drop_container = "docker rm --force {testname}"
+        sh____(stop_container.format(**locals()))
+        sh____(drop_container.format(**locals()))
         # CHECK
-        self.assertEqual(len(greps(open(tmp+"/systemctl.log"), " ERROR ")), 1)
-        self.assertTrue(greps(open(tmp+"/systemctl.log"), "ERROR chdir .* '/home/elasticsearch': .* No such file or directory"))
-        self.assertTrue(greps(open(tmp+"/systemctl.log"), "simp start done PID"))
-        self.assertTrue(greps(open(tmp+"/systemctl.log"), "stop kill PID .*elasticsearch.service"))
-        self.assertTrue(greps(open(tmp+"/systemctl.log"), "stopped PID .* EXIT 143"))
+        systemctl_log = open(testdir+"/systemctl.log").read()
+        self.assertEqual(len(greps(systemctl_log, " ERROR ")), 1)
+        self.assertTrue(greps(systemctl_log, "ERROR chdir .* '/home/elasticsearch': .* No such file or directory"))
+        self.assertTrue(greps(systemctl_log, "simp start done PID"))
+        self.assertTrue(greps(systemctl_log, "stop kill PID .*elasticsearch.service"))
+        self.assertTrue(greps(systemctl_log, "stopped PID .* EXIT 143"))
+        #
+        ## drop_image_container = "docker rmi {images}:{name}"
+        ## sx____(drop_image_container.format(**locals()))
         self.rm_testdir()
     def test_6011_centos_httpd_socket_notify(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
