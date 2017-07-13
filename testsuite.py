@@ -73,6 +73,14 @@ def text_file(filename, content):
 def shell_file(filename, content):
     text_file(filename, content)
     os.chmod(filename, 0770)
+def copy_file(filename, target):
+    targetdir = os.path.dirname(target)
+    if not os.path.isdir(targetdir):
+        os.makedirs(targetdir)
+    shutil.copyfile(filename, target)
+def copy_tool(filename, target):
+    copy_file(filename, target)
+    os.chmod(target, 0750)
 
 def get_caller_name():
     frame = inspect.currentframe().f_back.f_back
@@ -89,9 +97,13 @@ def os_path(root, path):
        path = path[1:]
     return os.path.join(root, path)
 
+
 class DockerSystemctlReplacementTest(unittest.TestCase):
-    def testname(self):
-        return self.caller_testname()
+    def testname(self, suffix = None):
+        name = self.caller_testname()
+        if suffix:
+            return name + "_" + suffix
+        return name
     def caller_testname(self):
         name = get_caller_caller_name()
         x1 = name.find("_")
@@ -117,6 +129,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not os.path.isdir(root_folder):
             os.makedirs(root_folder)
         return os.path.abspath(root_folder)
+    def user(self):
+        import getpass
+        getpass.getuser()
     def with_local_centos_mirror(self, ver = None):
         """ detects a local centos mirror or starts a local
             docker container with a centos repo mirror. It
@@ -915,6 +930,54 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(lines(out)), 4)
         self.assertEqual(end, 0)
         #
+        self.rm_testdir()
+    def test_3030_systemctl_py_start_simple(self):
+        """ check that we can start simple services in a container"""
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = _systemctl_py + " --root=" + root
+        testsleep = self.testname("sleep")
+        bindir = os_path(root, "/usr/bin")
+        text_file(os_path(testdir, "zzz.service"),"""
+            [Unit]
+            Description=Testing Z
+            [Service]
+            Type=simple
+            ExecStart={bindir}/{testsleep} 50
+            ExceStop=killall {testsleep}
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
+        #
+        enable_service = "{systemctl} enable zzz.service"
+        sh____(enable_service.format(**locals()))
+        version_systemctl = "{systemctl} --version"
+        sh____(version_systemctl.format(**locals()))
+        list_units_systemctl = "{systemctl} default-services -vv"
+        sh____(list_units_systemctl.format(**locals()))
+        out = output(list_units_systemctl.format(**locals()))
+        logg.info("\n>\n%s", out)
+        self.assertTrue(greps(out, "zzz.service"))
+        self.assertEqual(len(lines(out)), 1)
+        #
+        start_service = "{systemctl} start zzz.service -vv"
+        sh____(start_service.format(**locals()))
+        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
+        top = output(top_recent.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        #
+        stop_service = "{systemctl} stop zzz.service -vv"
+        sh____(stop_service.format(**locals()))
+        top = output(top_recent.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, testsleep))
+        kill_testsleep = "killall {testsleep}"
+        sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
     def test_5001_systemctl_py_inside_container(self):
         """ check that we can run systemctl.py inside a docker container """
