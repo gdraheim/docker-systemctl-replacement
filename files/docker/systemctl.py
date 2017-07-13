@@ -911,6 +911,62 @@ class Systemctl:
         """ just sleep """
         seconds = seconds or MinimumSleep
         time.sleep(seconds)
+    def environment_of_unit(self, unit):
+        """ [UNIT]. -- show environment parts """
+        conf = self.load_unit_conf(unit)
+        if conf is None:
+            logg.error("no such unit: '%s'", unit)
+            return False
+        return self.get_env(conf)
+    def get_env(self, conf):
+        env = os.environ.copy()
+        for env_part in conf.getlist("Service", "Environment", []):
+            for name, value in self.read_env_part(env_part):
+                env[name] = self.expand_env(value, env)
+        for env_file in conf.getlist("Service", "EnvironmentFile", []):
+            for name, value in self.read_env_file(env_file):
+                env[name] = self.expand_env(value, env)
+        return env
+    def expand_env(self, cmd, env):
+        def get_env1(m):
+            if m.group(1) in env:
+                return env[m.group(1)]
+            logg.debug("can not expand $%s", m.group(1))
+            return ""
+        def get_env2(m):
+            if m.group(1) in env:
+                return env[m.group(1)]
+            logg.debug("can not expand ${%s}", m.group(1))
+            return "${"+m.group(1)+"}"
+        #
+        maxdepth = 20
+        expanded = re.sub("[$](\w+)", lambda m: get_env1(m), cmd.replace("\\\n",""))
+        for depth in xrange(maxdepth):
+            new_text = re.sub("[$][{](\w+)[}]", lambda m: get_env2(m), expanded)
+            if new_text == expanded:
+                return expanded
+            expanded = new_text
+        logg.error("shell variable expansion exceeded maxdepth %s", maxdepth)
+        return expanded
+    def non_shell_cmd(self, cmd, env):
+        # according to documentation, when bar="one two" then the expansion
+        # of '$bar' is ["one","two"] and '${bar}' becomes ["one two"]
+        def get_env1(m):
+            if m.group(1) in env:
+                return env[m.group(1)]
+            logg.debug("can not expand $%s", m.group(1))
+            return ""
+        def get_env2(m):
+            if m.group(1) in env:
+                return env[m.group(1)]
+            logg.debug("can not expand ${%s}", m.group(1))
+            return "${"+m.group(1)+"}"
+        expanded = re.sub("[$](\w+)", lambda m: get_env1(m), cmd.replace("\\\n",""))
+        import shlex
+        newcmd = []
+        for part in shlex.split(expanded):
+            newcmd += [ re.sub("[$][{](\w+)[}]", lambda m: get_env2(m), part) ]
+        return newcmd
     def sudo_from(self, conf):
         """ calls runuser with a (non-priviledged) user """
         runuser = conf.get("Service", "User", "")
@@ -970,25 +1026,6 @@ class Systemctl:
                logg.error("chdir tempdir '%s': %s", tempdir, e)
                if check: raise
         return None
-    def non_shell_cmd(self, cmd, env):
-        # according to documentation, when bar="one two" then the expansion
-        # of '$bar' is ["one","two"] and '${bar}' becomes ["one two"]
-        def get_env1(m):
-            if m.group(1) in env:
-                return env[m.group(1)]
-            logg.debug("can not expand $%s", m.group(1))
-            return ""
-        def get_env2(m):
-            if m.group(1) in env:
-                return env[m.group(1)]
-            logg.debug("can not expand ${%s}", m.group(1))
-            return "${"+m.group(1)+"}"
-        expanded = re.sub("[$](\w+)", lambda m: get_env1(m), cmd.replace("\\\n",""))
-        import shlex
-        newcmd = []
-        for part in shlex.split(expanded):
-            newcmd += [ re.sub("[$][{](\w+)[}]", lambda m: get_env2(m), part) ]
-        return newcmd
     def notify_socket_from(self, conf, socketfile = None):
         """ creates a notify-socket for the (non-privileged) user """
         NotifySocket = collections.namedtuple("NotifySocket", ["socket", "socketfile" ])
@@ -1293,22 +1330,6 @@ class Systemctl:
                 break
             self.sleep(1)
         return not self.pid_exists(pid)
-    def environment_of_unit(self, unit):
-        """ [UNIT]. -- show environment parts """
-        conf = self.load_unit_conf(unit)
-        if conf is None:
-            logg.error("no such unit: '%s'", unit)
-            return False
-        return self.get_env(conf)
-    def get_env(self, conf):
-        env = os.environ.copy()
-        for env_part in conf.getlist("Service", "Environment", []):
-            for name, value in self.read_env_part(env_part):
-                env[name] = value
-        for env_file in conf.getlist("Service", "EnvironmentFile", []):
-            for name, value in self.read_env_file(env_file):
-                env[name] = value
-        return env
     def stop_modules(self, *modules):
         """ [UNIT]... -- stop these units """
         found_all = True
