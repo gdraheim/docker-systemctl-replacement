@@ -1452,7 +1452,7 @@ class Systemctl:
         elif runs in [ "oneshot" ]:
             for cmd in conf.getlist("Service", "ExecStop", []):
                 check, cmd = checkstatus(cmd)
-                logg.info(" {env} %s", env)
+                logg.debug("{env} %s", env)
                 newcmd = self.exec_cmd(cmd, env, conf)
                 logg.info("shot stop %s", shell_cmd(sudo+newcmd))
                 run = subprocess_wait(sudo+newcmd, env)
@@ -1464,7 +1464,7 @@ class Systemctl:
                     pid = self.read_pid_file(pid_file, "")
                     env["MAINPID"] = str(pid)
                 check, cmd = checkstatus(cmd)
-                logg.info(" {env} %s", env)
+                logg.debug("{env} %s", env)
                 newcmd = self.exec_cmd(cmd, env, conf)
                 logg.info("fork stop %s", shell_cmd(sudo+newcmd))
                 run = subprocess_wait(sudo+newcmd, env)
