@@ -946,7 +946,54 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Service]
             Type=simple
             ExecStart={bindir}/{testsleep} 50
-            ExceStop=killall {testsleep}
+            ExecStop=killall {testsleep}
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
+        #
+        enable_service = "{systemctl} enable zzz.service"
+        sh____(enable_service.format(**locals()))
+        version_systemctl = "{systemctl} --version"
+        sh____(version_systemctl.format(**locals()))
+        list_units_systemctl = "{systemctl} default-services -vv"
+        sh____(list_units_systemctl.format(**locals()))
+        out = output(list_units_systemctl.format(**locals()))
+        logg.info("\n>\n%s", out)
+        self.assertTrue(greps(out, "zzz.service"))
+        self.assertEqual(len(lines(out)), 1)
+        #
+        start_service = "{systemctl} start zzz.service -vv"
+        sh____(start_service.format(**locals()))
+        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
+        top = output(top_recent.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        #
+        stop_service = "{systemctl} stop zzz.service -vv"
+        sh____(stop_service.format(**locals()))
+        top = output(top_recent.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, testsleep))
+        kill_testsleep = "killall {testsleep}"
+        sx____(kill_testsleep.format(**locals()))
+        self.rm_testdir()
+    def test_3031_systemctl_py_start_extra_simple(self):
+        """ check that we can start simple services in a container"""
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = _systemctl_py + " --root=" + root
+        testsleep = self.testname("sleep")
+        bindir = os_path(root, "/usr/bin")
+        text_file(os_path(testdir, "zzz.service"),"""
+            [Unit]
+            Description=Testing Z
+            [Service]
+            Type=simple
+            ExecStart={bindir}/{testsleep} 50
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
@@ -1123,7 +1170,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Service]
             Type=simple
             ExecStart=testsleep 50
-            ExceStop=killall testsleep
+            ExecStop=killall testsleep
             [Install]
             WantedBy=multi-user.target""")
         #
