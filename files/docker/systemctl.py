@@ -133,11 +133,13 @@ def shutil_setuid(user = None, group = None):
         logg.debug("setuid %s '%s'", uid, user)
 
 def shutil_truncate(filename):
-    """ truncate file """
-    if os.path.exists(filename):
-        f = open(filename, "w")
-        f.write("")
-        f.close()
+    """ truncates the file (or creates a new empty file)"""
+    filedir = os.path.dirname(filename)
+    if not os.path.isdir(filedir):
+        os.makedirs(filedir)
+    f = open(filename, "w")
+    f.write("")
+    f.close()
 
 # http://stackoverflow.com/questions/568271/how-to-check-if-there-exists-a-process-with-a-given-pid
 def pid_exists(pid):
@@ -1196,7 +1198,7 @@ class Systemctl:
             shutil_truncate(pid_file)
             shutil_chown(pid_file, runuser, rungroup)
             if not os.fork():
-                logg.debug("simp: process for %s", conf.filename())
+                logg.debug("simp process for %s", conf.filename())
                 os.setsid() # detach from parent
                 inp = open("/dev/zero")
                 out = self.open_journal_log(conf)
