@@ -106,6 +106,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             shutil.rmtree(newdir)
         os.makedirs(newdir)
         return newdir
+    def rm_testdir(self, testname = None):
+        testname = testname or self.caller_testname()
+        newdir = "tests/tmp."+testname
+        if os.path.isdir(newdir):
+            shutil.rmtree(newdir)
+        return newdir
     def root(self, testdir):
         root_folder = os.path.join(testdir, "root")
         if not os.path.isdir(root_folder):
@@ -164,6 +170,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         target_systemctl = os_path(root, target)
         shutil.copy(_systemctl_py, target_systemctl)
         self.assertTrue(os.path.isfile(target_systemctl))
+        self.rm_testdir()
     def test_1002_systemctl_version(self):
         cmd = "%s --version" % _systemctl_py
         out = output(cmd)
@@ -204,6 +211,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n> %s\n%s\n**%s", cmd, out, end)
         self.assertEqual(lines(out), [])
         self.assertEqual(end, 0)
+        self.rm_testdir()
     def test_1010_systemctl_force_ipv4(self):
         """ we can force --ipv4 for /etc/hosts """
         testdir = self.testdir()
@@ -229,6 +237,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(hosts, "::1.*localhost6"))
         self.assertTrue(greps(hosts, "127.0.0.1.*localhost "))
         self.assertFalse(greps(hosts, "::1.*localhost "))
+        self.rm_testdir()
     def test_1011_systemctl_force_ipv6(self):
         """ we can force --ipv6 for /etc/hosts """
         testdir = self.testdir()
@@ -254,6 +263,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(hosts, "::1.*localhost6"))
         self.assertFalse(greps(hosts, "127.0.0.1.*localhost "))
         self.assertTrue(greps(hosts, "::1.*localhost "))
+        self.rm_testdir()
     def test_2001_can_create_test_services(self):
         """ check that two unit files can be created for testing """
         testname = self.testname()
@@ -271,6 +281,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(textB, "Testing B"))
         self.assertIn("\nDescription", textA)
         self.assertIn("\nDescription", textB)
+        self.rm_testdir()
     def test_2002_list_units(self):
         """ check that two unit files can be found for 'list-units' """
         testname = self.testname()
@@ -298,6 +309,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertNotIn("loaded units listed.", out)
         self.assertNotIn("To show all installed unit files use", out)
         self.assertEqual(len(lines(out)), 2)
+        self.rm_testdir()
     def test_2003_list_unit_files(self):
         """ check that two unit service files can be found for 'list-unit-files' """
         testname = self.testname()
@@ -323,6 +335,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, r"b.service\s+static"))
         self.assertNotIn("unit files listed.", out)
         self.assertEqual(len(lines(out)), 2)
+        self.rm_testdir()
     def test_2004_list_unit_files_wanted(self):
         """ check that two unit files can be found for 'list-unit-files'
             with an enabled status """
@@ -351,6 +364,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, r"b.service\s+disabled"))
         self.assertNotIn("unit files listed.", out)
         self.assertEqual(len(lines(out)), 2)
+        self.rm_testdir()
     def test_2013_list_unit_files_common_targets(self):
         """ check that some unit target files can be found for 'list-unit-files' """
         testname = self.testname()
@@ -384,6 +398,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, r"b.service\s+static"))
         self.assertTrue(greps(out, r"multi-user.target\s+enabled"))
         self.assertEqual(len(lines(out)), num_targets + 2)
+        self.rm_testdir()
     def test_2014_list_unit_files_now(self):
         """ check that 'list-unit-files --now' presents a special debug list """
         testname = self.testname()
@@ -403,6 +418,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(out, r"multi-user.target"))
         self.assertFalse(greps(out, r"enabled"))
         self.assertEqual(len(lines(out)), 2)
+        self.rm_testdir()
     def test_2020_show_unit_is_parseable(self):
         """ check that 'show UNIT' is machine-readable """
         testname = self.testname()
@@ -443,6 +459,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             if not m:
                 # found non-machine readable property line
                 self.assertEqual("word=value", line)
+        self.rm_testdir()
     def test_2021_show_unit_can_be_restricted_to_one_property(self):
         """ check that 'show UNIT' may return just one value if asked for"""
         testname = self.testname()
@@ -476,6 +493,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(lines(out)), 1)
         #
         self.assertEqual(lines(out), [ "PIDFile=" ])
+        self.rm_testdir()
     def test_2025_show_unit_for_multiple_matches(self):
         """ check that the result of 'show UNIT' for multiple services is 
             concatenated but still machine readable. """
@@ -539,6 +557,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             if not m:
                 # found non-machine readable property line
                 self.assertEqual("word=value", line)
+        self.rm_testdir()
     def test_3002_enable_service_creates_a_symlink(self):
         """ check that a service can be enabled """
         testname = self.testname()
@@ -560,6 +579,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         textB = file(enabled_file).read()
         self.assertTrue(greps(textB, "Testing B"))
         self.assertIn("\nDescription", textB)
+        self.rm_testdir()
     def test_3003_disable_service_removes_the_symlink(self):
         """ check that a service can be enabled and disabled """
         testname = self.testname()
@@ -586,6 +606,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n> %s\n%s", cmd, out)
         enabled_file = os_path(root, "/etc/systemd/system/multi-user.target.wants/b.service")
         self.assertFalse(os.path.exists(enabled_file))
+        #
+        self.rm_testdir()
     def test_3004_list_unit_files_when_enabled(self):
         """ check that two unit files can be found for 'list-unit-files'
             with an enabled status """
@@ -632,6 +654,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, r"a.service\s+static"))
         self.assertTrue(greps(out, r"b.service\s+disabled"))
         self.assertEqual(len(lines(out)), 2)
+        #
+        self.rm_testdir()
     def test_3005_is_enabled_result_when_enabled(self):
         """ check that 'is-enabled' reports correctly for enabled/disabled """
         testname = self.testname()
@@ -682,6 +706,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, r"^disabled"))
         self.assertEqual(len(lines(out)), 1)
         self.assertEqual(end, 1)
+        #
+        self.rm_testdir()
     def test_3006_is_enabled_is_true_when_any_is_enabled(self):
         """ check that 'is-enabled' reports correctly for enabled/disabled """
         testname = self.testname()
@@ -762,6 +788,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, r"^disabled"))
         self.assertEqual(len(lines(out)), 2)
         self.assertEqual(end, 0)
+        #
+        self.rm_testdir()
     def test_3020_default_services(self):
         """ check the 'default-services' to know the enabled services """
         testname = self.testname()
@@ -812,6 +840,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(out, "a.service"))
         self.assertTrue(greps(out, "b.service"))
         self.assertTrue(greps(out, "c.service"))
+        #
+        self.rm_testdir()
     def test_3021_default_services(self):
         """ check that 'default-services' skips some known services """
         testname = self.testname()
@@ -885,6 +915,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(lines(out)), 4)
         self.assertEqual(end, 0)
         #
+        self.rm_testdir()
     def test_5001_systemctl_py_inside_container(self):
         """ check that we can run systemctl.py inside a docker container """
         testname = self.testname()
@@ -905,6 +936,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         sx____(stop_container.format(**locals()))
         self.assertTrue(greps(out, "systemctl.py"))
+        #
+        self.rm_testdir()
     def test_5002_systemctl_py_enable_in_container(self):
         """ check that we can enable services in a docker container """
         testname = self.testname()
@@ -950,6 +983,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "zza.service.*static"))
         self.assertTrue(greps(out, "zzb.service.*disabled"))
         self.assertTrue(greps(out, "zzc.service.*enabled"))
+        #
+        self.rm_testdir()
     def test_5003_systemctl_py_default_services_in_container(self):
         """ check that we can enable services in a docker container to have default-services"""
         testname = self.testname()
@@ -1004,6 +1039,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out3, "zzb.service"))
         self.assertTrue(greps(out3, "zzc.service"))
         # self.assertGreater(len(lines(out2)), 2)
+        #
+        self.rm_testdir()
     def test_5010_systemctl_py_start_simple(self):
         """ check that we can start simple services in a container"""
         testname = self.testname()
@@ -1065,6 +1102,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(top, "testsleep"))
         #
         sx____(stop_container.format(**locals()))
+        self.rm_testdir()
     def test_5011_systemctl_py_start_extra_simple(self):
         """ check that we can start simple services in a container"""
         testname = self.testname()
@@ -1116,6 +1154,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(top, "testsleep"))
         #
         sx____(stop_container.format(**locals()))
+        self.rm_testdir()
     def test_5012_systemctl_py_start_forking(self):
         """ check that we can start forking services in a container w/ PIDFile"""
         testname = self.testname()
@@ -1194,6 +1233,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(top, "testsleep"))
         #
         sx____(stop_container.format(**locals()))
+        self.rm_testdir()
     def test_5013_systemctl_py_start_forking_without_pid_file(self):
         """ check that we can start forking services in a container without PIDFile"""
         testname = self.testname()
@@ -1270,6 +1310,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(top, "testsleep"))
         #
         sx____(stop_container.format(**locals()))
+        self.rm_testdir()
     def test_5015_systemctl_py_start_notify_by_timeout(self):
         """ check that we can start simple services in a container w/ notify timeout"""
         testname = self.testname()
@@ -1332,6 +1373,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(top, "testsleep"))
         #
         sx____(stop_container.format(**locals()))
+        self.rm_testdir()
     def test_5031_systemctl_py_run_default_services_in_container(self):
         """ check that we can enable services in a docker container to be run as default-services"""
         testname = self.testname()
@@ -1405,6 +1447,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(top, "testsleep 50"))
         #
         sx____(stop_container.format(**locals()))
+        self.rm_testdir()
     def test_5032_systemctl_py_run_default_services_from_saved_container(self):
         """ check that we can enable services in a docker container to be run as default-services
             after it has been restarted from a commit-saved container image"""
@@ -1488,6 +1531,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(stop_container2.format(**locals()))
         drop_image_container = "docker rmi {images}:{testname}"
         sx____(drop_image_container.format(**locals()))
+        self.rm_testdir()
     def test_5033_systemctl_py_run_default_services_from_simple_saved_container(self):
         """ check that we can enable services in a docker container to be run as default-services
             after it has been restarted from a commit-saved container image"""
@@ -1571,6 +1615,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(stop_container2.format(**locals()))
         drop_image_container = "docker rmi {images}:{testname}"
         sx____(drop_image_container.format(**locals()))
+        self.rm_testdir()
     def test_5034_systemctl_py_run_default_services_from_single_service_saved_container(self):
         """ check that we can enable services in a docker container to be run as default-services
             after it has been restarted from a commit-saved container image"""
@@ -1654,7 +1699,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(stop_container2.format(**locals()))
         drop_image_container = "docker rmi {images}:{testname}"
         sx____(drop_image_container.format(**locals()))
-
+        self.rm_testdir()
     def test_6001_centos_httpd_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
             THEN we can create an image with an Apache HTTP service 
@@ -1691,6 +1736,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(drop_new_container.format(**locals()))
         drop_image_container = "docker rmi {images}:{name}"
         ## sx____(drop_image_container.format(**locals())) # TODO: still needed for test_6011
+        self.rm_testdir()
     def test_6002_centos_postgres_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
             THEN we can create an image with an PostgreSql DB service 
@@ -1729,6 +1775,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(drop_new_container.format(**locals()))
         drop_image_container = "docker rmi {images}:{name}"
         sx____(drop_image_container.format(**locals()))
+        self.rm_testdir()
     def test_6003_centos_lamp_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
             THEN we can create an image with an full LAMP stack 
@@ -1765,6 +1812,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(drop_new_container.format(**locals()))
         drop_image_container = "docker rmi {images}:{name}"
         sx____(drop_image_container.format(**locals()))
+        self.rm_testdir()
     def test_6004_opensuse_lamp_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled OpenSUSE, 
             THEN we can create an image with an full LAMP stack 
@@ -1801,6 +1849,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(drop_new_container.format(**locals()))
         drop_image_container = "docker rmi {images}:{name}"
         sx____(drop_image_container.format(**locals()))
+        self.rm_testdir()
     def test_6005_ubuntu_apache2_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled Ubuntu, 
             THEN we can create an image with an Apache HTTP service 
@@ -1837,6 +1886,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(drop_new_container.format(**locals()))
         drop_image_container = "docker rmi {images}:{name}"
         sx____(drop_image_container.format(**locals()))
+        self.rm_testdir()
     def test_6006_centos_elasticsearch_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
             THEN we can setup a specific ElasticSearch version 
@@ -1893,6 +1943,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(open(tmp+"/systemctl.log"), "simp start done PID"))
         self.assertTrue(greps(open(tmp+"/systemctl.log"), "stop kill PID .*elasticsearch.service"))
         self.assertTrue(greps(open(tmp+"/systemctl.log"), "stopped PID .* EXIT 143"))
+        self.rm_testdir()
     def test_6011_centos_httpd_socket_notify(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
             THEN we can create an image with an Apache HTTP service 
@@ -1942,6 +1993,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(open(tmp+"/systemctl.debug.log"), "stop '/bin/kill' '-WINCH'"))
         self.assertTrue(greps(open(tmp+"/systemctl.debug.log"), "wait [$]NOTIFY_SOCKET"))
         self.assertTrue(greps(open(tmp+"/systemctl.debug.log"), "dead PID"))
+        self.rm_testdir()
     # @unittest.expectedFailure
     def test_8001_issue_1_start_mariadb_centos_7_0(self):
         """ issue 1: mariadb on centos 7.0 does not start"""
@@ -2005,6 +2057,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             logg.critical("mysqld still running => this is an uptream error!")
         #
         sx____(stop_container.format(**locals()))
+        self.rm_testdir()
     def test_8002_issue_2_start_rsyslog_centos7(self):
         """ issue 2: rsyslog on centos 7 does not start"""
         # this was based on a ";Requires=xy" line in the unit file
@@ -2044,7 +2097,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(top, "/usr/sbin/rsyslog"))
         #
         sx____(stop_container.format(**locals()))
-
+        self.rm_testdir()
     def test_9000_ansible_test(self):
         """ FIXME: "-p testing_systemctl" makes containers like "testingsystemctl_<service>_1" ?! """
         sh____("ansible-playbook --version | grep ansible-playbook.2") # atleast version2
