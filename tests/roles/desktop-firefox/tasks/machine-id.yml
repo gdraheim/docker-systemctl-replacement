@@ -6,5 +6,5 @@
        echo CREATED
      fi
   register: machine_id
-  changed_when: "CREATED in machine_id.stdout"
+  changed_when: "'CREATED' in machine_id.stdout"
   when: "ansible_connection == 'docker'"
