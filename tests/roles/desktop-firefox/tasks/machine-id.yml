@@ -1,0 +1,10 @@
+- name: create machine-id
+  shell: |
+     if test -s /etc/machine-id; then :
+     else
+       echo 12345678901234567890123456789012 > /etc/machine-id
+       echo CREATED
+     fi
+  register: machine_id
+  changed_when: "CREATED in machine_id.stdout"
+  when: "ansible_connection == 'docker'"
