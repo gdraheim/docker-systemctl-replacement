@@ -180,15 +180,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         find_repo_image = "docker images {rmi}/{rep}:{ver}"
         images = output(find_repo_image.format(**locals()))
         running = output("docker ps")
-        if greps(images, rep) and not greps(running, rep+":"+ver):
+        if greps(images, rep) and not greps(running, rep+ver):
             stop_repo = "docker rm --force {rep}{ver}"
             sx____(stop_repo.format(**locals()))
-            start_repo = "docker run --detach --name {rep}:{ver} {rmi}/{rep}:{ver}"
+            start_repo = "docker run --detach --name {rep}{ver} {rmi}/{rep}:{ver}"
             logg.info("!! %s", start_repo.format(**locals()))
             sh____(start_repo.format(**locals()))
         running = output("docker ps")
         if greps(running, rep+ver):
-            ip_a = self.ip_container(rep+":"+ver)
+            ip_a = self.ip_container(rep+ver)
             logg.info("%s%s => %s", rep, ver, ip_a)
             result = "download.opensuse.org:%s" % ip_a
             logg.info("--add-host %s", result)
@@ -2130,6 +2130,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             THEN we can see the start page of PHP MyAdmin
             because the test script has enabled access to 
             that web page on our test port. """
+        self.skipTest("=> replaced by test_6013")
         testname="test_6003"
         port=6003
         name="centos-lamp"
@@ -2167,6 +2168,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             THEN we can see the start page of PHP MyAdmin
             because the test script has enabled access to 
             that web page on our test port. """
+        self.skipTest("=> replaced by test_6014")
         testname="test_6004"
         port=6004
         name="opensuse-lamp"
@@ -2378,6 +2380,124 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         ## drop_image_container = "docker rmi {images}:{name}"
         ## sx____(drop_image_container.format(**locals()))
+        self.rm_testdir()
+    def test_6013_centos_lamp_stack(self):
+        """ Check setup of Linux/Mariadb/Apache/Php on CentOs"""
+        testname=self.testname()
+        testdir = self.testdir(testname)
+        testport=self.testport()
+        images = IMAGES
+        image = self.local_image("centos:centos7")
+        systemctl_py = _systemctl_py
+        logg.info("%s:%s %s", testname, testport, image)
+        #
+        stop_container = "docker rm --force {testname}"
+        sx____(stop_container.format(**locals()))
+        start_container = "docker run --detach --name={testname} {image} sleep 200"
+        sh____(start_container.format(**locals()))
+        install_systemctl = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(install_systemctl.format(**locals()))
+        install_epel = "docker exec {testname} yum install -y epel-release"
+        sh____(install_epel.format(**locals()))
+        install_repos = "docker exec {testname} yum repolist"
+        sh____(install_repos.format(**locals()))
+        install_lamp = "docker exec {testname} yum install -y httpd httpd-tools mariadb-server mariadb php phpmyadmin"
+        sh____(install_lamp.format(**locals()))
+        #
+        WEB_CONF="/etc/httpd/conf.d/phpMyAdmin.conf"
+        INC_CONF="/etc/phpMyAdmin/config.inc.php"
+        INDEX_PHP="/var/www/html/index.php"
+        push_result = "docker exec {testname} bash -c 'echo \"<?php phpinfo(); ?>\" > {INDEX_PHP}'"
+        push_connect = "docker exec {testname} sed -i 's|ip 127.0.0.1|ip 172.0.0.0/8|' {WEB_CONF}"
+        sh____(push_result.format(**locals()))
+        sh____(push_connect.format(**locals()))
+        start_db = "docker exec {testname} systemctl start mariadb -vvv"
+        sh____(start_db.format(**locals()))
+        rootuser_db = "docker exec {testname} mysqladmin -uroot password 'N0.secret'"
+        text_file(os_path(testdir,"testuser.sql"), "CREATE USER testuser_OK IDENTIFIED BY 'Testuser.OK'")
+        testuser_sql = "docker cp {testdir}/testuser.sql {testname}:/srv/testuser.sql" 
+        testuser_db = "docker exec {testname} bash -c 'cat /srv/testuser.sql | mysql -uroot -pN0.secret'"
+        sh____(rootuser_db.format(**locals()))
+        sh____(testuser_sql.format(**locals()))
+        sh____(testuser_db.format(**locals()))
+        testuser_username = "docker exec {testname} sed -i -e \"/'user'/s|=.*;|='testuser_OK';|\" {INC_CONF}"
+        testuser_password = "docker exec {testname} sed -i -e \"/'password'/s|=.*;|='Testuser.OK';|\" {INC_CONF}"
+        sh____(testuser_username.format(**locals()))
+        sh____(testuser_password.format(**locals()))
+        enable_software = "docker exec {testname} systemctl start httpd"
+        sh____(enable_software.format(**locals()))
+        #
+        container = self.ip_container(testname)
+        # THEN
+        time.sleep(5)
+        read_php_admin_html = "wget -O {testdir}/result.txt http://{container}/phpMyAdmin"
+        grep_php_admin_html = "grep '<h1>.*>phpMyAdmin<' {testdir}/result.txt"
+        sh____(read_php_admin_html.format(**locals()))
+        sh____(grep_php_admin_html.format(**locals()))
+        # CLEAN
+        stop_container = "docker stop {testname}"
+        drop_container = "docker rm --force {testname}"
+        sh____(stop_container.format(**locals()))
+        sh____(drop_container.format(**locals()))
+        #
+        self.rm_testdir()
+    def test_6014_opensuse_lamp_stack(self):
+        """ Check setup of Linux/Mariadb/Apache/Php" on Opensuse"""
+        testname=self.testname()
+        testdir = self.testdir(testname)
+        testport=self.testport()
+        images = IMAGES
+        image = self.local_image("opensuse:42.2")
+        systemctl_py = _systemctl_py
+        logg.info("%s:%s %s", testname, testport, image)
+        #
+        stop_container = "docker rm --force {testname}"
+        sx____(stop_container.format(**locals()))
+        start_container = "docker run --detach --name={testname} {image} sleep 200"
+        sh____(start_container.format(**locals()))
+        install_systemctl = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(install_systemctl.format(**locals()))
+        install_python = "docker exec {testname} zypper install -r oss -y python"
+        sh____(install_python.format(**locals()))
+        install_lamp = "docker exec {testname} zypper install -r oss -y apache2 apache2-utils mariadb-server mariadb-tools php5 phpMyAdmin"
+        sh____(install_lamp.format(**locals()))
+        #
+        WEB_CONF="/etc/apache2/conf.d/phpMyAdmin.conf"
+        INC_CONF="/etc/phpMyAdmin/config.inc.php"
+        INDEX_PHP="/srv/www/htdocs/index.php"
+        push_result = "docker exec {testname} bash -c 'echo \"<?php phpinfo(); ?>\" > {INDEX_PHP}'"
+        push_connect = "docker exec {testname} sed -i 's|ip 127.0.0.1|ip 172.0.0.0/8|' {WEB_CONF}"
+        sh____(push_result.format(**locals()))
+        sh____(push_connect.format(**locals()))
+        start_db = "docker exec {testname} systemctl start mysql -vvv"
+        sh____(start_db.format(**locals()))
+        rootuser_db = "docker exec {testname} mysqladmin -uroot password 'N0.secret'"
+        text_file(os_path(testdir,"testuser.sql"), "CREATE USER testuser_OK IDENTIFIED BY 'Testuser.OK'")
+        testuser_sql = "docker cp {testdir}/testuser.sql {testname}:/srv/testuser.sql" 
+        testuser_db = "docker exec {testname} bash -c 'cat /srv/testuser.sql | mysql -uroot -pN0.secret'"
+        sh____(rootuser_db.format(**locals()))
+        sh____(testuser_sql.format(**locals()))
+        sh____(testuser_db.format(**locals()))
+        testuser_username = "docker exec {testname} sed -i -e \"/'user'/s|=.*;|='testuser_OK';|\" {INC_CONF}"
+        testuser_password = "docker exec {testname} sed -i -e \"/'password'/s|=.*;|='Testuser.OK';|\" {INC_CONF}"
+        sh____(testuser_username.format(**locals()))
+        sh____(testuser_password.format(**locals()))
+        enable_software = "docker exec {testname} systemctl start apache2"
+        sh____(enable_software.format(**locals()))
+        #
+        container = self.ip_container(testname)
+        # THEN
+        time.sleep(5)
+        read_php_admin_html = "wget -O {testdir}/result.txt http://{container}/phpMyAdmin"
+        grep_php_admin_html = "grep '<h1>.*>phpMyAdmin<' {testdir}/result.txt"
+        sh____(read_php_admin_html.format(**locals()))
+        sh____(grep_php_admin_html.format(**locals()))
+        # CLEAN
+        stop_container = "docker stop {testname}"
+        drop_container = "docker rm --force {testname}"
+        sh____(stop_container.format(**locals()))
+        sh____(drop_container.format(**locals()))
+        #
         self.rm_testdir()
     # @unittest.expectedFailure
     def test_8001_issue_1_start_mariadb_centos_7_0(self):
