@@ -2238,47 +2238,65 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             THEN we can download the root html showing 'OK'
             and in the systemctl.debug.log we can see NOTIFY_SOCKET
             messages with Apache sending a READY and MAINPID value."""
-        testname="test_6011"
-        port=6011
-        name="centos-httpd"
-        dockerfile="centos-httpd.dockerfile"
+        testname=self.testname()
+        testdir = self.testdir(testname)
+        testport=self.testport()
         images = IMAGES
-        # WHEN
-        # test_6001: build_new_image = "docker build . -f tests/{dockerfile} --tag {images}:{name}"
-        # test_6001: sh____(build_new_image.format(**locals()))
-        drop_old_container = "docker rm --force {name}"
-        start_as_container = "docker run -d -p {port}:80 --name {name} {images}:{name} sleep 9999"
-        sx____(drop_old_container.format(**locals()))
-        sh____(start_as_container.format(**locals()))
-        make_info_log = "docker exec {name} touch /var/log/systemctl.debug.log"
-        start_httpd = "docker exec {name} systemctl start httpd"
+        image = self.local_image("centos:centos7")
+        systemctl_py = _systemctl_py
+        logg.info("%s:%s %s", testname, testport, image)
+        #
+        stop_container = "docker rm --force {testname}"
+        sx____(stop_container.format(**locals()))
+        start_container = "docker run --detach --name={testname} {image} sleep 200"
+        sh____(start_container.format(**locals()))
+        install_systemctl = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(install_systemctl.format(**locals()))
+        install_software = "docker exec {testname} yum install -y httpd httpd-tools"
+        sh____(install_software.format(**locals()))
+        enable_software = "docker exec {testname} systemctl enable httpd"
+        sh____(enable_software.format(**locals()))
+        push_result = "docker exec {testname} bash -c 'echo TEST_OK > /var/www/html/index.html'"
+        sh____(push_result.format(**locals()))
+        #
+        ## commit_container = "docker commit -c 'CMD [\"/usr/bin/systemctl\",\"init\",\"-vv\"]'  {testname} {images}:{testname}"
+        ## sh____(commit_container.format(**locals()))
+        ## stop_container = "docker rm --force {testname}"
+        ## sx____(stop_container.format(**locals()))
+        ## start_container = "docker run --detach --name {testname} {images}:{testname} sleep 200"
+        ## sh____(start_container.format(**locals()))
+        ## time.sleep(3)
+        #
+        container = self.ip_container(testname)
+        make_info_log = "docker exec {testname} touch /var/log/systemctl.debug.log"
+        start_httpd = "docker exec {testname} systemctl start httpd"
         sh____(make_info_log.format(**locals()))
         sh____(start_httpd.format(**locals()))
         # THEN
-        tmp = self.testdir(testname)
-        read_index_html = "sleep 5; wget -O {tmp}/{name}.txt http://127.0.0.1:{port}"
-        grep_index_html = "grep OK {tmp}/{name}.txt"
+        time.sleep(5)
+        read_index_html = "wget -O {testdir}/result.txt http://{container}:80"
+        grep_index_html = "grep OK {testdir}/result.txt"
         sh____(read_index_html.format(**locals()))
         sh____(grep_index_html.format(**locals()))
         # STOP
-        status_elasticsearch = "docker exec {name} systemctl status httpd"
-        stop_elasticsearch = "docker exec {name} systemctl stop httpd"
-        sh____(status_elasticsearch.format(**locals()))
-        sh____(stop_elasticsearch.format(**locals()))
-        fetch_systemctl_log = "docker cp {name}:/var/log/systemctl.debug.log {tmp}/systemctl.debug.log"
+        status_software = "docker exec {testname} systemctl status httpd"
+        stop_software = "docker exec {testname} systemctl stop httpd"
+        sh____(status_software.format(**locals()))
+        sh____(stop_software.format(**locals()))
+        fetch_systemctl_log = "docker cp {testname}:/var/log/systemctl.debug.log {testdir}/systemctl.debug.log"
         sh____(fetch_systemctl_log.format(**locals()))
-        stop_new_container = "docker stop {name}"
-        drop_new_container = "docker rm --force {name}"
+        stop_new_container = "docker stop {testname}"
+        drop_new_container = "docker rm --force {testname}"
         sh____(stop_new_container.format(**locals()))
         sh____(drop_new_container.format(**locals()))
         # CHECK
-        self.assertEqual(len(greps(open(tmp+"/systemctl.debug.log"), " ERROR ")), 0)
-        self.assertTrue(greps(open(tmp+"/systemctl.debug.log"), "use NOTIFY_SOCKET="))
-        self.assertTrue(greps(open(tmp+"/systemctl.debug.log"), "read_notify.*READY=1.*MAINPID="))
-        self.assertTrue(greps(open(tmp+"/systemctl.debug.log"), "ntfy start done"))
-        self.assertTrue(greps(open(tmp+"/systemctl.debug.log"), "stop '/bin/kill' '-WINCH'"))
-        self.assertTrue(greps(open(tmp+"/systemctl.debug.log"), "wait [$]NOTIFY_SOCKET"))
-        self.assertTrue(greps(open(tmp+"/systemctl.debug.log"), "dead PID"))
+        self.assertEqual(len(greps(open(testdir+"/systemctl.debug.log"), " ERROR ")), 0)
+        self.assertTrue(greps(open(testdir+"/systemctl.debug.log"), "use NOTIFY_SOCKET="))
+        self.assertTrue(greps(open(testdir+"/systemctl.debug.log"), "read_notify.*READY=1.*MAINPID="))
+        self.assertTrue(greps(open(testdir+"/systemctl.debug.log"), "ntfy start done"))
+        self.assertTrue(greps(open(testdir+"/systemctl.debug.log"), "stop '/bin/kill' '-WINCH'"))
+        self.assertTrue(greps(open(testdir+"/systemctl.debug.log"), "wait [$]NOTIFY_SOCKET"))
+        self.assertTrue(greps(open(testdir+"/systemctl.debug.log"), "dead PID"))
         self.rm_testdir()
     def test_6012_centos_elasticsearch(self):
         """ WHEN we can setup a specific ElasticSearch version 
