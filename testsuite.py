@@ -871,6 +871,102 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 0)
         #
         self.rm_testdir()
+    def test_3010_check_list_of_preset_files(self):
+        """ check that 'is-enabled' reports correctly for presets """
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/a.service"),"""
+            [Unit]
+            Description=Testing A""")
+        text_file(os_path(root, "/etc/systemd/system/b.service"),"""
+            [Unit]
+            Description=Testing B
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/system/c.service"),"""
+            [Unit]
+            Description=Testing C
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/system-preset/our.preset"),"""
+            enable b.service
+            disable c.service""")
+        #
+        cmd = "{systemctl} __load_preset_files"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        self.assertTrue(greps(out, r"^our.preset"))
+        self.assertEqual(len(lines(out)), 1)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} __get_preset_of_unit a.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        # self.assertTrue(greps(out, r"^our.preset"))
+        self.assertEqual(len(lines(out)), 0)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} __get_preset_of_unit b.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        self.assertTrue(greps(out, r"^enable"))
+        self.assertEqual(len(lines(out)), 1)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} __get_preset_of_unit c.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        self.assertTrue(greps(out, r"^disable"))
+        self.assertEqual(len(lines(out)), 1)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} is-enabled a.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        self.assertTrue(greps(out, r"^static"))
+        self.assertEqual(len(lines(out)), 1)
+        self.assertEqual(end, 0)
+        cmd = "{systemctl} is-enabled b.service" 
+        out, end = output2(cmd.format(**locals()))
+        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        self.assertTrue(greps(out, r"^disabled"))
+        self.assertEqual(len(lines(out)), 1)
+        self.assertEqual(end, 1)
+        cmd = "{systemctl} is-enabled c.service" 
+        out, end = output2(cmd.format(**locals()))
+        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        self.assertTrue(greps(out, r"^disabled"))
+        self.assertEqual(len(lines(out)), 1)
+        self.assertEqual(end, 1)
+        #
+        cmd = "{systemctl} preset-all" 
+        out, end = output2(cmd.format(**locals()))
+        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        self.assertEqual(len(lines(out)), 0)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} is-enabled a.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        self.assertTrue(greps(out, r"^static"))
+        self.assertEqual(len(lines(out)), 1)
+        self.assertEqual(end, 0)
+        cmd = "{systemctl} is-enabled b.service" 
+        out, end = output2(cmd.format(**locals()))
+        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        self.assertTrue(greps(out, r"^enabled"))
+        self.assertEqual(len(lines(out)), 1)
+        self.assertEqual(end, 0)
+        cmd = "{systemctl} is-enabled c.service" 
+        out, end = output2(cmd.format(**locals()))
+        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        self.assertTrue(greps(out, r"^disabled"))
+        self.assertEqual(len(lines(out)), 1)
+        self.assertEqual(end, 1)
+        #
+        self.rm_testdir()
     def test_3020_default_services(self):
         """ check the 'default-services' to know the enabled services """
         testname = self.testname()
