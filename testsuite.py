@@ -1290,7 +1290,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ check that we can run systemctl.py inside a docker container """
         testname = self.testname()
         testdir = self.testdir()
-        image= "centos:centos7"
+        image= CENTOS
         systemctl_py = _systemctl_py
         #
         stop_container = "docker rm --force {testname}"
@@ -1312,7 +1312,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ check that we can enable services in a docker container """
         testname = self.testname()
         testdir = self.testdir()
-        image= "centos:centos7"
+        image= CENTOS
         systemctl_py = _systemctl_py
         text_file(os_path(testdir, "zza.service"),"""
             [Unit]
@@ -1359,7 +1359,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ check that we can enable services in a docker container to have default-services"""
         testname = self.testname()
         testdir = self.testdir()
-        image= "centos:centos7"
+        image= CENTOS
         systemctl_py = _systemctl_py
         text_file(os_path(testdir, "zza.service"),"""
             [Unit]
@@ -1415,7 +1415,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ check that we can start simple services in a container"""
         testname = self.testname()
         testdir = self.testdir()
-        image= "centos:centos7"
+        image= CENTOS
         systemctl_py = _systemctl_py
         shell_file(os_path(testdir, "killall"),"""
             #! /bin/sh
@@ -1477,7 +1477,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ check that we can start simple services in a container"""
         testname = self.testname()
         testdir = self.testdir()
-        image= "centos:centos7"
+        image= CENTOS
         systemctl_py = _systemctl_py
         text_file(os_path(testdir, "zzz.service"),"""
             [Unit]
@@ -1529,7 +1529,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ check that we can start forking services in a container w/ PIDFile"""
         testname = self.testname()
         testdir = self.testdir()
-        image= "centos:centos7"
+        image= CENTOS
         systemctl_py = _systemctl_py
         shell_file(os_path(testdir, "killall"),"""
             #! /bin/sh
@@ -1608,7 +1608,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ check that we can start forking services in a container without PIDFile"""
         testname = self.testname()
         testdir = self.testdir()
-        image= "centos:centos7"
+        image= CENTOS
         systemctl_py = _systemctl_py
         shell_file(os_path(testdir, "killall"),"""
             #! /bin/sh
@@ -1685,7 +1685,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ check that we can start simple services in a container w/ notify timeout"""
         testname = self.testname()
         testdir = self.testdir()
-        image= "centos:centos7"
+        image= CENTOS
         systemctl_py = _systemctl_py
         shell_file(os_path(testdir, "killall"),"""
             #! /bin/sh
@@ -1748,7 +1748,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ check that we can enable services in a docker container to be run as default-services"""
         testname = self.testname()
         testdir = self.testdir()
-        image= "centos:centos7"
+        image= CENTOS
         systemctl_py = _systemctl_py
         text_file(os_path(testdir, "zza.service"),"""
             [Unit]
@@ -1823,7 +1823,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             after it has been restarted from a commit-saved container image"""
         testname = self.testname()
         testdir = self.testdir()
-        image= "centos:centos7"
+        image= CENTOS
         systemctl_py = _systemctl_py
         images = IMAGES
         text_file(os_path(testdir, "zza.service"),"""
@@ -1907,7 +1907,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             after it has been restarted from a commit-saved container image"""
         testname = self.testname()
         testdir = self.testdir()
-        image= "centos:centos7"
+        image= CENTOS
         systemctl_py = _systemctl_py
         images = IMAGES
         text_file(os_path(testdir, "zza.service"),"""
@@ -1991,7 +1991,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             after it has been restarted from a commit-saved container image"""
         testname = self.testname()
         testdir = self.testdir()
-        image= "centos:centos7"
+        image= CENTOS
         systemctl_py = _systemctl_py
         images = IMAGES
         text_file(os_path(testdir, "zza.service"),"""
@@ -2271,7 +2271,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir(testname)
         testport=self.testport()
         images = IMAGES
-        image = self.local_image("centos:centos7")
+        image = self.local_image(CENTOS)
         systemctl_py = _systemctl_py
         logg.info("%s:%s %s", testname, testport, image)
         #
@@ -2345,7 +2345,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir(testname)
         testport=self.testport()
         images = IMAGES
-        image = self.local_image("centos:centos7")
+        image = self.local_image(CENTOS)
         systemctl_py = _systemctl_py
         logg.info("%s:%s %s", testname, testport, image)
         #
@@ -2414,7 +2414,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir(testname)
         testport=self.testport()
         images = IMAGES
-        image = self.local_image("centos:centos7")
+        image = self.local_image(CENTOS)
         systemctl_py = _systemctl_py
         logg.info("%s:%s %s", testname, testport, image)
         #
@@ -2474,7 +2474,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir(testname)
         testport=self.testport()
         images = IMAGES
-        image = self.local_image("opensuse:42.2")
+        image = self.local_image(OPENSUSE)
         systemctl_py = _systemctl_py
         logg.info("%s:%s %s", testname, testport, image)
         #
@@ -2538,7 +2538,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         # image= "centos:centos7.0.1406" # <<<< can not yum-install mariadb-server ?
         # image= "centos:centos7.1.1503"
-        image = self.local_image("centos:centos7")
+        image = self.local_image(CENTOS)
         systemctl_py = _systemctl_py
         stop_container = "docker rm --force {testname}"
         sx____(stop_container.format(**locals()))
@@ -2596,7 +2596,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # but our unit parser did not regard ";" as starting a comment
         testname = self.testname()
         testdir = self.testdir()
-        image= self.local_image("centos:centos7")
+        image= self.local_image(CENTOS)
         systemctl_py = _systemctl_py
         stop_container = "docker rm --force {testname}"
         sx____(stop_container.format(**locals()))
