@@ -22,6 +22,9 @@ logg = logging.getLogger("tests")
 _systemctl_py = "files/docker/systemctl.py"
 
 IMAGES = "localhost:5000/testingsystemctl"
+CENTOS = "centos:7.3.1611"
+UBUNTU = "ubuntu:14.04"
+OPENSUSE = "opensuse:42.2"
 
 def sh____(cmd, shell=True):
     return subprocess.check_call(cmd, shell=shell)
@@ -195,20 +198,44 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             return result
         return ""
     def local_image(self, image):
-        if image == "centos:centos7":
-            add_hosts = self.with_local_centos_mirror()
+        if image.startswith("centos:"):
+            version = image[len("centos:"):]
+            add_hosts = self.with_local_centos_mirror(version)
             if add_hosts:
                 return "--add-host '{add_hosts}' {image}".format(**locals())
-        if image == "opensuse:42.2":
-            add_hosts = self.with_local_opensuse_mirror()
+        if image.startswith("opensuse:"):
+            version = image[len("opensuse:"):]
+            add_hosts = self.with_local_opensuse_mirror(version)
             if add_hosts:
                 return "--add-host '{add_hosts}' {image}".format(**locals())
         return image
-    def test_1000(self):
-        self.with_local_centos_mirror()
+    def drop_container(self, name):
+        stop = "docker rm --force {name}"
+        sx____(stop.format(**locals()))
+    def drop_centos(self):
+        self.drop_container("centos")
+    def drop_ubuntu(self):
+        self.drop_container("ubuntu")
+    def drop_opensuse(self):
+        self.drop_container("opensuse")
+    def make_opensuse(self):
+        self.make_container("opensuse", OPENSUSE)
+    def make_ubuntu(self):
+        self.make_container("ubuntu", UBUNTU)
+    def make_centos(self):
+        self.make_container("centos", CENTOS)
+    def make_container(self, name, image):
+        self.drop_container(name)
+        local_image = self.local_image(image)
+        start = "docker run --detach --name {name} {local_image} sleep 1000"
+        sh____(start.format(**locals()))
+        print "                 # " + local_image
+        print "  docker exec -it "+name+" bash"
     #
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     #
+    def test_1000(self):
+        self.with_local_centos_mirror()
     def test_1001_systemctl_testfile(self):
         """ the systemctl.py file to be tested does exist """
         testname = self.testname()

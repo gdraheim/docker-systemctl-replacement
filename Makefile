@@ -28,3 +28,8 @@ DJ docker-jenkins: ; ./testsuite.py test_900*
 
 check: ; ./testsuite.py -v
 test_%: ; ./testsuite.py $@ -v
+
+op opensuse: ; ./testsuite.py make_opensuse
+ub ubuntu:   ; ./testsuite.py make_ubuntu
+ce centos:   ; ./testsuite.py make_centos
+

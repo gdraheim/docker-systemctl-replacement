@@ -2060,9 +2060,11 @@ class Systemctl:
         for unit in units:
             status = self.get_preset_of_unit(unit)
             if status and status.startswith("enable"):
+                logg.critical("preset enable %s", unit)
                 if not self.enable_unit(unit):
                     done = False
             if status and status.startswith("disable"):
+                logg.critical("preset disable %s", unit)
                 if not self.disable_unit(unit):
                     done = False
         return done
