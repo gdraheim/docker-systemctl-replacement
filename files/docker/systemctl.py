@@ -2905,6 +2905,12 @@ if __name__ == "__main__":
         systemctl.force_ipv6()
     found = False
     # command NAME
+    if command.startswith("__"):
+    command_name = command[2:]
+    command_func = getattr(systemctl, command_name, None)
+    if callable(command_func) and not found:
+        found = True
+        result = command_func(modules[0])
     command_name = command.replace("-","_").replace(".","_")+"_of_unit"
     command_func = getattr(systemctl, command_name, None)
     if callable(command_func) and not found:
