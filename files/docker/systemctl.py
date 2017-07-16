@@ -2068,12 +2068,12 @@ class Systemctl:
                 if not self.disable_unit(unit):
                     done = False
         return done
-    def system_preset_all(self):
+    def system_preset_all(self, *modules):
         """ 'preset' all services
         enable or disable services according to *.preset files
         """
         done = True
-        for unit in self.match_units():
+        for unit in self.match_units(modules):
             status = self.get_preset_of_unit(unit)
             if status and status.startswith("enable"):
                 if not self.enable_unit(unit):
@@ -2906,11 +2906,11 @@ if __name__ == "__main__":
     found = False
     # command NAME
     if command.startswith("__"):
-    command_name = command[2:]
-    command_func = getattr(systemctl, command_name, None)
-    if callable(command_func) and not found:
-        found = True
-        result = command_func(modules[0])
+        command_name = command[2:]
+        command_func = getattr(systemctl, command_name, None)
+        if callable(command_func) and not found:
+            found = True
+            result = command_func(*modules)
     command_name = command.replace("-","_").replace(".","_")+"_of_unit"
     command_func = getattr(systemctl, command_name, None)
     if callable(command_func) and not found:
