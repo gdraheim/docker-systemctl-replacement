@@ -163,9 +163,9 @@ process and it will implicitly call its functionality of
 docker-stop it will run its "systemctl halt" implementation.
 
 Here "default" is the standard command to start all services 
-in the multi-user target. The new option "-1" (or --init) 
-will keep the script running as a zombie reaper. (NOTE: if 
-it is not PID-1 then it defaults "systemctl list-units").
+in the multi-user target. The new option "--init" (or the command 
+"init") will keep the script running as a zombie reaper. (NOTE: 
+if it is not PID-1 then it defaults "systemctl list-units").
 
 As a hint: the SystemD "systemctl enable" command will
 read the "WantedBy" of the referenced *.service script.
@@ -204,7 +204,7 @@ anyway then you may just want to reference that. (Left
 for an excercise here). If only a specific set of
 services shall be run then one can exchange the "default"
 command with an explicit start list (and be sure to 
-activate the continued execution as an --init process):
+activate the continued execution as an init process):
 
     /usr/bin/systemctl.py init mongodb myapp
 
