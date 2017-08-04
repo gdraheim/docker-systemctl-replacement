@@ -24,11 +24,13 @@ _sysd_default = "multi-user.target"
 _sysd_folder1 = "/etc/systemd/system"
 _sysd_folder2 = "/var/run/systemd/system"
 _sysd_folder3 = "/usr/lib/systemd/system"
+_sysd_folder4 = "/usr/lib/systemd/system"
 _sysv_folder1 = "/etc/init.d"
 _sysv_folder2 = "/var/run/init.d"
 _preset_folder1 = "/etc/systemd/system-preset"
 _preset_folder2 = "/var/run/systemd/system-preset"
 _preset_folder3 = "/usr/lib/systemd/system-preset"
+_preset_folder4 = "/lib/systemd/system-preset"
 _waitprocfile = 100
 _waitkillproc = 10
 _force = False
@@ -535,11 +537,13 @@ class Systemctl:
         self._sysd_folder1 = _sysd_folder1
         self._sysd_folder2 = _sysd_folder2
         self._sysd_folder3 = _sysd_folder3
+        self._sysd_folder4 = _sysd_folder4
         self._sysv_folder1 = _sysv_folder1
         self._sysv_folder2 = _sysv_folder2
         self._preset_folder1 = _preset_folder1
         self._preset_folder2 = _preset_folder2
         self._preset_folder3 = _preset_folder3
+        self._preset_folder4 = _preset_folder4
         self._notify_socket_folder = _notify_socket_folder
         self._notify_socket_name = _notify_socket_name
         self._pid_file_folder = _pid_file_folder 
@@ -567,7 +571,7 @@ class Systemctl:
         """ reads all unit files, returns the first filename for the unit given """
         if self._file_for_unit_sysd is None:
             self._file_for_unit_sysd = {}
-            for folder in (self._sysd_folder1, self._sysd_folder2, self._sysd_folder3):
+            for folder in (self._sysd_folder1, self._sysd_folder2, self._sysd_folder3, self._sysd_folder4):
                 if self._root:
                     folder = os_path(self._root, folder)
                 if not os.path.isdir(folder):
@@ -2015,7 +2019,7 @@ class Systemctl:
         """ reads all preset files, returns the scanned files """
         if self._preset_file_list is None:
             self._preset_file_list = {}
-            for folder in (self._preset_folder1, self._preset_folder2, self._preset_folder3):
+            for folder in (self._preset_folder1, self._preset_folder2, self._preset_folder3, self._preset_folder4):
                 if self._root:
                     folder = os_path(self._root, folder)
                 if not os.path.isdir(folder):
@@ -2368,7 +2372,7 @@ class Systemctl:
         for style in [ "Requires", "Wants", "Requisite", "BindsTo", "PartOf",
             ".requires", ".wants", "PropagateReloadTo", "Conflicts",  ]:
             if style.startswith("."):
-                for folder in [ _sysd_folder1, _sysd_folder2, _sysd_folder3 ]:
+                for folder in [ self._sysd_folder1, self._sysd_folder2, self._sysd_folder3, self._sysd_folder4 ]:
                     require_path = os.path.join(folder, unit + style)
                     if self._root:
                         require_path = os_path(self._root, require_path)
