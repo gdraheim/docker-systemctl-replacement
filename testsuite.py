@@ -20,6 +20,9 @@ import json
 
 logg = logging.getLogger("tests")
 _systemctl_py = "files/docker/systemctl.py"
+_cov = ""
+_coverage = "coverage2 run -a "
+_cov_cmd = "coverage2"
 
 IMAGES = "localhost:5000/testingsystemctl"
 CENTOS = "centos:7.3.1611"
@@ -253,30 +256,33 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(os.path.isfile(target_systemctl))
         self.rm_testdir()
     def test_1002_systemctl_version(self):
-        cmd = "%s --version" % _systemctl_py
-        out = output(cmd)
+        systemctl = _cov + _systemctl_py 
+        cmd = "{systemctl} --version"
+        out = output(cmd.format(**locals()))
         logg.info("\n> %s\n%s", cmd, out)
         self.assertTrue(greps(out, "systemd 0"))
         self.assertTrue(greps(out, "[(]systemctl.py"))
         self.assertTrue(greps(out, "[+]SYSVINIT"))
     def test_1003_systemctl_help(self):
-        cmd = "%s --help" % _systemctl_py
-        out = output(cmd)
+        systemctl = _cov + _systemctl_py
+        cmd = "{systemctl} --help"
+        out = output(cmd.format(**locals()))
         logg.info("\n> %s\n%s", cmd, out)
         self.assertTrue(greps(out, "--root=PATH"))
         self.assertTrue(greps(out, "--verbose"))
         self.assertTrue(greps(out, "--init"))
         self.assertTrue(greps(out, "for more information"))
         self.assertFalse(greps(out, "reload-or-try-restart"))
-        cmd = "%s help" % _systemctl_py
-        out = output(cmd)
+        cmd = "{systemctl} help" 
+        out = output(cmd.format(**locals()))
         logg.info("\n> %s\n%s", cmd, out)
         self.assertFalse(greps(out, "--verbose"))
         self.assertTrue(greps(out, "reload-or-try-restart"))
     def test_1004_systemctl_daemon_reload(self):
         """ daemon-reload always succeeds (does nothing) """
-        cmd = "%s daemon-reload" % _systemctl_py
-        out,end = output2(cmd)
+        systemctl = _cov + _systemctl_py
+        cmd = "{systemctl} daemon-reload"
+        out, end = output2(cmd.format(**locals()))
         logg.info("\n> %s\n%s\n**%s", cmd, out, end)
         self.assertEqual(lines(out), [])
         self.assertEqual(end, 0)
@@ -284,11 +290,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ daemon-reload always succeeds (does nothing) """
         testdir = self.testdir()
         root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/a.service"),"""
             [Unit]
             Description=Testing A""")
-        cmd = "%s --root=%s daemon-reload" % (_systemctl_py, root)
-        out,end = output2(cmd)
+        cmd = "{systemctl} daemon-reload"
+        out,end = output2(cmd.format(**locals()))
         logg.info("\n> %s\n%s\n**%s", cmd, out, end)
         self.assertEqual(lines(out), [])
         self.assertEqual(end, 0)
@@ -297,6 +304,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ we can force --ipv4 for /etc/hosts """
         testdir = self.testdir()
         root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/hosts"),"""
             127.0.0.1 localhost localhost4
             ::1 localhost localhost6""")
@@ -307,8 +315,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(hosts, "127.0.0.1.*localhost "))
         self.assertTrue(greps(hosts, "::1.*localhost "))
         #
-        cmd = "%s --root=%s --ipv4 daemon-reload" % (_systemctl_py, root)
-        out,end = output2(cmd)
+        cmd = "{systemctl} --ipv4 daemon-reload"
+        out, end = output2(cmd.format(**locals()))
         logg.info("\n> %s\n%s\n**%s", cmd, out, end)
         self.assertEqual(lines(out), [])
         self.assertEqual(end, 0)
@@ -323,6 +331,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ we can force --ipv6 for /etc/hosts """
         testdir = self.testdir()
         root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/hosts"),"""
             127.0.0.1 localhost localhost4
             ::1 localhost localhost6""")
@@ -333,8 +342,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(hosts, "127.0.0.1.*localhost "))
         self.assertTrue(greps(hosts, "::1.*localhost "))
         #
-        cmd = "%s --root=%s --ipv6 daemon-reload" % (_systemctl_py, root)
-        out,end = output2(cmd)
+        cmd = "{systemctl} --ipv6 daemon-reload"
+        out, end = output2(cmd.format(**locals()))
         logg.info("\n> %s\n%s\n**%s", cmd, out, end)
         self.assertEqual(lines(out), [])
         self.assertEqual(end, 0)
@@ -350,6 +359,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/a.service"),"""
             [Unit]
             Description=Testing A""")
@@ -368,22 +378,23 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/a.service"),"""
             [Unit]
             Description=Testing A""")
         text_file(os_path(root, "/etc/systemd/system/b.service"),"""
             [Unit]
             Description=Testing B""")
-        cmd = "%s --root=%s list-units" % (_systemctl_py, root)
-        out = output(cmd)
+        cmd = "{systemctl} list-units"
+        out = output(cmd.format(**locals()))
         logg.info("\n> %s\n%s", cmd, out)
         self.assertTrue(greps(out, r"a.service\s+loaded inactive dead\s+.*Testing A"))
         self.assertTrue(greps(out, r"b.service\s+loaded inactive dead\s+.*Testing B"))
         self.assertIn("loaded units listed.", out)
         self.assertIn("To show all installed unit files use", out)
         self.assertEqual(len(lines(out)), 5)
-        cmd = "%s --root=%s --no-legend list-units" % (_systemctl_py, root)
-        out = output(cmd)
+        cmd = "{systemctl} --no-legend list-units"
+        out = output(cmd.format(**locals()))
         logg.info("\n> %s\n%s", cmd, out)
         self.assertTrue(greps(out, r"a.service\s+loaded inactive dead\s+.*Testing A"))
         self.assertTrue(greps(out, r"b.service\s+loaded inactive dead\s+.*Testing B"))
@@ -396,21 +407,22 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/a.service"),"""
             [Unit]
             Description=Testing A""")
         text_file(os_path(root, "/etc/systemd/system/b.service"),"""
             [Unit]
             Description=Testing B""")
-        cmd = "%s --root=%s --type=service list-unit-files" % (_systemctl_py, root)
-        out = output(cmd)
+        cmd = "{systemctl} --type=service list-unit-files"
+        out = output(cmd.format(**locals()))
         logg.info("\n> %s\n%s", cmd, out)
         self.assertTrue(greps(out, r"a.service\s+static"))
         self.assertTrue(greps(out, r"b.service\s+static"))
         self.assertIn("unit files listed.", out)
         self.assertEqual(len(lines(out)), 5)
-        cmd = "%s --root=%s --no-legend --type=service list-unit-files" % (_systemctl_py, root)
-        out = output(cmd)
+        cmd = "{systemctl} --no-legend --type=service list-unit-files"
+        out = output(cmd.format(**locals()))
         logg.info("\n> %s\n%s", cmd, out)
         self.assertTrue(greps(out, r"a.service\s+static"))
         self.assertTrue(greps(out, r"b.service\s+static"))
@@ -423,6 +435,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/a.service"),"""
             [Unit]
             Description=Testing A""")
@@ -431,15 +444,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing B
             [Install]
             WantedBy=multi-user.target""")
-        cmd = "%s --root=%s --type=service list-unit-files" % (_systemctl_py, root)
-        out = output(cmd)
+        cmd = "{systemctl} --type=service list-unit-files"
+        out = output(cmd.format(**locals()))
         logg.info("\n> %s\n%s", cmd, out)
         self.assertTrue(greps(out, r"a.service\s+static"))
         self.assertTrue(greps(out, r"b.service\s+disabled"))
         self.assertIn("unit files listed.", out)
         self.assertEqual(len(lines(out)), 5)
-        cmd = "%s --root=%s --no-legend --type=service list-unit-files" % (_systemctl_py, root)
-        out = output(cmd)
+        cmd = "{systemctl} --no-legend --type=service list-unit-files"
+        out = output(cmd.format(**locals()))
         logg.info("\n> %s\n%s", cmd, out)
         self.assertTrue(greps(out, r"a.service\s+static"))
         self.assertTrue(greps(out, r"b.service\s+disabled"))
@@ -451,29 +464,30 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/a.service"),"""
             [Unit]
             Description=Testing A""")
         text_file(os_path(root, "/etc/systemd/system/b.service"),"""
             [Unit]
             Description=Testing B""")
-        cmd = "%s --root=%s --no-legend --type=service list-unit-files" % (_systemctl_py, root)
-        out = output(cmd)
+        cmd = "{systemctl} --no-legend --type=service list-unit-files"
+        out = output(cmd.format(**locals()))
         logg.info("\n> %s\n%s", cmd, out)
         self.assertTrue(greps(out, r"a.service\s+static"))
         self.assertTrue(greps(out, r"b.service\s+static"))
         self.assertFalse(greps(out, r"multi-user.target\s+enabled"))
         self.assertEqual(len(lines(out)), 2)
-        cmd = "%s --root=%s --no-legend --type=target list-unit-files" % (_systemctl_py, root)
-        out = output(cmd)
+        cmd = "{systemctl} --no-legend --type=target list-unit-files"
+        out = output(cmd.format(**locals()))
         logg.info("\n> %s\n%s", cmd, out)
         self.assertFalse(greps(out, r"a.service\s+static"))
         self.assertFalse(greps(out, r"b.service\s+static"))
         self.assertTrue(greps(out, r"multi-user.target\s+enabled"))
         self.assertGreater(len(lines(out)), 10)
         num_targets = len(lines(out))
-        cmd = "%s --root=%s --no-legend list-unit-files" % (_systemctl_py, root)
-        out = output(cmd)
+        cmd = "{systemctl} --no-legend list-unit-files"
+        out = output(cmd.format(**locals()))
         logg.info("\n> %s\n%s", cmd, out)
         self.assertTrue(greps(out, r"a.service\s+static"))
         self.assertTrue(greps(out, r"b.service\s+static"))
@@ -485,14 +499,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/a.service"),"""
             [Unit]
             Description=Testing A""")
         text_file(os_path(root, "/etc/systemd/system/b.service"),"""
             [Unit]
             Description=Testing B""")
-        cmd = "%s --root=%s --no-legend --now list-unit-files" % (_systemctl_py, root)
-        out = output(cmd)
+        cmd = "{systemctl} --no-legend --now list-unit-files"
+        out = output(cmd.format(**locals()))
         logg.info("\n> %s\n%s", cmd, out)
         self.assertTrue(greps(out, r"a.service\s+SysD\s+.*systemd/system/a.service"))
         self.assertTrue(greps(out, r"b.service\s+SysD\s+.*systemd/system/b.service"))
@@ -505,11 +520,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/a.service"),"""
             [Unit]
             Description=Testing A""")
-        cmd = "%s --root=%s show a.service" % (_systemctl_py, root)
-        out = output(cmd)
+        cmd = "{systemctl} show a.service"
+        out = output(cmd.format(**locals()))
         logg.info("\n> %s\n%s", cmd, out)
         self.assertTrue(greps(out, r"^Id="))
         self.assertTrue(greps(out, r"^Names="))
@@ -521,8 +537,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, r"^UnitFileState="))
         num_lines = len(lines(out))
         #
-        cmd = "%s --root=%s --all show a.service" % (_systemctl_py, root)
-        out = output(cmd)
+        cmd = "{systemctl} --all show a.service"
+        out = output(cmd.format(**locals()))
         logg.info("\n> %s\n%s", cmd, out)
         self.assertTrue(greps(out, r"^Id="))
         self.assertTrue(greps(out, r"^Names="))
@@ -546,29 +562,30 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/a.service"),"""
             [Unit]
             Description=Testing A""")
-        cmd = "%s --root=%s show a.service --property=Description" % (_systemctl_py, root)
-        out = output(cmd)
+        cmd = "{systemctl} show a.service --property=Description"
+        out = output(cmd.format(**locals()))
         logg.info("\n> %s\n%s", cmd, out)
         self.assertTrue(greps(out, r"^Description="))
         self.assertEqual(len(lines(out)), 1)
         #
-        cmd = "%s --root=%s show a.service --property=Description --all" % (_systemctl_py, root)
-        out = output(cmd)
+        cmd = "{systemctl} show a.service --property=Description --all"
+        out = output(cmd.format(**locals()))
         logg.info("\n> %s\n%s", cmd, out)
         self.assertTrue(greps(out, r"^Description="))
         self.assertEqual(len(lines(out)), 1)
         #
-        cmd = "%s --root=%s show a.service --property=PIDFile" % (_systemctl_py, root)
-        out = output(cmd)
+        cmd = "{systemctl} show a.service --property=PIDFile"
+        out = output(cmd.format(**locals()))
         logg.info("\n> %s\n%s", cmd, out)
         self.assertTrue(greps(out, r"^PIDFile="))
         self.assertEqual(len(lines(out)), 1)
         #
-        cmd = "%s --root=%s show a.service --property=PIDFile --all" % (_systemctl_py, root)
-        out = output(cmd)
+        cmd = "{systemctl} show a.service --property=PIDFile --all"
+        out = output(cmd.format(**locals()))
         logg.info("\n> %s\n%s", cmd, out)
         self.assertTrue(greps(out, r"^PIDFile="))
         self.assertEqual(len(lines(out)), 1)
@@ -581,6 +598,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/a.service"),"""
             [Unit]
             Description=Testing A""")
@@ -589,8 +607,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing B
             [Install]
             WantedBy=multi-user.target""")
-        cmd = "%s --root=%s show a.service" % (_systemctl_py, root)
-        out = output(cmd)
+        cmd = "{systemctl} show a.service"
+        out = output(cmd.format(**locals()))
         logg.info("\n> %s\n%s", cmd, out)
         self.assertTrue(greps(out, r"^Id="))
         self.assertTrue(greps(out, r"^Names="))
@@ -602,8 +620,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, r"^UnitFileState="))
         a_lines = len(lines(out))
         #
-        cmd = "%s --root=%s show b.service" % (_systemctl_py, root)
-        out = output(cmd)
+        cmd = "{systemctl} show b.service"
+        out = output(cmd.format(**locals()))
         logg.info("\n> %s\n%s", cmd, out)
         self.assertTrue(greps(out, r"^Id="))
         self.assertTrue(greps(out, r"^Names="))
@@ -615,8 +633,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, r"^UnitFileState="))
         b_lines = len(lines(out))
         #
-        cmd = "%s --root=%s show a.service b.service" % (_systemctl_py, root)
-        out = output(cmd)
+        cmd = "{systemctl} show a.service b.service"
+        out = output(cmd.format(**locals()))
         logg.info("\n> %s\n%s", cmd, out)
         self.assertTrue(greps(out, r"^Id="))
         self.assertTrue(greps(out, r"^Names="))
@@ -644,6 +662,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/a.service"),"""
             [Unit]
             Description=Testing A""")
@@ -652,8 +671,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing B
             [Install]
             WantedBy=multi-user.target""")
-        cmd = "%s --root=%s enable b.service" % (_systemctl_py, root)
-        out = output(cmd)
+        cmd = "{systemctl} enable b.service"
+        out = output(cmd.format(**locals()))
         logg.info("\n> %s\n%s", cmd, out)
         enabled_file = os_path(root, "/etc/systemd/system/multi-user.target.wants/b.service")
         self.assertTrue(os.path.islink(enabled_file))
@@ -666,6 +685,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/a.service"),"""
             [Unit]
             Description=Testing A""")
@@ -674,16 +694,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing B
             [Install]
             WantedBy=multi-user.target""")
-        cmd = "%s --root=%s enable b.service" % (_systemctl_py, root)
-        out = output(cmd)
+        cmd = "{systemctl} enable b.service"
+        out = output(cmd.format(**locals()))
         logg.info("\n> %s\n%s", cmd, out)
         enabled_file = os_path(root, "/etc/systemd/system/multi-user.target.wants/b.service")
         self.assertTrue(os.path.islink(enabled_file))
         textB = file(enabled_file).read()
         self.assertTrue(greps(textB, "Testing B"))
         self.assertIn("\nDescription", textB)
-        cmd = "%s --root=%s disable b.service" % (_systemctl_py, root)
-        out = output(cmd)
+        cmd = "{systemctl} disable b.service"
+        out = output(cmd.format(**locals()))
         logg.info("\n> %s\n%s", cmd, out)
         enabled_file = os_path(root, "/etc/systemd/system/multi-user.target.wants/b.service")
         self.assertFalse(os.path.exists(enabled_file))
@@ -695,6 +715,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/a.service"),"""
             [Unit]
             Description=Testing A""")
@@ -703,34 +724,34 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing B
             [Install]
             WantedBy=multi-user.target""")
-        cmd = "%s --root=%s --no-legend --type=service list-unit-files" % (_systemctl_py, root)
-        out = output(cmd)
+        cmd = "{systemctl} --no-legend --type=service list-unit-files"
+        out = output(cmd.format(**locals()))
         logg.info("\n> %s\n%s", cmd, out)
         self.assertTrue(greps(out, r"a.service\s+static"))
         self.assertTrue(greps(out, r"b.service\s+disabled"))
         self.assertEqual(len(lines(out)), 2)
         #
-        cmd = "%s --root=%s --no-legend enable b.service" % (_systemctl_py, root)
-        out = output(cmd)
+        cmd = "{systemctl} --no-legend enable b.service"
+        out = output(cmd.format(**locals()))
         logg.info("\n> %s\n%s", cmd, out)
         enabled_file = os_path(root, "/etc/systemd/system/multi-user.target.wants/b.service")
         self.assertTrue(os.path.islink(enabled_file))
         #
-        cmd = "%s --root=%s --no-legend --type=service list-unit-files" % (_systemctl_py, root)
-        out = output(cmd)
+        cmd = "{systemctl} --no-legend --type=service list-unit-files"
+        out = output(cmd.format(**locals()))
         logg.info("\n> %s\n%s", cmd, out)
         self.assertTrue(greps(out, r"a.service\s+static"))
         self.assertTrue(greps(out, r"b.service\s+enabled"))
         self.assertEqual(len(lines(out)), 2)
         #
-        cmd = "%s --root=%s --no-legend disable b.service" % (_systemctl_py, root)
-        out = output(cmd)
+        cmd = "{systemctl} --no-legend disable b.service"
+        out = output(cmd.format(**locals()))
         logg.info("\n> %s\n%s", cmd, out)
         enabled_file = os_path(root, "/etc/systemd/system/multi-user.target.wants/b.service")
         self.assertFalse(os.path.exists(enabled_file))
         #
-        cmd = "%s --root=%s --no-legend --type=service list-unit-files" % (_systemctl_py, root)
-        out = output(cmd)
+        cmd = "{systemctl} --no-legend --type=service list-unit-files"
+        out = output(cmd.format(**locals()))
         logg.info("\n> %s\n%s", cmd, out)
         self.assertTrue(greps(out, r"a.service\s+static"))
         self.assertTrue(greps(out, r"b.service\s+disabled"))
@@ -742,6 +763,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/a.service"),"""
             [Unit]
             Description=Testing A""")
@@ -751,38 +773,38 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target""")
         #
-        cmd = "%s --root=%s is-enabled a.service" % (_systemctl_py, root)
-        out, end = output2(cmd)
+        cmd = "{systemctl} is-enabled a.service"
+        out, end = output2(cmd.format(**locals()))
         logg.info("\n> %s\n%s\n**%s", cmd, out, end)
         self.assertTrue(greps(out, r"^static"))
         self.assertEqual(len(lines(out)), 1)
         self.assertEqual(end, 0)
-        cmd = "%s --root=%s is-enabled b.service" % (_systemctl_py, root)
-        out, end = output2(cmd)
+        cmd = "{systemctl} is-enabled b.service"
+        out, end = output2(cmd.format(**locals()))
         logg.info("\n> %s\n%s\n**%s", cmd, out, end)
         self.assertTrue(greps(out, r"^disabled"))
         self.assertEqual(len(lines(out)), 1)
         self.assertEqual(end, 1)
         #
-        cmd = "%s --root=%s --no-legend enable b.service" % (_systemctl_py, root)
-        out, end = output2(cmd)
+        cmd = "{systemctl} --no-legend enable b.service"
+        out, end = output2(cmd.format(**locals()))
         logg.info("\n> %s\n%s\n**%s", cmd, out, end)
         self.assertEqual(end, 0)
         #
-        cmd = "%s --root=%s is-enabled b.service" % (_systemctl_py, root)
-        out, end = output2(cmd)
+        cmd = "{systemctl} is-enabled b.service"
+        out, end = output2(cmd.format(**locals()))
         logg.info("\n> %s\n%s\n**%s", cmd, out, end)
         self.assertTrue(greps(out, r"^enabled"))
         self.assertEqual(len(lines(out)), 1)
         self.assertEqual(end, 0)
         #
-        cmd = "%s --root=%s --no-legend disable b.service" % (_systemctl_py, root)
-        out, end = output2(cmd)
+        cmd = "{systemctl} --no-legend disable b.service"
+        out, end = output2(cmd.format(**locals()))
         logg.info("\n> %s\n%s\n**%s", cmd, out, end)
         self.assertEqual(end, 0)
         #
-        cmd = "%s --root=%s is-enabled b.service" % (_systemctl_py, root)
-        out, end = output2(cmd)
+        cmd = "{systemctl} is-enabled b.service"
+        out, end = output2(cmd.format(**locals()))
         logg.info("\n> %s\n%s\n**%s", cmd, out, end)
         self.assertTrue(greps(out, r"^disabled"))
         self.assertEqual(len(lines(out)), 1)
@@ -794,6 +816,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/a.service"),"""
             [Unit]
             Description=Testing A""")
@@ -808,62 +831,62 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target""")
         #
-        cmd = "%s --root=%s is-enabled a.service" % (_systemctl_py, root)
-        out, end = output2(cmd)
+        cmd = "{systemctl} is-enabled a.service"
+        out, end = output2(cmd.format(**locals()))
         logg.info("\n> %s\n%s\n**%s", cmd, out, end)
         self.assertTrue(greps(out, r"^static"))
         self.assertEqual(len(lines(out)), 1)
         self.assertEqual(end, 0)
-        cmd = "%s --root=%s is-enabled b.service" % (_systemctl_py, root)
-        out, end = output2(cmd)
+        cmd = "{systemctl} is-enabled b.service"
+        out, end = output2(cmd.format(**locals()))
         logg.info("\n> %s\n%s\n**%s", cmd, out, end)
         self.assertTrue(greps(out, r"^disabled"))
         self.assertEqual(len(lines(out)), 1)
         self.assertEqual(end, 1)
-        cmd = "%s --root=%s is-enabled c.service" % (_systemctl_py, root)
-        out, end = output2(cmd)
+        cmd = "{systemctl} is-enabled c.service"
+        out, end = output2(cmd.format(**locals()))
         logg.info("\n> %s\n%s\n**%s", cmd, out, end)
         self.assertTrue(greps(out, r"^disabled"))
         self.assertEqual(len(lines(out)), 1)
         self.assertEqual(end, 1)
-        cmd = "%s --root=%s is-enabled b.service c.service" % (_systemctl_py, root)
-        out, end = output2(cmd)
+        cmd = "{systemctl} is-enabled b.service c.service"
+        out, end = output2(cmd.format(**locals()))
         logg.info("\n> %s\n%s\n**%s", cmd, out, end)
         self.assertTrue(greps(out, r"^disabled"))
         self.assertFalse(greps(out, r"^enabled"))
         self.assertEqual(len(lines(out)), 2)
         self.assertEqual(end, 1)
-        cmd = "%s --root=%s is-enabled a.service b.service c.service" % (_systemctl_py, root)
-        out, end = output2(cmd)
+        cmd = "{systemctl} is-enabled a.service b.service c.service"
+        out, end = output2(cmd.format(**locals()))
         logg.info("\n> %s\n%s\n**%s", cmd, out, end)
         self.assertTrue(greps(out, r"^disabled"))
         self.assertFalse(greps(out, r"^enabled"))
         self.assertEqual(len(lines(out)), 3)
         self.assertEqual(end, 0)
         #
-        cmd = "%s --root=%s --no-legend enable b.service" % (_systemctl_py, root)
-        out, end = output2(cmd)
+        cmd = "{systemctl} --no-legend enable b.service"
+        out, end = output2(cmd.format(**locals()))
         logg.info("\n> %s\n%s\n**%s", cmd, out, end)
         self.assertEqual(end, 0)
         #
-        cmd = "%s --root=%s is-enabled b.service c.service" % (_systemctl_py, root)
-        out, end = output2(cmd)
+        cmd = "{systemctl} is-enabled b.service c.service"
+        out, end = output2(cmd.format(**locals()))
         logg.info("\n> %s\n%s\n**%s", cmd, out, end)
         self.assertTrue(greps(out, r"^disabled"))
         self.assertTrue(greps(out, r"^enabled"))
         self.assertEqual(len(lines(out)), 2)
         self.assertEqual(end, 0)
         #
-        cmd = "%s --root=%s is-enabled b.service a.service" % (_systemctl_py, root)
-        out, end = output2(cmd)
+        cmd = "{systemctl} is-enabled b.service a.service"
+        out, end = output2(cmd.format(**locals()))
         logg.info("\n> %s\n%s\n**%s", cmd, out, end)
         self.assertTrue(greps(out, r"^static"))
         self.assertTrue(greps(out, r"^enabled"))
         self.assertEqual(len(lines(out)), 2)
         self.assertEqual(end, 0)
         #
-        cmd = "%s --root=%s is-enabled c.service a.service" % (_systemctl_py, root)
-        out, end = output2(cmd)
+        cmd = "{systemctl} is-enabled c.service a.service"
+        out, end = output2(cmd.format(**locals()))
         logg.info("\n> %s\n%s\n**%s", cmd, out, end)
         self.assertTrue(greps(out, r"^static"))
         self.assertTrue(greps(out, r"^disabled"))
@@ -876,7 +899,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _systemctl_py + " --root=" + root
+        systemctl = _cov + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/a.service"),"""
             [Unit]
             Description=Testing A""")
@@ -972,6 +995,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/a.service"),"""
             [Unit]
             Description=Testing A""")
@@ -986,30 +1010,30 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target""")
         #
-        cmd = "%s --root=%s default-services" % (_systemctl_py, root)
-        out, end = output2(cmd)
+        cmd = "{systemctl} default-services"
+        out, end = output2(cmd.format(**locals()))
         logg.info("\n> %s\n%s\n**%s", cmd, out, end)
         self.assertEqual(len(lines(out)), 0)
         self.assertEqual(end, 0)
         #
-        cmd = "%s --root=%s --no-legend enable b.service" % (_systemctl_py, root)
-        out, end = output2(cmd)
+        cmd = "{systemctl} --no-legend enable b.service"
+        out, end = output2(cmd.format(**locals()))
         logg.info("\n> %s\n%s\n**%s", cmd, out, end)
         self.assertEqual(end, 0)
         #
-        cmd = "%s --root=%s default-services" % (_systemctl_py, root)
-        out, end = output2(cmd)
+        cmd = "{systemctl} default-services"
+        out, end = output2(cmd.format(**locals()))
         logg.info("\n> %s\n%s\n**%s", cmd, out, end)
         self.assertEqual(len(lines(out)), 1)
         self.assertEqual(end, 0)
         #
-        cmd = "%s --root=%s --no-legend enable c.service" % (_systemctl_py, root)
-        out, end = output2(cmd)
+        cmd = "{systemctl} --no-legend enable c.service"
+        out, end = output2(cmd.format(**locals()))
         logg.info("\n> %s\n%s\n**%s", cmd, out, end)
         self.assertEqual(end, 0)
         #
-        cmd = "%s --root=%s default-services" % (_systemctl_py, root)
-        out, end = output2(cmd)
+        cmd = "{systemctl} default-services"
+        out, end = output2(cmd.format(**locals()))
         logg.info("\n> %s\n%s\n**%s", cmd, out, end)
         self.assertEqual(len(lines(out)), 2)
         self.assertEqual(end, 0)
@@ -1024,6 +1048,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/a.service"),"""
             [Unit]
             Description=Testing A""")
@@ -1048,46 +1073,46 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target""")
         #
-        cmd = "%s --root=%s default-services" % (_systemctl_py, root)
-        out, end = output2(cmd)
+        cmd = "{systemctl} default-services"
+        out, end = output2(cmd.format(**locals()))
         logg.info("\n> %s\n%s\n**%s", cmd, out, end)
         self.assertEqual(len(lines(out)), 0)
         self.assertEqual(end, 0)
         #
-        cmd = "%s --root=%s --no-legend enable b.service" % (_systemctl_py, root)
-        out, end = output2(cmd)
+        cmd = "{systemctl} --no-legend enable b.service"
+        out, end = output2(cmd.format(**locals()))
         logg.info("\n> %s\n%s\n**%s", cmd, out, end)
         self.assertEqual(end, 0)
         #
-        cmd = "%s --root=%s --no-legend enable c.service" % (_systemctl_py, root)
-        out, end = output2(cmd)
+        cmd = "{systemctl} --no-legend enable c.service"
+        out, end = output2(cmd.format(**locals()))
         logg.info("\n> %s\n%s\n**%s", cmd, out, end)
         self.assertEqual(end, 0)
         #
-        cmd = "%s --root=%s --no-legend enable mount-disks.service" % (_systemctl_py, root)
-        out, end = output2(cmd)
+        cmd = "{systemctl} --no-legend enable mount-disks.service"
+        out, end = output2(cmd.format(**locals()))
         logg.info("\n> %s\n%s\n**%s", cmd, out, end)
         self.assertEqual(end, 0)
         #
-        cmd = "%s --root=%s --no-legend enable network.service" % (_systemctl_py, root)
-        out, end = output2(cmd)
+        cmd = "{systemctl} --no-legend enable network.service"
+        out, end = output2(cmd.format(**locals()))
         logg.info("\n> %s\n%s\n**%s", cmd, out, end)
         self.assertEqual(end, 0)
         #
-        cmd = "%s --root=%s default-services" % (_systemctl_py, root)
-        out, end = output2(cmd)
+        cmd = "{systemctl} default-services"
+        out, end = output2(cmd.format(**locals()))
         logg.info("\n> %s\n%s\n**%s", cmd, out, end)
         self.assertEqual(len(lines(out)), 2)
         self.assertEqual(end, 0)
         #
-        cmd = "%s --root=%s default-services --all" % (_systemctl_py, root)
-        out, end = output2(cmd)
+        cmd = "{systemctl} default-services --all"
+        out, end = output2(cmd.format(**locals()))
         logg.info("\n> %s\n%s\n**%s", cmd, out, end)
         self.assertEqual(len(lines(out)), 3)
         self.assertEqual(end, 0)
         #
-        cmd = "%s --root=%s default-services --all --force" % (_systemctl_py, root)
-        out, end = output2(cmd)
+        cmd = "{systemctl} default-services --all --force"
+        out, end = output2(cmd.format(**locals()))
         logg.info("\n> %s\n%s\n**%s", cmd, out, end)
         self.assertEqual(len(lines(out)), 4)
         self.assertEqual(end, 0)
@@ -1099,7 +1124,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
-        systemctl = _systemctl_py + " --root=" + root
+        systemctl = _cov + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         text_file(os_path(testdir, "zzz.service"),"""
@@ -1147,7 +1172,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
-        systemctl = _systemctl_py + " --root=" + root
+        systemctl = _cov + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         text_file(os_path(testdir, "zzz.service"),"""
@@ -1194,7 +1219,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
-        systemctl = _systemctl_py + " --root=" + root
+        systemctl = _cov + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         os.makedirs(os_path(root, "/var/run"))
@@ -1260,7 +1285,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
-        systemctl = _systemctl_py + " --root=" + root
+        systemctl = _cov + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         os.makedirs(os_path(root, "/var/run"))
@@ -1324,7 +1349,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
-        systemctl = _systemctl_py + " --root=" + root
+        systemctl = _cov + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         text_file(os_path(testdir, "zza.service"),"""
@@ -2875,17 +2900,25 @@ if __name__ == "__main__":
     _o = OptionParser("%prog [options] test*",
        epilog=__doc__.strip().split("\n")[0])
     _o.add_option("-v","--verbose", action="count", default=0,
-       help="increase logging level (%default)")
+       help="increase logging level [%default]")
     _o.add_option("--with", metavar="FILE", dest="systemctl_py", default=_systemctl_py,
        help="systemctl.py file to be tested (%default)")
+    _o.add_option("-a","--coverage", action="count", default=0,
+       help="gather coverage.py data (use -aa for new set) [%default]")
     _o.add_option("-l","--logfile", metavar="FILE", default="",
-       help="additionally save the output log to a file (%default)")
+       help="additionally save the output log to a file [%default]")
     _o.add_option("--xmlresults", metavar="FILE", default=None,
-       help="capture results as a junit xml file (%default)")
+       help="capture results as a junit xml file [%default]")
     opt, args = _o.parse_args()
     logging.basicConfig(level = logging.WARNING - opt.verbose * 5)
     #
     _systemctl_py = opt.systemctl_py
+    #
+    if opt.coverage:
+        _c = _coverage
+        if opt.coverage > 1:
+            if os.path.exists(".coverage"):
+                os.remove(".coverage")
     #
     logfile = None
     if opt.logfile:
@@ -2901,6 +2934,13 @@ if __name__ == "__main__":
            os.remove(opt.xmlresults)
         xmlresults = open(opt.xmlresults, "w")
         logg.info("xml results into %s", opt.xmlresults)
+    #
+    if opt.coverage:
+        _cov = _coverage
+        if opt.coverage > 1:
+            if os.path.exists(".coverage"):
+                logg.info("rm .coverage")
+                os.remove(".coverage")
     # unittest.main()
     suite = unittest.TestSuite()
     if not args: args = [ "test_*" ]
@@ -2929,3 +2969,6 @@ if __name__ == "__main__":
             import xmlrunner
             Runner = xmlrunner.XMLTestRunner
         Runner(logfile.stream, verbosity=opt.verbose).run(suite)
+    if opt.coverage:
+        print " " + _cov_cmd + " report " + _systemctl_py
+        print " " + _cov_cmd + " annotate " + _systemctl_py
