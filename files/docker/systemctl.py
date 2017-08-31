@@ -1737,11 +1737,11 @@ class Systemctl:
     def try_restart_units(self, units):
         """ fails if any module fails to try-restart """
         done = True
-        if unit in units:
+        for unit in units:
             if not self.try_restart_unit(unit):
                 done = False
         return done
-    def try_restart_unit(unit):
+    def try_restart_unit(self, unit):
         conf = self.load_unit_conf(unit)
         if conf is None:
             logg.error("no such unit: '%s'", unit)
@@ -2870,8 +2870,8 @@ if __name__ == "__main__":
     _no_wall = opt.no_wall
     _no_ask_password = opt.no_ask_password
     #
-    _systemctl_debug_log = "/var/log/systemctl.debug.log"
-    _systemctl_extra_log = "/var/log/systemctl.log"
+    _systemctl_debug_log = _root + "/var/log/systemctl.debug.log"
+    _systemctl_extra_log = _root + "/var/log/systemctl.log"
     if _root:
        _systemctl_debug_log = os.path.join(_root, _systemctl_debug_log)
        _systemctl_extra_log = os.path.join(_root, _systemctl_extra_log)
