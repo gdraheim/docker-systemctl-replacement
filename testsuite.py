@@ -48,7 +48,7 @@ def _lines(lines):
             lines = lines[:-1]
     return lines
 def lines(text):
-    return _lines(text)
+    return list(_lines(text))
 def grep(pattern, lines):
     for line in _lines(lines):
        if re.search(pattern, line.rstrip()):
@@ -353,6 +353,32 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(hosts, "::1.*localhost6"))
         self.assertFalse(greps(hosts, "127.0.0.1.*localhost "))
         self.assertTrue(greps(hosts, "::1.*localhost "))
+        self.rm_testdir()
+    def test_1020_systemctl_with_systemctl_log(self):
+        """ when /var/log/systemctl.log exists then print INFO messages into it"""
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        logfile = os_path(root, "/var/log/systemctl.log")
+        text_file(logfile,"")
+        #
+        cmd = "{systemctl} daemon-reload"
+        sh____(cmd.format(**locals()))
+        self.assertEqual(len(greps(open(logfile), " INFO ")), 3)
+        self.assertEqual(len(greps(open(logfile), " DEBUG ")), 0)
+        self.rm_testdir()
+    def test_1021_systemctl_with_systemctl_debug_log(self):
+        """ when /var/log/systemctl.debug.log exists then print DEBUG messages into it"""
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        logfile = os_path(root, "/var/log/systemctl.debug.log")
+        text_file(logfile,"")
+        #
+        cmd = "{systemctl} daemon-reload"
+        sh____(cmd.format(**locals()))
+        self.assertEqual(len(greps(open(logfile), " INFO ")), 3)
+        self.assertEqual(len(greps(open(logfile), " DEBUG ")), 1)
         self.rm_testdir()
     def test_2001_can_create_test_services(self):
         """ check that two unit files can be created for testing """
