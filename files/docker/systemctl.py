@@ -2536,7 +2536,7 @@ class Systemctl:
             if fnmatch.fnmatchcase(unit, ignore+".service"):
                 return True # ignore
         return False
-    def system_default_services(self, sysv="S", default_target = "multi-user.target"):
+    def system_default_services(self, sysv = "S", default_target = "multi-user.target"):
         """ show the default services 
             This is used internally to know the list of service to be started in 'default'
             runlevel when the container is started through default initialisation. It will
@@ -2549,21 +2549,21 @@ class Systemctl:
             if self._force:
                 igno = []
         logg.debug("ignored services filter for default.target:\n\t%s", igno)
-        return self.default_services(sysv, default_target, igno)
-    def default_services(self, sysv, default_target, igno = []):
-        wants_services = []
+        return self.enabled_default_services(sysv, default_target, igno)
+    def enabled_default_services(self, sysv = "S", default_target = "multi-user.target", igno = []):
+        default_services = []
         for folder in [ self._sysd_folder1, self._sysd_folder2 ]:
             if self._root:
                 folder = os_path(self._root, folder)
-            wants_folder = os.path.join(folder, default_target + ".wants")
-            if os.path.isdir(wants_folder):
-                for unit in sorted(os.listdir(wants_folder)):
-                    path = os.path.join(wants_folder, unit)
+            enabled_folder = os.path.join(folder, default_target + ".wants")
+            if os.path.isdir(enabled_folder):
+                for unit in sorted(os.listdir(enabled_folder)):
+                    path = os.path.join(enabled_folder, unit)
                     if os.path.isdir(path): continue
                     if self._ignored_unit(unit, igno):
                         continue # ignore
                     if unit.endswith(".service"):
-                        wants_services.append(unit)
+                        default_services.append(unit)
         for folder in [ self.rc3_root_folder() ]:
             if not os.path.isdir(folder):
                 logg.warning("non-existant %s", folder)
@@ -2577,8 +2577,8 @@ class Systemctl:
                     unit = service+".service"
                     if self._ignored_unit(unit, igno):
                         continue # ignore
-                    wants_services.append(unit)
-        return wants_services
+                    default_services.append(unit)
+        return default_services
     def system_default(self, arg = True):
         """ start units for default system level
             This will go through the enabled services in the default 'multi-user.target'.
@@ -2595,8 +2595,8 @@ class Systemctl:
             When --init is given then the init-loop is run and
             the services are stopped again by 'systemctl halt'."""
         default_target = "multi-user.target"
-        wants_services = self.system_default_services("S", default_target)
-        self.start_units(wants_services)
+        default_services = self.system_default_services("S", default_target)
+        self.start_units(default_services)
         logg.info("system is up")
         if init:
             logg.info("init-loop start")
@@ -2608,8 +2608,8 @@ class Systemctl:
             This is commonly run through 'systemctl halt' or
             at the end of a 'systemctl --init default' loop."""
         default_target = "multi-user.target"
-        wants_services = self.system_default_services("K", default_target)
-        self.stop_units(wants_services)
+        default_services = self.system_default_services("K", default_target)
+        self.stop_units(default_services)
         logg.info("system is down")
     def system_halt(self, arg = True):
         """ stop units from default system level """
