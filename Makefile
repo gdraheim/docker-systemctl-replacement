@@ -26,7 +26,8 @@ CP centos-postgres.dockerfile: ; ./testsuite.py test_6002
 UA ubuntu-apache2.dockerfile: ; ./testsuite.py test_6005
 DJ docker-jenkins: ; ./testsuite.py test_900*
 
-check: ; ./testsuite.py -v
+COVERAGE=--coverage
+check: ; ./testsuite.py -v --coverage
 test_%: ; ./testsuite.py $@ -v
 
 op opensuse: ; ./testsuite.py make_opensuse
