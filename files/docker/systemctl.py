@@ -410,15 +410,6 @@ def subprocess_wait(cmd, env=None, check = False, shell=False):
         raise Exception("command failed")
     return run
 
-def subprocess_output(cmd, env=None, check = False):
-    run = subprocess.Popen(cmd, shell=True, env=env, stdout = subprocess.PIPE)
-    run.wait()
-    if check and run.returncode: 
-        logg.error("returncode %i\n %s", run.returncode, cmd)
-        raise Exception("command failed")
-    return run
-
-
 def time_to_seconds(text, maximum = None):
     if maximum is None:
         maximum = DefaultMaximumTimeout
