@@ -1393,6 +1393,9 @@ class Systemctl:
         runs = conf.get("Service", "Type", "simple").lower()
         sudo = self.sudo_from(conf)
         env = self.get_env(conf)
+        timeout = conf.get("Service", "TimeoutSec", DefaultTimeoutStopSec)
+        timeout = conf.get("Service", "TimeoutStopSec", timeout)
+        timeout = time_to_seconds(timeout, DefaultMaximumTimeout)
         if True:
             for cmd in conf.getlist("Service", "ExecStopPre", []):
                 check, cmd = checkstatus(cmd)
@@ -1425,9 +1428,6 @@ class Systemctl:
                 # self.write_pid_file(pid_file, run.pid)
         elif runs in [ "notify" ]:
             pid_file = self.get_pid_file_from(conf)
-            timeout = conf.get("Service", "TimeoutSec", DefaultTimeoutStopSec)
-            timeout = conf.get("Service", "TimeoutStopSec", timeout)
-            timeout = time_to_seconds(timeout, DefaultMaximumTimeout)
             notify = self.notify_socket_from(conf)
             if notify:
                 env["NOTIFY_SOCKET"] = notify.socketfile
@@ -1458,8 +1458,9 @@ class Systemctl:
             for cmd in conf.getlist("Service", "ExecStop", []):
                 active = self.is_active_from(conf)
                 if pid_file:
-                    pid = self.read_pid_file(pid_file, "")
-                    env["MAINPID"] = str(pid)
+                    new_pid = self.read_pid_file(pid_file, "")
+                    if new_pid:
+                        env["MAINPID"] = str(new_pid)
                 check, cmd = checkstatus(cmd)
                 logg.debug("{env} %s", env)
                 newcmd = self.exec_cmd(cmd, env, conf)
@@ -1467,9 +1468,16 @@ class Systemctl:
                 run = subprocess_wait(sudo+newcmd, env)
                 if active:
                     if check and run.returncode: raise Exception("ExecStop")
-                if pid_file:
-                    pid = self.wait_pid_file(pid_file)
-            if not pid_file:
+            pid = env.get("MAINPID",0)
+            if pid:
+                logg.info("wait for PID %s to vanish", pid)
+                for x in xrange(int(timeout)):
+                    if not pid_exists(int(pid)):
+                        break
+                    self.sleep()
+                logg.info("wait for PID %s is done (%s.)", pid, x)
+            else:
+                logg.info("short sleep as no PID was found on Stop")
                 self.sleep()
         else:
             logg.error("unsupported run type '%s'", runs)
