@@ -1514,6 +1514,97 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
+    def test_4032_forking_service_functions(self):
+        """ check that we manage forking services in a root env
+            with commands like start, restart, stop, etc"""
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        testsleep = self.testname("sleep")
+        logfile = os_path(root, "/var/log/"+testsleep+".log")
+        bindir = os_path(root, "/usr/bin")
+        os.makedirs(os_path(root, "/var/run"))
+        text_file(logfile, "created\n")
+        begin = "{" ; end = "}"
+        shell_file(os_path(testdir, "zzz.init"), """
+            #! /bin/bash
+            logfile={logfile}
+            start() {begin} 
+               [ -d /var/run ] || mkdir -p /var/run
+               ({bindir}/{testsleep} 50 0<&- &>/dev/null &
+                echo $! > {root}/var/run/zzz.init.pid
+               ) &
+               wait %1
+               ps -o pid,ppid,args
+            {end}
+            stop() {begin}
+               killall {testsleep}
+            {end}
+            case "$1" in start)
+               date "+START.%T" >> $logfile
+               start >> $logfile 2>&1
+               date "+start.%T" >> $logfile
+            ;; stop)
+               date "+STOP.%T" >> $logfile
+               stop >> $logfile 2>&1
+               date "+start.%T" >> $logfile
+            ;; restart)
+               date "+RESTART.%T" >> $logfile
+               stop >> $logfile 2>&1
+               start >> $logfile 2>&1
+               date "+.%T" >> $logfile
+            ;; reload)
+               date "+RELOAD.%T" >> $logfile
+               echo "...." >> $logfile 2>&1
+               date "+reload.%T" >> $logfile
+            ;; esac 
+            echo "done$1" >&2
+            exit 0
+            """.format(**locals()))
+        text_file(os_path(testdir, "zzz.service"),"""
+            [Unit]
+            Description=Testing Z
+            [Service]
+            Type=forking
+            PIDFile={root}/var/run/zzz.init.pid
+            ExecStart={root}/usr/bin/zzz.init start
+            ExecStop={root}/usr/bin/zzz.init stop
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/usr/bin/zzz.init"))
+        copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
+        #
+        enable_service = "{systemctl} enable zzz.service"
+        sh____(enable_service.format(**locals()))
+        version_systemctl = "{systemctl} --version"
+        sh____(version_systemctl.format(**locals()))
+        list_units_systemctl = "{systemctl} default-services -vv"
+        sh____(list_units_systemctl.format(**locals()))
+        out = output(list_units_systemctl.format(**locals()))
+        logg.info("\n>\n%s", out)
+        self.assertTrue(greps(out, "zzz.service"))
+        self.assertEqual(len(lines(out)), 1)
+        #
+        start_service = "{systemctl} start zzz.service -vv"
+        sh____(start_service.format(**locals()))
+        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
+        top = output(top_recent.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        #
+        stop_service = "{systemctl} stop zzz.service -vv"
+        sh____(stop_service.format(**locals()))
+        top = output(top_recent.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, testsleep))
+        kill_testsleep = "killall {testsleep}"
+        sx____(kill_testsleep.format(**locals()))
+        logg.warning("LOG\n%s", open(logfile).read())
+        self.rm_testdir()
     def test_5001_systemctl_py_inside_container(self):
         """ check that we can run systemctl.py inside a docker container """
         testname = self.testname()
