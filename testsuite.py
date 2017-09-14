@@ -1433,6 +1433,87 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
+    def test_4030_simple_service_functions(self):
+        """ check that we manage simple services in a root env
+            with commands like start, restart, stop, etc"""
+        self.skipTest("not implemented correctly")
+        # the shellscript is blocking on its testsleep child
+        # in such a way that it does not compute the signals.
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        testsleep = self.testname("testsleep")
+        testscript = self.testname("testscript.sh")
+        logfile = os_path(root, "/var/log/test.log")
+        bindir = os_path(root, "/usr/bin")
+        begin = "{"
+        end = "}"
+        text_file(logfile, "")
+        text_file(os_path(testdir, "zzz.service"),"""
+            [Unit]
+            Description=Testing Z
+            [Service]
+            Type=simple
+            ExecStart={bindir}/{testscript} 50
+            ExecStop=killall -3 {testscript}
+            ExecStop=sleep 4
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        shell_file(os_path(bindir, testscript),"""
+            #! /bin/sh
+            date > {logfile}
+            echo "begin" >> {logfile}
+            stops () {begin}
+              date >> {logfile}
+              echo "stopping" >> {logfile}
+              killall {testsleep}
+              exit 0
+            {end}
+            reload () {begin}
+              date >> {logfile}
+              echo "reloads" >> {logfile}
+            {end}
+            trap "stops" 3
+            trap "reload" 5
+            date >> {logfile}
+            echo "start" >> {logfile}
+            {bindir}/{testsleep} $1 >> {logfile} 2>&1
+            date >> {logfile}
+            echo "ended" >> {logfile}
+            trap - 1 5
+        """.format(**locals()))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
+        #
+        enable_service = "{systemctl} enable zzz.service"
+        sh____(enable_service.format(**locals()))
+        version_systemctl = "{systemctl} --version"
+        sh____(version_systemctl.format(**locals()))
+        list_units_systemctl = "{systemctl} default-services -vv"
+        sh____(list_units_systemctl.format(**locals()))
+        out = output(list_units_systemctl.format(**locals()))
+        logg.info("\n>\n%s", out)
+        self.assertTrue(greps(out, "zzz.service"))
+        self.assertEqual(len(lines(out)), 1)
+        #
+        start_service = "{systemctl} start zzz.service -vv"
+        sh____(start_service.format(**locals()))
+        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
+        top = output(top_recent.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        #
+        stop_service = "{systemctl} stop zzz.service -vv"
+        sh____(stop_service.format(**locals()))
+        top = output(top_recent.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, testsleep))
+        kill_testsleep = "killall {testsleep}"
+        sx____(kill_testsleep.format(**locals()))
+        self.rm_testdir()
     def test_5001_systemctl_py_inside_container(self):
         """ check that we can run systemctl.py inside a docker container """
         testname = self.testname()
