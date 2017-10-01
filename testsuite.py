@@ -1578,17 +1578,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/usr/bin/zzz.init"))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         #
-        enable_service = "{systemctl} enable zzz.service"
-        sh____(enable_service.format(**locals()))
-        version_systemctl = "{systemctl} --version"
-        sh____(version_systemctl.format(**locals()))
-        list_units_systemctl = "{systemctl} default-services -vv"
-        sh____(list_units_systemctl.format(**locals()))
-        out = output(list_units_systemctl.format(**locals()))
-        logg.info("\n>\n%s", out)
-        self.assertTrue(greps(out, "zzz.service"))
-        self.assertEqual(len(lines(out)), 1)
-        #
         start_service = "{systemctl} start zzz.service -vv"
         sh____(start_service.format(**locals()))
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
