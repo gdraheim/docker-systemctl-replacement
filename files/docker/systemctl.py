@@ -1876,20 +1876,33 @@ class Systemctl:
             return True
     def is_active_modules(self, *modules):
         """ [UNIT].. -- check if these units are in active state
-        implements True if any is-active = True """
+        implements True if all is-active = True """
+        # systemctl returns multiple lines, one for each argument
+        #   "active" when is_active
+        #   "inactive" when not is_active
+        #   "unknown" when not found
+        # The return code is set to
+        #   0 when "active"
+        #   3 when any "inactive" or "unknown"
         found_all = True
         units = []
+        results = []
         for module in modules:
-            matched = self.match_units([ module ])
-            if not matched:
-                logg.error("no such service '%s'", module)
+            units = self.match_units([ module ])
+            if not units:
+                # logg.error("no such service '%s'", module)
+                results += ["unknown"]
                 found_all = False
                 continue
-            for unit in matched:
-                if unit not in units:
-                    units += [ unit ]
-        return self.is_active_units(units) # and found_all
-    def is_active_units(self, *units):
+            active = self.is_active_units(units) 
+            if active:
+                results += ["active"]
+            else:
+                results += ["inactive"]
+        inactive = "inactive" in results
+        status = found_all and not inactive
+        return status, results
+    def is_active_units(self, units):
         """ true if any unit was active """
         result = False
         for unit in units:
