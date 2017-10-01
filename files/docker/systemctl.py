@@ -676,9 +676,11 @@ class Systemctl:
         if conf is not None:
             return conf
         return self.default_unit_conf(module)
-    def match_units(self, modules, suffix=".service"): # -> [ units,.. ]
-        """ call for about any command with multiple units which can
-            actually be glob patterns on their respective unit name. """
+    def match_units(self, modules = None, suffix=".service"): # -> [ units,.. ]
+        """ Helper for about any command with multiple units which can
+            actually be glob patterns on their respective unit name. 
+            It returns all modules if no modules pattern were given.
+            Also a single string as one module pattern may be given. """
         found = []
         for unit in self.match_sysd_units(modules, suffix):
             if unit not in found:
@@ -687,8 +689,10 @@ class Systemctl:
             if unit not in found:
                 found.append(unit)
         return found
-    def match_sysd_units(self, modules, suffix=".service"): # -> generate[ unit ]
-        """ make a file glob on all known units (systemd areas) """
+    def match_sysd_units(self, modules = None, suffix=".service"): # -> generate[ unit ]
+        """ make a file glob on all known units (systemd areas).
+            It returns all modules if no modules pattern were given.
+            Also a single string as one module pattern may be given. """
         if isinstance(modules, basestring):
             modules = [ modules ]
         self.scan_unit_sysd_files()
@@ -699,8 +703,10 @@ class Systemctl:
                 yield item
             elif [ module for module in modules if module+suffix == item ]:
                 yield item
-    def match_sysv_units(self, modules, suffix=".service"): # -> generate[ unit ]
-        """ make a file glob on all known units (sysv areas) """
+    def match_sysv_units(self, modules = None, suffix=".service"): # -> generate[ unit ]
+        """ make a file glob on all known units (sysv areas).
+            It returns all modules if no modules pattern were given.
+            Also a single string as one module pattern may be given. """
         if isinstance(modules, basestring):
             modules = [ modules ]
         self.scan_unit_sysv_files()
