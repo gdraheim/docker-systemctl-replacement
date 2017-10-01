@@ -2576,6 +2576,10 @@ class Systemctl:
         ok = True
         for unit in self.match_units():
             conf = self.get_unit_conf(unit)
+            if not conf.has_section("Service"):
+                if conf.filename() and conf.filename().endswith(".service"):
+                   logg.error("%s: .service file without [Service] section", unit)
+                continue
             haveType = conf.get("Service", "Type", "simple")
             haveExecStart = conf.getlist("Service", "ExecStart", [])
             haveExecStop = conf.getlist("Service", "ExecStop", [])
@@ -2587,7 +2591,7 @@ class Systemctl:
                     continue
                 usedExecStart.append(line)
             for line in haveExecStop:
-                if not line.startswith("/"):
+                if not line.startswith("/") and not line.startswith("-/"):
                     logg.error("%s: Executable path is not absolute, ignoring: %s", unit, line.strip())
                     continue
                 usedExecStop.append(line)
