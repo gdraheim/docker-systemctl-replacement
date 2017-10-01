@@ -2499,9 +2499,34 @@ class Systemctl:
         sortlist = sortedAfter(conflist)
         return [ item.name() for item in reversed(sortlist) ]
     def system_daemon_reload(self):
-        """ reload does nothing here """
-        logg.info("ignored daemon-reload")
-        return True
+        """ reload does will only check the service files here """
+        ok = True
+        for unit in self.match_units():
+            logg.info("============= %s", unit)
+            conf = self.get_unit_conf(unit)
+            haveType = conf.get("Service", "Type", "simple")
+            haveExecStart = conf.getlist("Service", "ExecStart", [])
+            haveExecStop = conf.getlist("Service", "ExecStop", [])
+            usedExecStart = []
+            usedExecStop = []
+            for line in haveExecStart:
+                if not line.startswith("/") and not line.startswith("-/"):
+                    logg.error("%s: Executable path is not absolute, ignoring: %s", unit, line.strip())
+                    continue
+                usedExecStart.append(line)
+            for line in haveExecStop:
+                if not line.startswith("/"):
+                    logg.error("%s: Executable path is not absolute, ignoring: %s", unit, line.strip())
+                    continue
+                usedExecStop.append(line)
+            if haveType in ["simple", "notify", "forking"]:
+                if not usedExecStart and not usedExecStop:
+                    logg.error("%s: Service lacks both ExecStart and ExecStop= setting. Refusing.", unit)
+                    ok = False
+                elif not usedExecStart and haveType != "oneshot":
+                    logg.error("%s: Service has no ExecStart= setting, which is only allowed for Type=oneshot services. Refusing.",  unit)
+                    ok = False
+        return False
     def show_modules(self, *modules):
         """ [PATTERN]... -- Show properties of one or more units
            Show properties of one or more units (or the manager itself).
