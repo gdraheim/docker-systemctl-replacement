@@ -295,7 +295,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = _cov + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/a.service"),"""
             [Unit]
-            Description=Testing A""")
+            Description=Testing A
+            [Service]
+            ExecStart=/usr/bin/sleep 3
+        """)
         cmd = "{systemctl} daemon-reload"
         out,end = output2(cmd.format(**locals()))
         logg.info("\n> %s\n%s\n**%s", cmd, out, end)
