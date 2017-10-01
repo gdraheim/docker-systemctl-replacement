@@ -2009,10 +2009,8 @@ class Systemctl:
         """ returns 'running' 'exited' 'dead' 'failed' 'plugged' 'mounted' """
         if not conf: return False
         pid_file = self.get_pid_file_from(conf)
-        if not pid_file:
+        if not pid_file or not os.path.exists(pid_file):
             return "dead"
-        if not os.path.exists(pid_file):
-            return "exited"
         pid = self.read_pid_file(pid_file)
         logg.debug("pid_file '%s' => PID %s", pid_file, pid)
         exists = self.pid_exists(pid)
@@ -2577,7 +2575,6 @@ class Systemctl:
         """ reload does will only check the service files here """
         ok = True
         for unit in self.match_units():
-            logg.info("============= %s", unit)
             conf = self.get_unit_conf(unit)
             haveType = conf.get("Service", "Type", "simple")
             haveExecStart = conf.getlist("Service", "ExecStart", [])
@@ -2601,7 +2598,7 @@ class Systemctl:
                 elif not usedExecStart and haveType != "oneshot":
                     logg.error("%s: Service has no ExecStart= setting, which is only allowed for Type=oneshot services. Refusing.",  unit)
                     ok = False
-        return False
+        return True # and ok
     def show_modules(self, *modules):
         """ [PATTERN]... -- Show properties of one or more units
            Show properties of one or more units (or the manager itself).
