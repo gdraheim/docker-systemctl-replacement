@@ -1884,6 +1884,9 @@ class Systemctl:
         # The return code is set to
         #   0 when "active"
         #   3 when any "inactive" or "unknown"
+        # However: # TODO!!!!! BUG in original systemctl!!
+        #   documentation says " exit code 0 if at least one is active"
+        #   and "Unless --quiet is specified, print the unit state"
         found_all = True
         units = []
         results = []
@@ -1899,9 +1902,18 @@ class Systemctl:
                 results += ["active"]
             else:
                 results += ["inactive"]
-        inactive = "inactive" in results
-        status = found_all and not inactive
-        return status, results
+        if True:
+            ## how 'systemctl' works:
+            inactive = "inactive" in results
+            status = found_all and not inactive
+        else:
+            ## how it should work:
+            active = "active" in results
+            status = found_all and active
+        if not _quiet:
+            return status, results
+        else:
+            return status
     def is_active_units(self, units):
         """ true if any unit was active """
         result = False
