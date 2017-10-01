@@ -366,7 +366,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "{systemctl} daemon-reload"
         sh____(cmd.format(**locals()))
-        self.assertEqual(len(greps(open(logfile), " INFO ")), 3)
+        self.assertEqual(len(greps(open(logfile), " INFO ")), 2)
         self.assertEqual(len(greps(open(logfile), " DEBUG ")), 0)
         self.rm_testdir()
     def test_1021_systemctl_with_systemctl_debug_log(self):
@@ -379,8 +379,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "{systemctl} daemon-reload"
         sh____(cmd.format(**locals()))
-        self.assertEqual(len(greps(open(logfile), " INFO ")), 3)
-        self.assertEqual(len(greps(open(logfile), " DEBUG ")), 1)
+        self.assertEqual(len(greps(open(logfile), " INFO ")), 2)
+        self.assertEqual(len(greps(open(logfile), " DEBUG ")), 3)
         self.rm_testdir()
     def test_2001_can_create_test_services(self):
         """ check that two unit files can be created for testing """
