@@ -855,6 +855,22 @@ class Systemctl:
             folder = os_path(self._root, folder)
         name = "%s.pid" % unit
         return os.path.join(folder, name)
+    def get_pid_file(self, unit):
+        conf = self.load_unit_conf(unit)
+        if conf is None:
+            logg.error("no such unit: '%s'", unit)
+            return None
+        return self.get_pid_file_from(conf)
+    def get_pid_file_from(self, conf, default = None):
+        if not conf: return default
+        if not conf.filename(): return default
+        unit = os.path.basename(conf.filename())
+        if default is None:
+            default = self.default_pid_file(unit)
+        return self.pid_file_from(conf, default)
+    def pid_file_from(self, conf, default = ""):
+        return conf.get("Service", "PIDFile", default)
+    #
     def sleep(self, seconds = None): 
         """ just sleep """
         seconds = seconds or MinimumSleep
@@ -1748,21 +1764,6 @@ class Systemctl:
                 logg.info("post-restart %s", shell_cmd(sudo+newcmd))
                 run = subprocess_wait(sudo+newcmd, env)
         return True
-    def get_pid_file(self, unit):
-        conf = self.load_unit_conf(unit)
-        if conf is None:
-            logg.error("no such unit: '%s'", unit)
-            return None
-        return self.get_pid_file_from(conf)
-    def get_pid_file_from(self, conf, default = None):
-        if not conf: return default
-        if not conf.filename(): return default
-        unit = os.path.basename(conf.filename())
-        if default is None:
-            default = self.default_pid_file(unit)
-        return self.pid_file_from(conf, default)
-    def pid_file_from(self, conf, default = ""):
-        return conf.get("Service", "PIDFile", default)
     def try_restart_modules(self, *modules):
         """ [UNIT]... -- try-restart these units """
         found_all = True
