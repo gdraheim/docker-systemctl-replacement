@@ -1749,7 +1749,7 @@ class Systemctl:
             return self.restart_unit_from(conf)
         return True
     def reload_or_restart_modules(self, *modules):
-        """ [UNIT]... -- reload-or-start these units """
+        """ [UNIT]... -- reload-or-restart these units """
         found_all = True
         units = []
         for module in modules:
@@ -1780,8 +1780,10 @@ class Systemctl:
             # except Exception, e: pass
             return self.start_unit_from(conf)
         elif conf.getlist("Service", "ExecReload", []):
+            logg.info("found service to have ExecReload -> 'reload'")
             return self.reload_unit_from(conf)
         else:
+            logg.info("found service without ExecReload -> 'restart'")
             return self.restart_unit_from(conf)
     def reload_or_try_restart_modules(self, *modules):
         """ [UNIT]... -- reload-or-try-restart these units """
