@@ -1,7 +1,7 @@
 FROM centos:centos7
 
 LABEL __copyright__="(C) Guido U. Draheim, for free use (CC-BY,GPL,BSD)" \
-      __version__="1.0.1285"
+      __version__="1.0.1401"
 
 ENV PG /var/lib/pgsql/data
 
