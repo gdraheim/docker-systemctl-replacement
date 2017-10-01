@@ -1537,7 +1537,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 echo $! > {root}/var/run/zzz.init.pid
                ) &
                wait %1
-               ps -o pid,ppid,args
+               # ps -o pid,ppid,args
             {end}
             stop() {begin}
                killall {testsleep}
@@ -1549,7 +1549,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ;; stop)
                date "+STOP.%T" >> $logfile
                stop >> $logfile 2>&1
-               date "+start.%T" >> $logfile
+               date "+stop.%T" >> $logfile
             ;; restart)
                date "+RESTART.%T" >> $logfile
                stop >> $logfile 2>&1
@@ -1601,9 +1601,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
-        kill_testsleep = "killall {testsleep}"
-        sx____(kill_testsleep.format(**locals()))
-        logg.warning("LOG\n%s", open(logfile).read())
+        logg.warning("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
         self.rm_testdir()
     def test_5001_systemctl_py_inside_container(self):
         """ check that we can run systemctl.py inside a docker container """
