@@ -327,7 +327,7 @@ class UnitConfigParser:
                     section = line[1:x]
                     self.add_section(section)
                 continue
-            m = re.match(r"(\w+)=(.*)", line)
+            m = re.match(r"(\w+) *=(.*)", line)
             if not m:
                 logg.warning("bad ini line: %s", line)
                 raise Exception("bad ini line")
