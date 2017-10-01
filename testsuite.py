@@ -1436,6 +1436,118 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
+
+    def test_3050_systemctl_py_check_is_active_in_testenv(self):
+        """ check is_active behaviour in local testenv env"""
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        testsleep = self.testname("sleep")
+        bindir = os_path(root, "/usr/bin")
+        text_file(os_path(testdir, "zza.service"),"""
+            [Unit]
+            Description=Testing A""")
+        text_file(os_path(testdir, "zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            Type=simple
+            ExecStart={bindir}/{testsleep} 40
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        text_file(os_path(testdir, "zzc.service"),"""
+            [Unit]
+            Description=Testing C
+            [Service]
+            Type=simple
+            ExecStart={bindir}/{testsleep} 50
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
+        copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
+        copy_file(os_path(testdir, "zzc.service"), os_path(root, "/etc/systemd/system/zzc.service"))
+        #
+        is_active_A = "{systemctl} is-active zza.service"
+        is_active_B = "{systemctl} is-active zzb.service"
+        is_active_C = "{systemctl} is-active zzc.service"
+        is_active_D = "{systemctl} is-active zzd.service"
+        actA, exitA  = output2(is_active_A.format(**locals()))
+        actB, exitB  = output2(is_active_B.format(**locals()))
+        actC, exitC  = output2(is_active_C.format(**locals()))
+        actD, exitD  = output2(is_active_D.format(**locals()))
+        self.assertEqual(actA.strip(), "inactive")
+        self.assertEqual(actB.strip(), "inactive")
+        self.assertEqual(actC.strip(), "inactive")
+        self.assertEqual(actD.strip(), "unknown")
+        self.assertNotEqual(exitA, 0)
+        self.assertNotEqual(exitB, 0)
+        self.assertNotEqual(exitC, 0)
+        self.assertNotEqual(exitD, 0)
+        #
+        start_service_B = "{systemctl} start zzb.service -vv"
+        sh____(start_service_B.format(**locals()))
+        #
+        is_active_A = "{systemctl} is-active zza.service"
+        is_active_B = "{systemctl} is-active zzb.service"
+        is_active_C = "{systemctl} is-active zzc.service"
+        is_active_D = "{systemctl} is-active zzd.service"
+        actA, exitA  = output2(is_active_A.format(**locals()))
+        actB, exitB  = output2(is_active_B.format(**locals()))
+        actC, exitC  = output2(is_active_C.format(**locals()))
+        actD, exitD  = output2(is_active_D.format(**locals()))
+        self.assertEqual(actA.strip(), "inactive")
+        self.assertEqual(actB.strip(), "active")
+        self.assertEqual(actC.strip(), "inactive")
+        self.assertEqual(actD.strip(), "unknown")
+        self.assertNotEqual(exitA, 0)
+        self.assertEqual(exitB, 0)
+        self.assertNotEqual(exitC, 0)
+        self.assertNotEqual(exitD, 0)
+        #
+        logg.info("== checking combinations of arguments")
+        is_active_BC = "{systemctl} is-active zzb.service zzc.service "
+        is_active_CD = "{systemctl} is-active zzc.service zzd.service"
+        is_active_BD = "{systemctl} is-active zzb.service zzd.service"
+        is_active_BCD = "{systemctl} is-active zzb.service zzc.service zzd.service"
+        actBC, exitBC  = output2(is_active_BC.format(**locals()))
+        actCD, exitCD  = output2(is_active_CD.format(**locals()))
+        actBD, exitBD  = output2(is_active_BD.format(**locals()))
+        actBCD, exitBCD  = output2(is_active_BCD.format(**locals()))
+        self.assertEqual(actBC.split("\n"), ["active", "inactive", ""])
+        self.assertEqual(actCD.split("\n"), [ "inactive", "unknown",""])
+        self.assertEqual(actBD.split("\n"), [ "active", "unknown", ""])
+        self.assertEqual(actBCD.split("\n"), ["active", "inactive", "unknown", ""])
+        self.assertNotEqual(exitBC, 0)         ## this is how the original systemctl
+        self.assertNotEqual(exitCD, 0)         ## works. The documentation however
+        self.assertNotEqual(exitBD, 0)         ## says to return 0 if any service
+        self.assertNotEqual(exitBCD, 0)        ## is found to be 'active'
+        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
+        top = output(top_recent.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep+" 40"))
+        #
+        start_service_C = "{systemctl} start zzc.service -vv"
+        sh____(start_service_C.format(**locals()))
+        #
+        actBC, exitBC  = output2(is_active_BC.format(**locals()))
+        self.assertEqual(actBC.split("\n"), ["active", "active", ""])
+        self.assertEqual(exitBC, 0)         ## all is-active => return 0
+        #
+        start_service_C = "{systemctl} stop zzb.service zzc.service -vv"
+        sh____(start_service_C.format(**locals()))
+        #
+        actBC, exitBC  = output2(is_active_BC.format(**locals()))
+        self.assertEqual(actBC.split("\n"), ["inactive", "inactive", ""])
+        self.assertNotEqual(exitBC, 0)
+        #
+        kill_testsleep = "killall {testsleep}"
+        sx____(kill_testsleep.format(**locals()))
+        self.rm_testdir()
     def test_4030_simple_service_functions(self):
         """ check that we manage simple services in a root env
             with commands like start, restart, stop, etc"""
