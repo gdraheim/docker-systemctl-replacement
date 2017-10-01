@@ -870,6 +870,29 @@ class Systemctl:
         return self.pid_file_from(conf, default)
     def pid_file_from(self, conf, default = ""):
         return conf.get("Service", "PIDFile", default)
+    def default_status_file(self, unit): # -> text
+        """ default file pattern where to store a status mark """
+        folder = self._pid_file_folder
+        if self._root:
+            folder = os_path(self._root, folder)
+        name = "%s.status" % unit
+        return os.path.join(folder, name)
+    def get_status_file(self, unit):
+        conf = self.load_unit_conf(unit)
+        if conf is None:
+            logg.error("no such unit: '%s'", unit)
+            return None
+        return self.get_status_file_from(conf)
+    def get_status_file_from(self, conf, default = None):
+        if not conf: return default
+        if not conf.filename(): return default
+        unit = os.path.basename(conf.filename())
+        if default is None:
+            default = self.default_status_file(unit)
+        return self.status_file_from(conf, default)
+    def status_file_from(self, conf, default = ""):
+        return conf.get("Service", "StatusFile", default)
+        # this not a real setting.
     #
     def sleep(self, seconds = None): 
         """ just sleep """
