@@ -3407,8 +3407,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(read_logfile_2.format(**locals()))
         self.assertFalse(greps(open(tmp+"/systemctl.server.log"), " ERROR "))
         self.assertFalse(greps(open(tmp+"/systemctl.desktop.log"), " ERROR "))
-        self.assertGreater(len(greps(open(tmp+"/systemctl.server.log"), " INFO ")), 15)
-        self.assertGreater(len(greps(open(tmp+"/systemctl.desktop.log"), " INFO ")), 15)
+        self.assertGreater(len(greps(open(tmp+"/systemctl.server.log"), " INFO ")), 10)
+        self.assertGreater(len(greps(open(tmp+"/systemctl.desktop.log"), " INFO ")), 10)
         self.assertTrue(greps(open(tmp+"/systemctl.server.log"), "/systemctl daemon-reload"))
         # self.assertTrue(greps(open(tmp+"/systemctl.server.log"), "/systemctl status jenkins.service"))
         self.assertTrue(greps(open(tmp+"/systemctl.server.log"), "--property=ActiveState")) # <<< new
