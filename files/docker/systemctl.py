@@ -741,9 +741,8 @@ class Systemctl:
                 conf = self.get_unit_conf(unit)
                 result[unit] = "loaded"
                 description[unit] = self.get_description_from(conf)
-                if self.is_active_from(conf):
-                    active[unit] = "active"
-                    substate[unit] = "undead" # TODO
+                active[unit] = self.get_active_from(conf)
+                substate[unit] = self.get_substate_from(conf)
             except Exception, e:
                 logg.warning("list-units: %s", e)
         return [ (unit, result[unit] + " " + active[unit] + " " + substate[unit], description[unit]) for unit in sorted(result) ]
@@ -1421,6 +1420,7 @@ class Systemctl:
                     os.remove(pid_file)
         elif runs in [ "simple" ]:
             pid_file = self.get_pid_file_from(conf)
+            pid = 0
             for cmd in conf.getlist("Service", "ExecStop", []):
                 pid = self.read_pid_file(pid_file, "")
                 env["MAINPID"] = str(pid)
@@ -1428,6 +1428,18 @@ class Systemctl:
                 logg.info("simp stop %s", shell_cmd(sudo+newcmd))
                 run = subprocess_wait(sudo+newcmd, env)
                 # self.write_pid_file(pid_file, run.pid)
+            pid = env.get("MAINPID",0)
+            if pid:
+                if self.wait_vanished_pid(pid):
+                    if os.path.isfile(pid_file, timeout):
+                        os.remove(pid_file)
+            else:
+                logg.info("short sleep as no PID was found on Stop")
+                self.sleep()
+                pid = self.read_pid_file(pid_file, "")
+                if not pid or not pid_exists(pid):
+                    if os.path.isfile(pid_file):
+                        os.remove(pid_file)
         elif runs in [ "notify" ]:
             pid_file = self.get_pid_file_from(conf)
             notify = self.notify_socket_from(conf)
@@ -1448,6 +1460,18 @@ class Systemctl:
                     if new_pid and new_pid.strip() != mainpid:
                         logg.info("NEW PID %s from sd_notify", new_pid)
                         self.write_pid_file(pid_file, new_pid)
+            pid = self.read_pid_file(pid_file, "")
+            if pid:
+                if self.wait_vanished_pid(pid):
+                    if os.path.isfile(pid_file):
+                        os.remove(pid_file)
+            else:
+                logg.info("short sleep as no PID was found on Stop")
+                self.sleep()
+                pid = self.read_pid_file(pid_file, "")
+                if not pid or not pid_exists(pid):
+                    if os.path.isfile(pid_file):
+                        os.remove(pid_file)
         elif runs in [ "oneshot" ]:
             for cmd in conf.getlist("Service", "ExecStop", []):
                 check, cmd = checkstatus(cmd)
@@ -1472,15 +1496,16 @@ class Systemctl:
                     if check and run.returncode: raise Exception("ExecStop")
             pid = env.get("MAINPID",0)
             if pid:
-                logg.info("wait for PID %s to vanish", pid)
-                for x in xrange(int(timeout)):
-                    if not pid_exists(int(pid)):
-                        break
-                    self.sleep()
-                logg.info("wait for PID %s is done (%s.)", pid, x)
+                if self.wait_vanished_pid(pid, timeout):
+                    if os.path.isfile(pid_file):
+                        os.remove(pid_file)
             else:
                 logg.info("short sleep as no PID was found on Stop")
                 self.sleep()
+                pid = self.read_pid_file(pid_file, "")
+                if not pid or not pid_exists(pid):
+                    if os.path.isfile(pid_file):
+                        os.remove(pid_file)
         else:
             logg.error("unsupported run type '%s'", runs)
             raise Exception("unsupported run type")
@@ -1491,6 +1516,17 @@ class Systemctl:
                 logg.info("post-stop %s", shell_cmd(sudo+newcmd))
                 run = subprocess_wait(sudo+newcmd, env)
         return True
+    def wait_vanished_pid(self, pid, timeout):
+        if not pid:
+            return True
+        logg.info("wait for PID %s to vanish", pid)
+        for x in xrange(int(timeout)):
+            if not pid_exists(int(pid)):
+                logg.info("wait for PID %s is done (%s.)", pid, x)
+                return True
+            self.sleep()
+        logg.info("wait for PID %s failed (%s.)", pid, x)
+        return False
     def reload_modules(self, *modules):
         """ [UNIT]... -- reload these units """
         found_all = True
@@ -1903,11 +1939,10 @@ class Systemctl:
                 results += ["unknown"]
                 found_all = False
                 continue
-            active = self.is_active_units(units) 
-            if active:
-                results += ["active"]
-            else:
-                results += ["inactive"]
+            for unit in units:
+                active = self.get_active_unit(unit) 
+                results += [ active ]
+                break
         if True:
             ## how 'systemctl' works:
             inactive = "inactive" in results
@@ -1928,10 +1963,19 @@ class Systemctl:
                 result = True
         return result
     def is_active(self, unit):
+        """ true if status == 'active' """
         conf = self.get_unit_conf(unit)
         if not conf.loaded():
             logg.warning("no such unit '%s'", unit)
-        return self.is_active_from(conf)
+            return False
+        status = self.get_active_from(conf)
+        return status == "active"
+    def is_active_from(self, conf):
+        """ used in try-restart/other commands to check if needed. """
+        if not conf: return False
+        if self.active_pid_from(conf) is None:
+           return False
+        return True
     def active_pid_from(self, conf):
         if not conf: return False
         pid_file = self.get_pid_file_from(conf)
@@ -1941,16 +1985,40 @@ class Systemctl:
         if not exists:
            return None
         return pid # string!!
-    def is_active_from(self, conf):
+    def get_active_unit(self, unit):
+        """ returns 'active' 'inactive' 'failed' 'unknown' """
+        conf = self.get_unit_conf(unit)
+        if not conf.loaded():
+            logg.warning("no such unit '%s'", unit)
+            return "unknown"
+        return self.get_active_from(conf)
+    def get_active_from(self, conf):
+        """ returns 'active' 'inactive' 'failed' """
+        # used in try-restart/other commands to check if needed.
         if not conf: return False
-        if self.active_pid_from(conf) is None:
-           return False
-        return True
-    def active_from(self, conf):
+        pid_file = self.get_pid_file_from(conf)
+        if not pid_file or not os.path.exists(pid_file):
+            return "inactive"
+        pid = self.read_pid_file(pid_file)
+        logg.debug("pid_file '%s' => PID %s", pid_file, pid)
+        exists = self.pid_exists(pid)
+        if not exists:
+            return "failed"
+        return "active"
+    def get_substate_from(self, conf):
+        """ returns 'running' 'exited' 'dead' 'failed' 'plugged' 'mounted' """
         if not conf: return False
-        pid = self.active_pid_from(conf)
-        if pid is None: return "dead"
-        return "PID %s" % pid
+        pid_file = self.get_pid_file_from(conf)
+        if not pid_file:
+            return "dead"
+        if not os.path.exists(pid_file):
+            return "exited"
+        pid = self.read_pid_file(pid_file)
+        logg.debug("pid_file '%s' => PID %s", pid_file, pid)
+        exists = self.pid_exists(pid)
+        if not exists:
+            return "failed"
+        return "running"
     def is_failed_modules(self, *modules):
         """ [UNIT]... -- check if these units are in failes state
         implements True if any is-active = True """
@@ -1974,16 +2042,13 @@ class Systemctl:
                 result = True
         return result
     def is_failed(self, unit):
+        """ true if status == 'failed' """
         conf = self.get_unit_conf(unit)
         if not conf.loaded():
             logg.warning("no such unit '%s'", unit)
-        return self.is_failed_from(conf)
-    def is_failed_from(self, conf):
-        if not conf: return True
-        pid_file = self.get_pid_file_from(conf)
-        pid = self.read_pid_file(pid_file)
-        logg.debug("pid_file '%s' => PID %s", pid_file, pid)
-        return not self.pid_exists(pid)
+            return False
+        status = self.get_active_from(conf)
+        return status == "failed"
     def status_modules(self, *modules):
         """ [UNIT]... check the status of these units.
         """
@@ -2020,11 +2085,12 @@ class Systemctl:
         else:
             result += "\n    Loaded: failed"
             return 3, result
-        if self.is_active_from(conf):
-            result += "\n    Active: active ({})".format(self.active_from(conf))
+        active = self.get_active_from(conf)
+        substate = self.get_substate_from(conf)
+        result += "\n    Active: {} ({})".format(active, substate)
+        if active == "active":
             return 0, result
         else:
-            result += "\n    Active: inactive ({})".format(self.active_from(conf))
             return 3, result
     def cat_modules(self, *modules):
         """ [UNIT]... show the *.system file for these"
@@ -2588,8 +2654,8 @@ class Systemctl:
         yield "Description", self.get_description_from(conf) # conf.get("Unit", "Description")
         yield "PIDFile", self.pid_file_from(conf) # not self.get_pid_file_from w/ default location
         yield "MainPID", self.active_pid_from(conf) or "0"
-        yield "SubState", self.active_from(conf)
-        yield "ActiveState", self.is_active_from(conf) and "active" or "dead"
+        yield "SubState", self.get_substate_from(conf)
+        yield "ActiveState", self.get_active_from(conf)
         yield "LoadState", conf.loaded() and "loaded" or "not-loaded"
         yield "UnitFileState", self.enabled_from(conf)
         env_parts = []
