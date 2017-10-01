@@ -28,7 +28,7 @@ DJ docker-jenkins: ; ./testsuite.py test_900*
 
 COVERAGE=--coverage
 check: ; ./testsuite.py -v --coverage
-test_%: ; ./testsuite.py $@ -v
+test_%: ; ./testsuite.py $@ -vv
 
 op opensuse: ; ./testsuite.py make_opensuse
 ub ubuntu:   ; ./testsuite.py make_ubuntu
