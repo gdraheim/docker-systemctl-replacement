@@ -1980,7 +1980,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertNotEqual(ps5[0], ps6[0])
         #
         logg.info("== 'try-restart' will restart an is-active service")        
-        restart_service = "{systemctl} reload-or-try-restart zzz.service -vv"
+        restart_service = "{systemctl} try-restart zzz.service -vv"
         sh____(restart_service.format(**locals()))
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
