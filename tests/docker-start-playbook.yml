@@ -21,17 +21,21 @@
      j_password: install.1A
      j_url: http://serversystem/build
   tasks:
-    - copy:
+    - name: push the password file
+      copy:
         src: "./initialAdminPassword"
         dest: "./"
-    - copy: 
+    - name: push the unlock program
+      copy: 
         src: "initialJenkinsSetup.py"
         dest: "./"
-    - shell: |
+    - name: run the  unlock program
+      shell: |
         python initialJenkinsSetup.py -f initialAdminPassword \
          --username "{{j_username}}" --password "{{j_password}}" \
          --base_url "{{j_url}}" --screenshot initialJenkinsSetup.png -v
-    - fetch:
+    - name: pull the final screen png
+      fetch:
         src: "initialJenkinsSetup.png"
         dest: "./"
         flat: yes
