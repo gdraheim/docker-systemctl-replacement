@@ -1810,7 +1810,7 @@ class Systemctl:
             if not self.reload_or_try_restart_unit(unit):
                 done = False
         return done
-    def reload_or_try_restart_unit(unit):
+    def reload_or_try_restart_unit(self, unit):
         conf = self.load_unit_conf(unit)
         if conf is None:
             logg.error("no such unit: '%s'", unit)
