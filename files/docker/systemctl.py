@@ -1430,8 +1430,8 @@ class Systemctl:
                 # self.write_pid_file(pid_file, run.pid)
             pid = env.get("MAINPID",0)
             if pid:
-                if self.wait_vanished_pid(pid):
-                    if os.path.isfile(pid_file, timeout):
+                if self.wait_vanished_pid(pid, timeout):
+                    if os.path.isfile(pid_file):
                         os.remove(pid_file)
             else:
                 logg.info("short sleep as no PID was found on Stop")
@@ -1462,7 +1462,7 @@ class Systemctl:
                         self.write_pid_file(pid_file, new_pid)
             pid = self.read_pid_file(pid_file, "")
             if pid:
-                if self.wait_vanished_pid(pid):
+                if self.wait_vanished_pid(pid, timeout):
                     if os.path.isfile(pid_file):
                         os.remove(pid_file)
             else:
@@ -2575,7 +2575,11 @@ class Systemctl:
         """ reload does will only check the service files here """
         ok = True
         for unit in self.match_units():
-            conf = self.get_unit_conf(unit)
+            try:
+                conf = self.get_unit_conf(unit)
+            except Exception, e:
+                logg.error("%s: can not read unit file %s\n\t%e", conf.filename(), e)
+                continue
             if not conf.has_section("Service"):
                 if conf.filename() and conf.filename().endswith(".service"):
                    logg.error("%s: .service file without [Service] section", unit)
