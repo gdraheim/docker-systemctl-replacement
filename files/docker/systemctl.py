@@ -2022,18 +2022,27 @@ class Systemctl:
     def is_failed_modules(self, *modules):
         """ [UNIT]... -- check if these units are in failes state
         implements True if any is-active = True """
+
         found_all = True
         units = []
+        results = []
         for module in modules:
-            matched = self.match_units([ module ])
-            if not matched:
-                logg.error("no such service '%s'", module)
+            units = self.match_units([ module ])
+            if not units:
+                # logg.error("no such service '%s'", module)
+                results += ["unknown"]
                 found_all = False
                 continue
-            for unit in matched:
-                if unit not in units:
-                    units += [ unit ]
-        return self.is_failed_units(units) # and found_all
+            for unit in units:
+                active = self.get_active_unit(unit) 
+                results += [ active ]
+                break
+        failed = "failed" in results
+        status = found_all and failed
+        if not _quiet:
+            return status, results
+        else:
+            return status
     def is_failed_units(self, units):
         """ true if any unit is-failed """
         result = False
