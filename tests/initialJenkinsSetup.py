@@ -234,7 +234,7 @@ class Program:
             elem = self.find_element_by(self.ref_plugins)
             elem.click()
             logg.info("done install-recommended - wait for admin user")
-            for i in xrange(int(self.LONGWAIT) / int(self.slow)):
+            for i in xrange((int(self.LONGWAIT) * 4)/ int(self.slow)):
                 self.sleep()
                 if self.exists_element_by(self.ref_firstuser):
                     self.sleep()
