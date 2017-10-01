@@ -826,6 +826,20 @@ class Systemctl:
         except IOError, e:
             logg.error("PID %s -- %s", pid, e)
         return True
+    def read_pid_file(self, pid_file, default = None):
+        pid = default
+        if not pid_file:
+            return default
+        if not os.path.isfile(pid_file):
+            return default
+        try:
+            for line in open(pid_file):
+                if line.strip(): 
+                    pid = to_int(line.strip())
+                    break
+        except:
+            logg.warning("bad read of pid file '%s'", pid_file)
+        return pid
     def pid_exists(self, pid): # -> bool
         """ check if a pid does still exist (unix standard) """
         # return os.path.isdir("/proc/%s" % pid) # (linux standard) 
@@ -893,6 +907,35 @@ class Systemctl:
     def status_file_from(self, conf, default = ""):
         return conf.get("Service", "StatusFile", default)
         # this not a real setting.
+    def write_status_file(self, status_file, status): # -> bool(written)
+        """ if a status_file is known then path is created and the
+            give status is written as the only content. """
+        if not status_file: 
+            logg.debug("status %s but no status_file", pid)
+            return False
+        dirpath = os.path.dirname(os.path.abspath(status_file))
+        if not os.path.isdir(dirpath):
+            os.makedirs(dirpath)
+        try:
+            with open(status_file, "w") as f:
+                f.write("{}\n".format(status))
+        except IOError, e:
+            logg.error("STATUS %s -- %s", status, e)
+        return True
+    def read_status_file(self, status_file, default = None):
+        status = default
+        if not status_file:
+            return default
+        if not os.path.isfile(status_file):
+            return default
+        try:
+            for line in open(status_file):
+                if line.strip(): 
+                    status = line.strip()
+                    break
+        except:
+            logg.warning("bad read of status file '%s'", status_file)
+        return status
     #
     def sleep(self, seconds = None): 
         """ just sleep """
@@ -1363,20 +1406,6 @@ class Systemctl:
                 logg.info("post-start %s", shell_cmd(sudo+newcmd))
                 run = subprocess_wait(sudo+newcmd, env)
         return True
-    def read_pid_file(self, pid_file, default = None):
-        pid = default
-        if not pid_file:
-            return default
-        if not os.path.isfile(pid_file):
-            return default
-        try:
-            for line in open(pid_file):
-                if line.strip(): 
-                    pid = to_int(line.strip())
-                    break
-        except:
-            logg.warning("bad read of pid file '%s'", pid_file)
-        return pid
     def kill_pid(self, pid, timeout = None, kill_signal = None):
         if not pid:
             return None
