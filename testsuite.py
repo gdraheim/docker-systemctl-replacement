@@ -150,6 +150,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def ip_container(self, name):
         values = output("docker inspect "+name)
         values = json.loads(values)
+        if not values or "NetworkSettings" not in values[0]:
+            logg.critical(" docker inspect %s => %s ", name, values)
         return values[0]["NetworkSettings"]["IPAddress"]    
     def with_local_centos_mirror(self, ver = None):
         """ detects a local centos mirror or starts a local
@@ -157,7 +159,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             will return the setting for extrahosts"""
         rmi = "localhost:5000"
         rep = "centos-repo"
-        ver = ver or "7.3"
+        ver = ver or "7.3.1611"
         find_repo_image = "docker images {rmi}/{rep}:{ver}"
         images = output(find_repo_image.format(**locals()))
         running = output("docker ps")
@@ -991,6 +993,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 1)
         #
         cmd = "{systemctl} preset-all" 
+        logg.info(" %s", cmd.format(**locals()))
         out, end = output2(cmd.format(**locals()))
         logg.info("\n> %s\n%s\n**%s", cmd, out, end)
         self.assertEqual(len(lines(out)), 0)
