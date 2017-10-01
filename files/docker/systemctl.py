@@ -1256,6 +1256,7 @@ class Systemctl:
                 logg.info(" pre-start %s", shell_cmd(sudo+newcmd))
                 run = subprocess_wait(sudo+newcmd, env)
         if runs in [ "sysv" ]:
+            status_file = self.get_status_file_from(conf)
             if True:
                 exe = conf.filename()
                 cmd = "'%s' start" % exe
@@ -1263,6 +1264,30 @@ class Systemctl:
                 newcmd = self.exec_cmd(cmd, env, conf)
                 logg.info("sysv start %s", shell_cmd(sudo+newcmd))
                 run = subprocess_wait(sudo+newcmd, env)
+                failed = "failed\nEXIT %s\n" % run.returncode
+                if run.returncode:
+                    self.write_status_file(status_file, failed)
+                else:
+                    self.write_status_file(status_file, "active")
+                return True
+        elif runs in [ "oneshot" ]:
+            status_file = self.get_status_file_from(conf)
+            returncode = 0
+            for cmd in conf.getlist("Service", "ExecStart", []):
+                check, cmd = checkstatus(cmd)
+                newcmd = self.exec_cmd(cmd, env, conf)
+                logg.info("shot start %s", shell_cmd(sudo+newcmd))
+                run = subprocess_wait(sudo+newcmd, env)
+                if check and run.returncode: raise Exception("ExecStart")
+                if run.returncode: returncode = run.returncode
+                logg.info("shot start done")
+            if True:
+                failed = "failed\nEXIT %s\n" % returncode
+                if returncode:
+                    self.write_status_file(status_file, failed)
+                else:
+                    self.write_status_file(status_file, "active")
+                return True
         elif runs in [ "simple" ]: 
             pid_file = self.get_pid_file_from(conf)
             pid = self.read_pid_file(pid_file, "")
@@ -1371,14 +1396,6 @@ class Systemctl:
                     env["MAINPID"] = str(pid)
                 else:
                     raise Exception("could not start service")
-        elif runs in [ "oneshot" ]:
-            for cmd in conf.getlist("Service", "ExecStart", []):
-                check, cmd = checkstatus(cmd)
-                newcmd = self.exec_cmd(cmd, env, conf)
-                logg.info("shot start %s", shell_cmd(sudo+newcmd))
-                run = subprocess_wait(sudo+newcmd, env)
-                if check and run.returncode: raise Exception("ExecStart")
-                logg.info("shot start done")
         elif runs in [ "forking" ]:
             pid_file = self.pid_file_from(conf)
             for cmd in conf.getlist("Service", "ExecStart", []):
@@ -1472,6 +1489,7 @@ class Systemctl:
                 logg.info(" pre-stop %s", shell_cmd(sudo+newcmd))
                 run = subprocess_wait(sudo+newcmd, env)
         if runs in [ "sysv" ]:
+            status_file = self.get_status_file_from(conf)
             if True:
                 exe = conf.filename()
                 cmd = "'%s' stop" % exe
@@ -1479,6 +1497,30 @@ class Systemctl:
                 newcmd = self.exec_cmd(cmd, env, conf)
                 logg.info("sysv stop %s", shell_cmd(sudo+newcmd))
                 run = subprocess_wait(sudo+newcmd, env)
+                failed = "failed\nEXIT %s\n" % run.returncode
+                if run.returncode:
+                    self.write_status_file(status_file, failed)
+                elif os.path.isfile(status_file):
+                    os.remove(status_file)
+                return True
+        elif runs in [ "oneshot" ]:
+            status_file = self.get_status_file_from(conf)
+            returncode = 0
+            for cmd in conf.getlist("Service", "ExecStop", []):
+                check, cmd = checkstatus(cmd)
+                logg.debug("{env} %s", env)
+                newcmd = self.exec_cmd(cmd, env, conf)
+                logg.info("shot stop %s", shell_cmd(sudo+newcmd))
+                run = subprocess_wait(sudo+newcmd, env)
+                if run.returncode: returncode = run.returncode
+            if True:
+                failed = "failed\nEXIT %s\n" % returncode
+                if returncode:
+                    self.write_status_file(status_file, failed)
+                elif os.path.isfile(status_file):
+                    os.remove(status_file)
+                return True
+        ### fallback Stop => Kill for ["simple","notify","forking"]
         elif not conf.getlist("Service", "ExecStop", []):
             logg.info("no ExecStop => systemctl kill")
             if True:
@@ -1540,13 +1582,6 @@ class Systemctl:
                 if not pid or not pid_exists(pid):
                     if os.path.isfile(pid_file):
                         os.remove(pid_file)
-        elif runs in [ "oneshot" ]:
-            for cmd in conf.getlist("Service", "ExecStop", []):
-                check, cmd = checkstatus(cmd)
-                logg.debug("{env} %s", env)
-                newcmd = self.exec_cmd(cmd, env, conf)
-                logg.info("shot stop %s", shell_cmd(sudo+newcmd))
-                run = subprocess_wait(sudo+newcmd, env)
         elif runs in [ "forking" ]:
             pid_file = self.pid_file_from(conf)
             for cmd in conf.getlist("Service", "ExecStop", []):
@@ -1635,6 +1670,7 @@ class Systemctl:
                 logg.info(" pre-reload %s", shell_cmd(sudo+newcmd))
                 run = subprocess_wait(sudo+newcmd, env)
         if runs in [ "sysv" ]:
+            status_file = self.get_status_file_from(conf)
             if True:
                 exe = conf.filename()
                 cmd = "'%s' reload" % exe
@@ -1642,6 +1678,26 @@ class Systemctl:
                 newcmd = self.exec_cmd(cmd, env, conf)
                 logg.info("sysv reload %s", shell_cmd(sudo+newcmd))
                 run = subprocess_wait(sudo+newcmd, env)
+                failed = "failed\nEXIT %s\n" % run.returncode
+                if run.returncode:
+                    self.write_status_file(status_file, failed)
+                else:
+                    self.write_status_file(status_file, "active")
+        elif runs in [ "oneshot" ]:
+            status_file = self.get_status_file_from(conf)
+            returncode = 0
+            for cmd in conf.getlist("Service", "ExecReload", []):
+                check, cmd = checkstatus(cmd)
+                newcmd = self.exec_cmd(cmd, env, conf)
+                logg.info("shot reload %s", shell_cmd(sudo+newcmd))
+                run = subprocess_wait(sudo+newcmd, env)
+                if run.returncode: returncode = run.returncode
+            if True:
+                failed = "failed\nEXIT %s\n" % returncode
+                if returncode:
+                    self.write_status_file(status_file, failed)
+                else:
+                    self.write_status_file(status_file, "active")
         elif runs in [ "simple" ]:
             for cmd in conf.getlist("Service", "ExecReload", []):
                 pid_file = self.get_pid_file_from(conf)
@@ -1674,12 +1730,6 @@ class Systemctl:
                     if new_pid and new_pid.strip() != mainpid:
                         logg.info("NEW PID %s from sd_notify", new_pid)
                         self.write_pid_file(pid_file, new_pid)
-        elif runs in [ "oneshot" ]:
-            for cmd in conf.getlist("Service", "ExecReload", []):
-                check, cmd = checkstatus(cmd)
-                newcmd = self.exec_cmd(cmd, env, conf)
-                logg.info("shot reload %s", shell_cmd(sudo+newcmd))
-                run = subprocess_wait(sudo+newcmd, env)
         elif runs in [ "forking" ]:
             pid_file = self.pid_file_from(conf)
             for cmd in conf.getlist("Service", "ExecReload", []):
@@ -1744,7 +1794,8 @@ class Systemctl:
                 newcmd = self.exec_cmd(cmd, env, conf)
                 logg.info(" pre-restart %s", shell_cmd(sudo+newcmd))
                 run = subprocess_wait(sudo+newcmd, env)
-        if runs in [ "sysv" ]:
+        if runs in [ "sysv"]:
+            status_file = self.get_status_file_from(conf)
             if True:
                 exe = conf.filename()
                 cmd = "'%s' restart" % exe
@@ -1752,6 +1803,28 @@ class Systemctl:
                 newcmd = self.exec_cmd(cmd, env, conf)
                 logg.info("sysv restart %s", shell_cmd(sudo+newcmd))
                 run = subprocess_wait(sudo+newcmd, env)
+                failed = "failed\nEXIT %s\n" % run.returncode
+                if run.returncode:
+                    self.write_status_file(status_file, failed)
+                else:
+                    self.write_status_file(status_file, "active")
+                return True
+        elif runs in [ "oneshot" ]:
+            status_file = self.get_status_file_from(conf)
+            returncode = 0
+            for cmd in conf.getlist("Service", "ExecRestart", []):
+                check, cmd = checkstatus(cmd)
+                newcmd = self.exec_cmd(cmd, env, conf)
+                logg.info("shot restart %s", shell_cmd(sudo+newcmd))
+                run = subprocess_wait(sudo+newcmd, env)
+                if run.returncode: returncode = run.returncode
+            if True:
+                failed = "failed\nEXIT %s\n" % returncode
+                if returncode:
+                    self.write_status_file(status_file, failed)
+                else:
+                    self.write_status_file(status_file, "active")
+        ## fallback Restart => Stop/Start for ["simple","notify","forking"]
         elif not conf.getlist("Service", "ExecRestart", []):
             logg.info("(restart) => stop/start")
             self.stop_unit_from(conf)
@@ -1788,12 +1861,6 @@ class Systemctl:
                     if new_pid:
                         logg.info("NEW PID %s from sd_notify", new_pid)
                         self.write_pid_file(pid_file, new_pid)
-        elif runs in [ "oneshot" ]:
-            for cmd in conf.getlist("Service", "ExecRestart", []):
-                check, cmd = checkstatus(cmd)
-                newcmd = self.exec_cmd(cmd, env, conf)
-                logg.info("shot restart %s", shell_cmd(sudo+newcmd))
-                run = subprocess_wait(sudo+newcmd, env)
         elif runs in [ "forking" ]:
             pid_file = self.pid_file_from(conf)
             for cmd in conf.getlist("Service", "ExecRestart", []):
@@ -2021,14 +2088,11 @@ class Systemctl:
         if not conf.loaded():
             logg.warning("no such unit '%s'", unit)
             return False
-        status = self.get_active_from(conf)
-        return status == "active"
+        return self.is_active_from(conf)
     def is_active_from(self, conf):
         """ used in try-restart/other commands to check if needed. """
         if not conf: return False
-        if self.active_pid_from(conf) is None:
-           return False
-        return True
+        return self.get_active_from(conf) == "active"
     def active_pid_from(self, conf):
         if not conf: return False
         pid_file = self.get_pid_file_from(conf)
@@ -2049,6 +2113,9 @@ class Systemctl:
         """ returns 'active' 'inactive' 'failed' """
         # used in try-restart/other commands to check if needed.
         if not conf: return False
+        status_file = self.get_status_file_from(conf)
+        if os.path.exists(status_file):
+            return self.read_status_file(status_file)
         pid_file = self.get_pid_file_from(conf)
         if not pid_file or not os.path.exists(pid_file):
             return "inactive"
@@ -2107,8 +2174,10 @@ class Systemctl:
         if not conf.loaded():
             logg.warning("no such unit '%s'", unit)
             return False
-        status = self.get_active_from(conf)
-        return status == "failed"
+        return self.is_failed_from(conf)
+    def is_failed_from(self, conf):
+        if conf is None: return True
+        return self.get_active_from(conf) == "failed"
     def status_modules(self, *modules):
         """ [UNIT]... check the status of these units.
         """
