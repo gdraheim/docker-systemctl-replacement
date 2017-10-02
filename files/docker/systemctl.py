@@ -1198,10 +1198,9 @@ class Systemctl:
         results = {}
         seenREADY = None
         for attempt in xrange(timeout+1):
-            if pid:
-               if not pid_exists(pid) or pid_zombie(pid):
-                   logg.info("dead PID %s", pid)
-                   return results
+            if pid and not self.is_active_pid(pid):
+                logg.info("dead PID %s", pid)
+                return results
             if not attempt: # first one
                 time.sleep(1)
                 continue
@@ -1314,9 +1313,9 @@ class Systemctl:
         elif runs in [ "simple" ]: 
             pid_file = self.get_pid_file_from(conf)
             pid = self.read_pid_file(pid_file, "")
-            if pid and pid_exists(pid) and not pid_zombie(pid):
-                logg.error("the service is already running on PID %s", pid)
-                return False
+            if self.is_active_pid(pid):
+                logg.warning("the service is already running on PID %s", pid)
+                return True
             runuser = conf.get("Service", "User", "")
             rungroup = conf.get("Service", "Group", "")
             shutil_truncate(pid_file)
@@ -1363,7 +1362,7 @@ class Systemctl:
             # and wait for startup completion by checking the socket messages
             pid_file = self.get_pid_file_from(conf)
             pid = self.read_pid_file(pid_file, "")
-            if pid and pid_exists(pid) and not pid_zombie(pid):
+            if self.is_active_pid(pid):
                 logg.error("the service is already running on PID %s", pid)
                 return False
             runuser = conf.get("Service", "User", "")
@@ -2129,10 +2128,12 @@ class Systemctl:
         pid_file = self.get_pid_file_from(conf)
         pid = self.read_pid_file(pid_file)
         logg.debug("pid_file '%s' => PID %s", pid_file, pid)
-        exists = self.pid_exists(pid)
-        if not exists:
-           return None
-        return pid # string!!
+        return self.is_active_pid(pid)
+    def is_active_pid(self, pid):
+        """ returns pid if the pid is still an active process """
+        if pid and pid_exists(pid) and not pid_zombie(pid):
+            return pid # usually a string (not null)
+        return None
     def get_active_unit(self, unit):
         """ returns 'active' 'inactive' 'failed' 'unknown' """
         conf = self.get_unit_conf(unit)
