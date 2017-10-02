@@ -921,7 +921,7 @@ class Systemctl:
                 if hasattr(status, "keys"):
                     for key in sorted(status.keys()):
                         f.write("{}: {}\n".format(key, status[key]))
-                elif isinstance(defaults, basestring):
+                elif isinstance(status, basestring):
                     f.write("STATUS: {}\n".format(status))
         except IOError, e:
             logg.error("STATUS %s -- %s", status, e)
