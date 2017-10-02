@@ -922,7 +922,7 @@ class Systemctl:
                     for key in sorted(status.keys()):
                         f.write("{}: {}\n".format(key, status[key]))
                 elif isinstance(status, basestring):
-                    f.write("STATUS: {}\n".format(status))
+                    f.write("STATE: {}\n".format(status))
         except IOError, e:
             logg.error("STATUS %s -- %s", status, e)
         return True
@@ -1284,8 +1284,10 @@ class Systemctl:
                 run = subprocess_wait(sudo+newcmd, env)
                 failed = { "STATE": "failed", "EXIT": run.returncode }
                 if run.returncode:
+                    logg.info("sysv start done %s", run.returncode)
                     self.write_status_file(status_file, failed)
                 else:
+                    logg.info("sysv start done OK")
                     self.write_status_file(status_file, "active")
                 return True
         elif runs in [ "oneshot" ]:
