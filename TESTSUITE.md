@@ -1,3 +1,18 @@
+## the testsuite
+
+Before any release "make check" should report no problems.
+
+Some testcases are skipped as they are known bugs or they
+point to missing features of systemctl.py. That's okay.
+
+The testsuite is organized by four digit numbers. In all
+documents (and issue tickets) only the number is used to
+identify the relevant testcase. Four digits are used to
+put related testcase into a common group, it is not 
+related to the amount of testcases (other than having
+enough free numbers in between the groups to allow for 
+later addition of testcases into an existing group).
+
 ## running testcases by number
 
 The standard python unittest.main() is not used. Instead there
@@ -12,9 +27,9 @@ It may be easiest to say
 Actually the implementation is checking for the given testcase
 by checking for test function names with that prefix. This 
 will also allow to run a group of tests with a common prefix.
-The number will ensure that they are being run an expected
+The number will ensure that they are being run in an expected
 order, so that "make test_900" will run the (up to) ten
-testcases of test_9000...test9009 in that order.
+testcases of test_9000...test_9009 in that order.
 
 ## docker-container or subdir-root
 
@@ -41,7 +56,7 @@ run systemctl.py outside of a docker container.
 ## python line coverage
 
 There is an option --coverage on the testsuite which will use an
-install pycoverage (in /usr/bin/coverage) tool to gather the
+install pycoverage (in /usr/bin/coverage2) tool to gather the
 testsuite coverage of the systemctl.py tool.
 
 The result will be in files/docker/systemctl.py,cover !
