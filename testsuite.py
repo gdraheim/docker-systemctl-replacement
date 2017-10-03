@@ -1865,10 +1865,87 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cat, end = output2(cat_service.format(**locals()))
         logg.info("RESULT \n%s", cat)
         orig = lines(open(os_path(root, "/etc/systemd/system/zzs.service")))
-        show = lines(cat)
-        self.assertEqual(orig + [""], show)
+        data = lines(cat)
+        self.assertEqual(orig + [""], data)
         self.assertEqual(end, 0)
         #
+        self.rm_testdir()
+        self.coverage()
+    def test_3301_service_config_show(self):
+        """ check that a named service config can show its properties"""
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        logfile = os_path(root, "/var/log/test.log")
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        testsleep = self.testname("sleep")
+        bindir = os_path(root, "/usr/bin")
+        text_file(os_path(testdir, "zzs.service"),"""
+            [Unit]
+            Description=Testing S
+            After=foo.service
+            [Service]
+            Type=simple
+            ExecStart={bindir}/{testsleep} 40
+            ExecStop=/usr/bin/killall {testsleep}
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_file(os_path(testdir, "zzs.service"), os_path(root, "/etc/systemd/system/zzs.service"))
+        #
+        show_service = "{systemctl} show zzs.service -vv"
+        show, end = output2(show_service.format(**locals()))
+        logg.info("RESULT \n%s", show)
+        data = lines(show)
+        self.assertTrue(greps(data, "Id=zzs.service"))
+        self.assertTrue(greps(data, "Names=zzs.service"))
+        self.assertTrue(greps(data, "Description=Testing"))
+        self.assertTrue(greps(data, "MainPID=0"))
+        self.assertTrue(greps(data, "SubState=dead"))
+        self.assertTrue(greps(data, "ActiveState=inactive"))
+        self.assertTrue(greps(data, "LoadState=loaded"))
+        self.assertTrue(greps(data, "UnitFileState=disabled"))
+        self.assertEqual(end, 0)
+        #
+        enable_service = "{systemctl} enable zzs.service -vv"
+        sh____(enable_service.format(**locals()))
+        #
+        show_service = "{systemctl} show zzs.service -vv"
+        show, end = output2(show_service.format(**locals()))
+        logg.info("RESULT \n%s", show)
+        data = lines(show)
+        self.assertTrue(greps(data, "Id=zzs.service"))
+        self.assertTrue(greps(data, "Names=zzs.service"))
+        self.assertTrue(greps(data, "Description=Testing"))
+        self.assertTrue(greps(data, "MainPID=0"))
+        self.assertTrue(greps(data, "SubState=dead"))
+        self.assertTrue(greps(data, "ActiveState=inactive"))
+        self.assertTrue(greps(data, "LoadState=loaded"))
+        self.assertTrue(greps(data, "UnitFileState=enabled")) # <<<
+        self.assertEqual(end, 0)
+        #
+        start_service = "{systemctl} start zzs.service -vv"
+        sh____(start_service.format(**locals()))
+        #
+        show_service = "{systemctl} show zzs.service -vv"
+        show, end = output2(show_service.format(**locals()))
+        logg.info("RESULT \n%s", show)
+        data = lines(show)
+        self.assertTrue(greps(data, "Id=zzs.service"))
+        self.assertTrue(greps(data, "Names=zzs.service"))
+        self.assertTrue(greps(data, "Description=Testing"))
+        self.assertTrue(greps(data, "MainPID=[12345678][1234567890]*")) # <<<<
+        self.assertTrue(greps(data, "SubState=running")) # <<<
+        self.assertTrue(greps(data, "ActiveState=active")) # <<<<
+        self.assertTrue(greps(data, "LoadState=loaded"))
+        self.assertTrue(greps(data, "UnitFileState=enabled")) 
+        self.assertEqual(end, 0)
+        #
+        # cleanup
+        kill_testsleep = "killall {testsleep}"
+        sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
     def test_4030_simple_service_functions(self):
