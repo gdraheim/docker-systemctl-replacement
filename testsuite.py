@@ -1717,7 +1717,71 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
-
+    def test_3061_environment_files_are_included(self):
+        """ check that environment specs are read correctly"""
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        logfile = os_path(root, "/var/log/test.log")
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        testsleep = self.testname("sleep")
+        bindir = os_path(root, "/usr/bin")
+        text_file(os_path(testdir, "zzz.service"),"""
+            [Unit]
+            Description=Testing Z
+            [Service]
+            Type=simple
+            EnvironmentFile=/etc/sysconfig/zzz.conf
+            Environment=CONF4=dd4
+            ExecStart={bindir}/zzz.sh
+            ExecStop=/usr/bin/killall {testsleep}
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        text_file(os_path(testdir, "zzz.sh"),"""
+            #! /bin/sh
+            echo "WITH CONF1=$CONF1" >> {logfile}
+            echo "WITH CONF2=$CONF2" >> {logfile}
+            echo "WITH CONF3=$CONF3" >> {logfile}
+            echo "WITH CONF4=$CONF4" >> {logfile}
+            {bindir}/{testsleep} 4
+            """.format(**locals()))
+        text_file(os_path(testdir, "zzz.conf"),"""
+            CONF1=aa1
+            CONF2="bb2"
+            CONF3='cc3'
+            """.format(**locals()))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(os_path(testdir, "zzz.sh"), os_path(bindir, "zzz.sh"))
+        copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
+        copy_file(os_path(testdir, "zzz.conf"), os_path(root, "/etc/sysconfig/zzz.conf"))
+        #
+        start_service = "{systemctl} start zzz.service -vv"
+        end = sx____(start_service.format(**locals()))
+        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
+        top = output(top_recent.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        self.assertEqual(end, 0)
+        #
+        log = lines(open(logfile))
+        logg.info("LOG \n| %s", "\n| ".join(log))
+        self.assertTrue(greps(log, "WITH CONF1=aa1"))
+        self.assertTrue(greps(log, "WITH CONF2=bb2"))
+        self.assertTrue(greps(log, "WITH CONF3=cc3"))
+        self.assertTrue(greps(log, "WITH CONF4=dd4"))
+        os.remove(logfile)
+        #
+        stop_service = "{systemctl} stop zzz.service -vv"
+        end = sx____(stop_service.format(**locals()))
+        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
+        top = output(top_recent.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, testsleep))
+        self.assertEqual(end, 0)
+        #
+        self.rm_testdir()
     def test_4030_simple_service_functions(self):
         """ check that we manage simple services in a root env
             with commands like start, restart, stop, etc"""
