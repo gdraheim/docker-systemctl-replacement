@@ -513,8 +513,8 @@ def sortedAfter(conflist, cmp = compareAfter):
             break
             # because Requires is almost always the same as the After clauses
             # we are mostly done in round 1 as the list is in required order
-    for item in conflist:
-        logg.debug(".. %s", item.name())
+    for conf in conflist:
+        logg.debug(".. %s", conf.name())
     for item in sortlist:
         logg.info("(%s) %s", item.rank, item.conf.name())
     sortedlist = sorted(sortlist, cmp = lambda x, y: y.rank - x.rank)
@@ -1764,7 +1764,7 @@ class Systemctl:
     def restart_units(self, units):
         """ fails if any unit fails to restart """
         done = True
-        for unit in sortedAfter(units):
+        for unit in self.sortedAfter(units):
             if not self.restart_unit(unit):
                 done = False
         return done
