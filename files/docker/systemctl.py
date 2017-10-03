@@ -964,10 +964,10 @@ class Systemctl:
         """ EnvironmentFile=<name> is being scanned """
         if env_file.startswith("-"):
             env_file = env_file[1:]
-            if not os.path.isfile(env_file):
+            if not os.path.isfile(os_path(self._root, env_file)):
                 return
         try:
-            for real_line in open(env_file):
+            for real_line in open(os_path(self._root, env_file)):
                 line = real_line.strip()
                 if not line or line.startswith("#"):
                     continue
@@ -1016,10 +1016,9 @@ class Systemctl:
     def bad_service_from(self, conf):
         for env_file in conf.getlist("Service", "EnvironmentFile", []):
             if env_file.startswith("-"): continue
-            if not os.path.isfile(env_file):
+            if not os.path.isfile(os_path(self._root, env_file)):
                 logg.warning("non-existant EnvironmentFile=%s", env_file)
                 return True
-        logg.warning("okay.................")
         return False
     def get_env(self, conf):
         env = os.environ.copy()
