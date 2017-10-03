@@ -26,7 +26,7 @@ import json
 logg = logging.getLogger("TESTING")
 _systemctl_py = "files/docker/systemctl.py"
 _cov = ""
-_coverage = "coverage2 run -a "
+_coverage = "coverage2 run --append -- "
 _cov_cmd = "coverage2"
 
 IMAGES = "localhost:5000/testingsystemctl"
@@ -35,14 +35,30 @@ UBUNTU = "ubuntu:14.04"
 OPENSUSE = "opensuse:42.2"
 
 def sh____(cmd, shell=True):
+    if isinstance(cmd, basestring):
+        logg.info(": %s", cmd)
+    else:    
+        logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
     return subprocess.check_call(cmd, shell=shell)
 def sx____(cmd, shell=True):
+    if isinstance(cmd, basestring):
+        logg.info(": %s", cmd)
+    else:    
+        logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
     return subprocess.call(cmd, shell=shell)
 def output(cmd, shell=True):
+    if isinstance(cmd, basestring):
+        logg.info(": %s", cmd)
+    else:    
+        logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
     run = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE)
     out, err = run.communicate()
     return out
 def output2(cmd, shell=True):
+    if isinstance(cmd, basestring):
+        logg.info(": %s", cmd)
+    else:    
+        logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
     run = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE)
     out, err = run.communicate()
     return out, run.returncode
@@ -147,6 +163,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if os.path.isdir(newdir):
             shutil.rmtree(newdir)
         return newdir
+    def coverage(self, testname = None):
+        testname = testname or self.caller_testname()
+        newcoverage = ".coverage."+testname
+        if os.path.isfile(".coverage"):
+            shutil.copy(".coverage", newcoverage)
     def root(self, testdir):
         root_folder = os.path.join(testdir, "root")
         if not os.path.isdir(root_folder):
@@ -265,6 +286,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         shutil.copy(_systemctl_py, target_systemctl)
         self.assertTrue(os.path.isfile(target_systemctl))
         self.rm_testdir()
+        self.coverage()
     def test_1002_systemctl_version(self):
         systemctl = _cov + _systemctl_py 
         cmd = "{systemctl} --version"
@@ -273,6 +295,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "systemd 0"))
         self.assertTrue(greps(out, "[(]systemctl.py"))
         self.assertTrue(greps(out, "[+]SYSVINIT"))
+        self.coverage()
     def test_1003_systemctl_help(self):
         systemctl = _cov + _systemctl_py
         cmd = "{systemctl} --help"
@@ -288,6 +311,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n> %s\n%s", cmd, out)
         self.assertFalse(greps(out, "--verbose"))
         self.assertTrue(greps(out, "reload-or-try-restart"))
+        self.coverage()
     def test_1004_systemctl_daemon_reload(self):
         """ daemon-reload always succeeds (does nothing) """
         systemctl = _cov + _systemctl_py
@@ -296,6 +320,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n> %s\n%s\n**%s", cmd, out, end)
         self.assertEqual(lines(out), [])
         self.assertEqual(end, 0)
+        self.coverage()
     def test_1005_systemctl_daemon_reload_root_ignored(self):
         """ daemon-reload always succeeds (does nothing) """
         testdir = self.testdir()
@@ -313,6 +338,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(lines(out), [])
         self.assertEqual(end, 0)
         self.rm_testdir()
+        self.coverage()
     def test_1010_systemctl_force_ipv4(self):
         """ we can force --ipv4 for /etc/hosts """
         testdir = self.testdir()
@@ -340,6 +366,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(hosts, "127.0.0.1.*localhost "))
         self.assertFalse(greps(hosts, "::1.*localhost "))
         self.rm_testdir()
+        self.coverage()
     def test_1011_systemctl_force_ipv6(self):
         """ we can force --ipv6 for /etc/hosts """
         testdir = self.testdir()
@@ -367,6 +394,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(hosts, "127.0.0.1.*localhost "))
         self.assertTrue(greps(hosts, "::1.*localhost "))
         self.rm_testdir()
+        self.coverage()
     def test_1020_systemctl_with_systemctl_log(self):
         """ when /var/log/systemctl.log exists then print INFO messages into it"""
         testdir = self.testdir()
@@ -380,6 +408,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(greps(open(logfile), " INFO ")), 2)
         self.assertEqual(len(greps(open(logfile), " DEBUG ")), 0)
         self.rm_testdir()
+        self.coverage()
     def test_1021_systemctl_with_systemctl_debug_log(self):
         """ when /var/log/systemctl.debug.log exists then print DEBUG messages into it"""
         testdir = self.testdir()
@@ -393,6 +422,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(greps(open(logfile), " INFO ")), 2)
         self.assertEqual(len(greps(open(logfile), " DEBUG ")), 3)
         self.rm_testdir()
+        self.coverage()
     def test_2001_can_create_test_services(self):
         """ check that two unit files can be created for testing """
         testname = self.testname()
@@ -412,6 +442,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertIn("\nDescription", textA)
         self.assertIn("\nDescription", textB)
         self.rm_testdir()
+        self.coverage()
     def test_2002_list_units(self):
         """ check that two unit files can be found for 'list-units' """
         testname = self.testname()
@@ -441,6 +472,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertNotIn("To show all installed unit files use", out)
         self.assertEqual(len(lines(out)), 2)
         self.rm_testdir()
+        self.coverage()
     def test_2003_list_unit_files(self):
         """ check that two unit service files can be found for 'list-unit-files' """
         testname = self.testname()
@@ -468,6 +500,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertNotIn("unit files listed.", out)
         self.assertEqual(len(lines(out)), 2)
         self.rm_testdir()
+        self.coverage()
     def test_2004_list_unit_files_wanted(self):
         """ check that two unit files can be found for 'list-unit-files'
             with an enabled status """
@@ -498,6 +531,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertNotIn("unit files listed.", out)
         self.assertEqual(len(lines(out)), 2)
         self.rm_testdir()
+        self.coverage()
     def test_2013_list_unit_files_common_targets(self):
         """ check that some unit target files can be found for 'list-unit-files' """
         testname = self.testname()
@@ -533,6 +567,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, r"multi-user.target\s+enabled"))
         self.assertEqual(len(lines(out)), num_targets + 2)
         self.rm_testdir()
+        self.coverage()
     def test_2014_list_unit_files_now(self):
         """ check that 'list-unit-files --now' presents a special debug list """
         testname = self.testname()
@@ -554,6 +589,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(out, r"enabled"))
         self.assertEqual(len(lines(out)), 2)
         self.rm_testdir()
+        self.coverage()
     def test_2020_show_unit_is_parseable(self):
         """ check that 'show UNIT' is machine-readable """
         testname = self.testname()
@@ -596,6 +632,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 # found non-machine readable property line
                 self.assertEqual("word=value", line)
         self.rm_testdir()
+        self.coverage()
     def test_2021_show_unit_can_be_restricted_to_one_property(self):
         """ check that 'show UNIT' may return just one value if asked for"""
         testname = self.testname()
@@ -631,6 +668,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.assertEqual(lines(out), [ "PIDFile=" ])
         self.rm_testdir()
+        self.coverage()
     def test_2025_show_unit_for_multiple_matches(self):
         """ check that the result of 'show UNIT' for multiple services is 
             concatenated but still machine readable. """
@@ -696,6 +734,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 # found non-machine readable property line
                 self.assertEqual("word=value", line)
         self.rm_testdir()
+        self.coverage()
     def test_3002_enable_service_creates_a_symlink(self):
         """ check that a service can be enabled """
         testname = self.testname()
@@ -719,6 +758,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(textB, "Testing B"))
         self.assertIn("\nDescription", textB)
         self.rm_testdir()
+        self.coverage()
     def test_3003_disable_service_removes_the_symlink(self):
         """ check that a service can be enabled and disabled """
         testname = self.testname()
@@ -748,6 +788,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(os.path.exists(enabled_file))
         #
         self.rm_testdir()
+        self.coverage()
     def test_3004_list_unit_files_when_enabled(self):
         """ check that two unit files can be found for 'list-unit-files'
             with an enabled status """
@@ -797,6 +838,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(lines(out)), 2)
         #
         self.rm_testdir()
+        self.coverage()
     def test_3005_is_enabled_result_when_enabled(self):
         """ check that 'is-enabled' reports correctly for enabled/disabled """
         testname = self.testname()
@@ -850,6 +892,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 1)
         #
         self.rm_testdir()
+        self.coverage()
     def test_3006_is_enabled_is_true_when_any_is_enabled(self):
         """ check that 'is-enabled' reports correctly for enabled/disabled """
         testname = self.testname()
@@ -933,6 +976,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 0)
         #
         self.rm_testdir()
+        self.coverage()
     def test_3010_check_list_of_preset_files(self):
         """ check that 'is-enabled' reports correctly for presets """
         testname = self.testname()
@@ -1030,6 +1074,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 1)
         #
         self.rm_testdir()
+        self.coverage()
     def test_3020_default_services(self):
         """ check the 'default-services' to know the enabled services """
         testname = self.testname()
@@ -1083,6 +1128,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "c.service"))
         #
         self.rm_testdir()
+        self.coverage()
     def test_3021_default_services(self):
         """ check that 'default-services' skips some known services """
         testname = self.testname()
@@ -1158,6 +1204,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 0)
         #
         self.rm_testdir()
+        self.coverage()
     def test_3030_systemctl_py_start_simple(self):
         """ check that we can start simple services with root env"""
         testname = self.testname()
@@ -1206,6 +1253,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
+        self.coverage()
     def test_3031_systemctl_py_start_extra_simple(self):
         """ check that we can start extra simple services with root env"""
         testname = self.testname()
@@ -1253,6 +1301,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
+        self.coverage()
     def test_3032_systemctl_py_start_forking(self):
         """ check that we can start forking services with root env"""
         testname = self.testname()
@@ -1319,6 +1368,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
+        self.coverage()
     def test_3033_systemctl_py_start_forking_without_pid_file(self):
         """ check that we can start forking services with root env without PIDFile"""
         testname = self.testname()
@@ -1383,6 +1433,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
+        self.coverage()
     def test_3041_systemctl_py_run_default_services_in_testenv(self):
         """ check that we can enable services in a test env to be run as default-services"""
         testname = self.testname()
@@ -1447,7 +1498,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
-
+        self.coverage()
     def test_3050_systemctl_py_check_is_active_in_testenv(self):
         """ check is_active behaviour in local testenv env"""
         testname = self.testname()
@@ -1559,6 +1610,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
+        self.coverage()
     def test_3051_systemctl_py_check_is_failed_in_testenv(self):
         """ check is_failed behaviour in local testenv env"""
         testname = self.testname()
@@ -1677,6 +1729,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
+        self.coverage()
     def test_3060_missing_environment_file_makes_service_ignored(self):
         """ check that a missing EnvironmentFile spec makes the service to be ignored"""
         testname = self.testname()
@@ -1717,6 +1770,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
+        self.coverage()
     def test_3061_environment_files_are_included(self):
         """ check that environment specs are read correctly"""
         testname = self.testname()
@@ -1782,6 +1836,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 0)
         #
         self.rm_testdir()
+        self.coverage()
     def test_4030_simple_service_functions(self):
         """ check that we manage simple services in a root env
             with commands like start, restart, stop, etc"""
@@ -2070,6 +2125,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
+        self.coverage()
     def test_4032_forking_service_functions(self):
         """ check that we manage forking services in a root env
             with basic run-service commands: start, stop, restart,
@@ -2319,6 +2375,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
         self.rm_testdir()
+        self.coverage()
     def test_4035_notify_service_functions(self):
         """ check that we manage notify services in a root env
             with basic run-service commands: start, stop, restart,
@@ -2571,6 +2628,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
         self.rm_testdir()
         self.rm_testdir()
+        self.coverage()
     def test_4037_oneshot_service_functions(self):
         """ check that we manage oneshot services in a root env
             with basic run-service commands: start, stop, restart,
@@ -2718,6 +2776,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
         self.rm_testdir()
+        self.coverage()
     def test_4038_oneshot_service_functions_and_restart(self):
         """ check that we manage oneshot services in a root env
             with basic run-service commands: start, stop, restart,
@@ -2888,6 +2947,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
         self.rm_testdir()
+        self.coverage()
     def test_4039_sysv_service_functions(self):
         """ check that we manage SysV services in a root env
             with basic run-service commands: start, stop, restart,
@@ -3110,6 +3170,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
         self.rm_testdir()
+        self.coverage()
     def test_5001_systemctl_py_inside_container(self):
         """ check that we can run systemctl.py inside a docker container """
         testname = self.testname()
@@ -4674,5 +4735,6 @@ if __name__ == "__main__":
             Runner = xmlrunner.XMLTestRunner
         Runner(logfile.stream, verbosity=opt.verbose).run(suite)
     if opt.coverage:
+        print " " + _cov_cmd + " combine"
         print " " + _cov_cmd + " report " + _systemctl_py
         print " " + _cov_cmd + " annotate " + _systemctl_py
