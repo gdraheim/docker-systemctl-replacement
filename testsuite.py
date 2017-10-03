@@ -1936,7 +1936,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(data, "Id=zzs.service"))
         self.assertTrue(greps(data, "Names=zzs.service"))
         self.assertTrue(greps(data, "Description=Testing"))
-        self.assertTrue(greps(data, "MainPID=[12345678][1234567890]*")) # <<<<
+        self.assertTrue(greps(data, "MainPID=[123456789][1234567890]*")) # <<<<
         self.assertTrue(greps(data, "SubState=running")) # <<<
         self.assertTrue(greps(data, "ActiveState=active")) # <<<<
         self.assertTrue(greps(data, "LoadState=loaded"))
@@ -1995,7 +1995,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         show, end = output2(show_service.format(**locals()))
         logg.info("RESULT \n%s", show)
         data = lines(show)
-        self.assertTrue(greps(data, "MainPID=[12345678][1234567890]*")) # <<<<
+        self.assertTrue(greps(data, "MainPID=[123456789][1234567890]*")) # <<<<
         self.assertEqual(len(data), 1)
         self.assertEqual(end, 0)
         #
