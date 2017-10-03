@@ -1268,6 +1268,10 @@ class Systemctl:
         env = self.get_env(conf)
         logg.debug("start env = %s", env)
         if True:
+            if runs in [ "simple", "forking", "notify" ]:
+                pid_file = self.get_pid_file_from(conf)
+                pid = self.read_pid_file(pid_file, "")
+                env["MAINPID"] = str(pid)
             for cmd in conf.getlist("Service", "ExecStartPre", []):
                 check, cmd = checkstatus(cmd)
                 newcmd = self.exec_cmd(cmd, env, conf)
@@ -1507,6 +1511,10 @@ class Systemctl:
         timeout = conf.get("Service", "TimeoutStopSec", timeout)
         timeout = time_to_seconds(timeout, DefaultMaximumTimeout)
         if True:
+            if runs in [ "simple", "forking", "notify" ]:
+                pid_file = self.get_pid_file_from(conf)
+                pid = self.read_pid_file(pid_file, "")
+                env["MAINPID"] = str(pid)
             for cmd in conf.getlist("Service", "ExecStopPre", []):
                 check, cmd = checkstatus(cmd)
                 newcmd = self.exec_cmd(cmd, env, conf)
@@ -1692,6 +1700,10 @@ class Systemctl:
         sudo = self.sudo_from(conf)
         env = self.get_env(conf)
         if True:
+            if runs in [ "simple", "forking", "notify" ]:
+                pid_file = self.get_pid_file_from(conf)
+                pid = self.read_pid_file(pid_file, "")
+                env["MAINPID"] = str(pid)
             for cmd in conf.getlist("Service", "ExecReloadPre", []):
                 check, cmd = checkstatus(cmd)
                 newcmd = self.exec_cmd(cmd, env, conf)
@@ -1821,6 +1833,10 @@ class Systemctl:
         sudo = self.sudo_from(conf)
         env = self.get_env(conf)
         if True:
+            if runs in [ "simple", "forking", "notify" ]:
+                pid_file = self.get_pid_file_from(conf)
+                pid = self.read_pid_file(pid_file, "")
+                env["MAINPID"] = str(pid)
             for cmd in conf.getlist("Service", "ExecRestartPre", []):
                 check, cmd = checkstatus(cmd)
                 newcmd = self.exec_cmd(cmd, env, conf)
