@@ -1730,7 +1730,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
-    def test_3060_missing_environment_file_makes_service_ignored(self):
+    def test_3101_missing_environment_file_makes_service_ignored(self):
         """ check that a missing EnvironmentFile spec makes the service to be ignored"""
         testname = self.testname()
         testdir = self.testdir()
@@ -1771,7 +1771,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
-    def test_3061_environment_files_are_included(self):
+    def test_3111_environment_files_are_included(self):
         """ check that environment specs are read correctly"""
         testname = self.testname()
         testdir = self.testdir()
