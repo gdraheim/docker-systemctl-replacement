@@ -1706,6 +1706,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPre=echo stopping $MAINPID
             ExecStop=/usr/bin/kill -3 $MAINPID
             ExecStopPost=sleep 2
+            ExecReloadPre=echo reloading $MAINPID
+            ExecReload=/usr/bin/kill -10 $MAINPID
+            ExecReloadPost=sleep 1
             KillSignal=SIGQUIT
             [Install]
             WantedBy=multi-user.target
@@ -1723,12 +1726,17 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
               date +%T,reloaded >> {logfile}
             {end}
             trap "stops" 3
-            trap "reload" 5
+            trap "reload" 10
             date +%T,starting >> {logfile}
             {bindir}/{testsleep} $1 >> {logfile} 2>&1 &
-            wait # wait for children AND external signals
+            while kill -0 $!; do 
+               # use 'kill -0' to check the existance of the child
+               date +%T,waiting >> {logfile}
+               # use 'wait' for children AND external signals
+               wait
+            done
             date +%T,leaving >> {logfile}
-            trap - 3 5
+            trap - 3 10
             date +%T,leave >> {logfile}
         """.format(**locals()))
         copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
@@ -1764,6 +1772,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(log, "leave"))
         self.assertTrue(greps(log, "starting"))
         self.assertTrue(greps(log, "stopped"))
+        self.assertFalse(greps(log, "reload"))
+        os.remove(logfile)
         #
         logg.info("== 'restart' shall start a service that NOT is-active")        
         restart_service = "{systemctl} restart zzz.service -vv"
@@ -1775,6 +1785,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         act = output(is_active.format(**locals()))
         self.assertEqual(act.strip(), "active")
         top1= top
+        #
+        # inspect the service's log
+        log = lines(open(logfile))
+        logg.info("LOG\n %s", "\n ".join(log))
+        self.assertTrue(greps(log, "enter"))
+        self.assertFalse(greps(log, "leave"))
+        self.assertTrue(greps(log, "starting"))
+        self.assertFalse(greps(log, "stopped"))
+        self.assertFalse(greps(log, "reload"))
+        os.remove(logfile)
         #
         logg.info("== 'restart' shall restart a service that is-active")        
         restart_service = "{systemctl} restart zzz.service -vv"
@@ -1804,6 +1824,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(len(ps2), 1)
         self.assertNotEqual(ps1[0], ps2[0])
         #
+        # inspect the service's log
+        log = lines(open(logfile))
+        logg.info("LOG\n %s", "\n ".join(log))
+        self.assertTrue(greps(log, "enter"))
+        self.assertTrue(greps(log, "starting"))
+        self.assertFalse(greps(log, "reload"))
+        os.remove(logfile)
+        #
+        #
         logg.info("== 'reload' will NOT restart a service that is-active")        
         restart_service = "{systemctl} reload zzz.service -vv"
         sh____(restart_service.format(**locals()))
@@ -1822,7 +1851,17 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(len(ps3), 1)
         self.assertEqual(ps2[0], ps3[0])
         #
-        logg.info("== 'reload-or-restart' will restart a service that is-active (if no ExecReload)")        
+        # inspect the service's log
+        log = lines(open(logfile))
+        logg.info("LOG\n %s", "\n ".join(log))
+        self.assertFalse(greps(log, "enter"))
+        self.assertFalse(greps(log, "leave"))
+        self.assertFalse(greps(log, "starting"))
+        self.assertFalse(greps(log, "stopped"))
+        self.assertTrue(greps(log, "reload"))
+        os.remove(logfile)
+        #
+        logg.info("== 'reload-or-restart' will restart a service that is-active (if ExecReload)")        
         restart_service = "{systemctl} reload-or-restart zzz.service -vv"
         sh____(restart_service.format(**locals()))
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
@@ -1833,12 +1872,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(act.strip(), "active")
         top4 = top
         #
-        logg.info("-- and we check that there is a new PID for the service process (if no ExecReload)")
+        logg.info("-- and we check that there is NO new PID for the service process (if ExecReload)")
         ps4 = find_pids(top4, testsleep)
         logg.info("found PIDs %s and %s", ps3, ps4)
         self.assertTrue(len(ps3), 1)
         self.assertTrue(len(ps4), 1)
-        self.assertNotEqual(ps3[0], ps4[0])
+        self.assertEqual(ps3[0], ps4[0])
         #
         logg.info("== 'kill' will bring is-active non-active as well (when the PID is known)")        
         restart_service = "{systemctl} kill zzz.service -vv"
@@ -1887,7 +1926,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(act.strip(), "active")
         top5 = top
         #
-        logg.info("== 'reload-or-try-restart' will restart an is-active service (with no ExecReload)")        
+        logg.info("== 'reload-or-try-restart' will NOT restart an is-active service (with ExecReload)")        
         restart_service = "{systemctl} reload-or-try-restart zzz.service -vv"
         sh____(restart_service.format(**locals()))
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
@@ -1898,13 +1937,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(act.strip(), "active")
         top6 = top
         #
-        logg.info("-- and we check that there is a new PID for the service process (if no ExecReload)")
+        logg.info("-- and we check that there is NO new PID for the service process (if ExecReload)")
         ps5 = find_pids(top5, testsleep)
         ps6 = find_pids(top6, testsleep)
         logg.info("found PIDs %s and %s", ps5, ps6)
         self.assertTrue(len(ps5), 1)
         self.assertTrue(len(ps6), 1)
-        self.assertNotEqual(ps5[0], ps6[0])
+        self.assertEqual(ps5[0], ps6[0])
         #
         logg.info("== 'try-restart' will restart an is-active service")        
         restart_service = "{systemctl} try-restart zzz.service -vv"
