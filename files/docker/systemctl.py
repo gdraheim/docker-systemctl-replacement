@@ -19,6 +19,8 @@ import time
 import socket
 import tempfile
 
+DEBUG_AFTER = False
+
 _root = ""
 _sysd_default = "multi-user.target"
 _sysd_folder1 = "/etc/systemd/system"
@@ -501,25 +503,31 @@ def sortedAfter(conflist, cmp = compareAfter):
                     itemB = sortlist[B]
                     before = compareAfter(itemA.conf, itemB.conf)
                     if before > 0 and itemA.rank <= itemB.rank:
-                        logg.info("  %-30s before %s", itemA.conf.name(), itemB.conf.name())
+                        if DEBUG_AFTER:
+                            logg.info("  %-30s before %s", itemA.conf.name(), itemB.conf.name())
                         itemA.rank = itemB.rank + 1
                         changed += 1
                     if before < 0 and itemB.rank <= itemA.rank:
-                        logg.info("  %-30s before %s", itemB.conf.name(), itemA.conf.name())
+                        if DEBUG_AFTER:
+                            logg.info("  %-30s before %s", itemB.conf.name(), itemA.conf.name())
                         itemB.rank = itemA.rank + 1
                         changed += 1
         if not changed:
-            logg.info("done in check %s of %s", check, len(sortlist))
+            if DEBUG_AFTER:
+                logg.info("done in check %s of %s", check, len(sortlist))
             break
             # because Requires is almost always the same as the After clauses
             # we are mostly done in round 1 as the list is in required order
     for conf in conflist:
-        logg.debug(".. %s", conf.name())
+        if DEBUG_AFTER:
+            logg.debug(".. %s", conf.name())
     for item in sortlist:
-        logg.info("(%s) %s", item.rank, item.conf.name())
+        if DEBUG_AFTER:
+            logg.info("(%s) %s", item.rank, item.conf.name())
     sortedlist = sorted(sortlist, cmp = lambda x, y: y.rank - x.rank)
     for item in sortedlist:
-        logg.info("[%s] %s", item.rank, item.conf.name())
+        if DEBUG_AFTER:
+            logg.info("[%s] %s", item.rank, item.conf.name())
     return [ item.conf for item in sortedlist ]
 
 class Systemctl:
