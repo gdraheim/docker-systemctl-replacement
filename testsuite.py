@@ -16,6 +16,7 @@ import datetime
 import unittest
 import shutil
 import inspect
+import types
 import logging
 import re
 from fnmatch import fnmatchcase as fnmatch
@@ -52,7 +53,10 @@ def _lines(lines):
             lines = lines[:-1]
     return lines
 def lines(text):
-    return list(_lines(text))
+    lines = []
+    for line in _lines(text):
+        lines.append(line.rstrip())
+    return lines
 def grep(pattern, lines):
     for line in _lines(lines):
        if re.search(pattern, line.rstrip()):
@@ -1676,7 +1680,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_4030_simple_service_functions(self):
         """ check that we manage simple services in a root env
             with commands like start, restart, stop, etc"""
-        self.skipTest("not implemented correctly")
+        #! self.skipTest("not implemented correctly")
         # the shellscript is blocking on its testsleep child
         # in such a way that it does not compute the signals.
         testname = self.testname()
@@ -1696,34 +1700,35 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing Z
             [Service]
             Type=simple
+            ExecStartPre=echo %n
             ExecStart={bindir}/{testscript} 50
-            ExecStop=killall -3 {testscript}
-            ExecStop=sleep 4
+            ExecStartPost=echo started $MAINPID
+            ExecStopPre=echo stopping $MAINPID
+            ExecStop=/usr/bin/kill -3 $MAINPID
+            ExecStopPost=sleep 4
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
         shell_file(os_path(bindir, testscript),"""
             #! /bin/sh
-            date > {logfile}
-            echo "begin" >> {logfile}
+            date +%T,enter > {logfile}
             stops () {begin}
-              date >> {logfile}
-              echo "stopping" >> {logfile}
+              date +%T,stopping >> {logfile}
               killall {testsleep}
-              exit 0
+              date +%T,stopped >> {logfile}
             {end}
             reload () {begin}
-              date >> {logfile}
-              echo "reloads" >> {logfile}
+              date +%T,reloading >> {logfile}
+              date +%T,reloaded >> {logfile}
             {end}
             trap "stops" 3
             trap "reload" 5
-            date >> {logfile}
-            echo "start" >> {logfile}
-            {bindir}/{testsleep} $1 >> {logfile} 2>&1
-            date >> {logfile}
-            echo "ended" >> {logfile}
-            trap - 1 5
+            date +%T,starting >> {logfile}
+            {bindir}/{testsleep} $1 >> {logfile} 2>&1 &
+            wait # wait for children AND external signals
+            date +%T,leaving >> {logfile}
+            trap - 3 5
+            date +%T,leave >> {logfile}
         """.format(**locals()))
         copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
@@ -1751,6 +1756,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
+        #
+        # inspect the service's log
+        log = lines(open(logfile))
+        logg.info("LOG\n %s", "\n ".join(log))
+        self.assertTrue(greps(log, "enter"))
+        self.assertTrue(greps(log, "leave"))
+        self.assertTrue(greps(log, "starting"))
+        self.assertTrue(greps(log, "stopped"))
+        #
+        # cleanup
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
