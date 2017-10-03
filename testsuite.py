@@ -5784,7 +5784,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(greps(open(testdir+"/systemctl.debug.log"), " ERROR ")), 0)
         self.assertTrue(greps(open(testdir+"/systemctl.debug.log"), "use NOTIFY_SOCKET="))
         self.assertTrue(greps(open(testdir+"/systemctl.debug.log"), "read_notify.*READY=1.*MAINPID="))
-        self.assertTrue(greps(open(testdir+"/systemctl.debug.log"), "ntfy start done"))
+        self.assertTrue(greps(open(testdir+"/systemctl.debug.log"), "notify start done"))
         self.assertTrue(greps(open(testdir+"/systemctl.debug.log"), "stop '/bin/kill' '-WINCH'"))
         self.assertTrue(greps(open(testdir+"/systemctl.debug.log"), "wait [$]NOTIFY_SOCKET"))
         self.assertTrue(greps(open(testdir+"/systemctl.debug.log"), "dead PID"))
@@ -5863,7 +5863,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl_log = open(testdir+"/systemctl.log").read()
         self.assertEqual(len(greps(systemctl_log, " ERROR ")), 1)
         self.assertTrue(greps(systemctl_log, "ERROR chdir .* '/home/elasticsearch': .* No such file or directory"))
-        self.assertTrue(greps(systemctl_log, "simp start done PID"))
+        self.assertTrue(greps(systemctl_log, "simple start done PID"))
         self.assertTrue(greps(systemctl_log, "stop kill PID .*elasticsearch.service"))
         self.assertTrue(greps(systemctl_log, "stopped PID .* EXIT 143"))
         #
