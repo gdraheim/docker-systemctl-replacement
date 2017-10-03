@@ -2394,7 +2394,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(act.strip(), "inactive")
         #
         logg.info("== 'start' shall start a service that is NOT is-active ")
-        start_service = "{systemctl} start zzz.service -vvv"
+        start_service = "{systemctl} start zzz.service -vv"
         sh____(start_service.format(**locals()))
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
@@ -2570,6 +2570,324 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(len(ps6), 1)
         self.assertTrue(len(ps7), 1)
         self.assertNotEqual(ps6[0], ps7[0])
+        #
+        logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
+        self.rm_testdir()
+        self.rm_testdir()
+    def test_4037_oneshot_service_functions(self):
+        """ check that we manage oneshot services in a root env
+            with basic run-service commands: start, stop, restart,
+            reload, try-restart, reload-or-restart, kill and
+            reload-or-try-restart."""
+        if not os.path.exists("/usr/bin/socat"):
+            self.skipTest("missing /usr/bin/socat")
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        testsleep = self.testname("sleep")
+        logfile = os_path(root, "/var/log/"+testsleep+".log")
+        bindir = os_path(root, "/usr/bin")
+        os.makedirs(os_path(root, "/var/run"))
+        text_file(logfile, "created\n")
+        begin = "{" ; end = "}"
+        text_file(os_path(testdir, "zzz.service"),"""
+            [Unit]
+            Description=Testing Z
+            [Service]
+            Type=oneshot
+            ExecStartPre={bindir}/backup {root}/var/tmp/test.1 {root}/var/tmp/test.2
+            ExecStart=/usr/bin/touch {root}/var/tmp/test.1
+            ExecStop=/usr/bin/rm {root}/var/tmp/test.1
+            ExecStopPost=/usr/bin/rm -f {root}/var/tmp/test.2
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        shell_file(os_path(testdir, "backup"), """
+           #! /bin/sh
+           set -x
+           test ! -f "$1" || mv -v "$1" "$2"
+        """)
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
+        copy_tool(os_path(testdir, "backup"), os_path(root, "/usr/bin/backup"))
+        text_file(os_path(root, "/var/tmp/test.0"), """..""")
+        is_active = "{systemctl} is-active zzz.service -vv"
+        act = output(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "inactive")
+        #
+        logg.info("== 'start' shall start a service that is NOT is-active ")
+        start_service = "{systemctl} start zzz.service -vv"
+        sh____(start_service.format(**locals()))
+        act = output(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "active")
+        self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        #
+        logg.info("== 'stop' shall stop a service that is-active")
+        stop_service = "{systemctl} stop zzz.service -vv"
+        sh____(stop_service.format(**locals()))
+        act = output(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "inactive")
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        #
+        logg.info("== 'restart' shall start a service that NOT is-active")        
+        restart_service = "{systemctl} restart zzz.service -vv"
+        sh____(restart_service.format(**locals()))
+        act = output(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "active")
+        self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        #
+        logg.info("== 'restart' shall restart a service that is-active")        
+        restart_service = "{systemctl} restart zzz.service -vv"
+        sh____(restart_service.format(**locals()))
+        act = output(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "active")
+        self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        #
+        logg.info("== 'reload' will NOT restart a service that is-active")        
+        restart_service = "{systemctl} reload zzz.service -vv"
+        sh____(restart_service.format(**locals()))
+        act = output(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "active")
+        self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        #
+        logg.info("== 'reload-or-restart' will restart a service that is-active")        
+        restart_service = "{systemctl} reload-or-restart zzz.service -vv"
+        sh____(restart_service.format(**locals()))
+        act = output(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "active")
+        #
+        logg.info("== 'stop' will brings it back to 'inactive'")        
+        restart_service = "{systemctl} stop zzz.service -vv"
+        sh____(restart_service.format(**locals()))
+        act = output(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "inactive")
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        #
+        logg.info("== 'reload-or-try-restart' will not start a not-active service")        
+        restart_service = "{systemctl} reload-or-try-restart zzz.service -vv"
+        sh____(restart_service.format(**locals()))
+        act = output(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "inactive")
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        #
+        logg.info("== 'try-restart' will not start a not-active service")        
+        restart_service = "{systemctl} reload-or-try-restart zzz.service -vv"
+        sh____(restart_service.format(**locals()))
+        act = output(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "inactive")
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        #
+        logg.info("== 'reload-or-restart' will start a not-active service")        
+        restart_service = "{systemctl} reload-or-restart zzz.service -vv"
+        sh____(restart_service.format(**locals()))
+        act = output(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "active")
+        self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        #
+        logg.info("== 'reload-or-try-restart' will restart an is-active service")        
+        restart_service = "{systemctl} reload-or-try-restart zzz.service -vv"
+        sh____(restart_service.format(**locals()))
+        act = output(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "active")
+        self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        #
+        logg.info("== 'try-restart' will restart an is-active service")        
+        restart_service = "{systemctl} try-restart zzz.service -vv"
+        sh____(restart_service.format(**locals()))
+        act = output(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "active")
+        self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        #
+        logg.info("== 'stop' will brings it back to 'inactive'")        
+        restart_service = "{systemctl} stop zzz.service -vv"
+        sh____(restart_service.format(**locals()))
+        act = output(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "inactive")
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        #
+        logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
+        self.rm_testdir()
+    def test_4038_oneshot_service_functions_and_restart(self):
+        """ check that we manage oneshot services in a root env
+            with basic run-service commands: start, stop, restart,
+            reload, try-restart, reload-or-restart, kill and
+            reload-or-try-restart. This variant includes ExecRestart lines."""
+        if not os.path.exists("/usr/bin/socat"):
+            self.skipTest("missing /usr/bin/socat")
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        testsleep = self.testname("sleep")
+        logfile = os_path(root, "/var/log/"+testsleep+".log")
+        bindir = os_path(root, "/usr/bin")
+        os.makedirs(os_path(root, "/var/run"))
+        text_file(logfile, "created\n")
+        begin = "{" ; end = "}"
+        text_file(os_path(testdir, "zzz.service"),"""
+            [Unit]
+            Description=Testing Z
+            [Service]
+            Type=oneshot
+            ExecStartPre={bindir}/backup {root}/var/tmp/test.1 {root}/var/tmp/test.2
+            ExecStart=/usr/bin/touch {root}/var/tmp/test.1
+            ExecRestart=/usr/bin/touch {root}/var/tmp/test.3
+            ExecStop=/usr/bin/rm {root}/var/tmp/test.1
+            ExecStopPost=/usr/bin/rm -f {root}/var/tmp/test.2
+            ExecStopPost=/usr/bin/rm -f {root}/var/tmp/test.3
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        shell_file(os_path(testdir, "backup"), """
+           #! /bin/sh
+           set -x
+           test ! -f "$1" || mv -v "$1" "$2"
+        """)
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
+        copy_tool(os_path(testdir, "backup"), os_path(root, "/usr/bin/backup"))
+        text_file(os_path(root, "/var/tmp/test.0"), """..""")
+        is_active = "{systemctl} is-active zzz.service -vv"
+        act = output(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "inactive")
+        #
+        logg.info("== 'start' shall start a service that is NOT is-active ")
+        start_service = "{systemctl} start zzz.service -vv"
+        sh____(start_service.format(**locals()))
+        act = output(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "active")
+        self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.3")))
+        #
+        logg.info("== 'stop' shall stop a service that is-active")
+        stop_service = "{systemctl} stop zzz.service -vv"
+        sh____(stop_service.format(**locals()))
+        act = output(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "inactive")
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.3")))
+        #
+        logg.info("== 'restart' shall start a service that NOT is-active")        
+        restart_service = "{systemctl} restart zzz.service -vv"
+        sh____(restart_service.format(**locals()))
+        act = output(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "active")
+        self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.3")))
+        #
+        logg.info("== 'restart' shall restart a service that is-active")        
+        restart_service = "{systemctl} restart zzz.service -vv"
+        sh____(restart_service.format(**locals()))
+        act = output(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "active")
+        self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.3")))
+        #
+        logg.info("== 'reload' will NOT restart a service that is-active")        
+        restart_service = "{systemctl} reload zzz.service -vv"
+        sh____(restart_service.format(**locals()))
+        act = output(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "active")
+        self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.3")))
+        #
+        os.remove(os_path(root, "/var/tmp/test.3"))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.3")))
+        #
+        logg.info("== 'reload-or-restart' will restart a service that is-active")        
+        restart_service = "{systemctl} reload-or-restart zzz.service -vv"
+        sh____(restart_service.format(**locals()))
+        act = output(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "active")
+        self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.3")))
+        #
+        logg.info("== 'stop' will bring it back to 'inactive'")        
+        restart_service = "{systemctl} stop zzz.service -vv"
+        sh____(restart_service.format(**locals()))
+        act = output(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "inactive")
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.3")))
+        #
+        logg.info("== 'reload-or-try-restart' will not start a not-active service")        
+        restart_service = "{systemctl} reload-or-try-restart zzz.service -vv"
+        sh____(restart_service.format(**locals()))
+        act = output(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "inactive")
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.3")))
+        #
+        logg.info("== 'try-restart' will not start a not-active service")        
+        restart_service = "{systemctl} reload-or-try-restart zzz.service -vv"
+        sh____(restart_service.format(**locals()))
+        act = output(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "inactive")
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.3")))
+        #
+        logg.info("== 'reload-or-restart' will start a not-active service")        
+        restart_service = "{systemctl} reload-or-restart zzz.service -vv"
+        sh____(restart_service.format(**locals()))
+        act = output(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "active")
+        self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.3")))
+        #
+        logg.info("== 'reload-or-try-restart' will restart an is-active service")        
+        restart_service = "{systemctl} reload-or-try-restart zzz.service -vv"
+        sh____(restart_service.format(**locals()))
+        act = output(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "active")
+        self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.3")))
+        #
+        os.remove(os_path(root, "/var/tmp/test.3"))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.3")))
+        #
+        logg.info("== 'try-restart' will restart an is-active service")        
+        restart_service = "{systemctl} try-restart zzz.service -vv"
+        sh____(restart_service.format(**locals()))
+        act = output(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "active")
+        self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.3")))
+        #
+        logg.info("== 'stop' will brings it back to 'inactive'")        
+        restart_service = "{systemctl} stop zzz.service -vv"
+        sh____(restart_service.format(**locals()))
+        act = output(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "inactive")
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.3")))
         #
         logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
         self.rm_testdir()
