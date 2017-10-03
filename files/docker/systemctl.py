@@ -1320,7 +1320,6 @@ class Systemctl:
                     self.write_status_file(status_file, failed)
                 else:
                     self.write_status_file(status_file, "active")
-                return True
         elif runs in [ "simple" ]: 
             pid_file = self.get_pid_file_from(conf)
             pid = self.read_pid_file(pid_file, "")
