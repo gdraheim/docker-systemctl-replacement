@@ -1,4 +1,4 @@
-## the testsuite
+# The Testsuite
 
 Before any release "make check" should report no problems.
 
