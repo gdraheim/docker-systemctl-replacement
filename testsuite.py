@@ -1837,6 +1837,40 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.rm_testdir()
         self.coverage()
+    def test_3201_service_config_cat(self):
+        """ check that a name service config can be printed as-is"""
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        logfile = os_path(root, "/var/log/test.log")
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        testsleep = self.testname("sleep")
+        bindir = os_path(root, "/usr/bin")
+        text_file(os_path(testdir, "zzs.service"),"""
+            [Unit]
+            Description=Testing S
+            After=foo.service
+            [Service]
+            Type=simple
+            ExecStart={bindir}{testsleep} 40
+            ExecStop=/usr/bin/killall {testsleep}
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_file(os_path(testdir, "zzs.service"), os_path(root, "/etc/systemd/system/zzs.service"))
+        #
+        cat_service = "{systemctl} cat zzs.service -vv"
+        cat, end = output2(cat_service.format(**locals()))
+        logg.info("RESULT \n%s", cat)
+        orig = lines(open(os_path(root, "/etc/systemd/system/zzs.service")))
+        show = lines(cat)
+        self.assertEqual(orig + [""], show)
+        self.assertEqual(end, 0)
+        #
+        self.rm_testdir()
+        self.coverage()
     def test_4030_simple_service_functions(self):
         """ check that we manage simple services in a root env
             with commands like start, restart, stop, etc"""
