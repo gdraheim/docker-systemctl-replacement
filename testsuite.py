@@ -5,6 +5,10 @@
 __copyright__ = "(C) Guido Draheim, for free use (CC-BY,GPL) """
 __version__ = "0.8.1401"
 
+## NOTE:
+## The testcases 1000...4999 are using a --root=subdir environment
+## The testcases 5000...9999 will start a docker container to work.
+
 import subprocess
 import os.path
 import time
