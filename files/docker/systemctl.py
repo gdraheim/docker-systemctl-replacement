@@ -934,9 +934,9 @@ class Systemctl:
         elif isinstance(defaults, basestring):
            status["STATE"] = defaults
         if not status_file:
-            return default
+            return status
         if not os.path.isfile(status_file):
-            return default
+            return status
         try:
             for line in open(status_file):
                 if line.strip(): 
@@ -1810,22 +1810,7 @@ class Systemctl:
                 else:
                     self.write_status_file(status_file, "active")
                 return True
-        elif runs in [ "oneshot" ]:
-            status_file = self.get_status_file_from(conf)
-            returncode = 0
-            for cmd in conf.getlist("Service", "ExecRestart", []):
-                check, cmd = checkstatus(cmd)
-                newcmd = self.exec_cmd(cmd, env, conf)
-                logg.info("shot restart %s", shell_cmd(sudo+newcmd))
-                run = subprocess_wait(sudo+newcmd, env)
-                if run.returncode: returncode = run.returncode
-            if True:
-                failed = { "STATE": "failed", "EXIT": returncode }
-                if returncode:
-                    self.write_status_file(status_file, failed)
-                else:
-                    self.write_status_file(status_file, "active")
-        ## fallback Restart => Stop/Start for ["simple","notify","forking"]
+        # fallback to Stop/Start if no Restart-spec is given
         elif not conf.getlist("Service", "ExecRestart", []):
             logg.info("(restart) => stop/start")
             self.stop_unit_from(conf)
@@ -1874,6 +1859,21 @@ class Systemctl:
                     pid = self.wait_pid_file(pid_file)
             if not pid_file:
                 self.sleep()
+        elif runs in [ "oneshot" ]:
+            status_file = self.get_status_file_from(conf)
+            returncode = 0
+            for cmd in conf.getlist("Service", "ExecRestart", []):
+                check, cmd = checkstatus(cmd)
+                newcmd = self.exec_cmd(cmd, env, conf)
+                logg.info("shot restart %s", shell_cmd(sudo+newcmd))
+                run = subprocess_wait(sudo+newcmd, env)
+                if run.returncode: returncode = run.returncode
+            if True:
+                failed = { "STATE": "failed", "EXIT": returncode }
+                if returncode:
+                    self.write_status_file(status_file, failed)
+                else:
+                    self.write_status_file(status_file, "active")
         else:
             logg.error("unsupported run type '%s'", runs)
             raise Exception("unsupported run type")
