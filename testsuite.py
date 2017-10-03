@@ -3792,6 +3792,200 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
         self.rm_testdir()
         self.coverage()
+    def test_4201_systemctl_py_dependencies_plain_start_order(self):
+        """ check list-dependencies - standard order of starting
+            units is simply the command line order"""
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        logfile = os_path(root, "/var/log/"+testname+".log")
+        testsleep = self.testname("sleep")
+        bindir = os_path(root, "/usr/bin")
+        text_file(os_path(testdir, "zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            Type=simple
+            ExecStartPre={bindir}/logger 'start-A'
+            ExecStart={bindir}/{testsleep} 30
+            ExecStopPre={bindir}/logger 'stop-A'
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        text_file(os_path(testdir, "zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            Type=simple
+            ExecStartPre={bindir}/logger 'start-B'
+            ExecStart={bindir}/{testsleep} 40
+            ExecStopPre={bindir}/logger 'stop-B'
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        text_file(os_path(testdir, "zzc.service"),"""
+            [Unit]
+            Description=Testing C
+            [Service]
+            Type=simple
+            ExecStartPre={bindir}/logger 'start-C'
+            ExecStart={bindir}/{testsleep} 50
+            ExecStopPre={bindir}/logger 'stop-C'
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        shell_file(os_path(testdir, "logger"),"""
+            #! /bin/sh
+            echo "$@" >> {logfile}
+            cat {logfile} | sed -e "s|^| : |"
+            true
+            """.format(**locals()))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(os_path(testdir, "logger"), os_path(bindir, "logger"))
+        copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
+        copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
+        copy_file(os_path(testdir, "zzc.service"), os_path(root, "/etc/systemd/system/zzc.service"))
+        os.makedirs(os_path(root, "/var/run"))
+        os.makedirs(os_path(root, "/var/log"))
+        #
+        list_dependencies = "{systemctl} list-dependencies zza.service --now"
+        deps  = output(list_dependencies.format(**locals()))
+        logg.info("deps \n%s", deps)
+        #
+        starting_services = "{systemctl} start zza.service zzb.service zzc.service -vv"
+        sh____(starting_services.format(**locals()))
+        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
+        top = output(top_recent.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep+" 40"))
+        #
+        # inspect logfile
+        log = lines(open(logfile))
+        logg.info("logs \n| %s", "\n| ".join(log))
+        self.assertEqual(log[0], "start-A")
+        self.assertEqual(log[1], "start-B")
+        self.assertEqual(log[2], "start-C")
+        os.remove(logfile)
+        #
+        stopping_services = "{systemctl} stop zza.service zzb.service zzc.service -vv"
+        sh____(stopping_services.format(**locals()))
+        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
+        top = output(top_recent.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, testsleep+" 40"))
+        #
+        # inspect logfile
+        log = lines(open(logfile))
+        logg.info("logs \n| %s", "\n| ".join(log))
+        self.assertEqual(log[0], "stop-A")
+        self.assertEqual(log[1], "stop-B")
+        self.assertEqual(log[2], "stop-C")
+        os.remove(logfile)
+        #
+        kill_testsleep = "killall {testsleep}"
+        sx____(kill_testsleep.format(**locals()))
+        self.rm_testdir()
+        self.coverage()
+    def test_4211_systemctl_py_dependencies_basic_reorder(self):
+        """ check list-dependencies - standard order of starting
+            units is simply the command line order"""
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        logfile = os_path(root, "/var/log/"+testname+".log")
+        testsleep = self.testname("sleep")
+        bindir = os_path(root, "/usr/bin")
+        text_file(os_path(testdir, "zza.service"),"""
+            [Unit]
+            Description=Testing A
+            After=zzb.service
+            [Service]
+            Type=simple
+            ExecStartPre={bindir}/logger 'start-A'
+            ExecStart={bindir}/{testsleep} 30
+            ExecStopPre={bindir}/logger 'stop-A'
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        text_file(os_path(testdir, "zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            Type=simple
+            ExecStartPre={bindir}/logger 'start-B'
+            ExecStart={bindir}/{testsleep} 40
+            ExecStopPre={bindir}/logger 'stop-B'
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        text_file(os_path(testdir, "zzc.service"),"""
+            [Unit]
+            Description=Testing C
+            After=zza.service
+            [Service]
+            Type=simple
+            ExecStartPre={bindir}/logger 'start-C'
+            ExecStart={bindir}/{testsleep} 50
+            ExecStopPre={bindir}/logger 'stop-C'
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        shell_file(os_path(testdir, "logger"),"""
+            #! /bin/sh
+            echo "$@" >> {logfile}
+            cat {logfile} | sed -e "s|^| : |"
+            true
+            """.format(**locals()))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(os_path(testdir, "logger"), os_path(bindir, "logger"))
+        copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
+        copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
+        copy_file(os_path(testdir, "zzc.service"), os_path(root, "/etc/systemd/system/zzc.service"))
+        os.makedirs(os_path(root, "/var/run"))
+        os.makedirs(os_path(root, "/var/log"))
+        #
+        list_dependencies = "{systemctl} list-dependencies zza.service --now"
+        deps  = output(list_dependencies.format(**locals()))
+        logg.info("deps \n%s", deps)
+        #
+        starting_services = "{systemctl} start zza.service zzb.service zzc.service -vv"
+        sh____(starting_services.format(**locals()))
+        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
+        top = output(top_recent.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep+" 40"))
+        #
+        # inspect logfile
+        log = lines(open(logfile))
+        logg.info("logs \n| %s", "\n| ".join(log))
+        self.assertEqual(log[0], "start-B")
+        self.assertEqual(log[1], "start-A")
+        self.assertEqual(log[2], "start-C")
+        os.remove(logfile)
+        #
+        stopping_services = "{systemctl} stop zza.service zzb.service zzc.service -vv"
+        sh____(stopping_services.format(**locals()))
+        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
+        top = output(top_recent.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, testsleep+" 40"))
+        #
+        # inspect logfile
+        log = lines(open(logfile))
+        logg.info("logs \n| %s", "\n| ".join(log))
+        self.assertEqual(log[0], "stop-C")
+        self.assertEqual(log[1], "stop-A")
+        self.assertEqual(log[2], "stop-B")
+        os.remove(logfile)
+        #
+        kill_testsleep = "killall {testsleep}"
+        sx____(kill_testsleep.format(**locals()))
+        self.rm_testdir()
+        self.coverage()
     def test_5001_systemctl_py_inside_container(self):
         """ check that we can run systemctl.py inside a docker container """
         testname = self.testname()
