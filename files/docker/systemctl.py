@@ -1248,14 +1248,14 @@ class Systemctl:
         /// SPECIAL: may run the init-loop and 
             stop the named units afterwards """
         done = True
-        for unit in units:
+        for unit in self.sortedAfter(units):
             if not self.start_unit(unit):
                 done = False
         if init:
             logg.info("init-loop start")
             sig = self.init_loop_until_stop()
             logg.info("init-loop %s", sig)
-            for unit in units:
+            for unit in self.sortedBefore(units):
                 self.stop_unit(unit)
         return done
     def start_unit(self, unit):
@@ -1357,6 +1357,7 @@ class Systemctl:
                     pid = self.read_pid_file(pid_file, "")
                     if str(pid) == str(run.pid):
                         self.write_pid_file(pid_file, "")
+                sys.exit(run.returncode) # end of child
             else:
                 # parent
                 pid = self.wait_pid_file(pid_file)
@@ -1413,6 +1414,7 @@ class Systemctl:
                     pid = self.read_pid_file(pid_file, "")
                     if str(pid) == str(run.pid):
                         self.write_pid_file(pid_file, "")
+                sys.exit(run.returncode) # end of child
             else:
                 # parent
                 mainpid = self.wait_pid_file(pid_file) # fork is running
@@ -1495,7 +1497,7 @@ class Systemctl:
     def stop_units(self, units):
         """ fails if any unit fails to stop """
         done = True
-        for unit in units:
+        for unit in self.sortedBefore(units):
             if not self.stop_unit(unit):
                 done = False
         return done
@@ -1655,7 +1657,7 @@ class Systemctl:
     def reload_units(self, units):
         """ fails if any unit fails to reload """
         done = True
-        for unit in units:
+        for unit in self.sortedAfter(units):
             if not self.reload_unit(unit):
                 done = False
         return done
@@ -1762,7 +1764,7 @@ class Systemctl:
     def restart_units(self, units):
         """ fails if any unit fails to restart """
         done = True
-        for unit in units:
+        for unit in sortedAfter(units):
             if not self.restart_unit(unit):
                 done = False
         return done
@@ -1898,7 +1900,7 @@ class Systemctl:
     def try_restart_units(self, units):
         """ fails if any module fails to try-restart """
         done = True
-        for unit in units:
+        for unit in self.sortedAfter(units):
             if not self.try_restart_unit(unit):
                 done = False
         return done
@@ -1927,7 +1929,7 @@ class Systemctl:
     def reload_or_restart_units(self, units):
         """ fails if any unit does not reload-or-restart """
         done = True
-        for unit in units:
+        for unit in self.sortedAfter(units):
             if not self.reload_or_restart_unit(unit):
                 done = False
         return done
@@ -1966,7 +1968,7 @@ class Systemctl:
     def reload_or_try_restart_units(self, units):
         """ fails if any unit fails to reload-or-try-restart """
         done = True
-        for unit in units:
+        for unit in self.sortedAfter(units):
             if not self.reload_or_try_restart_unit(unit):
                 done = False
         return done
@@ -2001,7 +2003,7 @@ class Systemctl:
     def kill_units(self, units):
         """ fails if any unit could not be killed """
         done = True
-        for unit in units:
+        for unit in self.sortedBefore(units):
             if not self.kill_unit(unit):
                 done = False
         return done
@@ -2702,7 +2704,7 @@ class Systemctl:
         return [ item.name() for item in sortlist ]
     def sortedBefore(self, unitlist):
         conflist = [ self.get_unit_conf(unit) for unit in unitlist ]
-        sortlist = sortedAfter(conflist)
+        sortlist = sortedAfter(reversed(conflist))
         return [ item.name() for item in reversed(sortlist) ]
     def system_daemon_reload(self):
         """ reload does will only check the service files here """
