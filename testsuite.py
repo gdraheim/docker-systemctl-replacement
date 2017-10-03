@@ -1677,6 +1677,47 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
+    def test_3060_missing_environment_file_makes_service_ignored(self):
+        """ check that a missing EnvironmentFile spec makes the service to be ignored"""
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        testsleep = self.testname("sleep")
+        bindir = os_path(root, "/usr/bin")
+        text_file(os_path(testdir, "zzz.service"),"""
+            [Unit]
+            Description=Testing Z
+            [Service]
+            Type=simple
+            EnvironmentFile=/foo.conf
+            ExecStart={bindir}/{testsleep} 50
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
+        #
+        start_service = "{systemctl} start zzz.service -vv"
+        end = sx____(start_service.format(**locals()))
+        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
+        top = output(top_recent.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, testsleep))
+        self.assertGreater(end, 0)
+        #
+        stop_service = "{systemctl} stop zzz.service -vv"
+        end = sx____(stop_service.format(**locals()))
+        top = output(top_recent.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, testsleep))
+        self.assertGreater(end, 0)
+        #
+        kill_testsleep = "killall {testsleep}"
+        sx____(kill_testsleep.format(**locals()))
+        self.rm_testdir()
+
     def test_4030_simple_service_functions(self):
         """ check that we manage simple services in a root env
             with commands like start, restart, stop, etc"""

@@ -1013,6 +1013,14 @@ class Systemctl:
             logg.error("no such unit: '%s'", unit)
             return False
         return self.get_env(conf)
+    def bad_service_from(self, conf):
+        for env_file in conf.getlist("Service", "EnvironmentFile", []):
+            if env_file.startswith("-"): continue
+            if not os.path.isfile(env_file):
+                logg.warning("non-existant EnvironmentFile=%s", env_file)
+                return True
+        logg.warning("okay.................")
+        return False
     def get_env(self, conf):
         env = os.environ.copy()
         for env_part in conf.getlist("Service", "Environment", []):
@@ -1263,6 +1271,7 @@ class Systemctl:
         return self.start_unit_from(conf)
     def start_unit_from(self, conf):
         if not conf: return
+        if self.bad_service_from(conf): return False
         runs = conf.get("Service", "Type", "simple").lower()
         sudo = self.sudo_from(conf)
         env = self.get_env(conf)
@@ -1504,6 +1513,7 @@ class Systemctl:
         return self.stop_unit_from(conf)
     def stop_unit_from(self, conf):
         if not conf: return
+        if self.bad_service_from(conf): return False
         runs = conf.get("Service", "Type", "simple").lower()
         sudo = self.sudo_from(conf)
         env = self.get_env(conf)
@@ -1696,6 +1706,7 @@ class Systemctl:
         return self.reload_unit_from(conf)
     def reload_unit_from(self, conf):
         if not conf: return
+        if self.bad_service_from(conf): return False
         runs = conf.get("Service", "Type", "simple").lower()
         sudo = self.sudo_from(conf)
         env = self.get_env(conf)
@@ -1829,6 +1840,7 @@ class Systemctl:
         return self.restart_unit_from(conf)
     def restart_unit_from(self, conf):
         if not conf: return
+        if self.bad_service_from(conf): return False
         runs = conf.get("Service", "Type", "simple").lower()
         sudo = self.sudo_from(conf)
         env = self.get_env(conf)
