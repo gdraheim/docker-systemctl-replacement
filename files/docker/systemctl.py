@@ -1725,7 +1725,6 @@ class Systemctl:
                 run = subprocess_wait(sudo+newcmd, env)
                 # self.write_pid_file(pid_file, run.pid)
         elif runs in [ "forking" ]:
-            pid_file = self.pid_file_from(conf)
             for cmd in conf.getlist("Service", "ExecReload", []):
                 if pid_file:
                     pid = self.read_pid_file(pid_file, "")
@@ -1735,10 +1734,7 @@ class Systemctl:
                 logg.info("%s reload %s", runs, shell_cmd(sudo+newcmd))
                 run = subprocess_wait(sudo+newcmd, env)
                 if check and run.returncode: raise Exception("ExecReload")
-                if pid_file:
-                    pid = self.wait_pid_file(pid_file)
-            if not pid_file:
-                self.sleep()
+            self.sleep()
         else:
             logg.error("unsupported run type '%s'", runs)
             raise Exception("unsupported run type")
