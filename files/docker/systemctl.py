@@ -1570,49 +1570,17 @@ class Systemctl:
                 self.kill_unit_from(conf)
                 if os.path.isfile(pid_file):
                     os.remove(pid_file)
-        elif runs in [ "simple" ]:
+        elif runs in [ "simple", "notify" ]:
             pid_file = self.get_pid_file_from(conf)
             pid = 0
             for cmd in conf.getlist("Service", "ExecStop", []):
                 pid = self.read_pid_file(pid_file, "")
                 env["MAINPID"] = str(pid)
                 newcmd = self.exec_cmd(cmd, env, conf)
-                logg.info("simp stop %s", shell_cmd(sudo+newcmd))
+                logg.info("%s stop %s", runs, shell_cmd(sudo+newcmd))
                 run = subprocess_wait(sudo+newcmd, env)
                 # self.write_pid_file(pid_file, run.pid)
             pid = env.get("MAINPID",0)
-            if pid:
-                if self.wait_vanished_pid(pid, timeout):
-                    if os.path.isfile(pid_file):
-                        os.remove(pid_file)
-            else:
-                logg.info("short sleep as no PID was found on Stop")
-                self.sleep()
-                pid = self.read_pid_file(pid_file, "")
-                if not pid or not pid_exists(pid):
-                    if os.path.isfile(pid_file):
-                        os.remove(pid_file)
-        elif runs in [ "notify" ]:
-            pid_file = self.get_pid_file_from(conf)
-            notify = self.notify_socket_from(conf)
-            if notify:
-                env["NOTIFY_SOCKET"] = notify.socketfile
-                logg.debug("use NOTIFY_SOCKET=%s", notify.socketfile)
-            for cmd in conf.getlist("Service", "ExecStop", []):
-                pid = self.read_pid_file(pid_file, "")
-                env["MAINPID"] = str(pid)
-                newcmd = self.exec_cmd(cmd, env, conf)
-                logg.info("ntfy stop %s", shell_cmd(sudo+newcmd))
-                run = subprocess_wait(sudo+newcmd, env)
-                # self.write_pid_file(pid_file, run.pid)
-                mainpid = self.wait_pid_file(pid_file) # fork is running
-                results = self.wait_notify_socket(notify, timeout, mainpid)
-                if "MAINPID" in results:
-                    new_pid = results["MAINPID"]
-                    if new_pid and new_pid.strip() != mainpid:
-                        logg.info("NEW PID %s from sd_notify", new_pid)
-                        self.write_pid_file(pid_file, new_pid)
-            pid = self.read_pid_file(pid_file, "")
             if pid:
                 if self.wait_vanished_pid(pid, timeout):
                     if os.path.isfile(pid_file):
@@ -1749,7 +1717,7 @@ class Systemctl:
                     self.write_status_file(status_file, failed)
                 else:
                     self.write_status_file(status_file, "active")
-        elif runs in [ "simple" ]:
+        elif runs in [ "simple", "notify" ]:
             for cmd in conf.getlist("Service", "ExecReload", []):
                 pid_file = self.get_pid_file_from(conf)
                 pid = self.read_pid_file(pid_file, "")
@@ -1758,29 +1726,6 @@ class Systemctl:
                 logg.info("shot reload %s", shell_cmd(sudo+newcmd))
                 run = subprocess_wait(sudo+newcmd, env)
                 # self.write_pid_file(pid_file, run.pid)
-        elif runs in [ "notify" ]:
-            pid_file = self.get_pid_file_from(conf)
-            timeout = conf.get("Service", "TimeoutSec", DefaultTimeoutReloadSec)
-            timeout = conf.get("Service", "TimeoutReloadSec", timeout)
-            timeout = time_to_seconds(timeout, DefaultMaximumTimeout)
-            notify = self.notify_socket_from(conf)
-            if notify:
-                env["NOTIFY_SOCKET"] = notify.socketfile
-                logg.debug("use NOTIFY_SOCKET=%s", notify.socketfile)
-            for cmd in conf.getlist("Service", "ExecReload", []):
-                pid = self.read_pid_file(pid_file, "")
-                env["MAINPID"] = str(pid)
-                newcmd = self.exec_cmd(cmd, env, conf)
-                logg.info("ntfy reload %s", shell_cmd(sudo+newcmd))
-                run = subprocess_wait(sudo+newcmd, env)
-                # self.write_pid_file(pid_file, run.pid)
-                mainpid = self.wait_pid_file(pid_file) # fork is running
-                results = self.wait_notify_socket(notify, timeout, mainpid)
-                if "MAINPID" in results:
-                    new_pid = results["MAINPID"]
-                    if new_pid and new_pid.strip() != mainpid:
-                        logg.info("NEW PID %s from sd_notify", new_pid)
-                        self.write_pid_file(pid_file, new_pid)
         elif runs in [ "forking" ]:
             pid_file = self.pid_file_from(conf)
             for cmd in conf.getlist("Service", "ExecReload", []):
