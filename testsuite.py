@@ -2004,6 +2004,63 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
+    def test_3401_service_status_show(self):
+        """ check that a named service config can show its status"""
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        logfile = os_path(root, "/var/log/test.log")
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        testsleep = self.testname("sleep")
+        bindir = os_path(root, "/usr/bin")
+        text_file(os_path(testdir, "zzs.service"),"""
+            [Unit]
+            Description=Testing S
+            After=foo.service
+            [Service]
+            Type=simple
+            ExecStart={bindir}/{testsleep} 40
+            ExecStop=/usr/bin/killall {testsleep}
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_file(os_path(testdir, "zzs.service"), os_path(root, "/etc/systemd/system/zzs.service"))
+        #
+        show_service = "{systemctl} status zzs.service -vv"
+        show, end = output2(show_service.format(**locals()))
+        logg.info("RESULT \n%s", show)
+        data = lines(show)
+        self.assertTrue(greps(data, "zzs.service - Testing"))
+        self.assertTrue(greps(data, "Loaded: loaded"))
+        self.assertTrue(greps(data, "Active: inactive"))
+        self.assertTrue(greps(data, "[(]dead[)]"))
+        self.assertTrue(greps(data, "disabled[)]"))
+        self.assertNotEqual(end, 0)
+        #
+        enable_service = "{systemctl} enable zzs.service -vv"
+        sh____(enable_service.format(**locals()))
+        #
+        start_service = "{systemctl} start zzs.service -vv"
+        sh____(start_service.format(**locals()))
+        #
+        show_service = "{systemctl} status zzs.service -vv"
+        show, end = output2(show_service.format(**locals()))
+        logg.info("RESULT \n%s", show)
+        data = lines(show)
+        self.assertTrue(greps(data, "zzs.service - Testing"))
+        self.assertTrue(greps(data, "Loaded: loaded"))
+        self.assertTrue(greps(data, "Active: active"))
+        self.assertTrue(greps(data, "[(]running[)]"))
+        self.assertTrue(greps(data, "enabled[)]"))
+        self.assertEqual(end, 0)
+        #
+        # cleanup
+        kill_testsleep = "killall {testsleep}"
+        sx____(kill_testsleep.format(**locals()))
+        self.rm_testdir()
+        self.coverage()
     def test_4030_simple_service_functions(self):
         """ check that we manage simple services in a root env
             with commands like start, restart, stop, etc"""
