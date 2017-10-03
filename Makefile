@@ -27,6 +27,7 @@ UA ubuntu-apache2.dockerfile: ; ./testsuite.py test_6005
 DJ docker-jenkins: ; ./testsuite.py test_900*
 
 COVERAGE=--coverage
+est_%: ; ./testsuite.py t$@ -vv --coverage
 coverage: ; ./testsuite.py -v --coverage test_1 test_2 test_3 test_4
 check: ; ./testsuite.py -v --coverage
 test_%: ; ./testsuite.py $@ -vv

@@ -402,7 +402,7 @@ class PresetFile:
         return None
 
 def subprocess_wait(cmd, env=None, check = False, shell=False):
-    logg.warning("running = %s", cmd)
+    # logg.warning("running = %s", cmd)
     run = subprocess.Popen(cmd, shell=shell, env=env)
     run.wait()
     if check and run.returncode: 
