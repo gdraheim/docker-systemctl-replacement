@@ -2063,7 +2063,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(act.strip(), "inactive")
         #
         logg.info("== 'try-restart' will not start a not-active service")        
-        restart_service = "{systemctl} reload-or-try-restart zzz.service -vv"
+        restart_service = "{systemctl} try-restart zzz.service -vv"
         sh____(restart_service.format(**locals()))
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
@@ -2330,7 +2330,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         os.remove(logfile)
         #
         logg.info("== 'reload-or-try-restart' will NOT restart an is-active service (with ExecReload)")        
-        restart_service = "{systemctl} reload-or-try-restart zzz.service -vv"
+        restart_service = "{systemctl} try-restart zzz.service -vv"
         sh____(restart_service.format(**locals()))
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
@@ -2591,7 +2591,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top5 = top
         #
         logg.info("== 'reload-or-try-restart' will restart an is-active service (with no ExecReload)")        
-        restart_service = "{systemctl} reload-or-try-restart zzz.service -vv"
+        restart_service = "{systemctl} try-restart zzz.service -vv"
         sh____(restart_service.format(**locals()))
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
@@ -3189,7 +3189,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(act.strip(), "inactive")
         #
         logg.info("== 'try-restart' will not start a not-active service")        
-        restart_service = "{systemctl} reload-or-try-restart zzz.service -vv"
+        restart_service = "{systemctl} try-restart zzz.service -vv"
         sh____(restart_service.format(**locals()))
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
@@ -3210,7 +3210,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top5 = top
         #
         logg.info("== 'reload-or-try-restart' will restart an is-active service (with no ExecReload)")        
-        restart_service = "{systemctl} reload-or-try-restart zzz.service -vv"
+        restart_service = "{systemctl} try-restart zzz.service -vv"
         sh____(restart_service.format(**locals()))
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
@@ -3356,7 +3356,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
         #
         logg.info("== 'try-restart' will not start a not-active service")        
-        restart_service = "{systemctl} reload-or-try-restart zzz.service -vv"
+        restart_service = "{systemctl} try-restart zzz.service -vv"
         sh____(restart_service.format(**locals()))
         act = output(is_active.format(**locals()))
         self.assertEqual(act.strip(), "inactive")
@@ -3519,7 +3519,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.3")))
         #
         logg.info("== 'try-restart' will not start a not-active service")        
-        restart_service = "{systemctl} reload-or-try-restart zzz.service -vv"
+        restart_service = "{systemctl} try-restart zzz.service -vv"
         sh____(restart_service.format(**locals()))
         act = output(is_active.format(**locals()))
         self.assertEqual(act.strip(), "inactive")
@@ -3739,7 +3739,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(act.strip(), "inactive")
         #
         logg.info("== 'try-restart' will not start a not-active service")        
-        restart_service = "{systemctl} reload-or-try-restart zzz.service -vv"
+        restart_service = "{systemctl} try-restart zzz.service -vv"
         sh____(restart_service.format(**locals()))
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
