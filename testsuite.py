@@ -2570,7 +2570,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(act.strip(), "inactive")
         #
         logg.info("== 'try-restart' will not start a not-active service")        
-        restart_service = "{systemctl} reload-or-try-restart zzz.service -vv"
+        restart_service = "{systemctl} try-restart zzz.service -vv"
         sh____(restart_service.format(**locals()))
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
@@ -2608,6 +2608,373 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(len(ps5), 1)
         self.assertTrue(len(ps6), 1)
         self.assertNotEqual(ps5[0], ps6[0])
+        #
+        logg.info("== 'try-restart' will restart an is-active service")        
+        restart_service = "{systemctl} try-restart zzz.service -vv"
+        sh____(restart_service.format(**locals()))
+        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
+        top = output(top_recent.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        act = output(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "active")
+        top7 = top
+        #
+        logg.info("-- and we check that there is a new PID for the service process")
+        ps7 = find_pids(top7, testsleep)
+        logg.info("found PIDs %s and %s", ps6, ps7)
+        self.assertTrue(len(ps6), 1)
+        self.assertTrue(len(ps7), 1)
+        self.assertNotEqual(ps6[0], ps7[0])
+        #
+        logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
+        self.rm_testdir()
+        self.coverage()
+    def test_4033_forking_service_functions_with_restart(self):
+        """ check that we manage forking services in a root env
+            with basic run-service commands: start, stop, restart,
+            reload, try-restart, reload-or-restart, kill and
+            reload-or-try-restart. This variant has signals for
+            restart/reload actions instead of running stop/start"""
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        testsleep = self.testname("sleep")
+        logfile = os_path(root, "/var/log/"+testsleep+".log")
+        bindir = os_path(root, "/usr/bin")
+        os.makedirs(os_path(root, "/var/run"))
+        text_file(logfile, "created\n")
+        begin = "{" ; end = "}"
+        shell_file(os_path(testdir, "zzz.init"), """
+            #! /bin/bash
+            logfile={logfile}
+            start() {begin} 
+               [ -d /var/run ] || mkdir -p /var/run
+               ({bindir}/{testsleep} 50 0<&- &>/dev/null &
+                echo $! > {root}/var/run/zzz.init.pid
+               ) &
+               wait %1
+               # ps -o pid,ppid,args
+            {end}
+            stop() {begin}
+               killall {testsleep}
+            {end}
+            date "+%T.enter" >> $logfile
+            case "$1" in start)
+               date "+%T.starting" >> $logfile
+               start >> $logfile 2>&1
+               date "+%T.started" >> $logfile
+            ;; stop)
+               date "+%T.stopping" >> $logfile
+               stop >> $logfile 2>&1
+               date "+%T.stopped" >> $logfile
+            ;; restart)
+               date "+%T.restaating" >> $logfile
+               stop >> $logfile 2>&1
+               start >> $logfile 2>&1
+               date "+%T.restarted" >> $logfile
+            ;; reload)
+               date "+%T.reloading" >> $logfile
+               echo "...." >> $logfile 2>&1
+               date "+%T.reloaded" >> $logfile
+            ;; esac 
+            date "+%T.leave" >> $logfile
+            exit 0
+            """.format(**locals()))
+        text_file(os_path(testdir, "zzz.service"),"""
+            [Unit]
+            Description=Testing Z
+            [Service]
+            Type=forking
+            PIDFile={root}/var/run/zzz.init.pid
+            ExecStart={root}/usr/bin/zzz.init start
+            ExecRestart={root}/usr/bin/zzz.init restart
+            ExecReload={root}/usr/bin/zzz.init reload
+            ExecStop={root}/usr/bin/zzz.init stop
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/usr/bin/zzz.init"))
+        copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
+        is_active = "{systemctl} is-active zzz.service -vv"
+        act = output(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "inactive")
+        #
+        logg.info("== 'start' shall start a service that is NOT is-active ")
+        start_service = "{systemctl} start zzz.service -vv"
+        sh____(start_service.format(**locals()))
+        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
+        top = output(top_recent.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        act = output(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "active")
+        #
+        # inspect the service's log
+        log = lines(open(logfile))
+        logg.info("LOG\n %s", "\n ".join(log))
+        self.assertTrue(greps(log, "enter"))
+        self.assertTrue(greps(log, "leave"))
+        self.assertTrue(greps(log, "starting"))
+        self.assertFalse(greps(log, "stopped"))
+        self.assertFalse(greps(log, "restaating"))
+        self.assertFalse(greps(log, "reloading"))
+        os.remove(logfile)
+        #
+        logg.info("== 'stop' shall stop a service that is-active")
+        stop_service = "{systemctl} stop zzz.service -vv"
+        sh____(stop_service.format(**locals()))
+        top = output(top_recent.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, testsleep))
+        act = output(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "inactive")
+        #
+        # inspect the service's log
+        log = lines(open(logfile))
+        logg.info("LOG\n %s", "\n ".join(log))
+        self.assertTrue(greps(log, "enter"))
+        self.assertTrue(greps(log, "leave"))
+        self.assertFalse(greps(log, "starting"))
+        self.assertTrue(greps(log, "stopped"))
+        self.assertFalse(greps(log, "restaating"))
+        self.assertFalse(greps(log, "reloading"))
+        os.remove(logfile)
+        #
+        logg.info("== 'restart' shall start a service that NOT is-active")        
+        restart_service = "{systemctl} restart zzz.service -vv"
+        sh____(restart_service.format(**locals()))
+        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
+        top = output(top_recent.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        act = output(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "active")
+        top1= top
+        #
+        # inspect the service's log
+        log = lines(open(logfile))
+        logg.info("LOG\n %s", "\n ".join(log))
+        self.assertTrue(greps(log, "enter"))
+        self.assertTrue(greps(log, "leave"))
+        self.assertTrue(greps(log, "starting"))
+        self.assertFalse(greps(log, "stopped"))
+        self.assertFalse(greps(log, "restaating"))
+        self.assertFalse(greps(log, "reloading"))
+        os.remove(logfile)
+        #
+        logg.info("== 'restart' shall restart a service that is-active")        
+        restart_service = "{systemctl} restart zzz.service -vv"
+        sh____(restart_service.format(**locals()))
+        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
+        top = output(top_recent.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        act = output(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "active")
+        top2 = top
+        #
+        logg.info("-- and we check that there is a new PID for the service process")
+        def find_pids(ps_output, command):
+            pids = []
+            for line in ps_output.split("\n"):
+                if command not in line: continue
+                m = re.match(r"\s*[\d:]*\s+(\S+)\s+(\S+)\s+(.*)", line)
+                pid, ppid, args = m.groups()
+                # logg.info("  %s | %s | %s", pid, ppid, args)
+                pids.append(pid)
+            return pids
+        ps1 = find_pids(top1, testsleep)
+        ps2 = find_pids(top2, testsleep)
+        logg.info("found PIDs %s and %s", ps1, ps2)
+        self.assertTrue(len(ps1), 1)
+        self.assertTrue(len(ps2), 1)
+        self.assertNotEqual(ps1[0], ps2[0])
+        #
+        # inspect the service's log
+        log = lines(open(logfile))
+        logg.info("LOG\n %s", "\n ".join(log))
+        self.assertTrue(greps(log, "enter"))
+        self.assertTrue(greps(log, "leave"))
+        self.assertFalse(greps(log, "starting"))
+        self.assertFalse(greps(log, "stopped"))
+        self.assertTrue(greps(log, "restaating"))
+        self.assertFalse(greps(log, "reloading"))
+        os.remove(logfile)
+        #
+        logg.info("== 'reload' will NOT restart a service that is-active")        
+        restart_service = "{systemctl} reload zzz.service -vv"
+        sh____(restart_service.format(**locals()))
+        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
+        top = output(top_recent.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        act = output(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "active")
+        top3 = top
+        #
+        logg.info("-- and we check that there is NO new PID for the service process")
+        ps3 = find_pids(top3, testsleep)
+        logg.info("found PIDs %s and %s", ps2, ps3)
+        self.assertTrue(len(ps2), 1)
+        self.assertTrue(len(ps3), 1)
+        self.assertEqual(ps2[0], ps3[0])
+        #
+        # inspect the service's log
+        log = lines(open(logfile))
+        logg.info("LOG\n %s", "\n ".join(log))
+        self.assertTrue(greps(log, "enter"))
+        self.assertTrue(greps(log, "leave"))
+        self.assertFalse(greps(log, "starting"))
+        self.assertFalse(greps(log, "stopped"))
+        self.assertFalse(greps(log, "restaating"))
+        self.assertTrue(greps(log, "reloading"))
+        os.remove(logfile)
+        #
+        logg.info("== 'reload-or-restart' will reload a service that is-active (if ExecReload)")        
+        restart_service = "{systemctl} reload-or-restart zzz.service -vv"
+        sh____(restart_service.format(**locals()))
+        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
+        top = output(top_recent.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        act = output(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "active")
+        top4 = top
+        #
+        logg.info("-- and we check that there is NO new PID for the service process (if ExecReload)")
+        ps4 = find_pids(top4, testsleep)
+        logg.info("found PIDs %s and %s", ps3, ps4)
+        self.assertTrue(len(ps3), 1)
+        self.assertTrue(len(ps4), 1)
+        self.assertEqual(ps3[0], ps4[0])
+        #
+        # inspect the service's log
+        log = lines(open(logfile))
+        logg.info("LOG\n %s", "\n ".join(log))
+        self.assertTrue(greps(log, "enter"))
+        self.assertTrue(greps(log, "leave"))
+        self.assertFalse(greps(log, "starting"))
+        self.assertFalse(greps(log, "stopped"))
+        self.assertFalse(greps(log, "restaating"))
+        self.assertTrue(greps(log, "reloading"))
+        os.remove(logfile)
+        #
+        logg.info("== 'kill' will bring is-active non-active as well (when the PID is known)")        
+        restart_service = "{systemctl} kill zzz.service -vv"
+        sh____(restart_service.format(**locals()))
+        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
+        top = output(top_recent.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, testsleep))
+        act = output(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "failed")
+        #
+        logg.info("== 'stop' will turn 'failed' to 'inactive' (when the PID is known)")        
+        restart_service = "{systemctl} stop zzz.service -vv"
+        sh____(restart_service.format(**locals()))
+        act = output(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "inactive")
+        #
+        # inspect the service's log
+        log = lines(open(logfile))
+        logg.info("LOG\n %s", "\n ".join(log))
+        self.assertTrue(greps(log, "enter"))
+        self.assertTrue(greps(log, "leave"))
+        self.assertFalse(greps(log, "starting"))
+        self.assertTrue(greps(log, "stopped"))
+        self.assertFalse(greps(log, "restaating"))
+        self.assertFalse(greps(log, "reloading"))
+        os.remove(logfile)
+        #
+        logg.info("== 'reload-or-try-restart' will not start a not-active service")        
+        restart_service = "{systemctl} reload-or-try-restart zzz.service -vv"
+        sh____(restart_service.format(**locals()))
+        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
+        top = output(top_recent.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, testsleep))
+        act = output(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "inactive")
+        #
+        # inspect the service's log
+        log = lines(open(logfile))
+        logg.info("LOG\n %s", "\n ".join(log))
+        self.assertTrue(greps(log, "enter"))
+        self.assertTrue(greps(log, "leave"))
+        self.assertFalse(greps(log, "starting"))
+        self.assertFalse(greps(log, "stopped"))
+        self.assertFalse(greps(log, "restaating"))
+        self.assertTrue(greps(log, "reloading"))
+        os.remove(logfile)
+        #
+        logg.info("== 'try-restart' will not start a not-active service")        
+        restart_service = "{systemctl} try-restart zzz.service -vv"
+        sh____(restart_service.format(**locals()))
+        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
+        top = output(top_recent.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, testsleep))
+        act = output(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "inactive")
+        #
+        # inspect the service's log
+        self.assertFalse(os.path.exists(logfile))
+        #
+        logg.info("== 'reload-or-restart' will start a not-active service")        
+        restart_service = "{systemctl} reload-or-restart zzz.service -vv"
+        sh____(restart_service.format(**locals()))
+        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
+        top = output(top_recent.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        act = output(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "active")
+        top5 = top
+        #
+        # inspect the service's log
+        log = lines(open(logfile))
+        logg.info("LOG\n %s", "\n ".join(log))
+        self.assertTrue(greps(log, "enter"))
+        self.assertTrue(greps(log, "leave"))
+        self.assertTrue(greps(log, "starting"))
+        self.assertFalse(greps(log, "stopped"))
+        self.assertFalse(greps(log, "restaating"))
+        self.assertFalse(greps(log, "reloading"))
+        os.remove(logfile)
+        #
+        logg.info("== 'reload-or-try-restart' will restart an is-active service (with no ExecReload)")        
+        restart_service = "{systemctl} reload-or-try-restart zzz.service -vv"
+        sh____(restart_service.format(**locals()))
+        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
+        top = output(top_recent.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        act = output(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "active")
+        top6 = top
+        #
+        # inspect the service's log
+        log = lines(open(logfile))
+        logg.info("LOG\n %s", "\n ".join(log))
+        self.assertTrue(greps(log, "enter"))
+        self.assertTrue(greps(log, "leave"))
+        self.assertFalse(greps(log, "starting"))
+        self.assertFalse(greps(log, "stopped"))
+        self.assertFalse(greps(log, "restaating"))
+        self.assertTrue(greps(log, "reloading"))
+        os.remove(logfile)
+        #
+        logg.info("-- and we check that there is NO new PID for the service process (if ExecReload)")
+        ps5 = find_pids(top5, testsleep)
+        ps6 = find_pids(top6, testsleep)
+        logg.info("found PIDs %s and %s", ps5, ps6)
+        self.assertTrue(len(ps5), 1)
+        self.assertTrue(len(ps6), 1)
+        self.assertEqual(ps5[0], ps6[0])
         #
         logg.info("== 'try-restart' will restart an is-active service")        
         restart_service = "{systemctl} try-restart zzz.service -vv"
