@@ -940,16 +940,13 @@ class Systemctl:
         try:
             for line in open(status_file):
                 if line.strip(): 
-                    if line in [ "active", "inactive", "failed"]:
+                    m = re.match(r"^(\w+)[:=](.*)", line)
+                    if m:
+                        key, value = m.group(1), m.group(2)
+                        if key.strip():
+                            status[key.strip()] = value.strip()
+                    elif line in [ "active", "inactive", "failed"]:
                         status["STATE"] = line
-                    if ":" in line:
-                        key, value = line.split(":", 1)
-                        if key.strip():
-                            status[key.strip()] = value.strip()
-                    elif "=" in line:
-                        key, value = line.split("=", 1)
-                        if key.strip():
-                            status[key.strip()] = value.strip()
                     else:
                         logg.warning("ignored %s", line.strip())
         except:
