@@ -1785,9 +1785,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_4030_simple_service_functions(self):
         """ check that we manage simple services in a root env
             with commands like start, restart, stop, etc"""
-        #! self.skipTest("not implemented correctly")
-        # the shellscript is blocking on its testsleep child
-        # in such a way that it does not compute the signals.
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
