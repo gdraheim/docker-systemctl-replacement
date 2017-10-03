@@ -147,11 +147,14 @@ def shutil_truncate(filename):
 
 # http://stackoverflow.com/questions/568271/how-to-check-if-there-exists-a-process-with-a-given-pid
 def pid_exists(pid):
+    """Check whether pid exists in the current process table."""
+    if pid is None:
+        return False
+    return _pid_exists(int(pid))
+def _pid_exists(pid):
     """Check whether pid exists in the current process table.
     UNIX only.
     """
-    if pid is None:
-        return False
     if pid < 0:
         return False
     if pid == 0:
@@ -176,8 +179,12 @@ def pid_exists(pid):
     else:
         return True
 def pid_zombie(pid):
+    """ may be a pid exists but it is only a zombie """
     if pid is None:
         return False
+    return _pid_zombie(int(pid))
+def _pid_zombie(pid):
+    """ may be a pid exists but it is only a zombie """
     if pid < 0:
         return False
     if pid == 0:
@@ -848,10 +855,6 @@ class Systemctl:
         except:
             logg.warning("bad read of pid file '%s'", pid_file)
         return pid
-    def pid_exists(self, pid): # -> bool
-        """ check if a pid does still exist (unix standard) """
-        # return os.path.isdir("/proc/%s" % pid) # (linux standard) 
-        return pid_exists(pid)
     def wait_pid_file(self, pid_file, timeout = None): # -> pid?
         """ wait some seconds for the pid file to appear and return the pid """
         timeout = int(timeout or self._WaitProcFile)
@@ -1484,10 +1487,10 @@ class Systemctl:
                 logg.error("kill PID %s => %s", pid, str(e))
                 return False
         for x in xrange(timeout):
-            if not self.pid_exists(pid):
+            if not pid_exists(pid) or pid_zombie(pid):
                 break
             self.sleep(1)
-        return not self.pid_exists(pid)
+        return not pid_exists(pid) or pid_zombie(pid)
     def stop_modules(self, *modules):
         """ [UNIT]... -- stop these units """
         found_all = True
@@ -1597,7 +1600,7 @@ class Systemctl:
                 logg.info("%s sleep as no PID was found on Stop", runs)
                 self.sleep()
                 pid = self.read_pid_file(pid_file, "")
-                if not pid or not pid_exists(pid):
+                if not pid or not pid_exists(pid) or pid_zombie(pid):
                     if os.path.isfile(pid_file):
                         os.remove(pid_file)
         elif runs in [ "forking" ]:
@@ -1624,7 +1627,7 @@ class Systemctl:
                 logg.info("%s sleep as no PID was found on Stop", runs)
                 self.sleep()
                 pid = self.read_pid_file(pid_file, "")
-                if not pid or not pid_exists(pid):
+                if not pid or not pid_exists(pid) or pid_zombie(pid):
                     if os.path.isfile(pid_file):
                         os.remove(pid_file)
         else:
@@ -1642,7 +1645,7 @@ class Systemctl:
             return True
         logg.info("wait for PID %s to vanish", pid)
         for x in xrange(int(timeout)):
-            if not pid_exists(int(pid)):
+            if not self.is_active_pid(pid):
                 logg.info("wait for PID %s is done (%s.)", pid, x)
                 return True
             self.sleep()
@@ -2132,8 +2135,7 @@ class Systemctl:
             return "inactive"
         pid = self.read_pid_file(pid_file)
         logg.debug("pid_file '%s' => PID %s", pid_file, pid)
-        exists = self.pid_exists(pid)
-        if not exists:
+        if not pid_exists(pid) or pid_zombie(pid):
             return "failed"
         return "active"
     def get_substate_from(self, conf):
@@ -2154,8 +2156,7 @@ class Systemctl:
             return "dead"
         pid = self.read_pid_file(pid_file)
         logg.debug("pid_file '%s' => PID %s", pid_file, pid)
-        exists = self.pid_exists(pid)
-        if not exists:
+        if not pid_exists(pid) or pid_zombie(pid):
             return "failed"
         return "running"
     def is_failed_modules(self, *modules):
