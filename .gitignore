@@ -6,5 +6,6 @@ Software
 initialAdminPassword
 tmp.*
 .coverage
+.coverage.*
 *,cover
 
