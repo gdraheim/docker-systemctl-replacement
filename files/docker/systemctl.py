@@ -1561,7 +1561,6 @@ class Systemctl:
                     self.write_status_file(status_file, failed)
                 elif os.path.isfile(status_file):
                     os.remove(status_file)
-                return True
         ### fallback Stop => Kill for ["simple","notify","forking"]
         elif not conf.getlist("Service", "ExecStop", []):
             logg.info("no ExecStop => systemctl kill")
@@ -1778,7 +1777,10 @@ class Systemctl:
             logg.error("no such unit: '%s'", unit)
             return False
         logg.info(" restart unit %s => %s", unit, conf.filename())
-        return self.restart_unit_from(conf)
+        if not self.is_active_from(conf):
+            return self.start_unit_from(conf)
+        else:
+            return self.restart_unit_from(conf)
     def restart_unit_from(self, conf):
         if not conf: return
         if self.bad_service_from(conf): return False
