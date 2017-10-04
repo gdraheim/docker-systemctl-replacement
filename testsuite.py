@@ -5774,6 +5774,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         stop_software = "docker exec {testname} systemctl stop httpd"
         sh____(status_software.format(**locals()))
         sh____(stop_software.format(**locals()))
+        sx____(status_software.format(**locals()))
         fetch_systemctl_log = "docker cp {testname}:/var/log/systemctl.debug.log {testdir}/systemctl.debug.log"
         sh____(fetch_systemctl_log.format(**locals()))
         stop_new_container = "docker stop {testname}"
@@ -5787,7 +5788,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(open(testdir+"/systemctl.debug.log"), "notify start done"))
         self.assertTrue(greps(open(testdir+"/systemctl.debug.log"), "stop '/bin/kill' '-WINCH'"))
         self.assertTrue(greps(open(testdir+"/systemctl.debug.log"), "wait [$]NOTIFY_SOCKET"))
-        self.assertTrue(greps(open(testdir+"/systemctl.debug.log"), "dead PID"))
+        self.assertTrue(greps(open(testdir+"/systemctl.debug.log"), "(dead)"))
         self.rm_testdir()
     def test_6012_centos_elasticsearch(self):
         """ WHEN we can setup a specific ElasticSearch version 
