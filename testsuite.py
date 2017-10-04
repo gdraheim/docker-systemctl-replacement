@@ -3,7 +3,7 @@
 """ Testcases for docker-systemctl-replacement functionality """
 
 __copyright__ = "(C) Guido Draheim, for free use (CC-BY,GPL) """
-__version__ = "0.8.1401"
+__version__ = "0.9.1403"
 
 ## NOTE:
 ## The testcases 1000...4999 are using a --root=subdir environment
@@ -166,6 +166,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def coverage(self, testname = None):
         testname = testname or self.caller_testname()
         newcoverage = ".coverage."+testname
+        time.sleep(1) # TODO: flush output
         if os.path.isfile(".coverage"):
             shutil.copy(".coverage", newcoverage)
     def root(self, testdir):
