@@ -5744,7 +5744,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         drop_image_container = "docker rmi {images}:{testname}"
         sx____(drop_image_container.format(**locals()))
         self.rm_testdir()
-    def test_6001_centos_httpd_dockerfile(self):
+    def test_7001_centos_httpd_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
             THEN we can create an image with an Apache HTTP service 
                  being installed and enabled.
@@ -5781,7 +5781,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         drop_image_container = "docker rmi {images}:{name}"
         ## sx____(drop_image_container.format(**locals())) # TODO: still needed for test_6011
         self.rm_testdir()
-    def test_6002_centos_postgres_dockerfile(self):
+    def test_7002_centos_postgres_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
             THEN we can create an image with an PostgreSql DB service 
                  being installed and enabled.
@@ -5820,7 +5820,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         drop_image_container = "docker rmi {images}:{name}"
         sx____(drop_image_container.format(**locals()))
         self.rm_testdir()
-    def test_6003_centos_lamp_dockerfile(self):
+    def test_7003_centos_lamp_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
             THEN we can create an image with an full LAMP stack 
                  as systemd services being installed and enabled.
@@ -5858,7 +5858,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         drop_image_container = "docker rmi {images}:{name}"
         sx____(drop_image_container.format(**locals()))
         self.rm_testdir()
-    def test_6004_opensuse_lamp_dockerfile(self):
+    def test_7004_opensuse_lamp_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled OpenSUSE, 
             THEN we can create an image with an full LAMP stack 
                  as systemd services being installed and enabled.
@@ -5896,7 +5896,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         drop_image_container = "docker rmi {images}:{name}"
         sx____(drop_image_container.format(**locals()))
         self.rm_testdir()
-    def test_6005_ubuntu_apache2_dockerfile(self):
+    def test_7005_ubuntu_apache2_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled Ubuntu, 
             THEN we can create an image with an Apache HTTP service 
                  being installed and enabled.
@@ -5933,7 +5933,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         drop_image_container = "docker rmi {images}:{name}"
         sx____(drop_image_container.format(**locals()))
         self.rm_testdir()
-    def test_6011_centos_httpd_socket_notify(self):
+    def test_7011_centos_httpd_socket_notify(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
             THEN we can create an image with an Apache HTTP service 
                  being installed and enabled.
@@ -6002,7 +6002,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(open(testdir+"/systemctl.debug.log"), "wait [$]NOTIFY_SOCKET"))
         self.assertTrue(greps(open(testdir+"/systemctl.debug.log"), "(dead)"))
         self.rm_testdir()
-    def test_6012_centos_elasticsearch(self):
+    def test_7012_centos_elasticsearch(self):
         """ WHEN we can setup a specific ElasticSearch version 
                  as being downloaded from the company.
             Without a special startup.sh script or container-cmd 
@@ -6083,7 +6083,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         ## drop_image_container = "docker rmi {images}:{name}"
         ## sx____(drop_image_container.format(**locals()))
         self.rm_testdir()
-    def test_6013_centos_lamp_stack(self):
+    def test_7013_centos_lamp_stack(self):
         """ Check setup of Linux/Mariadb/Apache/Php on CentOs"""
         testname=self.testname()
         testdir = self.testdir(testname)
@@ -6143,7 +6143,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(drop_container.format(**locals()))
         #
         self.rm_testdir()
-    def test_6014_opensuse_lamp_stack(self):
+    def test_7014_opensuse_lamp_stack(self):
         """ Check setup of Linux/Mariadb/Apache/Php" on Opensuse"""
         testname=self.testname()
         testdir = self.testdir(testname)
