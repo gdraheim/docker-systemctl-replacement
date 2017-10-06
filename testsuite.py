@@ -593,7 +593,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertIn("4 unit files listed.", out)
         self.assertEqual(len(lines(out)), 7)
         #
-        self.assertTrue(False)
         self.rm_testdir()
         self.coverage()
     def test_2013_list_unit_files_common_targets(self):
