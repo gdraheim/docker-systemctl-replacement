@@ -798,6 +798,43 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 self.assertEqual("word=value", line)
         self.rm_testdir()
         self.coverage()
+    def test_2040_show_environment_from_parts(self):
+        """ check that the result of 'environment UNIT' can 
+            list the settings from different locations."""
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/sysconfig/b.conf"),"""
+            DEF1='def1'
+            DEF2="def2"
+            DEF3=def3
+            """)
+        text_file(os_path(root, "/etc/systemd/system/b.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            EnvironmentFile=/etc/sysconfig/b.conf
+            Environment=DEF5=def5
+            Environment=DEF6=def6
+            ExecStart=/usr/bin/printf $DEF1 $DEF2 \
+                                $DEF3 $DEF4 $DEF5
+            [Install]
+            WantedBy=multi-user.target""")
+        cmd = "{systemctl} environment b.service"
+        out = output(cmd.format(**locals()))
+        logg.info("\n> %s\n%s", cmd, out)
+        self.assertTrue(greps(out, r"^DEF1=def1"))
+        self.assertTrue(greps(out, r"^DEF2=def2"))
+        self.assertTrue(greps(out, r"^DEF3=def3"))
+        self.assertFalse(greps(out, r"^DEF4=def4"))
+        self.assertTrue(greps(out, r"^DEF5=def5"))
+        self.assertTrue(greps(out, r"^DEF6=def6"))
+        self.assertFalse(greps(out, r"^DEF7=def7"))
+        a_lines = len(lines(out))
+        #
+        self.rm_testdir()
+        self.coverage()
     def test_3002_enable_service_creates_a_symlink(self):
         """ check that a service can be enabled """
         testname = self.testname()

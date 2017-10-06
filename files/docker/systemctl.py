@@ -3295,7 +3295,7 @@ if __name__ == "__main__":
             if isinstance(element, tuple):
                 print key,"=","\t".join([ str(elem) for elem in element])
             else:
-                print key,"=",element
+                print "%s=%s" % (key,element)
         logg.info("EXEC END %s items", len(result))
         logg.debug("    END %s", result)
     else:
