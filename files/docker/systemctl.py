@@ -1070,7 +1070,7 @@ class Systemctl:
                 return confs
             confs["N"] = conf.name()
             confs["n"] = sh_escape(conf.name())
-            confs["f"] = conf.filename()
+            confs["f"] = sh_escape(conf.filename())
             confs["t"] = os_path(self._root, "/var")
             unit_name = conf.name()
             suffix = unit_name.rfind(".")

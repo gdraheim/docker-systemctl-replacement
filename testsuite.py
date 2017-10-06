@@ -1990,6 +1990,63 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.rm_testdir()
         self.coverage()
+    def test_3150_may_expand_special_variables(self):
+        """ check that different flavours for special
+            variables get expanded."""
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        print_sh = os_path(root, "/usr/bin/print.sh")
+        logfile = os_path(root, "/var/log/print_sh.log")
+        service_file = os_path(root, "/etc/systemd/system/b c.service")
+        text_file(service_file,"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            ExecStart=/usr/bin/sleep 2
+            ExecStartPost=%s A %%N
+            ExecStartPost=%s B %%n
+            ExecStartPost=%s C %%f
+            ExecStartPost=%s D %%t
+            ExecStartPost=%s E %%P
+            ExecStartPost=%s F %%p
+            ExecStartPost=%s G %%I
+            ExecStartPost=%s H %%i
+            [Install]
+            WantedBy=multi-user.target""" 
+            % (print_sh, print_sh, print_sh, print_sh,
+               print_sh, print_sh, print_sh, print_sh,))
+        text_file(logfile, "")
+        shell_file(print_sh, """
+            #! /bin/sh
+            logfile='{logfile}'
+            echo "'$1' '$2' '$3' '$4' '$5'" >> "$logfile"
+            """.format(**locals()))
+        #
+        start_service = "{systemctl} start 'b c.service' -vv"
+        sh____(start_service.format(**locals()))
+        log = lines(open(logfile))
+        logg.info("LOG \n%s", log)
+        A="'A' 'b' 'c.service' '' ''"  # A %%N
+        B="'B' 'b c.service' '' '' ''" # B %%n
+        C="'C' '%s' '' '' ''" % service_file           # C %%f
+        D="'D' '%s' '' '' ''" % os_path(root, "/var")  # D %%t
+        E="'E' 'b' 'c' '' ''"  # E %%P
+        F="'F' 'b c' '' '' ''" # F %%p
+        G="'G' '' '' '' ''" # G %%I
+        H="'H' '' '' '' ''" # H %%i
+        self.assertIn(A, log)
+        self.assertIn(B, log)
+        self.assertIn(C, log)
+        self.assertIn(D, log)
+        self.assertIn(E, log)
+        self.assertIn(F, log)
+        self.assertIn(G, log)
+        self.assertIn(H, log)
+        #
+        self.rm_testdir()
+        self.coverage()
     def test_3201_service_config_cat(self):
         """ check that a name service config can be printed as-is"""
         testname = self.testname()
