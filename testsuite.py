@@ -2810,6 +2810,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # cleanup
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
+        time.sleep(2)
         self.rm_testdir()
         self.coverage()
 
