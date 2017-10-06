@@ -26,8 +26,9 @@ import json
 logg = logging.getLogger("TESTING")
 _systemctl_py = "files/docker/systemctl.py"
 _cov = ""
-_coverage = "coverage2 run --append -- "
+_cov_run = "coverage2 run --append -- "
 _cov_cmd = "coverage2"
+COVERAGE = False
 
 IMAGES = "localhost:5000/testingsystemctl"
 CENTOS = "centos:7.3.1611"
@@ -6468,12 +6469,6 @@ if __name__ == "__main__":
     #
     _systemctl_py = opt.systemctl_py
     #
-    if opt.coverage:
-        _c = _coverage
-        if opt.coverage > 1:
-            if os.path.exists(".coverage"):
-                os.remove(".coverage")
-    #
     logfile = None
     if opt.logfile:
         if os.path.exists(opt.logfile):
@@ -6490,7 +6485,8 @@ if __name__ == "__main__":
         logg.info("xml results into %s", opt.xmlresults)
     #
     if opt.coverage:
-        _cov = _coverage
+        COVERAGE = True
+        _cov = _cov_run
         if opt.coverage > 1:
             if os.path.exists(".coverage"):
                 logg.info("rm .coverage")
