@@ -798,7 +798,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 self.assertEqual("word=value", line)
         self.rm_testdir()
         self.coverage()
-    def test_2040_show_environment_from_parts(self):
+    def test_2140_show_environment_from_parts(self):
         """ check that the result of 'environment UNIT' can 
             list the settings from different locations."""
         testname = self.testname()
@@ -1934,6 +1934,59 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         self.assertEqual(end, 0)
+        #
+        self.rm_testdir()
+        self.coverage()
+    def test_3140_may_expand_environment_variables(self):
+        """ check that different styles of environment
+            variables get expanded."""
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        print_sh = os_path(root, "/usr/bin/print.sh")
+        logfile = os_path(root, "/var/log/print_sh.log")
+        text_file(os_path(root, "/etc/sysconfig/b.conf"),"""
+            DEF1='def1'
+            DEF2="def2 def3"
+            """)
+        text_file(os_path(root, "/etc/systemd/system/b.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            EnvironmentFile=/etc/sysconfig/b.conf
+            ExecStart=/usr/bin/sleep 2
+            ExecStartPost=%s A $DEF1 $DEF2
+            ExecStartPost=%s B ${DEF1} ${DEF2}
+            ExecStartPost=%s C $DEF1$DEF2
+            ExecStartPost=%s D ${DEF1}${DEF2}
+            [Install]
+            WantedBy=multi-user.target""" 
+            % (print_sh, print_sh, print_sh, print_sh))
+        text_file(logfile, "")
+        shell_file(print_sh, """
+            #! /bin/sh
+            logfile='{logfile}'
+            echo "'$1' '$2' '$3' '$4' '$5'" >> "$logfile"
+            """.format(**locals()))
+        cmd = "{systemctl} environment b.service"
+        out = output(cmd.format(**locals()))
+        logg.info("\n> %s\n%s", cmd, out)
+        self.assertTrue(greps(out, r"^DEF1=def1"))
+        self.assertTrue(greps(out, r"^DEF2=def2 def3"))
+        #
+        start_service = "{systemctl} start b.service -vv"
+        sh____(start_service.format(**locals()))
+        log = lines(open(logfile))
+        logg.info("LOG \n%s", log)
+        A="'A' 'def1' 'def2' 'def3' ''"   # A $DEF1 $DEF2
+        B="'B' 'def1' 'def2 def3' '' ''"  # B ${DEF1} ${DEF2}
+        C="'C' 'def1def2' 'def3' '' ''"   # C $DEF1$DEF2
+        D="'D' 'def1def2 def3' '' '' ''"  # D ${DEF1}${DEF2} ??TODO??
+        self.assertIn(A, log)
+        self.assertIn(B, log)
+        self.assertIn(C, log)
+        self.assertIn(D, log)
         #
         self.rm_testdir()
         self.coverage()
