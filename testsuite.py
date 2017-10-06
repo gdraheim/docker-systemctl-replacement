@@ -5418,7 +5418,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         sx____(stop_container.format(**locals()))
         self.rm_testdir()
-    def test_5041_systemctl_py_run_default_services_in_container(self):
+    def test_5100_systemctl_py_run_default_services_in_container(self):
         """ check that we can enable services in a docker container to be run as default-services"""
         testname = self.testname()
         testdir = self.testdir()
@@ -5492,7 +5492,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         sx____(stop_container.format(**locals()))
         self.rm_testdir()
-    def test_5042_systemctl_py_run_default_services_from_saved_container(self):
+    def test_5120_systemctl_py_run_default_services_from_saved_container(self):
         """ check that we can enable services in a docker container to be run as default-services
             after it has been restarted from a commit-saved container image"""
         testname = self.testname()
@@ -5576,7 +5576,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         drop_image_container = "docker rmi {images}:{testname}"
         sx____(drop_image_container.format(**locals()))
         self.rm_testdir()
-    def test_5043_systemctl_py_run_default_services_from_simple_saved_container(self):
+    def test_5130_systemctl_py_run_default_services_from_simple_saved_container(self):
         """ check that we can enable services in a docker container to be run as default-services
             after it has been restarted from a commit-saved container image"""
         testname = self.testname()
@@ -5660,7 +5660,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         drop_image_container = "docker rmi {images}:{testname}"
         sx____(drop_image_container.format(**locals()))
         self.rm_testdir()
-    def test_5044_systemctl_py_run_default_services_from_single_service_saved_container(self):
+    def test_5133_systemctl_py_run_default_services_from_single_service_saved_container(self):
         """ check that we can enable services in a docker container to be run as default-services
             after it has been restarted from a commit-saved container image"""
         testname = self.testname()
