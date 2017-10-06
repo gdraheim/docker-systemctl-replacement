@@ -533,6 +533,69 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(lines(out)), 2)
         self.rm_testdir()
         self.coverage()
+    def test_2008_list_unit_files_locations(self):
+        """ check that unit files can be found for 'list-unit-files'
+            in different standard locations on disk. """
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/a.service"),"""
+            [Unit]
+            Description=Testing A
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/usr/lib/systemd/system/b.service"),"""
+            [Unit]
+            Description=Testing B
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/lib/systemd/system/c.service"),"""
+            [Unit]
+            Description=Testing C
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/var/run/systemd/system/d.service"),"""
+            [Unit]
+            Description=Testing D
+            [Install]
+            WantedBy=multi-user.target""")
+        cmd = "{systemctl} --type=service list-unit-files"
+        out = output(cmd.format(**locals()))
+        logg.info("\n> %s\n%s", cmd, out)
+        self.assertTrue(greps(out, r"a.service\s+disabled"))
+        self.assertTrue(greps(out, r"b.service\s+disabled"))
+        self.assertTrue(greps(out, r"c.service\s+disabled"))
+        self.assertTrue(greps(out, r"d.service\s+disabled"))
+        self.assertIn("4 unit files listed.", out)
+        self.assertEqual(len(lines(out)), 7)
+        #
+        cmd = "{systemctl} enable a.service"
+        out = output(cmd.format(**locals()))
+        logg.info("\n> %s\n%s", cmd, out)
+        cmd = "{systemctl} enable b.service"
+        out = output(cmd.format(**locals()))
+        logg.info("\n> %s\n%s", cmd, out)
+        cmd = "{systemctl} enable c.service"
+        out = output(cmd.format(**locals()))
+        logg.info("\n> %s\n%s", cmd, out)
+        cmd = "{systemctl} enable d.service"
+        out = output(cmd.format(**locals()))
+        logg.info("\n> %s\n%s", cmd, out)
+        #
+        cmd = "{systemctl} --type=service list-unit-files"
+        out = output(cmd.format(**locals()))
+        logg.info("\n> %s\n%s", cmd, out)
+        self.assertTrue(greps(out, r"a.service\s+enabled"))
+        self.assertTrue(greps(out, r"b.service\s+enabled"))
+        self.assertTrue(greps(out, r"c.service\s+enabled"))
+        self.assertTrue(greps(out, r"d.service\s+enabled"))
+        self.assertIn("4 unit files listed.", out)
+        self.assertEqual(len(lines(out)), 7)
+        #
+        self.assertTrue(False)
+        self.rm_testdir()
+        self.coverage()
     def test_2013_list_unit_files_common_targets(self):
         """ check that some unit target files can be found for 'list-unit-files' """
         testname = self.testname()
