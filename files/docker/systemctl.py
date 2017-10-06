@@ -230,7 +230,7 @@ class UnitConfigParser:
         self._dict = self._dict_type()
         self._files = []
     def defaults(self):
-        return self.defaults
+        return self._defaults
     def sections(self):
         return self._dict.keys()
     def add_section(self, section):
