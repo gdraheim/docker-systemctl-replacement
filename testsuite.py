@@ -5749,7 +5749,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ check that we can enable services in a docker container to be run as default-services
             after it has been restarted from a commit-saved container image.
             This includes some corage on the init-services."""
-        self.skipTest("unfinished")
         testname = self.testname()
         testdir = self.testdir()
         images = IMAGES
@@ -5758,12 +5757,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if greps(open("/etc/issue"), "openSUSE"):
            image = self.local_image(OPENSUSE)
            package = "zypper"
-        systemctl_py = _systemctl_py
+        systemctl_py = os.path.realpath(_systemctl_py)
         systemctl_sh = os_path(testdir, "systemctl.sh")
+        systemctl_py_run = systemctl_py.replace("/","_")[1:]
         cov_run = _cov_run
         shell_file(systemctl_sh,"""
             #! /bin/sh
-            exec {cov_run} /usr/bin/systemctl.py "$@" -vv
+            exec {cov_run} /{systemctl_py_run} "$@" -vv
             """.format(**locals()))
         text_file(os_path(testdir, "zza.service"),"""
             [Unit]
@@ -5789,7 +5789,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(stop_container.format(**locals()))
         start_container = "docker run --detach --name={testname} {image} sleep 50"
         sh____(start_container.format(**locals()))
-        install_systemctl = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl.py"
+        install_systemctl = "docker cp {systemctl_py} {testname}:/{systemctl_py_run}"
         sh____(install_systemctl.format(**locals()))
         install_systemctl = "docker cp {systemctl_sh} {testname}:/usr/bin/systemctl"
         sh____(install_systemctl.format(**locals()))
@@ -5842,8 +5842,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         if COVERAGE:
             coverage_file = ".coverage." + testname
-            grab_coverage = "docker cp {testname}:.coverage {coverage_file}"
+            grab_coverage = "docker cp {testname}x:.coverage {coverage_file}"
             sh____(grab_coverage.format(**locals()))
+            okay_coverage = "sed -i -e 's:/{systemctl_py_run}:{systemctl_py}:' {coverage_file}"
+            sh____(okay_coverage.format(**locals()))
         #
         sx____(stop_container.format(**locals()))
         sx____(stop_container2.format(**locals()))
@@ -5854,7 +5856,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ check that we can enable services in a docker container to be run as default-services
             after it has been restarted from a commit-saved container image.
             This includes some corage on the init-services."""
-        self.skipTest("unfinished")
         testname = self.testname()
         testdir = self.testdir()
         images = IMAGES
@@ -5863,12 +5864,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if greps(open("/etc/issue"), "openSUSE"):
            image = self.local_image(OPENSUSE)
            package = "zypper"
-        systemctl_py = _systemctl_py
+        systemctl_py = os.path.realpath(_systemctl_py)
         systemctl_sh = os_path(testdir, "systemctl.sh")
+        systemctl_py_run = systemctl_py.replace("/","_")[1:]
         cov_run = _cov_run
         shell_file(systemctl_sh,"""
             #! /bin/sh
-            exec {cov_run} /usr/bin/systemctl.py "$@" -vv
+            exec {cov_run} /{systemctl_py_run} "$@" -vv
             """.format(**locals()))
         text_file(os_path(testdir, "zza.service"),"""
             [Unit]
@@ -5894,7 +5896,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(stop_container.format(**locals()))
         start_container = "docker run --detach --name={testname} {image} sleep 50"
         sh____(start_container.format(**locals()))
-        install_systemctl = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl.py"
+        install_systemctl = "docker cp {systemctl_py} {testname}:/{systemctl_py_run}"
         sh____(install_systemctl.format(**locals()))
         install_systemctl = "docker cp {systemctl_sh} {testname}:/usr/bin/systemctl"
         sh____(install_systemctl.format(**locals()))
@@ -5905,8 +5907,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         version_systemctl = "docker exec {testname} systemctl --version"
         sh____(version_systemctl.format(**locals()))
         #
-        install_coverage = "docker exec {testname} yum install -y python-coverage"
-        sh____(install_coverage.format(**locals()))
         install_service = "docker cp {testdir}/zza.service {testname}:/etc/systemd/system/zza.service"
         sh____(install_service.format(**locals()))
         install_service = "docker cp {testdir}/zzb.service {testname}:/etc/systemd/system/zzb.service"
@@ -5950,8 +5950,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         if COVERAGE:
             coverage_file = ".coverage." + testname
-            grab_coverage = "docker cp {testname}:.coverage {coverage_file}"
+            grab_coverage = "docker cp {testname}x:.coverage {coverage_file}"
             sh____(grab_coverage.format(**locals()))
+            okay_coverage = "sed -i -e 's:/{systemctl_py_run}:{systemctl_py}:' {coverage_file}"
+            sh____(okay_coverage.format(**locals()))
         #
         sx____(stop_container.format(**locals()))
         sx____(stop_container2.format(**locals()))
