@@ -620,6 +620,40 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(out, "quite special"))
         self.rm_testdir()
         self.coverage()
+    def test_1070_external_env_files_can_be_parsed(self):
+        """ check that a unit file can have a valid EnvironmentFile for settings """
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/a.service"),"""
+            [Unit]
+            Description=Testing A 
+                which is quite special
+            [Service]
+            EnvironmentFile=/etc/sysconfig/a.conf
+            """)
+        text_file(os_path(root, "/etc/sysconfig/a.conf"),"""
+            CONF1=a1
+            CONF2="b2"
+            CONF3='c3'
+            #CONF4=b4
+            """)
+        cmd = "{systemctl} __read_env_file /etc/sysconfig/a.conf -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s => \n%s", cmd, out)
+        self.assertEqual(end, 0)
+        self.assertTrue(greps(out, "CONF1"))
+        self.assertTrue(greps(out, "CONF2"))
+        self.assertTrue(greps(out, "CONF3"))
+        self.assertFalse(greps(out, "CONF4"))
+        self.assertTrue(greps(out, "a1"))
+        self.assertTrue(greps(out, "b2"))
+        self.assertTrue(greps(out, "c3"))
+        self.assertFalse(greps(out, '"b2"'))
+        self.assertFalse(greps(out, "'c3'"))
+        self.rm_testdir()
+        self.coverage()
     def test_2001_can_create_test_services(self):
         """ check that two unit files can be created for testing """
         testname = self.testname()

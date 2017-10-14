@@ -3286,22 +3286,26 @@ if __name__ == "__main__":
         else:
             logg.info("EXEC END '%s...'", result1)
             logg.debug("    END '%s'", result)
-    elif isinstance(result, list):
+    elif isinstance(result, list) or hasattr(result, "next") or hasattr(result, "__next__"):
+        shown = 0
         for element in result:
             if isinstance(element, tuple):
                 print "\t".join([ str(elem) for elem in element] )
             else:
                 print element
-        logg.info("EXEC END %s items", len(result))
+            shown += 1
+        logg.info("EXEC END %s items", shown)
         logg.debug("    END %s", result)
     elif hasattr(result, "keys"):
+        shown = 0
         for key in sorted(result.keys()):
             element = result[key]
             if isinstance(element, tuple):
                 print key,"=","\t".join([ str(elem) for elem in element])
             else:
                 print "%s=%s" % (key,element)
-        logg.info("EXEC END %s items", len(result))
+            shown += 1
+        logg.info("EXEC END %s items", shown)
         logg.debug("    END %s", result)
     else:
         logg.warning("EXEC END Unknown result type %s", str(type(result)))
