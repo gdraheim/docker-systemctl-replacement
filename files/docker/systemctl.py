@@ -1153,24 +1153,14 @@ class Systemctl:
             return open(os.path.join(log_folder, log_file), "w")
         return open("/dev/null", "w")
     def chdir_workingdir(self, conf, check = True):
+        """ if specified then change the working directory """
+        # the original systemd will start in '/' even if User= is given
         runuser = conf.get("Service", "User", "")
         workingdir = conf.get("Service", "WorkingDirectory", "")
         if workingdir: 
             try: return os.chdir(workingdir)
             except Exception, e:
                logg.error("chdir workingdir '%s': %s", workingdir, e)
-               if check: raise
-        if runuser: 
-            homedir = homedir_user(runuser)
-            try: return os.chdir(homedir)
-            except Exception, e:
-               logg.error("chdir %s home '%s': %s", runuser, homedir, e)
-               if check: raise
-        tempdir = tempfile.gettempdir()
-        if tempdir:
-            try: return os.chdir(tempdir)
-            except Exception, e:
-               logg.error("chdir tempdir '%s': %s", tempdir, e)
                if check: raise
         return None
     def notify_socket_from(self, conf, socketfile = None):
