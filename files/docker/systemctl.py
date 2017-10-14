@@ -822,6 +822,8 @@ class Systemctl:
         return [ ("UNIT FILE", "STATE") ] + result + [ "", found ]
     ##
     ##
+    def get_description(self, unit, default = None):
+        return self.get_description_from(self.load_unit_conf(unit))
     def get_description_from(self, conf, default = None): # -> text
         """ Unit.Description could be empty sometimes """
         if not conf: return default or ""
@@ -881,12 +883,14 @@ class Systemctl:
         name = "%s.pid" % unit
         return os.path.join(folder, name)
     def get_pid_file(self, unit):
+        """ get the specified or default pid file path """
         conf = self.load_unit_conf(unit)
         if conf is None:
             logg.error("no such unit: '%s'", unit)
             return None
         return self.get_pid_file_from(conf)
     def get_pid_file_from(self, conf, default = None):
+        """ get the specified or default pid file path """
         if not conf: return default
         if not conf.filename(): return default
         unit = os.path.basename(conf.filename())
@@ -894,6 +898,7 @@ class Systemctl:
             default = self.default_pid_file(unit)
         return self.pid_file_from(conf, default)
     def pid_file_from(self, conf, default = ""):
+        """ get the specified pid file path (not a computed default) """
         return conf.get("Service", "PIDFile", default)
     def default_status_file(self, unit): # -> text
         """ default file pattern where to store a status mark """

@@ -425,6 +425,201 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(greps(open(logfile), " DEBUG ")), 3)
         self.rm_testdir()
         self.coverage()
+    def test_1050_can_create_a_test_service(self):
+        """ check that a unit file can be created for testing """
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/a.service"),"""
+            [Unit]
+            Description=Testing A""")
+        textA = file(os_path(root, "/etc/systemd/system/a.service")).read()
+        self.assertTrue(greps(textA, "Testing A"))
+        self.assertIn("\nDescription", textA)
+        self.rm_testdir()
+        self.coverage()
+    def test_1051_can_parse_the_service_file(self):
+        """ check that a unit file can be parsed atleast for a description """
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/a.service"),"""
+            [Unit]
+            Description=Testing A""")
+        textA = file(os_path(root, "/etc/systemd/system/a.service")).read()
+        self.assertTrue(greps(textA, "Testing A"))
+        cmd = "{systemctl} __get_description a.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s => \n%s", cmd, out)
+        self.assertEqual(end, 0)
+        self.assertTrue(greps(out, "Testing A"))
+        self.rm_testdir()
+        self.coverage()
+    def test_1052_can_describe_a_pid_file(self):
+        """ check that a unit file can have a specific pdi file """
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/a.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            PIDFile=/var/run/foo.pid
+            """)
+        textA = file(os_path(root, "/etc/systemd/system/a.service")).read()
+        self.assertTrue(greps(textA, "Testing A"))
+        self.assertTrue(greps(textA, "PIDFile="))
+        cmd = "{systemctl} __get_pid_file a.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s => \n%s", cmd, out)
+        self.assertEqual(end, 0)
+        self.assertTrue(greps(out, "/var/run/foo.pid"))
+        self.rm_testdir()
+        self.coverage()
+    def test_1053_can_have_default_pid_file_for_simple_service(self):
+        """ check that a unit file has a default pid file for simple services """
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/a.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            Type=simple
+            """)
+        textA = file(os_path(root, "/etc/systemd/system/a.service")).read()
+        self.assertTrue(greps(textA, "Testing A"))
+        self.assertFalse(greps(textA, "PIDFile="))
+        cmd = "{systemctl} __get_pid_file a.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s => \n%s", cmd, out)
+        self.assertEqual(end, 0)
+        self.assertTrue(greps(out, "/var/run/a.service.pid"))
+        self.rm_testdir()
+        self.coverage()
+    def test_1055_other_services_use_a_status_file(self):
+        """ check that other unit files may have a default status file """
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/a.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            Type=oneshot
+            """)
+        textA = file(os_path(root, "/etc/systemd/system/a.service")).read()
+        self.assertTrue(greps(textA, "Testing A"))
+        self.assertFalse(greps(textA, "PIDFile="))
+        cmd = "{systemctl} __get_status_file a.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s => \n%s", cmd, out)
+        self.assertEqual(end, 0)
+        self.assertTrue(greps(out, "/var/run/a.service.status"))
+        self.rm_testdir()
+        self.coverage()
+    def test_1060_can_have_shell_like_commments(self):
+        """ check that a unit file can have comment lines with '#' """
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/a.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            #PIDFile=/var/run/foo.pid
+            """)
+        textA = file(os_path(root, "/etc/systemd/system/a.service")).read()
+        self.assertTrue(greps(textA, "Testing A"))
+        self.assertTrue(greps(textA, "PIDFile="))
+        cmd = "{systemctl} __get_pid_file a.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s => \n%s", cmd, out)
+        self.assertEqual(end, 0)
+        self.assertFalse(greps(out, "/var/run/foo.pid"))
+        self.assertTrue(greps(out, "/var/run/a.service.pid"))
+        self.rm_testdir()
+        self.coverage()
+    def test_1061_can_have_winini_like_commments(self):
+        """ check that a unit file can have comment lines with ';' """
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/a.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            ;PIDFile=/var/run/foo.pid
+            """)
+        textA = file(os_path(root, "/etc/systemd/system/a.service")).read()
+        self.assertTrue(greps(textA, "Testing A"))
+        self.assertTrue(greps(textA, "PIDFile="))
+        cmd = "{systemctl} __get_pid_file a.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s => \n%s", cmd, out)
+        self.assertEqual(end, 0)
+        self.assertFalse(greps(out, "/var/run/foo.pid"))
+        self.assertTrue(greps(out, "/var/run/a.service.pid"))
+        self.rm_testdir()
+        self.coverage()
+    def test_1062_can_have_multi_line_settings_with_linebreak_mark(self):
+        """ check that a unit file can have settings with '\\' at the line end """
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/a.service"),"""
+            [Unit]
+            Description=Testing A \
+                which is quite special
+            [Service]
+            PIDFile=/var/run/foo.pid
+            """)
+        textA = file(os_path(root, "/etc/systemd/system/a.service")).read()
+        self.assertTrue(greps(textA, "Testing A"))
+        self.assertTrue(greps(textA, "quite special"))
+        self.assertTrue(greps(textA, "PIDFile="))
+        cmd = "{systemctl} __get_description a.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s => \n%s", cmd, out)
+        self.assertEqual(end, 0)
+        self.assertTrue(greps(out, "Testing A"))
+        self.assertTrue(greps(out, "quite special"))
+        self.rm_testdir()
+        self.coverage()
+    def test_1063_but_a_missing_linebreak_is_a_syntax_error(self):
+        """ check that a unit file can have 'bad ini' lines throwing an exception """
+        # the original systemd daemon would ignore services with syntax errors
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/a.service"),"""
+            [Unit]
+            Description=Testing A 
+                which is quite special
+            [Service]
+            PIDFile=/var/run/foo.pid
+            """)
+        textA = file(os_path(root, "/etc/systemd/system/a.service")).read()
+        self.assertTrue(greps(textA, "Testing A"))
+        self.assertTrue(greps(textA, "quite special"))
+        self.assertTrue(greps(textA, "PIDFile="))
+        cmd = "{systemctl} __get_description a.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s => \n%s", cmd, out)
+        self.assertNotEqual(end, 0)
+        self.assertFalse(greps(out, "Testing A"))
+        self.assertFalse(greps(out, "quite special"))
+        self.rm_testdir()
+        self.coverage()
     def test_2001_can_create_test_services(self):
         """ check that two unit files can be created for testing """
         testname = self.testname()
