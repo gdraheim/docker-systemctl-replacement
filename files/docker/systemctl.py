@@ -625,13 +625,6 @@ class Systemctl:
         if module and module+".service" in self._file_for_unit_sysv:
             return self._file_for_unit_sysv[module+".service"]
         return None
-    def is_sysv_unit(self, module): # -> bool?
-        """ for routines that have a special treatment for init.d services """
-        self.unit_file() # scan all
-        if not filename: return None
-        if module in self._file_for_unit_sysd: return False
-        if module in self._file_for_unit_sysv: return True
-        return None # not True
     def is_sysv_file(self, filename):
         """ for routines that have a special treatment for init.d services """
         self.unit_file() # scan all
