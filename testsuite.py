@@ -6447,6 +6447,146 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         drop_image_container = "docker rmi {images}:{testname}"
         sx____(drop_image_container.format(**locals()))
         self.rm_testdir()
+    def test_6050_systemctl_py_can_reap_zombies_in_a_container(self):
+        """ check that we can reap zombies in a container managed by systemctl.py"""
+        testname = self.testname()
+        testdir = self.testdir()
+        images = IMAGES
+        image = self.local_image(CENTOS)
+        package = "yum"
+        cov_run = ""
+        if COVERAGE:
+            cov_run = _cov_run
+            if greps(open("/etc/issue"), "openSUSE"):
+                image = self.local_image(OPENSUSE)
+                package = "zypper"
+        systemctl_py = os.path.realpath(_systemctl_py)
+        systemctl_sh = os_path(testdir, "systemctl.sh")
+        systemctl_py_run = systemctl_py.replace("/","_")[1:]
+        shell_file(systemctl_sh,"""
+            #! /bin/sh
+            exec {cov_run} /{systemctl_py_run} "$@" -vv
+            """.format(**locals()))
+        user = self.user()
+        testsleep = self.testname("sleep")
+        shell_file(os_path(testdir, "zzz.init"), """
+            #! /bin/bash
+            case "$1" in start) 
+               (/usr/bin/{testsleep} 50 0<&- &>/dev/null &) &
+               wait %1
+               # ps -o pid,ppid,args >&2
+            ;; stop)
+               killall {testsleep}
+               echo killed all {testsleep} >&2
+               sleep 1
+            ;; esac 
+            echo "done$1" >&2
+            exit 0
+            """.format(**locals()))
+        text_file(os_path(testdir, "zzz.service"),"""
+            [Unit]
+            Description=Testing Z
+            [Service]
+            Type=forking
+            ExecStart=/usr/bin/zzz.init start
+            ExecStop=/usr/bin/zzz.init stop
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+
+
+        #
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name={testname} {image} sleep 50"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {systemctl_py} {testname}:/{systemctl_py_run}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {systemctl_sh} {testname}:/usr/bin/systemctl"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/{testsleep}"
+        sh____(cmd.format(**locals()))
+        if COVERAGE:
+            cmd = "docker exec {testname} {package} install -y python-coverage"
+            sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl --version"
+        sh____(cmd.format(**locals()))
+        #
+        cmd = "docker cp {testdir}/zzz.service {testname}:/etc/systemd/system/zzz.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zzz.init {testname}:/usr/bin/zzz.init"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl enable zzz.service"
+        sh____(cmd.format(**locals()))
+        list_units_systemctl = "docker exec {testname} systemctl default-services -v"
+        out2 = output(list_units_systemctl.format(**locals()))
+        logg.info("\n>\n%s", out2)
+        #
+        cmd = "docker commit -c 'CMD [\"/usr/bin/systemctl\"]'  {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}x"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name {testname}x {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        time.sleep(3)
+        #
+        cmd = "docker exec {testname}x ps -eo state,pid,ppid,args"
+        top = output(cmd.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        # testsleep is running with parent-pid of '1'
+        self.assertTrue(greps(top, " 1 /usr/bin/.*sleep 50"))
+        # and the pid '1' is systemctl (actually systemctl.py)
+        self.assertTrue(greps(top, " 1 .* 0 .*systemctl"))
+        # and let's check no zombies around so far:
+        self.assertFalse(greps(top, "Z .*sleep.*<defunct>")) # <<< no zombie yet
+        #
+        # check the subprocess
+        m = re.search(r"(?m)^(\S+)\s+(\d+)\s+(\d+)\s+(\S+.*sleep 50.*)$", top)
+        if m:
+            state, pid, ppid, args = m.groups()
+        logg.info(" - sleep state = %s", state)
+        logg.info(" - sleep pid = %s", pid)
+        logg.info(" - sleep ppid = %s", ppid)
+        logg.info(" - sleep args = %s", args)
+        self.assertEqual(state, "S")
+        self.assertEqual(ppid, "1")
+        self.assertIn("sleep", args)
+        #
+        # and kill the subprocess
+        cmd = "docker exec {testname}x kill {pid}"
+        sh____(cmd.format(**locals()))
+        #
+        cmd = "docker exec {testname}x ps -eo state,pid,ppid,args"
+        top = output(cmd.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, "Z .*sleep.*<defunct>")) # <<< we have zombie!
+        time.sleep(4)
+        #
+        cmd = "docker exec {testname}x ps -eo state,pid,ppid,args"
+        top = output(cmd.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, "Z .*sleep.*<defunct>")) # <<< and it's gone!
+        time.sleep(1)
+        #
+        cmd = "docker stop {testname}x"
+        out3 = output(cmd.format(**locals()))
+        logg.info("\n>\n%s", out3)
+        #
+        if COVERAGE:
+            coverage_file = ".coverage." + testname
+            grab_coverage = "docker cp {testname}x:.coverage {coverage_file}"
+            sh____(grab_coverage.format(**locals()))
+            okay_coverage = "sed -i -e 's:/{systemctl_py_run}:{systemctl_py}:' {coverage_file}"
+            sh____(okay_coverage.format(**locals()))
+        #
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}x"
+        sx____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
+        self.rm_testdir()
+
     def test_7001_centos_httpd_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
             THEN we can create an image with an Apache HTTP service 
