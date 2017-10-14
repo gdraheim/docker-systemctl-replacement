@@ -1155,13 +1155,22 @@ class Systemctl:
     def chdir_workingdir(self, conf, check = True):
         """ if specified then change the working directory """
         # the original systemd will start in '/' even if User= is given
+        if self._root:
+            os.chdir(self._root)
         runuser = conf.get("Service", "User", "")
         workingdir = conf.get("Service", "WorkingDirectory", "")
-        if workingdir: 
-            try: return os.chdir(workingdir)
+        if workingdir:
+            ignore = False
+            if workingdir.startswith("-"):
+                workingdir = workingdir[1:]
+                ignore = True
+            into = os_path(self._root, workingdir)
+            try: 
+               return os.chdir(into)
             except Exception, e:
-               logg.error("chdir workingdir '%s': %s", workingdir, e)
-               if check: raise
+               if not ignore:
+                   logg.error("chdir workingdir '%s': %s", into, e)
+                   if check: raise
         return None
     def notify_socket_from(self, conf, socketfile = None):
         """ creates a notify-socket for the (non-privileged) user """

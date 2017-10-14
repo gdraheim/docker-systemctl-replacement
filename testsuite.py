@@ -2501,6 +2501,221 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
+    def test_3530_systemctl_py_default_workingdirectory_is_root(self):
+        """ check that services without WorkingDirectory start in / """
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        logfile = os_path(root, "/var/log/test.log")
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        testsleep = self.testname("sleep")
+        bindir = os_path(root, "/usr/bin")
+        text_file(os_path(testdir, "zzz.service"),"""
+            [Unit]
+            Description=Testing Z
+            [Service]
+            Type=simple
+            ExecStart={bindir}/zzz.sh
+            ExecStop=killall {testsleep}
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        shell_file(os_path(testdir, "zzz.sh"),"""
+            #! /bin/sh
+            log={logfile}
+            date > "$log"
+            pwd >> "$log"
+            exec {bindir}/{testsleep} 50
+            """.format(**locals()))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
+        copy_tool(os_path(testdir, "zzz.sh"), os_path(root, "/usr/bin/zzz.sh"))
+        #
+        start_service = "{systemctl} start zzz.service -vv"
+        sh____(start_service.format(**locals()))
+        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
+        top = output(top_recent.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        #
+        log = lines(open(logfile).read())
+        logg.info("LOG %s\n| %s", logfile, "\n| ".join(log))
+        self.assertIn(root, log) # <<<<<<<<<< CHECK
+        #
+        stop_service = "{systemctl} stop zzz.service -vv"
+        sh____(stop_service.format(**locals()))
+        top = output(top_recent.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, testsleep))
+        kill_testsleep = "killall {testsleep}"
+        sx____(kill_testsleep.format(**locals()))
+        # self.rm_testdir()
+        self.coverage()
+    def test_3531_systemctl_py_simple_in_workingdirectory(self):
+        """ check that we can start simple services with a WorkingDirectory"""
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        logfile = os_path(root, "/var/log/test.log")
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        testsleep = self.testname("sleep")
+        bindir = os_path(root, "/usr/bin")
+        workingdir = "/var/testsleep"
+        text_file(os_path(testdir, "zzz.service"),"""
+            [Unit]
+            Description=Testing Z
+            [Service]
+            Type=simple
+            WorkingDirectory={workingdir}
+            ExecStart={bindir}/zzz.sh
+            ExecStop=killall {testsleep}
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        shell_file(os_path(testdir, "zzz.sh"),"""
+            #! /bin/sh
+            log={logfile}
+            date > "$log"
+            pwd >> "$log"
+            exec {bindir}/{testsleep} 50
+            """.format(**locals()))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
+        copy_tool(os_path(testdir, "zzz.sh"), os_path(root, "/usr/bin/zzz.sh"))
+        os.makedirs(os_path(root, workingdir))
+        #
+        start_service = "{systemctl} start zzz.service -vv"
+        sh____(start_service.format(**locals()))
+        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
+        top = output(top_recent.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        #
+        log = lines(open(logfile).read())
+        logg.info("LOG %s\n| %s", logfile, "\n| ".join(log))
+        self.assertIn(os_path(root,workingdir), log) # <<<<<<<<<< CHECK
+        #
+        stop_service = "{systemctl} stop zzz.service -vv"
+        sh____(stop_service.format(**locals()))
+        top = output(top_recent.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, testsleep))
+        kill_testsleep = "killall {testsleep}"
+        sx____(kill_testsleep.format(**locals()))
+        # self.rm_testdir()
+        self.coverage()
+    def test_3532_systemctl_py_with_bad_workingdirectory(self):
+        """ check that we can start simple services with a bad WorkingDirectory"""
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        logfile = os_path(root, "/var/log/test.log")
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        testsleep = self.testname("sleep")
+        bindir = os_path(root, "/usr/bin")
+        workingdir = "/var/testsleep"
+        text_file(os_path(testdir, "zzz.service"),"""
+            [Unit]
+            Description=Testing Z
+            [Service]
+            Type=simple
+            WorkingDirectory={workingdir}
+            ExecStart={bindir}/zzz.sh
+            ExecStop=killall {testsleep}
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        shell_file(os_path(testdir, "zzz.sh"),"""
+            #! /bin/sh
+            log={logfile}
+            date > "$log"
+            pwd >> "$log"
+            exec {bindir}/{testsleep} 50
+            """.format(**locals()))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
+        copy_tool(os_path(testdir, "zzz.sh"), os_path(root, "/usr/bin/zzz.sh"))
+        # os.makedirs(os_path(root, workingdir)) <<<
+        #
+        start_service = "{systemctl} start zzz.service -vv"
+        sh____(start_service.format(**locals()))
+        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
+        top = output(top_recent.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        #
+        log = lines(open(logfile).read())
+        logg.info("LOG %s\n| %s", logfile, "\n| ".join(log))
+        self.assertNotIn(os_path(root,workingdir), log) # <<<<<<<<<< CHECK
+        self.assertIn(root, log)
+        #
+        stop_service = "{systemctl} stop zzz.service -vv"
+        sh____(stop_service.format(**locals()))
+        top = output(top_recent.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, testsleep))
+        kill_testsleep = "killall {testsleep}"
+        sx____(kill_testsleep.format(**locals()))
+        # self.rm_testdir()
+        self.coverage()
+    def test_3533_systemctl_py_with_bad_workingdirectory(self):
+        """ check that we can start simple services with a bad WorkingDirectory with '-'"""
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        logfile = os_path(root, "/var/log/test.log")
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        testsleep = self.testname("sleep")
+        bindir = os_path(root, "/usr/bin")
+        workingdir = "/var/testsleep"
+        text_file(os_path(testdir, "zzz.service"),"""
+            [Unit]
+            Description=Testing Z
+            [Service]
+            Type=simple
+            WorkingDirectory=-{workingdir}
+            ExecStart={bindir}/zzz.sh
+            ExecStop=killall {testsleep}
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        shell_file(os_path(testdir, "zzz.sh"),"""
+            #! /bin/sh
+            log={logfile}
+            date > "$log"
+            pwd >> "$log"
+            exec {bindir}/{testsleep} 50
+            """.format(**locals()))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
+        copy_tool(os_path(testdir, "zzz.sh"), os_path(root, "/usr/bin/zzz.sh"))
+        # os.makedirs(os_path(root, workingdir)) <<<
+        #
+        start_service = "{systemctl} start zzz.service -vv"
+        sh____(start_service.format(**locals()))
+        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
+        top = output(top_recent.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        #
+        log = lines(open(logfile).read())
+        logg.info("LOG %s\n| %s", logfile, "\n| ".join(log))
+        self.assertNotIn(os_path(root,workingdir), log) # <<<<<<<<<< CHECK
+        self.assertIn(root, log)
+        #
+        stop_service = "{systemctl} stop zzz.service -vv"
+        sh____(stop_service.format(**locals()))
+        top = output(top_recent.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, testsleep))
+        kill_testsleep = "killall {testsleep}"
+        sx____(kill_testsleep.format(**locals()))
+        # self.rm_testdir()
+        self.coverage()
     def test_4030_simple_service_functions(self):
         """ check that we manage simple services in a root env
             with commands like start, restart, stop, etc"""
