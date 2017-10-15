@@ -96,12 +96,6 @@ def to_int(value, default = 0):
     except:
         return default
 
-def homedir_user(user = None, default = None):
-    if user:
-        import pwd
-        return pwd.getpwnam(user).pw_dir
-    return default
-
 def os_path(root, path):
     if not root:
         return path
