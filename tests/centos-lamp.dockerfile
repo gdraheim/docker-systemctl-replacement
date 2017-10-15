@@ -1,7 +1,7 @@
 FROM centos:centos7
 
 LABEL __copyright__="(C) Guido Draheim, for free use (CC-BY,GPL,BSD)" \
-      __version__="1.0.1403"
+      __version__="1.0.1417"
 
 ENV WEB_CONF /etc/httpd/conf.d/phpMyAdmin.conf
 ENV INC_CONF /etc/phpMyAdmin/config.inc.php

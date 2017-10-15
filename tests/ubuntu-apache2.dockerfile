@@ -1,7 +1,7 @@
 FROM ubuntu:16.04
 
 LABEL __copyright__="(C) Guido U. Draheim, for free use (CC-BY,GPL,BSD)" \
-      __version__="1.0.1403"
+      __version__="1.0.1417"
 
 RUN apt-get update
 RUN apt-get install -y apache2 python
