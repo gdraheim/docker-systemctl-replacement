@@ -2621,7 +2621,8 @@ class Systemctl:
                     for required in requirelist.strip().split(" "):
                         deps[required.strip()] = style
         return deps
-    def get_start_dependencies(self, unit):
+    def get_start_dependencies(self, unit): # pragma: no cover
+        """ the list of services to be started as well / TODO: unused """
         deps = {}
         unit_deps = self.get_dependencies_unit(unit)
         for dep_unit, dep_style in unit_deps.items():
@@ -2690,7 +2691,8 @@ class Systemctl:
             try:
                 conf = self.get_unit_conf(unit)
             except Exception, e:
-                logg.error("%s: can not read unit file %s\n\t%e", conf.filename(), e)
+                logg.error("%s: can not read unit file %s\n\t%s", 
+                    unit, conf.filename(), e)
                 continue
             if not conf.has_section("Service"):
                 if conf.filename() and conf.filename().endswith(".service"):
