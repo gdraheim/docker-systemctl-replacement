@@ -299,6 +299,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "[+]SYSVINIT"))
         self.coverage()
     def test_1003_systemctl_help(self):
+        """ the '--help' option and 'help' command do work """
         systemctl = _cov + _systemctl_py
         cmd = "{systemctl} --help"
         out = output(cmd.format(**locals()))
@@ -309,9 +310,30 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "for more information"))
         self.assertFalse(greps(out, "reload-or-try-restart"))
         cmd = "{systemctl} help" 
-        out = output(cmd.format(**locals()))
+        out, end = output2(cmd.format(**locals()))
         logg.info("\n> %s\n%s", cmd, out)
+        self.assertEqual(end, 0)
         self.assertFalse(greps(out, "--verbose"))
+        self.assertTrue(greps(out, "reload-or-try-restart"))
+        self.coverage()
+    def test_1005_systemctl_help_command(self):
+        """ for any command, 'help command' shows the documentation """
+        systemctl = _cov + _systemctl_py
+        cmd = "{systemctl} help list-unit-files" 
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s\n%s", cmd, out)
+        self.assertEqual(end, 0)
+        self.assertFalse(greps(out, "for more information"))
+        self.assertTrue(greps(out, "--type=service"))
+        self.coverage()
+    def test_1006_systemctl_help_command_other(self):
+        """ for a non-existant command, 'help command' just shows the list """
+        systemctl = _cov + _systemctl_py
+        cmd = "{systemctl} help list-foo" 
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s\n%s", cmd, out)
+        self.assertEqual(end, 1)
+        self.assertFalse(greps(out, "for more information"))
         self.assertTrue(greps(out, "reload-or-try-restart"))
         self.coverage()
     def test_1010_systemctl_daemon_reload(self):

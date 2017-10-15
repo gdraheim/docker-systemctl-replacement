@@ -3019,6 +3019,7 @@ class Systemctl:
     def show_help(self, *args):
         """[command] -- show this help
         """
+        okay = True
         prog = os.path.basename(sys.argv[0])
         if not args:
             argz = {}
@@ -3056,8 +3057,8 @@ class Systemctl:
             func4 = getattr(self.__class__, "system_"+arg, None)
             func = func1 or func2 or func3 or func4
             if func is None:
-                logg.debug("func '%s' is none", func_name)
-                self.show_help()
+                print "error: no such command '%s'" % arg
+                okay = False
             else:
                 doc = getattr(func, "__doc__", None)
                 if doc is None:
@@ -3067,6 +3068,10 @@ class Systemctl:
                     print prog, arg, doc.replace("\n","\n\n", 1)
                 else:
                     print prog, arg, "--", doc.replace("\n","\n\n", 1)
+        if not okay:
+            self.show_help()
+            return False
+        return True
     def systemd_version(self):
         """ the the version line for systemd compatibility """
         return "systemd 0 (systemctl.py %s)" % __version__
