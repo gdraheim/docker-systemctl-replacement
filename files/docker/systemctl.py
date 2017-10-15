@@ -111,7 +111,7 @@ def shutil_chown(filename, user = None, group = None):
     gid = -1
     if group:
         import grp
-        gid = grp.getgrnam(user).gr_gid
+        gid = grp.getgrnam(group).gr_gid
     if user:
         import pwd
         uid = pwd.getpwnam(user).pw_uid
