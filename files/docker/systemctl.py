@@ -2785,16 +2785,6 @@ class Systemctl:
                     if not value and not self._show_all:
                         continue
                 result += [ "%s=%s" % (var, value) ]
-        if not result and units:
-            unit = units[0]
-            for var, value in self.show_unit_items(unit):
-                if _unit_property:
-                    if _unit_property != var:
-                        continue
-                else:
-                    if not value and not self._show_all:
-                        continue
-                result += [ "%s=%s" % (var, value) ]
         return result
     def show_unit_items(self, unit):
         """ [UNIT]... -- show properties of a unit.
