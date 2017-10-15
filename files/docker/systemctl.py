@@ -2328,12 +2328,14 @@ class Systemctl:
         for unit in units:
             status = self.get_preset_of_unit(unit)
             if status and status.startswith("enable"):
-                logg.critical("preset enable %s", unit)
+                logg.info("preset enable %s", unit)
                 if not self.enable_unit(unit):
+                    logg.warning("failed to enable %s", unit)
                     done = False
             if status and status.startswith("disable"):
-                logg.critical("preset disable %s", unit)
+                logg.info("preset disable %s", unit)
                 if not self.disable_unit(unit):
+                    logg.warning("failed to disable %s", unit)
                     done = False
         return done
     def system_preset_all(self, *modules):
@@ -2464,8 +2466,6 @@ class Systemctl:
         folder = self.enablefolder(wanted)
         if self._root:
             folder = os_path(self._root, folder)
-        if not os.path.isdir(folder):
-            return False
         target = os.path.join(folder, os.path.basename(unit_file))
         if os.path.isfile(target):
             _f = self._force and "-f" or ""
