@@ -676,6 +676,56 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(out, "'c3'"))
         self.rm_testdir()
         self.coverage()
+    def test_1080_preset_files_can_be_parsed(self):
+        """ check that preset files do work internally"""
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/a.service"),"""
+            [Unit]
+            Description=Testing A""")
+        text_file(os_path(root, "/etc/systemd/system/b.service"),"""
+            [Unit]
+            Description=Testing B
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/system/c.service"),"""
+            [Unit]
+            Description=Testing C
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/system-preset/our.preset"),"""
+            enable b.service
+            disable c.service""")
+        #
+        cmd = "{systemctl} __load_preset_files"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        self.assertTrue(greps(out, r"^our.preset"))
+        self.assertEqual(len(lines(out)), 1)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} __get_preset_of_unit a.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        # self.assertTrue(greps(out, r"^our.preset"))
+        self.assertEqual(len(lines(out)), 0)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} __get_preset_of_unit b.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        self.assertTrue(greps(out, r"^enable"))
+        self.assertEqual(len(lines(out)), 1)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} __get_preset_of_unit c.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        self.assertTrue(greps(out, r"^disable"))
+        self.assertEqual(len(lines(out)), 1)
+        self.assertEqual(end, 0)
     def test_2001_can_create_test_services(self):
         """ check that two unit files can be created for testing """
         testname = self.testname()
@@ -1351,34 +1401,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(os_path(root, "/etc/systemd/system-preset/our.preset"),"""
             enable b.service
             disable c.service""")
-        #
-        cmd = "{systemctl} __load_preset_files"
-        out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
-        self.assertTrue(greps(out, r"^our.preset"))
-        self.assertEqual(len(lines(out)), 1)
-        self.assertEqual(end, 0)
-        #
-        cmd = "{systemctl} __get_preset_of_unit a.service"
-        out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
-        # self.assertTrue(greps(out, r"^our.preset"))
-        self.assertEqual(len(lines(out)), 0)
-        self.assertEqual(end, 0)
-        #
-        cmd = "{systemctl} __get_preset_of_unit b.service"
-        out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
-        self.assertTrue(greps(out, r"^enable"))
-        self.assertEqual(len(lines(out)), 1)
-        self.assertEqual(end, 0)
-        #
-        cmd = "{systemctl} __get_preset_of_unit c.service"
-        out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
-        self.assertTrue(greps(out, r"^disable"))
-        self.assertEqual(len(lines(out)), 1)
-        self.assertEqual(end, 0)
         #
         cmd = "{systemctl} is-enabled a.service"
         out, end = output2(cmd.format(**locals()))
