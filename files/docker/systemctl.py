@@ -2078,20 +2078,6 @@ class Systemctl:
             return status, results
         else:
             return status
-    def is_active_units(self, units):
-        """ true if any unit was active """
-        result = False
-        for unit in units:
-            if self.is_active(unit):
-                result = True
-        return result
-    def is_active(self, unit):
-        """ true if status == 'active' """
-        conf = self.get_unit_conf(unit)
-        if not conf.loaded():
-            logg.warning("no such unit '%s'", unit)
-            return False
-        return self.is_active_from(conf)
     def is_active_from(self, conf):
         """ used in try-restart/other commands to check if needed. """
         if not conf: return False
