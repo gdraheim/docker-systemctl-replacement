@@ -2161,20 +2161,6 @@ class Systemctl:
             return status, results
         else:
             return status
-    def is_failed_units(self, units):
-        """ true if any unit is-failed """
-        result = False
-        for unit in units:
-            if self.is_failed(unit):
-                result = True
-        return result
-    def is_failed(self, unit):
-        """ true if status == 'failed' """
-        conf = self.get_unit_conf(unit)
-        if not conf.loaded():
-            logg.warning("no such unit '%s'", unit)
-            return False
-        return self.is_failed_from(conf)
     def is_failed_from(self, conf):
         if conf is None: return True
         return self.get_active_from(conf) == "failed"
