@@ -7222,7 +7222,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         drop_image_container = "docker rmi {images}:{testname}"
         sx____(drop_image_container.format(**locals()))
         self.rm_testdir()
-    def test_6050_systemctl_py_can_reap_zombies_in_a_container(self):
+    def test_6600_systemctl_py_can_reap_zombies_in_a_container(self):
         """ check that we can reap zombies in a container managed by systemctl.py"""
         testname = self.testname()
         testdir = self.testdir()
