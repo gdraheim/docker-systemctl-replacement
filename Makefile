@@ -28,7 +28,7 @@ DJ docker-jenkins: ; ./testsuite.py test_900*
 
 COVERAGE=--coverage
 est_%: ; rm .coverage* ; ./testsuite.py t$@ -vv --coverage
-coverage: ; rm .coverage* ; ./testsuite.py -v --coverage test_1 test_2 test_3 test_4
+coverage: ; rm .coverage* ; ./testsuite.py -vv --coverage test_1 test_2 test_3 test_4 test_6
 check: ; rm .coverage* ; ./testsuite.py -vv --coverage
 test_%: ; ./testsuite.py $@ -vv
 

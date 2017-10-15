@@ -2420,6 +2420,8 @@ class Systemctl:
         name = os.path.basename(unit_file)
         nameS = "S50"+name
         nameK = "K50"+name
+        if not os.path.isdir(rc_folder):
+           os.makedirs(rc_folder)
         # do not double existing entries
         if found in os.listdir(rc_folder):
             m = re.match("S\d\d(.*)", found)
@@ -2470,8 +2472,8 @@ class Systemctl:
             os.remove(target)
         return True
     def disable_unit_sysv(self, unit_file):
-        rc3 = self.disable_unit_sysv(unit_file, self.rc3_root_folder())
-        rc5 = self.disable_unit_sysv(unit_file, self.rc5_root_folder())
+        rc3 = self._disable_unit_sysv(unit_file, self.rc3_root_folder())
+        rc5 = self._disable_unit_sysv(unit_file, self.rc5_root_folder())
         return rc3 and rc5
     def _disable_unit_sysv(self, unit_file, rc_folder):
         # a "multi-user.target"/rc3 is also started in /rc5

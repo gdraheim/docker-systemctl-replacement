@@ -1400,6 +1400,103 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.rm_testdir()
         self.coverage()
+    def test_3009_sysv_service_enable(self):
+        """ check that we manage SysV services in a root env
+            with basic enable/disable commands, also being
+            able to check its status."""
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        testsleep = self.testname("sleep")
+        logfile = os_path(root, "/var/log/"+testsleep+".log")
+        bindir = os_path(root, "/usr/bin")
+        os.makedirs(os_path(root, "/var/run"))
+        text_file(logfile, "created\n")
+        begin = "{" ; end = "}"
+        shell_file(os_path(testdir, "zzz.init"), """
+            #! /bin/bash
+            ### BEGIN INIT INFO
+            # Required-Start: $local_fs $remote_fs $syslog $network 
+            # Required-Stop:  $local_fs $remote_fs $syslog $network
+            # Default-Start:  3 5
+            # Default-Stop:   0 1 2 6
+            # Short-Description: Testing Z
+            # Description:    Allows for SysV testing
+            ### END INIT INFO
+            logfile={logfile}
+            sleeptime=50
+            start() {begin} 
+               [ -d /var/run ] || mkdir -p /var/run
+               ({bindir}/{testsleep} $sleeptime 0<&- &>/dev/null &
+                echo $! > {root}/var/run/zzz.init.pid
+               ) &
+               wait %1
+               # ps -o pid,ppid,args
+               cat "RUNNING `cat {root}/var/run/zzz.init.pid`"
+            {end}
+            stop() {begin}
+               killall {testsleep}
+            {end}
+            case "$1" in start)
+               date "+START.%T" >> $logfile
+               start >> $logfile 2>&1
+               date "+start.%T" >> $logfile
+            ;; stop)
+               date "+STOP.%T" >> $logfile
+               stop >> $logfile 2>&1
+               date "+stop.%T" >> $logfile
+            ;; restart)
+               date "+RESTART.%T" >> $logfile
+               stop >> $logfile 2>&1
+               start >> $logfile 2>&1
+               date "+.%T" >> $logfile
+            ;; reload)
+               date "+RELOAD.%T" >> $logfile
+               echo "...." >> $logfile 2>&1
+               date "+reload.%T" >> $logfile
+            ;; esac 
+            echo "done$1" >&2
+            exit 0
+            """.format(**locals()))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/etc/init.d/zzz"))
+        #
+        cmd = "{systemctl} is-enabled zzz.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        self.assertTrue(greps(out, r"^disabled"))
+        self.assertEqual(len(lines(out)), 1)
+        self.assertEqual(end, 1)
+        #
+        cmd = "{systemctl} --no-legend enable zzz.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} is-enabled zzz.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        self.assertTrue(greps(out, r"^enabled"))
+        self.assertEqual(len(lines(out)), 1)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} --no-legend disable zzz.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} is-enabled zzz.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        self.assertTrue(greps(out, r"^disabled"))
+        self.assertEqual(len(lines(out)), 1)
+        self.assertEqual(end, 1)
+        #
+        self.rm_testdir()
+        self.coverage()
+
     def test_3010_check_preset_all(self):
         """ check that 'is-enabled' reports correctly after 'preset-all' """
         testname = self.testname()
