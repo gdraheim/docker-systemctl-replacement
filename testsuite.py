@@ -7222,6 +7222,227 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         drop_image_container = "docker rmi {images}:{testname}"
         sx____(drop_image_container.format(**locals()))
         self.rm_testdir()
+    def test_6200_systemctl_py_switch_users_is_possible(self):
+        """ check that we can put setuid/setgid definitions in a service
+            specfile which also works on the pid file itself """
+        testname = self.testname()
+        testdir = self.testdir()
+        images = IMAGES
+        image = self.local_image(CENTOS)
+        package = "yum"
+        if greps(open("/etc/issue"), "openSUSE"):
+           image = self.local_image(OPENSUSE)
+           package = "zypper"
+        systemctl_py = os.path.realpath(_systemctl_py)
+        systemctl_sh = os_path(testdir, "systemctl.sh")
+        systemctl_py_run = systemctl_py.replace("/","_")[1:]
+        cov_run = _cov_run
+        shell_file(systemctl_sh,"""
+            #! /bin/sh
+            exec {cov_run} /{systemctl_py_run} "$@" -vv
+            """.format(**locals()))
+        text_file(os_path(testdir, "zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            Type=simple
+            User=user1
+            ExecStart=testsleep 40
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(testdir, "zzc.service"),"""
+            [Unit]
+            Description=Testing C
+            [Service]
+            Type=simple
+            User=user1
+            Group=group2
+            ExecStart=testsleep 50
+            [Install]
+            WantedBy=multi-user.target""")
+        #
+        stop_container = "docker rm --force {testname}"
+        sx____(stop_container.format(**locals()))
+        start_container = "docker run --detach --name={testname} {image} sleep 50"
+        sh____(start_container.format(**locals()))
+        install_systemctl = "docker cp {systemctl_py} {testname}:/{systemctl_py_run}"
+        sh____(install_systemctl.format(**locals()))
+        install_systemctl = "docker cp {systemctl_sh} {testname}:/usr/bin/systemctl"
+        sh____(install_systemctl.format(**locals()))
+        install_testsleep = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
+        sh____(install_testsleep.format(**locals()))
+        install_coverage = "docker exec {testname} {package} install -y python-coverage"
+        sh____(install_coverage.format(**locals()))
+        version_systemctl = "docker exec {testname} systemctl --version"
+        sh____(version_systemctl.format(**locals()))
+        #
+        create_group = "docker exec {testname} groupadd group2"
+        sh____(create_group.format(**locals()))
+        create_user = "docker exec {testname} useradd user1 -g group2"
+        sh____(create_user.format(**locals()))
+        install_service = "docker cp {testdir}/zzb.service {testname}:/etc/systemd/system/zzb.service"
+        sh____(install_service.format(**locals()))
+        install_service = "docker cp {testdir}/zzc.service {testname}:/etc/systemd/system/zzc.service"
+        sh____(install_service.format(**locals()))
+        start_service = "docker exec {testname} systemctl start zzb.service -v"
+        sh____(start_service.format(**locals()))
+        start_service = "docker exec {testname} systemctl start zzc.service -v"
+        sh____(start_service.format(**locals()))
+        #
+        # first of all, it starts commands like the service specs without user/group
+        top_container = "docker exec {testname} ps -eo pid,ppid,args"
+        top = output(top_container.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, "testsleep 40"))
+        self.assertTrue(greps(top, "testsleep 50"))
+        # but really it has some user/group changed
+        top_container = "docker exec {testname} ps -eo user,group,args"
+        top = output(top_container.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, "user1 .*root .*testsleep 40"))
+        self.assertTrue(greps(top, "user1 .*group2 .*testsleep 50"))
+        # and the pid file has changed as well
+        check_pid_file = "docker exec {testname} ls -l /var/run/zzb.service.pid"
+        out = output(check_pid_file.format(**locals()))
+        self.assertTrue(greps(out, "user1 .*root .*zzb.service.pid"))
+        check_pid_file = "docker exec {testname} ls -l /var/run/zzc.service.pid"
+        out = output(check_pid_file.format(**locals()))
+        self.assertTrue(greps(out, "user1 .*group2 .*zzc.service.pid"))
+        #
+        if COVERAGE:
+            coverage_file = ".coverage." + testname
+            grab_coverage = "docker cp {testname}x:.coverage {coverage_file}"
+            sh____(grab_coverage.format(**locals()))
+            okay_coverage = "sed -i -e 's:/{systemctl_py_run}:{systemctl_py}:' {coverage_file}"
+            sh____(okay_coverage.format(**locals()))
+        #
+        drop_container = "docker rm --force {testname}"
+        sx____(drop_container.format(**locals()))
+        drop_image_container = "docker rmi {images}:{testname}"
+        sx____(drop_image_container.format(**locals()))
+        self.rm_testdir()
+    def test_6201_systemctl_py_switch_users_is_possible_from_saved_container(self):
+        """ check that we can put setuid/setgid definitions in a service
+            specfile which also works on the pid file itself """
+        testname = self.testname()
+        testdir = self.testdir()
+        images = IMAGES
+        image = self.local_image(CENTOS)
+        package = "yum"
+        if greps(open("/etc/issue"), "openSUSE"):
+           image = self.local_image(OPENSUSE)
+           package = "zypper"
+        systemctl_py = os.path.realpath(_systemctl_py)
+        systemctl_sh = os_path(testdir, "systemctl.sh")
+        systemctl_py_run = systemctl_py.replace("/","_")[1:]
+        cov_run = _cov_run
+        shell_file(systemctl_sh,"""
+            #! /bin/sh
+            exec {cov_run} /{systemctl_py_run} "$@" -vv
+            """.format(**locals()))
+        text_file(os_path(testdir, "zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            Type=simple
+            User=user1
+            ExecStart=testsleep 40
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(testdir, "zzc.service"),"""
+            [Unit]
+            Description=Testing C
+            [Service]
+            Type=simple
+            User=user1
+            Group=group2
+            ExecStart=testsleep 50
+            [Install]
+            WantedBy=multi-user.target""")
+        #
+        stop_container = "docker rm --force {testname}"
+        sx____(stop_container.format(**locals()))
+        start_container = "docker run --detach --name={testname} {image} sleep 50"
+        sh____(start_container.format(**locals()))
+        install_systemctl = "docker cp {systemctl_py} {testname}:/{systemctl_py_run}"
+        sh____(install_systemctl.format(**locals()))
+        install_systemctl = "docker cp {systemctl_sh} {testname}:/usr/bin/systemctl"
+        sh____(install_systemctl.format(**locals()))
+        install_testsleep = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
+        sh____(install_testsleep.format(**locals()))
+        install_coverage = "docker exec {testname} {package} install -y python-coverage"
+        sh____(install_coverage.format(**locals()))
+        version_systemctl = "docker exec {testname} systemctl --version"
+        sh____(version_systemctl.format(**locals()))
+        #
+        create_group = "docker exec {testname} groupadd group2"
+        sh____(create_group.format(**locals()))
+        create_user = "docker exec {testname} useradd user1 -g group2"
+        sh____(create_user.format(**locals()))
+        install_service = "docker cp {testdir}/zzb.service {testname}:/etc/systemd/system/zzb.service"
+        sh____(install_service.format(**locals()))
+        install_service = "docker cp {testdir}/zzc.service {testname}:/etc/systemd/system/zzc.service"
+        sh____(install_service.format(**locals()))
+        enable_service = "docker exec {testname} systemctl enable zzb.service"
+        sh____(enable_service.format(**locals()))
+        enable_service = "docker exec {testname} systemctl enable zzc.service"
+        sh____(enable_service.format(**locals()))
+        list_units_systemctl = "docker exec {testname} systemctl default-services -v"
+        # sh____(list_units_systemctl.format(**locals()))
+        out2 = output(list_units_systemctl.format(**locals()))
+        logg.info("\n>\n%s", out2)
+        # .........................................vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+        commit_container = "docker commit -c 'CMD [\"/usr/bin/systemctl\"]'  {testname} {images}:{testname}"
+        sh____(commit_container.format(**locals()))
+        stop_container2 = "docker rm --force {testname}x"
+        sx____(stop_container2.format(**locals()))
+        start_container2 = "docker run --detach --name {testname}x {images}:{testname}"
+        sh____(start_container2.format(**locals()))
+        time.sleep(3)
+        #
+        # first of all, it starts commands like the service specs without user/group
+        top_container2 = "docker exec {testname}x ps -eo pid,ppid,args"
+        top = output(top_container2.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, "testsleep 40"))
+        self.assertTrue(greps(top, "testsleep 50"))
+        # but really it has some user/group changed
+        top_container2 = "docker exec {testname}x ps -eo user,group,args"
+        top = output(top_container2.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, "user1 .*root .*testsleep 40"))
+        self.assertTrue(greps(top, "user1 .*group2 .*testsleep 50"))
+        # and the pid file has changed as well
+        check_pid_file = "docker exec {testname}x ls -l /var/run/zzb.service.pid"
+        out = output(check_pid_file.format(**locals()))
+        self.assertTrue(greps(out, "user1 .*root .*zzb.service.pid"))
+        check_pid_file = "docker exec {testname}x ls -l /var/run/zzc.service.pid"
+        out = output(check_pid_file.format(**locals()))
+        self.assertTrue(greps(out, "user1 .*group2 .*zzc.service.pid"))
+        #
+        list_units_systemctl = "docker stop {testname}x" # <<<
+        # sh____(list_units_systemctl.format(**locals()))
+        out3 = output(list_units_systemctl.format(**locals()))
+        logg.info("\n>\n%s", out3)
+        #
+        top_container = "docker exec {testname} ps -eo pid,ppid,args"
+        top = output(top_container.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, "testsleep 40"))
+        self.assertFalse(greps(top, "testsleep 50"))
+        #
+        if COVERAGE:
+            coverage_file = ".coverage." + testname
+            grab_coverage = "docker cp {testname}x:.coverage {coverage_file}"
+            sh____(grab_coverage.format(**locals()))
+            okay_coverage = "sed -i -e 's:/{systemctl_py_run}:{systemctl_py}:' {coverage_file}"
+            sh____(okay_coverage.format(**locals()))
+        #
+        sx____(stop_container.format(**locals()))
+        sx____(stop_container2.format(**locals()))
+        drop_image_container = "docker rmi {images}:{testname}"
+        sx____(drop_image_container.format(**locals()))
+        self.rm_testdir()
     def test_6600_systemctl_py_can_reap_zombies_in_a_container(self):
         """ check that we can reap zombies in a container managed by systemctl.py"""
         testname = self.testname()
