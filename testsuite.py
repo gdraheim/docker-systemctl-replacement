@@ -1482,6 +1482,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(lines(out)), 1)
         self.assertEqual(end, 0)
         #
+        cmd = "{systemctl} default-services"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        self.assertEqual(len(lines(out)), 1)
+        self.assertEqual(end, 0)
+        #
         cmd = "{systemctl} --no-legend disable zzz.service"
         out, end = output2(cmd.format(**locals()))
         logg.info("\n> %s\n%s\n**%s", cmd, out, end)
@@ -1493,6 +1499,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, r"^disabled"))
         self.assertEqual(len(lines(out)), 1)
         self.assertEqual(end, 1)
+        #
+        cmd = "{systemctl} default-services"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        self.assertEqual(len(lines(out)), 0)
+        self.assertEqual(end, 0)
         #
         self.rm_testdir()
         self.coverage()
