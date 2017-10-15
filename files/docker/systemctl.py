@@ -46,6 +46,7 @@ _no_legend = False
 _no_block = False
 _no_wall = False
 _no_ask_password = False
+_preset_mode = "all"
 
 MinimumSleep = 2
 MinimumWaitProcFile = 10
@@ -2328,11 +2329,13 @@ class Systemctl:
         for unit in units:
             status = self.get_preset_of_unit(unit)
             if status and status.startswith("enable"):
+                if _preset_mode == "disable": continue
                 logg.info("preset enable %s", unit)
                 if not self.enable_unit(unit):
                     logg.warning("failed to enable %s", unit)
                     done = False
             if status and status.startswith("disable"):
+                if _preset_mode == "enable": continue
                 logg.info("preset disable %s", unit)
                 if not self.disable_unit(unit):
                     logg.warning("failed to disable %s", unit)
@@ -3130,6 +3133,8 @@ if __name__ == "__main__":
     #     help="Enable unit files only temporarily until next reboot*")
     _o.add_option("--force", action="store_true", default=_force,
         help="When enabling unit files, override existing symblinks / When shutting down, execute action immediately")
+    _o.add_option("--preset-mode", metavar="TYPE", default=_preset_mode,
+        help="Apply only enable, only disable, or all presets [%default]")
     _o.add_option("--root", metavar="PATH", default=_root,
         help="Enable unit files in the specified root directory*")
     _o.add_option("-n","--lines", metavar="NUM",
@@ -3165,6 +3170,7 @@ if __name__ == "__main__":
     _no_block = opt.no_block
     _no_wall = opt.no_wall
     _no_ask_password = opt.no_ask_password
+    _preset_mode = opt.preset_mode
     #
     _systemctl_debug_log = _root + "/var/log/systemctl.debug.log"
     _systemctl_extra_log = _root + "/var/log/systemctl.log"
