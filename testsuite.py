@@ -7595,8 +7595,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(drop_container.format(**locals()))
         # CHECK
         systemctl_log = open(testdir+"/systemctl.log").read()
-        self.assertEqual(len(greps(systemctl_log, " ERROR ")), 1)
-        self.assertTrue(greps(systemctl_log, "ERROR chdir .* '/home/elasticsearch': .* No such file or directory"))
+        self.assertEqual(len(greps(systemctl_log, " ERROR ")), 0)
         self.assertTrue(greps(systemctl_log, "simple start done PID"))
         self.assertTrue(greps(systemctl_log, "stop kill PID .*elasticsearch.service"))
         self.assertTrue(greps(systemctl_log, "stopped PID .* EXIT 143"))
