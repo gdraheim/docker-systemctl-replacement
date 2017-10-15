@@ -314,7 +314,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(out, "--verbose"))
         self.assertTrue(greps(out, "reload-or-try-restart"))
         self.coverage()
-    def test_1004_systemctl_daemon_reload(self):
+    def test_1010_systemctl_daemon_reload(self):
         """ daemon-reload always succeeds (does nothing) """
         systemctl = _cov + _systemctl_py
         cmd = "{systemctl} daemon-reload"
@@ -323,7 +323,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(lines(out), [])
         self.assertEqual(end, 0)
         self.coverage()
-    def test_1005_systemctl_daemon_reload_root_ignored(self):
+    def test_1011_systemctl_daemon_reload_root_ignored(self):
         """ daemon-reload always succeeds (does nothing) """
         testdir = self.testdir()
         root = self.root(testdir)
@@ -339,62 +339,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n> %s\n%s\n**%s", cmd, out, end)
         self.assertEqual(lines(out), [])
         self.assertEqual(end, 0)
-        self.rm_testdir()
-        self.coverage()
-    def test_1010_systemctl_force_ipv4(self):
-        """ we can force --ipv4 for /etc/hosts """
-        testdir = self.testdir()
-        root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
-        text_file(os_path(root, "/etc/hosts"),"""
-            127.0.0.1 localhost localhost4
-            ::1 localhost localhost6""")
-        hosts = open(os_path(root, "/etc/hosts")).read()
-        self.assertEqual(len(lines(hosts)), 2)
-        self.assertTrue(greps(hosts, "127.0.0.1.*localhost4"))
-        self.assertTrue(greps(hosts, "::1.*localhost6"))
-        self.assertTrue(greps(hosts, "127.0.0.1.*localhost "))
-        self.assertTrue(greps(hosts, "::1.*localhost "))
-        #
-        cmd = "{systemctl} --ipv4 daemon-reload"
-        out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
-        self.assertEqual(lines(out), [])
-        self.assertEqual(end, 0)
-        hosts = open(os_path(root, "/etc/hosts")).read()
-        self.assertEqual(len(lines(hosts)), 2)
-        self.assertTrue(greps(hosts, "127.0.0.1.*localhost4"))
-        self.assertTrue(greps(hosts, "::1.*localhost6"))
-        self.assertTrue(greps(hosts, "127.0.0.1.*localhost "))
-        self.assertFalse(greps(hosts, "::1.*localhost "))
-        self.rm_testdir()
-        self.coverage()
-    def test_1011_systemctl_force_ipv6(self):
-        """ we can force --ipv6 for /etc/hosts """
-        testdir = self.testdir()
-        root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
-        text_file(os_path(root, "/etc/hosts"),"""
-            127.0.0.1 localhost localhost4
-            ::1 localhost localhost6""")
-        hosts = open(os_path(root, "/etc/hosts")).read()
-        self.assertEqual(len(lines(hosts)), 2)
-        self.assertTrue(greps(hosts, "127.0.0.1.*localhost4"))
-        self.assertTrue(greps(hosts, "::1.*localhost6"))
-        self.assertTrue(greps(hosts, "127.0.0.1.*localhost "))
-        self.assertTrue(greps(hosts, "::1.*localhost "))
-        #
-        cmd = "{systemctl} --ipv6 daemon-reload"
-        out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
-        self.assertEqual(lines(out), [])
-        self.assertEqual(end, 0)
-        hosts = open(os_path(root, "/etc/hosts")).read()
-        self.assertEqual(len(lines(hosts)), 2)
-        self.assertTrue(greps(hosts, "127.0.0.1.*localhost4"))
-        self.assertTrue(greps(hosts, "::1.*localhost6"))
-        self.assertFalse(greps(hosts, "127.0.0.1.*localhost "))
-        self.assertTrue(greps(hosts, "::1.*localhost "))
         self.rm_testdir()
         self.coverage()
     def test_1020_systemctl_with_systemctl_log(self):
@@ -423,6 +367,62 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         self.assertEqual(len(greps(open(logfile), " INFO ")), 2)
         self.assertEqual(len(greps(open(logfile), " DEBUG ")), 3)
+        self.rm_testdir()
+        self.coverage()
+    def test_1030_systemctl_force_ipv4(self):
+        """ we can force --ipv4 for /etc/hosts """
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/hosts"),"""
+            127.0.0.1 localhost localhost4
+            ::1 localhost localhost6""")
+        hosts = open(os_path(root, "/etc/hosts")).read()
+        self.assertEqual(len(lines(hosts)), 2)
+        self.assertTrue(greps(hosts, "127.0.0.1.*localhost4"))
+        self.assertTrue(greps(hosts, "::1.*localhost6"))
+        self.assertTrue(greps(hosts, "127.0.0.1.*localhost "))
+        self.assertTrue(greps(hosts, "::1.*localhost "))
+        #
+        cmd = "{systemctl} --ipv4 daemon-reload"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        self.assertEqual(lines(out), [])
+        self.assertEqual(end, 0)
+        hosts = open(os_path(root, "/etc/hosts")).read()
+        self.assertEqual(len(lines(hosts)), 2)
+        self.assertTrue(greps(hosts, "127.0.0.1.*localhost4"))
+        self.assertTrue(greps(hosts, "::1.*localhost6"))
+        self.assertTrue(greps(hosts, "127.0.0.1.*localhost "))
+        self.assertFalse(greps(hosts, "::1.*localhost "))
+        self.rm_testdir()
+        self.coverage()
+    def test_1031_systemctl_force_ipv6(self):
+        """ we can force --ipv6 for /etc/hosts """
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/hosts"),"""
+            127.0.0.1 localhost localhost4
+            ::1 localhost localhost6""")
+        hosts = open(os_path(root, "/etc/hosts")).read()
+        self.assertEqual(len(lines(hosts)), 2)
+        self.assertTrue(greps(hosts, "127.0.0.1.*localhost4"))
+        self.assertTrue(greps(hosts, "::1.*localhost6"))
+        self.assertTrue(greps(hosts, "127.0.0.1.*localhost "))
+        self.assertTrue(greps(hosts, "::1.*localhost "))
+        #
+        cmd = "{systemctl} --ipv6 daemon-reload"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        self.assertEqual(lines(out), [])
+        self.assertEqual(end, 0)
+        hosts = open(os_path(root, "/etc/hosts")).read()
+        self.assertEqual(len(lines(hosts)), 2)
+        self.assertTrue(greps(hosts, "127.0.0.1.*localhost4"))
+        self.assertTrue(greps(hosts, "::1.*localhost6"))
+        self.assertFalse(greps(hosts, "127.0.0.1.*localhost "))
+        self.assertTrue(greps(hosts, "::1.*localhost "))
         self.rm_testdir()
         self.coverage()
     def test_1050_can_create_a_test_service(self):
