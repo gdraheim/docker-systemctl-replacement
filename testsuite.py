@@ -374,7 +374,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(logfile,"")
         #
         cmd = "{systemctl} daemon-reload"
-        sh____(cmd.format(**locals()))
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         self.assertEqual(len(greps(open(logfile), " INFO ")), 2)
         self.assertEqual(len(greps(open(logfile), " DEBUG ")), 0)
         self.rm_testdir()
@@ -388,7 +390,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(logfile,"")
         #
         cmd = "{systemctl} daemon-reload"
-        sh____(cmd.format(**locals()))
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         self.assertEqual(len(greps(open(logfile), " INFO ")), 2)
         self.assertEqual(len(greps(open(logfile), " DEBUG ")), 3)
         self.rm_testdir()
@@ -2261,10 +2265,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         #
-        enable_service = "{systemctl} enable zzz.service"
-        sh____(enable_service.format(**locals()))
-        version_systemctl = "{systemctl} --version"
-        sh____(version_systemctl.format(**locals()))
+        cmd = "{systemctl} enable zzz.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        cmd = "{systemctl} --version"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         cmd = "{systemctl} default-services -vv"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
@@ -2272,15 +2280,19 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "zzz.service"))
         self.assertEqual(len(lines(out)), 1)
         #
-        start_service = "{systemctl} start zzz.service -vv"
-        sh____(start_service.format(**locals()))
+        cmd = "{systemctl} start zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         #
-        stop_service = "{systemctl} stop zzz.service -vv"
-        sh____(stop_service.format(**locals()))
+        cmd = "{systemctl} stop zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
@@ -2309,10 +2321,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         #
-        enable_service = "{systemctl} enable zzz.service"
-        sh____(enable_service.format(**locals()))
-        version_systemctl = "{systemctl} --version"
-        sh____(version_systemctl.format(**locals()))
+        cmd = "{systemctl} enable zzz.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        cmd = "{systemctl} --version"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         cmd = "{systemctl} default-services -vv"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
@@ -2320,15 +2336,19 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "zzz.service"))
         self.assertEqual(len(lines(out)), 1)
         #
-        start_service = "{systemctl} start zzz.service -vv"
-        sh____(start_service.format(**locals()))
+        cmd = "{systemctl} start zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         #
-        stop_service = "{systemctl} stop zzz.service -vv"
-        sh____(stop_service.format(**locals()))
+        cmd = "{systemctl} stop zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
@@ -2376,10 +2396,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/usr/bin/zzz.init"))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         #
-        enable_service = "{systemctl} enable zzz.service"
-        sh____(enable_service.format(**locals()))
-        version_systemctl = "{systemctl} --version"
-        sh____(version_systemctl.format(**locals()))
+        cmd = "{systemctl} enable zzz.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        cmd = "{systemctl} --version"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         cmd = "{systemctl} default-services -vv"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
@@ -2387,15 +2411,19 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "zzz.service"))
         self.assertEqual(len(lines(out)), 1)
         #
-        start_service = "{systemctl} start zzz.service -vv"
-        sh____(start_service.format(**locals()))
+        cmd = "{systemctl} start zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         #
-        stop_service = "{systemctl} stop zzz.service -vv"
-        sh____(stop_service.format(**locals()))
+        cmd = "{systemctl} stop zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
@@ -2441,10 +2469,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/usr/bin/zzz.init"))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         #
-        enable_service = "{systemctl} enable zzz.service"
-        sh____(enable_service.format(**locals()))
-        version_systemctl = "{systemctl} --version"
-        sh____(version_systemctl.format(**locals()))
+        cmd = "{systemctl} enable zzz.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        cmd = "{systemctl} --version"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         cmd = "{systemctl} default-services -vv"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
@@ -2452,15 +2484,19 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "zzz.service"))
         self.assertEqual(len(lines(out)), 1)
         #
-        start_service = "{systemctl} start zzz.service -vv"
-        sh____(start_service.format(**locals()))
+        cmd = "{systemctl} start zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         #
-        stop_service = "{systemctl} stop zzz.service -vv"
-        sh____(stop_service.format(**locals()))
+        cmd = "{systemctl} stop zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
@@ -2503,12 +2539,18 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
         copy_file(os_path(testdir, "zzc.service"), os_path(root, "/etc/systemd/system/zzc.service"))
         #
-        enable_service = "{systemctl} enable zzb.service"
-        sh____(enable_service.format(**locals()))
-        enable_service = "{systemctl} enable zzc.service"
-        sh____(enable_service.format(**locals()))
-        version_systemctl = "{systemctl} --version"
-        sh____(version_systemctl.format(**locals()))
+        cmd = "{systemctl} enable zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        cmd = "{systemctl} enable zzc.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        cmd = "{systemctl} --version"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         cmd = "{systemctl} default-services -vv"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
@@ -2516,16 +2558,20 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "zzb.service"))
         self.assertEqual(len(lines(out)), 2)
         #
-        start_services = "{systemctl} default -vv"
-        sh____(start_services.format(**locals()))
+        cmd = "{systemctl} default -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep+" 40"))
         self.assertTrue(greps(top, testsleep+" 50"))
         #
-        stop_services = "{systemctl} halt -vv"
-        sh____(stop_services.format(**locals()))
+        cmd = "{systemctl} halt -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)        
         self.assertFalse(greps(top, testsleep))
@@ -2586,8 +2632,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertNotEqual(exitC, 0)
         self.assertNotEqual(exitD, 0)
         #
-        start_service_B = "{systemctl} start zzb.service -vv"
-        sh____(start_service_B.format(**locals()))
+        cmd = "{systemctl} start zzb.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         #
         is_active_A = "{systemctl} is-active zza.service"
         is_active_B = "{systemctl} is-active zzb.service"
@@ -2628,15 +2676,19 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep+" 40"))
         #
-        start_service_C = "{systemctl} start zzc.service -vv"
-        sh____(start_service_C.format(**locals()))
+        cmd = "{systemctl} start zzc.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         #
         actBC, exitBC  = output2(is_active_BC.format(**locals()))
         self.assertEqual(actBC.split("\n"), ["active", "active", ""])
         self.assertEqual(exitBC, 0)         ## all is-active => return 0
         #
-        start_service_C = "{systemctl} stop zzb.service zzc.service -vv"
-        sh____(start_service_C.format(**locals()))
+        cmd = "{systemctl} stop zzb.service zzc.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         #
         actBC, exitBC  = output2(is_active_BC.format(**locals()))
         self.assertEqual(actBC.split("\n"), ["inactive", "inactive", ""])
@@ -2698,8 +2750,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertNotEqual(exitC, 0)
         self.assertNotEqual(exitD, 0)
         #
-        start_service_B = "{systemctl} start zzb.service -vv"
-        sh____(start_service_B.format(**locals()))
+        cmd = "{systemctl} start zzb.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         #
         is_active_A = "{systemctl} is-failed zza.service"
         is_active_B = "{systemctl} is-failed zzb.service"
@@ -2740,8 +2794,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep+" 40"))
         #
-        start_service_C = "{systemctl} start zzc.service -vv"
-        sh____(start_service_C.format(**locals()))
+        cmd = "{systemctl} start zzc.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         #
         actBC, exitBC  = output2(is_active_BC.format(**locals()))
         self.assertEqual(actBC.split("\n"), ["active", "active", ""])
@@ -2754,8 +2810,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(actBC.split("\n"), ["failed", "failed", ""])
         self.assertEqual(exitBC, 0)         ## all is-failed => return 0
         #
-        start_service_C = "{systemctl} stop zzb.service zzc.service -vv"
-        sh____(start_service_C.format(**locals()))
+        cmd = "{systemctl} stop zzb.service zzc.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         #
         actBC, exitBC  = output2(is_active_BC.format(**locals()))
         self.assertEqual(actBC.split("\n"), ["inactive", "inactive", ""])
@@ -2911,8 +2969,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, r"^DEF1=def1"))
         self.assertTrue(greps(out, r"^DEF2=def2 def3"))
         #
-        start_service = "{systemctl} start b.service -vv"
-        sh____(start_service.format(**locals()))
+        cmd = "{systemctl} start b.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         log = lines(open(logfile))
         logg.info("LOG \n%s", log)
         A="'A' 'def1' 'def2' 'def3' ''"   # A $DEF1 $DEF2
@@ -2960,8 +3020,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             echo "'$1' '$2' '$3' '$4' '$5'" >> "$logfile"
             """.format(**locals()))
         #
-        start_service = "{systemctl} start 'b c.service' -vv"
-        sh____(start_service.format(**locals()))
+        cmd = "{systemctl} start 'b c.service' -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         log = lines(open(logfile))
         logg.info("LOG \n%s", log)
         A="'A' 'b' 'c.service' '' ''"  # A %%N
@@ -3055,8 +3117,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(data, "UnitFileState=disabled"))
         self.assertEqual(end, 0)
         #
-        enable_service = "{systemctl} enable zzs.service -vv"
-        sh____(enable_service.format(**locals()))
+        cmd = "{systemctl} enable zzs.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         #
         cmd = "{systemctl} show zzs.service -vv"
         out, end = output2(cmd.format(**locals()))
@@ -3072,8 +3136,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(data, "UnitFileState=enabled")) # <<<
         self.assertEqual(end, 0)
         #
-        start_service = "{systemctl} start zzs.service -vv"
-        sh____(start_service.format(**locals()))
+        cmd = "{systemctl} start zzs.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         #
         cmd = "{systemctl} show zzs.service -vv"
         out, end = output2(cmd.format(**locals()))
@@ -3126,8 +3192,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(data), 1)
         self.assertEqual(end, 0)
         #
-        start_service = "{systemctl} start zzs.service -vv"
-        sh____(start_service.format(**locals()))
+        cmd = "{systemctl} start zzs.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         #
         cmd = "{systemctl} show zzs.service -vv -p ActiveState"
         out, end = output2(cmd.format(**locals()))
@@ -3185,11 +3253,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(data, "disabled[)]"))
         self.assertNotEqual(end, 0)
         #
-        enable_service = "{systemctl} enable zzs.service -vv"
-        sh____(enable_service.format(**locals()))
+        cmd = "{systemctl} enable zzs.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         #
-        start_service = "{systemctl} start zzs.service -vv"
-        sh____(start_service.format(**locals()))
+        cmd = "{systemctl} start zzs.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         #
         cmd = "{systemctl} status zzs.service -vv"
         out, end = output2(cmd.format(**locals()))
@@ -3238,8 +3310,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         copy_tool(os_path(testdir, "zzz.sh"), os_path(root, "/usr/bin/zzz.sh"))
         #
-        start_service = "{systemctl} start zzz.service -vv"
-        sh____(start_service.format(**locals()))
+        cmd = "{systemctl} start zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -3249,8 +3323,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("LOG %s\n| %s", logfile, "\n| ".join(log))
         self.assertIn(root, log) # <<<<<<<<<< CHECK
         #
-        stop_service = "{systemctl} stop zzz.service -vv"
-        sh____(stop_service.format(**locals()))
+        cmd = "{systemctl} stop zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
@@ -3292,8 +3368,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_tool(os_path(testdir, "zzz.sh"), os_path(root, "/usr/bin/zzz.sh"))
         os.makedirs(os_path(root, workingdir))
         #
-        start_service = "{systemctl} start zzz.service -vv"
-        sh____(start_service.format(**locals()))
+        cmd = "{systemctl} start zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -3303,8 +3381,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("LOG %s\n| %s", logfile, "\n| ".join(log))
         self.assertIn(os_path(root,workingdir), log) # <<<<<<<<<< CHECK
         #
-        stop_service = "{systemctl} stop zzz.service -vv"
-        sh____(stop_service.format(**locals()))
+        cmd = "{systemctl} stop zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
@@ -3346,8 +3426,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_tool(os_path(testdir, "zzz.sh"), os_path(root, "/usr/bin/zzz.sh"))
         # os.makedirs(os_path(root, workingdir)) <<<
         #
-        start_service = "{systemctl} start zzz.service -vv"
-        sh____(start_service.format(**locals()))
+        cmd = "{systemctl} start zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -3358,8 +3440,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertNotIn(os_path(root,workingdir), log) # <<<<<<<<<< CHECK
         self.assertIn(root, log)
         #
-        stop_service = "{systemctl} stop zzz.service -vv"
-        sh____(stop_service.format(**locals()))
+        cmd = "{systemctl} stop zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
@@ -3401,8 +3485,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_tool(os_path(testdir, "zzz.sh"), os_path(root, "/usr/bin/zzz.sh"))
         # os.makedirs(os_path(root, workingdir)) <<<
         #
-        start_service = "{systemctl} start zzz.service -vv"
-        sh____(start_service.format(**locals()))
+        cmd = "{systemctl} start zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -3413,8 +3499,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertNotIn(os_path(root,workingdir), log) # <<<<<<<<<< CHECK
         self.assertIn(root, log)
         #
-        stop_service = "{systemctl} stop zzz.service -vv"
-        sh____(stop_service.format(**locals()))
+        cmd = "{systemctl} stop zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
@@ -3489,8 +3577,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(out.strip(), "inactive")
         #
         logg.info("== 'start' shall start a service that is NOT is-active ")
-        start_service = "{systemctl} start zzz.service -vv"
-        sh____(start_service.format(**locals()))
+        cmd = "{systemctl} start zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -3502,8 +3592,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(out.strip(), "active")
         #
         logg.info("== 'stop' shall stop a service that is-active")
-        stop_service = "{systemctl} stop zzz.service -vv"
-        sh____(stop_service.format(**locals()))
+        cmd = "{systemctl} stop zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
@@ -3524,8 +3616,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         os.remove(logfile)
         #
         logg.info("== 'restart' shall start a service that NOT is-active")        
-        restart_service = "{systemctl} restart zzz.service -vv"
-        sh____(restart_service.format(**locals()))
+        cmd = "{systemctl} restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -3548,8 +3642,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         os.remove(logfile)
         #
         logg.info("== 'restart' shall restart a service that is-active")        
-        restart_service = "{systemctl} restart zzz.service -vv"
-        sh____(restart_service.format(**locals()))
+        cmd = "{systemctl} restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -3588,8 +3684,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         #
         logg.info("== 'reload' will NOT restart a service that is-active")        
-        restart_service = "{systemctl} reload zzz.service -vv"
-        sh____(restart_service.format(**locals()))
+        cmd = "{systemctl} reload zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -3619,8 +3717,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         os.remove(logfile)
         #
         logg.info("== 'reload-or-restart' will restart a service that is-active (if ExecReload)")        
-        restart_service = "{systemctl} reload-or-restart zzz.service -vv"
-        sh____(restart_service.format(**locals()))
+        cmd = "{systemctl} reload-or-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -3640,8 +3740,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(ps3[0], ps4[0])
         #
         logg.info("== 'kill' will bring is-active non-active as well (when the PID is known)")        
-        restart_service = "{systemctl} kill zzz.service -vv"
-        sh____(restart_service.format(**locals()))
+        cmd = "{systemctl} kill zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -3653,8 +3755,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(out.strip(), "failed")
         #
         logg.info("== 'stop' will turn 'failed' to 'inactive' (when the PID is known)")        
-        restart_service = "{systemctl} stop zzz.service -vv"
-        sh____(restart_service.format(**locals()))
+        cmd = "{systemctl} stop zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         cmd = "{systemctl} is-active zzz.service -vv"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s", cmd, end, out)
@@ -3662,8 +3766,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(out.strip(), "inactive")
         #
         logg.info("== 'reload-or-try-restart' will not start a not-active service")        
-        restart_service = "{systemctl} reload-or-try-restart zzz.service -vv"
-        sh____(restart_service.format(**locals()))
+        cmd = "{systemctl} reload-or-try-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -3675,8 +3781,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(out.strip(), "inactive")
         #
         logg.info("== 'try-restart' will not start a not-active service")        
-        restart_service = "{systemctl} try-restart zzz.service -vv"
-        sh____(restart_service.format(**locals()))
+        cmd = "{systemctl} try-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -3688,8 +3796,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(out.strip(), "inactive")
         #
         logg.info("== 'reload-or-restart' will start a not-active service")        
-        restart_service = "{systemctl} reload-or-restart zzz.service -vv"
-        sh____(restart_service.format(**locals()))
+        cmd = "{systemctl} reload-or-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -3702,8 +3812,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top5 = top
         #
         logg.info("== 'reload-or-try-restart' will NOT restart an is-active service (with ExecReload)")        
-        restart_service = "{systemctl} reload-or-try-restart zzz.service -vv"
-        sh____(restart_service.format(**locals()))
+        cmd = "{systemctl} reload-or-try-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -3724,8 +3836,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(ps5[0], ps6[0])
         #
         logg.info("== 'try-restart' will restart an is-active service")        
-        restart_service = "{systemctl} try-restart zzz.service -vv"
-        sh____(restart_service.format(**locals()))
+        cmd = "{systemctl} try-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -3822,8 +3936,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(out.strip(), "inactive")
         #
         logg.info("== 'start' shall start a service that is NOT is-active ")
-        start_service = "{systemctl} start zzz.service -vv"
-        sh____(start_service.format(**locals()))
+        cmd = "{systemctl} start zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -3835,8 +3951,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(out.strip(), "active")
         #
         logg.info("== 'stop' shall stop a service that is-active")
-        stop_service = "{systemctl} stop zzz.service -vv"
-        sh____(stop_service.format(**locals()))
+        cmd = "{systemctl} stop zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
@@ -3847,8 +3965,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(out.strip(), "inactive")
         #
         logg.info("== 'restart' shall start a service that NOT is-active")        
-        restart_service = "{systemctl} restart zzz.service -vv"
-        sh____(restart_service.format(**locals()))
+        cmd = "{systemctl} restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -3861,8 +3981,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top1= top
         #
         logg.info("== 'restart' shall restart a service that is-active")        
-        restart_service = "{systemctl} restart zzz.service -vv"
-        sh____(restart_service.format(**locals()))
+        cmd = "{systemctl} restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -3892,8 +4014,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertNotEqual(ps1[0], ps2[0])
         #
         logg.info("== 'reload' will NOT restart a service that is-active")        
-        restart_service = "{systemctl} reload zzz.service -vv"
-        sh____(restart_service.format(**locals()))
+        cmd = "{systemctl} reload zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -3913,8 +4037,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(ps2[0], ps3[0])
         #
         logg.info("== 'reload-or-restart' will restart a service that is-active (if no ExecReload)")        
-        restart_service = "{systemctl} reload-or-restart zzz.service -vv"
-        sh____(restart_service.format(**locals()))
+        cmd = "{systemctl} reload-or-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -3934,8 +4060,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertNotEqual(ps3[0], ps4[0])
         #
         logg.info("== 'kill' will bring is-active non-active as well (when the PID is known)")        
-        restart_service = "{systemctl} kill zzz.service -vv"
-        sh____(restart_service.format(**locals()))
+        cmd = "{systemctl} kill zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -3947,8 +4075,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(out.strip(), "failed")
         #
         logg.info("== 'stop' will turn 'failed' to 'inactive' (when the PID is known)")        
-        restart_service = "{systemctl} stop zzz.service -vv"
-        sh____(restart_service.format(**locals()))
+        cmd = "{systemctl} stop zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         cmd = "{systemctl} is-active zzz.service -vv"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s", cmd, end, out)
@@ -3956,8 +4086,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(out.strip(), "inactive")
         #
         logg.info("== 'reload-or-try-restart' will not start a not-active service")        
-        restart_service = "{systemctl} reload-or-try-restart zzz.service -vv"
-        sh____(restart_service.format(**locals()))
+        cmd = "{systemctl} reload-or-try-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -3969,8 +4101,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(out.strip(), "inactive")
         #
         logg.info("== 'try-restart' will not start a not-active service")        
-        restart_service = "{systemctl} try-restart zzz.service -vv"
-        sh____(restart_service.format(**locals()))
+        cmd = "{systemctl} try-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -3982,8 +4116,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(out.strip(), "inactive")
         #
         logg.info("== 'reload-or-restart' will start a not-active service")        
-        restart_service = "{systemctl} reload-or-restart zzz.service -vv"
-        sh____(restart_service.format(**locals()))
+        cmd = "{systemctl} reload-or-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -3996,8 +4132,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top5 = top
         #
         logg.info("== 'reload-or-try-restart' will restart an is-active service (with no ExecReload)")        
-        restart_service = "{systemctl} try-restart zzz.service -vv"
-        sh____(restart_service.format(**locals()))
+        cmd = "{systemctl} try-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -4018,8 +4156,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertNotEqual(ps5[0], ps6[0])
         #
         logg.info("== 'try-restart' will restart an is-active service")        
-        restart_service = "{systemctl} try-restart zzz.service -vv"
-        sh____(restart_service.format(**locals()))
+        cmd = "{systemctl} try-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -4116,8 +4256,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(out.strip(), "inactive")
         #
         logg.info("== 'start' shall start a service that is NOT is-active ")
-        start_service = "{systemctl} start zzz.service -vv"
-        sh____(start_service.format(**locals()))
+        cmd = "{systemctl} start zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -4129,8 +4271,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(out.strip(), "active")
         #
         logg.info("== 'stop' shall stop a service that is-active")
-        stop_service = "{systemctl} stop zzz.service -vv"
-        sh____(stop_service.format(**locals()))
+        cmd = "{systemctl} stop zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
@@ -4141,8 +4285,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(out.strip(), "inactive")
         #
         logg.info("== 'restart' shall start a service that NOT is-active")        
-        restart_service = "{systemctl} restart zzz.service -vv"
-        sh____(restart_service.format(**locals()))
+        cmd = "{systemctl} restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -4155,8 +4301,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top1= top
         #
         logg.info("== 'restart' shall restart a service that is-active")        
-        restart_service = "{systemctl} restart zzz.service -vv"
-        sh____(restart_service.format(**locals()))
+        cmd = "{systemctl} restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -4186,8 +4334,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertNotEqual(ps1[0], ps2[0])
         #
         logg.info("== 'reload' will NOT restart a service that is-active")        
-        restart_service = "{systemctl} reload zzz.service -vv"
-        sh____(restart_service.format(**locals()))
+        cmd = "{systemctl} reload zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -4207,8 +4357,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(ps2[0], ps3[0])
         #
         logg.info("== 'reload-or-restart' will restart a service that is-active (if no ExecReload)")        
-        restart_service = "{systemctl} reload-or-restart zzz.service -vv"
-        sh____(restart_service.format(**locals()))
+        cmd = "{systemctl} reload-or-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -4228,8 +4380,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertNotEqual(ps3[0], ps4[0])
         #
         logg.info("== 'kill' will bring is-active non-active as well (when the PID is known)")        
-        restart_service = "{systemctl} kill zzz.service -vv"
-        sh____(restart_service.format(**locals()))
+        cmd = "{systemctl} kill zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -4241,8 +4395,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(out.strip(), "failed")
         #
         logg.info("== 'stop' will turn 'failed' to 'inactive' (when the PID is known)")        
-        restart_service = "{systemctl} stop zzz.service -vv"
-        sh____(restart_service.format(**locals()))
+        cmd = "{systemctl} stop zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         cmd = "{systemctl} is-active zzz.service -vv"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s", cmd, end, out)
@@ -4250,8 +4406,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(out.strip(), "inactive")
         #
         logg.info("== 'reload-or-try-restart' will not start a not-active service")        
-        restart_service = "{systemctl} reload-or-try-restart zzz.service -vv"
-        sh____(restart_service.format(**locals()))
+        cmd = "{systemctl} reload-or-try-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -4263,8 +4421,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(out.strip(), "inactive")
         #
         logg.info("== 'try-restart' will not start a not-active service")        
-        restart_service = "{systemctl} try-restart zzz.service -vv"
-        sh____(restart_service.format(**locals()))
+        cmd = "{systemctl} try-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -4276,8 +4436,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(out.strip(), "inactive")
         #
         logg.info("== 'reload-or-restart' will start a not-active service")        
-        restart_service = "{systemctl} reload-or-restart zzz.service -vv"
-        sh____(restart_service.format(**locals()))
+        cmd = "{systemctl} reload-or-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -4290,8 +4452,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top5 = top
         #
         logg.info("== 'reload-or-try-restart' will restart an is-active service (with no ExecReload)")        
-        restart_service = "{systemctl} try-restart zzz.service -vv"
-        sh____(restart_service.format(**locals()))
+        cmd = "{systemctl} try-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -4312,8 +4476,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertNotEqual(ps5[0], ps6[0])
         #
         logg.info("== 'try-restart' will restart an is-active service")        
-        restart_service = "{systemctl} try-restart zzz.service -vv"
-        sh____(restart_service.format(**locals()))
+        cmd = "{systemctl} try-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -4415,8 +4581,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(out.strip(), "inactive")
         #
         logg.info("== 'start' shall start a service that is NOT is-active ")
-        start_service = "{systemctl} start zzz.service -vv"
-        sh____(start_service.format(**locals()))
+        cmd = "{systemctl} start zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -4428,8 +4596,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(out.strip(), "active")
         #
         logg.info("== 'stop' shall stop a service that is-active")
-        stop_service = "{systemctl} stop zzz.service -vv"
-        sh____(stop_service.format(**locals()))
+        cmd = "{systemctl} stop zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
@@ -4440,8 +4610,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(out.strip(), "inactive")
         #
         logg.info("== 'restart' shall start a service that NOT is-active")        
-        restart_service = "{systemctl} restart zzz.service -vv"
-        sh____(restart_service.format(**locals()))
+        cmd = "{systemctl} restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -4454,8 +4626,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top1= top
         #
         logg.info("== 'restart' shall restart a service that is-active")        
-        restart_service = "{systemctl} restart zzz.service -vv"
-        sh____(restart_service.format(**locals()))
+        cmd = "{systemctl} restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -4485,8 +4659,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertNotEqual(ps1[0], ps2[0])
         #
         logg.info("== 'reload' will NOT restart a service that is-active")        
-        restart_service = "{systemctl} reload zzz.service -vv"
-        sh____(restart_service.format(**locals()))
+        cmd = "{systemctl} reload zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -4506,8 +4682,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(ps2[0], ps3[0])
         #
         logg.info("== 'reload-or-restart' will restart a service that is-active (if no ExecReload)")        
-        restart_service = "{systemctl} reload-or-restart zzz.service -vv"
-        sh____(restart_service.format(**locals()))
+        cmd = "{systemctl} reload-or-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -4527,8 +4705,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertNotEqual(ps3[0], ps4[0])
         #
         logg.info("== 'kill' will bring is-active non-active as well (when the PID is known)")        
-        restart_service = "{systemctl} kill zzz.service -vv"
-        sh____(restart_service.format(**locals()))
+        cmd = "{systemctl} kill zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -4540,8 +4720,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(out.strip(), "failed")
         #
         logg.info("== 'stop' will turn 'failed' to 'inactive' (when the PID is known)")        
-        restart_service = "{systemctl} stop zzz.service -vv"
-        sh____(restart_service.format(**locals()))
+        cmd = "{systemctl} stop zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         cmd = "{systemctl} is-active zzz.service -vv"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s", cmd, end, out)
@@ -4549,8 +4731,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(out.strip(), "inactive")
         #
         logg.info("== 'reload-or-try-restart' will not start a not-active service")        
-        restart_service = "{systemctl} reload-or-try-restart zzz.service -vv"
-        sh____(restart_service.format(**locals()))
+        cmd = "{systemctl} reload-or-try-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -4562,8 +4746,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(out.strip(), "inactive")
         #
         logg.info("== 'try-restart' will not start a not-active service")        
-        restart_service = "{systemctl} try-restart zzz.service -vv"
-        sh____(restart_service.format(**locals()))
+        cmd = "{systemctl} try-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -4575,8 +4761,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(out.strip(), "inactive")
         #
         logg.info("== 'reload-or-restart' will start a not-active service")        
-        restart_service = "{systemctl} reload-or-restart zzz.service -vv"
-        sh____(restart_service.format(**locals()))
+        cmd = "{systemctl} reload-or-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -4589,8 +4777,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top5 = top
         #
         logg.info("== 'reload-or-try-restart' will restart an is-active service (with no ExecReload)")        
-        restart_service = "{systemctl} try-restart zzz.service -vv"
-        sh____(restart_service.format(**locals()))
+        cmd = "{systemctl} try-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -4611,8 +4801,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertNotEqual(ps5[0], ps6[0])
         #
         logg.info("== 'try-restart' will restart an is-active service")        
-        restart_service = "{systemctl} try-restart zzz.service -vv"
-        sh____(restart_service.format(**locals()))
+        cmd = "{systemctl} try-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -5088,8 +5280,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(out.strip(), "inactive")
         #
         logg.info("== 'start' shall start a service that is NOT is-active ")
-        start_service = "{systemctl} start zzz.service -vv"
-        sh____(start_service.format(**locals()))
+        cmd = "{systemctl} start zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -5101,8 +5295,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(out.strip(), "active")
         #
         logg.info("== 'stop' shall stop a service that is-active")
-        stop_service = "{systemctl} stop zzz.service -vv"
-        sh____(stop_service.format(**locals()))
+        cmd = "{systemctl} stop zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
@@ -5113,8 +5309,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(out.strip(), "inactive")
         #
         logg.info("== 'restart' shall start a service that NOT is-active")        
-        restart_service = "{systemctl} restart zzz.service -vv"
-        sh____(restart_service.format(**locals()))
+        cmd = "{systemctl} restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -5127,8 +5325,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top1= top
         #
         logg.info("== 'restart' shall restart a service that is-active")        
-        restart_service = "{systemctl} restart zzz.service -vv"
-        sh____(restart_service.format(**locals()))
+        cmd = "{systemctl} restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -5158,8 +5358,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertNotEqual(ps1[0], ps2[0])
         #
         logg.info("== 'reload' will NOT restart a service that is-active")        
-        restart_service = "{systemctl} reload zzz.service -vv"
-        sh____(restart_service.format(**locals()))
+        cmd = "{systemctl} reload zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -5179,8 +5381,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(ps2[0], ps3[0])
         #
         logg.info("== 'reload-or-restart' may restart a service that is-active")        
-        restart_service = "{systemctl} reload-or-restart zzz.service -vv"
-        sh____(restart_service.format(**locals()))
+        cmd = "{systemctl} reload-or-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -5192,8 +5396,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(out.strip(), "active")
         #
         logg.info("== 'stop' will turn 'failed' to 'inactive' (when the PID is known)")        
-        restart_service = "{systemctl} stop zzz.service -vv"
-        sh____(restart_service.format(**locals()))
+        cmd = "{systemctl} stop zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         cmd = "{systemctl} is-active zzz.service -vv"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s", cmd, end, out)
@@ -5201,8 +5407,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(out.strip(), "inactive")
         #
         logg.info("== 'reload-or-try-restart' will not start a not-active service")        
-        restart_service = "{systemctl} reload-or-try-restart zzz.service -vv"
-        sh____(restart_service.format(**locals()))
+        cmd = "{systemctl} reload-or-try-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -5214,8 +5422,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(out.strip(), "inactive")
         #
         logg.info("== 'try-restart' will not start a not-active service")        
-        restart_service = "{systemctl} try-restart zzz.service -vv"
-        sh____(restart_service.format(**locals()))
+        cmd = "{systemctl} try-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -5227,8 +5437,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(out.strip(), "inactive")
         #
         logg.info("== 'reload-or-restart' will start a not-active service")        
-        restart_service = "{systemctl} reload-or-restart zzz.service -vv"
-        sh____(restart_service.format(**locals()))
+        cmd = "{systemctl} reload-or-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -5241,8 +5453,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top5 = top
         #
         logg.info("== 'reload-or-try-restart' will restart an is-active service (with no ExecReload)")        
-        restart_service = "{systemctl} reload-or-try-restart zzz.service -vv"
-        sh____(restart_service.format(**locals()))
+        cmd = "{systemctl} reload-or-try-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -5255,8 +5469,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top6 = top
         #
         logg.info("== 'try-restart' will restart an is-active service")        
-        restart_service = "{systemctl} try-restart zzz.service -vv"
-        sh____(restart_service.format(**locals()))
+        cmd = "{systemctl} try-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -5341,8 +5557,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         deps  = output(list_dependencies.format(**locals()))
         logg.info("deps \n%s", deps)
         #
-        starting_services = "{systemctl} start zza.service zzb.service zzc.service -vv"
-        sh____(starting_services.format(**locals()))
+        cmd = "{systemctl} start zza.service zzb.service zzc.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -5356,8 +5574,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(log[2], "start-C")
         os.remove(logfile)
         #
-        stopping_services = "{systemctl} stop zza.service zzb.service zzc.service -vv"
-        sh____(stopping_services.format(**locals()))
+        cmd = "{systemctl} stop zza.service zzb.service zzc.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -5439,8 +5659,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         deps  = output(list_dependencies.format(**locals()))
         logg.info("deps \n%s", deps)
         #
-        starting_services = "{systemctl} start zza.service zzb.service zzc.service -vv"
-        sh____(starting_services.format(**locals()))
+        cmd = "{systemctl} start zza.service zzb.service zzc.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -5454,8 +5676,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(log[2], "start-C")
         os.remove(logfile)
         #
-        stopping_services = "{systemctl} stop zza.service zzb.service zzc.service -vv"
-        sh____(stopping_services.format(**locals()))
+        cmd = "{systemctl} stop zza.service zzb.service zzc.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
