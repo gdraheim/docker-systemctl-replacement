@@ -1678,17 +1678,9 @@ class Systemctl:
                     self.write_status_file(status_file, AS="failed", EXIT=run.returncode)
                 else:
                     self.write_status_file(status_file, AS="active")
-        elif runs in [ "simple", "notify" ]:
+        elif runs in [ "simple", "notify", "forking" ]:
             for cmd in conf.getlist("Service", "ExecReload", []):
                 pid_file = self.get_pid_file_from(conf)
-                pid = self.read_pid_file(pid_file, "")
-                env["MAINPID"] = str(pid)
-                newcmd = self.exec_cmd(cmd, env, conf)
-                logg.info("%s reload %s", runs, shell_cmd(sudo+newcmd))
-                run = subprocess_wait(sudo+newcmd, env)
-                # self.write_pid_file(pid_file, run.pid)
-        elif runs in [ "forking" ]:
-            for cmd in conf.getlist("Service", "ExecReload", []):
                 if pid_file:
                     pid = self.read_pid_file(pid_file, "")
                     env["MAINPID"] = str(pid)
