@@ -3314,9 +3314,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStop=/usr/bin/kill -3 $MAINPID
             ExecStopPost=echo stopped $MAINPID
             ExecStopPost=sleep 2
-            ExecReloadPre=echo reloading $MAINPID
             ExecReload=/usr/bin/kill -10 $MAINPID
-            ExecReloadPost=sleep 1
             KillSignal=SIGQUIT
             [Install]
             WantedBy=multi-user.target
