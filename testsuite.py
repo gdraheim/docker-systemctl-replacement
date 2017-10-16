@@ -343,7 +343,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = _cov + _systemctl_py
         cmd = "{systemctl} daemon-reload"
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(lines(out), [])
         self.assertEqual(end, 0)
         self.coverage()
@@ -360,7 +360,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """)
         cmd = "{systemctl} daemon-reload"
         out,end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(lines(out), [])
         self.assertEqual(end, 0)
         self.rm_testdir()
@@ -410,7 +410,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "{systemctl} --ipv4 daemon-reload"
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(lines(out), [])
         self.assertEqual(end, 0)
         hosts = open(os_path(root, "/etc/hosts")).read()
@@ -438,7 +438,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "{systemctl} --ipv6 daemon-reload"
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(lines(out), [])
         self.assertEqual(end, 0)
         hosts = open(os_path(root, "/etc/hosts")).read()
@@ -703,28 +703,28 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "{systemctl} __load_preset_files"
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         self.assertTrue(greps(out, r"^our.preset"))
         self.assertEqual(len(lines(out)), 1)
         #
         cmd = "{systemctl} __get_preset_of_unit a.service"
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         # self.assertTrue(greps(out, r"^our.preset"))
         self.assertEqual(len(lines(out)), 0)
         #
         cmd = "{systemctl} __get_preset_of_unit b.service"
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         self.assertTrue(greps(out, r"^enable"))
         self.assertEqual(len(lines(out)), 1)
         #
         cmd = "{systemctl} __get_preset_of_unit c.service"
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         self.assertTrue(greps(out, r"^disable"))
         self.assertEqual(len(lines(out)), 1)
@@ -1411,37 +1411,37 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "{systemctl} is-enabled a.service"
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         self.assertTrue(greps(out, r"^static"))
         self.assertEqual(len(lines(out)), 1)
         cmd = "{systemctl} is-enabled b.service"
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 1)
         self.assertTrue(greps(out, r"^disabled"))
         self.assertEqual(len(lines(out)), 1)
         #
         cmd = "{systemctl} --no-legend enable b.service"
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         #
         cmd = "{systemctl} is-enabled b.service"
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         self.assertTrue(greps(out, r"^enabled"))
         self.assertEqual(len(lines(out)), 1)
         #
         cmd = "{systemctl} --no-legend disable b.service"
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         #
         cmd = "{systemctl} is-enabled b.service"
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertTrue(greps(out, r"^disabled"))
         self.assertEqual(len(lines(out)), 1)
         self.assertEqual(end, 1)
@@ -1470,32 +1470,32 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "{systemctl} is-enabled a.service"
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         self.assertTrue(greps(out, r"^static"))
         self.assertEqual(len(lines(out)), 1)
         cmd = "{systemctl} is-enabled b.service"
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 1)
         self.assertTrue(greps(out, r"^disabled"))
         self.assertEqual(len(lines(out)), 1)
         cmd = "{systemctl} is-enabled c.service"
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 1)
         self.assertTrue(greps(out, r"^disabled"))
         self.assertEqual(len(lines(out)), 1)
         cmd = "{systemctl} is-enabled b.service c.service"
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 1)
         self.assertTrue(greps(out, r"^disabled"))
         self.assertFalse(greps(out, r"^enabled"))
         self.assertEqual(len(lines(out)), 2)
         cmd = "{systemctl} is-enabled a.service b.service c.service"
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         self.assertTrue(greps(out, r"^disabled"))
         self.assertFalse(greps(out, r"^enabled"))
@@ -1503,12 +1503,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "{systemctl} --no-legend enable b.service"
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         #
         cmd = "{systemctl} is-enabled b.service c.service"
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         self.assertTrue(greps(out, r"^disabled"))
         self.assertTrue(greps(out, r"^enabled"))
@@ -1516,7 +1516,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "{systemctl} is-enabled b.service a.service"
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         self.assertTrue(greps(out, r"^static"))
         self.assertTrue(greps(out, r"^enabled"))
@@ -1524,7 +1524,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "{systemctl} is-enabled c.service a.service"
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         self.assertTrue(greps(out, r"^static"))
         self.assertTrue(greps(out, r"^disabled"))
@@ -1597,19 +1597,19 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "{systemctl} is-enabled zzz.service"
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertTrue(greps(out, r"^disabled"))
         self.assertEqual(len(lines(out)), 1)
         self.assertEqual(end, 1)
         #
         cmd = "{systemctl} --no-legend enable zzz.service"
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         #
         cmd = "{systemctl} is-enabled zzz.service"
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         self.assertTrue(greps(out, r"^enabled"))
         self.assertEqual(len(lines(out)), 1)
@@ -1617,24 +1617,24 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} default-services"
         out, end = output2(cmd.format(**locals()))
         self.assertEqual(end, 0)
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(len(lines(out)), 1)
         #
         cmd = "{systemctl} --no-legend disable zzz.service"
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         #
         cmd = "{systemctl} is-enabled zzz.service"
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 1)
         self.assertTrue(greps(out, r"^disabled"))
         self.assertEqual(len(lines(out)), 1)
         #
         cmd = "{systemctl} default-services"
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         self.assertEqual(len(lines(out)), 0)
         #
@@ -1666,19 +1666,19 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "{systemctl} is-enabled a.service"
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertTrue(greps(out, r"^static"))
         self.assertEqual(len(lines(out)), 1)
         self.assertEqual(end, 0)
         cmd = "{systemctl} is-enabled b.service" 
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertTrue(greps(out, r"^disabled"))
         self.assertEqual(len(lines(out)), 1)
         self.assertEqual(end, 1)
         cmd = "{systemctl} is-enabled c.service" 
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertTrue(greps(out, r"^disabled"))
         self.assertEqual(len(lines(out)), 1)
         self.assertEqual(end, 1)
@@ -1686,25 +1686,25 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} preset-all" 
         logg.info(" %s", cmd.format(**locals()))
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(len(lines(out)), 0)
         self.assertEqual(end, 0)
         #
         cmd = "{systemctl} is-enabled a.service"
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertTrue(greps(out, r"^static"))
         self.assertEqual(len(lines(out)), 1)
         self.assertEqual(end, 0)
         cmd = "{systemctl} is-enabled b.service" 
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertTrue(greps(out, r"^enabled"))
         self.assertEqual(len(lines(out)), 1)
         self.assertEqual(end, 0)
         cmd = "{systemctl} is-enabled c.service" 
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertTrue(greps(out, r"^disabled"))
         self.assertEqual(len(lines(out)), 1)
         self.assertEqual(end, 1)
@@ -1733,13 +1733,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "{systemctl} is-enabled b.service" 
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertTrue(greps(out, r"^disabled"))
         self.assertEqual(len(lines(out)), 1)
         self.assertEqual(end, 1)
         cmd = "{systemctl} is-enabled c.service" 
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertTrue(greps(out, r"^disabled"))
         self.assertEqual(len(lines(out)), 1)
         self.assertEqual(end, 1)
@@ -1747,19 +1747,19 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} preset c.service -vv" 
         logg.info(" %s", cmd.format(**locals()))
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(len(lines(out)), 0)
         self.assertEqual(end, 0)
         #
         cmd = "{systemctl} is-enabled b.service" 
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertTrue(greps(out, r"^disabled"))
         self.assertEqual(len(lines(out)), 1)
         self.assertEqual(end, 1)
         cmd = "{systemctl} is-enabled c.service" 
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertTrue(greps(out, r"^disabled"))
         self.assertEqual(len(lines(out)), 1)
         self.assertEqual(end, 1)
@@ -1767,19 +1767,19 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} preset b.service" 
         logg.info(" %s", cmd.format(**locals()))
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(len(lines(out)), 0)
         self.assertEqual(end, 0)
         #
         cmd = "{systemctl} is-enabled b.service" 
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertTrue(greps(out, r"^enabled"))
         self.assertEqual(len(lines(out)), 1)
         self.assertEqual(end, 0)
         cmd = "{systemctl} is-enabled c.service" 
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertTrue(greps(out, r"^disabled"))
         self.assertEqual(len(lines(out)), 1)
         self.assertEqual(end, 1)
@@ -1808,13 +1808,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "{systemctl} is-enabled b.service" 
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertTrue(greps(out, r"^disabled"))
         self.assertEqual(len(lines(out)), 1)
         self.assertEqual(end, 1)
         cmd = "{systemctl} is-enabled c.service" 
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertTrue(greps(out, r"^disabled"))
         self.assertEqual(len(lines(out)), 1)
         self.assertEqual(end, 1)
@@ -1823,26 +1823,26 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} preset b.service" 
         logg.info(" %s", cmd.format(**locals()))
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(len(lines(out)), 0)
         self.assertEqual(end, 0)
         #
         cmd = "{systemctl} preset c.service" 
         logg.info(" %s", cmd.format(**locals()))
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(len(lines(out)), 0)
         self.assertEqual(end, 0)
         #
         cmd = "{systemctl} is-enabled b.service" 
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertTrue(greps(out, r"^enabled"))
         self.assertEqual(len(lines(out)), 1)
         self.assertEqual(end, 0)
         cmd = "{systemctl} is-enabled c.service" 
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertTrue(greps(out, r"^disabled"))
         self.assertEqual(len(lines(out)), 1)
         self.assertEqual(end, 1)
@@ -1850,26 +1850,26 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} disable b.service" 
         logg.info(" %s", cmd.format(**locals()))
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(len(lines(out)), 0)
         self.assertEqual(end, 0)
         #
         cmd = "{systemctl} enable c.service" 
         logg.info(" %s", cmd.format(**locals()))
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(len(lines(out)), 0)
         self.assertEqual(end, 0)
         #
         cmd = "{systemctl} is-enabled b.service" 
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertTrue(greps(out, r"^disabled"))
         self.assertEqual(len(lines(out)), 1)
         self.assertEqual(end, 1)
         cmd = "{systemctl} is-enabled c.service" 
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertTrue(greps(out, r"^enabled"))
         self.assertEqual(len(lines(out)), 1)
         self.assertEqual(end, 0)
@@ -1877,26 +1877,26 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} preset b.service" 
         logg.info(" %s", cmd.format(**locals()))
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(len(lines(out)), 0)
         self.assertEqual(end, 0)
         #
         cmd = "{systemctl} preset c.service" 
         logg.info(" %s", cmd.format(**locals()))
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(len(lines(out)), 0)
         self.assertEqual(end, 0)
         #
         cmd = "{systemctl} is-enabled b.service" 
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertTrue(greps(out, r"^enabled"))
         self.assertEqual(len(lines(out)), 1)
         self.assertEqual(end, 0)
         cmd = "{systemctl} is-enabled c.service" 
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertTrue(greps(out, r"^disabled"))
         self.assertEqual(len(lines(out)), 1)
         self.assertEqual(end, 1)
@@ -1928,19 +1928,19 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "{systemctl} is-enabled a.service"
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertTrue(greps(out, r"^static"))
         self.assertEqual(len(lines(out)), 1)
         self.assertEqual(end, 0)
         cmd = "{systemctl} is-enabled b.service" 
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertTrue(greps(out, r"^disabled"))
         self.assertEqual(len(lines(out)), 1)
         self.assertEqual(end, 1)
         cmd = "{systemctl} is-enabled c.service" 
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertTrue(greps(out, r"^disabled"))
         self.assertEqual(len(lines(out)), 1)
         self.assertEqual(end, 1)
@@ -1948,32 +1948,32 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} disable b.service" 
         logg.info(" %s", cmd.format(**locals()))
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(len(lines(out)), 0)
         self.assertEqual(end, 0)
         #
         cmd = "{systemctl} enable c.service" 
         logg.info(" %s", cmd.format(**locals()))
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(len(lines(out)), 0)
         self.assertEqual(end, 0)
         #
         cmd = "{systemctl} is-enabled a.service"
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertTrue(greps(out, r"^static"))
         self.assertEqual(len(lines(out)), 1)
         self.assertEqual(end, 0)
         cmd = "{systemctl} is-enabled b.service" 
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertTrue(greps(out, r"^disabled"))
         self.assertEqual(len(lines(out)), 1)
         self.assertEqual(end, 1)
         cmd = "{systemctl} is-enabled c.service" 
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertTrue(greps(out, r"^enabled"))
         self.assertEqual(len(lines(out)), 1)
         self.assertEqual(end, 0)
@@ -1981,25 +1981,25 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} preset-all --preset-mode=enable" 
         logg.info(" %s", cmd.format(**locals()))
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(len(lines(out)), 0)
         self.assertEqual(end, 0)
         #
         cmd = "{systemctl} is-enabled a.service"
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertTrue(greps(out, r"^static"))
         self.assertEqual(len(lines(out)), 1)
         self.assertEqual(end, 0)
         cmd = "{systemctl} is-enabled b.service" 
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertTrue(greps(out, r"^enabled"))
         self.assertEqual(len(lines(out)), 1)
         self.assertEqual(end, 0)
         cmd = "{systemctl} is-enabled c.service" 
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertTrue(greps(out, r"^enabled"))
         self.assertEqual(len(lines(out)), 1)
         self.assertEqual(end, 0)
@@ -2031,19 +2031,19 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "{systemctl} is-enabled a.service"
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertTrue(greps(out, r"^static"))
         self.assertEqual(len(lines(out)), 1)
         self.assertEqual(end, 0)
         cmd = "{systemctl} is-enabled b.service" 
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertTrue(greps(out, r"^disabled"))
         self.assertEqual(len(lines(out)), 1)
         self.assertEqual(end, 1)
         cmd = "{systemctl} is-enabled c.service" 
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertTrue(greps(out, r"^disabled"))
         self.assertEqual(len(lines(out)), 1)
         self.assertEqual(end, 1)
@@ -2051,32 +2051,32 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} disable b.service" 
         logg.info(" %s", cmd.format(**locals()))
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(len(lines(out)), 0)
         self.assertEqual(end, 0)
         #
         cmd = "{systemctl} enable c.service" 
         logg.info(" %s", cmd.format(**locals()))
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(len(lines(out)), 0)
         self.assertEqual(end, 0)
         #
         cmd = "{systemctl} is-enabled a.service"
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertTrue(greps(out, r"^static"))
         self.assertEqual(len(lines(out)), 1)
         self.assertEqual(end, 0)
         cmd = "{systemctl} is-enabled b.service" 
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertTrue(greps(out, r"^disabled"))
         self.assertEqual(len(lines(out)), 1)
         self.assertEqual(end, 1)
         cmd = "{systemctl} is-enabled c.service" 
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertTrue(greps(out, r"^enabled"))
         self.assertEqual(len(lines(out)), 1)
         self.assertEqual(end, 0)
@@ -2084,25 +2084,25 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} preset-all --preset-mode=disable" 
         logg.info(" %s", cmd.format(**locals()))
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(len(lines(out)), 0)
         self.assertEqual(end, 0)
         #
         cmd = "{systemctl} is-enabled a.service"
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertTrue(greps(out, r"^static"))
         self.assertEqual(len(lines(out)), 1)
         self.assertEqual(end, 0)
         cmd = "{systemctl} is-enabled b.service" 
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertTrue(greps(out, r"^disabled"))
         self.assertEqual(len(lines(out)), 1)
         self.assertEqual(end, 1)
         cmd = "{systemctl} is-enabled c.service" 
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertTrue(greps(out, r"^disabled"))
         self.assertEqual(len(lines(out)), 1)
         self.assertEqual(end, 1)
@@ -2131,29 +2131,29 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "{systemctl} default-services"
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(len(lines(out)), 0)
         self.assertEqual(end, 0)
         #
         cmd = "{systemctl} --no-legend enable b.service"
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         #
         cmd = "{systemctl} default-services"
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(len(lines(out)), 1)
         self.assertEqual(end, 0)
         #
         cmd = "{systemctl} --no-legend enable c.service"
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         #
         cmd = "{systemctl} default-services"
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(len(lines(out)), 2)
         self.assertEqual(end, 0)
         #
@@ -2195,45 +2195,45 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "{systemctl} default-services"
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(len(lines(out)), 0)
         self.assertEqual(end, 0)
         #
         cmd = "{systemctl} --no-legend enable b.service"
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         #
         cmd = "{systemctl} --no-legend enable c.service"
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         #
         cmd = "{systemctl} --no-legend enable mount-disks.service"
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         #
         cmd = "{systemctl} --no-legend enable network.service"
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         #
         cmd = "{systemctl} default-services"
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(len(lines(out)), 2)
         self.assertEqual(end, 0)
         #
         cmd = "{systemctl} default-services --all"
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(len(lines(out)), 3)
         self.assertEqual(end, 0)
         #
         cmd = "{systemctl} default-services --all --force"
         out, end = output2(cmd.format(**locals()))
-        logg.info("\n> %s\n%s\n**%s", cmd, out, end)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(len(lines(out)), 4)
         self.assertEqual(end, 0)
         #
