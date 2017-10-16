@@ -1676,9 +1676,14 @@ class Systemctl:
                 run = subprocess_wait(sudo+newcmd, env)
                 if run.returncode:
                     self.write_status_file(status_file, AS="failed", EXIT=run.returncode)
+                    return False
                 else:
                     self.write_status_file(status_file, AS="active")
+                    return True
         elif runs in [ "simple", "notify", "forking" ]:
+            if not self.is_active_from(conf):
+                logg.info("no reload on inactive service %s", conf.name())
+                return True
             for cmd in conf.getlist("Service", "ExecReload", []):
                 pid_file = self.get_pid_file_from(conf)
                 if pid_file:
@@ -1690,12 +1695,13 @@ class Systemctl:
                 run = subprocess_wait(sudo+newcmd, env)
                 if check and run.returncode: raise Exception("ExecReload")
             self.sleep()
+            return True
         elif runs in [ "oneshot" ]:
             logg.debug("ignored run type '%s' for reload", runs)
+            return True
         else:
             logg.error("unsupported run type '%s'", runs)
             raise Exception("unsupported run type")
-        return True
     def restart_modules(self, *modules):
         """ [UNIT]... -- restart these units """
         found_all = True
