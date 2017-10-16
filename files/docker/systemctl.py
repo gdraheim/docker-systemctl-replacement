@@ -927,6 +927,7 @@ class Systemctl:
                     if value is None: value = ""
                     if key.upper() == "AS": key = "ACTIVESTATE"
                     if key.upper() == "PID": key = "MAINPID"
+                    if key.upper() == "EXIT": key = "EXIT_STATUS"
                     f.write("{}={}\n".format(key.upper(), str(value)))
         except IOError, e:
             logg.error("STATUS %s -- %s", status, e)
