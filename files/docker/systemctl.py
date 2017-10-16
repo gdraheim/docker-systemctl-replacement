@@ -1665,16 +1665,6 @@ class Systemctl:
         runs = conf.get("Service", "Type", "simple").lower()
         sudo = self.sudo_from(conf)
         env = self.get_env(conf)
-        if True:
-            if runs in [ "simple", "forking", "notify" ]:
-                pid_file = self.get_pid_file_from(conf)
-                pid = self.read_pid_file(pid_file, "")
-                env["MAINPID"] = str(pid)
-            for cmd in conf.getlist("Service", "ExecReloadPre", []):
-                check, cmd = checkstatus(cmd)
-                newcmd = self.exec_cmd(cmd, env, conf)
-                logg.info(" pre-reload %s", shell_cmd(sudo+newcmd))
-                run = subprocess_wait(sudo+newcmd, env)
         if runs in [ "sysv" ]:
             status_file = self.get_status_file_from(conf)
             if True:
@@ -1729,12 +1719,6 @@ class Systemctl:
         else:
             logg.error("unsupported run type '%s'", runs)
             raise Exception("unsupported run type")
-        if True:
-            for cmd in conf.getlist("Service", "ExecReloadPost", []):
-                check, cmd = checkstatus(cmd)
-                newcmd = self.exec_cmd(cmd, env, conf)
-                logg.info("post-reload %s", shell_cmd(sudo+newcmd))
-                run = subprocess_wait(sudo+newcmd, env)
         return True
     def restart_modules(self, *modules):
         """ [UNIT]... -- restart these units """
