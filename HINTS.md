@@ -129,5 +129,63 @@ the SIGTERM & SIGKILL will only go the $MAINPID of a service as far
 as we know about it (KillMode=process). If there is NO ExecStop
 then there is a fallback from "signal stop" to "signal kill".
 
+## Start Exec-Mode
+
+It may be a little known detail from the systemd specs but in
+reality one should NOT have multiple ExecStart lines in a spec
+file. (quoting from specs: "Unless Type= is oneshot, exactly 
+one command must be given.")
+
+Instead the systemd specification has a number of prefixes for
+the ExecStart line that modify the behaviour that are somewhat
+related to the call of fork+execve.
+
+https://www.freedesktop.org/software/systemd/man/systemd.service.html#ExecStart=
+
+* a "-" prefix is the most obvious: ignore the return value
+* a "@" prefix allows to have argv[0] to be not the called program
+* a "+" prefix makes for a priviledged services process which
+  basically means that User/Group changes should NOT be made
+  (User/Group would affect ExecStart/ExecStop otherwise)
+* and some unintelligible description of "!" and "!!" prefixes
+  the seem to be alterations of a "+"
+
+Moreover, "-" and "@" and "+" may be combined and the prefix
+characters may occur in any order. Phew!
+
+And just for another thing - one might expect that along with
+ExecStart / ExecStop / ExecReload there also Exec-statements
+for other frontend commands - including ExecXyPre/ExecXyPost
+statements for each of them. But this is not the case - 
+specifically there exists NO ExecRestart statement in the
+systemd specs. Only these are valid:
+
+* ExecStartPre
+* ExecStart
+* ExecStartPost
+* ExecReload
+* ExecStop
+* ExecStopPost
+
+On top of that, if any of the ExecStopPre, ExecStart, ExecStopPost
+commands fails then you will also see that the original systemd 
+daemon will execute the ExecStopPost lines to cleanup the system.
+(and it will NOT run the ExecStop lines in that case). In order
+for ExecStopPost to know the reason why it has been called there
+are additional environment variables around
+
+* $SERVICE_RESULT = "success", "timeout", "exit-code", "signal"..
+* $EXIT_CODE = "exited", "killed" (the most relevant styles)
+* $EXIT_STATUS - the exit-code of $MAINPID .. and for the
+  combination of "success" + "exited" this is always 0.
+
+That's a bit tricky to follow and "systemctl.py" does not do it.
+One can assume that there is hardly any programmer to have taken
+advantage of that - it sounds a bit like wizardry around.
+
+As for the hint of "only one ExecStart" - while the script after
+ExecStart is NOT run in a shell you can still use multiple
+commands by having them seperated with "{space}{semicolon}{space}".
+And a stray semicolon may instead be escaped with "\;". Phew!
 
 
