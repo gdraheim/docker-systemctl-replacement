@@ -2265,10 +2265,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(enable_service.format(**locals()))
         version_systemctl = "{systemctl} --version"
         sh____(version_systemctl.format(**locals()))
-        list_units_systemctl = "{systemctl} default-services -vv"
-        sh____(list_units_systemctl.format(**locals()))
-        out = output(list_units_systemctl.format(**locals()))
-        logg.info("\n>\n%s", out)
+        cmd = "{systemctl} default-services -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         self.assertTrue(greps(out, "zzz.service"))
         self.assertEqual(len(lines(out)), 1)
         #
@@ -2313,10 +2313,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(enable_service.format(**locals()))
         version_systemctl = "{systemctl} --version"
         sh____(version_systemctl.format(**locals()))
-        list_units_systemctl = "{systemctl} default-services -vv"
-        sh____(list_units_systemctl.format(**locals()))
-        out = output(list_units_systemctl.format(**locals()))
-        logg.info("\n>\n%s", out)
+        cmd = "{systemctl} default-services -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         self.assertTrue(greps(out, "zzz.service"))
         self.assertEqual(len(lines(out)), 1)
         #
@@ -2380,10 +2380,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(enable_service.format(**locals()))
         version_systemctl = "{systemctl} --version"
         sh____(version_systemctl.format(**locals()))
-        list_units_systemctl = "{systemctl} default-services -vv"
-        sh____(list_units_systemctl.format(**locals()))
-        out = output(list_units_systemctl.format(**locals()))
-        logg.info("\n>\n%s", out)
+        cmd = "{systemctl} default-services -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         self.assertTrue(greps(out, "zzz.service"))
         self.assertEqual(len(lines(out)), 1)
         #
@@ -2445,10 +2445,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(enable_service.format(**locals()))
         version_systemctl = "{systemctl} --version"
         sh____(version_systemctl.format(**locals()))
-        list_units_systemctl = "{systemctl} default-services -vv"
-        sh____(list_units_systemctl.format(**locals()))
-        out = output(list_units_systemctl.format(**locals()))
-        logg.info("\n>\n%s", out)
+        cmd = "{systemctl} default-services -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         self.assertTrue(greps(out, "zzz.service"))
         self.assertEqual(len(lines(out)), 1)
         #
@@ -2509,9 +2509,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(enable_service.format(**locals()))
         version_systemctl = "{systemctl} --version"
         sh____(version_systemctl.format(**locals()))
-        list_services = "{systemctl} default-services -vv"
-        out = output(list_services.format(**locals()))
-        logg.info("\n>\n%s", out)
+        cmd = "{systemctl} default-services -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         self.assertTrue(greps(out, "zzb.service"))
         self.assertEqual(len(lines(out)), 2)
         #
