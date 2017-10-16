@@ -2608,28 +2608,28 @@ class Systemctl:
             elif not usedExecStart and haveType != "oneshot":
                 logg.error("%s: Service has no ExecStart= setting, which is only allowed for Type=oneshot services. Refusing.",  unit)
                 ok = False
-        if len(usedExecStart) > 1 and haveType != "oneshot":
+        if len(usedExecStart) > 1 and haveType != "oneshot": #pragma: no cover
             logg.error("%s: there may be only one ExecStart statement (unless for 'oneshot' services)."
               + "Use ' ; ' for multiple commands or better use ExecStartPre / ExecStartPost", unit)
             ok = False
-        if len(usedExecReload) > 1:
+        if len(usedExecReload) > 1: #pragma: no cover
             logg.error("%s: there may be only one ExecReload statement."
               + "Use ' ; ' for multiple commands (ExecReloadPost or ExedReloadPre do not exit)", unit)
             ok = False
-        if len(usedExecReload) > 0 and "/bin/kill " in usedExecReload[0]:
+        if len(usedExecReload) > 0 and "/bin/kill " in usedExecReload[0]: #pragma: no cover
             logg.info("%s: the use of /bin/kill is not recommended for ExecReload as it is asychronous."
               + "That means all the dependencies will perform the reload simultanously / out of order.", unit)
-        if conf.getlist("Service", "ExecRestart", []):
+        if conf.getlist("Service", "ExecRestart", []): #pragma: no cover
             logg.error("%s: there no such thing as an ExecRestart (ignored)", unit)
-        if conf.getlist("Service", "ExecRestartPre", []):
+        if conf.getlist("Service", "ExecRestartPre", []): #pragma: no cover
             logg.error("%s: there no such thing as an ExecRestartPre (ignored)", unit)
-        if conf.getlist("Service", "ExecRestartPost", []):
+        if conf.getlist("Service", "ExecRestartPost", []): #pragma: no cover 
             logg.error("%s: there no such thing as an ExecRestartPost (ignored)", unit)
-        if conf.getlist("Service", "ExecReloadPre", []):
+        if conf.getlist("Service", "ExecReloadPre", []): #pragma: no cover
             logg.error("%s: there no such thing as an ExecReloadPre (ignored)", unit)
-        if conf.getlist("Service", "ExecReloadPost", []):
+        if conf.getlist("Service", "ExecReloadPost", []): #pragma: no cover
             logg.error("%s: there no such thing as an ExecReloadPost (ignored)", unit)
-        if conf.getlist("Service", "ExecStopPre", []):
+        if conf.getlist("Service", "ExecStopPre", []): #pragma: no cover
             logg.error("%s: there no such thing as an ExecStopPre (ignored)", unit)
         return ok
     def show_modules(self, *modules):
