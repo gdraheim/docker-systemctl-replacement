@@ -3,7 +3,7 @@
 """ Testcases for docker-systemctl-replacement functionality """
 
 __copyright__ = "(C) Guido Draheim, for free use (CC-BY,GPL) """
-__version__ = "0.9.1417"
+__version__ = "0.9.1421"
 
 ## NOTE:
 ## The testcases 1000...4999 are using a --root=subdir environment

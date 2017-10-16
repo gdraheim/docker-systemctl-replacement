@@ -1,6 +1,6 @@
 #! /usr/bin/python
 __copyright__ = "(C) 2016-2017 Guido U. Draheim, for free use (CC-BY, GPL, BSD)"
-__version__ = "0.9.1417"
+__version__ = "0.9.1421"
 
 import logging
 logg = logging.getLogger("systemctl")
@@ -119,13 +119,13 @@ def shutil_chown(filename, user = None, group = None):
 def shutil_setuid(user = None, group = None):
     """ set fork-child uid/gid """
     if group: # pragma: no cover
-        # actually tested but in a forked child only
+        # no cover: actually tested but in a forked child only
         import grp
         gid = grp.getgrnam(group).gr_gid
         os.setgid(gid)
         logg.debug("setgid %s '%s'", gid, group)
     if user: # pragma: no cover
-        # actually tested but in a forked child only
+        # no cover: actually tested but in a forked child only
         import pwd
         uid = pwd.getpwnam(user).pw_uid
         os.setuid(uid)
@@ -1167,7 +1167,6 @@ class Systemctl:
         # the original systemd will start in '/' even if User= is given
         if self._root:
             os.chdir(self._root)
-        runuser = conf.get("Service", "User", "")
         workingdir = conf.get("Service", "WorkingDirectory", "")
         if workingdir:
             ignore = False
