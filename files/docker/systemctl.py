@@ -3120,12 +3120,6 @@ if __name__ == "__main__":
     if callable(command_func) and not found:
         found = True
         result = command_func()
-        for comm in modules:
-            comm_name = "system_"+comm.replace("-","_").replace(".","_")
-            comm_func = getattr(systemctl, comm_name, None)
-            if callable(comm_func):
-                found = True
-                result = comm_func()
     command_name = "systemctl"+command.replace("-","_").replace(".","_")
     command_func = getattr(systemctl, command_name, None)
     if callable(command_func) and not found:
