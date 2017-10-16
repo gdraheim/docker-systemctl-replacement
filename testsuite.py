@@ -6810,31 +6810,31 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             THEN we can download the root html showing 'OK'
             because the test script has placed an index.html
             in the webserver containing that text. """
-        testname="test_6001"
-        port=6001
+        testname=self.testname()
+        port=self.testport()
         name="centos-httpd"
         dockerfile="centos-httpd.dockerfile"
         images = IMAGES
         # WHEN
-        build_new_image = "docker build . -f tests/{dockerfile} --tag {images}:{name}"
+        build_new_image = "docker build . -f tests/{dockerfile} --tag {images}:{testname}"
         sh____(build_new_image.format(**locals()))
-        drop_old_container = "docker rm --force {name}"
-        start_as_container = "docker run -d -p {port}:80 --name {name} {images}:{name}"
-        sx____(drop_old_container.format(**locals()))
+        drop_container = "docker rm --force {testname}"
+        sx____(drop_container.format(**locals()))
+        start_as_container = "docker run -d -p {port}:80 --name {testname} {images}:{testname}"
         sh____(start_as_container.format(**locals()))
         # THEN
         tmp = self.testdir(testname)
-        read_index_html = "sleep 5; wget -O {tmp}/{name}.txt http://127.0.0.1:{port}"
-        grep_index_html = "grep OK {tmp}/{name}.txt"
+        read_index_html = "sleep 5; wget -O {tmp}/{testname}.txt http://127.0.0.1:{port}"
+        grep_index_html = "grep OK {tmp}/{testname}.txt"
         sh____(read_index_html.format(**locals()))
         sh____(grep_index_html.format(**locals()))
         # CLEAN
-        stop_new_container = "docker stop {name}"
-        drop_new_container = "docker rm --force {name}"
-        sh____(stop_new_container.format(**locals()))
-        sh____(drop_new_container.format(**locals()))
-        drop_image_container = "docker rmi {images}:{name}"
-        ## sx____(drop_image_container.format(**locals())) # TODO: still needed for test_6011
+        stop_container = "docker stop {testname}"
+        drop_container = "docker rm --force {testname}"
+        sh____(stop_container.format(**locals()))
+        sh____(drop_container.format(**locals()))
+        drop_image_container = "docker rmi {images}:{testname}"
+        sx____(drop_image_container.format(**locals()))
         self.rm_testdir()
     def test_7002_centos_postgres_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
@@ -6847,32 +6847,32 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             THEN we can see a specific role with an SQL query
             because the test script has created a new user account 
             in the in the database with a known password. """
-        testname="test_6002"
-        port=6002
+        testname=self.testname()
+        port=self.testport()
         name="centos-postgres"
         dockerfile="centos-postgres.dockerfile"
         images = IMAGES
         # WHEN
-        build_new_image = "docker build . -f tests/{dockerfile} --tag {images}:{name}"
+        build_new_image = "docker build . -f tests/{dockerfile} --tag {images}:{testname}"
         sh____(build_new_image.format(**locals()))
-        drop_old_container = "docker rm --force {name}"
-        start_as_container = "docker run -d -p {port}:5432 --name {name} {images}:{name}"
-        sx____(drop_old_container.format(**locals()))
+        drop_container = "docker rm --force {name}"
+        sx____(drop_container.format(**locals()))
+        start_as_container = "docker run -d -p {port}:5432 --name {testname} {images}:{testname}"
         sh____(start_as_container.format(**locals()))
         # THEN
         tmp = self.testdir(testname)
         login = "export PGUSER=testuser_11; export PGPASSWORD=Testuser.11"
         query = "SELECT rolname FROM pg_roles"
-        read_index_html = "sleep 5; {login}; psql -p {port} -h 127.0.0.1 -d postgres -c '{query}' > {tmp}/{name}.txt"
-        grep_index_html = "grep testuser_ok {tmp}/{name}.txt"
+        read_index_html = "sleep 5; {login}; psql -p {port} -h 127.0.0.1 -d postgres -c '{query}' > {tmp}/{testname}.txt"
+        grep_index_html = "grep testuser_ok {tmp}/{testname}.txt"
         sh____(read_index_html.format(**locals()))
         sh____(grep_index_html.format(**locals()))
         # CLEAN
-        stop_new_container = "docker stop {name}"
-        drop_new_container = "docker rm --force {name}"
-        sh____(stop_new_container.format(**locals()))
-        sh____(drop_new_container.format(**locals()))
-        drop_image_container = "docker rmi {images}:{name}"
+        stop_container = "docker stop {testname}"
+        drop_container = "docker rm --force {testname}"
+        sh____(stop_container.format(**locals()))
+        sh____(drop_container.format(**locals()))
+        drop_image_container = "docker rmi {images}:{testname}"
         sx____(drop_image_container.format(**locals()))
         self.rm_testdir()
     def test_7011_centos_httpd_socket_notify(self):
