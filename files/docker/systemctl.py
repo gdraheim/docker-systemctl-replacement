@@ -49,14 +49,12 @@ _no_ask_password = False
 _preset_mode = "all"
 
 MinimumSleep = 2
-MinimumWaitProcFile = 10
+MinimumWaitProcFile = 9
 MinimumWaitKillProc = 3
 DefaultWaitProcFile = 100
-DefaultWaitKillProc = 10
-DefaultTimeoutReloadSec = 2 # officially 0.1
-DefaultTimeoutRestartSec = 2 # officially 0.1
-DefaultTimeoutStartSec = 10 # officially 90
-DefaultTimeoutStopSec = 10 # officially 90
+DefaultWaitKillProc = 9
+DefaultTimeoutStartSec = 9 # officially 90
+DefaultTimeoutStopSec = 9  # officially 90
 DefaultMaximumTimeout = 200
 
 _notify_socket_folder = "/var/run/systemd" # alias /run/systemd
@@ -1269,9 +1267,14 @@ class Systemctl:
             return False
         logg.info(" start unit %s => %s", unit, conf.filename())
         return self.start_unit_from(conf)
+    def get_TimeoutStartSec(self, conf):
+        timeout = conf.get("Service", "TimeoutSec", DefaultTimeoutStartSec)
+        timeout = conf.get("Service", "TimeoutStartSec", timeout)
+        return time_to_seconds(timeout, DefaultMaximumTimeout)
     def start_unit_from(self, conf):
         if not conf: return
         if self.bad_service_from(conf): return False
+        timeout = self.get_TimeoutStartSec(conf)
         runs = conf.get("Service", "Type", "simple").lower()
         sudo = self.sudo_from(conf)
         env = self.get_env(conf)
@@ -1382,9 +1385,6 @@ class Systemctl:
             rungroup = conf.get("Service", "Group", "")
             shutil_truncate(pid_file)
             shutil_chown(pid_file, runuser, rungroup)
-            timeout = conf.get("Service", "TimeoutSec", DefaultTimeoutStartSec)
-            timeout = conf.get("Service", "TimeoutStartSec", timeout)
-            timeout = time_to_seconds(timeout, DefaultMaximumTimeout)
             notify = self.notify_socket_from(conf)
             if notify:
                 env["NOTIFY_SOCKET"] = notify.socketfile
@@ -1510,15 +1510,17 @@ class Systemctl:
             return False
         logg.info(" stop unit %s => %s", unit, conf.filename())
         return self.stop_unit_from(conf)
+    def get_TimeoutStopSec(self, conf):
+        timeout = conf.get("Service", "TimeoutSec", DefaultTimeoutStartSec)
+        timeout = conf.get("Service", "TimeoutStopSec", timeout)
+        return time_to_seconds(timeout, DefaultMaximumTimeout)
     def stop_unit_from(self, conf):
         if not conf: return
         if self.bad_service_from(conf): return False
+        timeout = self.get_TimeoutStopSec(conf)
         runs = conf.get("Service", "Type", "simple").lower()
         sudo = self.sudo_from(conf)
         env = self.get_env(conf)
-        timeout = conf.get("Service", "TimeoutSec", DefaultTimeoutStopSec)
-        timeout = conf.get("Service", "TimeoutStopSec", timeout)
-        timeout = time_to_seconds(timeout, DefaultMaximumTimeout)
         if runs in [ "sysv" ]:
             status_file = self.get_status_file_from(conf)
             if True:
@@ -1873,8 +1875,7 @@ class Systemctl:
         if not conf: return None
         sendSIGKILL = conf.get("Service", "SendSIGKILL", "yes")
         kill_signal = conf.get("Service", "KillSignal", signal.SIGTERM)
-        timeout = conf.get("Service", "TimeoutSec", DefaultTimeoutStopSec)
-        timeout = conf.get("Service", "TimeoutStopSec", timeout)
+        timeout = self.get_TimeoutStopSec(conf)
         pid_file = self.get_pid_file_from(conf)
         pid = self.read_pid_file(pid_file)
         if not pid:
