@@ -90,3 +90,44 @@ https://www.freedesktop.org/software/systemd/man/systemd.unit.html
 * "%H" Host name = The hostname of the running system at the point in time the unit configuration is loaded.
 * "%v" Kernel release = Identical to uname -r output
 * "%%" Single percent sign = Use "%%" in place of "%" to specify a single percent sign.
+
+## KillMode with SendSIGKILL and SendSIGHUP
+
+When grepping through existing *.service files one can see a number
+of references to those two options
+* SendSIGKILL=no / postgresql + plymouth-start
+* SendSIGHUP=yes / getty + console + journal-service
+
+For a docker container one can safely exclude the latter but the
+usage for postgresql makes it an importation option being in use.
+In both cases the option changes the behaviour of "systemctl kill".
+
+https://www.freedesktop.org/software/systemd/man/systemd.kill.html
+
+As one can already guess, the default for SendSIGHUP is "no" and it
+means that after the "KillSignal=" it should immediately send an
+addtional SIGHUP - which is defined to also be forwarded to the
+children of a program. 
+
+One can also guess the default for SendSIGKILL to be "yes". Here it
+is defined to work only after a timeout - as it shall send a KILL
+to all remaining processes(!) of a service that are still around.
+
+The third signal in use is a SIGTERM which is the default that is
+sometimes overridden as "KillSignal=SIGHUP". Obviously it does
+not make sense to mix Kill-SIGHUP and SendSIGHUP and there is no
+such thing to exist in real service systemd files.
+
+Last not least, there is also a "KillMode=control-group" default.
+Which effectivly means that the specified sequences of Signals
+(SIGTERM + SIGHUP & SIGKILL) should be sent to all processes.
+
+As it is implemented for systemctl.py 1.0 there are some differences
+in the handling - a "systemctl.py stop" will only execute ExecStop
+but no implicit "systemctl kill" after that (KillMode=none). And
+the SIGTERM & SIGKILL will only go the $MAINPID of a service as far
+as we know about it (KillMode=process). If there is NO ExecStop
+then there is a fallback from "signal stop" to "signal kill".
+
+
+
