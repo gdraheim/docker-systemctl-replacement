@@ -6875,64 +6875,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         drop_image_container = "docker rmi {images}:{name}"
         sx____(drop_image_container.format(**locals()))
         self.rm_testdir()
-    def test_7005_ubuntu_apache2_with_saved_container(self):
-        """ WHEN using a systemd enabled Ubuntu as the base image
-            THEN we can create an image with an Apache HTTP service 
-                 being installed and enabled.
-            Without a special startup.sh script or container-cmd 
-            one can just start the image and in the container
-            expecting that the service is started. Therefore,
-            WHEN we start the image as a docker container
-            THEN we can download the root html showing 'OK'
-            because the test script has placed an index.html
-            in the webserver containing that text. """
-        testname = self.testname()
-        port=self.testport()
-        images = IMAGES
-        image = "ubuntu:16.04"
-        systemctl_py = _systemctl_py
-        logg.info("%s:%s %s (%s)", testname, port, image)
-        #
-        drop_container = "docker rm --force {testname}"
-        sx____(drop_container.format(**locals()))
-        start_container = "docker run --detach --name={testname} {image} sleep 200"
-        sh____(start_container.format(**locals()))
-        install_prepare = "docker exec {testname} apt-get update"
-        sh____(install_prepare.format(**locals()))
-        install_software = "docker exec {testname} apt-get install -y apache2 python"
-        sh____(install_software.format(**locals()))
-        install_systemctl = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
-        sh____(install_systemctl.format(**locals()))
-        fixup_systemctl = "docker exec {testname} bash -c 'test -L /bin/systemctl || ln -sf /usr/bin/systemctl /bin/systemctl'"
-        sh____(fixup_systemctl.format(**locals()))
-        enable_software = "docker exec {testname} systemctl enable apache2"
-        sh____(enable_software.format(**locals()))
-        push_result = "docker exec {testname} bash -c 'echo TEST_OK > /var/www/html/index.html'"
-        sh____(push_result.format(**locals()))
-        # .........................................
-        commit_container = "docker commit -c 'CMD [\"/usr/bin/systemctl\"]'  {testname} {images}:{testname}"
-        sh____(commit_container.format(**locals()))
-        stop_container = "docker stop {testname}"
-        sx____(stop_container.format(**locals()))
-        #
-        drop_container = "docker rm --force {testname}"
-        sx____(drop_container.format(**locals()))
-        start_as_container = "docker run -d -p {port}:80 --name {testname} {images}:{testname}"
-        sh____(start_as_container.format(**locals()))
-        # THEN
-        tmp = self.testdir(testname)
-        read_index_html = "sleep 5; wget -O {tmp}/{testname}.txt http://127.0.0.1:{port}"
-        grep_index_html = "grep OK {tmp}/{testname}.txt"
-        sh____(read_index_html.format(**locals()))
-        sh____(grep_index_html.format(**locals()))
-        # CLEAN
-        stop_new_container = "docker stop {testname}"
-        drop_new_container = "docker rm --force {testname}"
-        sh____(stop_new_container.format(**locals()))
-        sh____(drop_new_container.format(**locals()))
-        drop_image_container = "docker rmi {images}:{testname}"
-        sx____(drop_image_container.format(**locals()))
-        self.rm_testdir()
     def test_7011_centos_httpd_socket_notify(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
             THEN we can create an image with an Apache HTTP service 
@@ -7199,6 +7141,64 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(stop_container.format(**locals()))
         sh____(drop_container.format(**locals()))
         #
+        self.rm_testdir()
+    def test_7020_ubuntu_apache2_with_saved_container(self):
+        """ WHEN using a systemd enabled Ubuntu as the base image
+            THEN we can create an image with an Apache HTTP service 
+                 being installed and enabled.
+            Without a special startup.sh script or container-cmd 
+            one can just start the image and in the container
+            expecting that the service is started. Therefore,
+            WHEN we start the image as a docker container
+            THEN we can download the root html showing 'OK'
+            because the test script has placed an index.html
+            in the webserver containing that text. """
+        testname = self.testname()
+        port=self.testport()
+        images = IMAGES
+        image = "ubuntu:16.04"
+        systemctl_py = _systemctl_py
+        logg.info("%s:%s %s (%s)", testname, port, image)
+        #
+        drop_container = "docker rm --force {testname}"
+        sx____(drop_container.format(**locals()))
+        start_container = "docker run --detach --name={testname} {image} sleep 200"
+        sh____(start_container.format(**locals()))
+        install_prepare = "docker exec {testname} apt-get update"
+        sh____(install_prepare.format(**locals()))
+        install_software = "docker exec {testname} apt-get install -y apache2 python"
+        sh____(install_software.format(**locals()))
+        install_systemctl = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(install_systemctl.format(**locals()))
+        fixup_systemctl = "docker exec {testname} bash -c 'test -L /bin/systemctl || ln -sf /usr/bin/systemctl /bin/systemctl'"
+        sh____(fixup_systemctl.format(**locals()))
+        enable_software = "docker exec {testname} systemctl enable apache2"
+        sh____(enable_software.format(**locals()))
+        push_result = "docker exec {testname} bash -c 'echo TEST_OK > /var/www/html/index.html'"
+        sh____(push_result.format(**locals()))
+        # .........................................
+        commit_container = "docker commit -c 'CMD [\"/usr/bin/systemctl\"]'  {testname} {images}:{testname}"
+        sh____(commit_container.format(**locals()))
+        stop_container = "docker stop {testname}"
+        sx____(stop_container.format(**locals()))
+        #
+        drop_container = "docker rm --force {testname}"
+        sx____(drop_container.format(**locals()))
+        start_as_container = "docker run -d -p {port}:80 --name {testname} {images}:{testname}"
+        sh____(start_as_container.format(**locals()))
+        # THEN
+        tmp = self.testdir(testname)
+        read_index_html = "sleep 5; wget -O {tmp}/{testname}.txt http://127.0.0.1:{port}"
+        grep_index_html = "grep OK {tmp}/{testname}.txt"
+        sh____(read_index_html.format(**locals()))
+        sh____(grep_index_html.format(**locals()))
+        # CLEAN
+        stop_new_container = "docker stop {testname}"
+        drop_new_container = "docker rm --force {testname}"
+        sh____(stop_new_container.format(**locals()))
+        sh____(drop_new_container.format(**locals()))
+        drop_image_container = "docker rmi {images}:{testname}"
+        sx____(drop_image_container.format(**locals()))
         self.rm_testdir()
     # @unittest.expectedFailure
     def test_8001_issue_1_start_mariadb_centos_7_0(self):
