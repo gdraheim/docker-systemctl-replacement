@@ -525,30 +525,30 @@ def sortedAfter(conflist, cmp = compareAfter):
                     itemB = sortlist[B]
                     before = compareAfter(itemA.conf, itemB.conf)
                     if before > 0 and itemA.rank <= itemB.rank:
-                        if DEBUG_AFTER:
+                        if DEBUG_AFTER: # pragma: no cover
                             logg.info("  %-30s before %s", itemA.conf.name(), itemB.conf.name())
                         itemA.rank = itemB.rank + 1
                         changed += 1
                     if before < 0 and itemB.rank <= itemA.rank:
-                        if DEBUG_AFTER:
+                        if DEBUG_AFTER: # pragma: no cover
                             logg.info("  %-30s before %s", itemB.conf.name(), itemA.conf.name())
                         itemB.rank = itemA.rank + 1
                         changed += 1
         if not changed:
-            if DEBUG_AFTER:
+            if DEBUG_AFTER: # pragma: no cover
                 logg.info("done in check %s of %s", check, len(sortlist))
             break
             # because Requires is almost always the same as the After clauses
             # we are mostly done in round 1 as the list is in required order
     for conf in conflist:
-        if DEBUG_AFTER:
+        if DEBUG_AFTER: # pragma: no cover
             logg.debug(".. %s", conf.name())
     for item in sortlist:
-        if DEBUG_AFTER:
+        if DEBUG_AFTER: # pragma: no cover
             logg.info("(%s) %s", item.rank, item.conf.name())
     sortedlist = sorted(sortlist, cmp = lambda x, y: y.rank - x.rank)
     for item in sortedlist:
-        if DEBUG_AFTER:
+        if DEBUG_AFTER: # pragma: no cover
             logg.info("[%s] %s", item.rank, item.conf.name())
     return [ item.conf for item in sortedlist ]
 
