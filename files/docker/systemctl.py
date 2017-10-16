@@ -435,6 +435,19 @@ def time_to_seconds(text, maximum = None):
     if not value:
         return 1
     return value
+def seconds_to_time(seconds):
+    if seconds > 60:
+        mins = seconds % 60
+        secs = seconds - (mins * 60)
+        if secs:
+            return "%smin %ss" % (mins, secs)
+        return "%smin" % (mins)
+    else:
+        secs = int(seconds)
+        msecs = int(seconds * 1000) - (secs * 1000)
+        if msecs:
+            return "%ss %sms" % (secs, msecs)
+        return "%ss" % (secs)
 
 def getBefore(conf):
     result = []
@@ -2664,6 +2677,8 @@ class Systemctl:
         yield "ActiveState", self.get_active_from(conf)     # status["ACTIVESTATE"]
         yield "LoadState", conf.loaded() and "loaded" or "not-loaded"
         yield "UnitFileState", self.enabled_from(conf)
+        yield "TimeoutStartUsec", seconds_to_time(self.get_TimeoutStartSec(conf))
+        yield "TimeoutStopUsec", seconds_to_time(self.get_TimeoutStopSec(conf))
         env_parts = []
         for env_part in conf.getlist("Service", "Environment", []):
             env_parts.append(env_part)
