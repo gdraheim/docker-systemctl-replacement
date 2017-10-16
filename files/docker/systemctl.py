@@ -2677,8 +2677,8 @@ class Systemctl:
         yield "ActiveState", self.get_active_from(conf)     # status["ACTIVESTATE"]
         yield "LoadState", conf.loaded() and "loaded" or "not-loaded"
         yield "UnitFileState", self.enabled_from(conf)
-        yield "TimeoutStartUsec", seconds_to_time(self.get_TimeoutStartSec(conf))
-        yield "TimeoutStopUsec", seconds_to_time(self.get_TimeoutStopSec(conf))
+        yield "TimeoutStartUSec", seconds_to_time(self.get_TimeoutStartSec(conf))
+        yield "TimeoutStopUSec", seconds_to_time(self.get_TimeoutStopSec(conf))
         env_parts = []
         for env_part in conf.getlist("Service", "Environment", []):
             env_parts.append(env_part)
