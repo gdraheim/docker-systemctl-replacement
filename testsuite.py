@@ -4375,108 +4375,338 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_tool(os_path(testdir, "backup"), os_path(root, "/usr/bin/backup"))
         text_file(os_path(root, "/var/tmp/test.0"), """..""")
         is_active = "{systemctl} is-active zzz.service -vv"
-        act = output(is_active.format(**locals()))
+        act, end = output2(is_active.format(**locals()))
         self.assertEqual(act.strip(), "inactive")
+        self.assertEqual(end, 1)
         #
         logg.info("== 'start' shall start a service that is NOT is-active ")
-        start_service = "{systemctl} start zzz.service -vv"
-        sh____(start_service.format(**locals()))
-        act = output(is_active.format(**locals()))
+        cmd = "{systemctl} start zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertEqual(end, 0)
+        act, end = output2(is_active.format(**locals()))
         self.assertEqual(act.strip(), "active")
+        self.assertEqual(end, 0)
         self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
         self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
         #
         logg.info("== 'stop' shall stop a service that is-active")
-        stop_service = "{systemctl} stop zzz.service -vv"
-        sh____(stop_service.format(**locals()))
-        act = output(is_active.format(**locals()))
+        cmd = "{systemctl} stop zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertEqual(end, 0)
+        act, end = output2(is_active.format(**locals()))
         self.assertEqual(act.strip(), "inactive")
+        self.assertEqual(end, 1)
         self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.1")))
         self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
         #
         logg.info("== 'restart' shall start a service that NOT is-active")        
-        restart_service = "{systemctl} restart zzz.service -vv"
-        sh____(restart_service.format(**locals()))
-        act = output(is_active.format(**locals()))
+        cmd = "{systemctl} restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertEqual(end, 0)
+        act, end = output2(is_active.format(**locals()))
         self.assertEqual(act.strip(), "active")
+        self.assertEqual(end, 0)
         self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
         self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
         #
         logg.info("== 'restart' shall restart a service that is-active")        
-        restart_service = "{systemctl} restart zzz.service -vv"
-        sh____(restart_service.format(**locals()))
-        act = output(is_active.format(**locals()))
+        cmd = "{systemctl} restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertEqual(end, 0)
+        act, end = output2(is_active.format(**locals()))
         self.assertEqual(act.strip(), "active")
+        self.assertEqual(end, 0)
         self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
         self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
         #
         logg.info("== 'reload' will NOT restart a service that is-active")        
-        restart_service = "{systemctl} reload zzz.service -vv"
-        sh____(restart_service.format(**locals()))
-        act = output(is_active.format(**locals()))
+        cmd = "{systemctl} reload zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertEqual(end, 0)
+        act, end = output2(is_active.format(**locals()))
         self.assertEqual(act.strip(), "active")
+        self.assertEqual(end, 0)
         self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
         self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
         #
         logg.info("== 'reload-or-restart' will restart a service that is-active")        
-        restart_service = "{systemctl} reload-or-restart zzz.service -vv"
-        sh____(restart_service.format(**locals()))
-        act = output(is_active.format(**locals()))
+        cmd = "{systemctl} reload-or-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertEqual(end, 0)
+        act, end = output2(is_active.format(**locals()))
         self.assertEqual(act.strip(), "active")
+        self.assertEqual(end, 0)
         #
         logg.info("== 'stop' will brings it back to 'inactive'")        
-        restart_service = "{systemctl} stop zzz.service -vv"
-        sh____(restart_service.format(**locals()))
-        act = output(is_active.format(**locals()))
+        cmd = "{systemctl} stop zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertEqual(end, 0)
+        act, end = output2(is_active.format(**locals()))
         self.assertEqual(act.strip(), "inactive")
+        self.assertEqual(end, 1)
         self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.1")))
         self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
         #
         logg.info("== 'reload-or-try-restart' will not start a not-active service")        
-        restart_service = "{systemctl} reload-or-try-restart zzz.service -vv"
-        sh____(restart_service.format(**locals()))
-        act = output(is_active.format(**locals()))
+        cmd = "{systemctl} reload-or-try-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertEqual(end, 0)
+        act, end = output2(is_active.format(**locals()))
         self.assertEqual(act.strip(), "inactive")
+        self.assertEqual(end, 1)
         self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.1")))
         self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
         #
         logg.info("== 'try-restart' will not start a not-active service")        
-        restart_service = "{systemctl} try-restart zzz.service -vv"
-        sh____(restart_service.format(**locals()))
-        act = output(is_active.format(**locals()))
+        cmd = "{systemctl} try-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertEqual(end, 0)
+        act, end = output2(is_active.format(**locals()))
         self.assertEqual(act.strip(), "inactive")
+        self.assertEqual(end, 1)
         self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.1")))
         self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
         #
         logg.info("== 'reload-or-restart' will start a not-active service")        
-        restart_service = "{systemctl} reload-or-restart zzz.service -vv"
-        sh____(restart_service.format(**locals()))
-        act = output(is_active.format(**locals()))
+        cmd = "{systemctl} reload-or-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertEqual(end, 0)
+        act, end = output2(is_active.format(**locals()))
         self.assertEqual(act.strip(), "active")
+        self.assertEqual(end, 0)
         self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
         self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
         #
         logg.info("== 'reload-or-try-restart' will restart an is-active service")        
-        restart_service = "{systemctl} reload-or-try-restart zzz.service -vv"
-        sh____(restart_service.format(**locals()))
-        act = output(is_active.format(**locals()))
+        cmd = "{systemctl} reload-or-try-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertEqual(end, 0)
+        act, end = output2(is_active.format(**locals()))
         self.assertEqual(act.strip(), "active")
+        self.assertEqual(end, 0)
         self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
         self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
         #
         logg.info("== 'try-restart' will restart an is-active service")        
-        restart_service = "{systemctl} try-restart zzz.service -vv"
-        sh____(restart_service.format(**locals()))
-        act = output(is_active.format(**locals()))
+        cmd = "{systemctl} try-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertEqual(end, 0)
+        act, end = output2(is_active.format(**locals()))
         self.assertEqual(act.strip(), "active")
+        self.assertEqual(end, 0)
         self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
         self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
         #
         logg.info("== 'stop' will brings it back to 'inactive'")        
-        restart_service = "{systemctl} stop zzz.service -vv"
-        sh____(restart_service.format(**locals()))
-        act = output(is_active.format(**locals()))
+        cmd = "{systemctl} stop zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertEqual(end, 0)
+        act, end = output2(is_active.format(**locals()))
         self.assertEqual(act.strip(), "inactive")
+        self.assertEqual(end, 1)
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        #
+        logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
+        self.rm_testdir()
+        self.coverage()
+    def test_4038_oneshot_and_unknown_service_functions(self):
+        """ check that we manage multiple services even when some
+            services are not actually known. Along with oneshot serivce
+            with basic run-service commands: start, stop, restart,
+            reload, try-restart, reload-or-restart, kill and
+            reload-or-try-restart / we have only different exit-code."""
+        if not os.path.exists("/usr/bin/socat"):
+            self.skipTest("missing /usr/bin/socat")
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        testsleep = self.testname("sleep")
+        logfile = os_path(root, "/var/log/"+testsleep+".log")
+        bindir = os_path(root, "/usr/bin")
+        os.makedirs(os_path(root, "/var/run"))
+        text_file(logfile, "created\n")
+        begin = "{" ; end = "}"
+        text_file(os_path(testdir, "zzz.service"),"""
+            [Unit]
+            Description=Testing Z
+            [Service]
+            Type=oneshot
+            ExecStartPre={bindir}/backup {root}/var/tmp/test.1 {root}/var/tmp/test.2
+            ExecStart=/usr/bin/touch {root}/var/tmp/test.1
+            ExecStop=/usr/bin/rm {root}/var/tmp/test.1
+            ExecStopPost=/usr/bin/rm -f {root}/var/tmp/test.2
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        shell_file(os_path(testdir, "backup"), """
+           #! /bin/sh
+           set -x
+           test ! -f "$1" || mv -v "$1" "$2"
+        """)
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
+        copy_tool(os_path(testdir, "backup"), os_path(root, "/usr/bin/backup"))
+        text_file(os_path(root, "/var/tmp/test.0"), """..""")
+        is_active = "{systemctl} is-active zzz.service other.service -vv"
+        act, end = output2(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "inactive\nunknown")
+        self.assertEqual(end, 1)
+        #
+        logg.info("== 'start' shall start a service that is NOT is-active ")
+        cmd = "{systemctl} start zzz.service other.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertNotEqual(end, 0)
+        is_active = "{systemctl} is-active zzz.service other.service -vv"
+        act, end = output2(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "active\nunknown")
+        self.assertEqual(end, 1) 
+        self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        #
+        logg.info("== 'stop' shall stop a service that is-active")
+        cmd = "{systemctl} stop zzz.service other.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertNotEqual(end, 0)
+        act, end = output2(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "inactive\nunknown")
+        self.assertEqual(end, 1)
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        #
+        logg.info("== 'restart' shall start a service that NOT is-active")        
+        cmd = "{systemctl} restart zzz.service other.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertNotEqual(end, 0)
+        act, end = output2(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "active\nunknown")
+        self.assertEqual(end, 1)
+        self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        #
+        logg.info("== 'restart' shall restart a service that is-active")        
+        cmd = "{systemctl} restart zzz.service other.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertNotEqual(end, 0)
+        act, end = output2(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "active\nunknown")
+        self.assertEqual(end, 1)
+        self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        #
+        logg.info("== 'reload' will NOT restart a service that is-active")        
+        cmd = "{systemctl} reload zzz.service other.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertNotEqual(end, 0)
+        act, end = output2(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "active\nunknown")
+        self.assertEqual(end, 1)
+        self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        #
+        logg.info("== 'reload-or-restart' will restart a service that is-active")        
+        cmd = "{systemctl} reload-or-restart zzz.service other.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertNotEqual(end, 0)
+        act, end = output2(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "active\nunknown")
+        self.assertEqual(end, 1)
+        #
+        logg.info("== 'stop' will brings it back to 'inactive'")        
+        cmd = "{systemctl} stop zzz.service other.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertNotEqual(end, 0)
+        act, end = output2(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "inactive\nunknown")
+        self.assertEqual(end, 1)
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        #
+        logg.info("== 'reload-or-try-restart' will not start a not-active service")        
+        cmd = "{systemctl} reload-or-try-restart zzz.service other.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertNotEqual(end, 0)
+        act, end = output2(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "inactive\nunknown")
+        self.assertEqual(end, 1)
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        #
+        logg.info("== 'try-restart' will not start a not-active service")        
+        cmd = "{systemctl} try-restart zzz.service other.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertNotEqual(end, 0)
+        act, end = output2(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "inactive\nunknown")
+        self.assertEqual(end, 1)
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        #
+        logg.info("== 'reload-or-restart' will start a not-active service")        
+        cmd = "{systemctl} reload-or-restart zzz.service other.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertNotEqual(end, 0)
+        act, end = output2(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "active\nunknown")
+        self.assertEqual(end, 1)
+        self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        #
+        logg.info("== 'reload-or-try-restart' will restart an is-active service")        
+        cmd = "{systemctl} reload-or-try-restart zzz.service other.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertNotEqual(end, 0)
+        act, end = output2(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "active\nunknown")
+        self.assertEqual(end, 1)
+        self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        #
+        logg.info("== 'try-restart' will restart an is-active service")        
+        cmd = "{systemctl} try-restart zzz.service other.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertNotEqual(end, 0)
+        act, end = output2(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "active\nunknown")
+        self.assertEqual(end, 1)
+        self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        #
+        logg.info("== 'stop' will brings it back to 'inactive'")        
+        cmd = "{systemctl} stop zzz.service other.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertNotEqual(end, 0)
+        act, end = output2(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "inactive\nunknown")
+        self.assertEqual(end, 1)
         self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.1")))
         self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
         #
@@ -6527,7 +6757,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         if COVERAGE:
             coverage_file = ".coverage." + testname
-            grab_coverage = "docker cp {testname}x:.coverage {coverage_file}"
+            grab_coverage = "docker cp {testname}:.coverage {coverage_file}"
             sh____(grab_coverage.format(**locals()))
             okay_coverage = "sed -i -e 's:/{systemctl_py_run}:{systemctl_py}:' {coverage_file}"
             sh____(okay_coverage.format(**locals()))
