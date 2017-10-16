@@ -3311,8 +3311,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStartPre=echo %n
             ExecStart={bindir}/{testscript} 50
             ExecStartPost=echo started $MAINPID
-            ExecStopPre=echo stopping $MAINPID
             ExecStop=/usr/bin/kill -3 $MAINPID
+            ExecStopPost=echo stopped $MAINPID
             ExecStopPost=sleep 2
             ExecReloadPre=echo reloading $MAINPID
             ExecReload=/usr/bin/kill -10 $MAINPID
