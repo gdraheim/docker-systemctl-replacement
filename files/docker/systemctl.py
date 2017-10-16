@@ -419,25 +419,23 @@ def time_to_seconds(text, maximum = None):
     value = 0
     for part in str(text).split(" "):
         item = part.strip()
-        if not item: 
-            continue
         if item == "infinity":
             return maximum
         if item.endswith("m"):
             try: value += 60 * int(item[:-1])
-            except: pass
+            except: pass # pragma: no cover
         if item.endswith("min"):
             try: value += 60 * int(item[:-3])
-            except: pass
+            except: pass # pragma: no cover
         elif item.endswith("ms"):
             try: value += int(item[:-2]) / 1000.
-            except: pass
+            except: pass # pragma: no cover
         elif item.endswith("s"):
             try: value += int(item[:-1])
-            except: pass
-        else:
+            except: pass # pragma: no cover
+        elif item:
             try: value += int(item)
-            except: pass
+            except: pass # pragma: no cover
     if value > maximum:
         return maximum
     if not value:
