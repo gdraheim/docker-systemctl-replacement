@@ -3006,11 +3006,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzs.service"), os_path(root, "/etc/systemd/system/zzs.service"))
         #
-        cat_service = "{systemctl} cat zzs.service -vv"
-        cat, end = output2(cat_service.format(**locals()))
-        logg.info("RESULT \n%s", cat)
+        cmd = "{systemctl} cat zzs.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
         orig = lines(open(os_path(root, "/etc/systemd/system/zzs.service")))
-        data = lines(cat)
+        data = lines(out)
         self.assertEqual(orig + [""], data)
         self.assertEqual(end, 0)
         #
@@ -3040,10 +3040,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzs.service"), os_path(root, "/etc/systemd/system/zzs.service"))
         #
-        show_service = "{systemctl} show zzs.service -vv"
-        show, end = output2(show_service.format(**locals()))
-        logg.info("RESULT \n%s", show)
-        data = lines(show)
+        cmd = "{systemctl} show zzs.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        data = lines(out)
         self.assertTrue(greps(data, "Id=zzs.service"))
         self.assertTrue(greps(data, "Names=zzs.service"))
         self.assertTrue(greps(data, "Description=Testing"))
@@ -3057,10 +3057,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         enable_service = "{systemctl} enable zzs.service -vv"
         sh____(enable_service.format(**locals()))
         #
-        show_service = "{systemctl} show zzs.service -vv"
-        show, end = output2(show_service.format(**locals()))
-        logg.info("RESULT \n%s", show)
-        data = lines(show)
+        cmd = "{systemctl} show zzs.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        data = lines(out)
         self.assertTrue(greps(data, "Id=zzs.service"))
         self.assertTrue(greps(data, "Names=zzs.service"))
         self.assertTrue(greps(data, "Description=Testing"))
@@ -3074,10 +3074,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         start_service = "{systemctl} start zzs.service -vv"
         sh____(start_service.format(**locals()))
         #
-        show_service = "{systemctl} show zzs.service -vv"
-        show, end = output2(show_service.format(**locals()))
-        logg.info("RESULT \n%s", show)
-        data = lines(show)
+        cmd = "{systemctl} show zzs.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        data = lines(out)
         self.assertTrue(greps(data, "Id=zzs.service"))
         self.assertTrue(greps(data, "Names=zzs.service"))
         self.assertTrue(greps(data, "Description=Testing"))
@@ -3117,10 +3117,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzs.service"), os_path(root, "/etc/systemd/system/zzs.service"))
         #
-        show_service = "{systemctl} show zzs.service -vv -p ActiveState"
-        show, end = output2(show_service.format(**locals()))
-        logg.info("RESULT \n%s", show)
-        data = lines(show)
+        cmd = "{systemctl} show zzs.service -vv -p ActiveState"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        data = lines(out)
         self.assertTrue(greps(data, "ActiveState=inactive"))
         self.assertEqual(len(data), 1)
         self.assertEqual(end, 0)
@@ -3128,18 +3128,18 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         start_service = "{systemctl} start zzs.service -vv"
         sh____(start_service.format(**locals()))
         #
-        show_service = "{systemctl} show zzs.service -vv -p ActiveState"
-        show, end = output2(show_service.format(**locals()))
-        logg.info("RESULT \n%s", show)
-        data = lines(show)
+        cmd = "{systemctl} show zzs.service -vv -p ActiveState"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        data = lines(out)
         self.assertTrue(greps(data, "ActiveState=active"))
         self.assertEqual(len(data), 1)
         self.assertEqual(end, 0)
         #
-        show_service = "{systemctl} show zzs.service -vv -p 'MainPID'"
-        show, end = output2(show_service.format(**locals()))
-        logg.info("RESULT \n%s", show)
-        data = lines(show)
+        cmd = "{systemctl} show zzs.service -vv -p 'MainPID'"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        data = lines(out)
         self.assertTrue(greps(data, "MainPID=[123456789][1234567890]*")) # <<<<
         self.assertEqual(len(data), 1)
         self.assertEqual(end, 0)
@@ -3173,10 +3173,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzs.service"), os_path(root, "/etc/systemd/system/zzs.service"))
         #
-        show_service = "{systemctl} status zzs.service -vv"
-        show, end = output2(show_service.format(**locals()))
-        logg.info("RESULT \n%s", show)
-        data = lines(show)
+        cmd = "{systemctl} status zzs.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        data = lines(out)
         self.assertTrue(greps(data, "zzs.service - Testing"))
         self.assertTrue(greps(data, "Loaded: loaded"))
         self.assertTrue(greps(data, "Active: inactive"))
@@ -3190,10 +3190,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         start_service = "{systemctl} start zzs.service -vv"
         sh____(start_service.format(**locals()))
         #
-        show_service = "{systemctl} status zzs.service -vv"
-        show, end = output2(show_service.format(**locals()))
-        logg.info("RESULT \n%s", show)
-        data = lines(show)
+        cmd = "{systemctl} status zzs.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        data = lines(out)
         self.assertTrue(greps(data, "zzs.service - Testing"))
         self.assertTrue(greps(data, "Loaded: loaded"))
         self.assertTrue(greps(data, "Active: active"))
