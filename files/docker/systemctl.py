@@ -424,6 +424,12 @@ def time_to_seconds(text, maximum = None):
         if item.endswith("m"):
             try: value += 60 * int(item[:-1])
             except: pass
+        if item.endswith("min"):
+            try: value += 60 * int(item[:-3])
+            except: pass
+        elif item.endswith("ms"):
+            try: value += int(item[:-2]) / 1000.
+            except: pass
         elif item.endswith("s"):
             try: value += int(item[:-1])
             except: pass
@@ -436,17 +442,21 @@ def time_to_seconds(text, maximum = None):
         return 1
     return value
 def seconds_to_time(seconds):
-    if seconds > 60:
-        mins = seconds % 60
-        secs = seconds - (mins * 60)
-        if secs:
-            return "%smin %ss" % (mins, secs)
+    seconds = float(seconds)
+    mins = int(int(seconds) / 60)
+    secs = int(int(seconds) - (mins * 60))
+    msecs = int(int(seconds * 1000) - (secs * 1000 + mins * 60000))
+    if mins and secs and msecs:
+        return "%smin %ss %sms" % (mins, secs, msecs)
+    elif mins and secs:
+        return "%smin %ss" % (mins, secs)
+    elif secs and msecs:
+        return "%ss %sms" % (secs, msecs)
+    elif mins and msecs:
+        return "%smin %sms" % (mins, msecs)
+    elif mins:
         return "%smin" % (mins)
     else:
-        secs = int(seconds)
-        msecs = int(seconds * 1000) - (secs * 1000)
-        if msecs:
-            return "%ss %sms" % (secs, msecs)
         return "%ss" % (secs)
 
 def getBefore(conf):
