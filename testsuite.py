@@ -4823,7 +4823,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Type=simple
             ExecStartPre={bindir}/logger 'start-A'
             ExecStart={bindir}/{testsleep} 30
-            ExecStopPre={bindir}/logger 'stop-A'
+            ExecStopPost={bindir}/logger 'stop-A'
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
@@ -4834,7 +4834,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Type=simple
             ExecStartPre={bindir}/logger 'start-B'
             ExecStart={bindir}/{testsleep} 40
-            ExecStopPre={bindir}/logger 'stop-B'
+            ExecStopPost={bindir}/logger 'stop-B'
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
@@ -4846,7 +4846,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Type=simple
             ExecStartPre={bindir}/logger 'start-C'
             ExecStart={bindir}/{testsleep} 50
-            ExecStopPre={bindir}/logger 'stop-C'
+            ExecStopPost={bindir}/logger 'stop-C'
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
