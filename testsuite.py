@@ -6253,6 +6253,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out = output(version_systemctl.format(**locals()))
         logg.info("\n>\n%s", out)
         #
+        stop_container = "docker rm --force {testname}"
         sx____(stop_container.format(**locals()))
         self.assertTrue(greps(out, "systemctl.py"))
         #
@@ -6298,6 +6299,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out = output(list_units_systemctl.format(**locals()))
         logg.info("\n>\n%s", out)
         #
+        stop_container = "docker rm --force {testname}"
         sx____(stop_container.format(**locals()))
         self.assertTrue(greps(out, "zza.service.*static"))
         self.assertTrue(greps(out, "zzb.service.*disabled"))
@@ -6351,6 +6353,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out3 = output(list_units_systemctl.format(**locals()))
         logg.info("\n>\n%s", out3)
         #
+        stop_container = "docker rm --force {testname}"
         sx____(stop_container.format(**locals()))
         self.assertTrue(greps(out2, "zzb.service"))
         self.assertTrue(greps(out2, "zzc.service"))
@@ -6420,6 +6423,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, "testsleep"))
         #
+        stop_container = "docker rm --force {testname}"
         sx____(stop_container.format(**locals()))
         self.rm_testdir()
     def test_5031_systemctl_py_start_extra_simple(self):
@@ -6472,6 +6476,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, "testsleep"))
         #
+        stop_container = "docker rm --force {testname}"
         sx____(stop_container.format(**locals()))
         self.rm_testdir()
     def test_5032_systemctl_py_start_forking(self):
@@ -6551,6 +6556,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, "testsleep"))
         #
+        stop_container = "docker rm --force {testname}"
         sx____(stop_container.format(**locals()))
         self.rm_testdir()
     def test_5033_systemctl_py_start_forking_without_pid_file(self):
@@ -6628,6 +6634,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, "testsleep"))
         #
+        stop_container = "docker rm --force {testname}"
         sx____(stop_container.format(**locals()))
         self.rm_testdir()
     def test_5035_systemctl_py_start_notify_by_timeout(self):
@@ -6691,6 +6698,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, "testsleep"))
         #
+        stop_container = "docker rm --force {testname}"
         sx____(stop_container.format(**locals()))
         self.rm_testdir()
     def test_5100_systemctl_py_run_default_services_in_container(self):
@@ -6765,6 +6773,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(top, "testsleep 40"))
         self.assertFalse(greps(top, "testsleep 50"))
         #
+        stop_container = "docker rm --force {testname}"
         sx____(stop_container.format(**locals()))
         self.rm_testdir()
     def test_5120_systemctl_py_run_default_services_from_saved_container(self):
@@ -6846,7 +6855,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(top, "testsleep 40"))
         self.assertFalse(greps(top, "testsleep 50"))
         #
+        stop_container = "docker rm --force {testname}"
         sx____(stop_container.format(**locals()))
+        stop_container2 = "docker rm --force {testname}x"
         sx____(stop_container2.format(**locals()))
         drop_image_container = "docker rmi {images}:{testname}"
         sx____(drop_image_container.format(**locals()))
@@ -6930,7 +6941,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(top, "testsleep 40"))
         self.assertFalse(greps(top, "testsleep 50"))
         #
+        stop_container = "docker rm --force {testname}"
         sx____(stop_container.format(**locals()))
+        stop_container2 = "docker rm --force {testname}x"
         sx____(stop_container2.format(**locals()))
         drop_image_container = "docker rmi {images}:{testname}"
         sx____(drop_image_container.format(**locals()))
@@ -7014,7 +7027,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(top, "testsleep 40"))
         self.assertFalse(greps(top, "testsleep 50"))
         #
+        stop_container = "docker rm --force {testname}"
         sx____(stop_container.format(**locals()))
+        stop_container2 = "docker rm --force {testname}x"
         sx____(stop_container2.format(**locals()))
         drop_image_container = "docker rmi {images}:{testname}"
         sx____(drop_image_container.format(**locals()))
@@ -7122,7 +7137,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             okay_coverage = "sed -i -e 's:/{systemctl_py_run}:{systemctl_py}:' {coverage_file}"
             sh____(okay_coverage.format(**locals()))
         #
+        stop_container = "docker rm --force {testname}"
         sx____(stop_container.format(**locals()))
+        stop_container2 = "docker rm --force {testname}x"
         sx____(stop_container2.format(**locals()))
         drop_image_container = "docker rmi {images}:{testname}"
         sx____(drop_image_container.format(**locals()))
@@ -7230,7 +7247,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             okay_coverage = "sed -i -e 's:/{systemctl_py_run}:{systemctl_py}:' {coverage_file}"
             sh____(okay_coverage.format(**locals()))
         #
+        stop_container = "docker rm --force {testname}"
         sx____(stop_container.format(**locals()))
+        stop_container2 = "docker rm --force {testname}x"
         sx____(stop_container2.format(**locals()))
         drop_image_container = "docker rmi {images}:{testname}"
         sx____(drop_image_container.format(**locals()))
@@ -7451,7 +7470,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             okay_coverage = "sed -i -e 's:/{systemctl_py_run}:{systemctl_py}:' {coverage_file}"
             sh____(okay_coverage.format(**locals()))
         #
+        stop_container = "docker rm --force {testname}"
         sx____(stop_container.format(**locals()))
+        stop_container2 = "docker rm --force {testname}x"
         sx____(stop_container2.format(**locals()))
         drop_image_container = "docker rmi {images}:{testname}"
         sx____(drop_image_container.format(**locals()))
@@ -7622,13 +7643,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # THEN
         tmp = self.testdir(testname)
         read_index_html = "sleep 5; wget -O {tmp}/{testname}.txt http://127.0.0.1:{port}"
-        grep_index_html = "grep OK {tmp}/{testname}.txt"
         sh____(read_index_html.format(**locals()))
+        grep_index_html = "grep OK {tmp}/{testname}.txt"
         sh____(grep_index_html.format(**locals()))
         # CLEAN
         stop_container = "docker stop {testname}"
-        drop_container = "docker rm --force {testname}"
         sh____(stop_container.format(**locals()))
+        drop_container = "docker rm --force {testname}"
         sh____(drop_container.format(**locals()))
         drop_image_container = "docker rmi {images}:{testname}"
         sx____(drop_image_container.format(**locals()))
@@ -7661,13 +7682,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         login = "export PGUSER=testuser_11; export PGPASSWORD=Testuser.11"
         query = "SELECT rolname FROM pg_roles"
         read_index_html = "sleep 5; {login}; psql -p {port} -h 127.0.0.1 -d postgres -c '{query}' > {tmp}/{testname}.txt"
-        grep_index_html = "grep testuser_ok {tmp}/{testname}.txt"
         sh____(read_index_html.format(**locals()))
+        grep_index_html = "grep testuser_ok {tmp}/{testname}.txt"
         sh____(grep_index_html.format(**locals()))
         # CLEAN
         stop_container = "docker stop {testname}"
-        drop_container = "docker rm --force {testname}"
         sh____(stop_container.format(**locals()))
+        drop_container = "docker rm --force {testname}"
         sh____(drop_container.format(**locals()))
         drop_image_container = "docker rmi {images}:{testname}"
         sx____(drop_image_container.format(**locals()))
@@ -7711,26 +7732,27 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         container = self.ip_container(testname)
         make_info_log = "docker exec {testname} touch /var/log/systemctl.debug.log"
-        start_httpd = "docker exec {testname} systemctl start httpd"
         sh____(make_info_log.format(**locals()))
+        start_httpd = "docker exec {testname} systemctl start httpd"
         sh____(start_httpd.format(**locals()))
         # THEN
         time.sleep(5)
         read_index_html = "wget -O {testdir}/result.txt http://{container}:80"
-        grep_index_html = "grep OK {testdir}/result.txt"
         sh____(read_index_html.format(**locals()))
+        grep_index_html = "grep OK {testdir}/result.txt"
         sh____(grep_index_html.format(**locals()))
         # STOP
         status_software = "docker exec {testname} systemctl status httpd"
-        stop_software = "docker exec {testname} systemctl stop httpd"
         sh____(status_software.format(**locals()))
+        stop_software = "docker exec {testname} systemctl stop httpd"
         sh____(stop_software.format(**locals()))
+        status_software = "docker exec {testname} systemctl status httpd"
         sx____(status_software.format(**locals()))
         fetch_systemctl_log = "docker cp {testname}:/var/log/systemctl.debug.log {testdir}/systemctl.debug.log"
         sh____(fetch_systemctl_log.format(**locals()))
         stop_new_container = "docker stop {testname}"
-        drop_new_container = "docker rm --force {testname}"
         sh____(stop_new_container.format(**locals()))
+        drop_new_container = "docker rm --force {testname}"
         sh____(drop_new_container.format(**locals()))
         # CHECK
         self.assertEqual(len(greps(open(testdir+"/systemctl.debug.log"), " ERROR ")), 0)
@@ -7780,13 +7802,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         enable_software = "docker exec {testname} systemctl enable elasticsearch"
         sh____(enable_software.format(**locals()))
         #
-        ## commit_container = "docker commit -c 'CMD [\"/usr/bin/systemctl\",\"init\",\"-vv\"]'  {testname} {images}:{testname}"
-        ## sh____(commit_container.format(**locals()))
-        ## stop_container = "docker rm --force {testname}"
-        ## sx____(stop_container.format(**locals()))
-        ## start_container = "docker run --detach --name {testname} {images}:{testname} sleep 200"
-        ## sh____(start_container.format(**locals()))
-        ## time.sleep(3)
+        commit_container = "docker commit -c 'CMD [\"/usr/bin/systemctl\"]'  {testname} {images}:{testname}"
+        sh____(commit_container.format(**locals()))
+        stop_container = "docker rm --force {testname}"
+        sx____(stop_container.format(**locals()))
+        start_container = "docker run --detach --name {testname} {images}:{testname} sleep 200"
+        sh____(start_container.format(**locals()))
+        time.sleep(3)
         #
         container = self.ip_container(testname)
         logg.info("========================>>>>>>>>")
@@ -7797,19 +7819,19 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # THEN
         testdir = self.testdir(testname)
         read_index_html = "sleep 5; wget -O {testdir}/result.txt http://{container}:9200/?pretty"
-        grep_index_html = "grep 'You Know, for Search' {testdir}/result.txt"
         sh____(read_index_html.format(**locals()))
+        grep_index_html = "grep 'You Know, for Search' {testdir}/result.txt"
         sh____(grep_index_html.format(**locals()))
         # STOP
         status_elasticsearch = "docker exec {testname} systemctl status elasticsearch"
-        stop_elasticsearch = "docker exec {testname} systemctl stop elasticsearch"
         sh____(status_elasticsearch.format(**locals()))
+        stop_elasticsearch = "docker exec {testname} systemctl stop elasticsearch"
         sh____(stop_elasticsearch.format(**locals()))
         fetch_systemctl_log = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         sh____(fetch_systemctl_log.format(**locals()))
         stop_container = "docker stop {testname}"
-        drop_container = "docker rm --force {testname}"
         sh____(stop_container.format(**locals()))
+        drop_container = "docker rm --force {testname}"
         sh____(drop_container.format(**locals()))
         # CHECK
         systemctl_log = open(testdir+"/systemctl.log").read()
@@ -7818,8 +7840,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(systemctl_log, "stop kill PID .*elasticsearch.service"))
         self.assertTrue(greps(systemctl_log, "stopped PID .* EXIT 143"))
         #
-        ## drop_image_container = "docker rmi {images}:{name}"
-        ## sx____(drop_image_container.format(**locals()))
+        drop_image_container = "docker rmi {images}:{name}"
+        sx____(drop_image_container.format(**locals()))
         self.rm_testdir()
     def test_7013_centos_lamp_stack(self):
         """ Check setup of Linux/Mariadb/Apache/Php on CentOs"""
@@ -7848,21 +7870,21 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         INC_CONF="/etc/phpMyAdmin/config.inc.php"
         INDEX_PHP="/var/www/html/index.php"
         push_result = "docker exec {testname} bash -c 'echo \"<?php phpinfo(); ?>\" > {INDEX_PHP}'"
-        push_connect = "docker exec {testname} sed -i 's|ip 127.0.0.1|ip 172.0.0.0/8|' {WEB_CONF}"
         sh____(push_result.format(**locals()))
+        push_connect = "docker exec {testname} sed -i 's|ip 127.0.0.1|ip 172.0.0.0/8|' {WEB_CONF}"
         sh____(push_connect.format(**locals()))
         start_db = "docker exec {testname} systemctl start mariadb -vvv"
         sh____(start_db.format(**locals()))
         rootuser_db = "docker exec {testname} mysqladmin -uroot password 'N0.secret'"
+        sh____(rootuser_db.format(**locals()))
         text_file(os_path(testdir,"testuser.sql"), "CREATE USER testuser_OK IDENTIFIED BY 'Testuser.OK'")
         testuser_sql = "docker cp {testdir}/testuser.sql {testname}:/srv/testuser.sql" 
-        testuser_db = "docker exec {testname} bash -c 'cat /srv/testuser.sql | mysql -uroot -pN0.secret'"
-        sh____(rootuser_db.format(**locals()))
         sh____(testuser_sql.format(**locals()))
+        testuser_db = "docker exec {testname} bash -c 'cat /srv/testuser.sql | mysql -uroot -pN0.secret'"
         sh____(testuser_db.format(**locals()))
         testuser_username = "docker exec {testname} sed -i -e \"/'user'/s|=.*;|='testuser_OK';|\" {INC_CONF}"
-        testuser_password = "docker exec {testname} sed -i -e \"/'password'/s|=.*;|='Testuser.OK';|\" {INC_CONF}"
         sh____(testuser_username.format(**locals()))
+        testuser_password = "docker exec {testname} sed -i -e \"/'password'/s|=.*;|='Testuser.OK';|\" {INC_CONF}"
         sh____(testuser_password.format(**locals()))
         enable_software = "docker exec {testname} systemctl start httpd"
         sh____(enable_software.format(**locals()))
@@ -7871,13 +7893,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # THEN
         time.sleep(5)
         read_php_admin_html = "wget -O {testdir}/result.txt http://{container}/phpMyAdmin"
-        grep_php_admin_html = "grep '<h1>.*>phpMyAdmin<' {testdir}/result.txt"
         sh____(read_php_admin_html.format(**locals()))
+        grep_php_admin_html = "grep '<h1>.*>phpMyAdmin<' {testdir}/result.txt"
         sh____(grep_php_admin_html.format(**locals()))
         # CLEAN
         stop_container = "docker stop {testname}"
-        drop_container = "docker rm --force {testname}"
         sh____(stop_container.format(**locals()))
+        drop_container = "docker rm --force {testname}"
         sh____(drop_container.format(**locals()))
         #
         self.rm_testdir()
@@ -7906,21 +7928,21 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         INC_CONF="/etc/phpMyAdmin/config.inc.php"
         INDEX_PHP="/srv/www/htdocs/index.php"
         push_result = "docker exec {testname} bash -c 'echo \"<?php phpinfo(); ?>\" > {INDEX_PHP}'"
-        push_connect = "docker exec {testname} sed -i 's|ip 127.0.0.1|ip 172.0.0.0/8|' {WEB_CONF}"
         sh____(push_result.format(**locals()))
+        push_connect = "docker exec {testname} sed -i 's|ip 127.0.0.1|ip 172.0.0.0/8|' {WEB_CONF}"
         sh____(push_connect.format(**locals()))
         start_db = "docker exec {testname} systemctl start mysql -vvv"
         sh____(start_db.format(**locals()))
         rootuser_db = "docker exec {testname} mysqladmin -uroot password 'N0.secret'"
+        sh____(rootuser_db.format(**locals()))
         text_file(os_path(testdir,"testuser.sql"), "CREATE USER testuser_OK IDENTIFIED BY 'Testuser.OK'")
         testuser_sql = "docker cp {testdir}/testuser.sql {testname}:/srv/testuser.sql" 
-        testuser_db = "docker exec {testname} bash -c 'cat /srv/testuser.sql | mysql -uroot -pN0.secret'"
-        sh____(rootuser_db.format(**locals()))
         sh____(testuser_sql.format(**locals()))
+        testuser_db = "docker exec {testname} bash -c 'cat /srv/testuser.sql | mysql -uroot -pN0.secret'"
         sh____(testuser_db.format(**locals()))
         testuser_username = "docker exec {testname} sed -i -e \"/'user'/s|=.*;|='testuser_OK';|\" {INC_CONF}"
-        testuser_password = "docker exec {testname} sed -i -e \"/'password'/s|=.*;|='Testuser.OK';|\" {INC_CONF}"
         sh____(testuser_username.format(**locals()))
+        testuser_password = "docker exec {testname} sed -i -e \"/'password'/s|=.*;|='Testuser.OK';|\" {INC_CONF}"
         sh____(testuser_password.format(**locals()))
         enable_software = "docker exec {testname} systemctl start apache2"
         sh____(enable_software.format(**locals()))
@@ -7929,13 +7951,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # THEN
         time.sleep(5)
         read_php_admin_html = "wget -O {testdir}/result.txt http://{container}/phpMyAdmin"
-        grep_php_admin_html = "grep '<h1>.*>phpMyAdmin<' {testdir}/result.txt"
         sh____(read_php_admin_html.format(**locals()))
+        grep_php_admin_html = "grep '<h1>.*>phpMyAdmin<' {testdir}/result.txt"
         sh____(grep_php_admin_html.format(**locals()))
         # CLEAN
         stop_container = "docker stop {testname}"
-        drop_container = "docker rm --force {testname}"
         sh____(stop_container.format(**locals()))
+        drop_container = "docker rm --force {testname}"
         sh____(drop_container.format(**locals()))
         #
         self.rm_testdir()
@@ -7986,13 +8008,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # THEN
         tmp = self.testdir(testname)
         read_index_html = "sleep 5; wget -O {tmp}/{testname}.txt http://127.0.0.1:{port}"
-        grep_index_html = "grep OK {tmp}/{testname}.txt"
         sh____(read_index_html.format(**locals()))
+        grep_index_html = "grep OK {tmp}/{testname}.txt"
         sh____(grep_index_html.format(**locals()))
         # CLEAN
         stop_new_container = "docker stop {testname}"
-        drop_new_container = "docker rm --force {testname}"
         sh____(stop_new_container.format(**locals()))
+        drop_new_container = "docker rm --force {testname}"
         sh____(drop_new_container.format(**locals()))
         drop_image_container = "docker rmi {images}:{testname}"
         sx____(drop_image_container.format(**locals()))
@@ -8059,6 +8081,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if greps(top, "mysqld ") and had_mysqld_safe:
             logg.critical("mysqld still running => this is an uptream error!")
         #
+        stop_container = "docker rm --force {testname}"
         sx____(stop_container.format(**locals()))
         self.rm_testdir()
     def test_8002_issue_2_start_rsyslog_centos7(self):
@@ -8099,6 +8122,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, "/usr/sbin/rsyslog"))
         #
+        stop_container = "docker rm --force {testname}"
         sx____(stop_container.format(**locals()))
         self.rm_testdir()
     def test_9000_ansible_test(self):
