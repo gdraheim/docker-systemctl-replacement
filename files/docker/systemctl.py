@@ -2688,33 +2688,68 @@ class Systemctl:
                 logg.error("%s: can not read unit file %s\n\t%s", 
                     unit, conf.filename(), e)
                 continue
-            if not conf.has_section("Service"):
-                if conf.filename() and conf.filename().endswith(".service"):
-                   logg.error("%s: .service file without [Service] section", unit)
-                continue
-            haveType = conf.get("Service", "Type", "simple")
-            haveExecStart = conf.getlist("Service", "ExecStart", [])
-            haveExecStop = conf.getlist("Service", "ExecStop", [])
-            usedExecStart = []
-            usedExecStop = []
-            for line in haveExecStart:
-                if not line.startswith("/") and not line.startswith("-/"):
-                    logg.error("%s: Executable path is not absolute, ignoring: %s", unit, line.strip())
-                    continue
-                usedExecStart.append(line)
-            for line in haveExecStop:
-                if not line.startswith("/") and not line.startswith("-/"):
-                    logg.error("%s: Executable path is not absolute, ignoring: %s", unit, line.strip())
-                    continue
-                usedExecStop.append(line)
-            if haveType in ["simple", "notify", "forking"]:
-                if not usedExecStart and not usedExecStop:
-                    logg.error("%s: Service lacks both ExecStart and ExecStop= setting. Refusing.", unit)
-                    ok = False
-                elif not usedExecStart and haveType != "oneshot":
-                    logg.error("%s: Service has no ExecStart= setting, which is only allowed for Type=oneshot services. Refusing.",  unit)
-                    ok = False
+            self.syntax_check(conf)
         return True # and ok
+    def syntax_check(self, conf):
+        unit = conf.name()
+        if not conf.has_section("Service"):
+            if conf.filename() and conf.filename().endswith(".service"):
+               logg.error("%s: .service file without [Service] section", unit)
+            return False
+        ok = False
+        haveType = conf.get("Service", "Type", "simple")
+        haveExecStart = conf.getlist("Service", "ExecStart", [])
+        haveExecStop = conf.getlist("Service", "ExecStop", [])
+        haveExecReload = conf.getlist("Service", "ExecReload", [])
+        usedExecStart = []
+        usedExecStop = []
+        usedExecReload = []
+        for line in haveExecStart:
+            if not line.startswith("/") and not line.startswith("-/"):
+                logg.error("%s: Executable path is not absolute, ignoring: %s", unit, line.strip())
+                ok = False
+            usedExecStart.append(line)
+        for line in haveExecStop:
+            if not line.startswith("/") and not line.startswith("-/"):
+                logg.error("%s: Executable path is not absolute, ignoring: %s", unit, line.strip())
+                ok = False
+            usedExecStop.append(line)
+        for line in haveExecReload:
+            if not line.startswith("/") and not line.startswith("-/"):
+                logg.error("%s: Executable path is not absolute, ignoring: %s", unit, line.strip())
+                ok = False
+            usedExecReload.append(line)
+        if haveType in ["simple", "notify", "forking"]:
+            if not usedExecStart and not usedExecStop:
+                logg.error("%s: Service lacks both ExecStart and ExecStop= setting. Refusing.", unit)
+                ok = False
+            elif not usedExecStart and haveType != "oneshot":
+                logg.error("%s: Service has no ExecStart= setting, which is only allowed for Type=oneshot services. Refusing.",  unit)
+                ok = False
+        if len(usedExecStart) > 1 and haveType != "oneshot":
+            logg.error("%s: there may be only one ExecStart statement (unless for 'oneshot' services)."
+              + "Use ' ; ' for multiple commands or better use ExecStartPre / ExecStartPost", unit)
+            ok = False
+        if len(usedExecReload) > 1:
+            logg.error("%s: there may be only one ExecReload statement."
+              + "Use ' ; ' for multiple commands (ExecReloadPost or ExedReloadPre do not exit)", unit)
+            ok = False
+        if len(usedExecReload) > 0 and "/bin/kill " in usedExecReload[0]:
+            logg.info("%s: the use of /bin/kill is not recommended for ExecReload as it is asychronous."
+              + "That means all the dependencies will perform the reload simultanously / out of order.", unit)
+        if conf.getlist("Service", "ExecRestart", []):
+            logg.error("%s: there no such thing as an ExecRestart (ignored)", unit)
+        if conf.getlist("Service", "ExecRestartPre", []):
+            logg.error("%s: there no such thing as an ExecRestartPre (ignored)", unit)
+        if conf.getlist("Service", "ExecRestartPost", []):
+            logg.error("%s: there no such thing as an ExecRestartPost (ignored)", unit)
+        if conf.getlist("Service", "ExecReloadPre", []):
+            logg.error("%s: there no such thing as an ExecReloadPre (ignored)", unit)
+        if conf.getlist("Service", "ExecReloadPost", []):
+            logg.error("%s: there no such thing as an ExecReloadPost (ignored)", unit)
+        if conf.getlist("Service", "ExecStopPre", []):
+            logg.error("%s: there no such thing as an ExecStopPre (ignored)", unit)
+        return ok
     def show_modules(self, *modules):
         """ [PATTERN]... -- Show properties of one or more units
            Show properties of one or more units (or the manager itself).
