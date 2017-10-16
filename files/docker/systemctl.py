@@ -311,7 +311,7 @@ class UnitConfigParser:
         for orig_line in open(filename):
             if nextline:
                 text += orig_line
-                if text.rstrip().endswith("\\"):
+                if text.rstrip().endswith("\\") or text.rstrip().endswith("\\\n"):
                     text = text.rstrip() + "\n"
                 else:
                     self.set(section, name, text)
@@ -335,7 +335,7 @@ class UnitConfigParser:
                 logg.warning("bad ini line: %s", line)
                 raise Exception("bad ini line")
             name, text = m.group(1), m.group(2).strip()
-            if text.endswith("\\"):
+            if text.endswith("\\") or text.endswith("\\\n"):
                 nextline = True
                 text = text + "\n"
             else:
