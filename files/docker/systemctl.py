@@ -118,12 +118,14 @@ def shutil_chown(filename, user = None, group = None):
 
 def shutil_setuid(user = None, group = None):
     """ set fork-child uid/gid """
-    if group:
+    if group: # pragma: no cover
+        # actually tested but in a forked child only
         import grp
         gid = grp.getgrnam(group).gr_gid
         os.setgid(gid)
         logg.debug("setgid %s '%s'", gid, group)
-    if user:
+    if user: # pragma: no cover
+        # actually tested but in a forked child only
         import pwd
         uid = pwd.getpwnam(user).pw_uid
         os.setuid(uid)
