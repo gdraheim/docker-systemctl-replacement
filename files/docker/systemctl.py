@@ -1520,16 +1520,6 @@ class Systemctl:
         timeout = conf.get("Service", "TimeoutSec", DefaultTimeoutStopSec)
         timeout = conf.get("Service", "TimeoutStopSec", timeout)
         timeout = time_to_seconds(timeout, DefaultMaximumTimeout)
-        if True:
-            if runs in [ "simple", "forking", "notify" ]:
-                pid_file = self.get_pid_file_from(conf)
-                pid = self.read_pid_file(pid_file, "")
-                env["MAINPID"] = str(pid)
-            for cmd in conf.getlist("Service", "ExecStopPre", []):
-                check, cmd = checkstatus(cmd)
-                newcmd = self.exec_cmd(cmd, env, conf)
-                logg.info(" pre-stop %s", shell_cmd(sudo+newcmd))
-                run = subprocess_wait(sudo+newcmd, env)
         if runs in [ "sysv" ]:
             status_file = self.get_status_file_from(conf)
             if True:
