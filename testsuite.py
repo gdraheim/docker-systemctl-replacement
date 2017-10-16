@@ -6875,44 +6875,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         drop_image_container = "docker rmi {images}:{name}"
         sx____(drop_image_container.format(**locals()))
         self.rm_testdir()
-    def test_7004_opensuse_lamp_dockerfile(self):
-        """ WHEN using a dockerfile for systemd-enabled OpenSUSE, 
-            THEN we can create an image with an full LAMP stack 
-                 as systemd services being installed and enabled.
-            Without a special startup.sh script or container-cmd 
-            one can just start the image and in the container
-            expecting that the services have started. Therefore,
-            WHEN we start the image as a docker container
-            THEN we can see the start page of PHP MyAdmin
-            because the test script has enabled access to 
-            that web page on our test port. """
-        self.skipTest("=> replaced by test_6014")
-        testname="test_6004"
-        port=6004
-        name="opensuse-lamp"
-        dockerfile="opensuse-lamp.dockerfile"
-        images = IMAGES
-        # WHEN
-        build_new_image = "docker build . -f tests/{dockerfile} --tag {images}:{name}"
-        sh____(build_new_image.format(**locals()))
-        drop_old_container = "docker rm --force {name}"
-        start_as_container = "docker run -d -p {port}:80 --name {name} {images}:{name}"
-        sx____(drop_old_container.format(**locals()))
-        sh____(start_as_container.format(**locals()))
-        # THEN
-        tmp = self.testdir(testname)
-        read_php_admin_html = "sleep 5; wget -O {tmp}/{name}.txt http://127.0.0.1:{port}/phpMyAdmin"
-        grep_php_admin_html = "grep '<h1>.*>phpMyAdmin<' {tmp}/{name}.txt"
-        sh____(read_php_admin_html.format(**locals()))
-        sh____(grep_php_admin_html.format(**locals()))
-        # CLEAN
-        stop_new_container = "docker stop {name}"
-        drop_new_container = "docker rm --force {name}"
-        sh____(stop_new_container.format(**locals()))
-        sh____(drop_new_container.format(**locals()))
-        drop_image_container = "docker rmi {images}:{name}"
-        sx____(drop_image_container.format(**locals()))
-        self.rm_testdir()
     def test_7005_ubuntu_apache2_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled Ubuntu, 
             THEN we can create an image with an Apache HTTP service 
