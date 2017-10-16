@@ -1100,6 +1100,101 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 self.assertEqual("word=value", line)
         self.rm_testdir()
         self.coverage()
+    def test_2030_show_unit_display_parsed_timeouts(self):
+        """ check that 'show UNIT' show parsed timeoutss """
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/a.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            TimeoutStartSec=29
+            TimeoutStopSec=60
+            """)
+        cmd = "{systemctl} show a.service"
+        out = output(cmd.format(**locals()))
+        logg.info("\n> %s\n%s", cmd, out)
+        rep = lines(out)
+        self.assertIn("TimeoutStartUSec=29s", rep)
+        self.assertIn("TimeoutStopUSec=1min", rep)
+        ##
+        text_file(os_path(root, "/etc/systemd/system/b.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            TimeoutStartSec=1m
+            TimeoutStopSec=2min
+            """)
+        cmd = "{systemctl} show b.service"
+        out = output(cmd.format(**locals()))
+        logg.info("\n> %s\n%s", cmd, out)
+        rep = lines(out)
+        self.assertIn("TimeoutStartUSec=1min", rep)
+        self.assertIn("TimeoutStopUSec=2min", rep)
+        ##
+        text_file(os_path(root, "/etc/systemd/system/c.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            TimeoutStartSec=1s
+            TimeoutStopSec=2000ms
+            """)
+        cmd = "{systemctl} show c.service"
+        out = output(cmd.format(**locals()))
+        logg.info("\n> %s\n%s", cmd, out)
+        rep = lines(out)
+        self.assertIn("TimeoutStartUSec=1s", rep)
+        self.assertIn("TimeoutStopUSec=2s", rep)
+        #
+        self.rm_testdir()
+        self.coverage()
+        ##
+        text_file(os_path(root, "/etc/systemd/system/d.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            TimeoutStartSec=90s
+            TimeoutStopSec=2250ms
+            """)
+        cmd = "{systemctl} show d.service -vv"
+        out = output(cmd.format(**locals()))
+        logg.info("\n> %s\n%s", cmd, out)
+        rep = lines(out)
+        self.assertIn("TimeoutStartUSec=1min 30s", rep)
+        self.assertIn("TimeoutStopUSec=2s 250ms", rep)
+        ##
+        text_file(os_path(root, "/etc/systemd/system/e.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            TimeoutStartSec=90s 250ms
+            TimeoutStopSec=3m 25ms
+            """)
+        cmd = "{systemctl} show e.service -vv"
+        out = output(cmd.format(**locals()))
+        logg.info("\n> %s\n%s", cmd, out)
+        rep = lines(out)
+        self.assertIn("TimeoutStartUSec=1min 30s 250ms", rep)
+        self.assertIn("TimeoutStopUSec=3min 25ms", rep)
+        ##
+        text_file(os_path(root, "/etc/systemd/system/f.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            TimeoutStartSec=180
+            TimeoutStopSec=182
+            """)
+        cmd = "{systemctl} show f.service -vv"
+        out = output(cmd.format(**locals()))
+        logg.info("\n> %s\n%s", cmd, out)
+        rep = lines(out)
+        self.assertIn("TimeoutStartUSec=3min", rep)
+        self.assertIn("TimeoutStopUSec=3min 2s", rep)
+        #
+        self.rm_testdir()
+        self.coverage()
     def test_2140_show_environment_from_parts(self):
         """ check that the result of 'environment UNIT' can 
             list the settings from different locations."""
