@@ -288,18 +288,17 @@ class UnitConfigParser:
     def loaded(self):
         return len(self._files)
     def name(self):
+        name = ""
         filename = self.filename()
         if filename:
             name = os.path.basename(filename)
-        else:
-            name = ""
         return self.get("Unit", "Id", name)
     def filename(self):
         """ returns the last filename that was parsed """
         if self._files:
             return self._files[-1]
         return None
-    def read(self, filename):
+    def read(self, filename): # pragma: no cover
         return self.read_sysd(filename)
     def read_sysd(self, filename):
         initscript = False
