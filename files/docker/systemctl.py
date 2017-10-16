@@ -1678,24 +1678,6 @@ class Systemctl:
                     self.write_status_file(status_file, AS="failed", EXIT=run.returncode)
                 else:
                     self.write_status_file(status_file, AS="active")
-        elif runs in [ "oneshot" ]:
-            status_file = self.get_status_file_from(conf)
-            status = self.read_status_file(status_file)
-            if status.get("ACTIVESTATE", "unkown") == "inactive":
-                logg.warning("the service is already down once")
-                return True
-            returncode = 0
-            for cmd in conf.getlist("Service", "ExecReload", []):
-                check, cmd = checkstatus(cmd)
-                newcmd = self.exec_cmd(cmd, env, conf)
-                logg.info("%s reload %s", runs, shell_cmd(sudo+newcmd))
-                run = subprocess_wait(sudo+newcmd, env)
-                if run.returncode: returncode = run.returncode
-            if True:
-                if returncode:
-                    self.write_status_file(status_file, AS="failed", EXIT=returncode)
-                else:
-                    self.write_status_file(status_file, AS="active")
         elif runs in [ "simple", "notify" ]:
             for cmd in conf.getlist("Service", "ExecReload", []):
                 pid_file = self.get_pid_file_from(conf)
@@ -1716,6 +1698,8 @@ class Systemctl:
                 run = subprocess_wait(sudo+newcmd, env)
                 if check and run.returncode: raise Exception("ExecReload")
             self.sleep()
+        elif runs in [ "oneshot" ]:
+            logg.debug("ignored run type '%s' for reload", runs)
         else:
             logg.error("unsupported run type '%s'", runs)
             raise Exception("unsupported run type")
