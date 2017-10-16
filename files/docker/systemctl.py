@@ -2113,10 +2113,12 @@ class Systemctl:
     def cat_unit(self, unit):
         try:
             unit_file = self.unit_file(unit)
-            return open(unit_file).read()
+            if unit_file:
+                return open(unit_file).read()
+            logg.error("no file for unit '%s'", unit)
         except Exception, e:
             print "Unit {} is not-loaded: {}".format(unit, e)
-            return False
+        return False
     ##
     ##
     def load_preset_files(self, module = None): # -> [ preset-file-names,... ]
@@ -2222,6 +2224,9 @@ class Systemctl:
         return done
     def enable_unit(self, unit):
         unit_file = self.unit_file(unit)
+        if not unit_file:
+            logg.error("no such unit '%s'", unit)
+            return False
         if self.is_sysv_file(unit_file):
             return self.enable_unit_sysv(unit_file)
         wanted = self.wanted_from(self.get_unit_conf(unit))
@@ -2306,6 +2311,9 @@ class Systemctl:
         return done
     def disable_unit(self, unit):
         unit_file = self.unit_file(unit)
+        if not unit_file:
+            logg.error("no such unit '%s'", unit)
+            return False
         if self.is_sysv_file(unit_file):
             return self.disable_unit_sysv(unit_file)
         wanted = self.wanted_from(self.get_unit_conf(unit))
@@ -2374,6 +2382,9 @@ class Systemctl:
         return result, infos
     def is_enabled(self, unit):
         unit_file = self.unit_file(unit)
+        if not unit_file:
+            logg.error("no such unit '%s'", unit)
+            return False
         if self.is_sysv_file(unit_file):
             return self.is_enabled_sysv(unit_file)
         wanted = self.wanted_from(self.get_unit_conf(unit))
