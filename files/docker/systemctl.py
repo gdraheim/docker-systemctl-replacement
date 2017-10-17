@@ -1361,7 +1361,8 @@ class Systemctl:
             rungroup = conf.get("Service", "Group", "")
             shutil_truncate(pid_file)
             shutil_chown(pid_file, runuser, rungroup)
-            if not os.fork():
+            if not os.fork(): # pragma: no cover
+                # this code is running in a child process
                 logg.debug("%s process for %s", runs, conf.filename())
                 os.setsid() # detach from parent
                 inp = open("/dev/zero")
@@ -1415,7 +1416,8 @@ class Systemctl:
             if notify:
                 env["NOTIFY_SOCKET"] = notify.socketfile
                 logg.debug("use NOTIFY_SOCKET=%s", notify.socketfile)
-            if not os.fork():
+            if not os.fork(): # pragma: no cover
+                # this code is running in a child process
                 logg.debug("%s process for %s", runs, conf.filename())
                 os.setsid() # detach from parent
                 inp = open("/dev/zero")
