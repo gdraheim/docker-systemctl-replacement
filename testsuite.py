@@ -2188,6 +2188,116 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.rm_testdir()
         self.coverage()
+    def test_3013_check_preset_to_reset_some(self):
+        """ check that 'enable' and 'preset services..' are counterparts """
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/b.service"),"""
+            [Unit]
+            Description=Testing B
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/system/c.service"),"""
+            [Unit]
+            Description=Testing C
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/system-preset/our.preset"),"""
+            enable b.service
+            disable c.service""")
+        #
+        cmd = "{systemctl} is-enabled b.service" 
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertTrue(greps(out, r"^disabled"))
+        self.assertEqual(len(lines(out)), 1)
+        self.assertEqual(end, 1)
+        cmd = "{systemctl} is-enabled c.service" 
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertTrue(greps(out, r"^disabled"))
+        self.assertEqual(len(lines(out)), 1)
+        self.assertEqual(end, 1)
+        self.assertEqual(end, 1)
+        #
+        cmd = "{systemctl} preset b.service c.service" 
+        logg.info(" %s", cmd.format(**locals()))
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 0)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} is-enabled b.service" 
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertTrue(greps(out, r"^enabled"))
+        self.assertEqual(len(lines(out)), 1)
+        self.assertEqual(end, 0)
+        cmd = "{systemctl} is-enabled c.service" 
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertTrue(greps(out, r"^disabled"))
+        self.assertEqual(len(lines(out)), 1)
+        self.assertEqual(end, 1)
+        #
+        cmd = "{systemctl} disable b.service" 
+        logg.info(" %s", cmd.format(**locals()))
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 0)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} enable c.service" 
+        logg.info(" %s", cmd.format(**locals()))
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 0)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} is-enabled b.service" 
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertTrue(greps(out, r"^disabled"))
+        self.assertEqual(len(lines(out)), 1)
+        self.assertEqual(end, 1)
+        cmd = "{systemctl} is-enabled c.service" 
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertTrue(greps(out, r"^enabled"))
+        self.assertEqual(len(lines(out)), 1)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} preset b.service c.service" 
+        logg.info(" %s", cmd.format(**locals()))
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 0)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} is-enabled b.service" 
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertTrue(greps(out, r"^enabled"))
+        self.assertEqual(len(lines(out)), 1)
+        self.assertEqual(end, 0)
+        cmd = "{systemctl} is-enabled c.service" 
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertTrue(greps(out, r"^disabled"))
+        self.assertEqual(len(lines(out)), 1)
+        self.assertEqual(end, 1)
+        #
+        cmd = "{systemctl} preset b.service c.service other.service" 
+        logg.info(" %s", cmd.format(**locals()))
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 0)
+        self.assertEqual(end, 1)
+        #
+        self.rm_testdir()
+        self.coverage()
     def test_3015_check_preset_all_only_enable(self):
         """ check that 'preset-all' works with --preset-mode=enable """
         testname = self.testname()
@@ -7304,7 +7414,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertNotEqual(end, 0) 
-
+        #
+        cmd = "{systemctl} daemon-reload"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0) # always succeeds
+        #
         self.rm_testdir()
         self.coverage()
     def test_4901_unsupported_run_type_for_service(self):
