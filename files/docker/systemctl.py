@@ -1477,7 +1477,7 @@ class Systemctl:
                 self.sleep()
         else:
             logg.error("unsupported run type '%s'", runs)
-            raise Exception("unsupported run type")
+            return False
         if True:
             for cmd in conf.getlist("Service", "ExecStartPost", []):
                 check, cmd = checkstatus(cmd)
@@ -1616,7 +1616,7 @@ class Systemctl:
                         os.remove(pid_file)
         else:
             logg.error("unsupported run type '%s'", runs)
-            raise Exception("unsupported run type")
+            return False
         if True:
             for cmd in conf.getlist("Service", "ExecStopPost", []):
                 check, cmd = checkstatus(cmd)
@@ -1705,7 +1705,7 @@ class Systemctl:
             return True
         else:
             logg.error("unsupported run type '%s'", runs)
-            raise Exception("unsupported run type")
+            return False
     def restart_modules(self, *modules):
         """ [UNIT]... -- restart these units """
         found_all = True
