@@ -3196,27 +3196,33 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(os_path(root, "/etc/sysconfig/b.conf"),"""
             DEF1='def1'
             DEF2="def2 def3"
+            DEF4="$DEF1 ${DEF2}"
+            DEF5="$DEF1111 def5 ${DEF2222}"
             """)
         text_file(os_path(root, "/etc/systemd/system/b.service"),"""
             [Unit]
             Description=Testing B
             [Service]
+            Environment=DEF2=foo
             EnvironmentFile=/etc/sysconfig/b.conf
             ExecStart=/usr/bin/sleep 2
             ExecStartPost=%s A $DEF1 $DEF2
             ExecStartPost=%s B ${DEF1} ${DEF2}
             ExecStartPost=%s C $DEF1$DEF2
             ExecStartPost=%s D ${DEF1}${DEF2}
+            ExecStartPost=%s E ${DEF4}
+            ExecStartPost=%s F ${DEF5}
             [Install]
             WantedBy=multi-user.target""" 
-            % (print_sh, print_sh, print_sh, print_sh))
+            % (print_sh, print_sh, print_sh, print_sh, 
+               print_sh, print_sh,))
         text_file(logfile, "")
         shell_file(print_sh, """
             #! /bin/sh
             logfile='{logfile}'
             echo "'$1' '$2' '$3' '$4' '$5'" >> "$logfile"
             """.format(**locals()))
-        cmd = "{systemctl} environment b.service"
+        cmd = "{systemctl} environment b.service -vv"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
@@ -3233,10 +3239,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         B="'B' 'def1' 'def2 def3' '' ''"  # B ${DEF1} ${DEF2}
         C="'C' 'def1def2' 'def3' '' ''"   # C $DEF1$DEF2
         D="'D' 'def1def2 def3' '' '' ''"  # D ${DEF1}${DEF2} ??TODO??
+        E="'E' 'def1 def2 def3' '' '' ''" # E ${DEF4}
+        F="'F' ' def5 ' '' '' ''"         # F ${DEF5}
         self.assertIn(A, log)
         self.assertIn(B, log)
         self.assertIn(C, log)
         self.assertIn(D, log)
+        self.assertIn(E, log)
+        self.assertIn(F, log)
         #
         self.rm_testdir()
         self.coverage()
