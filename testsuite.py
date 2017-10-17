@@ -2775,14 +2775,17 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         is_active_CD = "{systemctl} is-failed zzc.service zzd.service"
         is_active_BD = "{systemctl} is-failed zzb.service zzd.service"
         is_active_BCD = "{systemctl} is-failed zzb.service zzc.service zzd.service"
+        is_active_BCDX = "{systemctl} is-failed zzb.service zzc.service zzd.service --quiet"
         actBC, exitBC  = output2(is_active_BC.format(**locals()))
         actCD, exitCD  = output2(is_active_CD.format(**locals()))
         actBD, exitBD  = output2(is_active_BD.format(**locals()))
         actBCD, exitBCD  = output2(is_active_BCD.format(**locals()))
+        actBCDX, exitBCDX  = output2(is_active_BCDX.format(**locals()))
         self.assertEqual(actBC.split("\n"), ["active", "inactive", ""])
         self.assertEqual(actCD.split("\n"), [ "inactive", "unknown",""])
         self.assertEqual(actBD.split("\n"), [ "active", "unknown", ""])
         self.assertEqual(actBCD.split("\n"), ["active", "inactive", "unknown", ""])
+        self.assertEqual(actBCDX.split("\n"), [""])
         self.assertNotEqual(exitBC, 0)         ## this is how the original systemctl
         self.assertNotEqual(exitCD, 0)         ## works. The documentation however
         self.assertNotEqual(exitBD, 0)         ## says to return 0 if any service
