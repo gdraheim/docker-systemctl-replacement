@@ -8845,7 +8845,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_7011_centos_httpd_socket_notify(self):
-        """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
+        """ WHEN using an image for a systemd-enabled CentOS 7, 
             THEN we can create an image with an Apache HTTP service 
                  being installed and enabled.
             WHEN we start the image as a docker container
@@ -9275,6 +9275,86 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
+        self.rm_testdir()
+    def test_8011_centos_httpd_socket_notify(self):
+        """ start/restart behaviour if a httpd has failed - issue #11 """
+        testname=self.testname()
+        testdir = self.testdir(testname)
+        testport=self.testport()
+        images = IMAGES
+        image = self.local_image(CENTOS)
+        systemctl_py = _systemctl_py
+        logg.info("%s:%s %s", testname, testport, image)
+        #
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name={testname} {image} sleep 600"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} yum install -y httpd httpd-tools"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl enable httpd"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'echo TEST_OK > /var/www/html/index.html'"
+        sh____(cmd.format(**locals()))
+        #
+        container = self.ip_container(testname)
+        cmd = "docker exec {testname} touch /var/log/systemctl.debug.log"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl start httpd"
+        sh____(cmd.format(**locals()))
+        # THEN
+        time.sleep(5)
+        cmd = "wget -O {testdir}/result.txt http://{container}:80"
+        sh____(cmd.format(**locals()))
+        cmd = "grep OK {testdir}/result.txt"
+        sh____(cmd.format(**locals()))
+        # STOP
+        cmd = "docker exec {testname} systemctl status httpd"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl stop httpd"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl status httpd"
+        #
+        # CRASH
+        cmd = "docker exec {testname} bash -c 'cp /etc/httpd/conf/httpd.conf /etc/httpd/conf/httpd.conf.orig'"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'echo foo > /etc/httpd/conf/httpd.conf'"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl start httpd"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertNotEqual(end, 0) # start failed
+        cmd = "docker exec {testname} systemctl status httpd"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertNotEqual(end, 0)
+        cmd = "docker exec {testname} systemctl restart httpd"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertNotEqual(end, 0) # restart failed
+        #
+        cmd = "docker exec {testname} bash -c 'cat /etc/httpd/conf/httpd.conf.orig > /etc/httpd/conf/httpd.conf'"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl restart httpd"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0) # restart ok
+        cmd = "docker exec {testname} systemctl stop httpd"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0) # down
+        cmd = "docker exec {testname} systemctl status httpd"
+        sx____(cmd.format(**locals()))
+        #
+        cmd = "docker cp {testname}:/var/log/systemctl.debug.log {testdir}/systemctl.debug.log"
+        sh____(cmd.format(**locals()))
+        cmd = "docker stop {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sh____(cmd.format(**locals()))
+        #
         self.rm_testdir()
     def test_9000_ansible_test(self):
         """ FIXME: "-p testing_systemctl" makes containers like "testingsystemctl_<service>_1" ?! """
