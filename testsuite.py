@@ -195,11 +195,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         images = output(find_repo_image.format(**locals()))
         running = output("docker ps")
         if greps(images, rep) and not greps(running, rep+ver):
-            stop_repo = "docker rm --force {rep}{ver}"
-            sx____(stop_repo.format(**locals()))
-            start_repo = "docker run --detach --name {rep}{ver} {rmi}/{rep}:{ver}"
-            logg.info("!! %s", start_repo.format(**locals()))
-            sh____(start_repo.format(**locals()))
+            cmd = "docker rm --force {rep}{ver}"
+            sx____(cmd.format(**locals()))
+            cmd = "docker run --detach --name {rep}{ver} {rmi}/{rep}:{ver}"
+            sh____(cmd.format(**locals()))
         running = output("docker ps")
         if greps(running, rep+ver):
             ip_a = self.ip_container(rep+ver)
@@ -220,11 +219,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         images = output(find_repo_image.format(**locals()))
         running = output("docker ps")
         if greps(images, rep) and not greps(running, rep+ver):
-            stop_repo = "docker rm --force {rep}{ver}"
-            sx____(stop_repo.format(**locals()))
-            start_repo = "docker run --detach --name {rep}{ver} {rmi}/{rep}:{ver}"
-            logg.info("!! %s", start_repo.format(**locals()))
-            sh____(start_repo.format(**locals()))
+            cmd = "docker rm --force {rep}{ver}"
+            sx____(cmd.format(**locals()))
+            cmd = "docker run --detach --name {rep}{ver} {rmi}/{rep}:{ver}"
+            sh____(cmd.format(**locals()))
         running = output("docker ps")
         if greps(running, rep+ver):
             ip_a = self.ip_container(rep+ver)
@@ -246,8 +244,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 return "--add-host '{add_hosts}' {image}".format(**locals())
         return image
     def drop_container(self, name):
-        stop = "docker rm --force {name}"
-        sx____(stop.format(**locals()))
+        cmd = "docker rm --force {name}"
+        sx____(cmd.format(**locals()))
     def drop_centos(self):
         self.drop_container("centos")
     def drop_ubuntu(self):
@@ -263,8 +261,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def make_container(self, name, image):
         self.drop_container(name)
         local_image = self.local_image(image)
-        start = "docker run --detach --name {name} {local_image} sleep 1000"
-        sh____(start.format(**locals()))
+        cmd = "docker run --detach --name {name} {local_image} sleep 1000"
+        sh____(cmd.format(**locals()))
         print "                 # " + local_image
         print "  docker exec -it "+name+" bash"
     #
@@ -6242,19 +6240,19 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         image= CENTOS
         systemctl_py = _systemctl_py
         #
-        stop_container = "docker rm --force {testname}"
-        sx____(stop_container.format(**locals()))
-        start_container = "docker run --detach --name={testname} {image} sleep 50"
-        sh____(start_container.format(**locals()))
-        install_systemctl = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
-        sh____(install_systemctl.format(**locals()))
-        version_systemctl = "docker exec {testname} systemctl --version"
-        sh____(version_systemctl.format(**locals()))
-        out = output(version_systemctl.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name={testname} {image} sleep 50"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl --version"
+        sh____(cmd.format(**locals()))
+        out = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out)
         #
-        stop_container = "docker rm --force {testname}"
-        sx____(stop_container.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
         self.assertTrue(greps(out, "systemctl.py"))
         #
         self.rm_testdir()
@@ -6278,29 +6276,29 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target""")
         #
-        stop_container = "docker rm --force {testname}"
-        sx____(stop_container.format(**locals()))
-        start_container = "docker run --detach --name={testname} {image} sleep 50"
-        sh____(start_container.format(**locals()))
-        install_systemctl = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
-        sh____(install_systemctl.format(**locals()))
-        install_service = "docker cp {testdir}/zza.service {testname}:/etc/systemd/system/zza.service"
-        sh____(install_service.format(**locals()))
-        install_service = "docker cp {testdir}/zzb.service {testname}:/etc/systemd/system/zzb.service"
-        sh____(install_service.format(**locals()))
-        install_service = "docker cp {testdir}/zzc.service {testname}:/etc/systemd/system/zzc.service"
-        sh____(install_service.format(**locals()))
-        enable_service = "docker exec {testname} systemctl enable zzc.service"
-        sh____(enable_service.format(**locals()))
-        version_systemctl = "docker exec {testname} systemctl --version"
-        sh____(version_systemctl.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name={testname} {image} sleep 50"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zza.service {testname}:/etc/systemd/system/zza.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zzb.service {testname}:/etc/systemd/system/zzb.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zzc.service {testname}:/etc/systemd/system/zzc.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl enable zzc.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl --version"
+        sh____(cmd.format(**locals()))
         list_units_systemctl = "docker exec {testname} systemctl list-unit-files"
         # sh____(list_units_systemctl.format(**locals()))
         out = output(list_units_systemctl.format(**locals()))
         logg.info("\n>\n%s", out)
         #
-        stop_container = "docker rm --force {testname}"
-        sx____(stop_container.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
         self.assertTrue(greps(out, "zza.service.*static"))
         self.assertTrue(greps(out, "zzb.service.*disabled"))
         self.assertTrue(greps(out, "zzc.service.*enabled"))
@@ -6326,24 +6324,24 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target""")
         #
-        stop_container = "docker rm --force {testname}"
-        sx____(stop_container.format(**locals()))
-        start_container = "docker run --detach --name={testname} {image} sleep 50"
-        sh____(start_container.format(**locals()))
-        install_systemctl = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
-        sh____(install_systemctl.format(**locals()))
-        install_service = "docker cp {testdir}/zza.service {testname}:/etc/systemd/system/zza.service"
-        sh____(install_service.format(**locals()))
-        install_service = "docker cp {testdir}/zzb.service {testname}:/etc/systemd/system/zzb.service"
-        sh____(install_service.format(**locals()))
-        install_service = "docker cp {testdir}/zzc.service {testname}:/etc/systemd/system/zzc.service"
-        sh____(install_service.format(**locals()))
-        enable_service = "docker exec {testname} systemctl enable zzb.service"
-        sh____(enable_service.format(**locals()))
-        enable_service = "docker exec {testname} systemctl enable zzc.service"
-        sh____(enable_service.format(**locals()))
-        version_systemctl = "docker exec {testname} systemctl --version"
-        sh____(version_systemctl.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name={testname} {image} sleep 50"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zza.service {testname}:/etc/systemd/system/zza.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zzb.service {testname}:/etc/systemd/system/zzb.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zzc.service {testname}:/etc/systemd/system/zzc.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl enable zzb.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl enable zzc.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl --version"
+        sh____(cmd.format(**locals()))
         list_units_systemctl = "docker exec {testname} systemctl default-services -vv"
         # sh____(list_units_systemctl.format(**locals()))
         out2 = output(list_units_systemctl.format(**locals()))
@@ -6353,8 +6351,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out3 = output(list_units_systemctl.format(**locals()))
         logg.info("\n>\n%s", out3)
         #
-        stop_container = "docker rm --force {testname}"
-        sx____(stop_container.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
         self.assertTrue(greps(out2, "zzb.service"))
         self.assertTrue(greps(out2, "zzc.service"))
         self.assertEqual(len(lines(out2)), 2)
@@ -6386,45 +6384,45 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target""")
         #
-        stop_container = "docker rm --force {testname}"
-        sx____(stop_container.format(**locals()))
-        start_container = "docker run --detach --name={testname} {image} sleep 50"
-        sh____(start_container.format(**locals()))
-        install_systemctl = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
-        sh____(install_systemctl.format(**locals()))
-        install_systemctl = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
-        sh____(install_systemctl.format(**locals()))
-        install_killall = "docker cp {testdir}/killall {testname}:/usr/bin/killall"
-        sh____(install_killall.format(**locals()))
-        install_service = "docker cp {testdir}/zzz.service {testname}:/etc/systemd/system/zzz.service"
-        sh____(install_service.format(**locals()))
-        enable_service = "docker exec {testname} systemctl enable zzz.service"
-        sh____(enable_service.format(**locals()))
-        version_systemctl = "docker exec {testname} systemctl --version"
-        sh____(version_systemctl.format(**locals()))
-        list_units_systemctl = "docker exec {testname} systemctl default-services -vv"
-        # sh____(list_units_systemctl.format(**locals()))
-        out = output(list_units_systemctl.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name={testname} {image} sleep 50"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/killall {testname}:/usr/bin/killall"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zzz.service {testname}:/etc/systemd/system/zzz.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl enable zzz.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl --version"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl default-services -vv"
+        # sh____(cmd.format(**locals()))
+        out = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out)
         self.assertTrue(greps(out, "zzz.service"))
         self.assertEqual(len(lines(out)), 1)
         #
-        start_service = "docker exec {testname} systemctl start zzz.service -vv"
-        sh____(start_service.format(**locals()))
+        cmd = "docker exec {testname} systemctl start zzz.service -vv"
+        sh____(cmd.format(**locals()))
         top_container = "docker exec {testname} ps -eo pid,ppid,args"
         top = output(top_container.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "testsleep"))
         #
-        start_service = "docker exec {testname} systemctl stop zzz.service -vv"
-        sh____(start_service.format(**locals()))
+        cmd = "docker exec {testname} systemctl stop zzz.service -vv"
+        sh____(cmd.format(**locals()))
         top_container = "docker exec {testname} ps -eo pid,ppid,args"
         top = output(top_container.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, "testsleep"))
         #
-        stop_container = "docker rm --force {testname}"
-        sx____(stop_container.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_5031_systemctl_py_start_extra_simple(self):
         """ check that we can start simple services in a container"""
@@ -6441,43 +6439,43 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target""")
         #
-        stop_container = "docker rm --force {testname}"
-        sx____(stop_container.format(**locals()))
-        start_container = "docker run --detach --name={testname} {image} sleep 50"
-        sh____(start_container.format(**locals()))
-        install_systemctl = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
-        sh____(install_systemctl.format(**locals()))
-        install_systemctl = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
-        sh____(install_systemctl.format(**locals()))
-        install_service = "docker cp {testdir}/zzz.service {testname}:/etc/systemd/system/zzz.service"
-        sh____(install_service.format(**locals()))
-        enable_service = "docker exec {testname} systemctl enable zzz.service"
-        sh____(enable_service.format(**locals()))
-        version_systemctl = "docker exec {testname} systemctl --version"
-        sh____(version_systemctl.format(**locals()))
-        list_units_systemctl = "docker exec {testname} systemctl default-services -vv"
-        # sh____(list_units_systemctl.format(**locals()))
-        out = output(list_units_systemctl.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name={testname} {image} sleep 50"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zzz.service {testname}:/etc/systemd/system/zzz.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl enable zzz.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl --version"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl default-services -vv"
+        # sh____(cmd.format(**locals()))
+        out = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out)
         self.assertTrue(greps(out, "zzz.service"))
         self.assertEqual(len(lines(out)), 1)
         #
-        start_service = "docker exec {testname} systemctl start zzz.service -vv"
-        sh____(start_service.format(**locals()))
+        cmd = "docker exec {testname} systemctl start zzz.service -vv"
+        sh____(cmd.format(**locals()))
         top_container = "docker exec {testname} ps -eo pid,ppid,args"
         top = output(top_container.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "testsleep"))
         #
-        start_service = "docker exec {testname} systemctl stop zzz.service -vv"
-        sh____(start_service.format(**locals()))
+        cmd = "docker exec {testname} systemctl stop zzz.service -vv"
+        sh____(cmd.format(**locals()))
         top_container = "docker exec {testname} ps -eo pid,ppid,args"
         top = output(top_container.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, "testsleep"))
         #
-        stop_container = "docker rm --force {testname}"
-        sx____(stop_container.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_5032_systemctl_py_start_forking(self):
         """ check that we can start forking services in a container w/ PIDFile"""
@@ -6517,47 +6515,47 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target""")
         #
-        stop_container = "docker rm --force {testname}"
-        sx____(stop_container.format(**locals()))
-        start_container = "docker run --detach --name={testname} {image} sleep 50"
-        sh____(start_container.format(**locals()))
-        install_systemctl = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
-        sh____(install_systemctl.format(**locals()))
-        install_systemctl = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
-        sh____(install_systemctl.format(**locals()))
-        install_killall = "docker cp {testdir}/killall {testname}:/usr/bin/killall"
-        sh____(install_killall.format(**locals()))
-        install_service = "docker cp {testdir}/zzz.service {testname}:/etc/systemd/system/zzz.service"
-        sh____(install_service.format(**locals()))
-        install_initscript = "docker cp {testdir}/zzz.init {testname}:/usr/bin/zzz.init"
-        sh____(install_initscript.format(**locals()))
-        enable_service = "docker exec {testname} systemctl enable zzz.service"
-        sh____(enable_service.format(**locals()))
-        version_systemctl = "docker exec {testname} systemctl --version"
-        sh____(version_systemctl.format(**locals()))
-        list_units_systemctl = "docker exec {testname} systemctl default-services -vv"
-        # sh____(list_units_systemctl.format(**locals()))
-        out = output(list_units_systemctl.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name={testname} {image} sleep 50"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/killall {testname}:/usr/bin/killall"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zzz.service {testname}:/etc/systemd/system/zzz.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zzz.init {testname}:/usr/bin/zzz.init"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl enable zzz.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl --version"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl default-services -vv"
+        # sh____(cmd.format(**locals()))
+        out = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out)
         self.assertTrue(greps(out, "zzz.service"))
         self.assertEqual(len(lines(out)), 1)
         #
-        start_service = "docker exec {testname} systemctl start zzz.service -vv"
-        sx____(start_service.format(**locals()))
+        cmd = "docker exec {testname} systemctl start zzz.service -vv"
+        sx____(cmd.format(**locals()))
         top_container = "docker exec {testname} ps -eo pid,ppid,args"
         top = output(top_container.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "testsleep"))
         #
-        start_service = "docker exec {testname} systemctl stop zzz.service -vv"
-        sh____(start_service.format(**locals()))
+        cmd = "docker exec {testname} systemctl stop zzz.service -vv"
+        sh____(cmd.format(**locals()))
         top_container = "docker exec {testname} ps -eo pid,ppid,args"
         top = output(top_container.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, "testsleep"))
         #
-        stop_container = "docker rm --force {testname}"
-        sx____(stop_container.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_5033_systemctl_py_start_forking_without_pid_file(self):
         """ check that we can start forking services in a container without PIDFile"""
@@ -6595,47 +6593,47 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target""")
         #
-        stop_container = "docker rm --force {testname}"
-        sx____(stop_container.format(**locals()))
-        start_container = "docker run --detach --name={testname} {image} sleep 50"
-        sh____(start_container.format(**locals()))
-        install_systemctl = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
-        sh____(install_systemctl.format(**locals()))
-        install_testsleep = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
-        sh____(install_testsleep.format(**locals()))
-        install_killall = "docker cp {testdir}/killall {testname}:/usr/bin/killall"
-        sh____(install_killall.format(**locals()))
-        install_service = "docker cp {testdir}/zzz.service {testname}:/etc/systemd/system/zzz.service"
-        sh____(install_service.format(**locals()))
-        install_initscript = "docker cp {testdir}/zzz.init {testname}:/usr/bin/zzz.init"
-        sh____(install_initscript.format(**locals()))
-        enable_service = "docker exec {testname} systemctl enable zzz.service"
-        sh____(enable_service.format(**locals()))
-        version_systemctl = "docker exec {testname} systemctl --version"
-        sh____(version_systemctl.format(**locals()))
-        list_units_systemctl = "docker exec {testname} systemctl default-services -vv"
-        # sh____(list_units_systemctl.format(**locals()))
-        out = output(list_units_systemctl.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name={testname} {image} sleep 50"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/killall {testname}:/usr/bin/killall"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zzz.service {testname}:/etc/systemd/system/zzz.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zzz.init {testname}:/usr/bin/zzz.init"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl enable zzz.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl --version"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl default-services -vv"
+        # sh____(cmd.format(**locals()))
+        out = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out)
         self.assertTrue(greps(out, "zzz.service"))
         self.assertEqual(len(lines(out)), 1)
         #
-        start_service = "docker exec {testname} systemctl start zzz.service -vv"
-        sx____(start_service.format(**locals()))
+        cmd = "docker exec {testname} systemctl start zzz.service -vv"
+        sx____(cmd.format(**locals()))
         top_container = "docker exec {testname} ps -eo pid,ppid,args"
         top = output(top_container.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "testsleep"))
         #
-        start_service = "docker exec {testname} systemctl stop zzz.service -vv"
-        sh____(start_service.format(**locals()))
+        cmd = "docker exec {testname} systemctl stop zzz.service -vv"
+        sh____(cmd.format(**locals()))
         top_container = "docker exec {testname} ps -eo pid,ppid,args"
         top = output(top_container.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, "testsleep"))
         #
-        stop_container = "docker rm --force {testname}"
-        sx____(stop_container.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_5035_systemctl_py_start_notify_by_timeout(self):
         """ check that we can start simple services in a container w/ notify timeout"""
@@ -6661,45 +6659,45 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target""")
         #
-        stop_container = "docker rm --force {testname}"
-        sx____(stop_container.format(**locals()))
-        start_container = "docker run --detach --name={testname} {image} sleep 50"
-        sh____(start_container.format(**locals()))
-        install_systemctl = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
-        sh____(install_systemctl.format(**locals()))
-        install_systemctl = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
-        sh____(install_systemctl.format(**locals()))
-        install_killall = "docker cp {testdir}/killall {testname}:/usr/bin/killall"
-        sh____(install_killall.format(**locals()))
-        install_service = "docker cp {testdir}/zzz.service {testname}:/etc/systemd/system/zzz.service"
-        sh____(install_service.format(**locals()))
-        enable_service = "docker exec {testname} systemctl enable zzz.service"
-        sh____(enable_service.format(**locals()))
-        version_systemctl = "docker exec {testname} systemctl --version"
-        sh____(version_systemctl.format(**locals()))
-        list_units_systemctl = "docker exec {testname} systemctl default-services -vv"
-        # sh____(list_units_systemctl.format(**locals()))
-        out = output(list_units_systemctl.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name={testname} {image} sleep 50"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/killall {testname}:/usr/bin/killall"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zzz.service {testname}:/etc/systemd/system/zzz.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl enable zzz.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl --version"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl default-services -vv"
+        # sh____(cmd.format(**locals()))
+        out = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out)
         self.assertTrue(greps(out, "zzz.service"))
         self.assertEqual(len(lines(out)), 1)
         #
-        start_service = "docker exec {testname} systemctl start zzz.service -vvvv"
-        sh____(start_service.format(**locals()))
+        cmd = "docker exec {testname} systemctl start zzz.service -vvvv"
+        sh____(cmd.format(**locals()))
         top_container = "docker exec {testname} ps -eo pid,ppid,args"
         top = output(top_container.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "testsleep"))
         #
-        start_service = "docker exec {testname} systemctl stop zzz.service -vv"
-        sh____(start_service.format(**locals()))
+        cmd = "docker exec {testname} systemctl stop zzz.service -vv"
+        sh____(cmd.format(**locals()))
         top_container = "docker exec {testname} ps -eo pid,ppid,args"
         top = output(top_container.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, "testsleep"))
         #
-        stop_container = "docker rm --force {testname}"
-        sx____(stop_container.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_5100_systemctl_py_run_default_services_in_container(self):
         """ check that we can enable services in a docker container to be run as default-services"""
@@ -6727,33 +6725,33 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target""")
         #
-        stop_container = "docker rm --force {testname}"
-        sx____(stop_container.format(**locals()))
-        start_container = "docker run --detach --name={testname} {image} sleep 50"
-        sh____(start_container.format(**locals()))
-        install_systemctl = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
-        sh____(install_systemctl.format(**locals()))
-        install_testsleep = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
-        sh____(install_testsleep.format(**locals()))
-        install_service = "docker cp {testdir}/zza.service {testname}:/etc/systemd/system/zza.service"
-        sh____(install_service.format(**locals()))
-        install_service = "docker cp {testdir}/zzb.service {testname}:/etc/systemd/system/zzb.service"
-        sh____(install_service.format(**locals()))
-        install_service = "docker cp {testdir}/zzc.service {testname}:/etc/systemd/system/zzc.service"
-        sh____(install_service.format(**locals()))
-        enable_service = "docker exec {testname} systemctl enable zzb.service"
-        sh____(enable_service.format(**locals()))
-        enable_service = "docker exec {testname} systemctl enable zzc.service"
-        sh____(enable_service.format(**locals()))
-        version_systemctl = "docker exec {testname} systemctl --version"
-        sh____(version_systemctl.format(**locals()))
-        list_units_systemctl = "docker exec {testname} systemctl default-services -vv"
-        # sh____(list_units_systemctl.format(**locals()))
-        out2 = output(list_units_systemctl.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name={testname} {image} sleep 50"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zza.service {testname}:/etc/systemd/system/zza.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zzb.service {testname}:/etc/systemd/system/zzb.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zzc.service {testname}:/etc/systemd/system/zzc.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl enable zzb.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl enable zzc.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl --version"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl default-services -vv"
+        # sh____(cmd.format(**locals()))
+        out2 = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out2)
-        list_units_systemctl = "docker exec {testname} systemctl default -vvvv"
-        # sh____(list_units_systemctl.format(**locals()))
-        out3 = output(list_units_systemctl.format(**locals()))
+        cmd = "docker exec {testname} systemctl default -vvvv"
+        # sh____(cmd.format(**locals()))
+        out3 = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out3)
         #
         top_container = "docker exec {testname} ps -eo pid,ppid,args"
@@ -6762,9 +6760,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(top, "testsleep 40"))
         self.assertTrue(greps(top, "testsleep 50"))
         #
-        list_units_systemctl = "docker exec {testname} systemctl halt -vvvv"
-        # sh____(list_units_systemctl.format(**locals()))
-        out3 = output(list_units_systemctl.format(**locals()))
+        cmd = "docker exec {testname} systemctl halt -vvvv"
+        # sh____(cmd.format(**locals()))
+        out3 = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out3)
         #
         top_container = "docker exec {testname} ps -eo pid,ppid,args"
@@ -6773,8 +6771,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(top, "testsleep 40"))
         self.assertFalse(greps(top, "testsleep 50"))
         #
-        stop_container = "docker rm --force {testname}"
-        sx____(stop_container.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_5120_systemctl_py_run_default_services_from_saved_container(self):
         """ check that we can enable services in a docker container to be run as default-services
@@ -6804,37 +6802,37 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target""")
         #
-        stop_container = "docker rm --force {testname}"
-        sx____(stop_container.format(**locals()))
-        start_container = "docker run --detach --name={testname} {image} sleep 50"
-        sh____(start_container.format(**locals()))
-        install_systemctl = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
-        sh____(install_systemctl.format(**locals()))
-        install_testsleep = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
-        sh____(install_testsleep.format(**locals()))
-        install_service = "docker cp {testdir}/zza.service {testname}:/etc/systemd/system/zza.service"
-        sh____(install_service.format(**locals()))
-        install_service = "docker cp {testdir}/zzb.service {testname}:/etc/systemd/system/zzb.service"
-        sh____(install_service.format(**locals()))
-        install_service = "docker cp {testdir}/zzc.service {testname}:/etc/systemd/system/zzc.service"
-        sh____(install_service.format(**locals()))
-        enable_service = "docker exec {testname} systemctl enable zzb.service"
-        sh____(enable_service.format(**locals()))
-        enable_service = "docker exec {testname} systemctl enable zzc.service"
-        sh____(enable_service.format(**locals()))
-        version_systemctl = "docker exec {testname} systemctl --version"
-        sh____(version_systemctl.format(**locals()))
-        list_units_systemctl = "docker exec {testname} systemctl default-services -v"
-        # sh____(list_units_systemctl.format(**locals()))
-        out2 = output(list_units_systemctl.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name={testname} {image} sleep 50"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zza.service {testname}:/etc/systemd/system/zza.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zzb.service {testname}:/etc/systemd/system/zzb.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zzc.service {testname}:/etc/systemd/system/zzc.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl enable zzb.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl enable zzc.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl --version"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl default-services -v"
+        # sh____(cmd.format(**locals()))
+        out2 = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out2)
         #
-        commit_container = "docker commit -c 'CMD [\"/usr/bin/systemctl\",\"--init\",\"default\",\"-vv\"]'  {testname} {images}:{testname}"
-        sh____(commit_container.format(**locals()))
-        stop_container2 = "docker rm --force {testname}x"
-        sx____(stop_container2.format(**locals()))
-        start_container2 = "docker run --detach --name {testname}x {images}:{testname}"
-        sh____(start_container2.format(**locals()))
+        cmd = "docker commit -c 'CMD [\"/usr/bin/systemctl\",\"--init\",\"default\",\"-vv\"]'  {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}x"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name {testname}x {images}:{testname}"
+        sh____(cmd.format(**locals()))
         time.sleep(3)
         #
         #
@@ -6844,9 +6842,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(top, "testsleep 40"))
         self.assertTrue(greps(top, "testsleep 50"))
         #
-        list_units_systemctl = "docker exec {testname} systemctl halt -vvvv"
-        # sh____(list_units_systemctl.format(**locals()))
-        out3 = output(list_units_systemctl.format(**locals()))
+        cmd = "docker exec {testname} systemctl halt -vvvv"
+        # sh____(cmd.format(**locals()))
+        out3 = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out3)
         #
         top_container = "docker exec {testname} ps -eo pid,ppid,args"
@@ -6855,12 +6853,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(top, "testsleep 40"))
         self.assertFalse(greps(top, "testsleep 50"))
         #
-        stop_container = "docker rm --force {testname}"
-        sx____(stop_container.format(**locals()))
-        stop_container2 = "docker rm --force {testname}x"
-        sx____(stop_container2.format(**locals()))
-        drop_image_container = "docker rmi {images}:{testname}"
-        sx____(drop_image_container.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}x"
+        sx____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_5130_systemctl_py_run_default_services_from_simple_saved_container(self):
         """ check that we can enable services in a docker container to be run as default-services
@@ -6890,37 +6888,37 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target""")
         #
-        stop_container = "docker rm --force {testname}"
-        sx____(stop_container.format(**locals()))
-        start_container = "docker run --detach --name={testname} {image} sleep 50"
-        sh____(start_container.format(**locals()))
-        install_systemctl = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
-        sh____(install_systemctl.format(**locals()))
-        install_testsleep = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
-        sh____(install_testsleep.format(**locals()))
-        install_service = "docker cp {testdir}/zza.service {testname}:/etc/systemd/system/zza.service"
-        sh____(install_service.format(**locals()))
-        install_service = "docker cp {testdir}/zzb.service {testname}:/etc/systemd/system/zzb.service"
-        sh____(install_service.format(**locals()))
-        install_service = "docker cp {testdir}/zzc.service {testname}:/etc/systemd/system/zzc.service"
-        sh____(install_service.format(**locals()))
-        enable_service = "docker exec {testname} systemctl enable zzb.service"
-        sh____(enable_service.format(**locals()))
-        enable_service = "docker exec {testname} systemctl enable zzc.service"
-        sh____(enable_service.format(**locals()))
-        version_systemctl = "docker exec {testname} systemctl --version"
-        sh____(version_systemctl.format(**locals()))
-        list_units_systemctl = "docker exec {testname} systemctl default-services -v"
-        # sh____(list_units_systemctl.format(**locals()))
-        out2 = output(list_units_systemctl.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name={testname} {image} sleep 50"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zza.service {testname}:/etc/systemd/system/zza.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zzb.service {testname}:/etc/systemd/system/zzb.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zzc.service {testname}:/etc/systemd/system/zzc.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl enable zzb.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl enable zzc.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl --version"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl default-services -v"
+        # sh____(cmd.format(**locals()))
+        out2 = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out2)
         #
-        commit_container = "docker commit -c 'CMD \"/usr/bin/systemctl\"'  {testname} {images}:{testname}"
-        sh____(commit_container.format(**locals()))
-        stop_container2 = "docker rm --force {testname}x"
-        sx____(stop_container2.format(**locals()))
-        start_container2 = "docker run --detach --name {testname}x {images}:{testname}"
-        sh____(start_container2.format(**locals()))
+        cmd = "docker commit -c 'CMD \"/usr/bin/systemctl\"'  {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}x"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name {testname}x {images}:{testname}"
+        sh____(cmd.format(**locals()))
         time.sleep(3)
         #
         #
@@ -6930,9 +6928,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(top, "testsleep 40"))
         self.assertTrue(greps(top, "testsleep 50"))
         #
-        list_units_systemctl = "docker exec {testname} systemctl halt -vvvv"
-        # sh____(list_units_systemctl.format(**locals()))
-        out3 = output(list_units_systemctl.format(**locals()))
+        cmd = "docker exec {testname} systemctl halt -vvvv"
+        # sh____(cmd.format(**locals()))
+        out3 = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out3)
         #
         top_container = "docker exec {testname} ps -eo pid,ppid,args"
@@ -6941,12 +6939,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(top, "testsleep 40"))
         self.assertFalse(greps(top, "testsleep 50"))
         #
-        stop_container = "docker rm --force {testname}"
-        sx____(stop_container.format(**locals()))
-        stop_container2 = "docker rm --force {testname}x"
-        sx____(stop_container2.format(**locals()))
-        drop_image_container = "docker rmi {images}:{testname}"
-        sx____(drop_image_container.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}x"
+        sx____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_5133_systemctl_py_run_default_services_from_single_service_saved_container(self):
         """ check that we can enable services in a docker container to be run as default-services
@@ -6976,37 +6974,37 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target""")
         #
-        stop_container = "docker rm --force {testname}"
-        sx____(stop_container.format(**locals()))
-        start_container = "docker run --detach --name={testname} {image} sleep 50"
-        sh____(start_container.format(**locals()))
-        install_systemctl = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
-        sh____(install_systemctl.format(**locals()))
-        install_testsleep = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
-        sh____(install_testsleep.format(**locals()))
-        install_service = "docker cp {testdir}/zza.service {testname}:/etc/systemd/system/zza.service"
-        sh____(install_service.format(**locals()))
-        install_service = "docker cp {testdir}/zzb.service {testname}:/etc/systemd/system/zzb.service"
-        sh____(install_service.format(**locals()))
-        install_service = "docker cp {testdir}/zzc.service {testname}:/etc/systemd/system/zzc.service"
-        sh____(install_service.format(**locals()))
-        enable_service = "docker exec {testname} systemctl enable zzb.service"
-        sh____(enable_service.format(**locals()))
-        enable_service = "docker exec {testname} systemctl enable zzc.service"
-        sh____(enable_service.format(**locals()))
-        version_systemctl = "docker exec {testname} systemctl --version"
-        sh____(version_systemctl.format(**locals()))
-        list_units_systemctl = "docker exec {testname} systemctl default-services -v"
-        # sh____(list_units_systemctl.format(**locals()))
-        out2 = output(list_units_systemctl.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name={testname} {image} sleep 50"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zza.service {testname}:/etc/systemd/system/zza.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zzb.service {testname}:/etc/systemd/system/zzb.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zzc.service {testname}:/etc/systemd/system/zzc.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl enable zzb.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl enable zzc.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl --version"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl default-services -v"
+        # sh____(cmd.format(**locals()))
+        out2 = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out2)
         # .........................................vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-        commit_container = "docker commit -c 'CMD [\"/usr/bin/systemctl\",\"init\",\"zzc.service\"]'  {testname} {images}:{testname}"
-        sh____(commit_container.format(**locals()))
-        stop_container2 = "docker rm --force {testname}x"
-        sx____(stop_container2.format(**locals()))
-        start_container2 = "docker run --detach --name {testname}x {images}:{testname}"
-        sh____(start_container2.format(**locals()))
+        cmd = "docker commit -c 'CMD [\"/usr/bin/systemctl\",\"init\",\"zzc.service\"]'  {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}x"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name {testname}x {images}:{testname}"
+        sh____(cmd.format(**locals()))
         time.sleep(3)
         #
         #
@@ -7016,9 +7014,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(top, "testsleep 40")) # <<<<<<<<<< difference to 5033
         self.assertTrue(greps(top, "testsleep 50"))
         #
-        list_units_systemctl = "docker stop {testname}x" # <<<
-        # sh____(list_units_systemctl.format(**locals()))
-        out3 = output(list_units_systemctl.format(**locals()))
+        cmd = "docker stop {testname}x" # <<<
+        # sh____(cmd.format(**locals()))
+        out3 = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out3)
         #
         top_container = "docker exec {testname} ps -eo pid,ppid,args"
@@ -7027,12 +7025,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(top, "testsleep 40"))
         self.assertFalse(greps(top, "testsleep 50"))
         #
-        stop_container = "docker rm --force {testname}"
-        sx____(stop_container.format(**locals()))
-        stop_container2 = "docker rm --force {testname}x"
-        sx____(stop_container2.format(**locals()))
-        drop_image_container = "docker rmi {images}:{testname}"
-        sx____(drop_image_container.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}x"
+        sx____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
         self.rm_testdir()
 
     def test_6130_systemctl_py_run_default_services_from_simple_saved_container(self):
@@ -7075,42 +7073,42 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target""")
         #
-        stop_container = "docker rm --force {testname}"
-        sx____(stop_container.format(**locals()))
-        start_container = "docker run --detach --name={testname} {image} sleep 50"
-        sh____(start_container.format(**locals()))
-        install_systemctl = "docker cp {systemctl_py} {testname}:/{systemctl_py_run}"
-        sh____(install_systemctl.format(**locals()))
-        install_systemctl = "docker cp {systemctl_sh} {testname}:/usr/bin/systemctl"
-        sh____(install_systemctl.format(**locals()))
-        install_testsleep = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
-        sh____(install_testsleep.format(**locals()))
-        install_coverage = "docker exec {testname} {package} install -y python-coverage"
-        sh____(install_coverage.format(**locals()))
-        version_systemctl = "docker exec {testname} systemctl --version"
-        sh____(version_systemctl.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name={testname} {image} sleep 50"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {systemctl_py} {testname}:/{systemctl_py_run}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {systemctl_sh} {testname}:/usr/bin/systemctl"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} {package} install -y python-coverage"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl --version"
+        sh____(cmd.format(**locals()))
         #
-        install_service = "docker cp {testdir}/zza.service {testname}:/etc/systemd/system/zza.service"
-        sh____(install_service.format(**locals()))
-        install_service = "docker cp {testdir}/zzb.service {testname}:/etc/systemd/system/zzb.service"
-        sh____(install_service.format(**locals()))
-        install_service = "docker cp {testdir}/zzc.service {testname}:/etc/systemd/system/zzc.service"
-        sh____(install_service.format(**locals()))
-        enable_service = "docker exec {testname} systemctl enable zzb.service"
-        sh____(enable_service.format(**locals()))
-        enable_service = "docker exec {testname} systemctl enable zzc.service"
-        sh____(enable_service.format(**locals()))
-        list_units_systemctl = "docker exec {testname} systemctl default-services -v"
-        # sh____(list_units_systemctl.format(**locals()))
-        out2 = output(list_units_systemctl.format(**locals()))
+        cmd = "docker cp {testdir}/zza.service {testname}:/etc/systemd/system/zza.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zzb.service {testname}:/etc/systemd/system/zzb.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zzc.service {testname}:/etc/systemd/system/zzc.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl enable zzb.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl enable zzc.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl default-services -v"
+        # sh____(cmd.format(**locals()))
+        out2 = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out2)
         #
-        commit_container = "docker commit -c 'CMD \"/usr/bin/systemctl\"'  {testname} {images}:{testname}"
-        sh____(commit_container.format(**locals()))
-        stop_container2 = "docker rm --force {testname}x"
-        sx____(stop_container2.format(**locals()))
-        start_container2 = "docker run --detach --name {testname}x {images}:{testname}"
-        sh____(start_container2.format(**locals()))
+        cmd = "docker commit -c 'CMD \"/usr/bin/systemctl\"'  {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}x"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name {testname}x {images}:{testname}"
+        sh____(cmd.format(**locals()))
         time.sleep(3)
         #
         top_container2 = "docker exec {testname}x ps -eo pid,ppid,args"
@@ -7119,9 +7117,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(top, "testsleep 40"))
         self.assertTrue(greps(top, "testsleep 50"))
         #
-        list_units_systemctl = "docker exec {testname} systemctl halt -vvvv"
-        # sh____(list_units_systemctl.format(**locals()))
-        out3 = output(list_units_systemctl.format(**locals()))
+        cmd = "docker exec {testname} systemctl halt -vvvv"
+        # sh____(cmd.format(**locals()))
+        out3 = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out3)
         #
         top_container = "docker exec {testname} ps -eo pid,ppid,args"
@@ -7132,17 +7130,17 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         if COVERAGE:
             coverage_file = ".coverage." + testname
-            grab_coverage = "docker cp {testname}x:.coverage {coverage_file}"
-            sh____(grab_coverage.format(**locals()))
+            cmd = "docker cp {testname}x:.coverage {coverage_file}"
+            sh____(cmd.format(**locals()))
             okay_coverage = "sed -i -e 's:/{systemctl_py_run}:{systemctl_py}:' {coverage_file}"
             sh____(okay_coverage.format(**locals()))
         #
-        stop_container = "docker rm --force {testname}"
-        sx____(stop_container.format(**locals()))
-        stop_container2 = "docker rm --force {testname}x"
-        sx____(stop_container2.format(**locals()))
-        drop_image_container = "docker rmi {images}:{testname}"
-        sx____(drop_image_container.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}x"
+        sx____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_6133_systemctl_py_run_default_services_from_single_service_saved_container(self):
         """ check that we can enable services in a docker container to be run as default-services
@@ -7184,42 +7182,42 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target""")
         #
-        stop_container = "docker rm --force {testname}"
-        sx____(stop_container.format(**locals()))
-        start_container = "docker run --detach --name={testname} {image} sleep 50"
-        sh____(start_container.format(**locals()))
-        install_systemctl = "docker cp {systemctl_py} {testname}:/{systemctl_py_run}"
-        sh____(install_systemctl.format(**locals()))
-        install_systemctl = "docker cp {systemctl_sh} {testname}:/usr/bin/systemctl"
-        sh____(install_systemctl.format(**locals()))
-        install_testsleep = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
-        sh____(install_testsleep.format(**locals()))
-        install_coverage = "docker exec {testname} {package} install -y python-coverage"
-        sh____(install_coverage.format(**locals()))
-        version_systemctl = "docker exec {testname} systemctl --version"
-        sh____(version_systemctl.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name={testname} {image} sleep 50"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {systemctl_py} {testname}:/{systemctl_py_run}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {systemctl_sh} {testname}:/usr/bin/systemctl"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} {package} install -y python-coverage"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl --version"
+        sh____(cmd.format(**locals()))
         #
-        install_service = "docker cp {testdir}/zza.service {testname}:/etc/systemd/system/zza.service"
-        sh____(install_service.format(**locals()))
-        install_service = "docker cp {testdir}/zzb.service {testname}:/etc/systemd/system/zzb.service"
-        sh____(install_service.format(**locals()))
-        install_service = "docker cp {testdir}/zzc.service {testname}:/etc/systemd/system/zzc.service"
-        sh____(install_service.format(**locals()))
-        enable_service = "docker exec {testname} systemctl enable zzb.service"
-        sh____(enable_service.format(**locals()))
-        enable_service = "docker exec {testname} systemctl enable zzc.service"
-        sh____(enable_service.format(**locals()))
-        list_units_systemctl = "docker exec {testname} systemctl default-services -v"
-        # sh____(list_units_systemctl.format(**locals()))
-        out2 = output(list_units_systemctl.format(**locals()))
+        cmd = "docker cp {testdir}/zza.service {testname}:/etc/systemd/system/zza.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zzb.service {testname}:/etc/systemd/system/zzb.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zzc.service {testname}:/etc/systemd/system/zzc.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl enable zzb.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl enable zzc.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl default-services -v"
+        # sh____(cmd.format(**locals()))
+        out2 = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out2)
         # .........................................vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-        commit_container = "docker commit -c 'CMD [\"/usr/bin/systemctl\",\"init\",\"zzc.service\"]'  {testname} {images}:{testname}"
-        sh____(commit_container.format(**locals()))
-        stop_container2 = "docker rm --force {testname}x"
-        sx____(stop_container2.format(**locals()))
-        start_container2 = "docker run --detach --name {testname}x {images}:{testname}"
-        sh____(start_container2.format(**locals()))
+        cmd = "docker commit -c 'CMD [\"/usr/bin/systemctl\",\"init\",\"zzc.service\"]'  {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}x"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name {testname}x {images}:{testname}"
+        sh____(cmd.format(**locals()))
         time.sleep(3)
         #
         #
@@ -7229,9 +7227,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(top, "testsleep 40")) # <<<<<<<<<< difference to 5033
         self.assertTrue(greps(top, "testsleep 50"))
         #
-        list_units_systemctl = "docker stop {testname}x" # <<<
-        # sh____(list_units_systemctl.format(**locals()))
-        out3 = output(list_units_systemctl.format(**locals()))
+        cmd = "docker stop {testname}x" # <<<
+        # sh____(cmd.format(**locals()))
+        out3 = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out3)
         #
         top_container = "docker exec {testname} ps -eo pid,ppid,args"
@@ -7242,17 +7240,17 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         if COVERAGE:
             coverage_file = ".coverage." + testname
-            grab_coverage = "docker cp {testname}x:.coverage {coverage_file}"
-            sh____(grab_coverage.format(**locals()))
+            cmd = "docker cp {testname}x:.coverage {coverage_file}"
+            sh____(cmd.format(**locals()))
             okay_coverage = "sed -i -e 's:/{systemctl_py_run}:{systemctl_py}:' {coverage_file}"
             sh____(okay_coverage.format(**locals()))
         #
-        stop_container = "docker rm --force {testname}"
-        sx____(stop_container.format(**locals()))
-        stop_container2 = "docker rm --force {testname}x"
-        sx____(stop_container2.format(**locals()))
-        drop_image_container = "docker rmi {images}:{testname}"
-        sx____(drop_image_container.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}x"
+        sx____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_6200_systemctl_py_switch_users_is_possible(self):
         """ check that we can put setuid/setgid definitions in a service
@@ -7293,33 +7291,33 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target""")
         #
-        stop_container = "docker rm --force {testname}"
-        sx____(stop_container.format(**locals()))
-        start_container = "docker run --detach --name={testname} {image} sleep 50"
-        sh____(start_container.format(**locals()))
-        install_systemctl = "docker cp {systemctl_py} {testname}:/{systemctl_py_run}"
-        sh____(install_systemctl.format(**locals()))
-        install_systemctl = "docker cp {systemctl_sh} {testname}:/usr/bin/systemctl"
-        sh____(install_systemctl.format(**locals()))
-        install_testsleep = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
-        sh____(install_testsleep.format(**locals()))
-        install_coverage = "docker exec {testname} {package} install -y python-coverage"
-        sh____(install_coverage.format(**locals()))
-        version_systemctl = "docker exec {testname} systemctl --version"
-        sh____(version_systemctl.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name={testname} {image} sleep 50"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {systemctl_py} {testname}:/{systemctl_py_run}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {systemctl_sh} {testname}:/usr/bin/systemctl"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} {package} install -y python-coverage"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl --version"
+        sh____(cmd.format(**locals()))
         #
-        create_group = "docker exec {testname} groupadd group2"
-        sh____(create_group.format(**locals()))
-        create_user = "docker exec {testname} useradd user1 -g group2"
-        sh____(create_user.format(**locals()))
-        install_service = "docker cp {testdir}/zzb.service {testname}:/etc/systemd/system/zzb.service"
-        sh____(install_service.format(**locals()))
-        install_service = "docker cp {testdir}/zzc.service {testname}:/etc/systemd/system/zzc.service"
-        sh____(install_service.format(**locals()))
-        start_service = "docker exec {testname} systemctl start zzb.service -v"
-        sh____(start_service.format(**locals()))
-        start_service = "docker exec {testname} systemctl start zzc.service -v"
-        sh____(start_service.format(**locals()))
+        cmd = "docker exec {testname} groupadd group2"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} useradd user1 -g group2"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zzb.service {testname}:/etc/systemd/system/zzb.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zzc.service {testname}:/etc/systemd/system/zzc.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl start zzb.service -v"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl start zzc.service -v"
+        sh____(cmd.format(**locals()))
         #
         # first of all, it starts commands like the service specs without user/group
         top_container = "docker exec {testname} ps -eo pid,ppid,args"
@@ -7334,24 +7332,24 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(top, "user1 .*root .*testsleep 40"))
         self.assertTrue(greps(top, "user1 .*group2 .*testsleep 50"))
         # and the pid file has changed as well
-        check_pid_file = "docker exec {testname} ls -l /var/run/zzb.service.pid"
-        out = output(check_pid_file.format(**locals()))
+        cmd = "docker exec {testname} ls -l /var/run/zzb.service.pid"
+        out = output(cmd.format(**locals()))
         self.assertTrue(greps(out, "user1 .*root .*zzb.service.pid"))
-        check_pid_file = "docker exec {testname} ls -l /var/run/zzc.service.pid"
-        out = output(check_pid_file.format(**locals()))
+        cmd = "docker exec {testname} ls -l /var/run/zzc.service.pid"
+        out = output(cmd.format(**locals()))
         self.assertTrue(greps(out, "user1 .*group2 .*zzc.service.pid"))
         #
         if COVERAGE:
             coverage_file = ".coverage." + testname
-            grab_coverage = "docker cp {testname}:.coverage {coverage_file}"
-            sh____(grab_coverage.format(**locals()))
-            okay_coverage = "sed -i -e 's:/{systemctl_py_run}:{systemctl_py}:' {coverage_file}"
-            sh____(okay_coverage.format(**locals()))
+            cmd = "docker cp {testname}:.coverage {coverage_file}"
+            sh____(cmd.format(**locals()))
+            cmd = "sed -i -e 's:/{systemctl_py_run}:{systemctl_py}:' {coverage_file}"
+            sh____(cmd.format(**locals()))
         #
-        drop_container = "docker rm --force {testname}"
-        sx____(drop_container.format(**locals()))
-        drop_image_container = "docker rmi {images}:{testname}"
-        sx____(drop_image_container.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_6201_systemctl_py_switch_users_is_possible_from_saved_container(self):
         """ check that we can put setuid/setgid definitions in a service
@@ -7392,44 +7390,44 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target""")
         #
-        stop_container = "docker rm --force {testname}"
-        sx____(stop_container.format(**locals()))
-        start_container = "docker run --detach --name={testname} {image} sleep 50"
-        sh____(start_container.format(**locals()))
-        install_systemctl = "docker cp {systemctl_py} {testname}:/{systemctl_py_run}"
-        sh____(install_systemctl.format(**locals()))
-        install_systemctl = "docker cp {systemctl_sh} {testname}:/usr/bin/systemctl"
-        sh____(install_systemctl.format(**locals()))
-        install_testsleep = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
-        sh____(install_testsleep.format(**locals()))
-        install_coverage = "docker exec {testname} {package} install -y python-coverage"
-        sh____(install_coverage.format(**locals()))
-        version_systemctl = "docker exec {testname} systemctl --version"
-        sh____(version_systemctl.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name={testname} {image} sleep 50"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {systemctl_py} {testname}:/{systemctl_py_run}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {systemctl_sh} {testname}:/usr/bin/systemctl"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} {package} install -y python-coverage"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl --version"
+        sh____(cmd.format(**locals()))
         #
-        create_group = "docker exec {testname} groupadd group2"
-        sh____(create_group.format(**locals()))
-        create_user = "docker exec {testname} useradd user1 -g group2"
-        sh____(create_user.format(**locals()))
-        install_service = "docker cp {testdir}/zzb.service {testname}:/etc/systemd/system/zzb.service"
-        sh____(install_service.format(**locals()))
-        install_service = "docker cp {testdir}/zzc.service {testname}:/etc/systemd/system/zzc.service"
-        sh____(install_service.format(**locals()))
-        enable_service = "docker exec {testname} systemctl enable zzb.service"
-        sh____(enable_service.format(**locals()))
-        enable_service = "docker exec {testname} systemctl enable zzc.service"
-        sh____(enable_service.format(**locals()))
-        list_units_systemctl = "docker exec {testname} systemctl default-services -v"
-        # sh____(list_units_systemctl.format(**locals()))
-        out2 = output(list_units_systemctl.format(**locals()))
+        cmd = "docker exec {testname} groupadd group2"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} useradd user1 -g group2"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zzb.service {testname}:/etc/systemd/system/zzb.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zzc.service {testname}:/etc/systemd/system/zzc.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl enable zzb.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl enable zzc.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl default-services -v"
+        # sh____(cmd.format(**locals()))
+        out2 = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out2)
         # .........................................vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-        commit_container = "docker commit -c 'CMD [\"/usr/bin/systemctl\"]'  {testname} {images}:{testname}"
-        sh____(commit_container.format(**locals()))
-        stop_container2 = "docker rm --force {testname}x"
-        sx____(stop_container2.format(**locals()))
-        start_container2 = "docker run --detach --name {testname}x {images}:{testname}"
-        sh____(start_container2.format(**locals()))
+        cmd = "docker commit -c 'CMD [\"/usr/bin/systemctl\"]'  {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}x"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name {testname}x {images}:{testname}"
+        sh____(cmd.format(**locals()))
         time.sleep(3)
         #
         # first of all, it starts commands like the service specs without user/group
@@ -7445,16 +7443,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(top, "user1 .*root .*testsleep 40"))
         self.assertTrue(greps(top, "user1 .*group2 .*testsleep 50"))
         # and the pid file has changed as well
-        check_pid_file = "docker exec {testname}x ls -l /var/run/zzb.service.pid"
-        out = output(check_pid_file.format(**locals()))
+        cmd = "docker exec {testname}x ls -l /var/run/zzb.service.pid"
+        out = output(cmd.format(**locals()))
         self.assertTrue(greps(out, "user1 .*root .*zzb.service.pid"))
-        check_pid_file = "docker exec {testname}x ls -l /var/run/zzc.service.pid"
-        out = output(check_pid_file.format(**locals()))
+        cmd = "docker exec {testname}x ls -l /var/run/zzc.service.pid"
+        out = output(cmd.format(**locals()))
         self.assertTrue(greps(out, "user1 .*group2 .*zzc.service.pid"))
         #
-        list_units_systemctl = "docker stop {testname}x" # <<<
-        # sh____(list_units_systemctl.format(**locals()))
-        out3 = output(list_units_systemctl.format(**locals()))
+        cmd = "docker stop {testname}x" # <<<
+        # sh____(cmd.format(**locals()))
+        out3 = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out3)
         #
         top_container = "docker exec {testname} ps -eo pid,ppid,args"
@@ -7465,17 +7463,17 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         if COVERAGE:
             coverage_file = ".coverage." + testname
-            grab_coverage = "docker cp {testname}x:.coverage {coverage_file}"
-            sh____(grab_coverage.format(**locals()))
-            okay_coverage = "sed -i -e 's:/{systemctl_py_run}:{systemctl_py}:' {coverage_file}"
-            sh____(okay_coverage.format(**locals()))
+            cmd = "docker cp {testname}x:.coverage {coverage_file}"
+            sh____(cmd.format(**locals()))
+            cmd = "sed -i -e 's:/{systemctl_py_run}:{systemctl_py}:' {coverage_file}"
+            sh____(cmd.format(**locals()))
         #
-        stop_container = "docker rm --force {testname}"
-        sx____(stop_container.format(**locals()))
-        stop_container2 = "docker rm --force {testname}x"
-        sx____(stop_container2.format(**locals()))
-        drop_image_container = "docker rmi {images}:{testname}"
-        sx____(drop_image_container.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}x"
+        sx____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_6600_systemctl_py_can_reap_zombies_in_a_container(self):
         """ check that we can reap zombies in a container managed by systemctl.py"""
@@ -7548,8 +7546,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl enable zzz.service"
         sh____(cmd.format(**locals()))
-        list_units_systemctl = "docker exec {testname} systemctl default-services -v"
-        out2 = output(list_units_systemctl.format(**locals()))
+        cmd = "docker exec {testname} systemctl default-services -v"
+        out2 = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out2)
         #
         cmd = "docker commit -c 'CMD [\"/usr/bin/systemctl\"]'  {testname} {images}:{testname}"
@@ -7604,10 +7602,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         if COVERAGE:
             coverage_file = ".coverage." + testname
-            grab_coverage = "docker cp {testname}x:.coverage {coverage_file}"
-            sh____(grab_coverage.format(**locals()))
-            okay_coverage = "sed -i -e 's:/{systemctl_py_run}:{systemctl_py}:' {coverage_file}"
-            sh____(okay_coverage.format(**locals()))
+            cmd = "docker cp {testname}x:.coverage {coverage_file}"
+            sh____(cmd.format(**locals()))
+            cmd = "sed -i -e 's:/{systemctl_py_run}:{systemctl_py}:' {coverage_file}"
+            sh____(cmd.format(**locals()))
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
@@ -7634,25 +7632,25 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         dockerfile="centos-httpd.dockerfile"
         images = IMAGES
         # WHEN
-        build_new_image = "docker build . -f tests/{dockerfile} --tag {images}:{testname}"
-        sh____(build_new_image.format(**locals()))
-        drop_container = "docker rm --force {testname}"
-        sx____(drop_container.format(**locals()))
-        start_as_container = "docker run -d -p {port}:80 --name {testname} {images}:{testname}"
-        sh____(start_as_container.format(**locals()))
+        cmd = "docker build . -f tests/{dockerfile} --tag {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run -d -p {port}:80 --name {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
         # THEN
         tmp = self.testdir(testname)
-        read_index_html = "sleep 5; wget -O {tmp}/{testname}.txt http://127.0.0.1:{port}"
-        sh____(read_index_html.format(**locals()))
-        grep_index_html = "grep OK {tmp}/{testname}.txt"
-        sh____(grep_index_html.format(**locals()))
+        cmd = "sleep 5; wget -O {tmp}/{testname}.txt http://127.0.0.1:{port}"
+        sh____(cmd.format(**locals()))
+        cmd = "grep OK {tmp}/{testname}.txt"
+        sh____(cmd.format(**locals()))
         # CLEAN
-        stop_container = "docker stop {testname}"
-        sh____(stop_container.format(**locals()))
-        drop_container = "docker rm --force {testname}"
-        sh____(drop_container.format(**locals()))
-        drop_image_container = "docker rmi {images}:{testname}"
-        sx____(drop_image_container.format(**locals()))
+        cmd = "docker stop {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_7002_centos_postgres_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
@@ -7671,27 +7669,27 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         dockerfile="centos-postgres.dockerfile"
         images = IMAGES
         # WHEN
-        build_new_image = "docker build . -f tests/{dockerfile} --tag {images}:{testname}"
-        sh____(build_new_image.format(**locals()))
-        drop_container = "docker rm --force {name}"
-        sx____(drop_container.format(**locals()))
-        start_as_container = "docker run -d -p {port}:5432 --name {testname} {images}:{testname}"
-        sh____(start_as_container.format(**locals()))
+        cmd = "docker build . -f tests/{dockerfile} --tag {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {name}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run -d -p {port}:5432 --name {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
         # THEN
         tmp = self.testdir(testname)
         login = "export PGUSER=testuser_11; export PGPASSWORD=Testuser.11"
         query = "SELECT rolname FROM pg_roles"
-        read_index_html = "sleep 5; {login}; psql -p {port} -h 127.0.0.1 -d postgres -c '{query}' > {tmp}/{testname}.txt"
-        sh____(read_index_html.format(**locals()))
-        grep_index_html = "grep testuser_ok {tmp}/{testname}.txt"
-        sh____(grep_index_html.format(**locals()))
+        cmd = "sleep 5; {login}; psql -p {port} -h 127.0.0.1 -d postgres -c '{query}' > {tmp}/{testname}.txt"
+        sh____(cmd.format(**locals()))
+        cmd = "grep testuser_ok {tmp}/{testname}.txt"
+        sh____(cmd.format(**locals()))
         # CLEAN
-        stop_container = "docker stop {testname}"
-        sh____(stop_container.format(**locals()))
-        drop_container = "docker rm --force {testname}"
-        sh____(drop_container.format(**locals()))
-        drop_image_container = "docker rmi {images}:{testname}"
-        sx____(drop_image_container.format(**locals()))
+        cmd = "docker stop {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_7011_centos_httpd_socket_notify(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
@@ -7709,18 +7707,18 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl_py = _systemctl_py
         logg.info("%s:%s %s", testname, testport, image)
         #
-        stop_container = "docker rm --force {testname}"
-        sx____(stop_container.format(**locals()))
-        start_container = "docker run --detach --name={testname} {image} sleep 200"
-        sh____(start_container.format(**locals()))
-        install_systemctl = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
-        sh____(install_systemctl.format(**locals()))
-        install_software = "docker exec {testname} yum install -y httpd httpd-tools"
-        sh____(install_software.format(**locals()))
-        enable_software = "docker exec {testname} systemctl enable httpd"
-        sh____(enable_software.format(**locals()))
-        push_result = "docker exec {testname} bash -c 'echo TEST_OK > /var/www/html/index.html'"
-        sh____(push_result.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name={testname} {image} sleep 200"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} yum install -y httpd httpd-tools"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl enable httpd"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'echo TEST_OK > /var/www/html/index.html'"
+        sh____(cmd.format(**locals()))
         #
         ## commit_container = "docker commit -c 'CMD [\"/usr/bin/systemctl\",\"init\",\"-vv\"]'  {testname} {images}:{testname}"
         ## sh____(commit_container.format(**locals()))
@@ -7731,29 +7729,29 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         ## time.sleep(3)
         #
         container = self.ip_container(testname)
-        make_info_log = "docker exec {testname} touch /var/log/systemctl.debug.log"
-        sh____(make_info_log.format(**locals()))
-        start_httpd = "docker exec {testname} systemctl start httpd"
-        sh____(start_httpd.format(**locals()))
+        cmd = "docker exec {testname} touch /var/log/systemctl.debug.log"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl start httpd"
+        sh____(cmd.format(**locals()))
         # THEN
         time.sleep(5)
-        read_index_html = "wget -O {testdir}/result.txt http://{container}:80"
-        sh____(read_index_html.format(**locals()))
-        grep_index_html = "grep OK {testdir}/result.txt"
-        sh____(grep_index_html.format(**locals()))
+        cmd = "wget -O {testdir}/result.txt http://{container}:80"
+        sh____(cmd.format(**locals()))
+        cmd = "grep OK {testdir}/result.txt"
+        sh____(cmd.format(**locals()))
         # STOP
-        status_software = "docker exec {testname} systemctl status httpd"
-        sh____(status_software.format(**locals()))
-        stop_software = "docker exec {testname} systemctl stop httpd"
-        sh____(stop_software.format(**locals()))
-        status_software = "docker exec {testname} systemctl status httpd"
-        sx____(status_software.format(**locals()))
-        fetch_systemctl_log = "docker cp {testname}:/var/log/systemctl.debug.log {testdir}/systemctl.debug.log"
-        sh____(fetch_systemctl_log.format(**locals()))
-        stop_new_container = "docker stop {testname}"
-        sh____(stop_new_container.format(**locals()))
-        drop_new_container = "docker rm --force {testname}"
-        sh____(drop_new_container.format(**locals()))
+        cmd = "docker exec {testname} systemctl status httpd"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl stop httpd"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl status httpd"
+        sx____(cmd.format(**locals()))
+        cmd = "docker cp {testname}:/var/log/systemctl.debug.log {testdir}/systemctl.debug.log"
+        sh____(cmd.format(**locals()))
+        cmd = "docker stop {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sh____(cmd.format(**locals()))
         # CHECK
         self.assertEqual(len(greps(open(testdir+"/systemctl.debug.log"), " ERROR ")), 0)
         self.assertTrue(greps(open(testdir+"/systemctl.debug.log"), "use NOTIFY_SOCKET="))
@@ -7785,54 +7783,54 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl_py = _systemctl_py
         logg.info("%s:%s %s", testname, testport, image)
         #
-        stop_container = "docker rm --force {testname}"
-        sx____(stop_container.format(**locals()))
-        start_container = "docker run --detach --name={testname} {image} sleep 200"
-        sh____(start_container.format(**locals()))
-        install_systemctl = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
-        sh____(install_systemctl.format(**locals()))
-        install_java = "docker exec {testname} yum install -y java" # required
-        sh____(install_java.format(**locals()))
-        install_extras = "docker exec {testname} yum install -y which" # TODO: missing requirement of elasticsearch
-        sh____(install_extras.format(**locals()))
-        uploads_software = "docker cp Software/ElasticSearch {testname}:/srv/"
-        sh____(uploads_software.format(**locals()))
-        install_software = "docker exec {testname} bash -c 'yum install -y /srv/ElasticSearch/*.rpm'"
-        sh____(install_software.format(**locals()))
-        enable_software = "docker exec {testname} systemctl enable elasticsearch"
-        sh____(enable_software.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name={testname} {image} sleep 200"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} yum install -y java" # required
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} yum install -y which" # TODO: missing requirement of elasticsearch
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp Software/ElasticSearch {testname}:/srv/"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'yum install -y /srv/ElasticSearch/*.rpm'"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl enable elasticsearch"
+        sh____(cmd.format(**locals()))
         #
-        commit_container = "docker commit -c 'CMD [\"/usr/bin/systemctl\"]'  {testname} {images}:{testname}"
-        sh____(commit_container.format(**locals()))
-        stop_container = "docker rm --force {testname}"
-        sx____(stop_container.format(**locals()))
-        start_container = "docker run --detach --name {testname} {images}:{testname} sleep 200"
-        sh____(start_container.format(**locals()))
+        cmd = "docker commit -c 'CMD [\"/usr/bin/systemctl\"]'  {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name {testname} {images}:{testname} sleep 200"
+        sh____(cmd.format(**locals()))
         time.sleep(3)
         #
         container = self.ip_container(testname)
         logg.info("========================>>>>>>>>")
-        make_info_log = "docker exec {testname} touch /var/log/systemctl.log"
-        sh____(make_info_log.format(**locals()))
-        start_software = "docker exec {testname} systemctl start elasticsearch -vvv"
-        sh____(start_software.format(**locals()))
+        cmd = "docker exec {testname} touch /var/log/systemctl.log"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl start elasticsearch -vvv"
+        sh____(cmd.format(**locals()))
         # THEN
         testdir = self.testdir(testname)
-        read_index_html = "sleep 5; wget -O {testdir}/result.txt http://{container}:9200/?pretty"
-        sh____(read_index_html.format(**locals()))
-        grep_index_html = "grep 'You Know, for Search' {testdir}/result.txt"
-        sh____(grep_index_html.format(**locals()))
+        cmd = "sleep 5; wget -O {testdir}/result.txt http://{container}:9200/?pretty"
+        sh____(cmd.format(**locals()))
+        cmd = "grep 'You Know, for Search' {testdir}/result.txt"
+        sh____(cmd.format(**locals()))
         # STOP
-        status_elasticsearch = "docker exec {testname} systemctl status elasticsearch"
-        sh____(status_elasticsearch.format(**locals()))
-        stop_elasticsearch = "docker exec {testname} systemctl stop elasticsearch"
-        sh____(stop_elasticsearch.format(**locals()))
-        fetch_systemctl_log = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
-        sh____(fetch_systemctl_log.format(**locals()))
-        stop_container = "docker stop {testname}"
-        sh____(stop_container.format(**locals()))
-        drop_container = "docker rm --force {testname}"
-        sh____(drop_container.format(**locals()))
+        cmd = "docker exec {testname} systemctl status elasticsearch"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl stop elasticsearch"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        sh____(cmd.format(**locals()))
+        cmd = "docker stop {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sh____(cmd.format(**locals()))
         # CHECK
         systemctl_log = open(testdir+"/systemctl.log").read()
         self.assertEqual(len(greps(systemctl_log, " ERROR ")), 0)
@@ -7840,8 +7838,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(systemctl_log, "stop kill PID .*elasticsearch.service"))
         self.assertTrue(greps(systemctl_log, "stopped PID .* EXIT 143"))
         #
-        drop_image_container = "docker rmi {images}:{name}"
-        sx____(drop_image_container.format(**locals()))
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_7013_centos_lamp_stack(self):
         """ Check setup of Linux/Mariadb/Apache/Php on CentOs"""
@@ -7853,54 +7851,54 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl_py = _systemctl_py
         logg.info("%s:%s %s", testname, testport, image)
         #
-        stop_container = "docker rm --force {testname}"
-        sx____(stop_container.format(**locals()))
-        start_container = "docker run --detach --name={testname} {image} sleep 200"
-        sh____(start_container.format(**locals()))
-        install_systemctl = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
-        sh____(install_systemctl.format(**locals()))
-        install_epel = "docker exec {testname} yum install -y epel-release"
-        sh____(install_epel.format(**locals()))
-        install_repos = "docker exec {testname} yum repolist"
-        sh____(install_repos.format(**locals()))
-        install_lamp = "docker exec {testname} yum install -y httpd httpd-tools mariadb-server mariadb php phpmyadmin"
-        sh____(install_lamp.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name={testname} {image} sleep 200"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} yum install -y epel-release"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} yum repolist"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} yum install -y httpd httpd-tools mariadb-server mariadb php phpmyadmin"
+        sh____(cmd.format(**locals()))
         #
         WEB_CONF="/etc/httpd/conf.d/phpMyAdmin.conf"
         INC_CONF="/etc/phpMyAdmin/config.inc.php"
         INDEX_PHP="/var/www/html/index.php"
-        push_result = "docker exec {testname} bash -c 'echo \"<?php phpinfo(); ?>\" > {INDEX_PHP}'"
-        sh____(push_result.format(**locals()))
-        push_connect = "docker exec {testname} sed -i 's|ip 127.0.0.1|ip 172.0.0.0/8|' {WEB_CONF}"
-        sh____(push_connect.format(**locals()))
-        start_db = "docker exec {testname} systemctl start mariadb -vvv"
-        sh____(start_db.format(**locals()))
-        rootuser_db = "docker exec {testname} mysqladmin -uroot password 'N0.secret'"
-        sh____(rootuser_db.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'echo \"<?php phpinfo(); ?>\" > {INDEX_PHP}'"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} sed -i 's|ip 127.0.0.1|ip 172.0.0.0/8|' {WEB_CONF}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl start mariadb -vvv"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} mysqladmin -uroot password 'N0.secret'"
+        sh____(cmd.format(**locals()))
         text_file(os_path(testdir,"testuser.sql"), "CREATE USER testuser_OK IDENTIFIED BY 'Testuser.OK'")
-        testuser_sql = "docker cp {testdir}/testuser.sql {testname}:/srv/testuser.sql" 
-        sh____(testuser_sql.format(**locals()))
-        testuser_db = "docker exec {testname} bash -c 'cat /srv/testuser.sql | mysql -uroot -pN0.secret'"
-        sh____(testuser_db.format(**locals()))
-        testuser_username = "docker exec {testname} sed -i -e \"/'user'/s|=.*;|='testuser_OK';|\" {INC_CONF}"
-        sh____(testuser_username.format(**locals()))
-        testuser_password = "docker exec {testname} sed -i -e \"/'password'/s|=.*;|='Testuser.OK';|\" {INC_CONF}"
-        sh____(testuser_password.format(**locals()))
-        enable_software = "docker exec {testname} systemctl start httpd"
-        sh____(enable_software.format(**locals()))
+        cmd = "docker cp {testdir}/testuser.sql {testname}:/srv/testuser.sql" 
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'cat /srv/testuser.sql | mysql -uroot -pN0.secret'"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} sed -i -e \"/'user'/s|=.*;|='testuser_OK';|\" {INC_CONF}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} sed -i -e \"/'password'/s|=.*;|='Testuser.OK';|\" {INC_CONF}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl start httpd"
+        sh____(cmd.format(**locals()))
         #
         container = self.ip_container(testname)
         # THEN
         time.sleep(5)
-        read_php_admin_html = "wget -O {testdir}/result.txt http://{container}/phpMyAdmin"
-        sh____(read_php_admin_html.format(**locals()))
-        grep_php_admin_html = "grep '<h1>.*>phpMyAdmin<' {testdir}/result.txt"
-        sh____(grep_php_admin_html.format(**locals()))
+        cmd = "wget -O {testdir}/result.txt http://{container}/phpMyAdmin"
+        sh____(cmd.format(**locals()))
+        cmd = "grep '<h1>.*>phpMyAdmin<' {testdir}/result.txt"
+        sh____(cmd.format(**locals()))
         # CLEAN
-        stop_container = "docker stop {testname}"
-        sh____(stop_container.format(**locals()))
-        drop_container = "docker rm --force {testname}"
-        sh____(drop_container.format(**locals()))
+        cmd = "docker stop {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sh____(cmd.format(**locals()))
         #
         self.rm_testdir()
     def test_7014_opensuse_lamp_stack(self):
@@ -7913,52 +7911,52 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl_py = _systemctl_py
         logg.info("%s:%s %s", testname, testport, image)
         #
-        stop_container = "docker rm --force {testname}"
-        sx____(stop_container.format(**locals()))
-        start_container = "docker run --detach --name={testname} {image} sleep 200"
-        sh____(start_container.format(**locals()))
-        install_systemctl = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
-        sh____(install_systemctl.format(**locals()))
-        install_python = "docker exec {testname} zypper install -r oss -y python"
-        sh____(install_python.format(**locals()))
-        install_lamp = "docker exec {testname} zypper install -r oss -y apache2 apache2-utils mariadb-server mariadb-tools php5 phpMyAdmin"
-        sh____(install_lamp.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name={testname} {image} sleep 200"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} zypper install -r oss -y python"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} zypper install -r oss -y apache2 apache2-utils mariadb-server mariadb-tools php5 phpMyAdmin"
+        sh____(cmd.format(**locals()))
         #
         WEB_CONF="/etc/apache2/conf.d/phpMyAdmin.conf"
         INC_CONF="/etc/phpMyAdmin/config.inc.php"
         INDEX_PHP="/srv/www/htdocs/index.php"
-        push_result = "docker exec {testname} bash -c 'echo \"<?php phpinfo(); ?>\" > {INDEX_PHP}'"
-        sh____(push_result.format(**locals()))
-        push_connect = "docker exec {testname} sed -i 's|ip 127.0.0.1|ip 172.0.0.0/8|' {WEB_CONF}"
-        sh____(push_connect.format(**locals()))
-        start_db = "docker exec {testname} systemctl start mysql -vvv"
-        sh____(start_db.format(**locals()))
-        rootuser_db = "docker exec {testname} mysqladmin -uroot password 'N0.secret'"
-        sh____(rootuser_db.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'echo \"<?php phpinfo(); ?>\" > {INDEX_PHP}'"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} sed -i 's|ip 127.0.0.1|ip 172.0.0.0/8|' {WEB_CONF}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl start mysql -vvv"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} mysqladmin -uroot password 'N0.secret'"
+        sh____(cmd.format(**locals()))
         text_file(os_path(testdir,"testuser.sql"), "CREATE USER testuser_OK IDENTIFIED BY 'Testuser.OK'")
-        testuser_sql = "docker cp {testdir}/testuser.sql {testname}:/srv/testuser.sql" 
-        sh____(testuser_sql.format(**locals()))
-        testuser_db = "docker exec {testname} bash -c 'cat /srv/testuser.sql | mysql -uroot -pN0.secret'"
-        sh____(testuser_db.format(**locals()))
-        testuser_username = "docker exec {testname} sed -i -e \"/'user'/s|=.*;|='testuser_OK';|\" {INC_CONF}"
-        sh____(testuser_username.format(**locals()))
-        testuser_password = "docker exec {testname} sed -i -e \"/'password'/s|=.*;|='Testuser.OK';|\" {INC_CONF}"
-        sh____(testuser_password.format(**locals()))
-        enable_software = "docker exec {testname} systemctl start apache2"
-        sh____(enable_software.format(**locals()))
+        cmd = "docker cp {testdir}/testuser.sql {testname}:/srv/testuser.sql" 
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'cat /srv/testuser.sql | mysql -uroot -pN0.secret'"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} sed -i -e \"/'user'/s|=.*;|='testuser_OK';|\" {INC_CONF}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} sed -i -e \"/'password'/s|=.*;|='Testuser.OK';|\" {INC_CONF}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl start apache2"
+        sh____(cmd.format(**locals()))
         #
         container = self.ip_container(testname)
         # THEN
         time.sleep(5)
-        read_php_admin_html = "wget -O {testdir}/result.txt http://{container}/phpMyAdmin"
-        sh____(read_php_admin_html.format(**locals()))
-        grep_php_admin_html = "grep '<h1>.*>phpMyAdmin<' {testdir}/result.txt"
-        sh____(grep_php_admin_html.format(**locals()))
+        cmd = "wget -O {testdir}/result.txt http://{container}/phpMyAdmin"
+        sh____(cmd.format(**locals()))
+        cmd = "grep '<h1>.*>phpMyAdmin<' {testdir}/result.txt"
+        sh____(cmd.format(**locals()))
         # CLEAN
-        stop_container = "docker stop {testname}"
-        sh____(stop_container.format(**locals()))
-        drop_container = "docker rm --force {testname}"
-        sh____(drop_container.format(**locals()))
+        cmd = "docker stop {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sh____(cmd.format(**locals()))
         #
         self.rm_testdir()
     def test_7020_ubuntu_apache2_with_saved_container(self):
@@ -7979,45 +7977,45 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl_py = _systemctl_py
         logg.info("%s:%s %s (%s)", testname, port, image)
         #
-        drop_container = "docker rm --force {testname}"
-        sx____(drop_container.format(**locals()))
-        start_container = "docker run --detach --name={testname} {image} sleep 200"
-        sh____(start_container.format(**locals()))
-        install_prepare = "docker exec {testname} apt-get update"
-        sh____(install_prepare.format(**locals()))
-        install_software = "docker exec {testname} apt-get install -y apache2 python"
-        sh____(install_software.format(**locals()))
-        install_systemctl = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
-        sh____(install_systemctl.format(**locals()))
-        fixup_systemctl = "docker exec {testname} bash -c 'test -L /bin/systemctl || ln -sf /usr/bin/systemctl /bin/systemctl'"
-        sh____(fixup_systemctl.format(**locals()))
-        enable_software = "docker exec {testname} systemctl enable apache2"
-        sh____(enable_software.format(**locals()))
-        push_result = "docker exec {testname} bash -c 'echo TEST_OK > /var/www/html/index.html'"
-        sh____(push_result.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name={testname} {image} sleep 200"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} apt-get update"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} apt-get install -y apache2 python"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'test -L /bin/systemctl || ln -sf /usr/bin/systemctl /bin/systemctl'"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl enable apache2"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'echo TEST_OK > /var/www/html/index.html'"
+        sh____(cmd.format(**locals()))
         # .........................................
-        commit_container = "docker commit -c 'CMD [\"/usr/bin/systemctl\"]'  {testname} {images}:{testname}"
-        sh____(commit_container.format(**locals()))
-        stop_container = "docker stop {testname}"
-        sx____(stop_container.format(**locals()))
+        cmd = "docker commit -c 'CMD [\"/usr/bin/systemctl\"]'  {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker stop {testname}"
+        sx____(cmd.format(**locals()))
         #
-        drop_container = "docker rm --force {testname}"
-        sx____(drop_container.format(**locals()))
-        start_as_container = "docker run -d -p {port}:80 --name {testname} {images}:{testname}"
-        sh____(start_as_container.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run -d -p {port}:80 --name {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
         # THEN
         tmp = self.testdir(testname)
-        read_index_html = "sleep 5; wget -O {tmp}/{testname}.txt http://127.0.0.1:{port}"
-        sh____(read_index_html.format(**locals()))
-        grep_index_html = "grep OK {tmp}/{testname}.txt"
-        sh____(grep_index_html.format(**locals()))
+        cmd = "sleep 5; wget -O {tmp}/{testname}.txt http://127.0.0.1:{port}"
+        sh____(cmd.format(**locals()))
+        cmd = "grep OK {tmp}/{testname}.txt"
+        sh____(cmd.format(**locals()))
         # CLEAN
-        stop_new_container = "docker stop {testname}"
-        sh____(stop_new_container.format(**locals()))
-        drop_new_container = "docker rm --force {testname}"
-        sh____(drop_new_container.format(**locals()))
-        drop_image_container = "docker rmi {images}:{testname}"
-        sx____(drop_image_container.format(**locals()))
+        cmd = "docker stop {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
         self.rm_testdir()
     # @unittest.expectedFailure
     def test_8001_issue_1_start_mariadb_centos_7_0(self):
@@ -8033,35 +8031,35 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # image= "centos:centos7.1.1503"
         image = self.local_image(CENTOS)
         systemctl_py = _systemctl_py
-        stop_container = "docker rm --force {testname}"
-        sx____(stop_container.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
         # mariadb has a TimeoutSec=300 in the unit config:
-        start_container = "docker run --detach --name={testname} {image} sleep 400"
-        sh____(start_container.format(**locals()))
-        install_systemctl = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
-        sh____(install_systemctl.format(**locals()))
-        install_software = "docker exec {testname} yum install -y mariadb"
-        sh____(install_software.format(**locals()))
+        cmd = "docker run --detach --name={testname} {image} sleep 400"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} yum install -y mariadb"
+        sh____(cmd.format(**locals()))
         if False:
             # expected in bug report but that one can not work:
-            enable_service = "docker exec {testname} systemctl enable mysql"
-            sh____(enable_service.format(**locals()))
-        version_systemctl = "docker exec {testname} systemctl --version"
-        sh____(version_systemctl.format(**locals()))
-        list_unit_files = "docker exec {testname} systemctl list-unit-files --type=service"
-        sh____(list_unit_files.format(**locals()))
-        out = output(list_unit_files.format(**locals()))
+            cmd = "docker exec {testname} systemctl enable mysql"
+            sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl --version"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl list-unit-files --type=service"
+        sh____(cmd.format(**locals()))
+        out = output(cmd.format(**locals()))
         self.assertFalse(greps(out,"mysqld"))
         #
-        install_software2 = "docker exec {testname} yum install -y mariadb-server"
-        sh____(install_software2.format(**locals()))
-        list_unit_files = "docker exec {testname} systemctl list-unit-files --type=service"
-        sh____(list_unit_files.format(**locals()))
-        out = output(list_unit_files.format(**locals()))
+        cmd = "docker exec {testname} yum install -y mariadb-server"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl list-unit-files --type=service"
+        sh____(cmd.format(**locals()))
+        out = output(cmd.format(**locals()))
         self.assertTrue(greps(out,"mariadb.service"))
         #
-        start_service = "docker exec {testname} systemctl start mariadb -vv"
-        sh____(start_service.format(**locals()))
+        cmd = "docker exec {testname} systemctl start mariadb -vv"
+        sh____(cmd.format(**locals()))
         #
         top_container = "docker exec {testname} ps -eo pid,ppid,args"
         top = output(top_container.format(**locals()))
@@ -8072,8 +8070,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # NOTE: mariadb-5.5.52's mysqld_safe controller does ignore systemctl kill
         # but after a TimeoutSec=300 the 'systemctl kill' will send a SIGKILL to it
         # which leaves the mysqld to be still running -> this is an upstream error.
-        start_service = "docker exec {testname} systemctl stop mariadb -vv"
-        sh____(start_service.format(**locals()))
+        cmd = "docker exec {testname} systemctl stop mariadb -vv"
+        sh____(cmd.format(**locals()))
         top_container = "docker exec {testname} ps -eo pid,ppid,args"
         top = output(top_container.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -8081,8 +8079,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if greps(top, "mysqld ") and had_mysqld_safe:
             logg.critical("mysqld still running => this is an uptream error!")
         #
-        stop_container = "docker rm --force {testname}"
-        sx____(stop_container.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_8002_issue_2_start_rsyslog_centos7(self):
         """ issue 2: rsyslog on centos 7 does not start"""
@@ -8092,38 +8090,38 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         image= self.local_image(CENTOS)
         systemctl_py = _systemctl_py
-        stop_container = "docker rm --force {testname}"
-        sx____(stop_container.format(**locals()))
-        start_container = "docker run --detach --name={testname} {image} sleep 50"
-        sh____(start_container.format(**locals()))
-        install_systemctl = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
-        sh____(install_systemctl.format(**locals()))
-        install_software = "docker exec {testname} yum install -y rsyslog"
-        sh____(install_software.format(**locals()))
-        version_systemctl = "docker exec {testname} systemctl --version"
-        sh____(version_systemctl.format(**locals()))
-        list_unit_files = "docker exec {testname} systemctl list-unit-files --type=service"
-        sh____(list_unit_files.format(**locals()))
-        out = output(list_unit_files.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name={testname} {image} sleep 50"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} yum install -y rsyslog"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl --version"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl list-unit-files --type=service"
+        sh____(cmd.format(**locals()))
+        out = output(cmd.format(**locals()))
         self.assertTrue(greps(out,"rsyslog.service.*enabled"))
         #
-        start_service = "docker exec {testname} systemctl start rsyslog -vv"
-        sh____(start_service.format(**locals()))
+        cmd = "docker exec {testname} systemctl start rsyslog -vv"
+        sh____(cmd.format(**locals()))
         #
         top_container = "docker exec {testname} ps -eo pid,ppid,args"
         top = output(top_container.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "/usr/sbin/rsyslog"))
         #
-        start_service = "docker exec {testname} systemctl stop rsyslog -vv"
-        sh____(start_service.format(**locals()))
+        cmd = "docker exec {testname} systemctl stop rsyslog -vv"
+        sh____(cmd.format(**locals()))
         top_container = "docker exec {testname} ps -eo pid,ppid,args"
         top = output(top_container.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, "/usr/sbin/rsyslog"))
         #
-        stop_container = "docker rm --force {testname}"
-        sx____(stop_container.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_9000_ansible_test(self):
         """ FIXME: "-p testing_systemctl" makes containers like "testingsystemctl_<service>_1" ?! """
