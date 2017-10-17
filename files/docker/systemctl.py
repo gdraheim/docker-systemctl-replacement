@@ -1481,29 +1481,6 @@ class Systemctl:
                 logg.info("post-start %s", shell_cmd(sudo+newcmd))
                 run = subprocess_wait(sudo+newcmd, env)
         return True
-    def kill_pid(self, pid, timeout = None, kill_signal = None):
-        if not pid:
-            return None
-        #
-        timeout = int(timeout or self._WaitKillProc)
-        timeout = max(timeout, MinimumWaitKillProc)
-        if isinstance(kill_signal, basestring):
-           sig = getattr(signal, kill_signal)
-        else:
-           sig = kill_signal or signal.SIGTERM
-        try: os.kill(pid, sig)
-        except OSError, e:
-            if e.errno == errno.ESRCH or e.errno == errno.ENOENT:
-                logg.info("kill PID %s => No such process", pid)
-                return True
-            else:
-                logg.error("kill PID %s => %s", pid, str(e))
-                return False
-        for x in xrange(timeout):
-            if not pid_exists(pid) or pid_zombie(pid):
-                break
-            self.sleep(1)
-        return not pid_exists(pid) or pid_zombie(pid)
     def stop_modules(self, *modules):
         """ [UNIT]... -- stop these units """
         found_all = True
@@ -1896,6 +1873,7 @@ class Systemctl:
     def kill_unit_from(self, conf):
         if not conf: return None
         sendSIGKILL = conf.get("Service", "SendSIGKILL", "yes")
+        sendSIGHUP = conf.get("Service", "SendSIGHUP", "no")
         kill_signal = conf.get("Service", "KillSignal", signal.SIGTERM)
         timeout = self.get_TimeoutStopSec(conf)
         pid_file = self.get_pid_file_from(conf)
@@ -1914,6 +1892,29 @@ class Systemctl:
         else:
             logg.info("done kill PID %s", pid)
             return True
+    def kill_pid(self, pid, timeout = None, kill_signal = None):
+        if not pid:
+            return None
+        #
+        timeout = int(timeout or self._WaitKillProc)
+        timeout = max(timeout, MinimumWaitKillProc)
+        if isinstance(kill_signal, basestring):
+           sig = getattr(signal, kill_signal)
+        else:
+           sig = kill_signal or signal.SIGTERM
+        try: os.kill(pid, sig)
+        except OSError, e:
+            if e.errno == errno.ESRCH or e.errno == errno.ENOENT:
+                logg.info("kill PID %s => No such process", pid)
+                return True
+            else:
+                logg.error("kill PID %s => %s", pid, str(e))
+                return False
+        for x in xrange(timeout):
+            if not pid_exists(pid) or pid_zombie(pid):
+                break
+            self.sleep(1)
+        return not pid_exists(pid) or pid_zombie(pid)
     def is_active_modules(self, *modules):
         """ [UNIT].. -- check if these units are in active state
         implements True if all is-active = True """
