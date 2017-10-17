@@ -1190,6 +1190,56 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 self.assertEqual("word=value", line)
         self.rm_testdir()
         self.coverage()
+    def test_2027_show_unit_for_oneshot_service(self):
+        """ check that 'show UNIT' is machine-readable """
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/a.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            Type=oneshot
+            ExecStart=/bin/echo foo
+            ExecStop=/bin/echo bar
+            """)
+        cmd = "{systemctl} show a.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertTrue(greps(out, r"^Id="))
+        self.assertTrue(greps(out, r"^Names="))
+        self.assertTrue(greps(out, r"^Description="))
+        self.assertTrue(greps(out, r"^MainPID="))
+        self.assertTrue(greps(out, r"^LoadState="))
+        self.assertTrue(greps(out, r"^ActiveState="))
+        self.assertTrue(greps(out, r"^SubState="))
+        self.assertTrue(greps(out, r"^UnitFileState="))
+        num_lines = len(lines(out))
+        #
+        cmd = "{systemctl} --all show a.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertTrue(greps(out, r"^Id="))
+        self.assertTrue(greps(out, r"^Names="))
+        self.assertTrue(greps(out, r"^Description="))
+        self.assertTrue(greps(out, r"^MainPID="))
+        self.assertTrue(greps(out, r"^LoadState="))
+        self.assertTrue(greps(out, r"^ActiveState="))
+        self.assertTrue(greps(out, r"^SubState="))
+        self.assertTrue(greps(out, r"^UnitFileState=static"))
+        self.assertTrue(greps(out, r"^PIDFile="))
+        self.assertGreater(len(lines(out)), num_lines)
+        #
+        for line in lines(out):
+            m = re.match(r"^\w+=", line)
+            if not m:
+                # found non-machine readable property line
+                self.assertEqual("word=value", line)
+        self.rm_testdir()
+        self.coverage()
     def test_2030_show_unit_display_parsed_timeouts(self):
         """ check that 'show UNIT' show parsed timeoutss """
         testname = self.testname()
