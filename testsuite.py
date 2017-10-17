@@ -3263,10 +3263,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStartPost=%s F %%p
             ExecStartPost=%s G %%I
             ExecStartPost=%s H %%i
+            ExecStartPost=%s Z %%Z
             [Install]
             WantedBy=multi-user.target""" 
             % (print_sh, print_sh, print_sh, print_sh,
-               print_sh, print_sh, print_sh, print_sh,))
+               print_sh, print_sh, print_sh, print_sh,
+               print_sh,))
         text_file(logfile, "")
         shell_file(print_sh, """
             #! /bin/sh
@@ -3288,6 +3290,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         F="'F' 'b c' '' '' ''" # F %%p
         G="'G' '' '' '' ''" # G %%I
         H="'H' '' '' '' ''" # H %%i
+        Z="'Z' '' '' '' ''" # Z %%Z
         self.assertIn(A, log)
         self.assertIn(B, log)
         self.assertIn(C, log)
@@ -3296,6 +3299,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertIn(F, log)
         self.assertIn(G, log)
         self.assertIn(H, log)
+        self.assertIn(Z, log)
         #
         self.rm_testdir()
         self.coverage()
