@@ -1873,6 +1873,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
+        cmd = "{systemctl} enable xxx.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         #
         cmd = "{systemctl} --no-legend enable zzz.service"
         out, end = output2(cmd.format(**locals()))
@@ -1908,7 +1912,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        #
+        cmd = "{systemctl} disable xxx.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         #
         cmd = "{systemctl} default-services"
         out, end = output2(cmd.format(**locals()))
