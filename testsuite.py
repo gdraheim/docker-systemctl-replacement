@@ -730,6 +730,67 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 0)
         self.assertTrue(greps(out, r"^disable"))
         self.assertEqual(len(lines(out)), 1)
+    def test_1090_syntax_errors_are_shown_on_daemon_reload(self):
+        """ check that preset files do work internally"""
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/a.service"),"""
+            [Unit]
+            Description=Testing A""")
+        text_file(os_path(root, "/etc/systemd/system/b.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            Type=foo
+            ExecStart=runA
+            ExecReload=runB
+            ExecStop=runC
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/system/c.service"),"""
+            [Unit]
+            Description=Testing C
+            [Service]
+            type=simple
+            ExecReload=/usr/bin/kill -SIGHUP $MAINPID
+            ExecStop=/usr/bin/kill $MAINPID
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/system/d.service"),"""
+            [Unit]
+            Description=Testing D
+            [Service]
+            type=forking
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/system/g.service"),"""
+            [Unit]
+            Description=Testing G
+            [Service]
+            Type=foo
+            ExecStart=runA
+            ExecStart=runA2
+            ExecReload=runB
+            ExecReload=runB2
+            ExecStop=runC
+            ExecStop=runC2
+            [Install]
+            WantedBy=multi-user.target""")
+        #
+        cmd = "{systemctl} daemon-reload -vv 2>&1"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertTrue(greps(out, r"a.service:.* file without .Service. section"))
+        self.assertTrue(greps(out, r"b.service:.* Executable path is not absolute"))
+        self.assertTrue(greps(out, r"c.service: Service has no ExecStart"))
+        self.assertTrue(greps(out, r"d.service: Service lacks both ExecStart and ExecStop"))
+        self.assertTrue(greps(out, r"g.service: there may be only one ExecStart statement"))
+        self.assertTrue(greps(out, r"g.service: there may be only one ExecStop statement"))
+        self.assertTrue(greps(out, r"g.service: there may be only one ExecReload statement"))
+        self.assertTrue(greps(out, r"c.service: the use of /bin/kill is not recommended"))
     def test_2001_can_create_test_services(self):
         """ check that two unit files can be created for testing """
         testname = self.testname()
