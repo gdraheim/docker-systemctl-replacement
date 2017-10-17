@@ -1872,9 +1872,11 @@ class Systemctl:
         return self.kill_unit_from(conf)
     def kill_unit_from(self, conf):
         if not conf: return None
+        # useKillMode = conf.get("Service", "KillMode", "process")
         sendSIGKILL = conf.get("Service", "SendSIGKILL", "yes")
         sendSIGHUP = conf.get("Service", "SendSIGHUP", "no")
-        kill_signal = conf.get("Service", "KillSignal", signal.SIGTERM)
+        useKillSignal = conf.get("Service", "KillSignal", "SIGTERM")
+        kill_signal = getattr(signal, useKillSignal)
         timeout = self.get_TimeoutStopSec(conf)
         pid_file = self.get_pid_file_from(conf)
         pid = self.read_pid_file(pid_file)
@@ -1882,27 +1884,23 @@ class Systemctl:
             logg.info("no main PID [%s]", conf.filename())
             return False
         logg.info("stop kill PID %s (%s)", pid, pid_file)
-        if not self.kill_pid(pid, timeout, kill_signal):
-            if "y" in sendSIGKILL:
-                logg.info("hard kill PID %s (%s)", pid, pid_file)
-                return self.kill_pid(pid, timeout, signal.SIGKILL)
-            else:
-                logg.info("no hard kill PID %s (no SendSIGKILL)", pid)
-                return False
-        else:
-            logg.info("done kill PID %s", pid)
-            return True
-    def kill_pid(self, pid, timeout = None, kill_signal = None):
-        if not pid:
-            return None
-        #
-        timeout = int(timeout or self._WaitKillProc)
-        timeout = max(timeout, MinimumWaitKillProc)
-        if isinstance(kill_signal, basestring):
-           sig = getattr(signal, kill_signal)
-        else:
-           sig = kill_signal or signal.SIGTERM
-        try: os.kill(pid, sig)
+        dead = self._kill_pid(pid, kill_signal)
+        if "y" in sendSIGHUP: 
+            # TODO: should be sent to all the children
+            self._kill_pid(pid, signal.SIGHUP)
+        if not dead:
+            dead = self._wait_killed_pid(pid, timeout)
+        if not dead and "y" in sendSIGKILL:
+            logg.info("hard kill PID %s (%s)", pid, pid_file)
+            dead = self._kill_pid(pid, signal.SIGKILL)
+            if not dead:
+                dead = self._wait_killed_pid(pid, timeout)
+        logg.info("done kill PID %s %s", pid, dead and "OK")
+        return dead
+    def _kill_pid(self, pid, kill_signal = None):
+        try: 
+            sig = kill_signal or signal.SIGTERM
+            os.kill(pid, sig)
         except OSError, e:
             if e.errno == errno.ESRCH or e.errno == errno.ENOENT:
                 logg.info("kill PID %s => No such process", pid)
@@ -1910,6 +1908,10 @@ class Systemctl:
             else:
                 logg.error("kill PID %s => %s", pid, str(e))
                 return False
+        return not pid_exists(pid) or pid_zombie(pid)
+    def _wait_killed_pid(self, pid, timeout):
+        timeout = int(timeout or self._WaitKillProc)
+        timeout = max(timeout, MinimumWaitKillProc)
         for x in xrange(timeout):
             if not pid_exists(pid) or pid_zombie(pid):
                 break
