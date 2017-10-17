@@ -6763,6 +6763,48 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
 
         self.rm_testdir()
         self.coverage()
+    def test_4901_unsupported_run_type_for_service(self):
+        """ a service file may exist but the run type is not supported"""
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        logfile = os_path(root, "/var/log/"+testname+".log")
+        text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
+            [Unit]
+            Description=Testing A
+            Requires=zzb.service
+            [Service]
+            Type=foo
+            ExecStart=/usr/bin/sleep 10
+            ExecStop=/usr/bin/kill $MAINPID
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        #
+        cmd = "{systemctl} start zza"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertNotEqual(end, 0)
+        cmd = "{systemctl} start zza.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertNotEqual(end, 0)
+        cmd = "{systemctl} stop zza.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertNotEqual(end, 0)
+        cmd = "{systemctl} reload zza.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertNotEqual(end, 0)
+        cmd = "{systemctl} restart zza.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertNotEqual(end, 0)
+        self.rm_testdir()
+        self.coverage()
 
     def test_5001_systemctl_py_inside_container(self):
         """ check that we can run systemctl.py inside a docker container """
