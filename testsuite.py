@@ -6161,6 +6161,125 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleepB))
+    def test_4121_systemctl_kill_ignore_nokill_behaviour(self):
+        """ systemctl kill ignore and nokill behaviour"""
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        testsleep = self.testname("testsleep")
+        testsleepB = testsleep+"B"
+        testsleepC = testsleep+"C"
+        testscriptB = self.testname("testscriptB.sh")
+        testscriptC = self.testname("testscriptC.sh")
+        logfile = os_path(root, "/var/log/test.log")
+        bindir = os_path(root, "/usr/bin")
+        begin = "{"
+        end = "}"
+        text_file(logfile, "")
+        text_file(os_path(testdir, "zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            Type=simple
+            ExecStartPre=echo %n
+            ExecStart={bindir}/{testscriptB} 50
+            ExecStartPost=echo started $MAINPID
+            ExecStop=/usr/bin/kill -3 $MAINPID
+            ExecStopPost=echo stopped $MAINPID
+            ExecStopPost=sleep 2
+            ExecReload=/usr/bin/kill -10 $MAINPID
+            # KillSignal=SIGQUIT
+            SendSIGKILL=no
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        shell_file(os_path(bindir, testscriptB),"""
+            #! /bin/sh
+            date +%T,enter > {logfile}
+            stops () {begin}
+              date +%T,stopping >> {logfile}
+              killall {testsleep}
+              date +%T,stopped >> {logfile}
+            {end}
+            reload () {begin}
+              date +%T,reloading >> {logfile}
+              date +%T,reloaded >> {logfile}
+            {end}
+            ignored () {begin}
+              date +%T,ignored >> {logfile}
+            {end}
+            trap "stops" 3
+            trap "reload" 10
+            trap "ignored" 15
+            date +%T,starting >> {logfile}
+            {bindir}/{testsleepB} $1 >> {logfile} 2>&1 &
+            while kill -0 $!; do 
+               # use 'kill -0' to check the existance of the child
+               date +%T,waiting >> {logfile}
+               # use 'wait' for children AND external signals
+               wait
+            done
+            date +%T,leaving >> {logfile}
+            trap - 3 10 15
+            date +%T,leave >> {logfile}
+        """.format(**locals()))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleepB))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleepC))
+        copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
+        #
+        cmd = "{systemctl} start zzb.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        #
+        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
+        top = output(top_recent.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleepB))
+        #
+        cmd = "{systemctl} stop zzb.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        #
+        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
+        top = output(top_recent.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testscriptB))
+        self.assertTrue(greps(top, testsleepB))
+        #
+        cmd = "{systemctl} kill zzb.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertNotEqual(end, 0) # not killed
+        #
+        time.sleep(1) # kill is asynchronous
+        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
+        top = output(top_recent.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testscriptB)) # still alive
+        self.assertTrue(greps(top, testsleepB)) 
+        #
+        log = lines(open(logfile).read())
+        logg.info("LOG %s\n| %s", logfile, "\n| ".join(log))
+        self.assertTrue(greps(log, "ignored"))
+        #
+        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
+        top = output(top_recent.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        cmd = "killall {testsleepB}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        #
+        time.sleep(1) # kill is asynchronous
+        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
+        top = output(top_recent.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, testscriptB))
+        self.assertFalse(greps(top, testsleepB))
 
 
     def test_4201_systemctl_py_dependencies_plain_start_order(self):
