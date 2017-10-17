@@ -234,7 +234,7 @@ class UnitConfigParser:
     def has_section(self, section):
         return section in self._dict
     def has_option(self, section, option):
-        if section in self._dict:
+        if section not in self._dict:
             return False
         return option in self._dict[section]
     def set(self, section, option, value):
