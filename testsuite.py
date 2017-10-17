@@ -3264,16 +3264,18 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Testing B
             [Service]
+            Environment=X=x1
+            Environment=Y=y2 y3
             ExecStart=/usr/bin/sleep 2
-            ExecStartPost=%s A %%N
-            ExecStartPost=%s B %%n
-            ExecStartPost=%s C %%f
-            ExecStartPost=%s D %%t
-            ExecStartPost=%s E %%P
-            ExecStartPost=%s F %%p
-            ExecStartPost=%s G %%I
-            ExecStartPost=%s H %%i
-            ExecStartPost=%s Z %%Z
+            ExecStartPost=%s A %%N $X ${Y}
+            ExecStartPost=%s B %%n $X ${Y}
+            ExecStartPost=%s C %%f $X ${Y}
+            ExecStartPost=%s D %%t $X ${Y}
+            ExecStartPost=%s E %%P $X ${Y}
+            ExecStartPost=%s F %%p $X ${Y}
+            ExecStartPost=%s G %%I $X ${Y}
+            ExecStartPost=%s H %%i $X ${Y} $FOO
+            ExecStartPost=%s Z %%Z $X ${Y} ${FOO}
             [Install]
             WantedBy=multi-user.target""" 
             % (print_sh, print_sh, print_sh, print_sh,
@@ -3292,15 +3294,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 0)
         log = lines(open(logfile))
         logg.info("LOG \n%s", log)
-        A="'A' 'b' 'c.service' '' ''"  # A %%N
-        B="'B' 'b c.service' '' '' ''" # B %%n
-        C="'C' '%s' '' '' ''" % service_file           # C %%f
-        D="'D' '%s' '' '' ''" % os_path(root, "/var")  # D %%t
-        E="'E' 'b' 'c' '' ''"  # E %%P
-        F="'F' 'b c' '' '' ''" # F %%p
-        G="'G' '' '' '' ''" # G %%I
-        H="'H' '' '' '' ''" # H %%i
-        Z="'Z' '' '' '' ''" # Z %%Z
+        A="'A' 'b' 'c.service' 'x1' 'y2 y3'"  # A %%N
+        B="'B' 'b c.service' 'x1' 'y2 y3' ''" # B %%n
+        C="'C' '%s' 'x1' 'y2 y3' ''" % service_file           # C %%f
+        D="'D' '%s' 'x1' 'y2 y3' ''" % os_path(root, "/var")  # D %%t
+        E="'E' 'b' 'c' 'x1' 'y2 y3'"  # E %%P
+        F="'F' 'b c' 'x1' 'y2 y3' ''" # F %%p
+        G="'G' 'x1' 'y2 y3' '' ''" # G %%I
+        H="'H' '' 'x1' 'y2 y3' ''" # H %%i
+        Z="'Z' '' 'x1' 'y2 y3' ''" # Z %%Z
         self.assertIn(A, log)
         self.assertIn(B, log)
         self.assertIn(C, log)
