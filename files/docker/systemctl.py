@@ -2177,24 +2177,25 @@ class Systemctl:
         return self.preset_units(units) and found_all
     def preset_units(self, units):
         """ fails if any unit could not be changed """
-        done = False
+        fails = 0
+        found = 0
         for unit in units:
             status = self.get_preset_of_unit(unit)
-            if status and status.startswith("enable"):
+            if not status: continue
+            found += 1
+            if status.startswith("enable"):
                 if _preset_mode == "disable": continue
                 logg.info("preset enable %s", unit)
                 if not self.enable_unit(unit):
                     logg.warning("failed to enable %s", unit)
-                else:
-                    done = True
-            if status and status.startswith("disable"):
+                    fails += 1
+            if status.startswith("disable"):
                 if _preset_mode == "enable": continue
                 logg.info("preset disable %s", unit)
                 if not self.disable_unit(unit):
                     logg.warning("failed to disable %s", unit)
-                else:
-                    done = True
-        return done
+                    fails += 1
+        return not fails and not not found
     def system_preset_all(self, *modules):
         """ 'preset' all services
         enable or disable services according to *.preset files
