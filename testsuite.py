@@ -2,8 +2,8 @@
 
 """ Testcases for docker-systemctl-replacement functionality """
 
-__copyright__ = "(C) Guido Draheim, for free use (CC-BY,GPL) """
-__version__ = "0.9.1421"
+__copyright__ = "(C) Guido Draheim, licensed under the EUPL"""
+__version__ = "1.0.1423"
 
 ## NOTE:
 ## The testcases 1000...4999 are using a --root=subdir environment
@@ -9427,7 +9427,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertGreater(len(greps(open(tmp+"/systemctl.desktop.log"), " INFO ")), 10)
         self.assertTrue(greps(open(tmp+"/systemctl.server.log"), "/systemctl daemon-reload"))
         # self.assertTrue(greps(open(tmp+"/systemctl.server.log"), "/systemctl status jenkins.service"))
-        self.assertTrue(greps(open(tmp+"/systemctl.server.log"), "--property=ActiveState")) # <<< new
+        # self.assertTrue(greps(open(tmp+"/systemctl.server.log"), "--property=ActiveState")) # <<< new
         self.assertTrue(greps(open(tmp+"/systemctl.server.log"), "/systemctl show jenkins.service"))
         self.assertTrue(greps(open(tmp+"/systemctl.desktop.log"), "/systemctl show xvnc.service"))
         self.assertTrue(greps(open(tmp+"/systemctl.desktop.log"), "/systemctl enable xvnc.service"))

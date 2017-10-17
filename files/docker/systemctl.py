@@ -1,6 +1,6 @@
 #! /usr/bin/python
-__copyright__ = "(C) 2016-2017 Guido U. Draheim, for free use (CC-BY, GPL, BSD)"
-__version__ = "0.9.1421"
+__copyright__ = "(C) 2016-2017 Guido U. Draheim, licensed under the EUPL"
+__version__ = "1.0.1423"
 
 import logging
 logg = logging.getLogger("systemctl")

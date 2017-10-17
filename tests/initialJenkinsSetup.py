@@ -12,8 +12,8 @@ a trial license - be sure to provide atleast a -T email@address to track the
 instances that have been used so far.
 """
 
-__copyright__ = " (C) Guido U. Draheim, for free use (CC-BY,GPL,BSD)"
-__version__ = "1.1.1421"
+__copyright__ = " (C) Guido U. Draheim, licensed under the EUPL"
+__version__ = "1.1.1423"
 
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
