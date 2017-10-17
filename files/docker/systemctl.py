@@ -2287,7 +2287,7 @@ class Systemctl:
         if not os.path.isdir(rc_folder):
            os.makedirs(rc_folder)
         # do not double existing entries
-        if found in os.listdir(rc_folder):
+        for found in os.listdir(rc_folder):
             m = re.match("S\d\d(.*)", found)
             if m and m.group(1) == name:
                 nameS = found
@@ -2348,7 +2348,7 @@ class Systemctl:
         nameS = "S50"+name
         nameK = "K50"+name
         # do not forget the existing entries
-        if found in os.listdir(rc_folder):
+        for found in os.listdir(rc_folder):
             m = re.match("S\d\d(.*)", found)
             if m and m.group(1) == name:
                 nameS = found
