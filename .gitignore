@@ -8,4 +8,5 @@ tmp.*
 .coverage
 .coverage.*
 *,cover
+*.pyc
 
