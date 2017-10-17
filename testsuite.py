@@ -1421,8 +1421,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             print "DEFAULTS", parser.defaults()
             parser.read(sys.argv[1])
             print "SECTIONS", parser.sections()
-            print "has.Foo.Bar", parser.has_option("Foo", "Bar")
-            print "has.Unit.Foo", parser.has_option("Unit", "Foo")
+            print "has.Foo.Bar=", parser.has_option("Foo", "Bar")
+            print "has.Unit.Foo=", parser.has_option("Unit", "Foo")
             try:
                parser.get("Foo", "Bar")
             except Exception, e:
@@ -1457,8 +1457,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertTrue(greps(out, "DEFAULTS {'a1': 'default1'}"))
         self.assertTrue(greps(out, "SECTIONS \\['Unit', 'Service', 'Install'\\]"))
-        self.assertTrue(greps(out, "has.Foo.Bar False"))
-        self.assertTrue(greps(out, "has.Unit.Foo False"))
+        self.assertTrue(greps(out, "has.Foo.Bar= False"))
+        self.assertTrue(greps(out, "has.Unit.Foo= False"))
         self.assertTrue(greps(out, "get.Foo.Bar: section Foo does not exist"))
         self.assertTrue(greps(out, "get.Unit.Foo: option Foo in Unit does not exist"))
         self.assertTrue(greps(out, "getlist.Foo.Bar: section Foo does not exist"))
