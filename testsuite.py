@@ -6642,6 +6642,73 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
+    def test_4900_unreadable_files_can_be_handled(self):
+        """ check list-dependencies - standard order of starting
+            units is simply the command line order"""
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        logfile = os_path(root, "/var/log/"+testname+".log")
+        text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
+            [Unit]
+            Description=Testing A
+            Requires=zzb.service
+            [Service]
+            Type=simple
+            ExecStart=/usr/bin/sleep 10
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        os.makedirs(os_path(root, "/var/run"))
+        os.makedirs(os_path(root, "/var/log"))
+        #
+        os.chmod(os_path(root, "/etc/systemd/system/zza.service"), 0222)
+        #
+        cmd = "{systemctl} start zza"
+        out, end = output2(cmd.format(**locals()))
+        self.assertNotEqual(end, 0)
+        cmd = "{systemctl} start zza.service"
+        out, end = output2(cmd.format(**locals()))
+        self.assertNotEqual(end, 0)
+        cmd = "{systemctl} stop zza.service"
+        out, end = output2(cmd.format(**locals()))
+        self.assertNotEqual(end, 0)
+        cmd = "{systemctl} reload zza.service"
+        out, end = output2(cmd.format(**locals()))
+        self.assertNotEqual(end, 0)
+        cmd = "{systemctl} restart zza.service"
+        out, end = output2(cmd.format(**locals()))
+        self.assertNotEqual(end, 0)
+        cmd = "{systemctl} try-restart zza.service"
+        out, end = output2(cmd.format(**locals()))
+        self.assertNotEqual(end, 0)
+        cmd = "{systemctl} reload-or-restart zza.service"
+        out, end = output2(cmd.format(**locals()))
+        self.assertNotEqual(end, 0)
+        cmd = "{systemctl} reload-or-try-restart zza.service"
+        out, end = output2(cmd.format(**locals()))
+        self.assertNotEqual(end, 0)
+        cmd = "{systemctl} kill zza.service"
+        out, end = output2(cmd.format(**locals()))
+        self.assertNotEqual(end, 0)
+        cmd = "{systemctl} is-active zza.service"
+        out, end = output2(cmd.format(**locals()))
+        # self.assertNotEqual(end, 0) TODO
+        cmd = "{systemctl} is-failed zza.service"
+        out, end = output2(cmd.format(**locals()))
+        self.assertNotEqual(end, 0)
+        cmd = "{systemctl} status zza.service"
+        out, end = output2(cmd.format(**locals()))
+        self.assertNotEqual(end, 0)
+        cmd = "{systemctl} show zza.service"
+        out, end = output2(cmd.format(**locals()))
+        # self.assertNotEqual(end, 0) TODO
+        cmd = "{systemctl} cat zza.service"
+        out, end = output2(cmd.format(**locals()))
+        self.assertNotEqual(end, 0)
+
     def test_5001_systemctl_py_inside_container(self):
         """ check that we can run systemctl.py inside a docker container """
         testname = self.testname()

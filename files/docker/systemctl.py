@@ -650,12 +650,15 @@ class Systemctl:
         return None # not True
     def load_unit_conf(self, module): # -> conf | None(not-found)
         """ read the unit file with a UnitParser (sysv or systemd) """
-        data = self.load_sysd_unit_conf(module)
-        if data is not None: 
-            return data
-        data = self.load_sysv_unit_conf(module)
-        if data is not None: 
-            return data
+        try:
+            data = self.load_sysd_unit_conf(module)
+            if data is not None: 
+                return data
+            data = self.load_sysv_unit_conf(module)
+            if data is not None: 
+                return data
+        except Exception, e:
+            logg.error("%s: %s", module, e)
         return None
     def load_sysd_unit_conf(self, module): # -> conf?
         """ read the unit file with a UnitParser (systemd) """
@@ -1984,7 +1987,7 @@ class Systemctl:
         # used in try-restart/other commands to check if needed.
         if not conf: return False
         status_file = self.get_status_file_from(conf)
-        if os.path.exists(status_file):
+        if status_file and os.path.exists(status_file):
             status = self.read_status_file(status_file)
             return status.get("ACTIVESTATE", "failed")
         pid_file = self.get_pid_file_from(conf)
@@ -1999,7 +2002,7 @@ class Systemctl:
         """ returns 'running' 'exited' 'dead' 'failed' 'plugged' 'mounted' """
         if not conf: return False
         status_file = self.get_status_file_from(conf)
-        if os.path.exists(status_file):
+        if status_file and os.path.exists(status_file):
             status = self.read_status_file(status_file)
             state = status.get("ACTIVESTATE", "failed")
             if state in [ "active" ]:
