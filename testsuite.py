@@ -1323,7 +1323,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 0)
         enabled_file = os_path(root, "/etc/systemd/system/multi-user.target.wants/b.service")
         self.assertTrue(os.path.islink(enabled_file))
-        self.assertIn("\nDescription", textB)
+        #
+        cmd = "{systemctl} enable other.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertNotEqual(end, 0)
+        enabled_file = os_path(root, "/etc/systemd/system/multi-user.target.wants/other.service")
+        self.assertFalse(os.path.islink(enabled_file))
         #
         cmd = "{systemctl} disable b.service"
         out, end = output2(cmd.format(**locals()))
@@ -1338,6 +1344,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 0)
         enabled_file = os_path(root, "/etc/systemd/system/multi-user.target.wants/b.service")
         self.assertFalse(os.path.exists(enabled_file))
+        #
+        cmd = "{systemctl} disable other.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertNotEqual(end, 0)
         #
         self.rm_testdir()
         self.coverage()
