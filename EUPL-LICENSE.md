@@ -1,6 +1,6 @@
 ## EUROPEAN UNION PUBLIC LICENCE v. 1.2 
 
-    EUPL (C) the European Union 2007, 2016 
+    __EUPL (C) the European Union 2007, 2016__
 
 This European Union Public Licence (the EUPL) applies to the Work (as 
 defined below) which is provided under the terms of this Licence. Any 
@@ -49,7 +49,7 @@ In this Licence, the following terms have the following meaning:
   or providing access to its essential functionalities at the disposal 
   of any other natural or legal person. 
 
-### 2.Scope of the rights granted by the Licence 
+### 2. Scope of the rights granted by the Licence 
 
 The Licensor hereby grants You a worldwide, royalty-free, 
 non-exclusive, sublicensable licence to do the following, for the 
@@ -78,7 +78,7 @@ The Licensor grants to the Licensee royalty-free, non-exclusive usage
 rights to any patents held by the Licensor, to the extent necessary 
 to make use of the rights granted on the Work under this Licence. 
 
-### 3.Communication of the Source Code 
+### 3. Communication of the Source Code 
 
 The Licensor may provide the Work either in its Source Code form, or 
 as Executable Code. If the Work is provided as Executable Code, the 
@@ -89,14 +89,14 @@ attached to the Work, a repository where the Source Code is easily
 and freely accessible for as long as the Licensor continues to 
 distribute or communicate the Work. 
 
-### 4.Limitations on copyright 
+### 4. Limitations on copyright 
 
 Nothing in this Licence is intended to deprive the Licensee of the 
 benefits from any exception or limitation to the exclusive rights of 
 the rights owners in the Work, of the exhaustion of those rights or 
 of other applicable limitations thereto. 
 
-### 5.Obligations of the Licensee 
+### 5. Obligations of the Licensee 
 
 The grant of the rights mentioned above is subject to some 
 restrictions and obligations imposed on the Licensee. Those 
@@ -142,7 +142,7 @@ except as required for reasonable and customary use in describing
 the origin of the Work and reproducing the content of the copyright 
 notice. 
 
-### 6.Chain of Authorship 
+### 6. Chain of Authorship 
 
 The original Licensor warrants that the copyright in the Original 
 Work granted hereunder is owned by him/her or licensed to him/her 
@@ -172,7 +172,7 @@ copyright as stated in Article 6 of this  Licence.
 This disclaimer of warranty is an essential part of the Licence and 
 a condition for the grant of any rights to the Work. 
 
-### 8.Disclaimer of Liability 
+### 8. Disclaimer of Liability 
 
 Except in the cases of wilful misconduct or damages directly caused 
 to natural persons, the Licensor will in no event be liable for any 
@@ -184,7 +184,7 @@ if the Licensor has been advised of the possibility of such damage.
 However, the Licensor will be liable under statutory product 
 liability laws as far such laws apply to the Work. 
 
-### 9.Additional agreements 
+### 9. Additional agreements 
 
 While distributing the Work, You may choose to conclude an additional 
 agreement, defining obligations or services consistent with this 
@@ -195,7 +195,7 @@ to indemnify, defend, and hold each Contributor harmless for any
 liability incurred by, or claims asserted against such Contributor by 
 the fact You have accepted any warranty or additional liability. 
 
-### 10.Acceptance of the Licence 
+### 10. Acceptance of the Licence 
 
 The provisions of this Licence can be accepted by clicking on an icon 
 I agree placed under the bottom of a window displaying the text of 
@@ -210,7 +210,7 @@ of this Licence, such as the use of the Work, the creation by You of
 a Derivative Work or the Distribution or Communication by You of 
 the Work or copies thereof. 
 
-### 11.Information to the public 
+### 11. Information to the public 
 
 In case of any Distribution or Communication of the Work by means 
 of electronic communication by You (for example, by offering to 
@@ -220,7 +220,7 @@ the information requested by the applicable law regarding the
 Licensor, the Licence and the way it may be accessible, concluded, 
 stored and reproduced by the Licensee. 
 
-### 12.Termination of the Licence 
+### 12. Termination of the Licence 
 
 The Licence and the rights granted hereunder will terminate 
 automatically upon any breach by the Licensee of the terms of the 
@@ -230,7 +230,7 @@ Such a termination will not terminate the licences of any person
 who has received the Work from the Licensee under the Licence, 
 provided such persons remain in full compliance with the Licence. 
 
-### 13.Miscellaneous 
+### 13. Miscellaneous 
 
 Without prejudice of Article 9 above, the Licence represents the 
 complete agreement between the Parties as to the Work. 
@@ -250,7 +250,7 @@ All linguistic versions of this Licence, approved by the European
 Commission, have identical value. Parties can take advantage of 
 the linguistic version of their choice. 
 
-### 14.Jurisdiction 
+### 14. Jurisdiction 
 
 Without prejudice to specific agreement between parties, 
 
@@ -265,7 +265,7 @@ Without prejudice to specific agreement between parties,
   exclusive jurisdiction of the competent court where the Licensor 
   resides or conducts its primary business. 
 
-### 15.Applicable Law 
+### 15. Applicable Law 
 
 Without prejudice to specific agreement between parties, 
 
