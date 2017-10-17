@@ -6643,8 +6643,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
     def test_4900_unreadable_files_can_be_handled(self):
-        """ check list-dependencies - standard order of starting
-            units is simply the command line order"""
+        """ a file may exist but it is unreadable"""
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -6695,10 +6694,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertNotEqual(end, 0)
         cmd = "{systemctl} is-active zza.service"
         out, end = output2(cmd.format(**locals()))
-        # self.assertNotEqual(end, 0) TODO
+        self.assertNotEqual(end, 0) 
         cmd = "{systemctl} is-failed zza.service"
         out, end = output2(cmd.format(**locals()))
-        self.assertNotEqual(end, 0)
+        self.assertEqual(end, 0) # made so
         cmd = "{systemctl} status zza.service"
         out, end = output2(cmd.format(**locals()))
         self.assertNotEqual(end, 0)
@@ -6709,6 +6708,37 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         self.assertNotEqual(end, 0)
 
+        self.rm_testdir()
+        self.coverage()
+    def test_4901_unreadable_files_can_be_handled(self):
+        """ a file may exist but it is unreadable"""
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        logfile = os_path(root, "/var/log/"+testname+".log")
+        text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
+            [Unit]
+            Description=Testing A
+            Requires=zzb.service
+            [Service]
+            Type=simple
+            ExecStart=/usr/bin/sleep 10
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        os.makedirs(os_path(root, "/var/run"))
+        os.makedirs(os_path(root, "/var/log"))
+        #
+        os.chmod(os_path(root, "/etc/systemd/system/zza.service"), 0222)
+        #
+        cmd = "{systemctl} is-active zza.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        self.assertNotEqual(end, 0)
+        cmd = "{systemctl} is-failed zza.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        self.assertEqual(end, 0)
     def test_5001_systemctl_py_inside_container(self):
         """ check that we can run systemctl.py inside a docker container """
         testname = self.testname()

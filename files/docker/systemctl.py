@@ -1948,14 +1948,15 @@ class Systemctl:
                 active = self.get_active_unit(unit) 
                 results += [ active ]
                 break
+        known = [ result for result in results if result != "unknown" ]
         if True:
             ## how 'systemctl' works:
             inactive = "inactive" in results
-            status = found_all and not inactive
+            status = found_all and not inactive and not not known
         else:
             ## how it should work:
             active = "active" in results
-            status = found_all and active
+            status = found_all and active and not not known
         if not _quiet:
             return status, results
         else:
@@ -1983,9 +1984,9 @@ class Systemctl:
             return "unknown"
         return self.get_active_from(conf)
     def get_active_from(self, conf):
-        """ returns 'active' 'inactive' 'failed' """
+        """ returns 'active' 'inactive' 'failed' 'unknown' """
         # used in try-restart/other commands to check if needed.
-        if not conf: return False
+        if not conf: return "unkonwn"
         status_file = self.get_status_file_from(conf)
         if status_file and os.path.exists(status_file):
             status = self.read_status_file(status_file)
@@ -2037,8 +2038,9 @@ class Systemctl:
                 active = self.get_active_unit(unit) 
                 results += [ active ]
                 break
+        known = [ result for result in results if result != "unknown" ]
         failed = "failed" in results
-        status = found_all and failed
+        status = found_all and failed or not known
         if not _quiet:
             return status, results
         else:
