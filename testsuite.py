@@ -1410,6 +1410,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         root = self.root(testdir)
         systemctl_py_dir = os.path.dirname(os.path.realpath(_systemctl_py))
         unitconfparser_py = os_path(root, "/usr/bin/unitconfparser.py")
+        service_file = os_path(root, "/etc/systemd/system/b.service")
         defaults = {"a1": "default1"}
         shell_file(unitconfparser_py,"""
             #! /usr/bin/python
@@ -1418,8 +1419,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             import systemctl
             parser = systemctl.UnitConfigParser({defaults})
             print "DEFAULTS", parser.defaults()
+            parser.read(sys.argv[1])
+            print "SECTIONS", parser.sections()
             """.format(**locals()))
-        text_file(os_path(root, "/etc/systemd/system/b.service"),"""
+        text_file(service_file,"""
             [Unit]
             Description=Testing B
             [Service]
@@ -1431,10 +1434,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target""")
         testrun = _cov + unitconfparser_py
-        cmd = "{testrun} b.service"
+        cmd = "{testrun} {service_file}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertTrue(greps(out, "DEFAULTS {'a1': 'default1'}"))
+        self.assertTrue(greps(out, "SECTIONS \\['Unit', 'Service', 'Install'\\]"))
         #
         self.rm_testdir()
         self.coverage()
