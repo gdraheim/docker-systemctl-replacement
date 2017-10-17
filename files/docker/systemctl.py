@@ -244,7 +244,7 @@ class UnitConfigParser:
             self._dict[section][option] = [ value ]
         else:
             self._dict[section][option].append(value)
-        if not value:
+        if value is None:
             self._dict[section][option] = []
     def get(self, section, option, default = None, allow_no_value = False):
         allow_no_value = allow_no_value or self._allow_no_value
@@ -262,12 +262,13 @@ class UnitConfigParser:
             if allow_no_value:
                 return None
             raise AttributeError("option {} in {} does not exist".format(option, section))
-        if not self._dict[section][option]:
+        if not self._dict[section][option]: # i.e. an empty list
             if default is not None:
                 return default
             if allow_no_value:
                 return None
-        return self._dict[section][option][0] # the first line in the unit config
+            raise AttributeError("option {} in {} is None".format(option, section))
+        return self._dict[section][option][0] # the first line in the list of configs
     def getlist(self, section, option, default = None, allow_no_value = False):
         allow_no_value = allow_no_value or self._allow_no_value
         if section not in self._dict:
@@ -282,9 +283,9 @@ class UnitConfigParser:
             if default is not None:
                 return default
             if allow_no_value:
-                return None
+                return []
             raise AttributeError("option {} in {} does not exist".format(option, section))
-        return self._dict[section][option]
+        return self._dict[section][option] # returns a list, possibly empty
     def loaded(self):
         return len(self._files)
     def name(self):
@@ -298,7 +299,7 @@ class UnitConfigParser:
         if self._files:
             return self._files[-1]
         return None
-    def read(self, filename): # pragma: no cover
+    def read(self, filename):
         return self.read_sysd(filename)
     def read_sysd(self, filename):
         initscript = False
