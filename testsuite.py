@@ -1423,6 +1423,22 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             print "SECTIONS", parser.sections()
             print "has.Foo.Bar", parser.has_option("Foo", "Bar")
             print "has.Unit.Foo", parser.has_option("Unit", "Foo")
+            try:
+               parser.get("Foo", "Bar")
+            except Exception, e:
+               print "get.Foo.Bar:", str(e)
+            try:
+               parser.get("Unit", "Foo")
+            except Exception, e:
+               print "get.Unit.Foo:", str(e)
+            try:
+               parser.getlist("Foo", "Bar")
+            except Exception, e:
+               print "getlist.Foo.Bar:", str(e)
+            try:
+               parser.getlist("Unit", "Foo")
+            except Exception, e:
+               print "getlist.Unit.Foo:", str(e)
             """.format(**locals()))
         text_file(service_file,"""
             [Unit]
@@ -1443,6 +1459,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "SECTIONS \\['Unit', 'Service', 'Install'\\]"))
         self.assertTrue(greps(out, "has.Foo.Bar False"))
         self.assertTrue(greps(out, "has.Unit.Foo False"))
+        self.assertTrue(greps(out, "get.Foo.Bar: section Foo does not exist"))
+        self.assertTrue(greps(out, "get.Unit.Foo: option Foo in Unit does not exist"))
+        self.assertTrue(greps(out, "getlist.Foo.Bar: section Foo does not exist"))
+        self.assertTrue(greps(out, "getlist.Unit.Foo: option Foo in Unit does not exist"))
         #
         self.rm_testdir()
         self.coverage()
