@@ -2999,7 +2999,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertNotEqual(exitA, 0)
         self.assertNotEqual(exitB, 0)
         self.assertNotEqual(exitC, 0)
-        self.assertNotEqual(exitD, 0)
+        self.assertEqual(exitD, 0)
         #
         cmd = "{systemctl} start zzb.service -vv"
         out, end = output2(cmd.format(**locals()))
@@ -3021,7 +3021,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertNotEqual(exitA, 0)
         self.assertNotEqual(exitB, 0)
         self.assertNotEqual(exitC, 0)
-        self.assertNotEqual(exitD, 0)
+        self.assertEqual(exitD, 0)
         #
         logg.info("== checking combinations of arguments")
         is_active_BC = "{systemctl} is-failed zzb.service zzc.service "
