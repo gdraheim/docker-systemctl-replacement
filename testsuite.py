@@ -1419,8 +1419,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             import systemctl
             parser = systemctl.UnitConfigParser({defaults})
             print "DEFAULTS", parser.defaults()
+            print "FILENAME", parser.filename()
             parser.read(sys.argv[1])
-            print "SECTIONS", parser.sections()
+            print "filename=", parser.filename()
+            print "sections=", parser.sections()
             print "has.Foo.Bar=", parser.has_option("Foo", "Bar")
             print "has.Unit.Foo=", parser.has_option("Unit", "Foo")
             try:
@@ -1439,6 +1441,26 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                parser.getlist("Unit", "Foo")
             except Exception, e:
                print "getlist.Unit.Foo:", str(e)
+            print "get.none.Foo.Bar=", parser.get("Foo", "Bar", allow_no_value = True)
+            print "get.none.Unit.Foo=", parser.get("Unit", "Foo", allow_no_value = True)
+            print "getlist.none.Foo.Bar=", parser.getlist("Foo", "Bar", allow_no_value = True)
+            print "getlist.none.Unit.Foo=", parser.getlist("Unit", "Foo", allow_no_value = True)
+            print "get.defs.Foo.Bar=", parser.get("Foo", "Bar", "def1")
+            print "get.defs.Unit.Foo=", parser.get("Unit", "Foo", "def2")
+            print "getlist.defs.Foo.Bar=", parser.getlist("Foo", "Bar", ["def3"])
+            print "getlist.defs.Unit.Foo=", parser.getlist("Unit", "Foo", ["def4"])
+            parser.set("Unit", "After", "network.target")
+            print "getlist.unit.after1=", parser.getlist("Unit", "After")
+            print "getitem.unit.after1=", parser.get("Unit", "After")
+            parser.set("Unit", "After", "postgres.service")
+            print "getlist.unit.after2=", parser.getlist("Unit", "After")
+            print "getitem.unit.after2=", parser.get("Unit", "After")
+            parser.set("Unit", "After", None)
+            print "getlist.unit.after0=", parser.getlist("Unit", "After")
+            print "getitem.unit.after0=", parser.get("Unit", "After", allow_no_value = True)
+            print "getlist.environment=", parser.getlist("Service", "Environment")
+            print "get.environment=", parser.get("Service", "Environment")
+            print "get.execstart=", parser.get("Service", "ExecStart")
             """.format(**locals()))
         text_file(service_file,"""
             [Unit]
@@ -1447,8 +1469,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             EnvironmentFile=/etc/sysconfig/b.conf
             Environment=DEF5=def5
             Environment=DEF6=def6
-            ExecStart=/usr/bin/printf $DEF1 $DEF2 \
-                                $DEF3 $DEF4 $DEF5
+            ExecStart=/usr/bin/printf $DEF1 $DEF2 \\
+                                $DEF3 $DEF4 $DEF5 \\
+                                $DEF6 $DEF7
             [Install]
             WantedBy=multi-user.target""")
         testrun = _cov + unitconfparser_py
@@ -1456,13 +1479,34 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertTrue(greps(out, "DEFAULTS {'a1': 'default1'}"))
-        self.assertTrue(greps(out, "SECTIONS \\['Unit', 'Service', 'Install'\\]"))
+        self.assertTrue(greps(out, "FILENAME None"))
+        self.assertTrue(greps(out, "filename= .*"+service_file))
+        self.assertTrue(greps(out, "sections= \\['Unit', 'Service', 'Install'\\]"))
         self.assertTrue(greps(out, "has.Foo.Bar= False"))
         self.assertTrue(greps(out, "has.Unit.Foo= False"))
         self.assertTrue(greps(out, "get.Foo.Bar: section Foo does not exist"))
         self.assertTrue(greps(out, "get.Unit.Foo: option Foo in Unit does not exist"))
         self.assertTrue(greps(out, "getlist.Foo.Bar: section Foo does not exist"))
         self.assertTrue(greps(out, "getlist.Unit.Foo: option Foo in Unit does not exist"))
+        self.assertTrue(greps(out, "get.none.Foo.Bar= None"))
+        self.assertTrue(greps(out, "get.none.Unit.Foo= None"))
+        self.assertTrue(greps(out, "getlist.none.Foo.Bar= \\[\\]"))
+        self.assertTrue(greps(out, "getlist.none.Unit.Foo= \\[\\]"))
+        self.assertTrue(greps(out, "get.defs.Foo.Bar= def1"))
+        self.assertTrue(greps(out, "get.defs.Unit.Foo= def2"))
+        self.assertTrue(greps(out, "getlist.defs.Foo.Bar= \\['def3'\\]"))
+        self.assertTrue(greps(out, "getlist.defs.Unit.Foo= \\['def4'\\]"))
+        self.assertTrue(greps(out, "getlist.unit.after1= \\['network.target'\\]"))
+        self.assertTrue(greps(out, "getlist.unit.after2= \\['network.target', 'postgres.service'\\]"))
+        self.assertTrue(greps(out, "getlist.unit.after0= \\[\\]"))
+        self.assertTrue(greps(out, "getitem.unit.after1= network.target"))
+        self.assertTrue(greps(out, "getitem.unit.after2= network.target"))
+        self.assertTrue(greps(out, "getitem.unit.after0= None"))
+        self.assertTrue(greps(out, "getlist.environment= \\['DEF5=def5', 'DEF6=def6'\\]"))
+        self.assertTrue(greps(out, "get.environment= DEF5=def5"))
+        self.assertTrue(greps(out, "get.execstart= /usr/bin/printf \\$DEF1 \\$DEF2 \\\\$"))
+        self.assertTrue(greps(out, "      \\$DEF3 \\$DEF4 \\$DEF5"))
+        self.assertTrue(greps(out, "      \\$DEF6 \\$DEF7"))
         #
         self.rm_testdir()
         self.coverage()
