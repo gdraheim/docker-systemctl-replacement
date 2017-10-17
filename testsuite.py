@@ -7293,6 +7293,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart=testsleep 50
             [Install]
             WantedBy=multi-user.target""")
+        text_file(os_path(testdir, "zzd.service"),"""
+            [Unit]
+            Description=Testing D
+            [Service]
+            Type=simple
+            Group=group2
+            ExecStart=testsleep 60
+            [Install]
+            WantedBy=multi-user.target""")
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
@@ -7317,9 +7326,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zzc.service {testname}:/etc/systemd/system/zzc.service"
         sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zzd.service {testname}:/etc/systemd/system/zzd.service"
+        sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl start zzb.service -v"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl start zzc.service -v"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl start zzd.service -v"
         sh____(cmd.format(**locals()))
         #
         # first of all, it starts commands like the service specs without user/group
@@ -7334,6 +7347,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "user1 .*root .*testsleep 40"))
         self.assertTrue(greps(top, "user1 .*group2 .*testsleep 50"))
+        self.assertTrue(greps(top, "root .*group2 .*testsleep 60"))
         # and the pid file has changed as well
         cmd = "docker exec {testname} ls -l /var/run/zzb.service.pid"
         out = output(cmd.format(**locals()))
@@ -7341,6 +7355,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} ls -l /var/run/zzc.service.pid"
         out = output(cmd.format(**locals()))
         self.assertTrue(greps(out, "user1 .*group2 .*zzc.service.pid"))
+        cmd = "docker exec {testname} ls -l /var/run/zzd.service.pid"
+        out = output(cmd.format(**locals()))
+        self.assertTrue(greps(out, "root .*group2 .*zzd.service.pid"))
         #
         if COVERAGE:
             coverage_file = ".coverage." + testname
@@ -7392,6 +7409,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart=testsleep 50
             [Install]
             WantedBy=multi-user.target""")
+        text_file(os_path(testdir, "zzd.service"),"""
+            [Unit]
+            Description=Testing D
+            [Service]
+            Type=simple
+            Group=group2
+            ExecStart=testsleep 60
+            [Install]
+            WantedBy=multi-user.target""")
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
@@ -7416,9 +7442,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zzc.service {testname}:/etc/systemd/system/zzc.service"
         sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zzd.service {testname}:/etc/systemd/system/zzd.service"
+        sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl enable zzb.service"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl enable zzc.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl enable zzd.service"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl default-services -v"
         # sh____(cmd.format(**locals()))
@@ -7431,7 +7461,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "docker run --detach --name {testname}x {images}:{testname}"
         sh____(cmd.format(**locals()))
-        time.sleep(3)
+        time.sleep(5)
         #
         # first of all, it starts commands like the service specs without user/group
         top_container2 = "docker exec {testname}x ps -eo pid,ppid,args"
@@ -7439,12 +7469,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "testsleep 40"))
         self.assertTrue(greps(top, "testsleep 50"))
+        self.assertTrue(greps(top, "testsleep 60"))
         # but really it has some user/group changed
         top_container2 = "docker exec {testname}x ps -eo user,group,args"
         top = output(top_container2.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "user1 .*root .*testsleep 40"))
         self.assertTrue(greps(top, "user1 .*group2 .*testsleep 50"))
+        self.assertTrue(greps(top, "root .*group2 .*testsleep 60"))
         # and the pid file has changed as well
         cmd = "docker exec {testname}x ls -l /var/run/zzb.service.pid"
         out = output(cmd.format(**locals()))
@@ -7452,6 +7484,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname}x ls -l /var/run/zzc.service.pid"
         out = output(cmd.format(**locals()))
         self.assertTrue(greps(out, "user1 .*group2 .*zzc.service.pid"))
+        cmd = "docker exec {testname}x ls -l /var/run/zzd.service.pid"
+        out = output(cmd.format(**locals()))
+        self.assertTrue(greps(out, "root .*group2 .*zzd.service.pid"))
         #
         cmd = "docker stop {testname}x" # <<<
         # sh____(cmd.format(**locals()))
@@ -7463,6 +7498,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, "testsleep 40"))
         self.assertFalse(greps(top, "testsleep 50"))
+        self.assertFalse(greps(top, "testsleep 60"))
         #
         if COVERAGE:
             coverage_file = ".coverage." + testname
