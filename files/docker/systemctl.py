@@ -1304,7 +1304,7 @@ class Systemctl:
         runs = conf.get("Service", "Type", "simple").lower()
         sudo = self.sudo_from(conf)
         env = self.get_env(conf)
-        logg.debug("start env = %s", env)
+        service_result = "success"
         if True:
             if runs in [ "simple", "forking", "notify" ]:
                 pid_file = self.get_pid_file_from(conf)
@@ -1398,7 +1398,7 @@ class Systemctl:
                 if pid:
                    env["MAINPID"] = str(pid)
                 else:
-                   raise Exception("could not start service")
+                   service_result = "timeout" # "could not start service"
         elif runs in [ "notify" ]:
             # "notify" is the same as "simple" but we create a $NOTIFY_SOCKET 
             # and wait for startup completion by checking the socket messages
@@ -1457,7 +1457,7 @@ class Systemctl:
                 if pid:
                     env["MAINPID"] = str(pid)
                 else:
-                    raise Exception("could not start service")
+                    service_result = "timeout" # "could not start service"
         elif runs in [ "forking" ]:
             pid_file = self.pid_file_from(conf)
             for cmd in conf.getlist("Service", "ExecStart", []):
@@ -1478,13 +1478,23 @@ class Systemctl:
         else:
             logg.error("unsupported run type '%s'", runs)
             return False
-        if True:
+        if service_result == "success":
             for cmd in conf.getlist("Service", "ExecStartPost", []):
                 check, cmd = checkstatus(cmd)
                 newcmd = self.exec_cmd(cmd, env, conf)
                 logg.info("post-start %s", shell_cmd(sudo+newcmd))
                 run = subprocess_wait(sudo+newcmd, env)
-        return True
+            return True
+        else:
+            # according to the systemd documentation, a failed start-sequence
+            # should execute the ExecStopPost sequence allowing some cleanup.
+            env["SERVICE_RESULT"] = service_result
+            for cmd in conf.getlist("Service", "ExecStopPost", []):
+                check, cmd = checkstatus(cmd)
+                newcmd = self.exec_cmd(cmd, env, conf)
+                logg.info("post-fail %s", shell_cmd(sudo+newcmd))
+                run = subprocess_wait(sudo+newcmd, env)
+            return False
     def stop_modules(self, *modules):
         """ [UNIT]... -- stop these units """
         found_all = True
@@ -1524,6 +1534,7 @@ class Systemctl:
         runs = conf.get("Service", "Type", "simple").lower()
         sudo = self.sudo_from(conf)
         env = self.get_env(conf)
+        service_result = "success"
         if runs in [ "sysv" ]:
             status_file = self.get_status_file_from(conf)
             if True:
@@ -1618,6 +1629,7 @@ class Systemctl:
             logg.error("unsupported run type '%s'", runs)
             return False
         if True:
+            env["SERVICE_RESULT"] = service_result
             for cmd in conf.getlist("Service", "ExecStopPost", []):
                 check, cmd = checkstatus(cmd)
                 newcmd = self.exec_cmd(cmd, env, conf)
