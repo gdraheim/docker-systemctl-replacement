@@ -1402,6 +1402,42 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.rm_testdir()
         self.coverage()
+    def test_2900_class_UnitConfParser(self):
+        """ using systemctl.py as a helper library for 
+            the UnitConfParser functions."""
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl_py_dir = os.path.dirname(os.path.realpath(_systemctl_py))
+        unitconfparser_py = os_path(root, "/usr/bin/unitconfparser.py")
+        defaults = {"a1": "default1"}
+        shell_file(unitconfparser_py,"""
+            #! /usr/bin/python
+            import sys
+            sys.path += [ "{systemctl_py_dir}" ]
+            import systemctl
+            parser = systemctl.UnitConfigParser({defaults})
+            print "DEFAULTS", parser.defaults()
+            """.format(**locals()))
+        text_file(os_path(root, "/etc/systemd/system/b.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            EnvironmentFile=/etc/sysconfig/b.conf
+            Environment=DEF5=def5
+            Environment=DEF6=def6
+            ExecStart=/usr/bin/printf $DEF1 $DEF2 \
+                                $DEF3 $DEF4 $DEF5
+            [Install]
+            WantedBy=multi-user.target""")
+        testrun = _cov + unitconfparser_py
+        cmd = "{testrun} b.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertTrue(greps(out, "DEFAULTS {'a1': 'default1'}"))
+        #
+        self.rm_testdir()
+        self.coverage()
     def test_3002_enable_service_creates_a_symlink(self):
         """ check that a service can be enabled """
         testname = self.testname()
