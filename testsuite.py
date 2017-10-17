@@ -6045,6 +6045,165 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 1) # nothing to kill
+        #
+        time.sleep(1)
+        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
+        top = output(top_recent.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, testsleepB))
+        self.assertFalse(greps(top, testsleepC))
+        #
+        self.rm_testdir()
+        self.coverage()
+    def test_4105_systemctl_py_kill_in_stop(self):
+        """ check systemctl_py kill from ExecStop"""
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        testsleep = self.testname("sleep")
+        testsleepB = testsleep+"B"
+        testsleepC = testsleep+"C"
+        bindir = os_path(root, "/usr/bin")
+        rundir = os_path(root, "/var/run")
+        begin="{"
+        end="}"
+        text_file(os_path(testdir, "zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            Type=simple
+            ExecStart={bindir}/{testsleepB} 40
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        text_file(os_path(testdir, "zzc.service"),"""
+            [Unit]
+            Description=Testing C
+            [Service]
+            Type=simple
+            ExecStart={bindir}/{testsleepC} 50
+            ExecStop=/usr/bin/kill ${begin}MAINPID{end}
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleepB))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleepC))
+        copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
+        copy_file(os_path(testdir, "zzc.service"), os_path(root, "/etc/systemd/system/zzc.service"))
+        os.makedirs(rundir)
+        #
+        cmd = "{systemctl} stop zzb.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        cmd = "{systemctl} stop zzc.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} start zzb.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        cmd = "{systemctl} start zzc.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        #
+        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
+        top = output(top_recent.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleepB))
+        self.assertTrue(greps(top, testsleepC))
+        #
+        cmd = "ls -l {rundir}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertTrue(greps(out, "zzb.service.pid"))
+        self.assertTrue(greps(out, "zzc.service.pid"))
+        #
+        cmd = "{systemctl} stop zzb.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        cmd = "{systemctl} kill zzc.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        #
+        time.sleep(1) # kill is asynchronous
+        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
+        top = output(top_recent.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, testsleepB))
+        self.assertFalse(greps(top, testsleepC))
+        #
+        cmd = "ls -l {rundir}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertFalse(greps(out, "zzb.service.pid"))
+        self.assertTrue(greps(out, "zzc.service.pid")) # TODO ?
+        #
+        cmd = "{systemctl} start zzb.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        cmd = "{systemctl} start zzc.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        #
+        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
+        top = output(top_recent.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleepB))
+        self.assertTrue(greps(top, testsleepC))
+        #
+        cmd = "ls -l {rundir}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertTrue(greps(out, "zzb.service.pid"))
+        self.assertTrue(greps(out, "zzc.service.pid"))
+        #
+        cmd = "killall {testsleepB}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        cmd = "killall {testsleepC}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} stop zzb.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0) # already down
+        cmd = "{systemctl} kill zzc.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 1) # nothing to kill
+        #
+        cmd = "ls -l {rundir}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertFalse(greps(out, "zzb.service.pid")) # issue #13
+        self.assertTrue(greps(out, "zzc.service.pid")) # TODO ?
+        #
+        time.sleep(1)
+        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
+        top = output(top_recent.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, testsleepB))
+        self.assertFalse(greps(top, testsleepC))
+        #
+        self.rm_testdir()
+        self.coverage()
     def test_4120_systemctl_kill_ignore_behaviour(self):
         """ systemctl kill ignore behaviour"""
         testname = self.testname()
@@ -6161,6 +6320,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleepB))
+        #
+        self.rm_testdir()
+        self.coverage()
     def test_4121_systemctl_kill_ignore_nokill_behaviour(self):
         """ systemctl kill ignore and nokill behaviour"""
         testname = self.testname()
@@ -6280,7 +6442,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testscriptB))
         self.assertFalse(greps(top, testsleepB))
-
+        #
+        self.rm_testdir()
+        self.coverage()
 
     def test_4201_systemctl_py_dependencies_plain_start_order(self):
         """ check list-dependencies - standard order of starting
