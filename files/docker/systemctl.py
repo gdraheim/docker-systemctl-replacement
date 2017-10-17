@@ -2177,7 +2177,7 @@ class Systemctl:
         return self.preset_units(units) and found_all
     def preset_units(self, units):
         """ fails if any unit could not be changed """
-        done = True
+        done = False
         for unit in units:
             status = self.get_preset_of_unit(unit)
             if status and status.startswith("enable"):
@@ -2185,13 +2185,15 @@ class Systemctl:
                 logg.info("preset enable %s", unit)
                 if not self.enable_unit(unit):
                     logg.warning("failed to enable %s", unit)
-                    done = False
+                else:
+                    done = True
             if status and status.startswith("disable"):
                 if _preset_mode == "enable": continue
                 logg.info("preset disable %s", unit)
                 if not self.disable_unit(unit):
                     logg.warning("failed to disable %s", unit)
-                    done = False
+                else:
+                    done = True
         return done
     def system_preset_all(self, *modules):
         """ 'preset' all services
@@ -2680,7 +2682,7 @@ class Systemctl:
                     units += [ unit ]
         return self.show_units(units) # and found_all
     def show_units(self, units):
-        logg.info("--property=%s", _unit_property)
+        logg.debug("show --property=%s", _unit_property)
         result = []
         for unit in units:
             if result: result += [ "", "" ]
