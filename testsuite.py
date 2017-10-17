@@ -1802,6 +1802,17 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         os.makedirs(os_path(root, "/var/run"))
         text_file(logfile, "created\n")
         begin = "{" ; end = "}"
+        shell_file(os_path(testdir, "xxx.init"), """
+            #! /bin/bash
+            ### BEGIN INIT INFO
+            # Required-Start: $local_fs $remote_fs $syslog $network 
+            # Required-Stop:  $local_fs $remote_fs $syslog $network
+            # Default-Start:  3 5
+            # Default-Stop:   0 1 2 6
+            # Short-Description: Testing Z
+            # Description:    Allows for SysV testing
+            ### END INIT INFO
+        """)
         shell_file(os_path(testdir, "zzz.init"), """
             #! /bin/bash
             ### BEGIN INIT INFO
@@ -1848,6 +1859,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             exit 0
             """.format(**locals()))
         copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(os_path(testdir, "xxx.init"), os_path(root, "/etc/init.d/xxx"))
         copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/etc/init.d/zzz"))
         #
         cmd = "{systemctl} is-enabled zzz.service"
@@ -1856,6 +1868,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, r"^disabled"))
         self.assertEqual(len(lines(out)), 1)
         self.assertEqual(end, 1)
+        #
+        cmd = "{systemctl} enable xxx.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         #
         cmd = "{systemctl} --no-legend enable zzz.service"
         out, end = output2(cmd.format(**locals()))
@@ -1873,7 +1890,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         self.assertEqual(end, 0)
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(len(lines(out)), 1)
+        self.assertEqual(len(lines(out)), 2)
         #
         cmd = "{systemctl} --no-legend disable zzz.service"
         out, end = output2(cmd.format(**locals()))
@@ -1886,6 +1903,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 1)
         self.assertTrue(greps(out, r"^disabled"))
         self.assertEqual(len(lines(out)), 1)
+        #
+        cmd = "{systemctl} disable xxx.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        #
         #
         cmd = "{systemctl} default-services"
         out, end = output2(cmd.format(**locals()))
