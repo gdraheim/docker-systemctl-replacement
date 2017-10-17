@@ -1,6 +1,6 @@
 ## EUROPEAN UNION PUBLIC LICENCE v. 1.2 
 
-    __EUPL (C) the European Union 2007, 2016__
+    EUPL (C) the European Union 2007, 2016
 
 This European Union Public Licence (the EUPL) applies to the Work (as 
 defined below) which is provided under the terms of this Licence. Any 
