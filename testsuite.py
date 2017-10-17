@@ -153,14 +153,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         return 6000 + (seconds % 2000)
     def testdir(self, testname = None):
         testname = testname or self.caller_testname()
-        newdir = "tests/tmp."+testname
+        newdir = "tmp/tmp."+testname
         if os.path.isdir(newdir):
             shutil.rmtree(newdir)
         os.makedirs(newdir)
         return newdir
     def rm_testdir(self, testname = None):
         testname = testname or self.caller_testname()
-        newdir = "tests/tmp."+testname
+        newdir = "tmp/tmp."+testname
         if os.path.isdir(newdir):
             shutil.rmtree(newdir)
         return newdir
