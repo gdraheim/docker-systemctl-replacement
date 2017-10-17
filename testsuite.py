@@ -906,6 +906,29 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(lines(out)), 2)
         self.rm_testdir()
         self.coverage()
+    def test_2006_list_unit_files_wanted_and_unknown_type(self):
+        """ check that two unit files can be found for 'list-unit-files'
+            with an enabled status plus handling unkonwn services"""
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/a.service"),"""
+            [Unit]
+            Description=Testing A""")
+        text_file(os_path(root, "/etc/systemd/system/b.service"),"""
+            [Unit]
+            Description=Testing B
+            [Install]
+            WantedBy=multi-user.target""")
+        cmd = "{systemctl} --type=foo list-unit-files"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertIn("0 unit files listed.", out)
+        self.assertEqual(len(lines(out)), 3)
+        self.rm_testdir()
+        self.coverage()
     def test_2008_list_unit_files_locations(self):
         """ check that unit files can be found for 'list-unit-files'
             in different standard locations on disk. """
