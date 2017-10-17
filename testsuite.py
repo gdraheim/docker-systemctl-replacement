@@ -641,7 +641,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} __get_description a.service"
         out, end = output2(cmd.format(**locals()))
         logg.info("%s => \n%s", cmd, out)
-        self.assertNotEqual(end, 0)
+        self.assertEqual(end, 0)
         self.assertFalse(greps(out, "Testing A"))
         self.assertFalse(greps(out, "quite special"))
         self.rm_testdir()
