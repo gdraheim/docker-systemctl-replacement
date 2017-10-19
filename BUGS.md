@@ -46,7 +46,10 @@ service unit file like "Restart=on-failure" is disregarded.
 
 As a designer of a docker application container one should
 take that as a warning - the process is buggy and it may
-break. And so will your containered service.
+break. And so will your containered service. If you need a
+fallback solutation then the container clould application
+should monitor the docker container.
+
 
 
 
