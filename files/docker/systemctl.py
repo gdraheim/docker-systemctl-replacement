@@ -3087,13 +3087,15 @@ if __name__ == "__main__":
     _show_all = opt.show_all
     _unit_type = opt.unit_type
     _unit_property = opt.unit_property
-    _init = opt.init
     _now = opt.now
     _no_legend = opt.no_legend
     _no_block = opt.no_block
     _no_wall = opt.no_wall
     _no_ask_password = opt.no_ask_password
     _preset_mode = opt.preset_mode
+    # being PID 1 (or 0) in a container will imply --init
+    _pid = os.getpid()
+    _init = opt.init or _pid in [ 1, 0 ]
     #
     _systemctl_debug_log = _root + "/var/log/systemctl.debug.log"
     _systemctl_extra_log = _root + "/var/log/systemctl.log"
@@ -3116,10 +3118,6 @@ if __name__ == "__main__":
     if opt.version:
        args = [ "_version" ]
     if not args: 
-        if os.getpid() == 0:
-            _init = True
-        if os.getpid() == 1:
-            _init = True
         if _init:
             args = [ "init" ] # alias "--init default"
         else:
