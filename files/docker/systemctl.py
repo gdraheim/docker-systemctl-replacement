@@ -579,6 +579,7 @@ class Systemctl:
         self._init = _init
         self._show_all = _show_all
         self._preset_mode = _preset_mode
+        self._no_ask_password = _no_ask_password
         #
         self._loaded_file_sysv = {} # /etc/init.d/name => config data
         self._loaded_file_sysd = {} # /etc/systemd/system/name.service => config data
@@ -1150,7 +1151,7 @@ class Systemctl:
                 sudo = ["/usr/bin/sudo", "-n", "-H", "-u", runuser, "--"]
             elif rungroup:
                 sudo = ["/usr/bin/sudo", "-n", "-H", "-g", rungroup, "--"]
-            if sudo and not _no_ask_password:
+            if sudo and not self._no_ask_password:
                 logg.warning("non-root execution, better use --no-ask-password")
         else:
             if runuser or rungroup:
