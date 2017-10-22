@@ -580,6 +580,7 @@ class Systemctl:
         self._preset_mode = _preset_mode
         self._no_ask_password = _no_ask_password
         self._unit_property = _unit_property
+        self._unit_type = _unit_type
         #
         self._loaded_file_sysv = {} # /etc/init.d/name => config data
         self._loaded_file_sysd = {} # /etc/systemd/system/name.service => config data
@@ -822,12 +823,12 @@ class Systemctl:
         --type=service or --type=target (and --now for some basics)."""
         if self._now:
             result = self.list_service_unit_basics()
-        elif _unit_type == "target":
+        elif self._unit_type == "target":
             result = self.list_target_unit_files()
-        elif _unit_type == "service":
+        elif self._unit_type == "service":
             result = self.list_service_unit_files()
-        elif _unit_type:
-            logg.error("unsupported unit --type=%s", _unit_type)
+        elif self._unit_type:
+            logg.error("unsupported unit --type=%s", self._unit_type)
             result = []
         else:
             result = self.list_target_unit_files()
