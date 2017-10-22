@@ -3163,23 +3163,22 @@ if __name__ == "__main__":
     _init = opt.init or _pid in [ 1, 0 ]
     #
     if _root:
-       _systemctl_debug_log = os_path(_root, _systemctl_debug_log)
-       _systemctl_extra_log = os_path(_root, _systemctl_extra_log)
+        _systemctl_debug_log = os_path(_root, _systemctl_debug_log)
+        _systemctl_extra_log = os_path(_root, _systemctl_extra_log)
+    if os.path.exists(_systemctl_extra_log):
+        loggfile = logging.FileHandler(_systemctl_extra_log)
+        loggfile.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
+        logg.addHandler(loggfile)
+        logg.setLevel(max(0, logging.INFO - 10 * opt.verbose))
     if os.path.exists(_systemctl_debug_log):
-       loggfile = logging.FileHandler(_systemctl_debug_log)
-       loggfile.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
-       logg.addHandler(loggfile)
-       logg.setLevel(logging.DEBUG)
-       logg.info("EXEC BEGIN %s %s", os.path.realpath(sys.argv[0]), " ".join(args))
-    elif os.path.exists(_systemctl_extra_log):
-       loggfile = logging.FileHandler(_systemctl_extra_log)
-       loggfile.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
-       logg.addHandler(loggfile)
-       logg.setLevel(max(0, logging.INFO - 10 * opt.verbose))
-       logg.info("EXEC BEGIN %s %s", os.path.realpath(sys.argv[0]), " ".join(args))
+        loggfile = logging.FileHandler(_systemctl_debug_log)
+        loggfile.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
+        logg.addHandler(loggfile)
+        logg.setLevel(logging.DEBUG)
+    logg.info("EXEC BEGIN %s %s", os.path.realpath(sys.argv[0]), " ".join(args))
     #
     if opt.version:
-       args = [ "_version" ]
+        args = [ "_version" ]
     if not args: 
         if _init:
             args = [ "init" ] # alias "--init default"
