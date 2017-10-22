@@ -26,7 +26,7 @@ import json
 logg = logging.getLogger("TESTING")
 _systemctl_py = "files/docker/systemctl.py"
 _cov = ""
-_cov_run = "coverage2 run --append -- "
+_cov_run = "coverage2 run '--omit=*/six.py' --append -- "
 _cov_cmd = "coverage2"
 COVERAGE = False
 
@@ -3320,7 +3320,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = output(top_recent.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
-        self.assertEqual(end, 0)
         #
         self.rm_testdir()
         self.coverage()
