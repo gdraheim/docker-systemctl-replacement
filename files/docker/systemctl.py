@@ -578,6 +578,8 @@ class Systemctl:
         self._now = _now
         self._init = _init
         self._show_all = _show_all
+        self._preset_mode = _preset_mode
+        #
         self._loaded_file_sysv = {} # /etc/init.d/name => config data
         self._loaded_file_sysd = {} # /etc/systemd/system/name.service => config data
         self._file_for_unit_sysv = None # name.service => /etc/init.d/name
@@ -2199,13 +2201,13 @@ class Systemctl:
             if not status: continue
             found += 1
             if status.startswith("enable"):
-                if _preset_mode == "disable": continue
+                if self._preset_mode == "disable": continue
                 logg.info("preset enable %s", unit)
                 if not self.enable_unit(unit):
                     logg.warning("failed to enable %s", unit)
                     fails += 1
             if status.startswith("disable"):
-                if _preset_mode == "enable": continue
+                if self._preset_mode == "enable": continue
                 logg.info("preset disable %s", unit)
                 if not self.disable_unit(unit):
                     logg.warning("failed to disable %s", unit)
