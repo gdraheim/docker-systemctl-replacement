@@ -579,6 +579,7 @@ class Systemctl:
         self._show_all = _show_all
         self._preset_mode = _preset_mode
         self._no_ask_password = _no_ask_password
+        self._unit_property = _unit_property
         #
         self._loaded_file_sysv = {} # /etc/init.d/name => config data
         self._loaded_file_sysd = {} # /etc/systemd/system/name.service => config data
@@ -2700,13 +2701,13 @@ class Systemctl:
                     units += [ unit ]
         return self.show_units(units) # and found_all
     def show_units(self, units):
-        logg.debug("show --property=%s", _unit_property)
+        logg.debug("show --property=%s", self._unit_property)
         result = []
         for unit in units:
             if result: result += [ "", "" ]
             for var, value in self.show_unit_items(unit):
-                if _unit_property:
-                    if _unit_property != var:
+                if self._unit_property:
+                    if self._unit_property != var:
                         continue
                 else:
                     if not value and not self._show_all:
