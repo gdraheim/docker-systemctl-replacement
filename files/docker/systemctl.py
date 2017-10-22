@@ -576,6 +576,7 @@ class Systemctl:
         self._quiet = _quiet
         self._full = _full
         self._now = _now
+        self._init = _init
         self._show_all = _show_all
         self._loaded_file_sysv = {} # /etc/init.d/name => config data
         self._loaded_file_sysd = {} # /etc/systemd/system/name.service => config data
@@ -1269,7 +1270,7 @@ class Systemctl:
             for unit in matched:
                 if unit not in units:
                     units += [ unit ]
-        init = self._now or _init
+        init = self._now or self._init
         return self.start_units(units, init) and found_all
     def start_units(self, units, init = None):
         """ fails if any unit does not start
@@ -2803,7 +2804,7 @@ class Systemctl:
             /// SPECIAL: with --now or --init the init-loop is run and afterwards
                 a system_halt is performed with the enabled services to be stopped."""
         logg.info("system default requested - %s", arg)
-        init = self._now or _init
+        init = self._now or self._init
         self.start_system_default(init = init)
     def start_system_default(self, init = False):
         """ detect the default.target services and start them.
