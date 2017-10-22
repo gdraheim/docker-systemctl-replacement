@@ -43,7 +43,6 @@ _show_all = False
 _unit_type = None
 _unit_property = None
 _no_legend = False
-_no_block = False
 _no_ask_password = False
 _preset_mode = "all"
 
@@ -3043,8 +3042,8 @@ if __name__ == "__main__":
         help="Start or stop unit in addition to enabling or disabling it")
     _o.add_option("-q","--quiet", action="store_true", default=_quiet,
         help="Suppress output")
-    _o.add_option("--no-block", action="store_true", default=_no_block,
-        help="Do not wait until operation finished*")
+    _o.add_option("--no-block", action="store_true", default=False,
+        help="Do not wait until operation finished (ignored)")
     _o.add_option("--no-legend", action="store_true", default=_no_legend,
         help="Do not print a legend (column headers and hints)")
     _o.add_option("--no-wall", action="store_true", default=False,
@@ -3092,7 +3091,6 @@ if __name__ == "__main__":
     _unit_property = opt.unit_property
     _now = opt.now
     _no_legend = opt.no_legend
-    _no_block = opt.no_block
     _no_ask_password = opt.no_ask_password
     _preset_mode = opt.preset_mode
     # being PID 1 (or 0) in a container will imply --init
