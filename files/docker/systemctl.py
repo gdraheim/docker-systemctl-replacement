@@ -3010,7 +3010,7 @@ class Systemctl:
         features2 = " +SYSVINIT -UTMP -LIBCRYPTSETUP -GCRYPT -GNUTLS"
         features3 = " -ACL -XZ -LZ4 -SECCOMP -BLKID -ELFUTILS -KMOD -IDN"
         return features1+features2+features3
-    def systemctl_version(self):
+    def systems_version(self):
         return [ self.systemd_version(), self.systemd_features() ]
 
 def print_result(result):
@@ -3177,8 +3177,9 @@ if __name__ == "__main__":
         logg.setLevel(logging.DEBUG)
     logg.info("EXEC BEGIN %s %s", os.path.realpath(sys.argv[0]), " ".join(args))
     #
+    systemctl = Systemctl()
     if opt.version:
-        args = [ "_version" ]
+        args = [ "version" ]
     if not args: 
         if _init:
             args = [ "init" ] # alias "--init default"
@@ -3187,7 +3188,6 @@ if __name__ == "__main__":
     logg.debug("======= systemctl.py " + " ".join(args))
     command = args[0]
     modules = args[1:]
-    systemctl = Systemctl()
     if opt.ipv4:
         systemctl.force_ipv4()
     elif opt.ipv6:
@@ -3215,7 +3215,7 @@ if __name__ == "__main__":
     if callable(command_func) and not found:
         found = True
         result = command_func()
-    command_name = "systemctl"+command.replace("-","_").replace(".","_")
+    command_name = "systems_"+command.replace("-","_").replace(".","_")
     command_func = getattr(systemctl, command_name, None)
     if callable(command_func) and not found:
         found = True
