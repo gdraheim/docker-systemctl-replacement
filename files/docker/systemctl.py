@@ -3126,7 +3126,7 @@ if __name__ == "__main__":
     _o.add_option("--preset-mode", metavar="TYPE", default=_preset_mode,
         help="Apply only enable, only disable, or all presets [%default]")
     _o.add_option("--root", metavar="PATH", default=_root,
-        help="Enable unit files in the specified root directory (abused for chroot-like testing)")
+        help="Enable unit files in the specified root directory (used for alternative root prefix)")
     _o.add_option("-n","--lines", metavar="NUM",
         help="Number of journal entries to show (ignored)")
     _o.add_option("-o","--output", metavar="CAT",
