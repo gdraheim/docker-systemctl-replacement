@@ -63,6 +63,9 @@ _notify_socket_name = "notify" # NOTIFY_SOCKET="/var/run/systemd/notify"
 _pid_file_folder = "/var/run"
 _journal_log_folder = "/var/log/journal"
 
+_systemctl_debug_log = "/var/log/systemctl.debug.log"
+_systemctl_extra_log = "/var/log/systemctl.log"
+
 _runlevel_targets = [ "runlevel0.target", "runlevel1.target", "runlevel2.target", "runlevel3.target", "runlevel4.target", "runlevel5.target", "runlevel6.target" ]
 _default_targets = [ "poweroff.target", "rescue.target", "sysinit.target", "basic.target", "multi-user.target", "graphical.target", "reboot.target" ]
 _feature_targets = [ "network.target", "remote-fs.target", "local-fs.target", "timers.target", "nfs-client.target" ]
@@ -3159,11 +3162,9 @@ if __name__ == "__main__":
     _pid = os.getpid()
     _init = opt.init or _pid in [ 1, 0 ]
     #
-    _systemctl_debug_log = _root + "/var/log/systemctl.debug.log"
-    _systemctl_extra_log = _root + "/var/log/systemctl.log"
     if _root:
-       _systemctl_debug_log = os.path.join(_root, _systemctl_debug_log)
-       _systemctl_extra_log = os.path.join(_root, _systemctl_extra_log)
+       _systemctl_debug_log = os_path(_root, _systemctl_debug_log)
+       _systemctl_extra_log = os_path(_root, _systemctl_extra_log)
     if os.path.exists(_systemctl_debug_log):
        loggfile = logging.FileHandler(_systemctl_debug_log)
        loggfile.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
