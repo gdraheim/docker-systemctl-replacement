@@ -3010,6 +3010,60 @@ class Systemctl:
     def systemctl_version(self):
         return [ self.systemd_version(), self.systemd_features() ]
 
+def print_result(result):
+    exitcode = 0
+    if result is None:
+        logg.info("EXEC END None")
+    elif result is True:
+        logg.info("EXEC END True")
+        result = None
+        exitcode = 0
+    elif result is False:
+        logg.info("EXEC END False")
+        result = None
+        exitcode = 1
+    elif isinstance(result, tuple) and len(result) == 2:
+        exitcode, status = result
+        logg.info("EXEC END %s '%s'", exitcode, status)
+        if exitcode is True: exitcode = 0
+        if exitcode is False: exitcode = 1
+        result = status
+    #
+    if result is None:
+        pass
+    elif isinstance(result, basestring):
+        print result
+        result1 = result.split("\n")[0][:-20]
+        if result == result1:
+            logg.info("EXEC END '%s'", result)
+        else:
+            logg.info("EXEC END '%s...'", result1)
+            logg.debug("    END '%s'", result)
+    elif isinstance(result, list) or hasattr(result, "next") or hasattr(result, "__next__"):
+        shown = 0
+        for element in result:
+            if isinstance(element, tuple):
+                print "\t".join([ str(elem) for elem in element] )
+            else:
+                print element
+            shown += 1
+        logg.info("EXEC END %s items", shown)
+        logg.debug("    END %s", result)
+    elif hasattr(result, "keys"):
+        shown = 0
+        for key in sorted(result.keys()):
+            element = result[key]
+            if isinstance(element, tuple):
+                print key,"=","\t".join([ str(elem) for elem in element])
+            else:
+                print "%s=%s" % (key,element)
+            shown += 1
+        logg.info("EXEC END %s items", shown)
+        logg.debug("    END %s", result)
+    else:
+        logg.warning("EXEC END Unknown result type %s", str(type(result)))
+    return exitcode
+
 if __name__ == "__main__":
     import optparse
     _o = optparse.OptionParser("%prog [options] command [name...]", 
@@ -3174,56 +3228,5 @@ if __name__ == "__main__":
     if not found:
         logg.error("EXEC END no method for '%s'", command)
         sys.exit(1)
-    exitcode = 0
-    if result is None:
-        logg.info("EXEC END None")
-    elif result is True:
-        logg.info("EXEC END True")
-        result = None
-        exitcode = 0
-    elif result is False:
-        logg.info("EXEC END False")
-        result = None
-        exitcode = 1
-    elif isinstance(result, tuple) and len(result) == 2:
-        exitcode, status = result
-        logg.info("EXEC END %s '%s'", exitcode, status)
-        if exitcode is True: exitcode = 0
-        if exitcode is False: exitcode = 1
-        result = status
     #
-    if result is None:
-        pass
-    elif isinstance(result, basestring):
-        print result
-        result1 = result.split("\n")[0][:-20]
-        if result == result1:
-            logg.info("EXEC END '%s'", result)
-        else:
-            logg.info("EXEC END '%s...'", result1)
-            logg.debug("    END '%s'", result)
-    elif isinstance(result, list) or hasattr(result, "next") or hasattr(result, "__next__"):
-        shown = 0
-        for element in result:
-            if isinstance(element, tuple):
-                print "\t".join([ str(elem) for elem in element] )
-            else:
-                print element
-            shown += 1
-        logg.info("EXEC END %s items", shown)
-        logg.debug("    END %s", result)
-    elif hasattr(result, "keys"):
-        shown = 0
-        for key in sorted(result.keys()):
-            element = result[key]
-            if isinstance(element, tuple):
-                print key,"=","\t".join([ str(elem) for elem in element])
-            else:
-                print "%s=%s" % (key,element)
-            shown += 1
-        logg.info("EXEC END %s items", shown)
-        logg.debug("    END %s", result)
-    else:
-        logg.warning("EXEC END Unknown result type %s", str(type(result)))
-    if exitcode:
-        sys.exit(exitcode)
+    sys.exit(print_result(result))
