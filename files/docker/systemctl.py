@@ -1046,7 +1046,7 @@ class Systemctl:
                     continue
         except Exception, e:
             logg.info("while reading %s: %s", env_part, e)
-    def environment_of_unit(self, unit):
+    def show_environment(self, unit):
         """ [UNIT]. -- show environment parts """
         conf = self.load_unit_conf(unit)
         if conf is None:
@@ -3200,11 +3200,6 @@ if __name__ == "__main__":
         if callable(command_func) and not found:
             found = True
             result = command_func(*modules)
-    command_name = command.replace("-","_").replace(".","_")+"_of_unit"
-    command_func = getattr(systemctl, command_name, None)
-    if callable(command_func) and not found:
-        found = True
-        result = command_func(modules[0])
     command_name = command.replace("-","_").replace(".","_")+"_modules"
     command_func = getattr(systemctl, command_name, None)
     if callable(command_func) and not found:
