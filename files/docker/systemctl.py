@@ -21,7 +21,20 @@ import tempfile
 
 DEBUG_AFTER = False
 
+# defaults for options
+_force = False
+_full = False
+_now = False
+_no_legend = False
+_no_ask_password = False
+_preset_mode = "all"
+_quiet = False
 _root = ""
+_unit_type = None
+_unit_property = None
+_show_all = False
+
+# common default paths
 _sysd_default = "multi-user.target"
 _sysd_folder1 = "/etc/systemd/system"
 _sysd_folder2 = "/var/run/systemd/system"
@@ -35,16 +48,6 @@ _preset_folder3 = "/usr/lib/systemd/system-preset"
 _preset_folder4 = "/lib/systemd/system-preset"
 _waitprocfile = 100
 _waitkillproc = 10
-_force = False
-_quiet = False
-_full = False
-_now = False
-_show_all = False
-_unit_type = None
-_unit_property = None
-_no_legend = False
-_no_ask_password = False
-_preset_mode = "all"
 
 MinimumSleep = 2
 MinimumWaitProcFile = 9
@@ -553,7 +556,20 @@ def sortedAfter(conflist, cmp = compareAfter):
 
 class Systemctl:
     def __init__(self):
+        # from command line options or the defaults
+        self._force = _force
+        self._full = _full
+        self._init = _init
+        self._no_ask_password = _no_ask_password
+        self._no_legend = _no_legend
+        self._now = _now
+        self._preset_mode = _preset_mode
+        self._quiet = _quiet
         self._root = _root
+        self._show_all = _show_all
+        self._unit_property = _unit_property
+        self._unit_type = _unit_type
+        # some common constants that may be changed
         self._sysd_folder1 = _sysd_folder1
         self._sysd_folder2 = _sysd_folder2
         self._sysd_folder3 = _sysd_folder3
@@ -570,18 +586,7 @@ class Systemctl:
         self._journal_log_folder = _journal_log_folder
         self._WaitProcFile = DefaultWaitProcFile
         self._WaitKillProc = DefaultWaitKillProc
-        self._force = _force
-        self._quiet = _quiet
-        self._full = _full
-        self._now = _now
-        self._init = _init
-        self._no_legend = _no_legend
-        self._show_all = _show_all
-        self._preset_mode = _preset_mode
-        self._no_ask_password = _no_ask_password
-        self._unit_property = _unit_property
-        self._unit_type = _unit_type
-        #
+        # and the actual internal runtime state
         self._loaded_file_sysv = {} # /etc/init.d/name => config data
         self._loaded_file_sysd = {} # /etc/systemd/system/name.service => config data
         self._file_for_unit_sysv = None # name.service => /etc/init.d/name
@@ -3085,17 +3090,17 @@ if __name__ == "__main__":
     logging.basicConfig(level = max(0, logging.FATAL - 10 * opt.verbose))
     logg.setLevel(max(0, logging.ERROR - 10 * opt.verbose))
     #
-    _root = opt.root
     _force = opt.force
-    _quiet = opt.quiet
     _full = opt.full
+    _no_legend = opt.no_legend
+    _no_ask_password = opt.no_ask_password
+    _now = opt.now
+    _preset_mode = opt.preset_mode
+    _quiet = opt.quiet
+    _root = opt.root
     _show_all = opt.show_all
     _unit_type = opt.unit_type
     _unit_property = opt.unit_property
-    _now = opt.now
-    _no_legend = opt.no_legend
-    _no_ask_password = opt.no_ask_password
-    _preset_mode = opt.preset_mode
     # being PID 1 (or 0) in a container will imply --init
     _pid = os.getpid()
     _init = opt.init or _pid in [ 1, 0 ]
