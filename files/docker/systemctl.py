@@ -575,6 +575,7 @@ class Systemctl:
         self._full = _full
         self._now = _now
         self._init = _init
+        self._no_legend = _no_legend
         self._show_all = _show_all
         self._preset_mode = _preset_mode
         self._no_ask_password = _no_ask_password
@@ -781,7 +782,7 @@ class Systemctl:
         them are shown. NOTE: This is the default command."""
         hint = "To show all installed unit files use 'systemctl list-unit-files'."
         result = self.list_service_units(*modules)
-        if _no_legend:
+        if self._no_legend:
             return result
         found = "%s loaded units listed." % len(result)
         return result + [ "", found, hint ]
@@ -830,7 +831,7 @@ class Systemctl:
         else:
             result = self.list_target_unit_files()
             result += self.list_service_unit_files(*modules)
-        if _no_legend:
+        if self._no_legend:
             return result
         found = "%s unit files listed." % len(result)
         return [ ("UNIT FILE", "STATE") ] + result + [ "", found ]
