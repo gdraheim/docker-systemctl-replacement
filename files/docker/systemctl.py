@@ -1,4 +1,6 @@
 #! /usr/bin/python
+from __future__ import print_function
+
 __copyright__ = "(C) 2016-2017 Guido U. Draheim, licensed under the EUPL"
 __version__ = "1.0.1423"
 
@@ -1375,34 +1377,8 @@ class Systemctl:
             shutil_truncate(pid_file)
             shutil_chown(pid_file, runuser, rungroup)
             if not os.fork(): # pragma: no cover
-                # this code is running in a child process
-                logg.debug("%s process for %s", runs, conf.filename())
-                os.setsid() # detach from parent
-                inp = open("/dev/zero")
-                out = self.open_journal_log(conf)
-                os.dup2(inp.fileno(), sys.stdin.fileno())
-                os.dup2(out.fileno(), sys.stdout.fileno())
-                os.dup2(out.fileno(), sys.stderr.fileno())
-                shutil_setuid(runuser, rungroup)
-                self.chdir_workingdir(conf, check = False)
-                cmdlist = conf.getlist("Service", "ExecStart", [])
-                for idx, cmd in enumerate(cmdlist):
-                    logg.debug("ExecStart[%s]: %s", idx, cmd)
-                for cmd in cmdlist:
-                    pid = self.read_pid_file(pid_file, "")
-                    env["MAINPID"] = str(pid)
-                    newcmd = self.exec_cmd(cmd, env, conf)
-                    logg.info("%s start %s", runs, shell_cmd(newcmd))
-                    run = subprocess.Popen(newcmd, env=env, close_fds=True, 
-                        stdin=inp, stdout=out, stderr=out)
-                    self.write_pid_file(pid_file, run.pid)
-                    logg.info("%s started PID %s", runs, run.pid)
-                    run.wait()
-                    logg.info("%s stopped PID %s EXIT %s", runs, run.pid, run.returncode)
-                    pid = self.read_pid_file(pid_file, "")
-                    if str(pid) == str(run.pid):
-                        self.write_pid_file(pid_file, "")
-                sys.exit(run.returncode) # end of child
+                os.setsid() # detach child process from parent
+                sys.exit(self.exec_start_from(conf)) # and exit after call
             else:
                 # parent
                 pid = self.wait_pid_file(pid_file)
@@ -1430,34 +1406,8 @@ class Systemctl:
                 env["NOTIFY_SOCKET"] = notify.socketfile
                 logg.debug("use NOTIFY_SOCKET=%s", notify.socketfile)
             if not os.fork(): # pragma: no cover
-                # this code is running in a child process
-                logg.debug("%s process for %s", runs, conf.filename())
-                os.setsid() # detach from parent
-                inp = open("/dev/zero")
-                out = self.open_journal_log(conf)
-                os.dup2(inp.fileno(), sys.stdin.fileno())
-                os.dup2(out.fileno(), sys.stdout.fileno())
-                os.dup2(out.fileno(), sys.stderr.fileno())
-                shutil_setuid(runuser, rungroup)
-                self.chdir_workingdir(conf, check = False)
-                cmdlist = conf.getlist("Service", "ExecStart", [])
-                for idx, cmd in enumerate(cmdlist):
-                    logg.debug("ExecStart[%s]: %s", idx, cmd)
-                for cmd in cmdlist:
-                    pid = self.read_pid_file(pid_file, "")
-                    env["MAINPID"] = str(pid)
-                    newcmd = self.exec_cmd(cmd, env, conf)
-                    logg.info("%s start %s", runs, shell_cmd(newcmd))
-                    run = subprocess.Popen(newcmd, env=env, close_fds=True, 
-                        stdin=inp, stdout=out, stderr=out)
-                    self.write_pid_file(pid_file, run.pid)
-                    logg.info("%s started PID %s", runs, run.pid)
-                    run.wait()
-                    logg.info("%s stopped PID %s EXIT %s", runs, run.pid, run.returncode)
-                    pid = self.read_pid_file(pid_file, "")
-                    if str(pid) == str(run.pid):
-                        self.write_pid_file(pid_file, "")
-                sys.exit(run.returncode) # end of child
+                os.setsid() # detach child process from parent
+                sys.exit(self.exec_start_from(conf)) # and exit after call
             else:
                 # parent
                 mainpid = self.wait_pid_file(pid_file) # fork is running
@@ -1510,6 +1460,41 @@ class Systemctl:
                 logg.info("post-fail %s", shell_cmd(sudo+newcmd))
                 run = subprocess_wait(sudo+newcmd, env)
             return False
+    def exec_start_from(self, conf):
+        """ this code is commonly run in a child process // returns exit-code"""
+        runs = conf.get("Service", "Type", "simple").lower()
+        logg.debug("%s process for %s", runs, conf.filename())
+        #
+        env = self.get_env(conf)
+        pid_file = self.get_pid_file_from(conf)
+        # os.setsid() # detach from parent
+        inp = open("/dev/zero")
+        out = self.open_journal_log(conf)
+        os.dup2(inp.fileno(), sys.stdin.fileno())
+        os.dup2(out.fileno(), sys.stdout.fileno())
+        os.dup2(out.fileno(), sys.stderr.fileno())
+        runuser = conf.get("Service", "User", "")
+        rungroup = conf.get("Service", "Group", "")
+        shutil_setuid(runuser, rungroup)
+        self.chdir_workingdir(conf, check = False)
+        cmdlist = conf.getlist("Service", "ExecStart", [])
+        for idx, cmd in enumerate(cmdlist):
+            logg.debug("ExecStart[%s]: %s", idx, cmd)
+        for cmd in cmdlist:
+            pid = self.read_pid_file(pid_file, "")
+            env["MAINPID"] = str(pid)
+            newcmd = self.exec_cmd(cmd, env, conf)
+            logg.info("%s start %s", runs, shell_cmd(newcmd))
+            run = subprocess.Popen(newcmd, env=env, close_fds=True, 
+                stdin=inp, stdout=out, stderr=out)
+            self.write_pid_file(pid_file, run.pid)
+            logg.info("%s started PID %s", runs, run.pid)
+            run.wait()
+            logg.info("%s stopped PID %s EXIT %s", runs, run.pid, run.returncode)
+            pid = self.read_pid_file(pid_file, "")
+            if str(pid) == str(run.pid):
+                self.write_pid_file(pid_file, "")
+        return run.returncode
     def stop_modules(self, *modules):
         """ [UNIT]... -- stop these units """
         found_all = True
@@ -2153,7 +2138,7 @@ class Systemctl:
                 return open(unit_file).read()
             logg.error("no file for unit '%s'", unit)
         except Exception, e:
-            print "Unit {} is not-loaded: {}".format(unit, e)
+            print("Unit {} is not-loaded: {}".format(unit, e))
         return False
     ##
     ##
@@ -2964,9 +2949,9 @@ class Systemctl:
                    arg = name[:-len("_modules")].replace("_","-")
                 if arg:
                    argz[arg] = name
-            print prog, "command","[options]..."
-            print ""
-            print "Commands:"
+            print(prog, "command","[options]...")
+            print("")
+            print("Commands:")
             for arg in sorted(argz):
                 name = argz[arg]
                 method = getattr(self, name)
@@ -2974,9 +2959,9 @@ class Systemctl:
                 doc = doc or "..."
                 firstline = doc.split("\n")[0]
                 if "--" not in firstline:
-                    print " ",arg,"--", firstline.strip()
+                    print(" ",arg,"--", firstline.strip())
                 else:
-                    print " ", arg, firstline.strip()
+                    print(" ", arg, firstline.strip())
             return True
         for arg in args:
             arg = arg.replace("-","_")
@@ -2986,17 +2971,17 @@ class Systemctl:
             func4 = getattr(self.__class__, "system_"+arg, None)
             func = func1 or func2 or func3 or func4
             if func is None:
-                print "error: no such command '%s'" % arg
+                print("error: no such command '%s'" % arg)
                 okay = False
             else:
                 doc = getattr(func, "__doc__", None)
                 if doc is None:
                     logg.debug("__doc__ of %s is none", func_name)
-                    print prog, arg, "..."
+                    print(prog, arg, "...")
                 elif "--" in doc:
-                    print prog, arg, doc.replace("\n","\n\n", 1)
+                    print(prog, arg, doc.replace("\n","\n\n", 1))
                 else:
-                    print prog, arg, "--", doc.replace("\n","\n\n", 1)
+                    print(prog, arg, "--", doc.replace("\n","\n\n", 1))
         if not okay:
             self.show_help()
             return False
@@ -3035,7 +3020,7 @@ def print_result(result):
     if result is None:
         pass
     elif isinstance(result, basestring):
-        print result
+        print(result)
         result1 = result.split("\n")[0][:-20]
         if result == result1:
             logg.info("EXEC END '%s'", result)
@@ -3046,9 +3031,9 @@ def print_result(result):
         shown = 0
         for element in result:
             if isinstance(element, tuple):
-                print "\t".join([ str(elem) for elem in element] )
+                print("\t".join([ str(elem) for elem in element] ))
             else:
-                print element
+                print(element)
             shown += 1
         logg.info("EXEC END %s items", shown)
         logg.debug("    END %s", result)
@@ -3057,9 +3042,9 @@ def print_result(result):
         for key in sorted(result.keys()):
             element = result[key]
             if isinstance(element, tuple):
-                print key,"=","\t".join([ str(elem) for elem in element])
+                print(key,"=","\t".join([ str(elem) for elem in element]))
             else:
-                print "%s=%s" % (key,element)
+                print("%s=%s" % (key,element))
             shown += 1
         logg.info("EXEC END %s items", shown)
         logg.debug("    END %s", result)
