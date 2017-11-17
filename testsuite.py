@@ -33,7 +33,7 @@ COVERAGE = False
 IMAGES = "localhost:5000/testingsystemctl"
 CENTOS = "centos:7.3.1611"
 UBUNTU = "ubuntu:14.04"
-OPENSUSE = "opensuse:42.2"
+OPENSUSE = "opensuse:42.3"
 
 def sh____(cmd, shell=True):
     if isinstance(cmd, basestring):
@@ -169,7 +169,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         newcoverage = ".coverage."+testname
         time.sleep(1) # TODO: flush output
         if os.path.isfile(".coverage"):
-            shutil.copy(".coverage", newcoverage)
+            # shutil.copy(".coverage", newcoverage)
+            f = open(".coverage")
+            text = f.read()
+            f.close()
+            text2 = re.sub(r"(\]\}\})[^{}]*(\]\}\})$", r"\1", text)
+            f = open(newcoverage, "w")
+            f.write(text2)
+            f.close()
     def root(self, testdir):
         root_folder = os.path.join(testdir, "root")
         if not os.path.isdir(root_folder):
@@ -8264,6 +8271,35 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         self.rm_testdir()
 
+    def test_6000_precheck_coverage_install(self):
+        """ Allow to have a coverage tool be installed."""
+        testname = self.testname()
+        testdir = self.testdir()
+        images = IMAGES
+        image = self.local_image(CENTOS)
+        package = "yum"
+        if greps(open("/etc/issue"), "openSUSE"):
+           image = self.local_image(OPENSUSE)
+           package = "zypper"
+        #
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name={testname} {image} sleep 50"
+        sh____(cmd.format(**locals()))
+        if package == "zypper":
+            cmd = "docker exec {testname} {package} mr --no-gpgcheck oss-update"
+            sh____(cmd.format(**locals()))
+            ## https://github.com/openSUSE/docker-containers/issues/64
+            #cmd = "docker exec {testname} {package} rr oss-update"
+            #sh____(cmd.format(**locals()))
+            #cmd = "docker exec {testname} {package} ar -f http://download.opensuse.org/update/leap/42.3/oss/openSUSE:Leap:42.3:Update.repo"
+            #sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} {package} install -y python-coverage"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        self.rm_testdir()
+
     def test_6130_systemctl_py_run_default_services_from_simple_saved_container(self):
         """ check that we can enable services in a docker container to be run as default-services
             after it has been restarted from a commit-saved container image.
@@ -8279,7 +8315,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl_py = os.path.realpath(_systemctl_py)
         systemctl_sh = os_path(testdir, "systemctl.sh")
         systemctl_py_run = systemctl_py.replace("/","_")[1:]
-        cov_run = _cov_run
+        cov_run = ""
+        if COVERAGE:
+            cov_run = _cov_run
         shell_file(systemctl_sh,"""
             #! /bin/sh
             exec {cov_run} /{systemctl_py_run} "$@" -vv
@@ -8314,8 +8352,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} {package} install -y python-coverage"
-        sh____(cmd.format(**locals()))
+        if COVERAGE:
+            if package == "zypper":
+                cmd = "docker exec {testname} {package} mr --no-gpgcheck oss-update"
+                sh____(cmd.format(**locals()))
+            cmd = "docker exec {testname} {package} install -y python-coverage"
+            sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
         #
@@ -8388,7 +8430,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl_py = os.path.realpath(_systemctl_py)
         systemctl_sh = os_path(testdir, "systemctl.sh")
         systemctl_py_run = systemctl_py.replace("/","_")[1:]
-        cov_run = _cov_run
+        cov_run = ""
+        if COVERAGE:
+            cov_run = _cov_run
         shell_file(systemctl_sh,"""
             #! /bin/sh
             exec {cov_run} /{systemctl_py_run} "$@" -vv
@@ -8423,8 +8467,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} {package} install -y python-coverage"
-        sh____(cmd.format(**locals()))
+        if COVERAGE:
+            if package == "zypper":
+                cmd = "docker exec {testname} {package} mr --no-gpgcheck oss-update"
+                sh____(cmd.format(**locals()))
+            cmd = "docker exec {testname} {package} install -y python-coverage"
+            sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
         #
@@ -8497,7 +8545,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl_py = os.path.realpath(_systemctl_py)
         systemctl_sh = os_path(testdir, "systemctl.sh")
         systemctl_py_run = systemctl_py.replace("/","_")[1:]
-        cov_run = _cov_run
+        cov_run = ""
+        if COVERAGE:
+            cov_run = _cov_run
         shell_file(systemctl_sh,"""
             #! /bin/sh
             exec {cov_run} /{systemctl_py_run} "$@" -vv
@@ -8541,8 +8591,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} {package} install -y python-coverage"
-        sh____(cmd.format(**locals()))
+        if COVERAGE:
+            if package == "zypper":
+                cmd = "docker exec {testname} {package} mr --no-gpgcheck oss-update"
+                sh____(cmd.format(**locals()))
+            cmd = "docker exec {testname} {package} install -y python-coverage"
+            sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
         #
@@ -8613,7 +8667,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl_py = os.path.realpath(_systemctl_py)
         systemctl_sh = os_path(testdir, "systemctl.sh")
         systemctl_py_run = systemctl_py.replace("/","_")[1:]
-        cov_run = _cov_run
+        cov_run = ""
+        if COVERAGE:
+            cov_run = _cov_run
         shell_file(systemctl_sh,"""
             #! /bin/sh
             exec {cov_run} /{systemctl_py_run} "$@" -vv
@@ -8657,8 +8713,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} {package} install -y python-coverage"
-        sh____(cmd.format(**locals()))
+        if COVERAGE:
+            if package == "zypper":
+                cmd = "docker exec {testname} {package} mr --no-gpgcheck oss-update"
+                sh____(cmd.format(**locals()))
+            cmd = "docker exec {testname} {package} install -y python-coverage"
+            sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
         #
@@ -8802,6 +8862,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/{testsleep}"
         sh____(cmd.format(**locals()))
         if COVERAGE:
+            if package == "zypper":
+                cmd = "docker exec {testname} {package} mr --no-gpgcheck oss-update"
+                sh____(cmd.format(**locals()))
             cmd = "docker exec {testname} {package} install -y python-coverage"
             sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl --version"
