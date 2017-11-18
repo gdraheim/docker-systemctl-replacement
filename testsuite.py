@@ -35,6 +35,8 @@ CENTOS = "centos:7.3.1611"
 UBUNTU = "ubuntu:14.04"
 OPENSUSE = "opensuse:42.3"
 
+DOCKER_SOCKET = "/var/run/docker.sock"
+
 def sh____(cmd, shell=True):
     if isinstance(cmd, basestring):
         logg.info(": %s", cmd)
@@ -7472,6 +7474,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
 
     def test_5001_systemctl_py_inside_container(self):
         """ check that we can run systemctl.py inside a docker container """
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         testname = self.testname()
         testdir = self.testdir()
         image= CENTOS
@@ -7495,6 +7498,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
     def test_5002_systemctl_py_enable_in_container(self):
         """ check that we can enable services in a docker container """
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         testname = self.testname()
         testdir = self.testdir()
         image= CENTOS
@@ -7543,6 +7547,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
     def test_5003_systemctl_py_default_services_in_container(self):
         """ check that we can enable services in a docker container to have default-services"""
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         testname = self.testname()
         testdir = self.testdir()
         image= CENTOS
@@ -7600,6 +7605,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
     def test_5030_systemctl_py_start_simple(self):
         """ check that we can start simple services in a container"""
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         testname = self.testname()
         testdir = self.testdir()
         image= CENTOS
@@ -7663,6 +7669,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
     def test_5031_systemctl_py_start_extra_simple(self):
         """ check that we can start simple services in a container"""
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         testname = self.testname()
         testdir = self.testdir()
         image= CENTOS
@@ -7716,6 +7723,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
     def test_5032_systemctl_py_start_forking(self):
         """ check that we can start forking services in a container w/ PIDFile"""
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         testname = self.testname()
         testdir = self.testdir()
         image= CENTOS
@@ -7796,6 +7804,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
     def test_5033_systemctl_py_start_forking_without_pid_file(self):
         """ check that we can start forking services in a container without PIDFile"""
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         testname = self.testname()
         testdir = self.testdir()
         image= CENTOS
@@ -7874,6 +7883,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
     def test_5035_systemctl_py_start_notify_by_timeout(self):
         """ check that we can start simple services in a container w/ notify timeout"""
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         testname = self.testname()
         testdir = self.testdir()
         image= CENTOS
@@ -7938,6 +7948,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
     def test_5100_systemctl_py_run_default_services_in_container(self):
         """ check that we can enable services in a docker container to be run as default-services"""
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         testname = self.testname()
         testdir = self.testdir()
         image= CENTOS
@@ -8014,6 +8025,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_5120_systemctl_py_run_default_services_from_saved_container(self):
         """ check that we can enable services in a docker container to be run as default-services
             after it has been restarted from a commit-saved container image"""
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         testname = self.testname()
         testdir = self.testdir()
         image= CENTOS
@@ -8100,6 +8112,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_5130_systemctl_py_run_default_services_from_simple_saved_container(self):
         """ check that we can enable services in a docker container to be run as default-services
             after it has been restarted from a commit-saved container image"""
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         testname = self.testname()
         testdir = self.testdir()
         image= CENTOS
@@ -8186,6 +8199,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_5133_systemctl_py_run_default_services_from_single_service_saved_container(self):
         """ check that we can enable services in a docker container to be run as default-services
             after it has been restarted from a commit-saved container image"""
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         testname = self.testname()
         testdir = self.testdir()
         image= CENTOS
@@ -8272,6 +8286,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
 
     def test_6000_precheck_coverage_install(self):
         """ Allow to have a coverage tool be installed."""
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         testname = self.testname()
         testdir = self.testdir()
         images = IMAGES
@@ -8303,6 +8318,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ check that we can enable services in a docker container to be run as default-services
             after it has been restarted from a commit-saved container image.
             This includes some corage on the init-services."""
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         testname = self.testname()
         testdir = self.testdir()
         images = IMAGES
@@ -8418,6 +8434,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ check that we can enable services in a docker container to be run as default-services
             after it has been restarted from a commit-saved container image.
             This includes some corage on the init-services."""
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         testname = self.testname()
         testdir = self.testdir()
         images = IMAGES
@@ -8533,6 +8550,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_6200_systemctl_py_switch_users_is_possible(self):
         """ check that we can put setuid/setgid definitions in a service
             specfile which also works on the pid file itself """
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         testname = self.testname()
         testdir = self.testdir()
         images = IMAGES
@@ -8655,6 +8673,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_6201_systemctl_py_switch_users_is_possible_from_saved_container(self):
         """ check that we can put setuid/setgid definitions in a service
             specfile which also works on the pid file itself """
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         testname = self.testname()
         testdir = self.testdir()
         images = IMAGES
@@ -8803,6 +8822,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
     def test_6600_systemctl_py_can_reap_zombies_in_a_container(self):
         """ check that we can reap zombies in a container managed by systemctl.py"""
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         testname = self.testname()
         testdir = self.testdir()
         images = IMAGES
@@ -8955,6 +8975,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             THEN we can download the root html showing 'OK'
             because the test script has placed an index.html
             in the webserver containing that text. """
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         testname=self.testname()
         port=self.testport()
         name="centos-httpd"
@@ -8992,6 +9013,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             THEN we can see a specific role with an SQL query
             because the test script has created a new user account 
             in the in the database with a known password. """
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         testname=self.testname()
         port=self.testport()
         name="centos-postgres"
@@ -9028,6 +9050,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             THEN we can download the root html showing 'OK'
             and in the systemctl.debug.log we can see NOTIFY_SOCKET
             messages with Apache sending a READY and MAINPID value."""
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         testname=self.testname()
         testdir = self.testdir(testname)
         testport=self.testport()
@@ -9098,6 +9121,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             expecting that the service is started. Therefore,
             WHEN we start the image as a docker container
             THEN we can see the ok-status from elastic."""
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         base_url = "https://download.elastic.co/elasticsearch/elasticsearch"
         filename = "elasticsearch-1.7.3.noarch.rpm"
         into_dir = "Software/ElasticSearch"
@@ -9172,6 +9196,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
     def test_7013_centos_lamp_stack(self):
         """ Check setup of Linux/Mariadb/Apache/Php on CentOs"""
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         testname=self.testname()
         testdir = self.testdir(testname)
         testport=self.testport()
@@ -9232,6 +9257,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
     def test_7014_opensuse_lamp_stack(self):
         """ Check setup of Linux/Mariadb/Apache/Php" on Opensuse"""
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         testname=self.testname()
         testdir = self.testdir(testname)
         testport=self.testport()
@@ -9299,6 +9325,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             THEN we can download the root html showing 'OK'
             because the test script has placed an index.html
             in the webserver containing that text. """
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         testname = self.testname()
         port=self.testport()
         images = IMAGES
@@ -9354,6 +9381,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # with "yum install mariadb-server" and "systemctl start mariadb" shows
         # that mariadb's unit file is buggy, because it does not specify a kill
         # signal that it's mysqld_safe controller does not ignore.
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         testname = self.testname()
         testdir = self.testdir()
         # image= "centos:centos7.0.1406" # <<<< can not yum-install mariadb-server ?
@@ -9415,6 +9443,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ issue 2: rsyslog on centos 7 does not start"""
         # this was based on a ";Requires=xy" line in the unit file
         # but our unit parser did not regard ";" as starting a comment
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         testname = self.testname()
         testdir = self.testdir()
         image= self.local_image(CENTOS)
@@ -9454,6 +9483,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
     def test_8011_centos_httpd_socket_notify(self):
         """ start/restart behaviour if a httpd has failed - issue #11 """
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         testname=self.testname()
         testdir = self.testdir(testname)
         testport=self.testport()
@@ -9534,6 +9564,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
     def test_9000_ansible_test(self):
         """ FIXME: "-p testing_systemctl" makes containers like "testingsystemctl_<service>_1" ?! """
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         sh____("ansible-playbook --version | grep ansible-playbook.2") # atleast version2
         new_image1 = "localhost:5000/testingsystemctl:serversystem"
         new_image2 = "localhost:5000/testingsystemctl:virtualdesktop"
@@ -9552,6 +9583,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             self.test_9008_ansible_stop_all_containers()
     def test_9001_ansible_download_software(self):
         """ download the software parts (will be done just once) """
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         sh____("cd tests && ansible-playbook download-jenkins.yml -vv")
         sh____("cd tests && ansible-playbook download-selenium.yml -vv")
         sh____("cd tests && ansible-playbook download-firefox.yml -vv")
@@ -9562,6 +9594,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(os.listdir("Software/CentOS"), "^firefox.*[.]centos[.]x86_64[.]rpm"))
     def test_9002_ansible_restart_docker_build_compose(self):
         """ bring up the build-step deployment containers """
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         drop_old_containers = "docker-compose -p testingsystemctl1 -f tests/docker-build-compose.yml down"
         make_new_containers = "docker-compose -p testingsystemctl1 -f tests/docker-build-compose.yml up -d"
         sx____("{drop_old_containers}".format(**locals()))
@@ -9571,6 +9604,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(output("docker ps"), " testingsystemctl1_serversystem_1$"))
     def test_9003_ansible_run_build_step_playbooks(self):
         """ run the build-playbook (using ansible roles) """
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         testname = "test_9003"
         # WHEN environment is prepared
         make_files_dir = "test -d tests/files || mkdir tests/files"
@@ -9612,6 +9646,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(open(tmp+"/systemctl.desktop.log"), "/systemctl daemon-reload"))
     def test_9004_ansible_save_build_step_as_new_images(self):
         # stop the containers but keep them around
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         inventory = "tests/docker-build-compose.ini"
         playbooks = "tests/docker-build-stop.yml"
         variables = "-e LOCAL=yes"
@@ -9632,6 +9667,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(output("docker images"), IMAGES+".* virtualdesktop "))
     def test_9005_ansible_restart_docker_start_compose(self):
         """ bring up the start-step runtime containers from the new images"""
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         drop_old_build_step = "docker-compose -p testingsystemctl1 -f tests/docker-build-compose.yml down"
         drop_old_containers = "docker-compose -p testingsystemctl2 -f tests/docker-start-compose.yml down"
         make_new_containers = "docker-compose -p testingsystemctl2 -f tests/docker-start-compose.yml up -d"
@@ -9646,6 +9682,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(output("docker ps"), " testingsystemctl2_serversystem_1$"))
     def test_9006_ansible_unlock_jenkins(self):
         """ unlock jenkins as a post-build config-example using selenium-server """
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         inventory = "tests/docker-start-compose.ini"
         playbooks = "tests/docker-start-playbook.yml"
         variables = "-e LOCAL=yes -e j_username=installs -e j_password=installs.11"
@@ -9657,6 +9694,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(test_screenshot)
     def test_9007_ansible_check_jenkins_login(self):
         """ check jenkins runs unlocked as a testcase result """
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         tmp = self.testdir("test_9007")
         webtarget = "http://localhost:8080/buildserver/manage"
         weblogin = "--user installs --password installs.11 --auth-no-challenge"
@@ -9666,6 +9704,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(grep_jenkins_html.format(**locals()))
     def test_9008_ansible_stop_all_containers(self):
         """ bring up the start-step runtime containers from the new images"""
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         time.sleep(3)
         drop_old_build_step = "docker-compose -p testingsystemctl1 -f tests/docker-build-compose.yml down"
         drop_old_start_step = "docker-compose -p testingsystemctl2 -f tests/docker-start-compose.yml down"
