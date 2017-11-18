@@ -2990,7 +2990,7 @@ class Systemctl:
         return True
     def systemd_version(self):
         """ the the version line for systemd compatibility """
-        return "systemd 0 (systemctl.py %s)" % __version__
+        return "systemd 219\n  - via systemctl.py %s" % __version__
     def systemd_features(self):
         """ the the info line for systemd features """
         features1 = "-PAM -AUDIT -SELINUX -IMA -APPARMOR -SMACK"
