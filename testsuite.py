@@ -5069,7 +5069,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
         self.rm_testdir()
-        self.rm_testdir()
         self.coverage()
     def test_4036_notify_service_functions_with_reload(self):
         """ check that we manage notify services in a root env
