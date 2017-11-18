@@ -1263,6 +1263,8 @@ class Systemctl:
                     logg.debug("%s: %s", name, value)
             if seenREADY:
                 break
+        if not seenREADY:
+            logg.info(".... timeout while waiting for 'READY=1' status on $NOTIFY_SOCKET")
         logg.debug("notify = %s", results)
         try:
             notify.socket.close()
@@ -1378,7 +1380,7 @@ class Systemctl:
             shutil_chown(pid_file, runuser, rungroup)
             if not os.fork(): # pragma: no cover
                 os.setsid() # detach child process from parent
-                sys.exit(self.exec_start_from(conf)) # and exit after call
+                sys.exit(self.exec_start_from(conf, env)) # and exit after call
             else:
                 # parent
                 pid = self.wait_pid_file(pid_file)
@@ -1407,7 +1409,7 @@ class Systemctl:
                 logg.debug("use NOTIFY_SOCKET=%s", notify.socketfile)
             if not os.fork(): # pragma: no cover
                 os.setsid() # detach child process from parent
-                sys.exit(self.exec_start_from(conf)) # and exit after call
+                sys.exit(self.exec_start_from(conf, env)) # and exit after call
             else:
                 # parent
                 mainpid = self.wait_pid_file(pid_file) # fork is running
@@ -1460,12 +1462,16 @@ class Systemctl:
                 logg.info("post-fail %s", shell_cmd(sudo+newcmd))
                 run = subprocess_wait(sudo+newcmd, env)
             return False
-    def exec_start_from(self, conf):
+    def exec_start_unit(self, unit):
+        """ helper function to test the code that is normally forked off """
+        conf = self.load_unit_conf(unit)
+        env = self.get_env(conf)
+        return self.exec_start_from(conf, env)
+    def exec_start_from(self, conf, env):
         """ this code is commonly run in a child process // returns exit-code"""
         runs = conf.get("Service", "Type", "simple").lower()
         logg.debug("%s process for %s", runs, conf.filename())
         #
-        env = self.get_env(conf)
         pid_file = self.get_pid_file_from(conf)
         # os.setsid() # detach from parent
         inp = open("/dev/zero")
