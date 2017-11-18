@@ -36,6 +36,7 @@ UBUNTU = "ubuntu:14.04"
 OPENSUSE = "opensuse:42.3"
 
 DOCKER_SOCKET = "/var/run/docker.sock"
+PSQL_TOOL = "/usr/bin/psql"
 
 def sh____(cmd, shell=True):
     if isinstance(cmd, basestring):
@@ -9014,15 +9015,17 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             because the test script has created a new user account 
             in the in the database with a known password. """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
         testname=self.testname()
         port=self.testport()
         name="centos-postgres"
         dockerfile="centos-postgres.dockerfile"
         images = IMAGES
+        psql = PSQL_TOOL
         # WHEN
         cmd = "docker build . -f tests/{dockerfile} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {name}"
+        cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
         cmd = "docker run -d -p {port}:5432 --name {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
@@ -9030,7 +9033,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         tmp = self.testdir(testname)
         login = "export PGUSER=testuser_11; export PGPASSWORD=Testuser.11"
         query = "SELECT rolname FROM pg_roles"
-        cmd = "sleep 5; {login}; psql -p {port} -h 127.0.0.1 -d postgres -c '{query}' > {tmp}/{testname}.txt"
+        cmd = "sleep 5; {login}; {psql} -p {port} -h 127.0.0.1 -d postgres -c '{query}' > {tmp}/{testname}.txt"
         sh____(cmd.format(**locals()))
         cmd = "grep testuser_ok {tmp}/{testname}.txt"
         sh____(cmd.format(**locals()))
