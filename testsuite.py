@@ -4330,7 +4330,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} stop zzz.service -vv"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(end, 0)
+        self.assertNotEqual(end, 0) # no PID known so 'kill $MAINPID' fails
         cmd = "{systemctl} is-active zzz.service -vv"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s", cmd, end, out)
