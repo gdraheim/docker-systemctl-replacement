@@ -197,7 +197,7 @@ def _pid_zombie(pid):
         for line in open(check):
             if line.startswith("State:"):
                 return "Z" in line
-    except IOError, e:
+    except IOError as e:
         if e.errno == errno.ENOENT:
             return False
         logg.error("%s (%s): %s", check, e.errno, e)
@@ -671,7 +671,7 @@ class Systemctl:
             data = self.load_sysv_unit_conf(module)
             if data is not None: 
                 return data
-        except Exception, e:
+        except Exception as e:
             logg.error("%s: %s", module, e)
         return None
     def load_sysd_unit_conf(self, module): # -> conf?
@@ -784,7 +784,7 @@ class Systemctl:
                 description[unit] = self.get_description_from(conf)
                 active[unit] = self.get_active_from(conf)
                 substate[unit] = self.get_substate_from(conf)
-            except Exception, e:
+            except Exception as e:
                 logg.warning("list-units: %s", e)
         return [ (unit, result[unit] + " " + active[unit] + " " + substate[unit], description[unit]) for unit in sorted(result) ]
     def show_list_units(self, *modules): # -> [ (unit,loaded,description) ]
@@ -808,7 +808,7 @@ class Systemctl:
                 conf = self.get_unit_conf(unit)
                 result[unit] = conf
                 enabled[unit] = self.enabled_from(conf)
-            except Exception, e:
+            except Exception as e:
                 logg.warning("list-units: %s", e)
         return [ (unit, enabled[unit]) for unit in sorted(result) ]
     def list_target_unit_files(self, *modules): # -> [ (unit,enabled) ]
@@ -866,7 +866,7 @@ class Systemctl:
         try:
             with open(pid_file, "w") as f:
                 f.write("{}\n".format(pid))
-        except IOError, e:
+        except IOError as e:
             logg.error("PID %s -- %s", pid, e)
         return True
     def read_pid_file(self, pid_file, default = None):
@@ -967,7 +967,7 @@ class Systemctl:
                     if key.upper() == "PID": key = "MAINPID"
                     if key.upper() == "EXIT": key = "EXIT_STATUS"
                     f.write("{}={}\n".format(key.upper(), str(value)))
-        except IOError, e:
+        except IOError as e:
             logg.error("STATUS %s -- %s", status, e)
         return True
     def read_status_file(self, status_file, defaults = None):
@@ -1024,7 +1024,7 @@ class Systemctl:
                 if m:
                     yield m.group(1), m.group(2)
                     continue
-        except Exception, e:
+        except Exception as e:
             logg.info("while reading %s: %s", env_file, e)
     def read_env_part(self, env_part): # -> generate[ (name, value) ]
         """ Environment=<name>=<value> is being scanned """
@@ -1045,7 +1045,7 @@ class Systemctl:
                 if m:
                     yield m.group(1), m.group(2)
                     continue
-        except Exception, e:
+        except Exception as e:
             logg.info("while reading %s: %s", env_part, e)
     def show_environment(self, unit):
         """ [UNIT]. -- show environment parts """
@@ -1194,7 +1194,7 @@ class Systemctl:
             into = os_path(self._root, workingdir)
             try: 
                return os.chdir(into)
-            except Exception, e:
+            except Exception as e:
                if not ignore:
                    logg.error("chdir workingdir '%s': %s", into, e)
                    if check: raise
@@ -1227,7 +1227,7 @@ class Systemctl:
             result, client_address = notify.socket.recvfrom(4096)
             if result:
                 logg.debug("read_notify_socket(%s):%s", len(result), result.replace("\n","|"))
-        except socket.timeout, e:
+        except socket.timeout as e:
             if timeout > 2:
                 logg.debug("socket.timeout %s", e)
         return result
@@ -1267,7 +1267,7 @@ class Systemctl:
         logg.debug("notify = %s", results)
         try:
             notify.socket.close()
-        except Exception, e:
+        except Exception as e:
             logg.debug("socket.close %s", e)
         return results
     def start_modules(self, *modules):
@@ -1856,7 +1856,7 @@ class Systemctl:
     def reload_or_restart_unit_from(self, conf):
         if not self.is_active_from(conf):
             # try: self.stop_unit_from(conf)
-            # except Exception, e: pass
+            # except Exception as e: pass
             return self.start_unit_from(conf)
         elif conf.getlist("Service", "ExecReload", []):
             logg.info("found service to have ExecReload -> 'reload'")
@@ -1958,7 +1958,7 @@ class Systemctl:
         try: 
             sig = kill_signal or signal.SIGTERM
             os.kill(pid, sig)
-        except OSError, e:
+        except OSError as e:
             if e.errno == errno.ESRCH or e.errno == errno.ENOENT:
                 logg.info("kill PID %s => No such process", pid)
                 return True
@@ -2178,7 +2178,7 @@ class Systemctl:
             if unit_file:
                 return open(unit_file).read()
             logg.error("no file for unit '%s'", unit)
-        except Exception, e:
+        except Exception as e:
             print("Unit {} is not-loaded: {}".format(unit, e))
         return False
     ##
@@ -2641,7 +2641,7 @@ class Systemctl:
         for unit in self.match_units():
             try:
                 conf = self.get_unit_conf(unit)
-            except Exception, e:
+            except Exception as e:
                 logg.error("%s: can not read unit file %s\n\t%s", 
                     unit, conf.filename(), e)
                 continue
@@ -2912,7 +2912,7 @@ class Systemctl:
             try:
                 time.sleep(5)
                 self.system_reap_zombies()
-            except KeyboardInterrupt, e:
+            except KeyboardInterrupt as e:
                 signal.signal(signal.SIGTERM, signal.SIG_DFL)
                 signal.signal(signal.SIGINT, signal.SIG_DFL)
                 return e.message or "STOPPED"
@@ -2934,7 +2934,7 @@ class Systemctl:
 		if zombie and ppid == os.getpid():
 		    logg.info("reap zombie %s", pid)
 		    try: os.waitpid(pid, os.WNOHANG)
-		    except OSError, e: 
+		    except OSError as e: 
 			logg.warning("reap zombie %s: %s", e.strerror)
     def etc_hosts(self):
         path = "/etc/hosts"
