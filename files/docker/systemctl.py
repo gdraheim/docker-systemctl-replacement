@@ -1320,6 +1320,8 @@ class Systemctl:
         runs = conf.get("Service", "Type", "simple").lower()
         sudo = self.sudo_from(conf)
         env = self.get_env(conf)
+        # for StopPost on failure:
+        returncode = 0
         service_result = "success"
         if True:
             if runs in [ "simple", "forking", "notify" ]:
@@ -1353,15 +1355,17 @@ class Systemctl:
             if status.get("ACTIVESTATE", "unkown") == "active":
                 logg.warning("the service was already up once")
                 return True
-            returncode = 0
             for cmd in conf.getlist("Service", "ExecStart", []):
                 check, cmd = checkstatus(cmd)
                 newcmd = self.exec_cmd(cmd, env, conf)
                 logg.info("%s start %s", runs, shell_cmd(sudo+newcmd))
                 run = subprocess_wait(sudo+newcmd, env)
-                if check and run.returncode: raise Exception("ExecStart")
-                if run.returncode: returncode = run.returncode
-                logg.info("%s start done", runs)
+                if run.returncode and check: 
+                    returncode = run.returncode
+                    service_result = "failed"
+                    logg.error("%s start %s (%s)", runs, service_result, returncode)
+                    break
+                logg.info("%s start done (%s)", runs, returncode)
             if True:
                 if returncode:
                     self.write_status_file(status_file, AS="failed", EXIT=returncode)
@@ -1427,7 +1431,10 @@ class Systemctl:
                 newcmd = self.exec_cmd(cmd, env, conf)
                 logg.info("%s start %s", runs, shell_cmd(sudo+newcmd))
                 run = subprocess_wait(sudo+newcmd, env)
-                if check and run.returncode: raise Exception("ExecStart")
+                if run.returncode and check:
+                    returncode = run.returncode
+                    service_result = "failed"
+                    break
                 if pid_file:
                     pid = self.wait_pid_file(pid_file)
                     logg.info("%s start done PID %s [%s]", runs, pid, pid_file)
