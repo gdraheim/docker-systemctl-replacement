@@ -1440,10 +1440,14 @@ class Systemctl:
                     logg.info("%s start done PID %s [%s]", runs, pid, pid_file)
                     if pid:
                         env["MAINPID"] = str(pid)
-                else:
-                    logg.warning("No PIDFile for forking %s", conf.filename())
             if not pid_file:
                 self.sleep()
+                logg.warning("No PIDFile for forking %s", conf.filename())
+                status_file = self.get_status_file_from(conf)
+                if not returncode:
+                    self.write_status_file(status_file, AS="active")
+                else:
+                    self.write_status_file(status_file, AS="failed", EXIT=returncode)
         else:
             logg.error("unsupported run type '%s'", runs)
             return False
