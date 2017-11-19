@@ -1447,14 +1447,9 @@ class Systemctl:
         else:
             logg.error("unsupported run type '%s'", runs)
             return False
-        if service_result == "success":
-            for cmd in conf.getlist("Service", "ExecStartPost", []):
-                check, cmd = checkstatus(cmd)
-                newcmd = self.exec_cmd(cmd, env, conf)
-                logg.info("post-start %s", shell_cmd(sudo+newcmd))
-                run = subprocess_wait(sudo+newcmd, env)
-            return True
-        else:
+        # POST sequence
+        active = self.is_active_from(conf)
+        if not active:
             # according to the systemd documentation, a failed start-sequence
             # should execute the ExecStopPost sequence allowing some cleanup.
             env["SERVICE_RESULT"] = service_result
@@ -1464,6 +1459,13 @@ class Systemctl:
                 logg.info("post-fail %s", shell_cmd(sudo+newcmd))
                 run = subprocess_wait(sudo+newcmd, env)
             return False
+        else:
+            for cmd in conf.getlist("Service", "ExecStartPost", []):
+                check, cmd = checkstatus(cmd)
+                newcmd = self.exec_cmd(cmd, env, conf)
+                logg.info("post-start %s", shell_cmd(sudo+newcmd))
+                run = subprocess_wait(sudo+newcmd, env)
+            return True
     def exec_start_unit(self, unit):
         """ helper function to test the code that is normally forked off """
         conf = self.load_unit_conf(unit)
@@ -1576,7 +1578,10 @@ class Systemctl:
                 newcmd = self.exec_cmd(cmd, env, conf)
                 logg.info("%s stop %s", runs, shell_cmd(sudo+newcmd))
                 run = subprocess_wait(sudo+newcmd, env)
-                if run.returncode: returncode = run.returncode
+                if run.returncode and check: 
+                    returncode = run.returncode
+                    service_result = "failed"
+                    break
             if True:
                 if returncode:
                     self.write_status_file(status_file, AS="failed", EXIT=returncode)
@@ -1594,12 +1599,17 @@ class Systemctl:
             pid_file = self.get_pid_file_from(conf)
             pid = 0
             for cmd in conf.getlist("Service", "ExecStop", []):
+                check, cmd = checkstatus(cmd)
                 pid = self.read_pid_file(pid_file, "")
                 env["MAINPID"] = str(pid)
                 newcmd = self.exec_cmd(cmd, env, conf)
                 logg.info("%s stop %s", runs, shell_cmd(sudo+newcmd))
                 run = subprocess_wait(sudo+newcmd, env)
                 # self.write_pid_file(pid_file, run.pid)
+                if run.returncode and check:
+                    returncode = run.returncode
+                    service_result = "failed"
+                    break
             pid = env.get("MAINPID",0)
             if pid:
                 if self.wait_vanished_pid(pid, timeout):
@@ -1625,8 +1635,10 @@ class Systemctl:
                 newcmd = self.exec_cmd(cmd, env, conf)
                 logg.info("fork stop %s", shell_cmd(sudo+newcmd))
                 run = subprocess_wait(sudo+newcmd, env)
-                if active:
-                    if check and run.returncode: raise Exception("ExecStop")
+                if run.returncode and check:
+                    returncode = run.returncode
+                    service_result = "failed"
+                    break
             pid = env.get("MAINPID",0)
             if pid:
                 if self.wait_vanished_pid(pid, timeout):
@@ -1642,14 +1654,16 @@ class Systemctl:
         else:
             logg.error("unsupported run type '%s'", runs)
             return False
-        if True:
+        # POST sequence
+        active = self.is_active_from(conf)
+        if not active:
             env["SERVICE_RESULT"] = service_result
             for cmd in conf.getlist("Service", "ExecStopPost", []):
                 check, cmd = checkstatus(cmd)
                 newcmd = self.exec_cmd(cmd, env, conf)
                 logg.info("post-stop %s", shell_cmd(sudo+newcmd))
                 run = subprocess_wait(sudo+newcmd, env)
-        return True
+        return service_result == "success"
     def wait_vanished_pid(self, pid, timeout):
         if not pid:
             return True
