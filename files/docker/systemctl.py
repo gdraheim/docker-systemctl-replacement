@@ -2070,7 +2070,7 @@ class Systemctl:
         for module in modules:
             matched = self.match_units([ module ])
             if not matched:
-                logg.error("no such service '%s'", module)
+                logg.error("Unit %s.service could not be found.", module)
                 found_all = False
                 continue
             for unit in matched:
