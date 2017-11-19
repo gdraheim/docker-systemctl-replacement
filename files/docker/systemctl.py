@@ -7,11 +7,11 @@ __version__ = "1.0.1471"
 import logging
 logg = logging.getLogger("systemctl")
 
+import six
 import re
 import fnmatch
 import shlex
 import collections
-import ConfigParser
 import errno
 import os
 import sys
@@ -99,6 +99,10 @@ def to_int(value, default = 0):
         return int(value)
     except:
         return default
+def to_list(value):
+    if isinstance(value, six.string_types):
+         return [ value ]
+    return value
 
 def os_path(root, path):
     if not root:
@@ -383,7 +387,7 @@ class UnitConfigParser:
                 self.set("Install", "WantedBy", _runlevel_mappings[item.strip()])
         self.set("Service", "Type", "sysv")
 
-UnitParser = ConfigParser.RawConfigParser
+# UnitParser = ConfigParser.RawConfigParser
 UnitParser = UnitConfigParser
 
 class PresetFile:
@@ -734,8 +738,7 @@ class Systemctl:
         """ make a file glob on all known units (systemd areas).
             It returns all modules if no modules pattern were given.
             Also a single string as one module pattern may be given. """
-        if isinstance(modules, basestring):
-            modules = [ modules ]
+        modules = to_list(modules)
         self.scan_unit_sysd_files()
         for item in sorted(self._file_for_unit_sysd.keys()):
             if not modules:
@@ -748,8 +751,7 @@ class Systemctl:
         """ make a file glob on all known units (sysv areas).
             It returns all modules if no modules pattern were given.
             Also a single string as one module pattern may be given. """
-        if isinstance(modules, basestring):
-            modules = [ modules ]
+        modules = to_list(modules)
         self.scan_unit_sysv_files()
         for item in sorted(self._file_for_unit_sysv.keys()):
             if not modules:
@@ -975,7 +977,7 @@ class Systemctl:
         if hasattr(defaults, "keys"):
            for key in defaults.keys():
                status[key] = defaults[key]
-        elif isinstance(defaults, basestring):
+        elif isinstance(defaults, six.string_types):
            status["ACTIVESTATE"] = defaults
         if not status_file:
             return status
@@ -2602,8 +2604,7 @@ class Systemctl:
             # unit_deps = self.get_start_dependencies(unit) # TODO
             unit_deps = self.get_dependencies_unit(unit)
             for dep_unit, styles in unit_deps.items():
-                if isinstance(styles, basestring):
-                    styles = [ styles ]
+                styles = to_list(styles)
                 for dep_style in styles:
                     if dep_unit in deps:
                         if dep_style not in deps[dep_unit]:
@@ -3060,7 +3061,7 @@ def print_result(result):
     #
     if result is None:
         pass
-    elif isinstance(result, basestring):
+    elif isinstance(result, six.string_types):
         print(result)
         result1 = result.split("\n")[0][:-20]
         if result == result1:
