@@ -1,7 +1,7 @@
 FROM centos:centos7
 
 LABEL __copyright__="(C) Guido Draheim, licensed under the EUPL" \
-      __version__="1.0.1423"
+      __version__="1.0.1471"
 
 COPY files/docker/systemctl.py /usr/bin/systemctl
 RUN yum install -y httpd httpd-tools

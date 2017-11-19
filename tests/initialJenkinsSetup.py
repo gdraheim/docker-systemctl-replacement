@@ -13,7 +13,7 @@ instances that have been used so far.
 """
 
 __copyright__ = " (C) Guido U. Draheim, licensed under the EUPL"
-__version__ = "1.1.1423"
+__version__ = "1.1.1471"
 
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
