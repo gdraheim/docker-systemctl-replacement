@@ -6066,6 +6066,158 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
         self.rm_testdir()
         self.coverage()
+
+    def test_4050_forking_service_failed_functions(self):
+        """ check that we manage forking services in a root env
+            with basic run-service commands: start, stop, restart,
+            checking the executions when some part fails."""
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        testsleep = self.testname("sleep")
+        logfile = os_path(root, "/var/log/"+testsleep+".log")
+        bindir = os_path(root, "/usr/bin")
+        fail = os_path(root, "/tmp/fail")
+        os.makedirs(os_path(root, "/var/run"))
+        text_file(logfile, "created\n")
+        begin = "{" ; end = "}"
+        shell_file(os_path(testdir, "zzz.init"), """
+            #! /bin/bash
+            logfile={logfile}
+            start() {begin} 
+               [ -d /var/run ] || mkdir -p /var/run
+               ({bindir}/{testsleep} 50 0<&- &>/dev/null &
+                echo $! > {root}/var/run/zzz.init.pid
+               ) &
+               wait %1
+               # ps -o pid,ppid,args
+            {end}
+            stop() {begin}
+               killall {testsleep}
+            {end}
+            echo "run-$1" >> $logfile
+            if test -f {fail}$1; then
+               echo "fail-$1" >> $logfile
+               exit 1
+            fi
+            case "$1" 
+            in start)
+               echo "START-IT" >> $logfile
+               start >> $logfile 2>&1
+               echo "started" >> $logfile
+            ;; stop)
+               echo "STOP-IT" >> $logfile
+               stop >> $logfile 2>&1
+               echo "stopped" >> $logfile
+            ;; restart)
+               echo "RESTART-IT" >> $logfile
+               stop >> $logfile 2>&1
+               start >> $logfile 2>&1
+               echo "restarted" >> $logfile
+            ;; reload)
+               echo "RELOAD-IT" >> $logfile
+               echo "...." >> $logfile 2>&1
+               echo "reloaded" >> $logfile
+            ;; start-pre)
+               echo "START-PRE" >> $logfile
+            ;; start-post)
+               echo "START-POST" >> $logfile
+            ;; stop-post)
+               echo "STOP-POST" >> $logfile
+            ;; esac 
+            echo "done$1" >&2
+            exit 0
+            """.format(**locals()))
+        text_file(os_path(testdir, "zzz.service"),"""
+            [Unit]
+            Description=Testing Z
+            [Service]
+            Type=forking
+            PIDFile={root}/var/run/zzz.init.pid
+            ExecStartPre={root}/usr/bin/zzz.init start-pre
+            ExecStart={root}/usr/bin/zzz.init start
+            ExecStartPost={root}/usr/bin/zzz.init start-post
+            ExecStop={root}/usr/bin/zzz.init stop
+            ExecStopPost={root}/usr/bin/zzz.init stop-post
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/usr/bin/zzz.init"))
+        copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
+        cmd = "{systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 1)
+        self.assertEqual(out.strip(), "inactive")
+        #
+        log = lines(open(logfile))
+        logg.info("LOG\n %s", "\n ".join(log))
+        os.remove(logfile)
+        self.assertEqual(log, ["created"])
+        #
+        logg.info("== 'start' shall start a service that is NOT is-active ")
+        cmd = "{systemctl} start zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        cmd = "{systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(out.strip(), "active")
+        #
+        log = lines(open(logfile))
+        logg.info("LOG\n %s", "\n ".join(log))
+        os.remove(logfile)
+        self.assertEqual(log, [
+           "run-start-pre", "START-PRE", 
+           "run-start", "START-IT", "started",
+           "run-start-post", "START-POST"])
+        #
+        logg.info("== 'stop' shall stop a service that is-active")
+        cmd = "{systemctl} stop zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        cmd = "{systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 1)
+        self.assertEqual(out.strip(), "inactive")
+        #
+        log = lines(open(logfile))
+        logg.info("LOG\n %s", "\n ".join(log))
+        os.remove(logfile)
+        self.assertEqual(log, [
+           "run-stop", "STOP-IT", "stopped",
+           "run-stop-post", "STOP-POST"])
+        #
+        text_file(fail+"start", "")
+        #
+        logg.info("== 'start' returns to stopped if the main call fails ")
+        cmd = "{systemctl} start zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertNotEqual(end, 0)
+        cmd = "{systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertNotEqual(end, 0)
+        self.assertEqual(out.strip(), "inactive")
+        #
+        log = lines(open(logfile))
+        logg.info("LOG\n %s", "\n ".join(log))
+        os.remove(logfile)
+        self.assertEqual(log, [
+           "run-start-pre", "START-PRE", 
+           "run-start", "fail-start",
+           "run-stop-post", "STOP-POST"])
+        #
+        self.rm_testdir()
+        self.coverage()
     def test_4101_systemctl_py_kill_basic_behaviour(self):
         """ check systemctl_py kill basic behaviour"""
         testname = self.testname()
@@ -8601,7 +8753,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run --detach --name={testname} {image} sleep 50"
+        cmd = "docker run --detach --name={testname} {image} sleep 150"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/{systemctl_py_run}"
         sh____(cmd.format(**locals()))
@@ -8617,6 +8769,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
+        #
+        if COVERAGE:
+            cmd = "docker exec {testname} touch /.coverage"
+            sh____(cmd.format(**locals()))
+            cmd = "docker exec {testname} chmod 777 /.coverage"
+            sh____(cmd.format(**locals()))
         #
         cmd = "docker exec {testname} groupadd group2"
         sh____(cmd.format(**locals()))
@@ -8817,6 +8975,166 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}x"
+        sx____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
+        self.rm_testdir()
+    def test_6210_switch_users_and_workingdir_coverage(self):
+        """ check that we can put workingdir and setuid/setgid definitions in a service
+            and code parts for that are actually executed (test case without fork before) """
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        testname = self.testname()
+        testdir = self.testdir()
+        images = IMAGES
+        image = self.local_image(CENTOS)
+        package = "yum"
+        if greps(open("/etc/issue"), "openSUSE"):
+           image = self.local_image(OPENSUSE)
+           package = "zypper"
+        systemctl_py = os.path.realpath(_systemctl_py)
+        systemctl_py_run = systemctl_py.replace("/","_")[1:]
+        systemctl_sh = os_path(testdir, "systemctl.sh")
+        testsleep_sh = os_path(testdir, "testsleep.sh")
+        cov_run = ""
+        if COVERAGE:
+            cov_run = _cov_run
+        shell_file(systemctl_sh,"""
+            #! /bin/sh
+            exec {cov_run} /{systemctl_py_run} "$@" -vv
+            """.format(**locals()))
+        shell_file(testsleep_sh,"""
+            #! /bin/sh
+            logfile="/tmp/testsleep-$1.log"
+            date > $logfile
+            echo "pwd": `pwd` >> $logfile
+            echo "user:" `id -un` >> $logfile
+            echo "group:" `id -gn` >> $logfile
+            testsleep $1
+            """.format(**locals()))
+        text_file(os_path(testdir, "zz4.service"),"""
+            [Unit]
+            Description=Testing 4
+            [Service]
+            Type=simple
+            User=user1
+            WorkingDirectory=/srv
+            ExecStart=/usr/bin/testsleep.sh 4
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(testdir, "zz5.service"),"""
+            [Unit]
+            Description=Testing 5
+            [Service]
+            Type=simple
+            User=user1
+            Group=group2
+            WorkingDirectory=/srv
+            ExecStart=/usr/bin/testsleep.sh 5
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(testdir, "zz6.service"),"""
+            [Unit]
+            Description=Testing 6
+            [Service]
+            Type=simple
+            Group=group2
+            WorkingDirectory=/srv
+            ExecStart=/usr/bin/testsleep.sh 6
+            [Install]
+            WantedBy=multi-user.target""")
+        #
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name={testname} {image} sleep 50"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {systemctl_py} {testname}:/{systemctl_py_run}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {systemctl_sh} {testname}:/usr/bin/systemctl"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testsleep_sh} {testname}:/usr/bin/testsleep.sh"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} chmod 755 /usr/bin/testsleep.sh"
+        sh____(cmd.format(**locals()))
+        if package == "zypper":
+            cmd = "docker exec {testname} {package} mr --no-gpgcheck oss-update"
+            sh____(cmd.format(**locals()))
+        if COVERAGE:
+            cmd = "docker exec {testname} {package} install -y python-coverage"
+            sh____(cmd.format(**locals()))
+        else:
+            cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/python || {package} install -y python'"
+            sx____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl --version"
+        sh____(cmd.format(**locals()))
+        #
+        if COVERAGE:
+            cmd = "docker exec {testname} touch /.coverage"
+            sh____(cmd.format(**locals()))
+            cmd = "docker exec {testname} chmod 777 /.coverage"
+            sh____(cmd.format(**locals()))
+        #
+        cmd = "docker exec {testname} groupadd group2"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} useradd user1 -g group2"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zz4.service {testname}:/etc/systemd/system/zz4.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zz5.service {testname}:/etc/systemd/system/zz5.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zz6.service {testname}:/etc/systemd/system/zz6.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl __exec_start_unit zz4.service -vv"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} cp .coverage .coverage.{testname}.4"
+        sx____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl __exec_start_unit zz5.service -vv"
+        sh____(cmd.format(**locals())) 
+        cmd = "docker exec {testname} cp .coverage .coverage.{testname}.5"
+        sx____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl __exec_start_unit zz6.service -vv"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} cp .coverage .coverage.{testname}.6"
+        sx____(cmd.format(**locals()))
+        #
+        cmd = "docker cp {testname}:/tmp/testsleep-4.log {testdir}/"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testname}:/tmp/testsleep-5.log {testdir}/"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testname}:/tmp/testsleep-6.log {testdir}/"
+        sh____(cmd.format(**locals()))
+        log4 = lines(open(os_path(testdir, "testsleep-4.log")))
+        log5 = lines(open(os_path(testdir, "testsleep-5.log")))
+        log6 = lines(open(os_path(testdir, "testsleep-6.log")))
+        logg.info("testsleep-4.log\n %s", "\n ".join(log4))
+        logg.info("testsleep-5.log\n %s", "\n ".join(log5))
+        logg.info("testsleep-6.log\n %s", "\n ".join(log6))
+        self.assertTrue(greps(log4, "pwd: /srv"))
+        self.assertTrue(greps(log5, "pwd: /srv"))
+        self.assertTrue(greps(log6, "pwd: /srv"))
+        self.assertTrue(greps(log4, "group: root"))
+        self.assertTrue(greps(log4, "user: user1"))
+        self.assertTrue(greps(log5, "user: user1"))
+        self.assertTrue(greps(log5, "group: group2"))
+        self.assertTrue(greps(log6, "group: group2"))
+        self.assertTrue(greps(log6, "user: root"))
+        #
+        if COVERAGE:
+            cmd = "docker cp {testname}:/.coverage.{testname}.4 ."
+            sh____(cmd.format(**locals()))
+            cmd = "docker cp {testname}:/.coverage.{testname}.5 ."
+            sh____(cmd.format(**locals()))
+            cmd = "docker cp {testname}:/.coverage.{testname}.6 ."
+            sh____(cmd.format(**locals()))
+            cmd = "sed -i -e 's:/{systemctl_py_run}:{systemctl_py}:' .coverage.{testname}.4"
+            sh____(cmd.format(**locals()))
+            cmd = "sed -i -e 's:/{systemctl_py_run}:{systemctl_py}:' .coverage.{testname}.5"
+            sh____(cmd.format(**locals()))
+            cmd = "sed -i -e 's:/{systemctl_py_run}:{systemctl_py}:' .coverage.{testname}.6"
+            sh____(cmd.format(**locals()))
+        #
+        cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
