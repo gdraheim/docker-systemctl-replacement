@@ -6128,6 +6128,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                echo "STOP-POST" >> $logfile
             ;; esac 
             echo "done$1" >&2
+            if test -f {fail}after$1; then
+               echo "fail-after-$1" >> $logfile
+               exit 1
+            fi
             exit 0
             """.format(**locals()))
         text_file(os_path(testdir, "zzz.service"),"""
@@ -6215,6 +6219,107 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
            "run-start-pre", "START-PRE", 
            "run-start", "fail-start",
            "run-stop-post", "STOP-POST"])
+        #
+        logg.info("== 'restart' on a stopped item remains stopped if the main call fails ")
+        cmd = "{systemctl} restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertNotEqual(end, 0)
+        cmd = "{systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertNotEqual(end, 0)
+        self.assertEqual(out.strip(), "inactive")
+        #
+        log = lines(open(logfile))
+        logg.info("LOG\n %s", "\n ".join(log))
+        os.remove(logfile)
+        self.assertEqual(log, [
+           "run-start-pre", "START-PRE", 
+           "run-start", "fail-start",
+           "run-stop-post", "STOP-POST"])
+        #
+        os.remove(fail+"start")
+        text_file(fail+"stop", "")
+        #
+        logg.info("== 'start' that service ")
+        cmd = "{systemctl} start zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        #
+        logg.info("== 'stop' may have a failed item ")
+        cmd = "{systemctl} stop zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertNotEqual(end, 0)
+        cmd = "{systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(out.strip(), "active")
+        # 'active' because the PIDFile process was not killed
+        #
+        log = lines(open(logfile))
+        logg.info("LOG\n %s", "\n ".join(log))
+        os.remove(logfile)
+        self.assertEqual(log, [
+           "run-start-pre", "START-PRE", 
+           "run-start", "START-IT", "started",
+           "run-start-post", "START-POST",
+           "run-stop", "fail-stop"])
+        #
+        os.remove(fail+"stop")
+        text_file(fail+"afterstop", "")
+        #
+        logg.info("== 'start' that service ")
+        cmd = "{systemctl} start zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        #
+        logg.info("== 'stop' may have a failed item ")
+        cmd = "{systemctl} stop zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertNotEqual(end, 0)
+        cmd = "{systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertNotEqual(end, 0)
+        self.assertEqual(out.strip(), "inactive")
+        #
+        log = lines(open(logfile))
+        logg.info("LOG\n %s", "\n ".join(log))
+        os.remove(logfile)
+        self.assertEqual(log, [
+           "run-start-pre", "START-PRE", 
+           "run-start", "START-IT", "started",
+           "run-start-post", "START-POST",
+           "run-stop", "STOP-IT", "stopped", "fail-after-stop",
+           "run-stop-post", "STOP-POST"])
+        #
+        os.remove(fail+"afterstop")
+        text_file(fail+"afterstart", "")
+        #
+        logg.info("== 'start' shall start a service that is NOT is-active ")
+        cmd = "{systemctl} start zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        cmd = "{systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(out.strip(), "active")
+        #
+        log = lines(open(logfile))
+        logg.info("LOG\n %s", "\n ".join(log))
+        os.remove(logfile)
+        self.assertEqual(log, [
+           "run-start-pre", "START-PRE", 
+           "run-start", "START-IT", "started", "fail-after-start",
+           "run-start-post", "START-POST"])
         #
         self.rm_testdir()
         self.coverage()
