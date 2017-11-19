@@ -1554,6 +1554,7 @@ class Systemctl:
         runs = conf.get("Service", "Type", "simple").lower()
         sudo = self.sudo_from(conf)
         env = self.get_env(conf)
+        returncode = 0
         service_result = "success"
         if runs in [ "sysv" ]:
             status_file = self.get_status_file_from(conf)
@@ -1575,7 +1576,6 @@ class Systemctl:
             if status.get("ACTIVESTATE", "unknown") == "inactive":
                 logg.warning("the service is already down once")
                 return True
-            returncode = 0
             for cmd in conf.getlist("Service", "ExecStop", []):
                 check, cmd = checkstatus(cmd)
                 logg.debug("{env} %s", env)
@@ -1595,10 +1595,13 @@ class Systemctl:
         elif not conf.getlist("Service", "ExecStop", []):
             logg.info("no ExecStop => systemctl kill")
             if True:
+                status_file = self.get_pid_file_from(conf)
                 pid_file = self.get_pid_file_from(conf)
                 self.kill_unit_from(conf)
                 if os.path.isfile(pid_file):
                     os.remove(pid_file)
+                if os.path.isfile(status_file):
+                    os.remove(status_file)
         elif runs in [ "simple", "notify" ]:
             pid_file = self.get_pid_file_from(conf)
             pid = 0
@@ -1627,6 +1630,7 @@ class Systemctl:
                     if os.path.isfile(pid_file):
                         os.remove(pid_file)
         elif runs in [ "forking" ]:
+            status_file = self.get_status_file_from(conf)
             pid_file = self.pid_file_from(conf)
             for cmd in conf.getlist("Service", "ExecStop", []):
                 active = self.is_active_from(conf)
@@ -1655,6 +1659,11 @@ class Systemctl:
                 if not pid or not pid_exists(pid) or pid_zombie(pid):
                     if os.path.isfile(pid_file):
                         os.remove(pid_file)
+            if os.path.isfile(status_file):
+                if not returncode:
+                    os.remove(status_file)
+                else:
+                    self.write_status_file(status_file, AS=service_result, EXIT=returncode)
         else:
             logg.error("unsupported run type '%s'", runs)
             return False
