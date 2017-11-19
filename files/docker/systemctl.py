@@ -1218,7 +1218,7 @@ class Systemctl:
            os.unlink(socketfile)
         sock = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
         sock.bind(socketfile)
-        os.chmod(socketfile, 0777)
+        os.chmod(socketfile, 0o777)
         return NotifySocket(sock, socketfile)
     def read_notify_socket(self, notify, timeout):
         notify.socket.settimeout(timeout or DefaultMaximumTimeout)
@@ -2919,23 +2919,23 @@ class Systemctl:
         return None
     def system_reap_zombies(self):
         """ check to reap children """
-	for pid in os.listdir("/proc"):
-	    try: pid = int(pid)
-	    except: continue
-	    status_file = "/proc/%s/status" % pid
-	    if os.path.isfile(status_file):
-	        zombie = False
-	        ppid = -1
-		for line in open(status_file):
-		    m = re.match(r"State:\s*Z.*", line)
-		    if m: zombie = True
-		    m = re.match(r"PPid:\s*(\d+)", line)
-		    if m: ppid = int(m.group(1))
-		if zombie and ppid == os.getpid():
-		    logg.info("reap zombie %s", pid)
-		    try: os.waitpid(pid, os.WNOHANG)
-		    except OSError as e: 
-			logg.warning("reap zombie %s: %s", e.strerror)
+        for pid in os.listdir("/proc"):
+            try: pid = int(pid)
+            except: continue
+            status_file = "/proc/%s/status" % pid
+            if os.path.isfile(status_file):
+                zombie = False
+                ppid = -1
+                for line in open(status_file):
+                    m = re.match(r"State:\s*Z.*", line)
+                    if m: zombie = True
+                    m = re.match(r"PPid:\s*(\d+)", line)
+                    if m: ppid = int(m.group(1))
+                if zombie and ppid == os.getpid():
+                    logg.info("reap zombie %s", pid)
+                    try: os.waitpid(pid, os.WNOHANG)
+                    except OSError as e: 
+                        logg.warning("reap zombie %s: %s", e.strerror)
     def etc_hosts(self):
         path = "/etc/hosts"
         if self._root:
