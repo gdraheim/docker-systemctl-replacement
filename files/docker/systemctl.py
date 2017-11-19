@@ -124,14 +124,12 @@ def shutil_chown(filename, user = None, group = None):
 
 def shutil_setuid(user = None, group = None):
     """ set fork-child uid/gid """
-    if group: # pragma: no cover
-        # no cover: actually tested but in a forked child only
+    if group:
         import grp
         gid = grp.getgrnam(group).gr_gid
         os.setgid(gid)
         logg.debug("setgid %s '%s'", gid, group)
-    if user: # pragma: no cover
-        # no cover: actually tested but in a forked child only
+    if user:
         import pwd
         uid = pwd.getpwnam(user).pw_uid
         os.setuid(uid)
@@ -202,7 +200,8 @@ def _pid_zombie(pid):
     except IOError, e:
         if e.errno == errno.ENOENT:
             return False
-        raise
+        logg.error("%s (%s): %s", check, e.errno, e)
+        return False
     return False
 
 def checkstatus(cmd):
@@ -1376,8 +1375,6 @@ class Systemctl:
                 return True
             runuser = conf.get("Service", "User", "")
             rungroup = conf.get("Service", "Group", "")
-            shutil_truncate(pid_file)
-            shutil_chown(pid_file, runuser, rungroup)
             if not os.fork(): # pragma: no cover
                 os.setsid() # detach child process from parent
                 sys.exit(self.exec_start_from(conf, env)) # and exit after call
@@ -1401,8 +1398,6 @@ class Systemctl:
                 return False
             runuser = conf.get("Service", "User", "")
             rungroup = conf.get("Service", "Group", "")
-            shutil_truncate(pid_file)
-            shutil_chown(pid_file, runuser, rungroup)
             notify = self.notify_socket_from(conf)
             if notify:
                 env["NOTIFY_SOCKET"] = notify.socketfile
@@ -1472,8 +1467,10 @@ class Systemctl:
         runs = conf.get("Service", "Type", "simple").lower()
         logg.debug("%s process for %s", runs, conf.filename())
         #
+        # os.setsid() # detach from parent // required to be done in caller code 
+        #
+        returncode = None
         pid_file = self.get_pid_file_from(conf)
-        # os.setsid() # detach from parent
         inp = open("/dev/zero")
         out = self.open_journal_log(conf)
         os.dup2(inp.fileno(), sys.stdin.fileno())
@@ -1481,6 +1478,8 @@ class Systemctl:
         os.dup2(out.fileno(), sys.stderr.fileno())
         runuser = conf.get("Service", "User", "")
         rungroup = conf.get("Service", "Group", "")
+        shutil_truncate(pid_file)
+        shutil_chown(pid_file, runuser, rungroup)
         shutil_setuid(runuser, rungroup)
         self.chdir_workingdir(conf, check = False)
         cmdlist = conf.getlist("Service", "ExecStart", [])
@@ -1497,10 +1496,12 @@ class Systemctl:
             logg.info("%s started PID %s", runs, run.pid)
             run.wait()
             logg.info("%s stopped PID %s EXIT %s", runs, run.pid, run.returncode)
+            returncode = run.returncode
             pid = self.read_pid_file(pid_file, "")
             if str(pid) == str(run.pid):
                 self.write_pid_file(pid_file, "")
-        return run.returncode
+        logg.info("returncode %s", returncode)
+        return returncode
     def stop_modules(self, *modules):
         """ [UNIT]... -- stop these units """
         found_all = True
