@@ -1,4 +1,5 @@
 #! /usr/bin/env python
+## from __future__ import print_function
 
 """ Testcases for docker-systemctl-replacement functionality """
 
@@ -24,10 +25,13 @@ from glob import glob
 import json
 
 logg = logging.getLogger("TESTING")
+_python = "/usr/bin/python"
 _systemctl_py = "files/docker/systemctl.py"
 _cov = ""
 _cov_run = "coverage2 run '--omit=*/six.py' --append -- "
 _cov_cmd = "coverage2"
+_cov3run = "coverage3 run '--omit=*/six.py' --append -- "
+_cov3cmd = "coverage3"
 COVERAGE = False
 
 IMAGES = "localhost:5000/testingsystemctl"
@@ -1415,6 +1419,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_2900_class_UnitConfParser(self):
         """ using systemctl.py as a helper library for 
             the UnitConfParser functions."""
+        python = _python
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
@@ -1423,54 +1428,55 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         service_file = os_path(root, "/etc/systemd/system/b.service")
         defaults = {"a1": "default1"}
         shell_file(unitconfparser_py,"""
-            #! /usr/bin/python
+            #! {python}
+            from __future__ import print_function
             import sys
             sys.path += [ "{systemctl_py_dir}" ]
             import systemctl
             parser = systemctl.UnitConfigParser({defaults})
-            print "DEFAULTS", parser.defaults()
-            print "FILENAME", parser.filename()
+            print("DEFAULTS", parser.defaults())
+            print("FILENAME", parser.filename())
             parser.read(sys.argv[1])
-            print "filename=", parser.filename()
-            print "sections=", parser.sections()
-            print "has.Foo.Bar=", parser.has_option("Foo", "Bar")
-            print "has.Unit.Foo=", parser.has_option("Unit", "Foo")
+            print("filename=", parser.filename())
+            print("sections=", parser.sections())
+            print("has.Foo.Bar=", parser.has_option("Foo", "Bar"))
+            print("has.Unit.Foo=", parser.has_option("Unit", "Foo"))
             try:
                parser.get("Foo", "Bar")
-            except Exception, e:
-               print "get.Foo.Bar:", str(e)
+            except Exception as e:
+               print("get.Foo.Bar:", str(e))
             try:
                parser.get("Unit", "Foo")
-            except Exception, e:
-               print "get.Unit.Foo:", str(e)
+            except Exception as e:
+               print("get.Unit.Foo:", str(e))
             try:
                parser.getlist("Foo", "Bar")
-            except Exception, e:
-               print "getlist.Foo.Bar:", str(e)
+            except Exception as e:
+               print("getlist.Foo.Bar:", str(e))
             try:
                parser.getlist("Unit", "Foo")
-            except Exception, e:
-               print "getlist.Unit.Foo:", str(e)
-            print "get.none.Foo.Bar=", parser.get("Foo", "Bar", allow_no_value = True)
-            print "get.none.Unit.Foo=", parser.get("Unit", "Foo", allow_no_value = True)
-            print "getlist.none.Foo.Bar=", parser.getlist("Foo", "Bar", allow_no_value = True)
-            print "getlist.none.Unit.Foo=", parser.getlist("Unit", "Foo", allow_no_value = True)
-            print "get.defs.Foo.Bar=", parser.get("Foo", "Bar", "def1")
-            print "get.defs.Unit.Foo=", parser.get("Unit", "Foo", "def2")
-            print "getlist.defs.Foo.Bar=", parser.getlist("Foo", "Bar", ["def3"])
-            print "getlist.defs.Unit.Foo=", parser.getlist("Unit", "Foo", ["def4"])
+            except Exception as e:
+               print("getlist.Unit.Foo:", str(e))
+            print("get.none.Foo.Bar=", parser.get("Foo", "Bar", allow_no_value = True))
+            print("get.none.Unit.Foo=", parser.get("Unit", "Foo", allow_no_value = True))
+            print("getlist.none.Foo.Bar=", parser.getlist("Foo", "Bar", allow_no_value = True))
+            print("getlist.none.Unit.Foo=", parser.getlist("Unit", "Foo", allow_no_value = True))
+            print("get.defs.Foo.Bar=", parser.get("Foo", "Bar", "def1"))
+            print("get.defs.Unit.Foo=", parser.get("Unit", "Foo", "def2"))
+            print("getlist.defs.Foo.Bar=", parser.getlist("Foo", "Bar", ["def3"]))
+            print("getlist.defs.Unit.Foo=", parser.getlist("Unit", "Foo", ["def4"]))
             parser.set("Unit", "After", "network.target")
-            print "getlist.unit.after1=", parser.getlist("Unit", "After")
-            print "getitem.unit.after1=", parser.get("Unit", "After")
+            print("getlist.unit.after1=", parser.getlist("Unit", "After"))
+            print("getitem.unit.after1=", parser.get("Unit", "After"))
             parser.set("Unit", "After", "postgres.service")
-            print "getlist.unit.after2=", parser.getlist("Unit", "After")
-            print "getitem.unit.after2=", parser.get("Unit", "After")
+            print("getlist.unit.after2=", parser.getlist("Unit", "After"))
+            print("getitem.unit.after2=", parser.get("Unit", "After"))
             parser.set("Unit", "After", None)
-            print "getlist.unit.after0=", parser.getlist("Unit", "After")
-            print "getitem.unit.after0=", parser.get("Unit", "After", allow_no_value = True)
-            print "getlist.environment=", parser.getlist("Service", "Environment")
-            print "get.environment=", parser.get("Service", "Environment")
-            print "get.execstart=", parser.get("Service", "ExecStart")
+            print("getlist.unit.after0=", parser.getlist("Unit", "After"))
+            print("getitem.unit.after0=", parser.get("Unit", "After", allow_no_value = True))
+            print("getlist.environment=", parser.getlist("Service", "Environment"))
+            print("get.environment=", parser.get("Service", "Environment"))
+            print("get.execstart=", parser.get("Service", "ExecStart"))
             """.format(**locals()))
         text_file(service_file,"""
             [Unit]
@@ -10150,6 +10156,8 @@ if __name__ == "__main__":
        help="increase logging level [%default]")
     _o.add_option("--with", metavar="FILE", dest="systemctl_py", default=_systemctl_py,
        help="systemctl.py file to be tested (%default)")
+    _o.add_option("-p","--python", metavar="EXE", default=_python,
+       help="use another python execution engine [%default]")
     _o.add_option("-a","--coverage", action="count", default=0,
        help="gather coverage.py data (use -aa for new set) [%default]")
     _o.add_option("-l","--logfile", metavar="FILE", default="",
@@ -10160,6 +10168,11 @@ if __name__ == "__main__":
     logging.basicConfig(level = logging.WARNING - opt.verbose * 5)
     #
     _systemctl_py = opt.systemctl_py
+    _python = opt.python
+    _python_version = output(_python + " --version 2>&1")
+    if "Python 3" in _python_version:
+        _cov_run = _cov3run
+        _cov_cmd = _cov3cmd
     #
     logfile = None
     if opt.logfile:
