@@ -21,6 +21,9 @@ import time
 import socket
 import tempfile
 
+if six.PY3:
+    xrange = range
+
 DEBUG_AFTER = False
 
 # defaults for options
