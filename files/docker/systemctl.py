@@ -239,7 +239,7 @@ class UnitConfigParser:
     def defaults(self):
         return self._defaults
     def sections(self):
-        return self._dict.keys()
+        return list(self._dict.keys())
     def add_section(self, section):
         if section not in self._dict:
             self._dict[section] = self._dict_type()
@@ -627,7 +627,7 @@ class Systemctl:
                     if service_name not in self._file_for_unit_sysd:
                         self._file_for_unit_sysd[service_name] = path
             logg.debug("found %s sysd files", len(self._file_for_unit_sysd))
-        return self._file_for_unit_sysd.keys()
+        return list(self._file_for_unit_sysd.keys())
     def unit_sysd_file(self, module = None): # -> filename?
         """ file path for the given module (systemd) """
         self.scan_unit_sysd_files()
@@ -653,7 +653,7 @@ class Systemctl:
                     if service_name not in self._file_for_unit_sysv:
                         self._file_for_unit_sysv[service_name] = path
             logg.debug("found %s sysv files", len(self._file_for_unit_sysv))
-        return self._file_for_unit_sysv.keys()
+        return list(self._file_for_unit_sysv.keys())
     def unit_sysv_file(self, module = None): # -> filename?
         """ file path for the given module (sysv) """
         self.scan_unit_sysv_files()
@@ -2546,7 +2546,7 @@ class Systemctl:
                 if dep in loop:
                     logg.debug("detected loop at %s", dep)
                     continue
-                new_loop = loop + deps.keys()
+                new_loop = loop + list(deps.keys())
                 new_indent = indent + "| "
                 new_mark = deps[dep]
                 if not self._show_all:
