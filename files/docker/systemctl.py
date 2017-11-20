@@ -559,7 +559,7 @@ def sortedAfter(conflist, cmp = compareAfter):
     for item in sortlist:
         if DEBUG_AFTER: # pragma: no cover
             logg.info("(%s) %s", item.rank, item.conf.name())
-    sortedlist = sorted(sortlist, key = lambda item: item.rank)
+    sortedlist = sorted(sortlist, key = lambda item: -item.rank)
     for item in sortedlist:
         if DEBUG_AFTER: # pragma: no cover
             logg.info("[%s] %s", item.rank, item.conf.name())
