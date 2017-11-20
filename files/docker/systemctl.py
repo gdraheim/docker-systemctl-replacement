@@ -1231,7 +1231,10 @@ class Systemctl:
         try:
             result, client_address = notify.socket.recvfrom(4096)
             if result:
-                logg.debug("read_notify_socket(%s):%s", len(result), result.replace("\n","|"))
+                result = result.decode("utf-8")
+                result_txt = result.replace("\n","|")
+                result_len = len(result)
+                logg.debug("read_notify_socket(%s):%s", result_len, result_txt)
         except socket.timeout as e:
             if timeout > 2:
                 logg.debug("socket.timeout %s", e)
