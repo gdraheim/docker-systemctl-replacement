@@ -1,7 +1,7 @@
 #! /usr/bin/env python
-## from __future__ import print_function
-
 """ Testcases for docker-systemctl-replacement functionality """
+
+from __future__ import print_function
 
 __copyright__ = "(C) Guido Draheim, licensed under the EUPL"""
 __version__ = "1.0.1471"
@@ -277,8 +277,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         local_image = self.local_image(image)
         cmd = "docker run --detach --name {name} {local_image} sleep 1000"
         sh____(cmd.format(**locals()))
-        print "                 # " + local_image
-        print "  docker exec -it "+name+" bash"
+        print("                 # " + local_image)
+        print("  docker exec -it "+name+" bash")
     #
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     #
@@ -10225,6 +10225,6 @@ if __name__ == "__main__":
             Runner = xmlrunner.XMLTestRunner
         Runner(logfile.stream, verbosity=opt.verbose).run(suite)
     if opt.coverage:
-        print " " + _cov_cmd + " combine"
-        print " " + _cov_cmd + " report " + _systemctl_py
-        print " " + _cov_cmd + " annotate " + _systemctl_py
+        print(" " + _cov_cmd + " combine")
+        print(" " + _cov_cmd + " report " + _systemctl_py)
+        print(" " + _cov_cmd + " annotate " + _systemctl_py)
