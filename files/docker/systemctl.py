@@ -7,7 +7,6 @@ __version__ = "1.0.1471"
 import logging
 logg = logging.getLogger("systemctl")
 
-import six
 import re
 import fnmatch
 import shlex
@@ -21,7 +20,10 @@ import time
 import socket
 import tempfile
 
-if six.PY3:
+if sys.version[0] == '2':
+    string_types = basestring
+else:
+    string_types = str
     xrange = range
 
 DEBUG_AFTER = False
@@ -103,7 +105,7 @@ def to_int(value, default = 0):
     except:
         return default
 def to_list(value):
-    if isinstance(value, six.string_types):
+    if isinstance(value, string_types):
          return [ value ]
     return value
 
@@ -980,7 +982,7 @@ class Systemctl:
         if hasattr(defaults, "keys"):
            for key in defaults.keys():
                status[key] = defaults[key]
-        elif isinstance(defaults, six.string_types):
+        elif isinstance(defaults, string_types):
            status["ACTIVESTATE"] = defaults
         if not status_file:
             return status
@@ -3067,7 +3069,7 @@ def print_result(result):
     #
     if result is None:
         pass
-    elif isinstance(result, six.string_types):
+    elif isinstance(result, string_types):
         print(result)
         result1 = result.split("\n")[0][:-20]
         if result == result1:
