@@ -32,6 +32,8 @@ _cov_run = "coverage2 run '--omit=*/six.py' --append -- "
 _cov_cmd = "coverage2"
 _cov3run = "coverage3 run '--omit=*/six.py' --append -- "
 _cov3cmd = "coverage3"
+_python_coverage = "python-coverage"
+_python3coverage = "python3-coverage"
 COVERAGE = False
 
 IMAGES = "localhost:5000/testingsystemctl"
@@ -7739,9 +7741,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_5001_systemctl_py_inside_container(self):
         """ check that we can run systemctl.py inside a docker container """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if _python.endswith("python3"): self.skipTest("no python3 on centos")
         testname = self.testname()
         testdir = self.testdir()
         image= CENTOS
+        python = _python
         systemctl_py = _systemctl_py
         #
         cmd = "docker rm --force {testname}"
@@ -7763,6 +7767,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_5002_systemctl_py_enable_in_container(self):
         """ check that we can enable services in a docker container """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if _python.endswith("python3"): self.skipTest("no python3 on centos")
         testname = self.testname()
         testdir = self.testdir()
         image= CENTOS
@@ -7812,6 +7817,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_5003_systemctl_py_default_services_in_container(self):
         """ check that we can enable services in a docker container to have default-services"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if _python.endswith("python3"): self.skipTest("no python3 on centos")
         testname = self.testname()
         testdir = self.testdir()
         image= CENTOS
@@ -7870,6 +7876,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_5030_systemctl_py_start_simple(self):
         """ check that we can start simple services in a container"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if _python.endswith("python3"): self.skipTest("no python3 on centos")
         testname = self.testname()
         testdir = self.testdir()
         image= CENTOS
@@ -7934,6 +7941,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_5031_systemctl_py_start_extra_simple(self):
         """ check that we can start simple services in a container"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if _python.endswith("python3"): self.skipTest("no python3 on centos")
         testname = self.testname()
         testdir = self.testdir()
         image= CENTOS
@@ -7988,6 +7996,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_5032_systemctl_py_start_forking(self):
         """ check that we can start forking services in a container w/ PIDFile"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if _python.endswith("python3"): self.skipTest("no python3 on centos")
         testname = self.testname()
         testdir = self.testdir()
         image= CENTOS
@@ -8069,6 +8078,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_5033_systemctl_py_start_forking_without_pid_file(self):
         """ check that we can start forking services in a container without PIDFile"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if _python.endswith("python3"): self.skipTest("no python3 on centos")
         testname = self.testname()
         testdir = self.testdir()
         image= CENTOS
@@ -8148,6 +8158,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_5035_systemctl_py_start_notify_by_timeout(self):
         """ check that we can start simple services in a container w/ notify timeout"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if _python.endswith("python3"): self.skipTest("no python3 on centos")
         testname = self.testname()
         testdir = self.testdir()
         image= CENTOS
@@ -8213,6 +8224,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_5100_systemctl_py_run_default_services_in_container(self):
         """ check that we can enable services in a docker container to be run as default-services"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if _python.endswith("python3"): self.skipTest("no python3 on centos")
         testname = self.testname()
         testdir = self.testdir()
         image= CENTOS
@@ -8290,6 +8302,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ check that we can enable services in a docker container to be run as default-services
             after it has been restarted from a commit-saved container image"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if _python.endswith("python3"): self.skipTest("no python3 on centos")
         testname = self.testname()
         testdir = self.testdir()
         image= CENTOS
@@ -8377,6 +8390,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ check that we can enable services in a docker container to be run as default-services
             after it has been restarted from a commit-saved container image"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if _python.endswith("python3"): self.skipTest("no python3 on centos")
         testname = self.testname()
         testdir = self.testdir()
         image= CENTOS
@@ -8464,6 +8478,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ check that we can enable services in a docker container to be run as default-services
             after it has been restarted from a commit-saved container image"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if _python.endswith("python3"): self.skipTest("no python3 on centos")
         testname = self.testname()
         testdir = self.testdir()
         image= CENTOS
@@ -8555,6 +8570,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         images = IMAGES
         image = self.local_image(CENTOS)
+        python_coverage = _python_coverage
         package = "yum"
         if greps(open("/etc/issue"), "openSUSE"):
            image = self.local_image(OPENSUSE)
@@ -8572,7 +8588,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             #sh____(cmd.format(**locals()))
             #cmd = "docker exec {testname} {package} ar -f http://download.opensuse.org/update/leap/42.3/oss/openSUSE:Leap:42.3:Update.repo"
             #sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} {package} install -y python-coverage"
+        cmd = "docker exec {testname} {package} install -y {python_coverage}"
         sh____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
@@ -8587,6 +8603,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         images = IMAGES
         image = self.local_image(CENTOS)
+        python_coverage = _python_coverage
         package = "yum"
         if greps(open("/etc/issue"), "openSUSE"):
            image = self.local_image(OPENSUSE)
@@ -8635,7 +8652,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             if package == "zypper":
                 cmd = "docker exec {testname} {package} mr --no-gpgcheck oss-update"
                 sh____(cmd.format(**locals()))
-            cmd = "docker exec {testname} {package} install -y python-coverage"
+            cmd = "docker exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
@@ -8703,6 +8720,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         images = IMAGES
         image = self.local_image(CENTOS)
+        python_coverage = _python_coverage
         package = "yum"
         if greps(open("/etc/issue"), "openSUSE"):
            image = self.local_image(OPENSUSE)
@@ -8751,7 +8769,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             if package == "zypper":
                 cmd = "docker exec {testname} {package} mr --no-gpgcheck oss-update"
                 sh____(cmd.format(**locals()))
-            cmd = "docker exec {testname} {package} install -y python-coverage"
+            cmd = "docker exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
@@ -8819,6 +8837,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         images = IMAGES
         image = self.local_image(CENTOS)
+        python_coverage = _python_coverage
         package = "yum"
         if greps(open("/etc/issue"), "openSUSE"):
            image = self.local_image(OPENSUSE)
@@ -8876,7 +8895,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             if package == "zypper":
                 cmd = "docker exec {testname} {package} mr --no-gpgcheck oss-update"
                 sh____(cmd.format(**locals()))
-            cmd = "docker exec {testname} {package} install -y python-coverage"
+            cmd = "docker exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
@@ -8948,6 +8967,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         images = IMAGES
         image = self.local_image(CENTOS)
+        python_coverage = _python_coverage
         package = "yum"
         if greps(open("/etc/issue"), "openSUSE"):
            image = self.local_image(OPENSUSE)
@@ -9005,7 +9025,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             if package == "zypper":
                 cmd = "docker exec {testname} {package} mr --no-gpgcheck oss-update"
                 sh____(cmd.format(**locals()))
-            cmd = "docker exec {testname} {package} install -y python-coverage"
+            cmd = "docker exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
@@ -9098,6 +9118,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         images = IMAGES
         image = self.local_image(CENTOS)
+        python_coverage = _python_coverage
         package = "yum"
         if greps(open("/etc/issue"), "openSUSE"):
            image = self.local_image(OPENSUSE)
@@ -9172,7 +9193,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             cmd = "docker exec {testname} {package} mr --no-gpgcheck oss-update"
             sh____(cmd.format(**locals()))
         if COVERAGE:
-            cmd = "docker exec {testname} {package} install -y python-coverage"
+            cmd = "docker exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
         else:
             cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/python || {package} install -y python'"
@@ -9258,6 +9279,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         images = IMAGES
         image = self.local_image(CENTOS)
         package = "yum"
+        python_coverage = _python_coverage
         cov_run = ""
         if COVERAGE:
             cov_run = _cov_run
@@ -9314,7 +9336,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             if package == "zypper":
                 cmd = "docker exec {testname} {package} mr --no-gpgcheck oss-update"
                 sh____(cmd.format(**locals()))
-            cmd = "docker exec {testname} {package} install -y python-coverage"
+            cmd = "docker exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
@@ -9406,6 +9428,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             because the test script has placed an index.html
             in the webserver containing that text. """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if _python.endswith("python3"): self.skipTest("no python3 on centos")
         testname=self.testname()
         port=self.testport()
         name="centos-httpd"
@@ -9445,6 +9468,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             in the in the database with a known password. """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
+        if _python.endswith("python3"): self.skipTest("no python3 on centos")
         testname=self.testname()
         port=self.testport()
         name="centos-postgres"
@@ -9483,6 +9507,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             and in the systemctl.debug.log we can see NOTIFY_SOCKET
             messages with Apache sending a READY and MAINPID value."""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if _python.endswith("python3"): self.skipTest("no python3 on centos")
         testname=self.testname()
         testdir = self.testdir(testname)
         testport=self.testport()
@@ -9554,6 +9579,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             WHEN we start the image as a docker container
             THEN we can see the ok-status from elastic."""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if _python.endswith("python3"): self.skipTest("no python3 on centos")
         base_url = "https://download.elastic.co/elasticsearch/elasticsearch"
         filename = "elasticsearch-1.7.3.noarch.rpm"
         into_dir = "Software/ElasticSearch"
@@ -9629,6 +9655,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_7013_centos_lamp_stack(self):
         """ Check setup of Linux/Mariadb/Apache/Php on CentOs"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if _python.endswith("python3"): self.skipTest("no python3 on centos")
         testname=self.testname()
         testdir = self.testdir(testname)
         testport=self.testport()
@@ -9695,6 +9722,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testport=self.testport()
         images = IMAGES
         image = self.local_image(OPENSUSE)
+        python_base = os.path.basename(_python)
         systemctl_py = _systemctl_py
         logg.info("%s:%s %s", testname, testport, image)
         #
@@ -9704,7 +9732,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} zypper install -r oss -y python"
+        cmd = "docker exec {testname} zypper install -r oss -y {python_base}"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} zypper install -r oss -y apache2 apache2-utils mariadb-server mariadb-tools php5 phpMyAdmin"
         sh____(cmd.format(**locals()))
@@ -9762,8 +9790,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         port=self.testport()
         images = IMAGES
         image = "ubuntu:16.04"
+        python_base = os.path.basename(_python)
         systemctl_py = _systemctl_py
-        logg.info("%s:%s %s (%s)", testname, port, image)
+        logg.info("%s:%s %s", testname, port, image)
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
@@ -9771,7 +9800,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} apt-get update"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} apt-get install -y apache2 python"
+        cmd = "docker exec {testname} apt-get install -y apache2 {python_base}"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
@@ -9814,6 +9843,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # that mariadb's unit file is buggy, because it does not specify a kill
         # signal that it's mysqld_safe controller does not ignore.
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if _python.endswith("python3"): self.skipTest("no python3 on centos")
         testname = self.testname()
         testdir = self.testdir()
         # image= "centos:centos7.0.1406" # <<<< can not yum-install mariadb-server ?
@@ -9876,6 +9906,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # this was based on a ";Requires=xy" line in the unit file
         # but our unit parser did not regard ";" as starting a comment
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if _python.endswith("python3"): self.skipTest("no python3 on centos")
         testname = self.testname()
         testdir = self.testdir()
         image= self.local_image(CENTOS)
@@ -9916,6 +9947,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_8011_centos_httpd_socket_notify(self):
         """ start/restart behaviour if a httpd has failed - issue #11 """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if _python.endswith("python3"): self.skipTest("no python3 on centos")
         testname=self.testname()
         testdir = self.testdir(testname)
         testport=self.testport()
@@ -9997,6 +10029,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_9000_ansible_test(self):
         """ FIXME: "-p testing_systemctl" makes containers like "testingsystemctl_<service>_1" ?! """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if _python.endswith("python3"): self.skipTest("no python3 on centos")
         sh____("ansible-playbook --version | grep ansible-playbook.2") # atleast version2
         new_image1 = "localhost:5000/testingsystemctl:serversystem"
         new_image2 = "localhost:5000/testingsystemctl:virtualdesktop"
@@ -10016,6 +10049,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_9001_ansible_download_software(self):
         """ download the software parts (will be done just once) """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if _python.endswith("python3"): self.skipTest("no python3 on centos")
         sh____("cd tests && ansible-playbook download-jenkins.yml -vv")
         sh____("cd tests && ansible-playbook download-selenium.yml -vv")
         sh____("cd tests && ansible-playbook download-firefox.yml -vv")
@@ -10027,6 +10061,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_9002_ansible_restart_docker_build_compose(self):
         """ bring up the build-step deployment containers """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if _python.endswith("python3"): self.skipTest("no python3 on centos")
         drop_old_containers = "docker-compose -p testingsystemctl1 -f tests/docker-build-compose.yml down"
         make_new_containers = "docker-compose -p testingsystemctl1 -f tests/docker-build-compose.yml up -d"
         sx____("{drop_old_containers}".format(**locals()))
@@ -10037,6 +10072,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_9003_ansible_run_build_step_playbooks(self):
         """ run the build-playbook (using ansible roles) """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if _python.endswith("python3"): self.skipTest("no python3 on centos")
         testname = "test_9003"
         # WHEN environment is prepared
         make_files_dir = "test -d tests/files || mkdir tests/files"
@@ -10079,6 +10115,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_9004_ansible_save_build_step_as_new_images(self):
         # stop the containers but keep them around
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if _python.endswith("python3"): self.skipTest("no python3 on centos")
         inventory = "tests/docker-build-compose.ini"
         playbooks = "tests/docker-build-stop.yml"
         variables = "-e LOCAL=yes"
@@ -10100,6 +10137,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_9005_ansible_restart_docker_start_compose(self):
         """ bring up the start-step runtime containers from the new images"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if _python.endswith("python3"): self.skipTest("no python3 on centos")
         drop_old_build_step = "docker-compose -p testingsystemctl1 -f tests/docker-build-compose.yml down"
         drop_old_containers = "docker-compose -p testingsystemctl2 -f tests/docker-start-compose.yml down"
         make_new_containers = "docker-compose -p testingsystemctl2 -f tests/docker-start-compose.yml up -d"
@@ -10115,6 +10153,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_9006_ansible_unlock_jenkins(self):
         """ unlock jenkins as a post-build config-example using selenium-server """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if _python.endswith("python3"): self.skipTest("no python3 on centos")
         inventory = "tests/docker-start-compose.ini"
         playbooks = "tests/docker-start-playbook.yml"
         variables = "-e LOCAL=yes -e j_username=installs -e j_password=installs.11"
@@ -10127,6 +10166,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_9007_ansible_check_jenkins_login(self):
         """ check jenkins runs unlocked as a testcase result """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if _python.endswith("python3"): self.skipTest("no python3 on centos")
         tmp = self.testdir("test_9007")
         webtarget = "http://localhost:8080/buildserver/manage"
         weblogin = "--user installs --password installs.11 --auth-no-challenge"
@@ -10137,6 +10177,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_9008_ansible_stop_all_containers(self):
         """ bring up the start-step runtime containers from the new images"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if _python.endswith("python3"): self.skipTest("no python3 on centos")
         time.sleep(3)
         drop_old_build_step = "docker-compose -p testingsystemctl1 -f tests/docker-build-compose.yml down"
         drop_old_start_step = "docker-compose -p testingsystemctl2 -f tests/docker-start-compose.yml down"
@@ -10173,6 +10214,7 @@ if __name__ == "__main__":
     if "Python 3" in _python_version:
         _cov_run = _cov3run
         _cov_cmd = _cov3cmd
+        _python_coverage = _python3coverage
     #
     logfile = None
     if opt.logfile:
