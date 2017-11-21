@@ -6228,6 +6228,25 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
            "run-start", "fail-start",
            "run-stop-post", "STOP-POST"])
         #
+        logg.info("== 'stop' on stopped service does not do much ")
+        cmd = "{systemctl} stop zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        cmd = "{systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertNotEqual(end, 0)
+        self.assertEqual(out.strip(), "inactive")
+        #
+        log = lines(open(logfile))
+        logg.info("LOG\n %s", "\n ".join(log))
+        os.remove(logfile)
+        self.assertEqual(log[:2], [
+           "run-stop", "STOP-IT" ])
+        self.assertEqual(log[-2:], [
+           "run-stop-post", "STOP-POST"])
+        #
         logg.info("== 'restart' on a stopped item remains stopped if the main call fails ")
         cmd = "{systemctl} restart zzz.service -vv"
         out, end = output2(cmd.format(**locals()))
