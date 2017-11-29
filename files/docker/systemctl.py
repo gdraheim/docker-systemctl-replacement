@@ -1040,18 +1040,18 @@ class Systemctl:
                 line = real_line.strip()
                 if not line or line.startswith("#"):
                     continue
-                m = re.match(r"(?:export +)?([\w_]+)[=]'([^']*)'", line)
-                if m:
+                for m in re.finditer(r'"([\w_]+)[=]([^"]*)"', line):
+                    line = line.replace(m.group(0), '')
                     yield m.group(1), m.group(2)
-                    continue
-                m = re.match(r'(?:export +)?([\w_]+)[=]"([^"]*)"', line)
-                if m:
+                for m in re.finditer(r"([\w_]+)[=]'([^']*)'", line):
+                    line = line.replace(m.group(0), '')
                     yield m.group(1), m.group(2)
-                    continue
-                m = re.match(r'(?:export +)?([\w_]+)[=](.*)', line)
-                if m:
+                for m in re.finditer(r'([\w_]+)[=]"([^"]*)"', line):
+                    line = line.replace(m.group(0), '')
                     yield m.group(1), m.group(2)
-                    continue
+                for m in re.finditer(r'([\w_]+)[=](.*)', line):
+                    line = line.replace(m.group(0), '')
+                    yield m.group(1).lstrip(), m.group(2).rstrip()
         except Exception as e:
             logg.info("while reading %s: %s", env_part, e)
     def show_environment(self, unit):
