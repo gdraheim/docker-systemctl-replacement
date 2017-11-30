@@ -1035,23 +1035,22 @@ class Systemctl:
             logg.info("while reading %s: %s", env_file, e)
     def read_env_part(self, env_part): # -> generate[ (name, value) ]
         """ Environment=<name>=<value> is being scanned """
+        ## systemd Environment= spec says it is a space-seperated list of 
+        ## assignments. In order to use a space or an equals sign in a value 
+        ## one should enclose the whole assignment with double quotes: 
+        ##    Environment="VAR1=word word" VAR2=word3 "VAR3=$word 5 6"
+        ## and the $word is not expanded by other environment variables.
         try:
             for real_line in env_part.split("\n"):
                 line = real_line.strip()
-                if not line or line.startswith("#"):
-                    continue
-                m = re.match(r"(?:export +)?([\w_]+)[=]'([^']*)'", line)
-                if m:
-                    yield m.group(1), m.group(2)
-                    continue
-                m = re.match(r'(?:export +)?([\w_]+)[=]"([^"]*)"', line)
-                if m:
-                    yield m.group(1), m.group(2)
-                    continue
-                m = re.match(r'(?:export +)?([\w_]+)[=](.*)', line)
-                if m:
-                    yield m.group(1), m.group(2)
-                    continue
+                for found in re.finditer(r'\s*("[\w_]+=[^"]*"|[\w_]+=\S*)', line):
+                    part = found.group(1)
+                    if part.startswith('"'):
+                        part = part[1:-1]
+                    logg.info("have part = '%s'", part)
+                    name, value = part.split("=", 1)
+                    yield name, value
+                logg.info("done '%s'", line)
         except Exception as e:
             logg.info("while reading %s: %s", env_part, e)
     def show_environment(self, unit):
@@ -1072,7 +1071,7 @@ class Systemctl:
         env = os.environ.copy()
         for env_part in conf.getlist("Service", "Environment", []):
             for name, value in self.read_env_part(env_part):
-                env[name] = self.expand_env(value, env)
+                env[name] = value # a '$word' is not special here
         for env_file in conf.getlist("Service", "EnvironmentFile", []):
             for name, value in self.read_env_file(env_file):
                 env[name] = self.expand_env(value, env)

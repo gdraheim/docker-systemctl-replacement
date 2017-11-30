@@ -1418,6 +1418,43 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.rm_testdir()
         self.coverage()
+    def test_2150_have_environment_with_multiple_parts(self):
+        """ check that the result of 'environment UNIT' can 
+            list the assignements that are crammed into one line."""
+        # https://www.freedesktop.org/software/systemd/man/systemd.exec.html#Environment=
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/sysconfig/b.conf"),"""
+            DEF1='def1'
+            DEF2="def2"
+            DEF3=def3
+            """)
+        text_file(os_path(root, "/etc/systemd/system/b.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            EnvironmentFile=/etc/sysconfig/b.conf
+            Environment="VAR1=word1 word2" VAR2=word3 "VAR3=$word 5 6"
+            ExecStart=/usr/bin/printf $DEF1 $DEF2 \
+                                $VAR1 $VAR2 $VAR3
+            [Install]
+            WantedBy=multi-user.target""")
+        cmd = "{systemctl} environment b.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertTrue(greps(out, r"^DEF1=def1"))
+        self.assertTrue(greps(out, r"^DEF2=def2"))
+        self.assertTrue(greps(out, r"^DEF3=def3"))
+        self.assertTrue(greps(out, r"^VAR1=word1 word2"))
+        self.assertTrue(greps(out, r"^VAR2=word3"))
+        self.assertTrue(greps(out, r"^VAR3=\$word 5 6"))
+        a_lines = len(lines(out))
+        #
+        self.rm_testdir()
+        self.coverage()
     def test_2900_class_UnitConfParser(self):
         """ using systemctl.py as a helper library for 
             the UnitConfParser functions."""
