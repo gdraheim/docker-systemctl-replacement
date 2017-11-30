@@ -108,6 +108,12 @@ def to_list(value):
     if isinstance(value, string_types):
          return [ value ]
     return value
+def to_bool(value):
+    if isinstance(value, string_types):
+        if value.strip().lower() in [ "true", "yes", "y"]:
+             return True
+        return False
+    return value
 
 def os_path(root, path):
     if not root:
@@ -1379,6 +1385,7 @@ class Systemctl:
                 else:
                     self.write_status_file(status_file, AS="active")
         elif runs in [ "simple" ]: 
+            status_file = self.get_status_file_from(conf)
             pid_file = self.get_pid_file_from(conf)
             pid = self.read_pid_file(pid_file, "")
             if self.is_active_pid(pid):
@@ -1490,16 +1497,20 @@ class Systemctl:
         # os.setsid() # detach from parent // required to be done in caller code 
         #
         returncode = None
+        status_file = self.get_status_file_from(conf)
         pid_file = self.get_pid_file_from(conf)
         inp = open("/dev/zero")
         out = self.open_journal_log(conf)
         os.dup2(inp.fileno(), sys.stdin.fileno())
         os.dup2(out.fileno(), sys.stdout.fileno())
         os.dup2(out.fileno(), sys.stderr.fileno())
+        exitokay = to_bool(conf.get("Service", "RemainAfterExit", "no"))
         runuser = conf.get("Service", "User", "")
         rungroup = conf.get("Service", "Group", "")
         shutil_truncate(pid_file)
+        shutil_truncate(status_file)
         shutil_chown(pid_file, runuser, rungroup)
+        shutil_chown(status_file, runuser, rungroup)
         shutil_setuid(runuser, rungroup)
         self.chdir_workingdir(conf, check = False)
         cmdlist = conf.getlist("Service", "ExecStart", [])
@@ -1521,6 +1532,12 @@ class Systemctl:
             if str(pid) == str(run.pid):
                 self.write_pid_file(pid_file, "")
         logg.info("returncode %s", returncode)
+        if exitokay:
+            status_file = self.get_status_file_from(conf)
+            if not returncode:
+                self.write_status_file(status_file, AS="active", EXIT=run.returncode)
+            else:
+                self.write_status_file(status_file, AS="failed", EXIT=run.returncode)
         return returncode
     def stop_modules(self, *modules):
         """ [UNIT]... -- stop these units """
@@ -1610,6 +1627,7 @@ class Systemctl:
                 if os.path.isfile(status_file):
                     os.remove(status_file)
         elif runs in [ "simple", "notify" ]:
+            status_file = self.get_status_file_from(conf)
             pid_file = self.get_pid_file_from(conf)
             pid = 0
             for cmd in conf.getlist("Service", "ExecStop", []):
@@ -1636,6 +1654,9 @@ class Systemctl:
                 if not pid or not pid_exists(pid) or pid_zombie(pid):
                     if os.path.isfile(pid_file):
                         os.remove(pid_file)
+            if True:
+                if os.path.isfile(status_file):
+                    os.remove(status_file)
         elif runs in [ "forking" ]:
             status_file = self.get_status_file_from(conf)
             pid_file = self.pid_file_from(conf)
@@ -1942,6 +1963,10 @@ class Systemctl:
         useKillSignal = conf.get("Service", "KillSignal", "SIGTERM")
         kill_signal = getattr(signal, useKillSignal)
         timeout = self.get_TimeoutStopSec(conf)
+        status_file = self.get_status_file_from(conf)
+        if os.path.isfile(status_file):
+            os.remove(status_file)
+            # clear RemainAfterExit and TimeoutStartSec
         pid_file = self.get_pid_file_from(conf)
         pid = self.read_pid_file(pid_file)
         if not pid:
@@ -2048,7 +2073,7 @@ class Systemctl:
         # used in try-restart/other commands to check if needed.
         if not conf: return "unkonwn"
         status_file = self.get_status_file_from(conf)
-        if status_file and os.path.exists(status_file):
+        if status_file and os.path.isfile(status_file) and os.path.getsize(status_file):
             status = self.read_status_file(status_file)
             return status.get("ACTIVESTATE", "failed")
         pid_file = self.get_pid_file_from(conf)
@@ -2063,7 +2088,7 @@ class Systemctl:
         """ returns 'running' 'exited' 'dead' 'failed' 'plugged' 'mounted' """
         if not conf: return False
         status_file = self.get_status_file_from(conf)
-        if status_file and os.path.exists(status_file):
+        if status_file and os.path.isfile(status_file) and os.path.getsize(status_file):
             status = self.read_status_file(status_file)
             state = status.get("ACTIVESTATE", "failed")
             if state in [ "active" ]:
@@ -2928,11 +2953,11 @@ class Systemctl:
         for pid in os.listdir("/proc"):
             try: pid = int(pid)
             except: continue
-            status_file = "/proc/%s/status" % pid
-            if os.path.isfile(status_file):
+            proc_status = "/proc/%s/status" % pid
+            if os.path.isfile(proc_status):
                 zombie = False
                 ppid = -1
-                for line in open(status_file):
+                for line in open(proc_status):
                     m = re.match(r"State:\s*Z.*", line)
                     if m: zombie = True
                     m = re.match(r"PPid:\s*(\d+)", line)
