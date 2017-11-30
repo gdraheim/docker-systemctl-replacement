@@ -3459,7 +3459,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing B
             [Service]
             Environment=X=x1
-            Environment=Y=y2 y3
+            Environment="Y=y2 y3"
             ExecStart=/usr/bin/sleep 2
             ExecStartPost=%s A %%N $X ${Y}
             ExecStartPost=%s B %%n $X ${Y}
