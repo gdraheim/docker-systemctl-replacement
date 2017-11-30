@@ -1047,10 +1047,8 @@ class Systemctl:
                     part = found.group(1)
                     if part.startswith('"'):
                         part = part[1:-1]
-                    logg.info("have part = '%s'", part)
                     name, value = part.split("=", 1)
                     yield name, value
-                logg.info("done '%s'", line)
         except Exception as e:
             logg.info("while reading %s: %s", env_part, e)
     def show_environment(self, unit):
