@@ -1158,12 +1158,15 @@ class Systemctl:
         rungroup = conf.get("Service", "Group", "")
         sudo = []
         if os.geteuid() == 0:
+            bin_runuser = "/usr/sbin/runuser"
+            if os.path.isfile("/sbin/runuser"):
+                bin_runuser = "/sbin/runuser" # @$%! ubuntu
             if runuser and rungroup:
-                sudo = ["/usr/sbin/runuser", "-g", rungroup, "-u", runuser, "--"]
+                sudo = [bin_runuser, "-g", rungroup, "-u", runuser, "--"]
             elif runuser:
-                sudo = ["/usr/sbin/runuser", "-u", runuser, "--"]
+                sudo = [bin_runuser, "-u", runuser, "--"]
             elif rungroup:
-                sudo = ["/usr/sbin/runuser", "-g", rungroup, "--"]
+                sudo = [bin_runuser, "-g", rungroup, "--"]
         elif os.path.exists("/usr/bin/sudo"):
             if runuser and rungroup:
                 sudo = ["/usr/bin/sudo", "-n", "-H", "-g", rungroup, "-u", runuser, "--"]
