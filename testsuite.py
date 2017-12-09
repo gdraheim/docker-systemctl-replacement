@@ -314,8 +314,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        self.assertTrue(greps(out, "systemd 0"))
-        self.assertTrue(greps(out, "[(]systemctl.py"))
+        self.assertTrue(greps(out, "systemd 219"))
+        self.assertTrue(greps(out, "via systemctl.py"))
         self.assertTrue(greps(out, "[+]SYSVINIT"))
         self.coverage()
     def test_1003_systemctl_help(self):
