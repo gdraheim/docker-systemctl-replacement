@@ -37,7 +37,7 @@ _python3coverage = "python3-coverage"
 COVERAGE = False
 
 IMAGES = "localhost:5000/testingsystemctl"
-CENTOS = "centos:7.3.1611"
+CENTOS = "centos:7.4.1708"
 UBUNTU = "ubuntu:14.04"
 OPENSUSE = "opensuse:42.3"
 
@@ -206,7 +206,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             will return the setting for extrahosts"""
         rmi = "localhost:5000"
         rep = "centos-repo"
-        ver = ver or "7.3.1611"
+        ver = ver or CENTOS.split(":")[1]
         find_repo_image = "docker images {rmi}/{rep}:{ver}"
         images = output(find_repo_image.format(**locals()))
         running = output("docker ps")
@@ -230,7 +230,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             other docker containers"""
         rmi = "localhost:5000"
         rep = "opensuse-repo"
-        ver = ver or "42.2"
+        ver = ver or OPENSUSE.split(":")[1]
         find_repo_image = "docker images {rmi}/{rep}:{ver}"
         images = output(find_repo_image.format(**locals()))
         running = output("docker ps")
@@ -248,6 +248,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             return result
         return ""
     def local_image(self, image):
+        """ attach local centos-repo / opensuse-repo to docker-start enviroment.
+            Effectivly when it is required to 'docker start centos:x.y' then do
+            'docker start centos-repo:x.y' before and extend the original to 
+            'docker start --add-host mirror...:centos-repo centos:x.y'. """
         if image.startswith("centos:"):
             version = image[len("centos:"):]
             add_hosts = self.with_local_centos_mirror(version)
@@ -285,6 +289,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     #
     def test_1000(self):
+        logg.info("\n  CENTOS = '%s'", CENTOS)
         self.with_local_centos_mirror()
     def test_1001_systemctl_testfile(self):
         """ the systemctl.py file to be tested does exist """
