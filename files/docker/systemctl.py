@@ -114,6 +114,10 @@ def to_bool(value):
              return True
         return False
     return value
+def unit_of(module):
+    if "." not in module:
+        return module + ".service"
+    return module
 
 def os_path(root, path):
     if not root:
@@ -641,8 +645,8 @@ class Systemctl:
         self.scan_unit_sysd_files()
         if module and module in self._file_for_unit_sysd:
             return self._file_for_unit_sysd[module]
-        if module and module+".service" in self._file_for_unit_sysd:
-            return self._file_for_unit_sysd[module+".service"]
+        if module and unit_of(module) in self._file_for_unit_sysd:
+            return self._file_for_unit_sysd[unit_of(module)]
         return None
     def scan_unit_sysv_files(self, module = None): # -> [ unit-names,... ]
         """ reads all init.d files, returns the first filename when unit is a '.service' """
@@ -657,7 +661,7 @@ class Systemctl:
                     path = os.path.join(folder, name)
                     if os.path.isdir(path):
                         continue
-                    service_name = name+".service"
+                    service_name = name + ".service" # simulate systemd
                     if service_name not in self._file_for_unit_sysv:
                         self._file_for_unit_sysv[service_name] = path
             logg.debug("found %s sysv files", len(self._file_for_unit_sysv))
@@ -667,8 +671,8 @@ class Systemctl:
         self.scan_unit_sysv_files()
         if module and module in self._file_for_unit_sysv:
             return self._file_for_unit_sysv[module]
-        if module and module+".service" in self._file_for_unit_sysv:
-            return self._file_for_unit_sysv[module+".service"]
+        if module and unit_of(module) in self._file_for_unit_sysv:
+            return self._file_for_unit_sysv[unit_of(module)]
         return None
     def is_sysv_file(self, filename):
         """ for routines that have a special treatment for init.d services """
@@ -925,7 +929,7 @@ class Systemctl:
         """ get the specified or default pid file path """
         conf = self.load_unit_conf(unit)
         if conf is None:
-            logg.error("no such unit: '%s'", unit)
+            logg.error("Unit %s could not be found.", unit)
             return None
         return self.get_pid_file_from(conf)
     def get_pid_file_from(self, conf, default = None):
@@ -949,7 +953,7 @@ class Systemctl:
     def get_status_file(self, unit):
         conf = self.load_unit_conf(unit)
         if conf is None:
-            logg.error("no such unit: '%s'", unit)
+            logg.error("Unit %s could not be found.", unit)
             return None
         return self.get_status_file_from(conf)
     def get_status_file_from(self, conf, default = None):
@@ -1061,7 +1065,7 @@ class Systemctl:
         """ [UNIT]. -- show environment parts """
         conf = self.load_unit_conf(unit)
         if conf is None:
-            logg.error("no such unit: '%s'", unit)
+            logg.error("Unit %s could not be found.", unit)
             return False
         return self.get_env(conf)
     def bad_service_from(self, conf):
@@ -1295,7 +1299,7 @@ class Systemctl:
         for module in modules:
             matched = self.match_units([ module ])
             if not matched:
-                logg.error("no such service '%s'", module)
+                logg.error("Unit %s could not be found.", unit_of(module))
                 found_all = False
                 continue
             for unit in matched:
@@ -1321,7 +1325,7 @@ class Systemctl:
     def start_unit(self, unit):
         conf = self.load_unit_conf(unit)
         if conf is None:
-            logg.error("no such unit: '%s'", unit)
+            logg.error("Unit %s could not be found.", unit)
             return False
         logg.info(" start unit %s => %s", unit, conf.filename())
         return self.start_unit_from(conf)
@@ -1549,7 +1553,7 @@ class Systemctl:
         for module in modules:
             matched = self.match_units([ module ])
             if not matched:
-                logg.error("no such service '%s'", module)
+                logg.error("Unit %s could not be found.", unit_of(module))
                 found_all = False
                 continue
             for unit in matched:
@@ -1566,7 +1570,7 @@ class Systemctl:
     def stop_unit(self, unit):
         conf = self.load_unit_conf(unit)
         if conf is None:
-            logg.error("no such unit: '%s'", unit)
+            logg.error("Unit %s could not be found.", unit)
             return False
         logg.info(" stop unit %s => %s", unit, conf.filename())
         return self.stop_unit_from(conf)
@@ -1726,7 +1730,7 @@ class Systemctl:
         for module in modules:
             matched = self.match_units([ module ])
             if not matched:
-                logg.error("no such service '%s'", module)
+                logg.error("Unit %s could not be found.", unit_of(module))
                 found_all = False
                 continue
             for unit in matched:
@@ -1743,7 +1747,7 @@ class Systemctl:
     def reload_unit(self, unit):
         conf = self.load_unit_conf(unit)
         if conf is None:
-            logg.error("no such unit: '%s'", unit)
+            logg.error("Unit %s could not be found.", unit)
             return False
         logg.info(" reload unit %s => %s", unit, conf.filename())
         return self.reload_unit_from(conf)
@@ -1797,7 +1801,7 @@ class Systemctl:
         for module in modules:
             matched = self.match_units([ module ])
             if not matched:
-                logg.error("no such service '%s'", module)
+                logg.error("Unit %s could not be found.", unit_of(module))
                 found_all = False
                 continue
             for unit in matched:
@@ -1814,7 +1818,7 @@ class Systemctl:
     def restart_unit(self, unit):
         conf = self.load_unit_conf(unit)
         if conf is None:
-            logg.error("no such unit: '%s'", unit)
+            logg.error("Unit %s could not be found.", unit)
             return False
         logg.info(" restart unit %s => %s", unit, conf.filename())
         if not self.is_active_from(conf):
@@ -1834,7 +1838,7 @@ class Systemctl:
         for module in modules:
             matched = self.match_units([ module ])
             if not matched:
-                logg.error("no such service '%s'", module)
+                logg.error("Unit %s could not be found.", unit_of(module))
                 found_all = False
                 continue
             for unit in matched:
@@ -1851,7 +1855,7 @@ class Systemctl:
     def try_restart_unit(self, unit):
         conf = self.load_unit_conf(unit)
         if conf is None:
-            logg.error("no such unit: '%s'", unit)
+            logg.error("Unit %s could not be found.", unit)
             return False
         if self.is_active_from(conf):
             return self.restart_unit_from(conf)
@@ -1863,7 +1867,7 @@ class Systemctl:
         for module in modules:
             matched = self.match_units([ module ])
             if not matched:
-                logg.error("no such service '%s'", module)
+                logg.error("Unit %s could not be found.", unit_of(module))
                 found_all = False
                 continue
             for unit in matched:
@@ -1880,7 +1884,7 @@ class Systemctl:
     def reload_or_restart_unit(self, unit):
         conf = self.load_unit_conf(unit)
         if conf is None:
-            logg.error("no such unit: '%s'", unit)
+            logg.error("Unit %s could not be found.", unit)
             return False
         logg.info(" reload-or-restart unit %s => %s", unit, conf.filename())
         return self.reload_or_restart_unit_from(conf)
@@ -1902,7 +1906,7 @@ class Systemctl:
         for module in modules:
             matched = self.match_units([ module ])
             if not matched:
-                logg.error("no such service '%s'", module)
+                logg.error("Unit %s could not be found.", unit_of(module))
                 found_all = False
                 continue
             for unit in matched:
@@ -1919,7 +1923,7 @@ class Systemctl:
     def reload_or_try_restart_unit(self, unit):
         conf = self.load_unit_conf(unit)
         if conf is None:
-            logg.error("no such unit: '%s'", unit)
+            logg.error("Unit %s could not be found.", unit)
             return False
         logg.info(" reload-or-try-restart unit %s => %s", unit, conf.filename())
         return self.reload_or_try_restart_unit_from(conf)
@@ -1937,7 +1941,7 @@ class Systemctl:
         for module in modules:
             matched = self.match_units([ module ])
             if not matched:
-                logg.error("no such service '%s'", module)
+                logg.error("Unit %s could not be found.", unit_of(module))
                 found_all = False
                 continue
             for unit in matched:
@@ -1954,7 +1958,7 @@ class Systemctl:
     def kill_unit(self, unit):
         conf = self.load_unit_conf(unit)
         if conf is None:
-            logg.error("no such unit: '%s'", unit)
+            logg.error("Unit %s could not be found.", unit)
             return False
         logg.info(" kill unit %s => %s", unit, conf.filename())
         return self.kill_unit_from(conf)
@@ -2028,7 +2032,7 @@ class Systemctl:
         for module in modules:
             units = self.match_units([ module ])
             if not units:
-                # logg.error("no such service '%s'", module)
+                logg.debug("Unit %s could not be found.", unit_of(module))
                 results += ["unknown"]
                 found_all = False
                 continue
@@ -2068,7 +2072,7 @@ class Systemctl:
         """ returns 'active' 'inactive' 'failed' 'unknown' """
         conf = self.get_unit_conf(unit)
         if not conf.loaded():
-            logg.warning("no such unit '%s'", unit)
+            logg.warning("Unit %s could not be found.", unit)
             return "unknown"
         return self.get_active_from(conf)
     def get_active_from(self, conf):
@@ -2118,7 +2122,7 @@ class Systemctl:
         for module in modules:
             units = self.match_units([ module ])
             if not units:
-                # logg.error("no such service '%s'", module)
+                logg.debug("Unit %s could not be found.", unit_of(module))
                 results += ["unknown"]
                 found_all = False
                 continue
@@ -2144,7 +2148,7 @@ class Systemctl:
         for module in modules:
             matched = self.match_units([ module ])
             if not matched:
-                logg.error("Unit %s.service could not be found.", module)
+                logg.error("Unit %s could not be found.", unit_of(module))
                 found_all = False
                 continue
             for unit in matched:
@@ -2187,7 +2191,7 @@ class Systemctl:
         for module in modules:
             matched = self.match_units([ module ])
             if not matched:
-                logg.error("no such service '%s'", module)
+                logg.error("Unit %s could not be found.", unit_of(module))
                 found_all = False
                 continue
             for unit in matched:
@@ -2256,7 +2260,7 @@ class Systemctl:
         for module in modules:
             matched = self.match_units([ module ])
             if not matched:
-                logg.error("no such service '%s'", module)
+                logg.error("Unit %s could not be found.", unit_of(module))
                 found_all = False
                 continue
             for unit in matched:
@@ -2307,7 +2311,7 @@ class Systemctl:
         for module in modules:
             matched = self.match_units([ module ])
             if not matched:
-                logg.error("no such service '%s'", module)
+                logg.error("Unit %s could not be found.", unit_of(module))
                 found_all = False
                 continue
             for unit in matched:
@@ -2325,7 +2329,7 @@ class Systemctl:
     def enable_unit(self, unit):
         unit_file = self.unit_file(unit)
         if not unit_file:
-            logg.error("no such unit '%s'", unit)
+            logg.error("Unit %s could not be found.", unit)
             return False
         if self.is_sysv_file(unit_file):
             return self.enable_unit_sysv(unit_file)
@@ -2396,7 +2400,7 @@ class Systemctl:
         for module in modules:
             matched = self.match_units([ module ])
             if not matched:
-                logg.error("no such service '%s'", module)
+                logg.error("Unit %s could not be found.", unit_of(module))
                 found_all = False
                 continue
             for unit in matched:
@@ -2412,7 +2416,7 @@ class Systemctl:
     def disable_unit(self, unit):
         unit_file = self.unit_file(unit)
         if not unit_file:
-            logg.error("no such unit '%s'", unit)
+            logg.error("Unit %s could not be found.", unit)
             return False
         if self.is_sysv_file(unit_file):
             return self.disable_unit_sysv(unit_file)
@@ -2464,7 +2468,7 @@ class Systemctl:
         for module in modules:
             matched = self.match_units([ module ])
             if not matched:
-                logg.error("no such service '%s'", module)
+                logg.error("Unit %s could not be found.", unit_of(module))
                 found_all = False
                 continue
             for unit in matched:
@@ -2483,7 +2487,7 @@ class Systemctl:
     def is_enabled(self, unit):
         unit_file = self.unit_file(unit)
         if not unit_file:
-            logg.error("no such unit '%s'", unit)
+            logg.error("Unit %s could not be found.", unit)
             return False
         if self.is_sysv_file(unit_file):
             return self.is_enabled_sysv(unit_file)
@@ -2525,7 +2529,7 @@ class Systemctl:
         for module in modules:
             matched = self.match_units([ module ])
             if not matched:
-                logg.error("no such service '%s'", module)
+                logg.error("Unit %s could not be found.", unit_of(module))
                 found_all = False
                 continue
             for unit in matched:
@@ -2762,7 +2766,7 @@ class Systemctl:
         for module in modules:
             matched = self.match_units([ module ])
             if not matched:
-                logg.error("no such service '%s'", module)
+                logg.error("Unit %s could not be found.", unit_of(module))
                 found_all = False
                 continue
             for unit in matched:
@@ -2928,7 +2932,7 @@ class Systemctl:
         for module in modules:
             matched = self.match_units([ module ])
             if not matched:
-                logg.error("no such service '%s'", module)
+                logg.error("Unit %s could not be found.", unit_of(module))
                 found_all = False
                 continue
             for unit in matched:
