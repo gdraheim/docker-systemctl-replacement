@@ -6,18 +6,30 @@
     dest: "/etc/systemd/system/{{selenium_service}}"
     force: yes
   become: yes
+- name: sysconfig script
+  template: 
+    src: "files/{{selenium_sysconfig}}" 
+    dest: "/etc/sysconfig/{{selenium_sysconfig}}"
+    force: yes
+  become: yes
 - name: systemd reload
   shell: systemctl daemon-reload
   become: yes
 - name: set dir
   replace:
-    dest: "/etc/systemd/system/{{selenium_service}}"
-    regexp: "(Environment=DIR)=.*"
+    dest: "/etc/sysconfig/{{selenium_sysconfig}}"
+    regexp: "(^DIR)=.*"
     replace: '\1={{selenium_server_dir}}'
   become: yes
 - name: set jar
   replace:
-    dest: "/etc/systemd/system/{{selenium_service}}"
-    regexp: "(Environment=JAR)=.*"
+    dest: "/etc/sysconfig/{{selenium_sysconfig}}"
+    regexp: "(^JAR)=.*"
     replace: '\1={{selenium_server}}'
+  become: yes
+- name: set port
+  replace:
+    dest: "/etc/sysconfig/{{selenium_sysconfig}}"
+    regexp: "(^PORT)=.*"
+    replace: '\1={{selenium_port}}'
   become: yes

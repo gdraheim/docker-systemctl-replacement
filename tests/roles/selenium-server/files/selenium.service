@@ -5,13 +5,9 @@ Description=Starting a selenium server
 [Service]
 Type=simple
 PIDFile=/var/lock/selenium.pid
+EnvironmentFile=/etc/sysconfig/selenium.conf
 Environment=PIDFILE=/var/lock/selenium.pid
-Environment=PORT=4444
-Environment=JAR=selenium-server-standalone.jar
-Environment=DIR=/usr/share/selenium
-Environment=DISPLAY=:99
-Environment=PATH=$PATH:$DIR
-ExecStart=/usr/bin/java -jar $DIR/$JAR -port $PORT
+ExecStart=/usr/bin/java -jar ${DIR}/${JAR} -port $PORT
 #ExecStop=pkill --pidfile $PIDFILE
 
 [Install]
