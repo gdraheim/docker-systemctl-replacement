@@ -1965,8 +1965,8 @@ class Systemctl:
     def kill_unit_from(self, conf):
         if not conf: return None
         # useKillMode = conf.get("Service", "KillMode", "process")
-        sendSIGKILL = conf.get("Service", "SendSIGKILL", "yes")
-        sendSIGHUP = conf.get("Service", "SendSIGHUP", "no")
+        doSendSIGKILL = to_bool(conf.get("Service", "SendSIGKILL", "yes"))
+        doSendSIGHUP = to_bool(conf.get("Service", "SendSIGHUP", "no"))
         useKillSignal = conf.get("Service", "KillSignal", "SIGTERM")
         kill_signal = getattr(signal, useKillSignal)
         timeout = self.get_TimeoutStopSec(conf)
@@ -1981,12 +1981,12 @@ class Systemctl:
             return False
         logg.info("stop kill PID %s (%s)", pid, pid_file)
         dead = self._kill_pid(pid, kill_signal)
-        if "y" in sendSIGHUP: 
+        if doSendSIGHUP: 
             # TODO: should be sent to all the children
             self._kill_pid(pid, signal.SIGHUP)
         if not dead:
             dead = self._wait_killed_pid(pid, timeout)
-        if not dead and "y" in sendSIGKILL:
+        if not dead and doSendSIGKILL:
             logg.info("hard kill PID %s (%s)", pid, pid_file)
             dead = self._kill_pid(pid, signal.SIGKILL)
             if not dead:
