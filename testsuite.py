@@ -392,6 +392,24 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 0)
         self.rm_testdir()
         self.coverage()
+    def real_1011_systemctl_daemon_reload_root_ignored(self):
+        """ daemon-reload always succeeds (does nothing) """
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/a.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            ExecStart=/usr/bin/sleep 3
+        """)
+        cmd = "{systemctl} daemon-reload"
+        out,end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(lines(out), [])
+        self.assertEqual(end, 0)
+        self.rm_testdir()
+        self.coverage()
     def test_1020_systemctl_with_systemctl_log(self):
         """ when /var/log/systemctl.log exists then print INFO messages into it"""
         testdir = self.testdir()
@@ -782,7 +800,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Testing C
             [Service]
-            type=simple
+            Type=simple
             ExecReload=/usr/bin/kill -SIGHUP $MAINPID
             ExecStop=/usr/bin/kill $MAINPID
             [Install]
@@ -791,7 +809,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Testing D
             [Service]
-            type=forking
+            Type=forking
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(root, "/etc/systemd/system/g.service"),"""
@@ -813,6 +831,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         self.assertTrue(greps(out, r"a.service:.* file without .Service. section"))
+        self.assertTrue(greps(out, r"Failed to parse service type, ignoring: foo"))
         self.assertTrue(greps(out, r"b.service:.* Executable path is not absolute"))
         self.assertTrue(greps(out, r"c.service: Service has no ExecStart"))
         self.assertTrue(greps(out, r"d.service: Service lacks both ExecStart and ExecStop"))
@@ -820,6 +839,90 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, r"g.service: there may be only one ExecStop statement"))
         self.assertTrue(greps(out, r"g.service: there may be only one ExecReload statement"))
         self.assertTrue(greps(out, r"c.service: the use of /bin/kill is not recommended"))
+    def real_1090_syntax_errors_are_shown_in_journal_after_try_start(self):
+        """ check that preset files do work internally"""
+        testname = self.testname()
+        root = ""
+        systemctl = "/usr/bin/systemctl"
+        sx____("rm /etc/systemd/system/zz*")
+        text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
+            [Unit]
+            Description=Testing A""")
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            Type=foo
+            ExecStart=runA
+            ExecReload=runB
+            ExecStop=runC
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/system/zzc.service"),"""
+            [Unit]
+            Description=Testing C
+            [Service]
+            Type=simple
+            ExecReload=/usr/bin/kill -SIGHUP $MAINPID
+            ExecStop=/usr/bin/kill $MAINPID
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/system/zzd.service"),"""
+            [Unit]
+            Description=Testing D
+            [Service]
+            Type=forking
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/system/zzg.service"),"""
+            [Unit]
+            Description=Testing G
+            [Service]
+            Type=foo
+            ExecStart=runA
+            ExecStart=runA2
+            ExecReload=runB
+            ExecReload=runB2
+            ExecStop=runC
+            ExecStop=runC2
+            [Install]
+            WantedBy=multi-user.target""")
+        #
+        cmd = "{systemctl} daemon-reload 2>&1"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        # there is not direct output
+        self.assertFalse(greps(out, r"a.service:.* file without .Service. section"))
+        self.assertFalse(greps(out, r"b.service:.* Executable path is not absolute"))
+        self.assertFalse(greps(out, r"c.service:.* Service has no ExecStart"))
+        self.assertFalse(greps(out, r"d.service:.* Service lacks both ExecStart and ExecStop"))
+        self.assertFalse(greps(out, r"g.service:.* there may be only one ExecStart statement"))
+        self.assertFalse(greps(out, r"g.service:.* there may be only one ExecStop statement"))
+        self.assertFalse(greps(out, r"g.service:.* there may be only one ExecReload statement"))
+        self.assertFalse(greps(out, r"c.service:.* the use of /bin/kill is not recommended"))
+        # but let's try to start the services
+        #
+        cmd = "{systemctl} start zza zzb zzc zzd zzg 2>&1"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertNotEqual(end, 0) # fails to start
+        self.assertTrue(greps(out, r"failed to load: Invalid argument. See system logs and 'systemctl status zz\w.service' for details."))
+        cmd = "journalctl -xe --lines=50 2>&1"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)        
+        self.assertFalse(greps(out, r"a.service:.* file without .Service. section")) # systemctl.py special
+        self.assertTrue(greps(out, r"Failed to parse service type, ignoring: foo"))
+        self.assertTrue(greps(out, r"b.service:.* Executable path is not absolute"))
+        self.assertTrue(greps(out, r"c.service:.* Service has no ExecStart"))
+        self.assertTrue(greps(out, r"d.service:.* Service lacks both ExecStart= and ExecStop="))
+        self.assertFalse(greps(out, r"g.service:.* there may be only one ExecStart statement")) # systemctl.py special
+        self.assertFalse(greps(out, r"g.service:.* there may be only one ExecStop statement")) # systemctl.py special
+        self.assertFalse(greps(out, r"g.service:.* there may be only one ExecReload statement")) # systemctl.py special
+        self.assertFalse(greps(out, r"c.service:.* the use of /bin/kill is not recommended")) # systemctl.py special
+        sh____("rm /etc/systemd/system/zz*")
+
     def test_2001_can_create_test_services(self):
         """ check that two unit files can be created for testing """
         testname = self.testname()
