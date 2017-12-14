@@ -2703,6 +2703,9 @@ class Systemctl:
         usedExecStart = []
         usedExecStop = []
         usedExecReload = []
+        if haveType not in [ "simple", "forking", "notify", "oneshot", "dbus", "idle"]:
+            logg.error("%s: Failed to parse service type, ignoring: %s", unit, haveType)
+            ok = False
         for line in haveExecStart:
             if not line.startswith("/") and not line.startswith("-/"):
                 logg.error("%s: Executable path is not absolute, ignoring: %s", unit, line.strip())
