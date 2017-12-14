@@ -318,6 +318,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "via systemctl.py"))
         self.assertTrue(greps(out, "[+]SYSVINIT"))
         self.coverage()
+    def real_1002_systemctl_version(self):
+        cmd = "systemctl --version"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertTrue(greps(out, r"systemd [234]\d\d"))
+        self.assertFalse(greps(out, "via systemctl.py"))
+        self.assertTrue(greps(out, "[+]SYSVINIT"))
     def test_1003_systemctl_help(self):
         """ the '--help' option and 'help' command do work """
         systemctl = _cov + _systemctl_py
