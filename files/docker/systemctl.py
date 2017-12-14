@@ -1511,7 +1511,7 @@ class Systemctl:
         os.dup2(inp.fileno(), sys.stdin.fileno())
         os.dup2(out.fileno(), sys.stdout.fileno())
         os.dup2(out.fileno(), sys.stderr.fileno())
-        exitokay = to_bool(conf.get("Service", "RemainAfterExit", "no"))
+        doRemainAfterExit = to_bool(conf.get("Service", "RemainAfterExit", "no"))
         runuser = conf.get("Service", "User", "")
         rungroup = conf.get("Service", "Group", "")
         shutil_truncate(pid_file)
@@ -1539,7 +1539,7 @@ class Systemctl:
             if str(pid) == str(run.pid):
                 self.write_pid_file(pid_file, "")
         logg.info("returncode %s", returncode)
-        if exitokay:
+        if doRemainAfterExit:
             status_file = self.get_status_file_from(conf)
             if not returncode:
                 self.write_status_file(status_file, AS="active", EXIT=run.returncode)
