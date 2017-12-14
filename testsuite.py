@@ -379,7 +379,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         root = self.root(testdir)
         systemctl = _cov + _systemctl_py + " --root=" + root
-        text_file(os_path(root, "/etc/systemd/system/a.service"),"""
+        text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A
             [Service]
@@ -397,7 +397,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         root = self.root(testdir)
         systemctl = _cov + _systemctl_py + " --root=" + root
-        text_file(os_path(root, "/etc/systemd/system/a.service"),"""
+        text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A
             [Service]
@@ -504,10 +504,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         root = self.root(testdir)
         systemctl = _cov + _systemctl_py + " --root=" + root
-        text_file(os_path(root, "/etc/systemd/system/a.service"),"""
+        text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A""")
-        textA = file(os_path(root, "/etc/systemd/system/a.service")).read()
+        textA = file(os_path(root, "/etc/systemd/system/zza.service")).read()
         self.assertTrue(greps(textA, "Testing A"))
         self.assertIn("\nDescription", textA)
         self.rm_testdir()
@@ -518,12 +518,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         root = self.root(testdir)
         systemctl = _cov + _systemctl_py + " --root=" + root
-        text_file(os_path(root, "/etc/systemd/system/a.service"),"""
+        text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A""")
-        textA = file(os_path(root, "/etc/systemd/system/a.service")).read()
+        textA = file(os_path(root, "/etc/systemd/system/zza.service")).read()
         self.assertTrue(greps(textA, "Testing A"))
-        cmd = "{systemctl} __get_description a.service"
+        cmd = "{systemctl} __get_description zza.service"
         out, end = output2(cmd.format(**locals()))
         logg.info("%s => \n%s", cmd, out)
         self.assertEqual(end, 0)
@@ -536,16 +536,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         root = self.root(testdir)
         systemctl = _cov + _systemctl_py + " --root=" + root
-        text_file(os_path(root, "/etc/systemd/system/a.service"),"""
+        text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A
             [Service]
             PIDFile=/var/run/foo.pid
             """)
-        textA = file(os_path(root, "/etc/systemd/system/a.service")).read()
+        textA = file(os_path(root, "/etc/systemd/system/zza.service")).read()
         self.assertTrue(greps(textA, "Testing A"))
         self.assertTrue(greps(textA, "PIDFile="))
-        cmd = "{systemctl} __get_pid_file a.service"
+        cmd = "{systemctl} __get_pid_file zza.service"
         out, end = output2(cmd.format(**locals()))
         logg.info("%s => \n%s", cmd, out)
         self.assertEqual(end, 0)
@@ -558,20 +558,20 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         root = self.root(testdir)
         systemctl = _cov + _systemctl_py + " --root=" + root
-        text_file(os_path(root, "/etc/systemd/system/a.service"),"""
+        text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A
             [Service]
             Type=simple
             """)
-        textA = file(os_path(root, "/etc/systemd/system/a.service")).read()
+        textA = file(os_path(root, "/etc/systemd/system/zza.service")).read()
         self.assertTrue(greps(textA, "Testing A"))
         self.assertFalse(greps(textA, "PIDFile="))
-        cmd = "{systemctl} __get_pid_file a.service"
+        cmd = "{systemctl} __get_pid_file zza.service"
         out, end = output2(cmd.format(**locals()))
         logg.info("%s => \n%s", cmd, out)
         self.assertEqual(end, 0)
-        self.assertTrue(greps(out, "/var/run/a.service.pid"))
+        self.assertTrue(greps(out, "/var/run/zza.service.pid"))
         self.rm_testdir()
         self.coverage()
     def test_1055_other_services_use_a_status_file(self):
@@ -580,20 +580,20 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         root = self.root(testdir)
         systemctl = _cov + _systemctl_py + " --root=" + root
-        text_file(os_path(root, "/etc/systemd/system/a.service"),"""
+        text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A
             [Service]
             Type=oneshot
             """)
-        textA = file(os_path(root, "/etc/systemd/system/a.service")).read()
+        textA = file(os_path(root, "/etc/systemd/system/zza.service")).read()
         self.assertTrue(greps(textA, "Testing A"))
         self.assertFalse(greps(textA, "PIDFile="))
-        cmd = "{systemctl} __get_status_file a.service"
+        cmd = "{systemctl} __get_status_file zza.service"
         out, end = output2(cmd.format(**locals()))
         logg.info("%s => \n%s", cmd, out)
         self.assertEqual(end, 0)
-        self.assertTrue(greps(out, "/var/run/a.service.status"))
+        self.assertTrue(greps(out, "/var/run/zza.service.status"))
         self.rm_testdir()
         self.coverage()
     def test_1060_can_have_shell_like_commments(self):
@@ -602,21 +602,21 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         root = self.root(testdir)
         systemctl = _cov + _systemctl_py + " --root=" + root
-        text_file(os_path(root, "/etc/systemd/system/a.service"),"""
+        text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A
             [Service]
-            #PIDFile=/var/run/foo.pid
+            #PIDFile=/var/run/zzfoo.pid
             """)
-        textA = file(os_path(root, "/etc/systemd/system/a.service")).read()
+        textA = file(os_path(root, "/etc/systemd/system/zza.service")).read()
         self.assertTrue(greps(textA, "Testing A"))
         self.assertTrue(greps(textA, "PIDFile="))
-        cmd = "{systemctl} __get_pid_file a.service"
+        cmd = "{systemctl} __get_pid_file zza.service"
         out, end = output2(cmd.format(**locals()))
         logg.info("%s => \n%s", cmd, out)
         self.assertEqual(end, 0)
-        self.assertFalse(greps(out, "/var/run/foo.pid"))
-        self.assertTrue(greps(out, "/var/run/a.service.pid"))
+        self.assertFalse(greps(out, "/var/run/zzfoo.pid"))
+        self.assertTrue(greps(out, "/var/run/zza.service.pid"))
         self.rm_testdir()
         self.coverage()
     def test_1061_can_have_winini_like_commments(self):
@@ -625,21 +625,21 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         root = self.root(testdir)
         systemctl = _cov + _systemctl_py + " --root=" + root
-        text_file(os_path(root, "/etc/systemd/system/a.service"),"""
+        text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A
             [Service]
-            ;PIDFile=/var/run/foo.pid
+            ;PIDFile=/var/run/zzfoo.pid
             """)
-        textA = file(os_path(root, "/etc/systemd/system/a.service")).read()
+        textA = file(os_path(root, "/etc/systemd/system/zza.service")).read()
         self.assertTrue(greps(textA, "Testing A"))
         self.assertTrue(greps(textA, "PIDFile="))
-        cmd = "{systemctl} __get_pid_file a.service"
+        cmd = "{systemctl} __get_pid_file zza.service"
         out, end = output2(cmd.format(**locals()))
         logg.info("%s => \n%s", cmd, out)
         self.assertEqual(end, 0)
-        self.assertFalse(greps(out, "/var/run/foo.pid"))
-        self.assertTrue(greps(out, "/var/run/a.service.pid"))
+        self.assertFalse(greps(out, "/var/run/zzfoo.pid"))
+        self.assertTrue(greps(out, "/var/run/zza.service.pid"))
         self.rm_testdir()
         self.coverage()
     def test_1062_can_have_multi_line_settings_with_linebreak_mark(self):
@@ -648,18 +648,18 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         root = self.root(testdir)
         systemctl = _cov + _systemctl_py + " --root=" + root
-        text_file(os_path(root, "/etc/systemd/system/a.service"),"""
+        text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A \
                 which is quite special
             [Service]
-            PIDFile=/var/run/foo.pid
+            PIDFile=/var/run/zzfoo.pid
             """)
-        textA = file(os_path(root, "/etc/systemd/system/a.service")).read()
+        textA = file(os_path(root, "/etc/systemd/system/zza.service")).read()
         self.assertTrue(greps(textA, "Testing A"))
         self.assertTrue(greps(textA, "quite special"))
         self.assertTrue(greps(textA, "PIDFile="))
-        cmd = "{systemctl} __get_description a.service"
+        cmd = "{systemctl} __get_description zza.service"
         out, end = output2(cmd.format(**locals()))
         logg.info("%s => \n%s", cmd, out)
         self.assertEqual(end, 0)
@@ -674,18 +674,18 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         root = self.root(testdir)
         systemctl = _cov + _systemctl_py + " --root=" + root
-        text_file(os_path(root, "/etc/systemd/system/a.service"),"""
+        text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A 
                 which is quite special
             [Service]
-            PIDFile=/var/run/foo.pid
+            PIDFile=/var/run/zzfoo.pid
             """)
-        textA = file(os_path(root, "/etc/systemd/system/a.service")).read()
+        textA = file(os_path(root, "/etc/systemd/system/zza.service")).read()
         self.assertTrue(greps(textA, "Testing A"))
         self.assertTrue(greps(textA, "quite special"))
         self.assertTrue(greps(textA, "PIDFile="))
-        cmd = "{systemctl} __get_description a.service"
+        cmd = "{systemctl} __get_description zza.service"
         out, end = output2(cmd.format(**locals()))
         logg.info("%s => \n%s", cmd, out)
         self.assertEqual(end, 0)
@@ -699,20 +699,20 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         root = self.root(testdir)
         systemctl = _cov + _systemctl_py + " --root=" + root
-        text_file(os_path(root, "/etc/systemd/system/a.service"),"""
+        text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A 
                 which is quite special
             [Service]
-            EnvironmentFile=/etc/sysconfig/a.conf
+            EnvironmentFile=/etc/sysconfig/zza.conf
             """)
-        text_file(os_path(root, "/etc/sysconfig/a.conf"),"""
+        text_file(os_path(root, "/etc/sysconfig/zza.conf"),"""
             CONF1=a1
             CONF2="b2"
             CONF3='c3'
             #CONF4=b4
             """)
-        cmd = "{systemctl} __read_env_file /etc/sysconfig/a.conf -vv"
+        cmd = "{systemctl} __read_env_file /etc/sysconfig/zza.conf -vv"
         out, end = output2(cmd.format(**locals()))
         logg.info("%s => \n%s", cmd, out)
         self.assertEqual(end, 0)
@@ -733,22 +733,22 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         root = self.root(testdir)
         systemctl = _cov + _systemctl_py + " --root=" + root
-        text_file(os_path(root, "/etc/systemd/system/a.service"),"""
+        text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A""")
-        text_file(os_path(root, "/etc/systemd/system/b.service"),"""
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"),"""
             [Unit]
             Description=Testing B
             [Install]
             WantedBy=multi-user.target""")
-        text_file(os_path(root, "/etc/systemd/system/c.service"),"""
+        text_file(os_path(root, "/etc/systemd/system/zzc.service"),"""
             [Unit]
             Description=Testing C
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(root, "/etc/systemd/system-preset/our.preset"),"""
-            enable b.service
-            disable c.service""")
+            enable zzb.service
+            disable zzc.service""")
         #
         cmd = "{systemctl} __load_preset_files"
         out, end = output2(cmd.format(**locals()))
@@ -757,21 +757,21 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, r"^our.preset"))
         self.assertEqual(len(lines(out)), 1)
         #
-        cmd = "{systemctl} __get_preset_of_unit a.service"
+        cmd = "{systemctl} __get_preset_of_unit zza.service"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         # self.assertTrue(greps(out, r"^our.preset"))
         self.assertEqual(len(lines(out)), 0)
         #
-        cmd = "{systemctl} __get_preset_of_unit b.service"
+        cmd = "{systemctl} __get_preset_of_unit zzb.service"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         self.assertTrue(greps(out, r"^enable"))
         self.assertEqual(len(lines(out)), 1)
         #
-        cmd = "{systemctl} __get_preset_of_unit c.service"
+        cmd = "{systemctl} __get_preset_of_unit zzc.service"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
@@ -783,10 +783,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         root = self.root(testdir)
         systemctl = _cov + _systemctl_py + " --root=" + root
-        text_file(os_path(root, "/etc/systemd/system/a.service"),"""
+        text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A""")
-        text_file(os_path(root, "/etc/systemd/system/b.service"),"""
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"),"""
             [Unit]
             Description=Testing B
             [Service]
@@ -796,7 +796,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStop=runC
             [Install]
             WantedBy=multi-user.target""")
-        text_file(os_path(root, "/etc/systemd/system/c.service"),"""
+        text_file(os_path(root, "/etc/systemd/system/zzc.service"),"""
             [Unit]
             Description=Testing C
             [Service]
@@ -805,14 +805,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStop=/usr/bin/kill $MAINPID
             [Install]
             WantedBy=multi-user.target""")
-        text_file(os_path(root, "/etc/systemd/system/d.service"),"""
+        text_file(os_path(root, "/etc/systemd/system/zzd.service"),"""
             [Unit]
             Description=Testing D
             [Service]
             Type=forking
             [Install]
             WantedBy=multi-user.target""")
-        text_file(os_path(root, "/etc/systemd/system/g.service"),"""
+        text_file(os_path(root, "/etc/systemd/system/zzg.service"),"""
             [Unit]
             Description=Testing G
             [Service]
