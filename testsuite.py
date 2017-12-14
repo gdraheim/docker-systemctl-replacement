@@ -6515,11 +6515,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = _cov + _systemctl_py + " --root=" + root
         testsleep = self.testname("testsleep")
         testfail = self.testname("testfail.sh")
-        logfile = os_path(root, "/var/log/test.log")
         bindir = os_path(root, "/usr/bin")
         begin = "{"
         end = "}"
-        text_file(logfile, "")
         text_file(os_path(testdir, "zzz.service"),"""
             [Unit]
             Description=Testing Z
