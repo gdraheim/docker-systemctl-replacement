@@ -1520,6 +1520,10 @@ class Systemctl:
         shutil_chown(status_file, runuser, rungroup)
         shutil_setuid(runuser, rungroup)
         self.chdir_workingdir(conf, check = False)
+        if doRemainAfterExit:
+            status_file = self.get_status_file_from(conf)
+            if True:
+                self.write_status_file(status_file, AS="active")
         cmdlist = conf.getlist("Service", "ExecStart", [])
         for idx, cmd in enumerate(cmdlist):
             logg.debug("ExecStart[%s]: %s", idx, cmd)
