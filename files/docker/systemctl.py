@@ -2703,7 +2703,7 @@ class Systemctl:
         usedExecStart = []
         usedExecStop = []
         usedExecReload = []
-        if haveType not in [ "simple", "forking", "notify", "oneshot", "dbus", "idle"]:
+        if haveType not in [ "simple", "forking", "notify", "oneshot", "dbus", "idle", "sysv"]:
             logg.error("%s: Failed to parse service type, ignoring: %s", unit, haveType)
             ok = False
         for line in haveExecStart:
