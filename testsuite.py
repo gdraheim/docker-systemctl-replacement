@@ -6607,7 +6607,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} is-active zzz.service {vv}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s", cmd, end, out)
-        self.assertEqual(end, 1)
+        self.assertEqual(end, 3)
         self.assertEqual(out.strip(), "inactive")
         #
         logg.info("== 'start' shall start a normal service ")
@@ -6637,7 +6637,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} is-active zzz.service {vv}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s", cmd, end, out)
-        self.assertEqual(end, 1)
+        self.assertEqual(end, 3)
         self.assertEqual(out.strip(), "inactive")
         #
         #
@@ -6668,7 +6668,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} is-active zze.service {vv}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s", cmd, end, out)
-        self.assertEqual(end, 1)
+        self.assertEqual(end, 3)
         self.assertEqual(out.strip(), "inactive")
 
         #
@@ -6699,7 +6699,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} is-active zzf.service {vv}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s", cmd, end, out)
-        self.assertEqual(end, 1)
+        self.assertEqual(end, 3)
         self.assertEqual(out.strip(), "inactive")
         #
         logg.info("== 'start' will have a later exiting service as remaining active")
@@ -6729,7 +6729,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} is-active zzr.service {vv}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s", cmd, end, out)
-        self.assertEqual(end, 1)
+        self.assertEqual(end, 3)
         self.assertEqual(out.strip(), "inactive")
 
         #
@@ -6760,7 +6760,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} is-active zzx.service {vv}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s", cmd, end, out)
-        self.assertEqual(end, 1)
+        self.assertEqual(end, 3)
         self.assertEqual(out.strip(), "inactive")
 
 
