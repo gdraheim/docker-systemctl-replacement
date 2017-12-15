@@ -6654,7 +6654,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} is-active zze.service {vv}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s", cmd, end, out)
-        self.assertEqual(end, 0) # TODO real = 3
+        self.assertEqual(end, 3)
         self.assertEqual(out.strip(), "failed")
         #
         logg.info("== 'stop' shall clean an already exited service")
@@ -6685,7 +6685,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} is-active zzf.service {vv}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s", cmd, end, out)
-        self.assertEqual(end, 0) ## TODO real = 3
+        self.assertEqual(end, 3)
         self.assertEqual(out.strip(), "failed")
         #
         logg.info("== 'stop' shall clean an already failed service")
@@ -6746,7 +6746,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} is-active zzx.service {vv}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s", cmd, end, out)
-        self.assertEqual(end, 0) 
+        self.assertEqual(end, 3) 
         self.assertEqual(out.strip(), "failed") # TODO real = "active"
         #
         logg.info("== 'stop' shall clean an already failed remaining service")
