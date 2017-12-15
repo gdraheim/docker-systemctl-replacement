@@ -2047,8 +2047,8 @@ class Systemctl:
         known = [ result for result in results if result != "unknown" ]
         if True:
             ## how 'systemctl' works:
-            inactive = "inactive" in results
-            status = found_all and not inactive and not not known
+            bad = "inactive" in results or "failed" in results
+            status = found_all and not bad and not not known
         else:
             ## how it should work:
             active = "active" in results
