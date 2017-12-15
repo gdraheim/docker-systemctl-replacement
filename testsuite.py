@@ -4,7 +4,7 @@
 from __future__ import print_function
 
 __copyright__ = "(C) Guido Draheim, licensed under the EUPL"""
-__version__ = "1.0.1472"
+__version__ = "1.1.1505"
 
 ## NOTE:
 ## The testcases 1000...4999 are using a --root=subdir environment
