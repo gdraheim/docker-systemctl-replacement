@@ -1511,7 +1511,7 @@ class Systemctl:
         os.dup2(inp.fileno(), sys.stdin.fileno())
         os.dup2(out.fileno(), sys.stdout.fileno())
         os.dup2(out.fileno(), sys.stderr.fileno())
-        exitokay = to_bool(conf.get("Service", "RemainAfterExit", "no"))
+        doRemainAfterExit = to_bool(conf.get("Service", "RemainAfterExit", "no"))
         runuser = conf.get("Service", "User", "")
         rungroup = conf.get("Service", "Group", "")
         shutil_truncate(pid_file)
@@ -1520,6 +1520,10 @@ class Systemctl:
         shutil_chown(status_file, runuser, rungroup)
         shutil_setuid(runuser, rungroup)
         self.chdir_workingdir(conf, check = False)
+        if doRemainAfterExit:
+            status_file = self.get_status_file_from(conf)
+            if True:
+                self.write_status_file(status_file, AS="active")
         cmdlist = conf.getlist("Service", "ExecStart", [])
         for idx, cmd in enumerate(cmdlist):
             logg.debug("ExecStart[%s]: %s", idx, cmd)
@@ -1539,7 +1543,7 @@ class Systemctl:
             if str(pid) == str(run.pid):
                 self.write_pid_file(pid_file, "")
         logg.info("returncode %s", returncode)
-        if exitokay:
+        if doRemainAfterExit:
             status_file = self.get_status_file_from(conf)
             if not returncode:
                 self.write_status_file(status_file, AS="active", EXIT=run.returncode)
@@ -1965,8 +1969,8 @@ class Systemctl:
     def kill_unit_from(self, conf):
         if not conf: return None
         # useKillMode = conf.get("Service", "KillMode", "process")
-        sendSIGKILL = conf.get("Service", "SendSIGKILL", "yes")
-        sendSIGHUP = conf.get("Service", "SendSIGHUP", "no")
+        doSendSIGKILL = to_bool(conf.get("Service", "SendSIGKILL", "yes"))
+        doSendSIGHUP = to_bool(conf.get("Service", "SendSIGHUP", "no"))
         useKillSignal = conf.get("Service", "KillSignal", "SIGTERM")
         kill_signal = getattr(signal, useKillSignal)
         timeout = self.get_TimeoutStopSec(conf)
@@ -1981,12 +1985,12 @@ class Systemctl:
             return False
         logg.info("stop kill PID %s (%s)", pid, pid_file)
         dead = self._kill_pid(pid, kill_signal)
-        if "y" in sendSIGHUP: 
+        if doSendSIGHUP: 
             # TODO: should be sent to all the children
             self._kill_pid(pid, signal.SIGHUP)
         if not dead:
             dead = self._wait_killed_pid(pid, timeout)
-        if not dead and "y" in sendSIGKILL:
+        if not dead and doSendSIGKILL:
             logg.info("hard kill PID %s (%s)", pid, pid_file)
             dead = self._kill_pid(pid, signal.SIGKILL)
             if not dead:
@@ -2043,12 +2047,14 @@ class Systemctl:
         known = [ result for result in results if result != "unknown" ]
         if True:
             ## how 'systemctl' works:
-            inactive = "inactive" in results
-            status = found_all and not inactive and not not known
+            bad = "inactive" in results or "failed" in results
+            status = found_all and not bad and not not known
         else:
             ## how it should work:
             active = "active" in results
             status = found_all and active and not not known
+        if not status:
+            status = 3
         if not _quiet:
             return status, results
         else:
@@ -2699,6 +2705,9 @@ class Systemctl:
         usedExecStart = []
         usedExecStop = []
         usedExecReload = []
+        if haveType not in [ "simple", "forking", "notify", "oneshot", "dbus", "idle", "sysv"]:
+            logg.error("%s: Failed to parse service type, ignoring: %s", unit, haveType)
+            ok = False
         for line in haveExecStart:
             if not line.startswith("/") and not line.startswith("-/"):
                 logg.error("%s: Executable path is not absolute, ignoring: %s", unit, line.strip())
