@@ -2053,6 +2053,8 @@ class Systemctl:
             ## how it should work:
             active = "active" in results
             status = found_all and active and not not known
+        if not status:
+            status = 3
         if not _quiet:
             return status, results
         else:
