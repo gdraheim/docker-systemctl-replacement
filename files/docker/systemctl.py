@@ -1019,19 +1019,19 @@ class Systemctl:
     #
     def get_boottime(self):
         for pid in xrange(10):
-            proc = "/proc/%s" % pid
+            proc = "/proc/%s/cmdline" % pid
             try:
-                if os.path.isdir(proc):
-                    return os.path.getctime(proc)
+                if os.path.exists(proc):
+                    return os.path.getmtime(proc)
             except Exception, e: # pragma: nocover
                 logg.warning("could not access %s: %s", proc, e)
         # otherwise get the oldest entry in /proc
         booted = time.time()
         for name in os.listdir("/proc"):
-            proc = "/proc/%s" % name
+            proc = "/proc/%s/cmdline" % name
             try:
-                if os.path.isdir(proc):
-                    ctime = os.path.getctime(proc)
+                if os.path.exists(proc):
+                    ctime = os.path.getmtime(proc)
                     if ctime < booted:
                         booted = ctime 
             except Exception, e: # pragma: nocover
