@@ -1589,10 +1589,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             sys.path += [ "{systemctl_py_dir}" ]
             import systemctl
             parser = systemctl.UnitConfigParser({defaults})
+            conf = systemctl.UnitConf(parser)
             print("DEFAULTS", parser.defaults())
-            print("FILENAME", parser.filename())
+            print("FILENAME", conf.filename())
             parser.read(sys.argv[1])
-            print("filename=", parser.filename())
+            print("filename=", conf.filename())
             print("sections=", parser.sections())
             print("has.Foo.Bar=", parser.has_option("Foo", "Bar"))
             print("has.Unit.Foo=", parser.has_option("Unit", "Foo"))
