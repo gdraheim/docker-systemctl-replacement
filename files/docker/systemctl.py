@@ -998,6 +998,9 @@ class Systemctl:
             return status
         if not os.path.isfile(status_file):
             return status
+        if self.get_filetime(status_file) < self.get_boottime():
+            # ignore status if there was a reboot
+            return status
         try:
             for line in open(status_file):
                 if line.strip(): 
@@ -1013,6 +1016,29 @@ class Systemctl:
         except:
             logg.warning("bad read of status file '%s'", status_file)
         return status
+    #
+    def get_boottime(self):
+        for pid in xrange(10):
+            proc = "/proc/%s" % pid
+            try:
+                if os.path.isdir(proc):
+                    return os.path.getctime(proc)
+            except Exception, e: # pragma: nocover
+                logg.warning("could not access %s: %s", proc, e)
+        # otherwise get the oldest entry in /proc
+        booted = time.time()
+        for name in os.listdir("/proc"):
+            proc = "/proc/%s" % name
+            try:
+                if os.path.isdir(proc):
+                    ctime = os.path.getctime(proc)
+                    if ctime < booted:
+                        booted = ctime 
+            except Exception, e: # pragma: nocover
+                logg.warning("could not access %s: %s", proc, e)
+        return booted
+    def get_filetime(self, filename):
+        return os.path.getmtime(filename)
     #
     def sleep(self, seconds = None): 
         """ just sleep """
