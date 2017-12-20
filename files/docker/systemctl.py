@@ -968,12 +968,12 @@ class Systemctl:
         if pid_file and os.path.isfile(pid_file):
             try:
                 os.remove(pid_file)
-            except OSError, e:
+            except OSError as e:
                 logg.warning("while rm %s: %s", pid_file, e)
         if def_file and os.path.isfile(def_file):
             try:
                 os.remove(def_file)
-            except OSError, e:
+            except OSError as e:
                 logg.warning("while rm %s: %s", def_file, e)
     def get_status_file(self, unit): # for testing
         conf = self.get_unit_conf(unit)
@@ -1072,7 +1072,7 @@ class Systemctl:
             try:
                 if os.path.exists(proc):
                     return os.path.getmtime(proc)
-            except Exception, e: # pragma: nocover
+            except Exception as e: # pragma: nocover
                 logg.warning("could not access %s: %s", proc, e)
         # otherwise get the oldest entry in /proc
         booted = time.time()
@@ -1083,7 +1083,7 @@ class Systemctl:
                     ctime = os.path.getmtime(proc)
                     if ctime < booted:
                         booted = ctime 
-            except Exception, e: # pragma: nocover
+            except Exception as e: # pragma: nocover
                 logg.warning("could not access %s: %s", proc, e)
         return booted
     def get_filetime(self, filename):
