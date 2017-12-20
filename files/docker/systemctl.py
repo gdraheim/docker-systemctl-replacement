@@ -972,6 +972,11 @@ class Systemctl:
             folder = os_path(self._root, folder)
         name = "%s.status" % conf.name()
         return os.path.join(folder, name)
+    def clean_status_from(self, conf):
+        status_file = self.status_file_from(conf)
+        if os.path.exists(status_file):
+            os.remove(status_file)
+        conf.status = {}
     def write_status_file(self, status_file, **status): # -> bool(written)
         """ if a status_file is known then path is created and the
             give status is written as the only content. """
@@ -1634,8 +1639,8 @@ class Systemctl:
                 run = subprocess_wait(sudo+newcmd, env)
                 if run.returncode:
                     self.write_status_file(status_file, AS="failed", EXIT=run.returncode)
-                elif os.path.isfile(status_file):
-                    os.remove(status_file)
+                else:
+                    self.clean_status_from(conf)
                 return True
         elif runs in [ "oneshot" ]:
             status_file = self.status_file_from(conf)
@@ -1656,8 +1661,8 @@ class Systemctl:
             if True:
                 if returncode:
                     self.write_status_file(status_file, AS="failed", EXIT=returncode)
-                elif os.path.isfile(status_file):
-                    os.remove(status_file)
+                else:
+                    self.clean_status_from(conf)
         ### fallback Stop => Kill for ["simple","notify","forking"]
         elif not conf.data.getlist("Service", "ExecStop", []):
             logg.info("no ExecStop => systemctl kill")
@@ -1667,8 +1672,7 @@ class Systemctl:
                 self.kill_unit_from(conf)
                 if os.path.isfile(pid_file):
                     os.remove(pid_file)
-                if os.path.isfile(status_file):
-                    os.remove(status_file)
+                self.clean_status_from(conf)
         elif runs in [ "simple", "notify" ]:
             status_file = self.status_file_from(conf)
             pid_file = self.get_pid_file_from(conf)
@@ -1698,8 +1702,7 @@ class Systemctl:
                     if os.path.isfile(pid_file):
                         os.remove(pid_file)
             if True:
-                if os.path.isfile(status_file):
-                    os.remove(status_file)
+                self.clean_status_from(conf)
         elif runs in [ "forking" ]:
             status_file = self.status_file_from(conf)
             pid_file = self.pid_file_from(conf)
@@ -1730,11 +1733,11 @@ class Systemctl:
                 if not pid or not pid_exists(pid) or pid_zombie(pid):
                     if os.path.isfile(pid_file):
                         os.remove(pid_file)
-            if os.path.isfile(status_file):
-                if not returncode:
-                    os.remove(status_file)
-                else:
+            if returncode:
+                if os.path.isfile(status_file):
                     self.write_status_file(status_file, AS=service_result, EXIT=returncode)
+            else:
+                self.clean_status_from(conf)
         else:
             logg.error("unsupported run type '%s'", runs)
             return False
@@ -2007,9 +2010,7 @@ class Systemctl:
         kill_signal = getattr(signal, useKillSignal)
         timeout = self.get_TimeoutStopSec(conf)
         status_file = self.status_file_from(conf)
-        if os.path.isfile(status_file):
-            os.remove(status_file)
-            # clear RemainAfterExit and TimeoutStartSec
+        self.clean_status_from(conf) # clear RemainAfterExit and TimeoutStartSec
         pid_file = self.get_pid_file_from(conf)
         pid = self.read_pid_file(pid_file)
         if not pid:
