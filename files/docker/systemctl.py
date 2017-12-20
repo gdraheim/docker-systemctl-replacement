@@ -1418,12 +1418,10 @@ class Systemctl:
                 newcmd = self.exec_cmd(cmd, env, conf)
                 logg.info("%s start %s", runs, shell_cmd(sudo+newcmd))
                 run = subprocess_wait(sudo+newcmd, env)
-                if run.returncode:
-                    logg.info("%s start done %s", runs, run.returncode)
-                    self.write_status_from(conf, AS="failed", EXIT=run.returncode)
-                else:
-                    logg.info("%s start done OK", runs)
-                    self.write_status_from(conf, AS="active")
+                self.set_status_from(conf, "ExecMainCode", run.returncode)
+                logg.info("%s start done %s", runs, run.returncode or "OK")
+                active = run.returncode and "failed" or "active"
+                self.write_status_from(conf, AS=active )
                 return True
         elif runs in [ "oneshot" ]:
             status_file = self.status_file_from(conf)
@@ -1442,10 +1440,9 @@ class Systemctl:
                     break
                 logg.info("%s start done (%s)", runs, returncode)
             if True:
-                if returncode:
-                    self.write_status_from(conf, AS="failed", EXIT=returncode)
-                else:
-                    self.write_status_from(conf, AS="active")
+                self.set_status_from(conf, "ExecMainCode", returncode)
+                active = returncode and "failed" or "active"
+                self.write_status_from(conf, AS=active)
         elif runs in [ "simple" ]: 
             status_file = self.status_file_from(conf)
             pid_file = self.get_pid_file_from(conf)
@@ -1520,10 +1517,9 @@ class Systemctl:
                 self.sleep()
                 logg.warning("No PIDFile for forking %s", conf.filename())
                 status_file = self.status_file_from(conf)
-                if not returncode:
-                    self.write_status_from(conf, AS="active")
-                else:
-                    self.write_status_from(conf, AS="failed", EXIT=returncode)
+                self.set_status_from(conf, "ExecMainCode", returncode)
+                active = returncode and "failed" or "active"
+                self.write_status_from(conf, AS=active)
         else:
             logg.error("unsupported run type '%s'", runs)
             return False
@@ -1600,11 +1596,9 @@ class Systemctl:
                 self.write_pid_file(pid_file, "")
         logg.info("returncode %s", returncode)
         if doRemainAfterExit:
-            status_file = self.status_file_from(conf)
-            if not returncode:
-                self.write_status_from(conf, AS="active", EXIT=run.returncode)
-            else:
-                self.write_status_from(conf, AS="failed", EXIT=run.returncode)
+            self.set_status_from(conf, "ExecMainCode", returncode)
+            active = returncode and "failed" or "active"
+            self.write_status_from(conf, AS=active)
         return returncode
     def stop_modules(self, *modules):
         """ [UNIT]... -- stop these units """
@@ -1657,9 +1651,10 @@ class Systemctl:
                 logg.info("%s stop %s", runs, shell_cmd(sudo+newcmd))
                 run = subprocess_wait(sudo+newcmd, env)
                 if run.returncode:
-                    self.write_status_from(conf, AS="failed", EXIT=run.returncode)
+                    self.set_status_from(conf, "ExecStopCode", run.returncode)
+                    self.write_status_from(conf, AS="failed")
                 else:
-                    self.clean_status_from(conf)
+                    self.clean_status_from(conf) # "inactive"
                 return True
         elif runs in [ "oneshot" ]:
             status_file = self.status_file_from(conf)
@@ -1678,9 +1673,10 @@ class Systemctl:
                     break
             if True:
                 if returncode:
-                    self.write_status_from(conf, AS="failed", EXIT=returncode)
+                    self.set_status_from(conf, "ExecStopCode", returncode)
+                    self.write_status_from(conf, AS="failed")
                 else:
-                    self.clean_status_from(conf)
+                    self.clean_status_from(conf) # "inactive"
         ### fallback Stop => Kill for ["simple","notify","forking"]
         elif not conf.data.getlist("Service", "ExecStop", []):
             logg.info("no ExecStop => systemctl kill")
@@ -1690,7 +1686,7 @@ class Systemctl:
                 self.kill_unit_from(conf)
                 if os.path.isfile(pid_file):
                     os.remove(pid_file)
-                self.clean_status_from(conf)
+                self.clean_status_from(conf) # "inactive"
         elif runs in [ "simple", "notify" ]:
             status_file = self.status_file_from(conf)
             pid_file = self.get_pid_file_from(conf)
@@ -1720,7 +1716,7 @@ class Systemctl:
                     if os.path.isfile(pid_file):
                         os.remove(pid_file)
             if True:
-                self.clean_status_from(conf)
+                self.clean_status_from(conf) # "inactive"
         elif runs in [ "forking" ]:
             status_file = self.status_file_from(conf)
             pid_file = self.pid_file_from(conf)
@@ -1753,9 +1749,10 @@ class Systemctl:
                         os.remove(pid_file)
             if returncode:
                 if os.path.isfile(status_file):
-                    self.write_status_from(conf, AS=service_result, EXIT=returncode)
+                    self.set_status_from(conf, "ExecStopCode", returncode)
+                    self.write_status_from(conf, AS="failed")
             else:
-                self.clean_status_from(conf)
+                self.clean_status_from(conf) # "inactive"
         else:
             logg.error("unsupported run type '%s'", runs)
             return False
@@ -1823,8 +1820,9 @@ class Systemctl:
                 newcmd = self.exec_cmd(cmd, env, conf)
                 logg.info("%s reload %s", runs, shell_cmd(sudo+newcmd))
                 run = subprocess_wait(sudo+newcmd, env)
+                self.set_status_from(conf, "ExecReloadCode", run.returncode)
                 if run.returncode:
-                    self.write_status_from(conf, AS="failed", EXIT=run.returncode)
+                    self.write_status_from(conf, AS="failed")
                     return False
                 else:
                     self.write_status_from(conf, AS="active")

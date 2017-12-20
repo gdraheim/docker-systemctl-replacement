@@ -3047,7 +3047,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "zzz.service"))
         self.assertEqual(len(lines(out)), 1)
         #
-        cmd = "{systemctl} start zzz.service -vv"
+        cmd = "{systemctl} start zzz.service -vvvv 2>&1"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
@@ -5605,7 +5605,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 3)
         #
         logg.info("== 'start' shall start a service that is NOT is-active ")
-        cmd = "{systemctl} start zzz.service -vv"
+        cmd = "{systemctl} start zzz.service -vvvv"
         out, end = output2(cmd.format(**locals()))
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
