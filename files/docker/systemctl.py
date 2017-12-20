@@ -942,20 +942,6 @@ class Systemctl:
             folder = os_path(self._root, folder)
         filename = "%s.pid" % conf.name()
         return os.path.join(folder, filename)
-    def get_pid_file(self, unit):
-        """ get the specified or default pid file path """
-        conf = self.load_unit_conf(unit)
-        if conf is None:
-            logg.error("Unit %s could not be found.", unit)
-            return None
-        return self.get_pid_file_from(conf)
-    def get_pid_file_from(self, conf, default = None):
-        """ get the specified or default pid file path """
-        if not conf: return default
-        if not conf.filename(): return default
-        if default is None:
-            default = self.default_pid_file_from(conf)
-        return self.pid_file_from(conf, default)
     def pid_file_from(self, conf, default = ""):
         """ get the specified pid file path (not a computed default) """
         return conf.data.get("Service", "PIDFile", default)
@@ -2157,24 +2143,6 @@ class Systemctl:
             return "active"
         else:
             return "inactive"
-    def _get_active_from(self, conf): # TODO cleanup
-        """ returns 'active' 'inactive' 'failed' 'unknown' """
-        # used in try-restart/other commands to check if needed.
-        if not conf: return "unknown"
-        status_file = self.status_file_from(conf)
-        if status_file and os.path.isfile(status_file) and os.path.getsize(status_file):
-            state = self.get_status_from(conf, "ActiveState", "failed")
-            logg.info("get_status_from %s => %s", conf.name(), state)
-            return state
-        pid_file = self.get_pid_file_from(conf)
-        if not pid_file or not os.path.exists(pid_file):
-            return "inactive"
-        pid = self.read_mainpid_from(conf, "")
-        logg.info("pid_file '%s' => PID %s", pid_file, pid)
-        if pid:
-            if not pid_exists(pid) or pid_zombie(pid):
-                return "failed"
-        return "active"
     def get_substate_from(self, conf):
         """ returns 'running' 'exited' 'dead' 'failed' 'plugged' 'mounted' """
         if not conf: return False
