@@ -398,7 +398,7 @@ class UnitConf:
     def __init__(self, data):
         self.data = data # UnitParser
         self.env = {}
-        self.status = {}
+        self.status = None
     def loaded(self):
         files = self.data.filenames()
         return len(files)
@@ -987,15 +987,21 @@ class Systemctl:
         dirpath = os.path.dirname(os.path.abspath(status_file))
         if not os.path.isdir(dirpath):
             os.makedirs(dirpath)
+        if conf.status is None:
+            conf.status = self.read_status_from(conf)
+        if True:
+            for key in sorted(status.keys()):
+                value = status[key]
+                if value is None: value = ""
+                if key.upper() == "AS": key = "ActiveState"
+                if key.upper() == "PID": key = "MainPID"
+                if key.upper() == "EXIT": key = "ExecMainCode"
+                conf.status[key] = value
         try:
             with open(status_file, "w") as f:
-                for key in sorted(status.keys()):
-                    value = status[key]
-                    if value is None: value = ""
-                    if key.upper() == "AS": key = "ACTIVESTATE"
-                    if key.upper() == "PID": key = "MAINPID"
-                    if key.upper() == "EXIT": key = "EXIT_STATUS"
-                    f.write("{}={}\n".format(key.upper(), str(value)))
+                for key in sorted(conf.status):
+                    value = conf.status[key]
+                    f.write("{}={}\n".format(key, str(value)))
         except IOError as e:
             logg.error("STATUS %s -- %s", status, e)
         return True
@@ -1006,15 +1012,18 @@ class Systemctl:
            for key in defaults.keys():
                status[key] = defaults[key]
         elif isinstance(defaults, string_types):
-           status["ACTIVESTATE"] = defaults
+           status["ActiveState"] = defaults
         if not status_file:
+            logg.debug("no status file.")
             return status
         if not os.path.isfile(status_file):
+            logg.debug("no status file: %s", status_file)
             return status
         if self.get_filetime(status_file) < self.get_boottime():
-            # ignore status if there was a reboot
+            logg.debug("ignore status if there was a reboot")
             return status
         try:
+            logg.debug("reading %s", status_file)
             for line in open(status_file):
                 if line.strip(): 
                     m = re.match(r"^(\w+)[:=](.*)", line)
@@ -1023,12 +1032,20 @@ class Systemctl:
                         if key.strip():
                             status[key.strip()] = value.strip()
                     elif line in [ "active", "inactive", "failed"]:
-                        status["ACTIVESTATE"] = line
+                        status["ActiveState"] = line
                     else:
                         logg.warning("ignored %s", line.strip())
         except:
             logg.warning("bad read of status file '%s'", status_file)
         return status
+    def get_status_from(self, conf, name, default = None):
+        if conf.status is None:
+            conf.status = self.read_status_from(conf)
+        return conf.status.get(name, default)
+    def set_status_from(self, conf, name, value):
+        if conf.status is None:
+            conf.status = self.read_status_from(conf)
+        conf.status[name] = value
     #
     def get_boottime(self):
         for pid in xrange(10):
@@ -1318,7 +1335,7 @@ class Systemctl:
                 if name == "READY":
                     seenREADY = value
                 if name in ["STATUS", "ACTIVESTATE"]:
-                    logg.debug("%s: %s", name, value)
+                    logg.debug("%s: %s", name, value) # TODO: update STATUS -> SubState
             if seenREADY:
                 break
         if not seenREADY:
@@ -1410,8 +1427,7 @@ class Systemctl:
                 return True
         elif runs in [ "oneshot" ]:
             status_file = self.status_file_from(conf)
-            status = self.read_status_from(conf)
-            if status.get("ACTIVESTATE", "unkown") == "active":
+            if self.get_status_from(conf, "ActiveState", "unknown") == "active":
                 logg.warning("the service was already up once")
                 return True
             for cmd in conf.data.getlist("Service", "ExecStart", []):
@@ -1514,6 +1530,7 @@ class Systemctl:
         # POST sequence
         active = self.is_active_from(conf)
         if not active:
+            logg.warning("%s start not active", runs)
             # according to the systemd documentation, a failed start-sequence
             # should execute the ExecStopPost sequence allowing some cleanup.
             env["SERVICE_RESULT"] = service_result
@@ -1646,8 +1663,7 @@ class Systemctl:
                 return True
         elif runs in [ "oneshot" ]:
             status_file = self.status_file_from(conf)
-            status = self.read_status_from(conf)
-            if status.get("ACTIVESTATE", "unknown") == "inactive":
+            if self.get_status_from(conf, "ActiveState", "unknown") == "inactive":
                 logg.warning("the service is already down once")
                 return True
             for cmd in conf.data.getlist("Service", "ExecStop", []):
@@ -2119,11 +2135,12 @@ class Systemctl:
     def get_active_from(self, conf):
         """ returns 'active' 'inactive' 'failed' 'unknown' """
         # used in try-restart/other commands to check if needed.
-        if not conf: return "unkonwn"
+        if not conf: return "unknown"
         status_file = self.status_file_from(conf)
         if status_file and os.path.isfile(status_file) and os.path.getsize(status_file):
-            status = self.read_status_from(conf)
-            return status.get("ACTIVESTATE", "failed")
+            state = self.get_status_from(conf, "ActiveState", "failed")
+            logg.info("get_status_from %s => %s", conf.name(), state)
+            return state
         pid_file = self.get_pid_file_from(conf)
         if not pid_file or not os.path.exists(pid_file):
             return "inactive"
@@ -2137,14 +2154,11 @@ class Systemctl:
         if not conf: return False
         status_file = self.status_file_from(conf)
         if status_file and os.path.isfile(status_file) and os.path.getsize(status_file):
-            status = self.read_status_from(conf)
-            state = status.get("ACTIVESTATE", "failed")
+            state = self.get_status_from(conf, "ActiveState", "failed")
             if state in [ "active" ]:
-                return status.get("STATUS", "running")
+                return self.get_status_from(conf, "SubState", "running")
             else:
-                return status.get("STATUS", "dead")
-            # "STATUS" is defined in sd_notify(3) while
-            # our "ACTIVESTATE" is used for the "ActiveState" property
+                return self.get_status_from(conf, "SubState", "dead")
         pid_file = self.get_pid_file_from(conf)
         if not pid_file or not os.path.exists(pid_file):
             return "dead"
@@ -2843,9 +2857,9 @@ class Systemctl:
         yield "Names", unit
         yield "Description", self.get_description_from(conf) # conf.data.get("Unit", "Description")
         yield "PIDFile", self.pid_file_from(conf) # not self.get_pid_file_from w/ default location
-        yield "MainPID", self.active_pid_from(conf) or "0"  # status["MAINPID"]
-        yield "SubState", self.get_substate_from(conf)      # status["STATUS"]
-        yield "ActiveState", self.get_active_from(conf)     # status["ACTIVESTATE"]
+        yield "MainPID", self.active_pid_from(conf) or "0"  # status["MainPID"] or PIDFile-read
+        yield "SubState", self.get_substate_from(conf)      # status["SubState"] or notify-result
+        yield "ActiveState", self.get_active_from(conf)     # status["ActiveState"]
         yield "LoadState", conf.loaded() and "loaded" or "not-loaded"
         yield "UnitFileState", self.enabled_from(conf)
         yield "TimeoutStartUSec", seconds_to_time(self.get_TimeoutStartSec(conf))
