@@ -935,6 +935,12 @@ class Systemctl:
                 continue
             return pid
         return None
+    def get_pid_file(self, unit): # -> text
+        """ support for the testsuite.py """
+        conf = self.get_unit_conf(unit)
+        pid_file = self.pid_file_from(conf)
+        def_file = self.default_pid_file_from(conf)
+        return pid_file or def_file
     def default_pid_file_from(self, conf): # -> text
         """ default file pattern where to store a pid """
         folder = self._pid_file_folder
