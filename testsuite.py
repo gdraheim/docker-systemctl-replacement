@@ -3263,6 +3263,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.coverage()
     def test_3051_systemctl_py_check_is_failed_in_testenv(self):
         """ check is_failed behaviour in local testenv env"""
+        vv = "-vv"
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -3336,11 +3337,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(exitD, 0)
         #
         logg.info("== checking combinations of arguments")
-        is_active_BC = "{systemctl} is-failed zzb.service zzc.service "
-        is_active_CD = "{systemctl} is-failed zzc.service zzd.service"
-        is_active_BD = "{systemctl} is-failed zzb.service zzd.service"
-        is_active_BCD = "{systemctl} is-failed zzb.service zzc.service zzd.service"
-        is_active_BCDX = "{systemctl} is-failed zzb.service zzc.service zzd.service --quiet"
+        is_active_BC = "{systemctl} is-failed zzb.service zzc.service {vv}"
+        is_active_CD = "{systemctl} is-failed zzc.service zzd.service {vv}"
+        is_active_BD = "{systemctl} is-failed zzb.service zzd.service {vv}"
+        is_active_BCD = "{systemctl} is-failed zzb.service zzc.service zzd.service {vv}"
+        is_active_BCDX = "{systemctl} is-failed zzb.service zzc.service zzd.service --quiet {vv}"
         actBC, exitBC  = output2(is_active_BC.format(**locals()))
         actCD, exitCD  = output2(is_active_CD.format(**locals()))
         actBD, exitBD  = output2(is_active_BD.format(**locals()))
@@ -3364,6 +3365,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
+        #
+        actBC, exitBC  = output2(is_active_BC.format(**locals()))
+        self.assertEqual(actBC.split("\n"), ["active", "active", ""])
+        self.assertNotEqual(exitBC, 0)
         #
         actBC, exitBC  = output2(is_active_BC.format(**locals()))
         self.assertEqual(actBC.split("\n"), ["active", "active", ""])
@@ -7132,7 +7137,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} kill zzc.service -vv"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(end, 1) # nothing to kill
+        self.assertEqual(end, 0) # nothing to kill
         #
         time.sleep(1)
         top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
@@ -7274,7 +7279,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} kill zzc.service -vv"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(end, 1) # nothing to kill
+        self.assertEqual(end, 0) # nothing to kill
         #
         cmd = "ls -l {rundir}"
         out, end = output2(cmd.format(**locals()))
