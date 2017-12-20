@@ -977,11 +977,12 @@ class Systemctl:
         if os.path.exists(status_file):
             os.remove(status_file)
         conf.status = {}
-    def write_status_file(self, status_file, **status): # -> bool(written)
+    def write_status_from(self, conf, **status): # -> bool(written)
         """ if a status_file is known then path is created and the
             give status is written as the only content. """
+        status_file = self.status_file_from(conf)
         if not status_file: 
-            logg.debug("status %s but no status_file", pid)
+            logg.debug("status %s but no status_file", conf.name())
             return False
         dirpath = os.path.dirname(os.path.abspath(status_file))
         if not os.path.isdir(dirpath):
@@ -998,7 +999,8 @@ class Systemctl:
         except IOError as e:
             logg.error("STATUS %s -- %s", status, e)
         return True
-    def read_status_file(self, status_file, defaults = None):
+    def read_status_from(self, conf, defaults = None):
+        status_file = self.status_file_from(conf)
         status = {}
         if hasattr(defaults, "keys"):
            for key in defaults.keys():
@@ -1401,14 +1403,14 @@ class Systemctl:
                 run = subprocess_wait(sudo+newcmd, env)
                 if run.returncode:
                     logg.info("%s start done %s", runs, run.returncode)
-                    self.write_status_file(status_file, AS="failed", EXIT=run.returncode)
+                    self.write_status_from(conf, AS="failed", EXIT=run.returncode)
                 else:
                     logg.info("%s start done OK", runs)
-                    self.write_status_file(status_file, AS="active")
+                    self.write_status_from(conf, AS="active")
                 return True
         elif runs in [ "oneshot" ]:
             status_file = self.status_file_from(conf)
-            status = self.read_status_file(status_file)
+            status = self.read_status_from(conf)
             if status.get("ACTIVESTATE", "unkown") == "active":
                 logg.warning("the service was already up once")
                 return True
@@ -1425,9 +1427,9 @@ class Systemctl:
                 logg.info("%s start done (%s)", runs, returncode)
             if True:
                 if returncode:
-                    self.write_status_file(status_file, AS="failed", EXIT=returncode)
+                    self.write_status_from(conf, AS="failed", EXIT=returncode)
                 else:
-                    self.write_status_file(status_file, AS="active")
+                    self.write_status_from(conf, AS="active")
         elif runs in [ "simple" ]: 
             status_file = self.status_file_from(conf)
             pid_file = self.get_pid_file_from(conf)
@@ -1503,9 +1505,9 @@ class Systemctl:
                 logg.warning("No PIDFile for forking %s", conf.filename())
                 status_file = self.status_file_from(conf)
                 if not returncode:
-                    self.write_status_file(status_file, AS="active")
+                    self.write_status_from(conf, AS="active")
                 else:
-                    self.write_status_file(status_file, AS="failed", EXIT=returncode)
+                    self.write_status_from(conf, AS="failed", EXIT=returncode)
         else:
             logg.error("unsupported run type '%s'", runs)
             return False
@@ -1560,7 +1562,7 @@ class Systemctl:
         if doRemainAfterExit:
             status_file = self.status_file_from(conf)
             if True:
-                self.write_status_file(status_file, AS="active")
+                self.write_status_from(conf, AS="active")
         cmdlist = conf.data.getlist("Service", "ExecStart", [])
         for idx, cmd in enumerate(cmdlist):
             logg.debug("ExecStart[%s]: %s", idx, cmd)
@@ -1583,9 +1585,9 @@ class Systemctl:
         if doRemainAfterExit:
             status_file = self.status_file_from(conf)
             if not returncode:
-                self.write_status_file(status_file, AS="active", EXIT=run.returncode)
+                self.write_status_from(conf, AS="active", EXIT=run.returncode)
             else:
-                self.write_status_file(status_file, AS="failed", EXIT=run.returncode)
+                self.write_status_from(conf, AS="failed", EXIT=run.returncode)
         return returncode
     def stop_modules(self, *modules):
         """ [UNIT]... -- stop these units """
@@ -1638,13 +1640,13 @@ class Systemctl:
                 logg.info("%s stop %s", runs, shell_cmd(sudo+newcmd))
                 run = subprocess_wait(sudo+newcmd, env)
                 if run.returncode:
-                    self.write_status_file(status_file, AS="failed", EXIT=run.returncode)
+                    self.write_status_from(conf, AS="failed", EXIT=run.returncode)
                 else:
                     self.clean_status_from(conf)
                 return True
         elif runs in [ "oneshot" ]:
             status_file = self.status_file_from(conf)
-            status = self.read_status_file(status_file)
+            status = self.read_status_from(conf)
             if status.get("ACTIVESTATE", "unknown") == "inactive":
                 logg.warning("the service is already down once")
                 return True
@@ -1660,7 +1662,7 @@ class Systemctl:
                     break
             if True:
                 if returncode:
-                    self.write_status_file(status_file, AS="failed", EXIT=returncode)
+                    self.write_status_from(conf, AS="failed", EXIT=returncode)
                 else:
                     self.clean_status_from(conf)
         ### fallback Stop => Kill for ["simple","notify","forking"]
@@ -1735,7 +1737,7 @@ class Systemctl:
                         os.remove(pid_file)
             if returncode:
                 if os.path.isfile(status_file):
-                    self.write_status_file(status_file, AS=service_result, EXIT=returncode)
+                    self.write_status_from(conf, AS=service_result, EXIT=returncode)
             else:
                 self.clean_status_from(conf)
         else:
@@ -1806,10 +1808,10 @@ class Systemctl:
                 logg.info("%s reload %s", runs, shell_cmd(sudo+newcmd))
                 run = subprocess_wait(sudo+newcmd, env)
                 if run.returncode:
-                    self.write_status_file(status_file, AS="failed", EXIT=run.returncode)
+                    self.write_status_from(conf, AS="failed", EXIT=run.returncode)
                     return False
                 else:
-                    self.write_status_file(status_file, AS="active")
+                    self.write_status_from(conf, AS="active")
                     return True
         elif runs in [ "simple", "notify", "forking" ]:
             if not self.is_active_from(conf):
@@ -2120,7 +2122,7 @@ class Systemctl:
         if not conf: return "unkonwn"
         status_file = self.status_file_from(conf)
         if status_file and os.path.isfile(status_file) and os.path.getsize(status_file):
-            status = self.read_status_file(status_file)
+            status = self.read_status_from(conf)
             return status.get("ACTIVESTATE", "failed")
         pid_file = self.get_pid_file_from(conf)
         if not pid_file or not os.path.exists(pid_file):
@@ -2135,7 +2137,7 @@ class Systemctl:
         if not conf: return False
         status_file = self.status_file_from(conf)
         if status_file and os.path.isfile(status_file) and os.path.getsize(status_file):
-            status = self.read_status_file(status_file)
+            status = self.read_status_from(conf)
             state = status.get("ACTIVESTATE", "failed")
             if state in [ "active" ]:
                 return status.get("STATUS", "running")
