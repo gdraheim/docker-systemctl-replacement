@@ -1450,8 +1450,6 @@ class Systemctl:
             if self.is_active_pid(pid):
                 logg.warning("the service is already running on PID %s", pid)
                 return True
-            runuser = conf.data.get("Service", "User", "")
-            rungroup = conf.data.get("Service", "Group", "")
             if not os.fork(): # pragma: no cover
                 os.setsid() # detach child process from parent
                 sys.exit(self.exec_start_from(conf, env)) # and exit after call
@@ -1473,8 +1471,6 @@ class Systemctl:
             if self.is_active_pid(pid):
                 logg.error("the service is already running on PID %s", pid)
                 return False
-            runuser = conf.data.get("Service", "User", "")
-            rungroup = conf.data.get("Service", "Group", "")
             notify = self.notify_socket_from(conf)
             if notify:
                 env["NOTIFY_SOCKET"] = notify.socketfile
