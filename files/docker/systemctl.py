@@ -2789,11 +2789,14 @@ class Systemctl:
             self.syntax_check(conf)
         return True # and ok
     def syntax_check(self, conf):
-        unit = conf.name()
         if conf.filename() and conf.filename().endswith(".service"):
-            if not conf.data.has_section("Service"):
-               logg.error("%s: .service file without [Service] section", unit)
-               return False
+            return self.syntax_check_service(conf)
+        return True
+    def syntax_check_service(self, conf):
+        unit = conf.name()
+        if not conf.data.has_section("Service"):
+           logg.error("%s: .service file without [Service] section", unit)
+           return False
         ok = False
         haveType = conf.data.get("Service", "Type", "simple")
         haveExecStart = conf.data.getlist("Service", "ExecStart", [])
