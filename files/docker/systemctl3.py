@@ -42,17 +42,20 @@ _unit_property = None
 _show_all = False
 
 # common default paths
-_sysd_default = "multi-user.target"
+_default_target = "multi-user.target"
 _sysd_folder1 = "/etc/systemd/system"
 _sysd_folder2 = "/var/run/systemd/system"
 _sysd_folder3 = "/usr/lib/systemd/system"
 _sysd_folder4 = "/lib/systemd/system"
+_sysd_folder9 = None
 _sysv_folder1 = "/etc/init.d"
 _sysv_folder2 = "/var/run/init.d"
+_sysv_folder9 = None
 _preset_folder1 = "/etc/systemd/system-preset"
 _preset_folder2 = "/var/run/systemd/system-preset"
 _preset_folder3 = "/usr/lib/systemd/system-preset"
 _preset_folder4 = "/lib/systemd/system-preset"
+_preset_folder9 = None
 _waitprocfile = 100
 _waitkillproc = 10
 
@@ -125,7 +128,7 @@ def os_path(root, path):
     if not path:
         return path
     while path.startswith(os.path.sep):
-       path = path[1:]
+        path = path[1:]
     return os.path.join(root, path)
 
 def shutil_chown(filename, user = None, group = None):
@@ -604,16 +607,9 @@ class Systemctl:
         self._unit_property = _unit_property
         self._unit_type = _unit_type
         # some common constants that may be changed
-        self._sysd_folder1 = _sysd_folder1
-        self._sysd_folder2 = _sysd_folder2
-        self._sysd_folder3 = _sysd_folder3
-        self._sysd_folder4 = _sysd_folder4
-        self._sysv_folder1 = _sysv_folder1
-        self._sysv_folder2 = _sysv_folder2
-        self._preset_folder1 = _preset_folder1
-        self._preset_folder2 = _preset_folder2
-        self._preset_folder3 = _preset_folder3
-        self._preset_folder4 = _preset_folder4
+        self._sysd_folders = [ _sysd_folder1, _sysd_folder2, _sysd_folder3, _sysd_folder4, _sysd_folder9 ]
+        self._sysv_folders = [ _sysv_folder1, _sysv_folder2, _sysv_folder9 ]
+        self._preset_folders = [ _preset_folder1, _preset_folder2, _preset_folder3, _preset_folder4, _preset_folder9 ]
         self._notify_socket_folder = _notify_socket_folder
         self._notify_socket_name = _notify_socket_name
         self._pid_file_folder = _pid_file_folder 
@@ -626,6 +622,13 @@ class Systemctl:
         self._file_for_unit_sysv = None # name.service => /etc/init.d/name
         self._file_for_unit_sysd = None # name.service => /etc/systemd/system/name.service
         self._preset_file_list = None # /etc/systemd/system-preset/* => file content
+        self._default_target = _default_target
+    def sysd_folders(self):
+        return self._sysd_folders
+    def sysv_folders(self):
+        return self._sysv_folders
+    def preset_folders(self):
+        return self._preset_folders
     def unit_file(self, module = None): # -> filename?
         """ file path for the given module (sysv or systemd) """
         path = self.unit_sysd_file(module)
@@ -637,7 +640,9 @@ class Systemctl:
         """ reads all unit files, returns the first filename for the unit given """
         if self._file_for_unit_sysd is None:
             self._file_for_unit_sysd = {}
-            for folder in (self._sysd_folder1, self._sysd_folder2, self._sysd_folder3, self._sysd_folder4):
+            for folder in self.sysd_folders():
+                if not folder: 
+                    continue
                 if self._root:
                     folder = os_path(self._root, folder)
                 if not os.path.isdir(folder):
@@ -663,7 +668,9 @@ class Systemctl:
         """ reads all init.d files, returns the first filename when unit is a '.service' """
         if self._file_for_unit_sysv is None:
             self._file_for_unit_sysv = {}
-            for folder in (self._sysv_folder1, self._sysv_folder2):
+            for folder in self.sysv_folders():
+                if not folder: 
+                    continue
                 if self._root:
                     folder = os_path(self._root, folder)
                 if not os.path.isdir(folder):
@@ -1297,17 +1304,17 @@ class Systemctl:
         runuser = conf.data.get("Service", "User", "")
         sudo = ""
         if runuser and os.geteuid() != 0:
-           logg.error("can not exec notify-service from non-root caller")
-           return None
+            logg.error("can not exec notify-service from non-root caller")
+            return None
         notify_socket_folder = self._notify_socket_folder
         if self._root:
-           notify_socket_folder = os_path(self._root, notify_socket_folder)
+            notify_socket_folder = os_path(self._root, notify_socket_folder)
         notify_socket = os.path.join(notify_socket_folder, self._notify_socket_name)
         socketfile = socketfile or notify_socket
         if not os.path.isdir(os.path.dirname(socketfile)):
             os.makedirs(os.path.dirname(socketfile))
         if os.path.exists(socketfile):
-           os.unlink(socketfile)
+            os.unlink(socketfile)
         sock = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
         sock.bind(socketfile)
         os.chmod(socketfile, 0o777)
@@ -2286,11 +2293,13 @@ class Systemctl:
         """ reads all preset files, returns the scanned files """
         if self._preset_file_list is None:
             self._preset_file_list = {}
-            for folder in (self._preset_folder1, self._preset_folder2, self._preset_folder3, self._preset_folder4):
+            for folder in self.preset_folders():
+                if not folder: 
+                    continue
                 if self._root:
                     folder = os_path(self._root, folder)
                 if not os.path.isdir(folder):
-                        continue
+                    continue
                 for name in os.listdir(folder):
                     if not name.endswith(".preset"):
                         continue
@@ -2360,7 +2369,7 @@ class Systemctl:
         return conf.data.get("Install", "WantedBy", default, True)
     def enablefolder(self, wanted = None):
         if not wanted: 
-            return None
+            return wanted
         if not wanted.endswith(".wants"):
             wanted = wanted + ".wants"
         return os.path.join("/etc/systemd/system", wanted)
@@ -2394,7 +2403,8 @@ class Systemctl:
         if self.is_sysv_file(unit_file):
             return self.enable_unit_sysv(unit_file)
         wanted = self.wanted_from(self.get_unit_conf(unit))
-        if not wanted: return False # wanted = "multi-user.target"
+        if not wanted: 
+            return False # "static" is-enabled
         folder = self.enablefolder(wanted)
         if self._root:
             folder = os_path(self._root, folder)
@@ -2481,6 +2491,8 @@ class Systemctl:
         if self.is_sysv_file(unit_file):
             return self.disable_unit_sysv(unit_file)
         wanted = self.wanted_from(self.get_unit_conf(unit))
+        if not wanted:
+            return False # "static" is-enabled
         folder = self.enablefolder(wanted)
         if self._root:
             folder = os_path(self._root, folder)
@@ -2552,11 +2564,11 @@ class Systemctl:
         if self.is_sysv_file(unit_file):
             return self.is_enabled_sysv(unit_file)
         wanted = self.wanted_from(self.get_unit_conf(unit))
+        if not wanted:
+            return True # "static"
         folder = self.enablefolder(wanted)
         if self._root:
             folder = os_path(self._root, folder)
-        if not wanted:
-            return True
         target = os.path.join(folder, os.path.basename(unit_file))
         if os.path.isfile(target):
             return True
@@ -2658,7 +2670,9 @@ class Systemctl:
         for style in [ "Requires", "Wants", "Requisite", "BindsTo", "PartOf",
             ".requires", ".wants", "PropagateReloadTo", "Conflicts",  ]:
             if style.startswith("."):
-                for folder in [ self._sysd_folder1, self._sysd_folder2, self._sysd_folder3, self._sysd_folder4 ]:
+                for folder in self.sysd_folders():
+                    if not folder: 
+                        continue
                     require_path = os.path.join(folder, unit + style)
                     if self._root:
                         require_path = os_path(self._root, require_path)
@@ -2891,7 +2905,7 @@ class Systemctl:
             if fnmatch.fnmatchcase(unit, ignore+".service"):
                 return True # ignore
         return False
-    def system_default_services(self, sysv = "S", default_target = "multi-user.target"):
+    def system_default_services(self, sysv = "S", default_target = None):
         """ show the default services 
             This is used internally to know the list of service to be started in 'default'
             runlevel when the container is started through default initialisation. It will
@@ -2905,9 +2919,12 @@ class Systemctl:
                 igno = []
         logg.debug("ignored services filter for default.target:\n\t%s", igno)
         return self.enabled_default_services(sysv, default_target, igno)
-    def enabled_default_services(self, sysv = "S", default_target = "multi-user.target", igno = []):
+    def enabled_default_services(self, sysv = "S", default_target = None, igno = []):
+        default_target = default_target or self._default_target
         default_services = []
-        for folder in [ self._sysd_folder1, self._sysd_folder2 ]:
+        for folder in self.sysd_folders():
+            if not folder:
+                continue
             if self._root:
                 folder = os_path(self._root, folder)
             enabled_folder = os.path.join(folder, default_target + ".wants")
@@ -2929,7 +2946,7 @@ class Systemctl:
                 m = re.match(sysv+r"\d\d(.*)", unit)
                 if m:
                     service = m.group(1)
-                    unit = service+".service"
+                    unit = service + ".service"
                     if self._ignored_unit(unit, igno):
                         continue # ignore
                     default_services.append(unit)
@@ -2949,7 +2966,7 @@ class Systemctl:
         """ detect the default.target services and start them.
             When --init is given then the init-loop is run and
             the services are stopped again by 'systemctl halt'."""
-        default_target = "multi-user.target"
+        default_target = self._default_target
         default_services = self.system_default_services("S", default_target)
         self.start_units(default_services)
         logg.info("system is up")
@@ -2962,7 +2979,7 @@ class Systemctl:
         """ detect the default.target services and stop them.
             This is commonly run through 'systemctl halt' or
             at the end of a 'systemctl --init default' loop."""
-        default_target = "multi-user.target"
+        default_target = self._default_target
         default_services = self.system_default_services("K", default_target)
         self.stop_units(default_services)
         logg.info("system is down")

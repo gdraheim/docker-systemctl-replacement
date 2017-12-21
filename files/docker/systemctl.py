@@ -2946,7 +2946,7 @@ class Systemctl:
                 m = re.match(sysv+r"\d\d(.*)", unit)
                 if m:
                     service = m.group(1)
-                    unit = service+".service"
+                    unit = service + ".service"
                     if self._ignored_unit(unit, igno):
                         continue # ignore
                     default_services.append(unit)
