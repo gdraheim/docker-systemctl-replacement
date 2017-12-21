@@ -5628,8 +5628,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             with basic run-service commands: start, stop, restart,
             reload, try-restart, reload-or-restart, kill and
             reload-or-try-restart."""
-        if not os.path.exists("/usr/bin/socat"):
-            self.skipTest("missing /usr/bin/socat")
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -5817,8 +5815,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             with basic run-service commands: start, stop, restart,
             reload, try-restart, reload-or-restart, kill and
             reload-or-try-restart / we have only different exit-code."""
-        if not os.path.exists("/usr/bin/socat"):
-            self.skipTest("missing /usr/bin/socat")
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
