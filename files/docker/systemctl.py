@@ -912,13 +912,16 @@ class Systemctl:
             return default
         if not os.path.isfile(pid_file):
             return default
+        if self.truncate_old(pid_file):
+            return default
         try:
+            # some pid-files from applications contain multiple lines
             for line in open(pid_file):
                 if line.strip(): 
                     pid = to_int(line.strip())
                     break
-        except:
-            logg.warning("bad read of pid file '%s'", pid_file)
+        except Exception, e:
+            logg.warning("bad read of pid file '%s': %s", pid_file, e)
         return pid
     def wait_pid_file_from(self, conf, timeout = None):
         pid_file = self.pid_file_from(conf)
@@ -1045,8 +1048,8 @@ class Systemctl:
         if not os.path.isfile(status_file):
             logg.debug("no status file: %s", status_file)
             return status
-        if self.get_filetime(status_file) < self.get_boottime():
-            logg.debug("ignore status if there was a reboot")
+        if self.truncate_old(status_file):
+            logg.debug("old status file: %s", status_file)
             return status
         try:
             logg.debug("reading %s", status_file)
@@ -1095,6 +1098,15 @@ class Systemctl:
         return booted
     def get_filetime(self, filename):
         return os.path.getmtime(filename)
+    def truncate_old(self, filename):
+        if self.get_filetime(filename) > self.get_boottime():
+            return False # OK
+        logg.warning("truncate old %s", filename)
+        try:
+            shell_truncate(filename)
+        except Exception, e:
+            logg.warning("while truncating: %s", e)
+        return True # truncated
     #
     def sleep(self, seconds = None): 
         """ just sleep """
