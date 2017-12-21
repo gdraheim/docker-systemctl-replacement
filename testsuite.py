@@ -1823,50 +1823,51 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.coverage()
     def test_3005_is_enabled_result_when_enabled(self):
         """ check that 'is-enabled' reports correctly for enabled/disabled """
+        vv = "-vv"
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
         systemctl = _cov + _systemctl_py + " --root=" + root
-        text_file(os_path(root, "/etc/systemd/system/a.service"),"""
+        text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A""")
-        text_file(os_path(root, "/etc/systemd/system/b.service"),"""
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"),"""
             [Unit]
             Description=Testing B
             [Install]
             WantedBy=multi-user.target""")
         #
-        cmd = "{systemctl} is-enabled a.service"
+        cmd = "{systemctl} is-enabled zza.service {vv}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         self.assertTrue(greps(out, r"^static"))
         self.assertEqual(len(lines(out)), 1)
-        cmd = "{systemctl} is-enabled b.service"
+        cmd = "{systemctl} is-enabled zzb.service"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 1)
         self.assertTrue(greps(out, r"^disabled"))
         self.assertEqual(len(lines(out)), 1)
         #
-        cmd = "{systemctl} --no-legend enable b.service"
+        cmd = "{systemctl} --no-legend enable zzb.service"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         #
-        cmd = "{systemctl} is-enabled b.service"
+        cmd = "{systemctl} is-enabled zzb.service"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         self.assertTrue(greps(out, r"^enabled"))
         self.assertEqual(len(lines(out)), 1)
         #
-        cmd = "{systemctl} --no-legend disable b.service"
+        cmd = "{systemctl} --no-legend disable zzb.service"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         #
-        cmd = "{systemctl} is-enabled b.service"
+        cmd = "{systemctl} is-enabled zzb.service"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertTrue(greps(out, r"^disabled"))
@@ -1875,6 +1876,63 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.rm_testdir()
         self.coverage()
+    def real_3005_is_enabled_result_when_enabled(self):
+        """ check that 'is-enabled' reports correctly for enabled/disabled """
+        vv = ""
+        testname = self.testname()
+        testdir = self.testdir()
+        root = ""
+        systemctl = "/usr/bin/systemctl"
+        text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
+            [Unit]
+            Description=Testing A""")
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Install]
+            WantedBy=multi-user.target""")
+        sx____("systemctl daemon-reload")
+        #
+        cmd = "{systemctl} is-enabled zza.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertTrue(greps(out, r"^static"))
+        self.assertEqual(len(lines(out)), 1)
+        cmd = "{systemctl} is-enabled zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 1)
+        self.assertTrue(greps(out, r"^disabled"))
+        self.assertEqual(len(lines(out)), 1)
+        #
+        cmd = "{systemctl} --no-legend enable zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} is-enabled zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertTrue(greps(out, r"^enabled"))
+        self.assertEqual(len(lines(out)), 1)
+        #
+        cmd = "{systemctl} --no-legend disable zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} is-enabled zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertTrue(greps(out, r"^disabled"))
+        self.assertEqual(len(lines(out)), 1)
+        self.assertEqual(end, 1)
+        #
+        self.rm_testdir()
+        sx____("rm /etc/systemd/system/zz*")
+        sx____("systemctl daemon-reload")
     def test_3006_is_enabled_is_true_when_any_is_enabled(self):
         """ check that 'is-enabled' reports correctly for enabled/disabled """
         testname = self.testname()
