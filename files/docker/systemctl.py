@@ -19,6 +19,7 @@ import signal
 import time
 import socket
 import tempfile
+import datetime
 
 if sys.version[0] == '2':
     string_types = basestring
@@ -1043,13 +1044,13 @@ class Systemctl:
         elif isinstance(defaults, string_types):
            status["ActiveState"] = defaults
         if not status_file:
-            logg.debug("no status file.")
+            logg.debug("no status file. returning %s", status)
             return status
         if not os.path.isfile(status_file):
-            logg.debug("no status file: %s", status_file)
+            logg.debug("no status file: %s\n returning %s", status_file, status)
             return status
         if self.truncate_old(status_file):
-            logg.debug("old status file: %s", status_file)
+            logg.debug("old status file: %s\n returning %s", status_file, status)
             return status
         try:
             logg.debug("reading %s", status_file)
@@ -1099,14 +1100,30 @@ class Systemctl:
     def get_filetime(self, filename):
         return os.path.getmtime(filename)
     def truncate_old(self, filename):
-        if self.get_filetime(filename) > self.get_boottime():
+        filetime = self.get_filetime(filename)
+        boottime = self.get_boottime()
+        if filetime > boottime :
             return False # OK
         logg.warning("truncate old %s", filename)
+        logg.warning("  file time: %s", datetime.datetime.fromtimestamp(filetime))
+        logg.warning("  boot time: %s", datetime.datetime.fromtimestamp(boottime))
         try:
-            shell_truncate(filename)
+            shutil_truncate(filename)
         except Exception, e:
             logg.warning("while truncating: %s", e)
         return True # truncated
+    def getsize(self, filename):
+        if not filename:
+            return 0
+        if not os.path.isfile(filename):
+            return 0
+        if self.truncate_old(filename):
+            return 0
+        try:
+            return os.path.getsize(filename)
+        except Exception, e:
+            logg.error("while reading file size: %s\n of %s", e, filename)
+            return 0
     #
     def sleep(self, seconds = None): 
         """ just sleep """
@@ -2155,7 +2172,7 @@ class Systemctl:
             if not os.path.exists(pid_file):
                 return "inactive"
         status_file = self.status_file_from(conf)
-        if status_file and os.path.isfile(status_file) and os.path.getsize(status_file):
+        if self.getsize(status_file):
             state = self.get_status_from(conf, "ActiveState", "failed")
             logg.info("get_status_from %s => %s", conf.name(), state)
             return state
@@ -2176,7 +2193,7 @@ class Systemctl:
             if not os.path.exists(pid_file):
                 return "dead"
         status_file = self.status_file_from(conf)
-        if status_file and os.path.isfile(status_file) and os.path.getsize(status_file):
+        if self.getsize(status_file):
             state = self.get_status_from(conf, "ActiveState", "failed")
             if state in [ "active" ]:
                 return self.get_status_from(conf, "SubState", "running")

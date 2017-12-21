@@ -3579,7 +3579,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Service]
             Environment=DEF2=foo
             EnvironmentFile=/etc/sysconfig/b.conf
-            ExecStart=/usr/bin/sleep 2
+            ExecStart=/usr/bin/sleep 3
             ExecStartPost=%s A $DEF1 $DEF2
             ExecStartPost=%s B ${DEF1} ${DEF2}
             ExecStartPost=%s C $DEF1$DEF2
@@ -6560,6 +6560,211 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
            "run-start-pre", "START-PRE", 
            "run-start", "START-IT", "started", "fail-after-start",
            "run-start-post", "START-POST"])
+        #
+        self.rm_testdir()
+        self.coverage()
+    def test_4060_oneshot_truncate_old_status(self):
+        """ check that we manage a service that has some old .status
+            file being around. That is a reboot has occurred and the
+            information is not relevant to the current system state."""
+        self.rm_testdir()
+        vv = "-vv"
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        testsleep = self.testname("sleep")
+        logfile = os_path(root, "/var/log/"+testsleep+".log")
+        bindir = os_path(root, "/usr/bin")
+        os.makedirs(os_path(root, "/var/run"))
+        text_file(logfile, "created\n")
+        begin = "{" ; end = "}"
+        text_file(os_path(testdir, "zzz.service"),"""
+            [Unit]
+            Description=Testing Z
+            [Service]
+            Type=oneshot
+            ExecStart=/usr/bin/touch {root}/var/tmp/test.1
+            ExecStopPost=/usr/bin/rm {root}/var/tmp/test.1
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
+        text_file(os_path(root, "/var/tmp/test.0"), """..""")
+        is_active = "{systemctl} is-active zzz.service other.service {vv}"
+        act, end = output2(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "inactive\nunknown")
+        self.assertEqual(end, 3)
+        #
+        logg.info("== 'start' shall start a service that is NOT is-active ")
+        cmd = "{systemctl} start zzz.service other.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertNotEqual(end, 0)
+        is_active = "{systemctl} is-active zzz.service other.service -vv"
+        act, end = output2(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "active\nunknown")
+        self.assertEqual(end, 3) 
+        self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        #
+        logg.info("== 'stop' shall stop a service that is-active")
+        cmd = "{systemctl} stop zzz.service other.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertNotEqual(end, 0)
+        act, end = output2(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "inactive\nunknown")
+        self.assertEqual(end, 3)
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        #
+        logg.info("== 'restart' shall start a service that NOT is-active\n")        
+        cmd = "{systemctl} restart zzz.service other.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertNotEqual(end, 0)
+        act, end = output2(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "active\nunknown")
+        self.assertEqual(end, 3)
+        self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        #
+        logg.info("== mark the status file as being too old")
+        status_file = os_path(root, "/var/run/zzz.service.status")
+        self.assertTrue(os.path.exists(status_file))
+        sh____("LANG=C stat {status_file} | grep Modify:".format(**locals()))
+        sh____("LANG=C stat /proc/1 | grep Modify:".format(**locals()))
+        sh____("touch -r /proc/1 {status_file}".format(**locals()))
+        sh____("LANG=C stat {status_file} | grep Modify:".format(**locals()))
+        #
+        logg.info("== the next is-active shall then truncate it")
+        old_size = os.path.getsize(status_file)
+        is_activeXX = "{systemctl} is-active zzz.service other.service {vv} {vv}"
+        act, end = output2(is_activeXX.format(**locals()))
+        self.assertEqual(act.strip(), "inactive\nunknown")
+        self.assertEqual(end, 3)
+        self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        new_size = os.path.getsize(status_file)
+        logg.info("status-file size: old %s new %s", old_size, new_size)
+        self.assertGreater(old_size, 0)
+        self.assertEqual(new_size, 0)
+        #
+        logg.info("== 'stop' shall cleanup a service that was not inactive")
+        cmd = "{systemctl} stop zzz.service other.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertNotEqual(end, 0)
+        act, end = output2(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "inactive\nunknown")
+        self.assertEqual(end, 3)
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        # and the status_file is also cleaned away
+        self.assertFalse(os.path.exists(status_file))
+        #
+        logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
+        self.rm_testdir()
+        self.coverage()
+    def test_4065_simple_truncate_old_pid(self):
+        """ check that we manage a service that has some old .pid
+            file being around. That is a reboot has occurred and the
+            information is not relevant to the current system state."""
+        vv = "-vv"
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        logfile = os_path(root, "/var/log/test.log")
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        testsleep = self.testname("sleep")
+        bindir = os_path(root, "/usr/bin")
+        text_file(os_path(testdir, "zzz.service"),"""
+            [Unit]
+            Description=Testing Z
+            After=foo.service
+            [Service]
+            Type=simple
+            ExecStart={bindir}/{testsleep} 40
+            ExecStop=/usr/bin/killall {testsleep}
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
+        is_active = "{systemctl} is-active zzz.service other.service {vv}"
+        act, end = output2(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "inactive\nunknown")
+        self.assertEqual(end, 3)
+        #
+        logg.info("== 'start' shall start a service that is NOT is-active ")
+        cmd = "{systemctl} start zzz.service other.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertNotEqual(end, 0)
+        is_active = "{systemctl} is-active zzz.service other.service -vv"
+        act, end = output2(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "active\nunknown")
+        self.assertEqual(end, 3) 
+        #
+        logg.info("== 'stop' shall stop a service that is-active")
+        cmd = "{systemctl} stop zzz.service other.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertNotEqual(end, 0)
+        act, end = output2(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "inactive\nunknown")
+        self.assertEqual(end, 3)
+        #
+        logg.info("== 'restart' shall start a service that NOT is-active\n")        
+        cmd = "{systemctl} restart zzz.service other.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertNotEqual(end, 0)
+        act, end = output2(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "active\nunknown")
+        self.assertEqual(end, 3)
+        #
+        logg.info("== mark the status file as being too old")
+        status_file = os_path(root, "/var/run/zzz.service.status")
+        self.assertTrue(os.path.exists(status_file))
+        sh____("LANG=C stat {status_file} | grep Modify:".format(**locals()))
+        sh____("LANG=C stat /proc/1 | grep Modify:".format(**locals()))
+        sh____("touch -r /proc/1 {status_file}".format(**locals()))
+        sh____("LANG=C stat {status_file} | grep Modify:".format(**locals()))
+        #
+        pid_file = os_path(root, "/var/run/zzz.service.pid")
+        self.assertTrue(os.path.exists(pid_file))
+        sh____("LANG=C stat {pid_file} | grep Modify:".format(**locals()))
+        sh____("LANG=C stat /proc/1 | grep Modify:".format(**locals()))
+        sh____("touch -r /proc/1 {pid_file}".format(**locals()))
+        sh____("LANG=C stat {pid_file} | grep Modify:".format(**locals()))
+        #
+        logg.info("== the next is-active shall then truncate it")
+        old_status = os.path.getsize(status_file)
+        old_pid = os.path.getsize(pid_file)
+        is_activeXX = "{systemctl} is-active zzz.service other.service {vv} {vv}"
+        act, end = output2(is_activeXX.format(**locals()))
+        self.assertEqual(act.strip(), "inactive\nunknown")
+        self.assertEqual(end, 3)
+        new_status = os.path.getsize(status_file)
+        new_pid = os.path.getsize(pid_file)
+        logg.info("status-file size: old %s new %s", old_status, new_status)
+        logg.info("pid-file size: old %s new %s", old_pid, new_pid)
+        self.assertEqual(old_status, 0)
+        self.assertEqual(new_status, 0)
+        self.assertGreater(old_pid, 0)
+        self.assertEqual(new_pid, 0)
+        #
+        logg.info("== 'stop' shall cleanup a service that was not inactive")
+        cmd = "{systemctl} stop zzz.service other.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertNotEqual(end, 0)
+        act, end = output2(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "inactive\nunknown")
+        self.assertEqual(end, 3)
+        logg.info("== and the status_file / pid_file is also cleaned away")
+        self.assertFalse(os.path.exists(status_file))
+        self.assertFalse(os.path.exists(pid_file))
         #
         self.rm_testdir()
         self.coverage()
@@ -10410,7 +10615,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl_log = open(testdir+"/systemctl.log").read()
         self.assertEqual(len(greps(systemctl_log, " ERROR ")), 0)
         self.assertTrue(greps(systemctl_log, "simple start done PID"))
-        self.assertTrue(greps(systemctl_log, "stop kill PID .*elasticsearch.service"))
+        self.assertTrue(greps(systemctl_log, "stop kill PID"))
         self.assertTrue(greps(systemctl_log, "stopped PID .* EXIT 143"))
         #
         cmd = "docker rmi {images}:{testname}"
