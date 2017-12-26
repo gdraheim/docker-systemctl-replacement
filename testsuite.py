@@ -1505,23 +1505,23 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         root = self.root(testdir)
         systemctl = _cov + _systemctl_py + " --root=" + root
-        text_file(os_path(root, "/etc/sysconfig/b.conf"),"""
+        text_file(os_path(root, "/etc/sysconfig/zzb.conf"),"""
             DEF1='def1'
             DEF2="def2"
             DEF3=def3
             """)
-        text_file(os_path(root, "/etc/systemd/system/b.service"),"""
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"),"""
             [Unit]
             Description=Testing B
             [Service]
-            EnvironmentFile=/etc/sysconfig/b.conf
+            EnvironmentFile=/etc/sysconfig/zzb.conf
             Environment=DEF5=def5
             Environment=DEF6=def6
             ExecStart=/usr/bin/printf $DEF1 $DEF2 \
                                 $DEF3 $DEF4 $DEF5
             [Install]
             WantedBy=multi-user.target""")
-        cmd = "{systemctl} environment b.service"
+        cmd = "{systemctl} environment zzb.service"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
@@ -1544,22 +1544,22 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         root = self.root(testdir)
         systemctl = _cov + _systemctl_py + " --root=" + root
-        text_file(os_path(root, "/etc/sysconfig/b.conf"),"""
+        text_file(os_path(root, "/etc/sysconfig/zzb.conf"),"""
             DEF1='def1'
             DEF2="def2"
             DEF3=def3
             """)
-        text_file(os_path(root, "/etc/systemd/system/b.service"),"""
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"),"""
             [Unit]
             Description=Testing B
             [Service]
-            EnvironmentFile=/etc/sysconfig/b.conf
+            EnvironmentFile=/etc/sysconfig/zzb.conf
             Environment="VAR1=word1 word2" VAR2=word3 "VAR3=$word 5 6"
             ExecStart=/usr/bin/printf $DEF1 $DEF2 \
                                 $VAR1 $VAR2 $VAR3
             [Install]
             WantedBy=multi-user.target""")
-        cmd = "{systemctl} environment b.service -vv"
+        cmd = "{systemctl} environment zzb.service -vv"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
