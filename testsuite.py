@@ -1582,7 +1582,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         root = self.root(testdir)
         systemctl_py_dir = os.path.dirname(os.path.realpath(_systemctl_py))
         unitconfparser_py = os_path(root, "/usr/bin/unitconfparser.py")
-        service_file = os_path(root, "/etc/systemd/system/b.service")
+        service_file = os_path(root, "/etc/systemd/system/zzb.service")
         defaults = {"a1": "default1"}
         shell_file(unitconfparser_py,"""
             #! {python}
@@ -1640,7 +1640,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Testing B
             [Service]
-            EnvironmentFile=/etc/sysconfig/b.conf
+            EnvironmentFile=/etc/sysconfig/zzb.conf
             Environment=DEF5=def5
             Environment=DEF6=def6
             ExecStart=/usr/bin/printf $DEF1 $DEF2 \\
