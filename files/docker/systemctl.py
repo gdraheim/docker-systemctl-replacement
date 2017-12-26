@@ -1079,7 +1079,7 @@ class Systemctl:
     #
     def get_boottime(self):
         for pid in xrange(10):
-            proc = "/proc/%s" % pid
+            proc = "/proc/%s/status" % pid
             try:
                 if os.path.exists(proc):
                     return os.path.getmtime(proc)
@@ -1088,7 +1088,7 @@ class Systemctl:
         # otherwise get the oldest entry in /proc
         booted = time.time()
         for name in os.listdir("/proc"):
-            proc = "/proc/%s" % name
+            proc = "/proc/%s/status" % name
             try:
                 if os.path.exists(proc):
                     ctime = os.path.getmtime(proc)
