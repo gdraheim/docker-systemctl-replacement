@@ -27,6 +27,8 @@ import json
 logg = logging.getLogger("TESTING")
 _python = "/usr/bin/python"
 _systemctl_py = "files/docker/systemctl.py"
+_top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* ' | grep -v -e ' ps ' -e ' grep ' -e 'kworker/'"
+_top_list = "ps -eo etime,pid,ppid,args --sort etime,pid"
 _cov = ""
 _cov_run = "coverage2 run '--omit=*/six.py' --append -- "
 _cov_cmd = "coverage2"
@@ -2870,6 +2872,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
+        top_recent = _top_recent
         systemctl = _cov + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
@@ -2905,8 +2908,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         #
@@ -2914,7 +2916,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         kill_testsleep = "killall {testsleep}"
@@ -2927,6 +2929,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
+        top_recent = _top_recent
         systemctl = _cov + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
@@ -2961,8 +2964,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         #
@@ -2970,7 +2972,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         kill_testsleep = "killall {testsleep}"
@@ -3036,8 +3038,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         #
@@ -3045,7 +3046,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         kill_testsleep = "killall {testsleep}"
@@ -3109,8 +3110,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         #
@@ -3118,7 +3118,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         kill_testsleep = "killall {testsleep}"
@@ -3183,8 +3183,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep+" 40"))
         self.assertTrue(greps(top, testsleep+" 50"))
@@ -3193,7 +3192,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)        
         self.assertFalse(greps(top, testsleep))
         #
@@ -3292,8 +3291,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertNotEqual(exitCD, 0)         ## works. The documentation however
         self.assertNotEqual(exitBD, 0)         ## says to return 0 if any service
         self.assertNotEqual(exitBCD, 0)        ## is found to be 'active'
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep+" 40"))
         #
@@ -3414,8 +3412,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertNotEqual(exitCD, 0)         ## works. The documentation however
         self.assertNotEqual(exitBD, 0)         ## says to return 0 if any service
         self.assertNotEqual(exitBCD, 0)        ## is found to be 'active'
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep+" 40"))
         #
@@ -3476,15 +3473,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         start_service = "{systemctl} start zzz.service -vv"
         end = sx____(start_service.format(**locals()))
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         self.assertGreater(end, 0)
         #
         stop_service = "{systemctl} stop zzz.service -vv"
         end = sx____(stop_service.format(**locals()))
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         self.assertGreater(end, 0)
@@ -3535,8 +3531,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         start_service = "{systemctl} start zzz.service -vv"
         end = sx____(start_service.format(**locals()))
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         self.assertEqual(end, 0)
@@ -3551,8 +3546,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         stop_service = "{systemctl} stop zzz.service -vv"
         end = sx____(stop_service.format(**locals()))
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         #
@@ -4111,8 +4105,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         #
@@ -4124,7 +4117,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         kill_testsleep = "killall {testsleep}"
@@ -4169,8 +4162,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         #
@@ -4182,7 +4174,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         kill_testsleep = "killall {testsleep}"
@@ -4227,8 +4219,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         #
@@ -4241,7 +4232,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         kill_testsleep = "killall {testsleep}"
@@ -4286,8 +4277,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         #
@@ -4300,7 +4290,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         kill_testsleep = "killall {testsleep}"
@@ -4378,8 +4368,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -4393,7 +4382,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -4417,8 +4406,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -4443,8 +4431,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -4485,8 +4472,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -4518,8 +4504,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -4541,8 +4526,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -4567,8 +4551,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -4582,8 +4565,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -4597,8 +4579,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -4613,8 +4594,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -4637,8 +4617,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -4737,8 +4716,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -4752,7 +4730,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -4766,8 +4744,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -4782,8 +4759,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -4815,8 +4791,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -4838,8 +4813,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -4861,8 +4835,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -4887,8 +4860,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -4902,8 +4874,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -4917,8 +4888,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -4933,8 +4903,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -4957,8 +4926,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -5057,8 +5025,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -5072,7 +5039,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -5086,8 +5053,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -5102,8 +5068,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -5135,8 +5100,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -5158,8 +5122,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -5181,8 +5144,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -5207,8 +5169,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -5222,8 +5183,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -5237,8 +5197,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -5253,8 +5212,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -5277,8 +5235,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -5381,8 +5338,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -5396,7 +5352,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -5410,8 +5366,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -5426,8 +5381,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -5459,8 +5413,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -5482,8 +5435,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -5505,8 +5457,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -5531,8 +5482,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -5546,8 +5496,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -5561,8 +5510,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -5577,8 +5525,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -5601,8 +5548,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -6076,8 +6022,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -6091,7 +6036,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -6105,8 +6050,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -6121,8 +6065,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -6154,8 +6097,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -6177,8 +6119,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -6203,8 +6144,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -6218,8 +6158,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -6233,8 +6172,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -6249,8 +6187,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -6265,8 +6202,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -6881,8 +6817,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         time.sleep(4)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service {vv}"
@@ -6896,7 +6831,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service {vv}"
@@ -6912,8 +6847,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         time.sleep(4)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         cmd = "{systemctl} is-active zze.service {vv}"
@@ -6927,7 +6861,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 1) ## TODO real = 0
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         cmd = "{systemctl} is-active zze.service {vv}"
@@ -6943,8 +6877,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         time.sleep(4)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         cmd = "{systemctl} is-active zzf.service {vv}"
@@ -6958,7 +6891,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 1) ## TODO real = 0
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         cmd = "{systemctl} is-active zzf.service {vv}"
@@ -6973,8 +6906,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         time.sleep(4)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         cmd = "{systemctl} is-active zzr.service {vv}"
@@ -6988,7 +6920,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 1)
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         cmd = "{systemctl} is-active zzr.service {vv}"
@@ -7004,8 +6936,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         time.sleep(4)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         cmd = "{systemctl} is-active zzx.service {vv}"
@@ -7019,7 +6950,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 1) ## TODO real = 0
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         cmd = "{systemctl} is-active zzx.service {vv}"
@@ -7148,8 +7079,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         time.sleep(4)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service {vv}"
@@ -7163,7 +7093,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         cmd = "{systemctl} is-active zzz.service {vv}"
@@ -7179,8 +7109,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         time.sleep(4)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         cmd = "{systemctl} is-active zze.service {vv}"
@@ -7194,7 +7123,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         cmd = "{systemctl} is-active zze.service {vv}"
@@ -7210,8 +7139,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         time.sleep(4)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         cmd = "{systemctl} is-active zzf.service {vv}"
@@ -7225,7 +7153,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         cmd = "{systemctl} is-active zzf.service {vv}"
@@ -7240,8 +7168,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         time.sleep(4)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         cmd = "{systemctl} is-active zzr.service {vv}"
@@ -7255,7 +7182,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         cmd = "{systemctl} is-active zzr.service {vv}"
@@ -7271,8 +7198,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         time.sleep(4)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         cmd = "{systemctl} is-active zzx.service {vv}"
@@ -7286,7 +7212,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         cmd = "{systemctl} is-active zzx.service {vv}"
@@ -7343,8 +7269,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         #
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleepB))
         self.assertTrue(greps(top, testsleepC))
@@ -7359,8 +7284,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 0)
         #
         time.sleep(1) # kill is asynchronous
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleepB))
         self.assertFalse(greps(top, testsleepC))
@@ -7374,8 +7298,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         #
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleepB))
         self.assertTrue(greps(top, testsleepC))
@@ -7399,8 +7322,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 0) # nothing to kill
         #
         time.sleep(1)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleepB))
         self.assertFalse(greps(top, testsleepC))
@@ -7464,8 +7386,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         #
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleepB))
         self.assertTrue(greps(top, testsleepC))
@@ -7487,8 +7408,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 0)
         #
         time.sleep(1) # kill is asynchronous
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleepB))
         self.assertFalse(greps(top, testsleepC))
@@ -7509,8 +7429,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         #
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleepB))
         self.assertTrue(greps(top, testsleepC))
@@ -7548,8 +7467,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "zzc.service.pid")) # TODO ?
         #
         time.sleep(1)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleepB))
         self.assertFalse(greps(top, testsleepC))
@@ -7628,8 +7546,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         #
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleepB))
         #
@@ -7638,8 +7555,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         #
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testscriptB))
         self.assertTrue(greps(top, testsleepB))
@@ -7650,8 +7566,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 0)
         #
         time.sleep(1) # kill is asynchronous
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testscriptB))
         self.assertTrue(greps(top, testsleepB)) # TODO: kill children as well (in default KillMode)
@@ -7660,16 +7575,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("LOG %s\n| %s", logfile, "\n| ".join(log))
         self.assertTrue(greps(log, "ignored"))
         #
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         cmd = "killall {testsleepB}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         #
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleepB))
         #
@@ -7748,8 +7661,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         #
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleepB))
         #
@@ -7758,8 +7670,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         #
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testscriptB))
         self.assertTrue(greps(top, testsleepB))
@@ -7770,8 +7681,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertNotEqual(end, 0) # not killed
         #
         time.sleep(1) # kill is asynchronous
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testscriptB)) # still alive
         self.assertTrue(greps(top, testsleepB)) 
@@ -7780,8 +7690,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("LOG %s\n| %s", logfile, "\n| ".join(log))
         self.assertTrue(greps(log, "ignored"))
         #
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         cmd = "killall {testsleepB}"
         out, end = output2(cmd.format(**locals()))
@@ -7789,8 +7698,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 0)
         #
         time.sleep(1) # kill is asynchronous
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testscriptB))
         self.assertFalse(greps(top, testsleepB))
@@ -7864,8 +7772,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep+" 40"))
         #
@@ -7881,8 +7788,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep+" 40"))
         #
@@ -7966,8 +7872,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep+" 40"))
         #
@@ -7983,8 +7888,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* '"
-        top = output(top_recent.format(**locals()))
+        top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep+" 40"))
         #
