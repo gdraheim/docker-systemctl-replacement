@@ -29,6 +29,9 @@
       copy: 
         src: "initialJenkinsSetup.py"
         dest: "./"
+    - name: wait for xnvc
+      wait_for:
+        port: 5599
     - name: run the  unlock program
       shell: |
         python initialJenkinsSetup.py -f initialAdminPassword \
