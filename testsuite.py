@@ -3200,8 +3200,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
-    def test_3050_systemctl_py_check_is_active_in_testenv(self):
-        """ check is_active behaviour in local testenv env"""
+    def test_3050_systemctl_py_check_is_active(self):
+        """ check is_active behaviour"""
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -3317,8 +3317,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
-    def test_3051_systemctl_py_check_is_failed_in_testenv(self):
-        """ check is_failed behaviour in local testenv env"""
+    def test_3051_systemctl_py_check_is_failed(self):
+        """ check is_failed behaviour"""
         vv = "-vv"
         testname = self.testname()
         testdir = self.testdir()
