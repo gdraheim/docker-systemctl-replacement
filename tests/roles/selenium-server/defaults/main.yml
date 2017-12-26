@@ -17,4 +17,5 @@ selenium_server_package: "selenium-server-standalone-3.3.1.jar"
 selenium_geckodriver_software: "Software/Selenium"
 selenium_geckodriver_download: "https://github.com/mozilla/geckodriver/releases/download/v0.15.0"
 selenium_geckodriver_package: "geckodriver-v0.15.0-linux64.tar.gz"
+# selenium_geckodriver_package: "geckodriver-v0.17.0-linux64.tar.gz"
  
