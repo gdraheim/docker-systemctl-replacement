@@ -280,8 +280,8 @@ class UnitConfigParser:
                 return default
             if allow_no_value:
                 return None
-            logg.error("section {} does not exist".format(section))
-            logg.error("  have {}".format(self.sections()))
+            logg.warning("section {} does not exist".format(section))
+            logg.warning("  have {}".format(self.sections()))
             raise AttributeError("section {} does not exist".format(section))
         if option not in self._dict[section]:
             if default is not None:
@@ -303,8 +303,8 @@ class UnitConfigParser:
                 return default
             if allow_no_value:
                 return []
-            logg.error("section {} does not exist".format(section))
-            logg.error("  have {}".format(self.sections()))
+            logg.warning("section {} does not exist".format(section))
+            logg.warning("  have {}".format(self.sections()))
             raise AttributeError("section {} does not exist".format(section))
         if option not in self._dict[section]:
             if default is not None:
@@ -448,7 +448,7 @@ def subprocess_wait(cmd, env=None, check = False, shell=False):
     run = subprocess.Popen(cmd, shell=shell, env=env)
     run.wait()
     if check and run.returncode: 
-        logg.error("returncode %i\n %s", run.returncode, cmd)
+        logg.warning("returncode %i\n %s", run.returncode, cmd)
         raise Exception("command failed")
     return run
 
@@ -709,7 +709,7 @@ class Systemctl:
             if data is not None: 
                 return data
         except Exception as e:
-            logg.error("%s: %s", module, e)
+            logg.warning("%s not loaded: %s", module, e)
         return None
     def load_sysd_unit_conf(self, module): # -> conf?
         """ read the unit file with a UnitParser (systemd) """
@@ -874,7 +874,7 @@ class Systemctl:
         elif self._unit_type == "service":
             result = self.list_service_unit_files()
         elif self._unit_type:
-            logg.error("unsupported unit --type=%s", self._unit_type)
+            logg.warning("unsupported unit --type=%s", self._unit_type)
             result = []
         else:
             result = self.list_target_unit_files()
@@ -904,7 +904,7 @@ class Systemctl:
             with open(pid_file, "w") as f:
                 f.write("{}\n".format(pid))
         except IOError as e:
-            logg.error("PID %s -- %s", pid, e)
+            logg.error("writing PID %s: %s\n\t to pid_file %s", pid, e, pid_file)
         return True
     def read_pid_file(self, pid_file, default = None):
         pid = default
@@ -1032,7 +1032,7 @@ class Systemctl:
                     value = conf.status[key]
                     f.write("{}={}\n".format(key, str(value)))
         except IOError as e:
-            logg.error("STATUS %s -- %s", status, e)
+            logg.error("writing STATUS %s: %s\n\t to status file %s", status, e, status_file)
         return True
     def read_status_from(self, conf, defaults = None):
         status_file = self.status_file_from(conf)
@@ -1121,7 +1121,7 @@ class Systemctl:
         try:
             return os.path.getsize(filename)
         except Exception, e:
-            logg.error("while reading file size: %s\n of %s", e, filename)
+            logg.warning("while reading file size: %s\n of %s", e, filename)
             return 0
     #
     def sleep(self, seconds = None): 
@@ -1437,7 +1437,7 @@ class Systemctl:
         if conf is None:
             logg.error("Unit %s could not be found.", unit)
             return False
-        logg.info(" start unit %s => %s", unit, conf.filename())
+        logg.debug(" start unit %s => %s", unit, conf.filename())
         return self.start_unit_from(conf)
     def get_TimeoutStartSec(self, conf):
         timeout = conf.data.get("Service", "TimeoutSec", DefaultTimeoutStartSec)
@@ -1641,7 +1641,7 @@ class Systemctl:
             # pid = self.read_mainpid_from(conf, "")
             # if str(pid) == str(run.pid):
             #     self.write_mainpid_from(conf, "") # set empty
-        logg.info("returncode %s", returncode)
+        logg.debug("returncode %s", returncode)
         if doRemainAfterExit:
             self.set_status_from(conf, "ExecMainCode", returncode)
             active = returncode and "failed" or "active"
@@ -2842,7 +2842,7 @@ class Systemctl:
               + "Use ' ; ' for multiple commands (ExecReloadPost or ExedReloadPre do not exit)", unit)
             ok = False
         if len(usedExecReload) > 0 and "/bin/kill " in usedExecReload[0]:
-            logg.info("%s: the use of /bin/kill is not recommended for ExecReload as it is asychronous."
+            logg.warning("%s: the use of /bin/kill is not recommended for ExecReload as it is asychronous."
               + "That means all the dependencies will perform the reload simultanously / out of order.", unit)
         if conf.data.getlist("Service", "ExecRestart", []): #pragma: no cover
             logg.error("%s: there no such thing as an ExecRestart (ignored)", unit)
@@ -3000,7 +3000,7 @@ class Systemctl:
         default_target = self._default_target
         default_services = self.system_default_services("S", default_target)
         self.start_units(default_services)
-        logg.info("system is up")
+        logg.info(" -- system is up")
         if init:
             logg.info("init-loop start")
             sig = self.init_loop_until_stop()
@@ -3013,7 +3013,7 @@ class Systemctl:
         default_target = self._default_target
         default_services = self.system_default_services("K", default_target)
         self.stop_units(default_services)
-        logg.info("system is down")
+        logg.info(" -- system is down")
     def system_halt(self, arg = True):
         """ stop units from default system level """
         logg.info("system halt requested - %s", arg)
