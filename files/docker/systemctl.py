@@ -1103,9 +1103,9 @@ class Systemctl:
         boottime = self.get_boottime()
         if filetime > boottime :
             return False # OK
-        logg.warning("truncate old %s", filename)
-        logg.warning("  file time: %s", datetime.datetime.fromtimestamp(filetime))
-        logg.warning("  boot time: %s", datetime.datetime.fromtimestamp(boottime))
+        logg.info("truncate old %s", filename)
+        logg.info("  file time: %s", datetime.datetime.fromtimestamp(filetime))
+        logg.info("  boot time: %s", datetime.datetime.fromtimestamp(boottime))
         try:
             shutil_truncate(filename)
         except Exception, e:
