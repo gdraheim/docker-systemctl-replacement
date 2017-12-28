@@ -3215,6 +3215,10 @@ def print_result(result):
         if exitcode is True: exitcode = 0
         if exitcode is False: exitcode = 1
         result = status
+    elif isinstance(result, int):
+        logg_note("EXEC END %s", result)
+        exitcode = result
+        result = None
     #
     if result is None:
         pass
