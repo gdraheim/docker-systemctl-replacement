@@ -221,9 +221,8 @@ def _pid_zombie(pid):
             if line.startswith("State:"):
                 return "Z" in line
     except IOError as e:
-        if e.errno == errno.ENOENT:
-            return False
-        logg.error("%s (%s): %s", check, e.errno, e)
+        if e.errno != errno.ENOENT:
+            logg.error("%s (%s): %s", check, e.errno, e)
         return False
     return False
 
