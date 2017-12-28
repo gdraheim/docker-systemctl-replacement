@@ -3189,20 +3189,24 @@ class Systemctl:
         return [ self.systemd_version(), self.systemd_features() ]
 
 def print_result(result):
+    # logg_note = logg.info
+    # logg_debug = logg.debug
+    def logg_note(*msg): pass
+    def logg_debug(*msg): pass
     exitcode = 0
     if result is None:
-        logg.info("EXEC END None")
+        logg_note("EXEC END None")
     elif result is True:
-        logg.info("EXEC END True")
+        logg_note("EXEC END True")
         result = None
         exitcode = 0
     elif result is False:
-        logg.info("EXEC END False")
+        logg_note("EXEC END False")
         result = None
         exitcode = 1
     elif isinstance(result, tuple) and len(result) == 2:
         exitcode, status = result
-        logg.info("EXEC END %s '%s'", exitcode, status)
+        logg_note("EXEC END %s '%s'", exitcode, status)
         if exitcode is True: exitcode = 0
         if exitcode is False: exitcode = 1
         result = status
@@ -3213,10 +3217,10 @@ def print_result(result):
         print(result)
         result1 = result.split("\n")[0][:-20]
         if result == result1:
-            logg.info("EXEC END '%s'", result)
+            logg_note("EXEC END '%s'", result)
         else:
-            logg.info("EXEC END '%s...'", result1)
-            logg.debug("    END '%s'", result)
+            logg_note("EXEC END '%s...'", result1)
+            logg_debug("    END '%s'", result)
     elif isinstance(result, list) or hasattr(result, "next") or hasattr(result, "__next__"):
         shown = 0
         for element in result:
@@ -3225,8 +3229,8 @@ def print_result(result):
             else:
                 print(element)
             shown += 1
-        logg.info("EXEC END %s items", shown)
-        logg.debug("    END %s", result)
+        logg_info("EXEC END %s items", shown)
+        logg_debug("    END %s", result)
     elif hasattr(result, "keys"):
         shown = 0
         for key in sorted(result.keys()):
@@ -3236,8 +3240,8 @@ def print_result(result):
             else:
                 print("%s=%s" % (key,element))
             shown += 1
-        logg.info("EXEC END %s items", shown)
-        logg.debug("    END %s", result)
+        logg_info("EXEC END %s items", shown)
+        logg_debug("    END %s", result)
     else:
         logg.warning("EXEC END Unknown result type %s", str(type(result)))
     return exitcode
