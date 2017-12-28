@@ -1178,13 +1178,6 @@ class Systemctl:
             logg.error("Unit %s could not be found.", unit)
             return False
         return self.get_env(conf)
-    def bad_service_from(self, conf):
-        for env_file in conf.data.getlist("Service", "EnvironmentFile", []):
-            if env_file.startswith("-"): continue
-            if not os.path.isfile(os_path(self._root, env_file)):
-                logg.warning("non-existant EnvironmentFile=%s", env_file)
-                return True
-        return False
     def get_env(self, conf):
         env = os.environ.copy()
         for env_part in conf.data.getlist("Service", "Environment", []):
@@ -1445,7 +1438,7 @@ class Systemctl:
         return time_to_seconds(timeout, DefaultMaximumTimeout)
     def start_unit_from(self, conf):
         if not conf: return
-        if self.bad_service_from(conf): return False
+        if self.syntax_check(conf) > 100: return False
         timeout = self.get_TimeoutStartSec(conf)
         runs = conf.data.get("Service", "Type", "simple").lower()
         sudo = self.sudo_from(conf)
@@ -1681,7 +1674,7 @@ class Systemctl:
         return time_to_seconds(timeout, DefaultMaximumTimeout)
     def stop_unit_from(self, conf):
         if not conf: return
-        if self.bad_service_from(conf): return False
+        if self.syntax_check(conf) > 100: return False
         timeout = self.get_TimeoutStopSec(conf)
         runs = conf.data.get("Service", "Type", "simple").lower()
         sudo = self.sudo_from(conf)
@@ -1845,7 +1838,7 @@ class Systemctl:
         return self.reload_unit_from(conf)
     def reload_unit_from(self, conf):
         if not conf: return
-        if self.bad_service_from(conf): return False
+        if self.syntax_check(conf) > 100: return False
         runs = conf.data.get("Service", "Type", "simple").lower()
         sudo = self.sudo_from(conf)
         env = self.get_env(conf)
@@ -1917,7 +1910,7 @@ class Systemctl:
             return self.restart_unit_from(conf)
     def restart_unit_from(self, conf):
         if not conf: return
-        if self.bad_service_from(conf): return False
+        if self.syntax_check(conf) > 100: return False
         logg.info("(restart) => stop/start")
         self.stop_unit_from(conf)
         return self.start_unit_from(conf)
@@ -2776,8 +2769,11 @@ class Systemctl:
         sortlist = sortedAfter(reversed(conflist))
         return [ item.name() for item in reversed(sortlist) ]
     def system_daemon_reload(self):
-        """ reload does will only check the service files here """
-        ok = True
+        """ reload does will only check the service files here.
+            The returncode will tell the number of warnings,
+            and it is over 100 if it can not continue even
+            for the relaxed systemctl.py style of execution. """
+        errors = 0
         for unit in self.match_units():
             try:
                 conf = self.get_unit_conf(unit)
@@ -2785,18 +2781,20 @@ class Systemctl:
                 logg.error("%s: can not read unit file %s\n\t%s", 
                     unit, conf.filename(), e)
                 continue
-            self.syntax_check(conf)
-        return True # and ok
+            errors += self.syntax_check(conf)
+        while errors > 200:
+            errors -= 100
+        return errors
     def syntax_check(self, conf):
         if conf.filename() and conf.filename().endswith(".service"):
             return self.syntax_check_service(conf)
-        return True
+        return 0
     def syntax_check_service(self, conf):
         unit = conf.name()
         if not conf.data.has_section("Service"):
            logg.error("%s: .service file without [Service] section", unit)
-           return False
-        ok = False
+           return 101
+        errors = 0
         haveType = conf.data.get("Service", "Type", "simple")
         haveExecStart = conf.data.getlist("Service", "ExecStart", [])
         haveExecStop = conf.data.getlist("Service", "ExecStop", [])
@@ -2806,57 +2804,64 @@ class Systemctl:
         usedExecReload = []
         if haveType not in [ "simple", "forking", "notify", "oneshot", "dbus", "idle", "sysv"]:
             logg.error("%s: Failed to parse service type, ignoring: %s", unit, haveType)
-            ok = False
+            errors += 100
         for line in haveExecStart:
             if not line.startswith("/") and not line.startswith("-/"):
                 logg.error("%s: Executable path is not absolute, ignoring: %s", unit, line.strip())
-                ok = False
+                errors += 1
             usedExecStart.append(line)
         for line in haveExecStop:
             if not line.startswith("/") and not line.startswith("-/"):
                 logg.error("%s: Executable path is not absolute, ignoring: %s", unit, line.strip())
-                ok = False
+                errors += 1
             usedExecStop.append(line)
         for line in haveExecReload:
             if not line.startswith("/") and not line.startswith("-/"):
                 logg.error("%s: Executable path is not absolute, ignoring: %s", unit, line.strip())
-                ok = False
+                errors += 1
             usedExecReload.append(line)
         if haveType in ["simple", "notify", "forking"]:
             if not usedExecStart and not usedExecStop:
                 logg.error("%s: Service lacks both ExecStart and ExecStop= setting. Refusing.", unit)
-                ok = False
+                errors += 101
             elif not usedExecStart and haveType != "oneshot":
                 logg.error("%s: Service has no ExecStart= setting, which is only allowed for Type=oneshot services. Refusing.",  unit)
-                ok = False
+                errors += 101
         if len(usedExecStart) > 1 and haveType != "oneshot":
             logg.error("%s: there may be only one ExecStart statement (unless for 'oneshot' services)."
               + "Use ' ; ' for multiple commands or better use ExecStartPre / ExecStartPost", unit)
-            ok = False
+            errors += 1
         if len(usedExecStop) > 1 and haveType != "oneshot":
             logg.error("%s: there may be only one ExecStop statement (unless for 'oneshot' services)."
               + "Use ' ; ' for multiple commands or better use ExecStopPost", unit)
-            ok = False
+            errors += 1
         if len(usedExecReload) > 1:
             logg.error("%s: there may be only one ExecReload statement."
               + "Use ' ; ' for multiple commands (ExecReloadPost or ExedReloadPre do not exit)", unit)
-            ok = False
+            errors += 1
         if len(usedExecReload) > 0 and "/bin/kill " in usedExecReload[0]:
             logg.warning("%s: the use of /bin/kill is not recommended for ExecReload as it is asychronous."
-              + "That means all the dependencies will perform the reload simultanously / out of order.", unit)
+              + "\n\tThat means all the dependencies will perform the reload simultanously / out of order.", unit)
         if conf.data.getlist("Service", "ExecRestart", []): #pragma: no cover
-            logg.error("%s: there no such thing as an ExecRestart (ignored)", unit)
+            logg.error(" %s: there no such thing as an ExecRestart (ignored)", unit)
         if conf.data.getlist("Service", "ExecRestartPre", []): #pragma: no cover
-            logg.error("%s: there no such thing as an ExecRestartPre (ignored)", unit)
+            logg.error(" %s: there no such thing as an ExecRestartPre (ignored)", unit)
         if conf.data.getlist("Service", "ExecRestartPost", []): #pragma: no cover 
-            logg.error("%s: there no such thing as an ExecRestartPost (ignored)", unit)
+            logg.error(" %s: there no such thing as an ExecRestartPost (ignored)", unit)
         if conf.data.getlist("Service", "ExecReloadPre", []): #pragma: no cover
-            logg.error("%s: there no such thing as an ExecReloadPre (ignored)", unit)
+            logg.error(" %s: there no such thing as an ExecReloadPre (ignored)", unit)
         if conf.data.getlist("Service", "ExecReloadPost", []): #pragma: no cover
-            logg.error("%s: there no such thing as an ExecReloadPost (ignored)", unit)
+            logg.error(" %s: there no such thing as an ExecReloadPost (ignored)", unit)
         if conf.data.getlist("Service", "ExecStopPre", []): #pragma: no cover
-            logg.error("%s: there no such thing as an ExecStopPre (ignored)", unit)
-        return ok
+            logg.error(" %s: there no such thing as an ExecStopPre (ignored)", unit)
+        for env_file in conf.data.getlist("Service", "EnvironmentFile", []):
+            if env_file.startswith("-"): continue
+            if not os.path.isfile(os_path(self._root, env_file)):
+                logg.error(" %s: non-existant EnvironmentFile=%s", unit, env_file)
+                errors += 101
+        if errors:
+            logg.info(" see %s", conf.filename())
+        return errors
     def show_modules(self, *modules):
         """ [PATTERN]... -- Show properties of one or more units
            Show properties of one or more units (or the manager itself).
