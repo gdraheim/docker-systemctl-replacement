@@ -3191,29 +3191,29 @@ class Systemctl:
         return [ self.systemd_version(), self.systemd_features() ]
 
 def print_result(result):
-    # logg_note = logg.info
+    # logg_info = logg.info
     # logg_debug = logg.debug
-    def logg_note(*msg): pass
+    def logg_info(*msg): pass
     def logg_debug(*msg): pass
     exitcode = 0
     if result is None:
-        logg_note("EXEC END None")
+        logg_info("EXEC END None")
     elif result is True:
-        logg_note("EXEC END True")
+        logg_info("EXEC END True")
         result = None
         exitcode = 0
     elif result is False:
-        logg_note("EXEC END False")
+        logg_info("EXEC END False")
         result = None
         exitcode = 1
     elif isinstance(result, tuple) and len(result) == 2:
         exitcode, status = result
-        logg_note("EXEC END %s '%s'", exitcode, status)
+        logg_info("EXEC END %s '%s'", exitcode, status)
         if exitcode is True: exitcode = 0
         if exitcode is False: exitcode = 1
         result = status
     elif isinstance(result, int):
-        logg_note("EXEC END %s", result)
+        logg_info("EXEC END %s", result)
         exitcode = result
         result = None
     #
@@ -3223,9 +3223,9 @@ def print_result(result):
         print(result)
         result1 = result.split("\n")[0][:-20]
         if result == result1:
-            logg_note("EXEC END '%s'", result)
+            logg_info("EXEC END '%s'", result)
         else:
-            logg_note("EXEC END '%s...'", result1)
+            logg_info("EXEC END '%s...'", result1)
             logg_debug("    END '%s'", result)
     elif isinstance(result, list) or hasattr(result, "next") or hasattr(result, "__next__"):
         shown = 0
