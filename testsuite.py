@@ -5532,7 +5532,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             reload-or-try-restart. (with ExecReload)"""
         if not os.path.exists("/usr/bin/socat"):
             self.skipTest("missing /usr/bin/socat")
-        self.skipTest("unfinished (bad functionality?)") # TODO
+        # self.skipTest("unfinished (bad functionality?)") # TODO
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -5718,12 +5718,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(out.strip(), "active")
         top4 = top
         #
-        logg.info("-- and we check that there is a new PID for the service process (if no ExecReload)")
+        logg.info("-- and we check that there is the same PID for the service process (if ExecReload)")
         ps4 = find_pids(top4, testsleep)
         logg.info("found PIDs %s and %s", ps3, ps4)
         self.assertTrue(len(ps3), 1)
         self.assertTrue(len(ps4), 1)
-        self.assertNotEqual(ps3[0], ps4[0])
+        self.assertEqual(ps3[0], ps4[0])
         #
         logg.info("== 'kill' will bring is-active non-active as well (when the PID is known)")        
         cmd = "{systemctl} kill zzz.service -vv"
