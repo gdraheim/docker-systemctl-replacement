@@ -202,7 +202,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             f = open(newcoverage, "w")
             f.write(text2)
             f.close()
-    def root(self, testdir):
+    def root(self, testdir, real = None):
+        if real: return "/"
         root_folder = os.path.join(testdir, "root")
         if not os.path.isdir(root_folder):
             os.makedirs(root_folder)
@@ -395,11 +396,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_1011_systemctl_daemon_reload_root_ignored(self, real = None):
         """ daemon-reload always succeeds (does nothing) """
         testdir = self.testdir()
-        root = self.root(testdir)
+        root = self.root(testdir, real)
         systemctl = _cov + _systemctl_py + " --root=" + root
-        if real:
-            systemctl = "/usr/bin/systemctl"
-            root = ""
+        if real: systemctl = "/usr/bin/systemctl"
         text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A
