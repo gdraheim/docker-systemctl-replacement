@@ -57,3 +57,6 @@ op opensuse: ; ./testsuite.py make_opensuse
 ub ubuntu:   ; ./testsuite.py make_ubuntu
 ce centos:   ; ./testsuite.py make_centos
 
+clean:
+	- rm .coverage*
+	- rm -rf tmp/tmp.test_*
