@@ -4619,6 +4619,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         #
+        cmd = "{systemctl} enable zzz.service -vv"
+        sh____(cmd.format(**locals()))
         cmd = "{systemctl} is-active zzz.service -vv"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s", cmd, end, out)
@@ -4967,6 +4969,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/usr/bin/zzz.init"))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
+        #
+        cmd = "{systemctl} enable zzz.service -vv"
+        sh____(cmd.format(**locals()))
         cmd = "{systemctl} is-active zzz.service -vv"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s", cmd, end, out)
@@ -5275,6 +5280,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/usr/bin/zzz.init"))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
+        #
+        cmd = "{systemctl} enable zzz.service -vv"
+        sh____(cmd.format(**locals()))
         #
         cmd = "{systemctl} is-active zzz.service -vv"
         out, end = output2(cmd.format(**locals()))
@@ -5588,7 +5596,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/usr/bin/zzz.init"))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
-
+        #
+        cmd = "{systemctl} enable zzz.service -vv"
+        sh____(cmd.format(**locals()))
+        #
         cmd = "{systemctl} is-active zzz.service -vv"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s", cmd, end, out)
@@ -5868,6 +5879,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         copy_tool(os_path(testdir, "backup"), os_path(root, "/usr/bin/backup"))
         text_file(os_path(root, "/var/tmp/test.0"), """..""")
+        #
+        cmd = "{systemctl} enable zzz.service -vv"
+        sh____(cmd.format(**locals()))
+        #
         is_active = "{systemctl} is-active zzz.service -vv"
         act, end = output2(is_active.format(**locals()))
         self.assertEqual(act.strip(), "inactive")
@@ -6055,6 +6070,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         copy_tool(os_path(testdir, "backup"), os_path(root, "/usr/bin/backup"))
         text_file(os_path(root, "/var/tmp/test.0"), """..""")
+        #
+        cmd = "{systemctl} enable zzz.service -vv"
+        sh____(cmd.format(**locals()))
         is_active = "{systemctl} is-active zzz.service other.service -vv"
         act, end = output2(is_active.format(**locals()))
         self.assertEqual(act.strip(), "inactive\nunknown")
@@ -6268,7 +6286,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             """.format(**locals()))
         copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/etc/init.d/zzz"))
-
+        #
+        cmd = "{systemctl} enable zzz.service -vv"
+        sh____(cmd.format(**locals()))
+        #
         cmd = "{systemctl} is-active zzz.service -vv"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s", cmd, end, out)
@@ -6570,6 +6591,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/usr/bin/zzz.init"))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
+        #
+        cmd = "{systemctl} enable zzz.service -vv"
+        sh____(cmd.format(**locals()))
         cmd = "{systemctl} is-active zzz.service -vv"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s", cmd, end, out)
@@ -6791,6 +6815,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         text_file(os_path(root, "/var/tmp/test.0"), """..""")
+        #
+        cmd = "{systemctl} enable zzz.service -vv"
+        sh____(cmd.format(**locals()))
         is_active = "{systemctl} is-active zzz.service other.service {vv}"
         act, end = output2(is_active.format(**locals()))
         self.assertEqual(act.strip(), "inactive\nunknown")
@@ -6888,6 +6915,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             """.format(**locals()))
         copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
+        #
+        cmd = "{systemctl} enable zzz.service -vv"
+        sh____(cmd.format(**locals()))
         is_active = "{systemctl} is-active zzz.service other.service {vv}"
         act, end = output2(is_active.format(**locals()))
         self.assertEqual(act.strip(), "inactive\nunknown")
