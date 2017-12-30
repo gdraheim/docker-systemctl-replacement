@@ -7157,7 +7157,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s", cmd, end, out)
         self.assertEqual(end, 3)
-        if not real: self.assertEqual(out.strip(), "inactive") # TODO real "failed"
+        self.assertEqual(out.strip(), "inactive")
         #
         #
         cmd = "{systemctl} enable zzr.service {vv}"
