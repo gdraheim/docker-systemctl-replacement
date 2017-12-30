@@ -2102,6 +2102,7 @@ class Systemctl:
         #   "unknown" when not enabled
         # The return code is set to
         #   0 when "active"
+        #   1 when unit is not found
         #   3 when any "inactive" or "unknown"
         # However: # TODO!!!!! BUG in original systemctl!!
         #   documentation says " exit code 0 if at least one is active"
@@ -2198,24 +2199,20 @@ class Systemctl:
     def is_failed_modules(self, *modules):
         """ [UNIT]... -- check if these units are in failes state
         implements True if any is-active = True """
-
-        found_all = True
         units = []
         results = []
         for module in modules:
             units = self.match_units([ module ])
             if not units:
-                logg.debug("Unit %s could not be found.", unit_of(module))
-                results += ["unknown"]
-                found_all = False
-                continue
+                logg.error("Failed to get unit file state for %s: No such file", unit_of(module))
+                return 1
             for unit in units:
                 active = self.get_active_unit(unit) 
+                enabled = self.enabled_unit(unit)
+                if enabled != "enabled": active = "unknown"
                 results += [ active ]
                 break
-        known = [ result for result in results if result != "unknown" ]
-        failed = "failed" in results
-        status = found_all and failed or not known
+        status = "failed" in results
         if not _quiet:
             return status, results
         else:
