@@ -175,6 +175,20 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if os.path.isdir(newdir):
             shutil.rmtree(newdir)
         return newdir
+    def real_folders(self):
+        yield "/etc/systemd/system"
+        yield "/var/run/systemd/system"
+        yield "/usr/lib/systemd/system"
+        yield "/lib/systemd/system"
+        yield "/etc/init.d"
+        yield "/var/run/init.d"
+        yield "/var/run"
+        yield "/etc/sysconfig"
+    def rm_zzfiles(self):
+        for folder in self.real_folders():
+            for item in glob(folder + "/zz*"):
+                logg.info("rm %s", item)
+                os.remove(item)
     def coverage(self, testname = None):
         testname = testname or self.caller_testname()
         newcoverage = ".coverage."+testname
@@ -399,6 +413,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(lines(out), [])
         self.assertEqual(end, 0)
         self.rm_testdir()
+        self.rm_zzfiles()
         self.coverage()
     def test_1020_systemctl_with_systemctl_log(self):
         """ when /var/log/systemctl.log exists then print INFO messages into it"""
