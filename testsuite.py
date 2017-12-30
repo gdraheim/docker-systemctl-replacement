@@ -376,25 +376,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(lines(out), [])
         self.assertEqual(end, 0)
         self.coverage()
-    def test_1011_systemctl_daemon_reload_root_ignored(self):
-        """ daemon-reload always succeeds (does nothing) """
-        testdir = self.testdir()
-        root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
-        text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
-            [Unit]
-            Description=Testing A
-            [Service]
-            ExecStart=/usr/bin/sleep 3
-        """)
-        cmd = "{systemctl} daemon-reload"
-        out,end = output2(cmd.format(**locals()))
-        logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(lines(out), [])
-        self.assertEqual(end, 0)
-        self.rm_testdir()
-        self.coverage()
     def real_1011_systemctl_daemon_reload_root_ignored(self):
+        self.test_1011_systemctl_daemon_reload_root_ignored(True)
+    def test_1011_systemctl_daemon_reload_root_ignored(self, real = None):
         """ daemon-reload always succeeds (does nothing) """
         testdir = self.testdir()
         root = self.root(testdir)
@@ -405,6 +389,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Service]
             ExecStart=/usr/bin/sleep 3
         """)
+        if real:
+            systemctl = "/usr/bin/systemctl"
+            root = ""
+        #
         cmd = "{systemctl} daemon-reload"
         out,end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
