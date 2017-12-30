@@ -6934,17 +6934,21 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.rm_testdir()
         self.coverage()
-    def test_4090_simple_service_RemainAfterExit(self):
+    def real_4090_simple_service_RemainAfterExit(self):
+        self.test_4090_simple_service_RemainAfterExit(True)
+    def test_4090_simple_service_RemainAfterExit(self, real = None):
         """ check that we manage simple services in a root env
             with commands like start, restart, stop, etc where
             RemainAfterExit=yes says the service is okay even
             when ExecStart has finished."""
+        self.rm_zzfiles()
         vv = "-vv"
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
-        root = self.root(testdir)
+        root = self.root(testdir, real)
         systemctl = _cov + _systemctl_py + " --root=" + root
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
         testsleep = self.testname("testsleep")
         testfail = self.testname("testfail.sh")
         bindir = os_path(root, "/usr/bin")
@@ -7034,267 +7038,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_file(os_path(testdir, "zzf.service"), os_path(root, "/etc/systemd/system/zzf.service"))
         copy_file(os_path(testdir, "zzr.service"), os_path(root, "/etc/systemd/system/zzr.service"))
         copy_file(os_path(testdir, "zzx.service"), os_path(root, "/etc/systemd/system/zzx.service"))
-        #
-        cmd = "{systemctl} is-active zzz.service {vv}"
-        out, end = output2(cmd.format(**locals()))
-        logg.info(" %s =>%s \n%s", cmd, end, out)
-        self.assertEqual(end, 3)
-        self.assertEqual(out.strip(), "inactive")
-        #
-        logg.info("== 'start' shall start a normal service ")
-        cmd = "{systemctl} start zzz.service {vv}"
-        out, end = output2(cmd.format(**locals()))
-        logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(end, 0)
-        time.sleep(4)
-        top = output(_top_recent)
-        logg.info("\n>>>\n%s", top)
-        self.assertTrue(greps(top, testsleep))
-        cmd = "{systemctl} is-active zzz.service {vv}"
-        out, end = output2(cmd.format(**locals()))
-        logg.info(" %s =>%s \n%s", cmd, end, out)
-        self.assertEqual(end, 0)
-        self.assertEqual(out.strip(), "active")
-        #
-        logg.info("== 'stop' shall stop a normal service")
-        cmd = "{systemctl} stop zzz.service {vv}"
-        out, end = output2(cmd.format(**locals()))
-        logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(end, 0)
-        top = output(_top_recent)
-        logg.info("\n>>>\n%s", top)
-        self.assertFalse(greps(top, testsleep))
-        cmd = "{systemctl} is-active zzz.service {vv}"
-        out, end = output2(cmd.format(**locals()))
-        logg.info(" %s =>%s \n%s", cmd, end, out)
-        self.assertEqual(end, 3)
-        self.assertEqual(out.strip(), "inactive") # TODO real "unknown"
-        #
-        #
-        logg.info("== 'start' will run a later exiting service ")
-        cmd = "{systemctl} start zze.service {vv}"
-        out, end = output2(cmd.format(**locals()))
-        logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(end, 0)
-        time.sleep(4)
-        top = output(_top_recent)
-        logg.info("\n>>>\n%s", top)
-        self.assertFalse(greps(top, testsleep))
-        cmd = "{systemctl} is-active zze.service {vv}"
-        out, end = output2(cmd.format(**locals()))
-        logg.info(" %s =>%s \n%s", cmd, end, out)
-        self.assertEqual(end, 3)
-        self.assertEqual(out.strip(), "failed")
-        #
-        logg.info("== 'stop' shall clean an already exited service")
-        cmd = "{systemctl} stop zze.service {vv}"
-        out, end = output2(cmd.format(**locals()))
-        logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(end, 1) ## TODO real = 0
-        top = output(_top_recent)
-        logg.info("\n>>>\n%s", top)
-        self.assertFalse(greps(top, testsleep))
-        cmd = "{systemctl} is-active zze.service {vv}"
-        out, end = output2(cmd.format(**locals()))
-        logg.info(" %s =>%s \n%s", cmd, end, out)
-        self.assertEqual(end, 3)
-        self.assertEqual(out.strip(), "inactive")
-
-        #
-        logg.info("== 'start' will run a later failing service ")
-        cmd = "{systemctl} start zzf.service {vv}"
-        out, end = output2(cmd.format(**locals()))
-        logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(end, 0)
-        time.sleep(4)
-        top = output(_top_recent)
-        logg.info("\n>>>\n%s", top)
-        self.assertFalse(greps(top, testsleep))
-        cmd = "{systemctl} is-active zzf.service {vv}"
-        out, end = output2(cmd.format(**locals()))
-        logg.info(" %s =>%s \n%s", cmd, end, out)
-        self.assertEqual(end, 3)
-        self.assertEqual(out.strip(), "failed")
-        #
-        logg.info("== 'stop' shall clean an already failed service")
-        cmd = "{systemctl} stop zzf.service {vv}"
-        out, end = output2(cmd.format(**locals()))
-        logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(end, 1) ## TODO real = 0
-        top = output(_top_recent)
-        logg.info("\n>>>\n%s", top)
-        self.assertFalse(greps(top, testsleep))
-        cmd = "{systemctl} is-active zzf.service {vv}"
-        out, end = output2(cmd.format(**locals()))
-        logg.info(" %s =>%s \n%s", cmd, end, out)
-        self.assertEqual(end, 3)
-        self.assertEqual(out.strip(), "inactive") # TODO real "failed"
-        #
-        logg.info("== 'start' will have a later exiting service as remaining active")
-        cmd = "{systemctl} start zzr.service {vv}"
-        out, end = output2(cmd.format(**locals()))
-        logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(end, 0)
-        time.sleep(4)
-        top = output(_top_recent)
-        logg.info("\n>>>\n%s", top)
-        self.assertFalse(greps(top, testsleep))
-        cmd = "{systemctl} is-active zzr.service {vv}"
-        out, end = output2(cmd.format(**locals()))
-        logg.info(" %s =>%s \n%s", cmd, end, out)
-        self.assertEqual(end, 0)
-        self.assertEqual(out.strip(), "active") # <<<<<<<<<<< here's the new functionality
-        #
-        logg.info("== 'stop' shall clean an exited but remaining service")
-        cmd = "{systemctl} stop zzr.service {vv}"
-        out, end = output2(cmd.format(**locals()))
-        logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(end, 1)
-        top = output(_top_recent)
-        logg.info("\n>>>\n%s", top)
-        self.assertFalse(greps(top, testsleep))
-        cmd = "{systemctl} is-active zzr.service {vv}"
-        out, end = output2(cmd.format(**locals()))
-        logg.info(" %s =>%s \n%s", cmd, end, out)
-        self.assertEqual(end, 3)
-        self.assertEqual(out.strip(), "inactive") # TODO real "failed"
-
-        #
-        logg.info("== 'start' will have a later failing service remaining but failed")
-        cmd = "{systemctl} start zzx.service {vv}"
-        out, end = output2(cmd.format(**locals()))
-        logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(end, 0)
-        time.sleep(4)
-        top = output(_top_recent)
-        logg.info("\n>>>\n%s", top)
-        self.assertFalse(greps(top, testsleep))
-        cmd = "{systemctl} is-active zzx.service {vv}"
-        out, end = output2(cmd.format(**locals()))
-        logg.info(" %s =>%s \n%s", cmd, end, out)
-        self.assertEqual(end, 3) 
-        self.assertEqual(out.strip(), "failed") # TODO real = "active"
-        #
-        logg.info("== 'stop' shall clean an already failed remaining service")
-        cmd = "{systemctl} stop zzx.service {vv}"
-        out, end = output2(cmd.format(**locals()))
-        logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(end, 1) ## TODO real = 0
-        top = output(_top_recent)
-        logg.info("\n>>>\n%s", top)
-        self.assertFalse(greps(top, testsleep))
-        cmd = "{systemctl} is-active zzx.service {vv}"
-        out, end = output2(cmd.format(**locals()))
-        logg.info(" %s =>%s \n%s", cmd, end, out)
-        self.assertEqual(end, 3)
-        self.assertEqual(out.strip(), "inactive") # TODO real "failed"
-        #
-        # cleanup
-        kill_testsleep = "killall {testsleep}"
-        sx____(kill_testsleep.format(**locals()))
-        self.rm_testdir()
-        self.coverage()
-    def real_4090_simple_service_RemainAfterExit(self):
-        """ check that we manage simple services in a root env
-            with commands like start, restart, stop, etc where
-            RemainAfterExit=yes says the service is okay even
-            when ExecStart has finished."""
-        vv = ""
-        testname = self.testname()
-        testdir = self.testdir()
-        sh____("rm /etc/systemd/system/zz* || true")
-        user = self.user()
-        root = self.root(testdir)
-        systemctl = "/usr/bin/systemctl"
-        testsleep = self.testname("testsleep")
-        testfail = self.testname("testfail.sh")
-        bindir = os_path(root, "/usr/bin")
-        begin = "{"
-        end = "}"
-        text_file(os_path(testdir, "zzz.service"),"""
-            [Unit]
-            Description=Testing Z
-            [Service]
-            Type=simple
-            ExecStartPre=echo %n
-            ExecStart={bindir}/{testsleep} 20
-            ExecStartPost=echo started $MAINPID
-            ExecStop=/usr/bin/kill $MAINPID
-            ExecStopPost=echo stopped $MAINPID
-            ExecStopPost=sleep 2
-            [Install]
-            WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zze.service"),"""
-            [Unit]
-            Description=Testing E
-            [Service]
-            Type=simple
-            ExecStartPre=echo %n
-            ExecStart={bindir}/{testsleep} 3
-            ExecStartPost=echo started $MAINPID
-            ExecStop=/usr/bin/kill $MAINPID
-            ExecStopPost=echo stopped $MAINPID
-            ExecStopPost=sleep 2
-            [Install]
-            WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzf.service"),"""
-            [Unit]
-            Description=Testing F
-            [Service]
-            Type=simple
-            ExecStartPre=echo %n
-            ExecStart={bindir}/{testfail} 3
-            ExecStartPost=echo started $MAINPID
-            ExecStop=/usr/bin/kill $MAINPID
-            ExecStopPost=echo stopped $MAINPID
-            ExecStopPost=sleep 2
-            [Install]
-            WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzr.service"),"""
-            [Unit]
-            Description=Testing R
-            [Service]
-            Type=simple
-            RemainAfterExit=yes
-            ExecStartPre=echo %n
-            ExecStart={bindir}/{testsleep} 3
-            ExecStartPost=echo started $MAINPID
-            ExecStop=/usr/bin/kill $MAINPID
-            ExecStopPost=echo stopped $MAINPID
-            ExecStopPost=sleep 2
-            [Install]
-            WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzx.service"),"""
-            [Unit]
-            Description=Testing X
-            [Service]
-            Type=simple
-            RemainAfterExit=yes
-            ExecStartPre=echo %n
-            ExecStart={bindir}/{testfail} 3
-            ExecStartPost=echo started $MAINPID
-            ExecStop=/usr/bin/kill $MAINPID
-            ExecStopPost=echo stopped $MAINPID
-            ExecStopPost=sleep 2
-            [Install]
-            WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "testfail.sh"),"""
-            #! /bin/sh
-            {bindir}/{testsleep} $1
-            exit 2
-            """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
-        copy_tool(os_path(testdir, "testfail.sh"), os_path(bindir, testfail))
-        copy_file(os_path(testdir, "zzz.service"), os_path("", "/etc/systemd/system/zzz.service"))
-        copy_file(os_path(testdir, "zze.service"), os_path("", "/etc/systemd/system/zze.service"))
-        copy_file(os_path(testdir, "zzf.service"), os_path("", "/etc/systemd/system/zzf.service"))
-        copy_file(os_path(testdir, "zzr.service"), os_path("", "/etc/systemd/system/zzr.service"))
-        copy_file(os_path(testdir, "zzx.service"), os_path("", "/etc/systemd/system/zzx.service"))
         sh____("{systemctl} daemon-reload".format(**locals()))
         #
         cmd = "{systemctl} is-active zzz.service {vv}"
@@ -7303,6 +7046,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 3)
         self.assertEqual(out.strip(), "unknown")
         #
+        cmd = "{systemctl} enable zzz.service {vv}"
+        sh____(cmd.format(**locals()))
+        cmd = "{systemctl} is-active zzz.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        self.assertEqual(out.strip(), "inactive")
+        #
         logg.info("== 'start' shall start a normal service ")
         cmd = "{systemctl} start zzz.service {vv}"
         out, end = output2(cmd.format(**locals()))
@@ -7330,7 +7081,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s", cmd, end, out)
         self.assertEqual(end, 3)
-        self.assertEqual(out.strip(), "unknown")
+        self.assertEqual(out.strip(), "inactive")
         #
         #
         logg.info("== 'start' will run a later exiting service ")
@@ -7352,7 +7103,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} stop zze.service {vv}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(end, 0)
+        if not real: self.assertEqual(end, 1) # TODO real = 0
         top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
@@ -7360,7 +7111,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s", cmd, end, out)
         self.assertEqual(end, 3)
-        self.assertEqual(out.strip(), "failed")
+        if not real: self.assertEqual(out.strip(), "inactive") # TODO real "failed"
 
         #
         logg.info("== 'start' will run a later failing service ")
@@ -7382,7 +7133,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} stop zzf.service {vv}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(end, 0)
+        if not real: self.assertEqual(end, 1) ## TODO real = 0
         top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
@@ -7390,7 +7141,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s", cmd, end, out)
         self.assertEqual(end, 3)
-        self.assertEqual(out.strip(), "failed")
+        if not real: self.assertEqual(out.strip(), "inactive") # TODO real "failed"
         #
         logg.info("== 'start' will have a later exiting service as remaining active")
         cmd = "{systemctl} start zzr.service {vv}"
@@ -7411,15 +7162,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} stop zzr.service {vv}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(end, 0)
+        if not real: self.assertEqual(end, 1) # TODO real 0
         top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         cmd = "{systemctl} is-active zzr.service {vv}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s", cmd, end, out)
-        self.assertEqual(end, 3)
-        self.assertEqual(out.strip(), "failed")
+        if not real: self.assertEqual(end, 3) # TODO real 0
+        if not real: self.assertEqual(out.strip(), "inactive") # TODO real "failed"
 
         #
         logg.info("== 'start' will have a later failing service remaining but failed")
@@ -7434,14 +7185,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} is-active zzx.service {vv}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s", cmd, end, out)
-        self.assertEqual(end, 0)
-        self.assertEqual(out.strip(), "active") # <<< RemainExit not when exit > 0 
+        if not real: self.assertEqual(end, 3)  # TODO real = 0
+        if not real: self.assertEqual(out.strip(), "failed") # TODO real = "active"
         #
         logg.info("== 'stop' shall clean an already failed remaining service")
         cmd = "{systemctl} stop zzx.service {vv}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(end, 0)
+        if not real: self.assertEqual(end, 1) ## TODO real = 0
         top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
@@ -7449,13 +7200,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s", cmd, end, out)
         self.assertEqual(end, 3)
-        self.assertEqual(out.strip(), "failed")
+        if not real: self.assertEqual(out.strip(), "inactive") # TODO real "failed"
         #
         # cleanup
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
-        # sh____("rm -f /etc/systemd/system/zz*")
+        self.rm_zzfiles()
+        self.coverage()
     def test_4101_systemctl_py_kill_basic_behaviour(self):
         """ check systemctl_py kill basic behaviour"""
         testname = self.testname()
