@@ -2099,36 +2099,31 @@ class Systemctl:
         # systemctl returns multiple lines, one for each argument
         #   "active" when is_active
         #   "inactive" when not is_active
-        #   "unknown" when not found
+        #   "unknown" when not enabled
         # The return code is set to
         #   0 when "active"
         #   3 when any "inactive" or "unknown"
         # However: # TODO!!!!! BUG in original systemctl!!
         #   documentation says " exit code 0 if at least one is active"
         #   and "Unless --quiet is specified, print the unit state"
-        found_all = True
         units = []
         results = []
         for module in modules:
             units = self.match_units([ module ])
             if not units:
-                logg.debug("Unit %s could not be found.", unit_of(module))
-                results += ["unknown"]
-                found_all = False
-                continue
+                logg.error("Failed to get unit file state for %s: No such file", unit_of(module))
+                return 1
             for unit in units:
                 active = self.get_active_unit(unit) 
+                enabled = self.enabled_unit(unit)
+                if enabled != "enabled": active = "unknown"
                 results += [ active ]
                 break
-        known = [ result for result in results if result != "unknown" ]
-        if True:
-            ## how 'systemctl' works:
-            bad = "inactive" in results or "failed" in results
-            status = found_all and not bad and not not known
-        else:
-            ## how it should work:
-            active = "active" in results
-            status = found_all and active and not not known
+        ## how it should work:
+        status = "active" in results
+        ## how 'systemctl' works:
+        non_active = [ result for result in results if result != "active" ]
+        status = not non_active
         if not status:
             status = 3
         if not _quiet:

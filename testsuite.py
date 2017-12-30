@@ -175,6 +175,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if os.path.isdir(newdir):
             shutil.rmtree(newdir)
         return newdir
+    def makedirs(self, path):
+        if not os.path.isdir(path):
+            os.makedirs(path)
     def real_folders(self):
         yield "/etc/systemd/system"
         yield "/var/run/systemd/system"
@@ -184,9 +187,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         yield "/var/run/init.d"
         yield "/var/run"
         yield "/etc/sysconfig"
+        yield "/etc/systemd/system/multi-user.target.wants"
     def rm_zzfiles(self):
         for folder in self.real_folders():
             for item in glob(folder + "/zz*"):
+                logg.info("rm %s", item)
+                os.remove(item)
+            for item in glob(folder + "/test_*"):
                 logg.info("rm %s", item)
                 os.remove(item)
     def coverage(self, testname = None):
@@ -3397,93 +3404,21 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
-    def test_3060_is_active_for_forking(self):
+    def real_3060_is_active_for_forking(self):
+        self.test_3060_is_active_for_forking(True)
+    def test_3060_is_active_for_forking(self, real = None):
         """ check that we can start forking services and have them is-active"""
+        self.rm_zzfiles()
         vv = "-vv"
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
-        root = self.root(testdir)
+        root = self.root(testdir, real)
         systemctl = _cov + _systemctl_py + " --root=" + root
-        testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
-        os.makedirs(os_path(root, "/var/run"))
-        shell_file(os_path(testdir, "zzz.init"), """
-            #! /bin/bash
-            case "$1" in start) 
-               [ -d /var/run ] || mkdir -p /var/run
-               ({bindir}/{testsleep} 50 0<&- &>/dev/null &
-                echo $! > {root}/var/run/zzz.init.pid
-               ) &
-               wait %1
-               ps -o pid,ppid,args
-            ;; stop)
-               killall {testsleep}
-            ;; esac 
-            echo "done$1" >&2
-            exit 0
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzz.service"),"""
-            [Unit]
-            Description=Testing Z
-            [Service]
-            Type=forking
-            PIDFile={root}/var/run/zzz.init.pid
-            ExecStart={root}/usr/bin/zzz.init start
-            ExecStop={root}/usr/bin/zzz.init stop
-            [Install]
-            WantedBy=multi-user.target
-            """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
-        copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/usr/bin/zzz.init"))
-        copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
-        #
-        is_active_ZX = "{systemctl} is-active zzz.service {vv}"
-        actZX, exitZX  = output2(is_active_ZX.format(**locals()))
-        self.assertEqual(actZX.split("\n"), ["inactive", ""])
-        self.assertEqual(exitZX, 3)
-        #
-        cmd = "{systemctl} start zzz.service -vv"
-        out, end = output2(cmd.format(**locals()))
-        logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(end, 0)
-        top = output(_top_recent)
-        logg.info("\n>>>\n%s", top)
-        self.assertTrue(greps(top, testsleep))
-        #
-        is_active_ZX = "{systemctl} is-active zzz.service {vv}"
-        actZX, exitZX  = output2(is_active_ZX.format(**locals()))
-        self.assertEqual(actZX.split("\n"), ["active", ""])
-        self.assertEqual(exitZX, 0)
-        #
-        cmd = "{systemctl} stop zzz.service -vv"
-        out, end = output2(cmd.format(**locals()))
-        logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(end, 0)
-        top = output(_top_recent)
-        logg.info("\n>>>\n%s", top)
-        self.assertFalse(greps(top, testsleep))
-        #
-        is_active_ZX = "{systemctl} is-active zzz.service {vv}"
-        actZX, exitZX  = output2(is_active_ZX.format(**locals()))
-        self.assertEqual(actZX.split("\n"), ["inactive", ""])
-        self.assertEqual(exitZX, 3)
-        #
-        kill_testsleep = "killall {testsleep}"
-        sx____(kill_testsleep.format(**locals()))
-        self.rm_testdir()
-        self.coverage()
-    def real_3060_is_active_for_forking(self):
-        """ check that we can start forking services and have them is-active"""
-        # TODO: test_3060 does differ from real_3060
-        vv = ""
-        testname = self.testname()
-        testdir = self.testdir()
-        user = self.user()
-        root = ""
-        systemctl = "/usr/bin/systemctl"
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
         testsleep = self.testname("sleep")
-        bindir = os.path.realpath(os_path(testdir, "/usr/bin"))
+        self.makedirs(os_path(root, "/var/run"))
         shell_file(os_path(testdir, "zzz.init"), """
             #! /bin/bash
             case "$1" in start) 
@@ -3513,15 +3448,19 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/usr/bin/zzz.init"))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
-        sh____("systemctl daemon-reload")
-        sx____("systemctl kill zzz.service")
-        sx____("systemctl stop zzz.service")
-        sh____("systemctl daemon-reload")
-        # sh____("systemctl enable zzz.service")
+        cmd = "{systemctl} daemon-reload"
+        sh____(cmd.format(**locals()))
         #
-        is_active_ZX = "{systemctl} is-active zzz.service {vv}"
-        actZX, exitZX  = output2(is_active_ZX.format(**locals()))
+        cmd = "{systemctl} is-active zzz.service {vv}"
+        actZX, exitZX  = output2(cmd.format(**locals()))
         self.assertEqual(actZX.split("\n"), ["unknown", ""])
+        self.assertEqual(exitZX, 3)
+        #
+        cmd = "{systemctl} enable zzz.service {vv}"
+        sh____(cmd.format(**locals()))
+        cmd = "{systemctl} is-active zzz.service {vv}"
+        actZX, exitZX  = output2(cmd.format(**locals()))
+        self.assertEqual(actZX.split("\n"), ["inactive", ""])
         self.assertEqual(exitZX, 3)
         #
         cmd = "{systemctl} start zzz.service {vv}"
@@ -3547,15 +3486,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         is_active_ZX = "{systemctl} is-active zzz.service {vv}"
         actZX, exitZX  = output2(is_active_ZX.format(**locals()))
-        self.assertEqual(actZX.split("\n"), ["unknown", ""])
+        self.assertEqual(actZX.split("\n"), ["inactive", ""])
         self.assertEqual(exitZX, 3)
         #
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
-        sx____("rm /var/run/zz*")
-        sx____("rm /etc/systemd/system/zz*")
-        sx____("systemctl daemon-reload")
+        self.rm_zzfiles()
+        self.coverage()
     def test_3061_is_failed_for_forking(self):
         """ check that we can start forking services and have them is-failed"""
         vv = "-vv"
