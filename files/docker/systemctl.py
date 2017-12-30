@@ -2113,7 +2113,8 @@ class Systemctl:
             units = self.match_units([ module ])
             if not units:
                 logg.error("Failed to get unit file state for %s: No such file", unit_of(module))
-                return 1
+                results += [ "unknown" ]
+                continue
             for unit in units:
                 active = self.get_active_unit(unit) 
                 enabled = self.enabled_unit(unit)
