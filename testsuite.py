@@ -397,15 +397,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         root = self.root(testdir)
         systemctl = _cov + _systemctl_py + " --root=" + root
+        if real:
+            systemctl = "/usr/bin/systemctl"
+            root = ""
         text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A
             [Service]
             ExecStart=/usr/bin/sleep 3
         """)
-        if real:
-            systemctl = "/usr/bin/systemctl"
-            root = ""
         #
         cmd = "{systemctl} daemon-reload"
         out,end = output2(cmd.format(**locals()))
