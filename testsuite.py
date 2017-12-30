@@ -3291,14 +3291,17 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.rm_zzfiles(root)
         self.coverage()
-    def test_3051_systemctl_py_check_is_failed(self):
+    def real_3051_systemctl_py_check_is_failed(self):
+        self.test_3051_systemctl_py_check_is_failed(True)
+    def test_3051_systemctl_py_check_is_failed(self, real = None):
         """ check is_failed behaviour"""
         vv = "-vv"
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
-        root = self.root(testdir)
+        root = self.root(testdir, real)
         systemctl = _cov + _systemctl_py + " --root=" + root
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         text_file(os_path(testdir, "zza.service"),"""
@@ -3326,6 +3329,20 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
         copy_file(os_path(testdir, "zzc.service"), os_path(root, "/etc/systemd/system/zzc.service"))
+        sh____("{systemctl} daemon-reload".format(**locals()))
+        #
+        enable_A = "{systemctl} enable zza.service"
+        enable_B = "{systemctl} enable zzb.service"
+        enable_C = "{systemctl} enable zzc.service"
+        enable_D = "{systemctl} enable zzd.service"
+        doneA, exitA  = output2(enable_A.format(**locals()))
+        doneB, exitB  = output2(enable_B.format(**locals()))
+        doneC, exitC  = output2(enable_C.format(**locals()))
+        doneD, exitD  = output2(enable_D.format(**locals()))
+        if not real: self.assertEqual(exitA, 1) # TODO: real = 0
+        self.assertEqual(exitB, 0)
+        self.assertEqual(exitC, 0)
+        self.assertEqual(exitD, 1)
         #
         is_active_A = "{systemctl} is-failed zza.service"
         is_active_B = "{systemctl} is-failed zzb.service"
@@ -3335,16 +3352,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         actB, exitB  = output2(is_active_B.format(**locals()))
         actC, exitC  = output2(is_active_C.format(**locals()))
         actD, exitD  = output2(is_active_D.format(**locals()))
-        self.assertEqual(actA.strip(), "inactive")
+        self.assertEqual(actA.strip(), "unknown")
         self.assertEqual(actB.strip(), "inactive")
         self.assertEqual(actC.strip(), "inactive")
         self.assertEqual(actD.strip(), "unknown")
-        self.assertNotEqual(exitA, 0)
-        self.assertNotEqual(exitB, 0)
-        self.assertNotEqual(exitC, 0)
-        self.assertEqual(exitD, 0)
+        self.assertEqual(exitA, 1)
+        self.assertEqual(exitB, 1)
+        self.assertEqual(exitC, 1)
+        self.assertEqual(exitD, 1)
         #
-        cmd = "{systemctl} start zzb.service -vv"
+        cmd = "{systemctl} start zzb.service {vv}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
@@ -3357,14 +3374,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         actB, exitB  = output2(is_active_B.format(**locals()))
         actC, exitC  = output2(is_active_C.format(**locals()))
         actD, exitD  = output2(is_active_D.format(**locals()))
-        self.assertEqual(actA.strip(), "inactive")
+        self.assertEqual(actA.strip(), "unknown")
         self.assertEqual(actB.strip(), "active")
         self.assertEqual(actC.strip(), "inactive")
         self.assertEqual(actD.strip(), "unknown")
-        self.assertNotEqual(exitA, 0)
-        self.assertNotEqual(exitB, 0)
-        self.assertNotEqual(exitC, 0)
-        self.assertEqual(exitD, 0)
+        self.assertEqual(exitA, 1)
+        self.assertEqual(exitB, 1)
+        self.assertEqual(exitC, 1)
+        self.assertEqual(exitD, 1)
         #
         logg.info("== checking combinations of arguments")
         is_active_BC = "{systemctl} is-failed zzb.service zzc.service {vv}"
@@ -3390,7 +3407,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep+" 40"))
         #
-        cmd = "{systemctl} start zzc.service -vv"
+        cmd = "{systemctl} start zzc.service {vv}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
@@ -3407,10 +3424,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(kill_testsleep.format(**locals()))
         #
         actBC, exitBC  = output2(is_active_BC.format(**locals()))
-        self.assertEqual(actBC.split("\n"), ["failed", "failed", ""])
-        self.assertEqual(exitBC, 0)         ## all is-failed => return 0
+        if not real: self.assertEqual(actBC.split("\n"), ["failed", "failed", ""]) # TODO real 'inactive'
+        if not real: self.assertEqual(exitBC, 0)         ## all is-failed => return 0
         #
-        cmd = "{systemctl} stop zzb.service zzc.service -vv"
+        cmd = "{systemctl} stop zzb.service zzc.service {vv}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
