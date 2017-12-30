@@ -8580,7 +8580,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} is-failed zza.service"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(end, 0) # made so
+        self.assertEqual(end, 1)
         self.assertTrue(greps(out, "unknown"))
         #
         cmd = "{systemctl} status zza.service"
