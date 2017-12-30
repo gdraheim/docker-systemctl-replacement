@@ -189,12 +189,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         yield "/etc/sysconfig"
         yield "/etc/systemd/system/multi-user.target.wants"
         yield "/usr/bin"
-    def rm_zzfiles(self):
+    def rm_zzfiles(self, root):
         for folder in self.real_folders():
-            for item in glob(folder + "/zz*"):
+            for item in glob(os_path(root, folder + "/zz*")):
                 logg.info("rm %s", item)
                 os.remove(item)
-            for item in glob(folder + "/test_*"):
+            for item in glob(os_path(root, folder + "/test_*")):
                 logg.info("rm %s", item)
                 os.remove(item)
     def coverage(self, testname = None):
@@ -420,7 +420,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(lines(out), [])
         self.assertEqual(end, 0)
         self.rm_testdir()
-        self.rm_zzfiles()
+        self.rm_zzfiles(root)
         self.coverage()
     def test_1020_systemctl_with_systemctl_log(self):
         """ when /var/log/systemctl.log exists then print INFO messages into it"""
@@ -1888,7 +1888,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(lines(out)), 1)
         self.assertEqual(end, 1)
         #
-        self.rm_zzfiles()
+        self.rm_zzfiles(root)
         self.rm_testdir()
         self.coverage()
     def test_3006_is_enabled_is_true_when_any_is_enabled(self):
@@ -3409,7 +3409,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.test_3060_is_active_for_forking(True)
     def test_3060_is_active_for_forking(self, real = None):
         """ check that we can start forking services and have them is-active"""
-        self.rm_zzfiles()
         vv = "-vv"
         testname = self.testname()
         testdir = self.testdir()
@@ -3493,13 +3492,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
-        self.rm_zzfiles()
+        self.rm_zzfiles(root)
         self.coverage()
     def real_3061_is_failed_for_forking(self):
         self.test_3061_is_failed_for_forking(True)
     def test_3061_is_failed_for_forking(self, real = None):
         """ check that we can start forking services and have them is-failed"""
-        self.rm_zzfiles()
         vv = "-vv"
         testname = self.testname()
         testdir = self.testdir()
@@ -3582,7 +3580,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
-        self.rm_zzfiles()
+        self.rm_zzfiles(root)
         self.coverage()
     def real_3063_is_active_for_forking_delayed(self):
         self.test_3063_is_active_for_forking_delayed(True)
@@ -3590,7 +3588,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ check that we can start forking services and have them is-active,
             even when the pid-file is created later because startup waits
             for its existance."""
-        self.rm_zzfiles()
         vv = "-vv"
         testname = self.testname()
         testdir = self.testdir()
@@ -3677,7 +3674,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
-        self.rm_zzfiles()
+        self.rm_zzfiles(root)
         self.coverage()
     def test_3101_missing_environment_file_makes_service_ignored(self):
         """ check that a missing EnvironmentFile spec makes the service to be ignored"""
@@ -6941,7 +6938,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             with commands like start, restart, stop, etc where
             RemainAfterExit=yes says the service is okay even
             when ExecStart has finished."""
-        self.rm_zzfiles()
         vv = "-vv"
         testname = self.testname()
         testdir = self.testdir()
@@ -7230,7 +7226,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
-        # self.rm_zzfiles()
+        self.rm_zzfiles(root)
         self.coverage()
     def test_4101_systemctl_py_kill_basic_behaviour(self):
         """ check systemctl_py kill basic behaviour"""
