@@ -2220,6 +2220,56 @@ class Systemctl:
     def is_failed_from(self, conf):
         if conf is None: return True
         return self.get_active_from(conf) == "failed"
+    def reset_failed_modules(self, *modules):
+        """ [UNIT]... -- Reset failed state for all, one, or more units """
+        units = []
+        status = True
+        for module in modules:
+            units = self.match_units([ module ])
+            if not units:
+                logg.error("Failed to reset failed state of unit %s: No such file", unit_of(module))
+                return 1
+            for unit in units:
+                if not self.reset_failed_unit(unit):
+                    logg.error("Failed to reset failed state of unit %s: not loaded", unit_of(module))
+                    status = False
+                break
+        return status
+    def reset_failed_unit(self, unit):
+        conf = self.get_unit_conf(unit)
+        if not conf.loaded():
+            logg.warning("Unit %s could not be found.", unit)
+            return False
+        return self.reset_failed_from(conf)
+    def reset_failed_from(self, conf):
+        if conf is None: return True
+        if not self.is_failed_from(conf): return False
+        done = False
+        status_file = self.status_file_from(conf)
+        if status_file and os.path.exists(status_file):
+            try:
+                os.remove(status_file)
+                done = True
+                logg.debug("done rm %s", status_file)
+            except Exception, e:
+                logg.error("while rm %s: %s", status_file, e)
+        pid_file = self.pid_file_from(conf)
+        if pid_file and os.path.exists(pid_file):
+            try:
+                os.remove(pid_file)
+                done = True
+                logg.debug("done rm %s", pid_file)
+            except Exception, e:
+                logg.error("while rm %s: %s", pid_file, e)
+        pid_file = self.default_pid_file_from(conf)
+        if pid_file and os.path.exists(pid_file):
+            try:
+                os.remove(pid_file)
+                done = True
+                logg.debug("done rm %s", pid_file)
+            except Exception, e:
+                logg.error("while rm %s: %s", pid_file, e)
+        return done
     def status_modules(self, *modules):
         """ [UNIT]... check the status of these units.
         """

@@ -7083,6 +7083,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 3)
         self.assertEqual(out.strip(), "inactive")
         #
+        cmd = "{systemctl} enable zze.service {vv}"
+        sh____(cmd.format(**locals()))
         #
         logg.info("== 'start' will run a later exiting service ")
         cmd = "{systemctl} start zze.service {vv}"
@@ -7114,6 +7116,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not real: self.assertEqual(out.strip(), "inactive") # TODO real "failed"
 
         #
+        cmd = "{systemctl} enable zzf.service {vv}"
+        sh____(cmd.format(**locals()))
+        #
         logg.info("== 'start' will run a later failing service ")
         cmd = "{systemctl} start zzf.service {vv}"
         out, end = output2(cmd.format(**locals()))
@@ -7129,6 +7134,17 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 3)
         self.assertEqual(out.strip(), "failed")
         #
+        logg.info("== 'reset-failed' shall clean an already failed service")
+        cmd = "{systemctl} reset-failed zzf.service {vv} {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        cmd = "{systemctl} is-active zzf.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        self.assertEqual(out.strip(), "inactive") 
+        #
         logg.info("== 'stop' shall clean an already failed service")
         cmd = "{systemctl} stop zzf.service {vv}"
         out, end = output2(cmd.format(**locals()))
@@ -7142,6 +7158,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s \n%s", cmd, end, out)
         self.assertEqual(end, 3)
         if not real: self.assertEqual(out.strip(), "inactive") # TODO real "failed"
+        #
+        #
+        cmd = "{systemctl} enable zzr.service {vv}"
+        sh____(cmd.format(**locals()))
         #
         logg.info("== 'start' will have a later exiting service as remaining active")
         cmd = "{systemctl} start zzr.service {vv}"
@@ -7172,6 +7192,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not real: self.assertEqual(end, 3) # TODO real 0
         if not real: self.assertEqual(out.strip(), "inactive") # TODO real "failed"
 
+        #
+        cmd = "{systemctl} enable zzx.service {vv}"
+        sh____(cmd.format(**locals()))
+        #
         #
         logg.info("== 'start' will have a later failing service remaining but failed")
         cmd = "{systemctl} start zzx.service {vv}"
@@ -7206,7 +7230,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
-        self.rm_zzfiles()
+        # self.rm_zzfiles()
         self.coverage()
     def test_4101_systemctl_py_kill_basic_behaviour(self):
         """ check systemctl_py kill basic behaviour"""
