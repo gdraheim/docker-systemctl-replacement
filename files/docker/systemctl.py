@@ -1,8 +1,8 @@
 #! /usr/bin/python
 from __future__ import print_function
 
-__copyright__ = "(C) 2016-2017 Guido U. Draheim, licensed under the EUPL"
-__version__ = "1.1.1526"
+__copyright__ = "(C) 2016-2018 Guido U. Draheim, licensed under the EUPL"
+__version__ = "1.1.2000"
 
 import logging
 logg = logging.getLogger("systemctl")
@@ -920,7 +920,7 @@ class Systemctl:
                 if line.strip(): 
                     pid = to_int(line.strip())
                     break
-        except Exception, e:
+        except Exception as e:
             logg.warning("bad read of pid file '%s': %s", pid_file, e)
         return pid
     def wait_pid_file_from(self, conf, timeout = None):
@@ -1108,7 +1108,7 @@ class Systemctl:
         logg.info("  boot time: %s", datetime.datetime.fromtimestamp(boottime))
         try:
             shutil_truncate(filename)
-        except Exception, e:
+        except Exception as e:
             logg.warning("while truncating: %s", e)
         return True # truncated
     def getsize(self, filename):
@@ -1120,7 +1120,7 @@ class Systemctl:
             return 0
         try:
             return os.path.getsize(filename)
-        except Exception, e:
+        except Exception as e:
             logg.warning("while reading file size: %s\n of %s", e, filename)
             return 0
     #
@@ -2253,7 +2253,7 @@ class Systemctl:
                 os.remove(status_file)
                 done = True
                 logg.debug("done rm %s", status_file)
-            except Exception, e:
+            except Exception as e:
                 logg.error("while rm %s: %s", status_file, e)
         pid_file = self.pid_file_from(conf)
         if pid_file and os.path.exists(pid_file):
@@ -2261,7 +2261,7 @@ class Systemctl:
                 os.remove(pid_file)
                 done = True
                 logg.debug("done rm %s", pid_file)
-            except Exception, e:
+            except Exception as e:
                 logg.error("while rm %s: %s", pid_file, e)
         pid_file = self.default_pid_file_from(conf)
         if pid_file and os.path.exists(pid_file):
@@ -2269,7 +2269,7 @@ class Systemctl:
                 os.remove(pid_file)
                 done = True
                 logg.debug("done rm %s", pid_file)
-            except Exception, e:
+            except Exception as e:
                 logg.error("while rm %s: %s", pid_file, e)
         return done
     def status_modules(self, *modules):
