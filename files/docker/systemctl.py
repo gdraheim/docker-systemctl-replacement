@@ -69,6 +69,7 @@ DefaultTimeoutStartSec = 9 # officially 90
 DefaultTimeoutStopSec = 9  # officially 90
 DefaultMaximumTimeout = 200
 InitLoopSleep = 5
+ProcMaxDepth = 100
 
 _notify_socket_folder = "/var/run/systemd" # alias /run/systemd
 _notify_socket_name = "notify" # NOTIFY_SOCKET="/var/run/systemd/notify"
@@ -3122,16 +3123,56 @@ class Systemctl:
             if os.path.isfile(proc_status):
                 zombie = False
                 ppid = -1
-                for line in open(proc_status):
-                    m = re.match(r"State:\s*Z.*", line)
-                    if m: zombie = True
-                    m = re.match(r"PPid:\s*(\d+)", line)
-                    if m: ppid = int(m.group(1))
+                try:
+                    for line in open(proc_status):
+                        m = re.match(r"State:\s*Z.*", line)
+                        if m: zombie = True
+                        m = re.match(r"PPid:\s*(\d+)", line)
+                        if m: ppid = int(m.group(1))
+                except IOError as e:
+                    logg.warning("%s : %s", proc_status, e)
+                    continue
                 if zombie and ppid == os.getpid():
                     logg.info("reap zombie %s", pid)
                     try: os.waitpid(pid, os.WNOHANG)
                     except OSError as e: 
                         logg.warning("reap zombie %s: %s", e.strerror)
+    def pidlist_of(self, pid):
+        try: pid = int(pid)
+        except: return []
+        pidlist = [ pid ]
+        pids = [ pid ]
+        for depth in xrange(ProcMaxDepth):
+            for pid in os.listdir("/proc"):
+                try: pid = int(pid)
+                except: continue
+                proc_status = "/proc/%s/status" % pid
+                if os.path.isfile(proc_status):
+                    try:
+                        for line in open(proc_status):
+                            if line.startswith("PPid:"):
+                                ppid = line[len("PPid:"):].strip()
+                                try: ppid = int(ppid)
+                                except: continue
+                                if ppid in pidlist and pid not in pids:
+                                    pids += [ pid ]
+                    except IOError as e:
+                        logg.warning("%s : %s", proc_status, e)
+                        continue
+            if len(pids) != len(pidlist):
+                pidlist = pids[:]
+                continue
+        return pids
+    def pidlist_modules(self, *units):
+        for unit in self.match_units(units):
+            conf = self.get_unit_conf(unit)
+            pid = self.read_mainpid_from(conf, "")
+            yield unit, self.pidlist_of(pid)
+    def mainpid_modules(self, *units):
+        for unit in self.match_units(units):
+            conf = self.get_unit_conf(unit)
+            pid = self.read_mainpid_from(conf, "")
+            yield unit, pid
     def etc_hosts(self):
         path = "/etc/hosts"
         if self._root:
@@ -3193,7 +3234,10 @@ class Systemctl:
                 name = argz[arg]
                 method = getattr(self, name)
                 doc = getattr(method, "__doc__")
-                doc = doc or "..."
+                if doc is None:
+                    if not self._show_all:
+                        continue
+                    doc = "..."
                 firstline = doc.split("\n")[0]
                 if "--" not in firstline:
                     print(" ",arg,"--", firstline.strip())
@@ -3214,6 +3258,8 @@ class Systemctl:
                 doc = getattr(func, "__doc__", None)
                 if doc is None:
                     logg.debug("__doc__ of %s is none", func_name)
+                    if not self._show_all:
+                        continue
                     print(prog, arg, "...")
                 elif "--" in doc:
                     print(prog, arg, doc.replace("\n","\n\n", 1))
