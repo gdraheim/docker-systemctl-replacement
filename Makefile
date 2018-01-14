@@ -16,6 +16,10 @@ version:
 
 help:
 	python files/docker/systemctl.py help
+3:
+	cp -v files/docker/systemctl.py files/docker/systemctl3.py
+	sed -i -e "s|/usr/bin/python|/usr/bin/python3|" files/docker/systemctl3.py
+	diff -U1 files/docker/systemctl.py files/docker/systemctl3.py || true
 
 alltests: CH CP UA DJ
 .PHONY: tests
