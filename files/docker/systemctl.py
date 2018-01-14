@@ -68,6 +68,7 @@ DefaultWaitKillProc = 9
 DefaultTimeoutStartSec = 9 # officially 90
 DefaultTimeoutStopSec = 9  # officially 90
 DefaultMaximumTimeout = 200
+InitLoopSleep = 5
 
 _notify_socket_folder = "/var/run/systemd" # alias /run/systemd
 _notify_socket_name = "notify" # NOTIFY_SOCKET="/var/run/systemd/notify"
@@ -3105,7 +3106,7 @@ class Systemctl:
         signal.signal(signal.SIGTERM, lambda signum, frame: ignore_signals_and_raise_keyboard_interrupt("SIGTERM"))
         while True:
             try:
-                time.sleep(5)
+                time.sleep(InitLoopSleep)
                 self.system_reap_zombies()
             except KeyboardInterrupt as e:
                 signal.signal(signal.SIGTERM, signal.SIG_DFL)
