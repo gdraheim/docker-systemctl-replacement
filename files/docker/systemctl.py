@@ -2047,33 +2047,80 @@ class Systemctl:
             return False
         logg.info(" kill unit %s => %s", unit, conf.filename())
         return self.kill_unit_from(conf)
-    def kill_unit_from(self, conf):
+    def kill_stopped_unit_from(self, conf, mainpid = None):
+        if not mainpid:
+            return True
+        useKillMode = conf.data.get("Service", "KillMode", "control-group")
+        if useKillMode.lower() in ["no", "none"]:
+            logg.info("kill on stop is disabled by KillMode=%s", useKillMode)
+            return False
+        self.kill_unit_from(conf, mainpid)
+    def kill_unit_from(self, conf, mainpid = None):
         if not conf: return None
-        # useKillMode = conf.data.get("Service", "KillMode", "process")
+        started = time.time()
         doSendSIGKILL = to_bool(conf.data.get("Service", "SendSIGKILL", "yes"))
         doSendSIGHUP = to_bool(conf.data.get("Service", "SendSIGHUP", "no"))
+        useKillMode = conf.data.get("Service", "KillMode", "control-group")
         useKillSignal = conf.data.get("Service", "KillSignal", "SIGTERM")
         kill_signal = getattr(signal, useKillSignal)
         timeout = self.get_TimeoutStopSec(conf)
         status_file = self.status_file_from(conf)
         self.clean_status_from(conf) # clear RemainAfterExit and TimeoutStartSec
-        pid = self.read_mainpid_from(conf, "")
-        if not pid:
-            logg.info("no main PID [%s]", conf.filename())
+        mainpid = to_int(self.read_mainpid_from(conf, mainpid or ""))
+        if not mainpid:
+            if useKillMode in ["control-group"]:
+                logg.warning("no main PID [%s]", conf.filename())
+                logg.warning("and there is no control-group here")
+            else:
+                logg.info("no main PID [%s]", conf.filename())
             return False
-        logg.info("stop kill PID %s", pid)
-        dead = self._kill_pid(pid, kill_signal)
+        if not pid_exists(mainpid) or pid_zombie(mainpid):
+            logg.debug("ignoring children when mainpid is already dead")
+            # because we list child processes, not processes in control-group
+            return True
+        pidlist = self.pidlist_of(mainpid) # here
+        if pid_exists(mainpid):
+            logg.info("stop kill PID %s", mainpid)
+            self._kill_pid(mainpid, kill_signal)
+        if useKillMode in ["control-group"]:
+            if len(pidlist) > 1:
+                logg.info("stop control-group PIDs %s", pidlist)
+            for pid in pidlist:
+                if pid != mainpid:
+                    self._kill_pid(pid, kill_signal)
         if doSendSIGHUP: 
-            # TODO: should be sent to all the children
-            self._kill_pid(pid, signal.SIGHUP)
-        if not dead:
-            dead = self._wait_killed_pid(pid, timeout)
-        if not dead and doSendSIGKILL:
-            logg.info("hard kill PID %s", pid)
-            dead = self._kill_pid(pid, signal.SIGKILL)
-            if not dead:
-                dead = self._wait_killed_pid(pid, timeout)
-        logg.info("done kill PID %s %s", pid, dead and "OK")
+            logg.info("stop SendSIGHUP to PIDs %s", pidlist)
+            for pid in pidlist:
+                self._kill_pid(pid, signal.SIGHUP)
+        # wait for the processes to have exited
+        while True:
+            dead = True
+            for pid in pidlist:
+                if pid_exists(pid) and not pid_zombie(pid):
+                    dead = False
+                    break
+            if dead:
+                break
+            if time.time() > started + timeout:
+                logg.info("service PIDs not stopped after %s", timeout)
+                break
+            self.sleep(1) # until timeout
+        if dead or not doSendSIGKILL:
+            logg.info("done kill PID %s %s", mainpid, dead and "OK")
+            return dead
+        if useKillMode in [ "control-group", "mixed" ]:
+            logg.info("hard kill PIDs %s", pidlist)
+            for pid in pidlist:
+                if pid != mainpid:
+                    self._kill_pid(pid, signal.SIGKILL)
+            self.sleep(1)
+        # useKillMode in [ "control-group", "mixed", "process" ]
+        if pid_exists(mainpid):
+            logg.info("hard kill PID %s", mainpid)
+            self._kill_pid(mainpid, signal.SIGKILL)
+            self.sleep(1)
+        dead = not pid_exists(mainpid) or pid_zombie(mainpid)
+        logg.info("done hard kill PID %s %s", mainpid, dead and "OK")
         return dead
     def _kill_pid(self, pid, kill_signal = None):
         try: 
@@ -2081,19 +2128,11 @@ class Systemctl:
             os.kill(pid, sig)
         except OSError as e:
             if e.errno == errno.ESRCH or e.errno == errno.ENOENT:
-                logg.info("kill PID %s => No such process", pid)
+                logg.debug("kill PID %s => No such process", pid)
                 return True
             else:
                 logg.error("kill PID %s => %s", pid, str(e))
                 return False
-        return not pid_exists(pid) or pid_zombie(pid)
-    def _wait_killed_pid(self, pid, timeout):
-        timeout = int(timeout or self._WaitKillProc)
-        timeout = max(timeout, MinimumWaitKillProc)
-        for x in xrange(timeout):
-            if not pid_exists(pid) or pid_zombie(pid):
-                break
-            self.sleep(1)
         return not pid_exists(pid) or pid_zombie(pid)
     def is_active_modules(self, *modules):
         """ [UNIT].. -- check if these units are in active state
