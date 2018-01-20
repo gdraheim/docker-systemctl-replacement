@@ -20,6 +20,7 @@ import time
 import socket
 import tempfile
 import datetime
+import psutil
 
 if sys.version[0] == '2':
     string_types = basestring
@@ -2123,8 +2124,19 @@ class Systemctl:
         logg.info("done hard kill PID %s %s", mainpid, dead and "OK")
         return dead
     def _kill_pid(self, pid, kill_signal = None):
-        try: 
-            sig = kill_signal or signal.SIGTERM
+        sig = kill_signal or signal.SIGTERM
+        # kill all children of the main process
+        try:
+            process = psutil.Process(pid)
+            for child in process.children():
+                try:
+                    os.kill(child.pid, sig)
+                except OSError:
+                    pass
+        except(psutil.NoSuchProcess, psutil.ZombieProcess):
+            pass
+        # kill the main process
+        try:
             os.kill(pid, sig)
         except OSError as e:
             if e.errno == errno.ESRCH or e.errno == errno.ENOENT:
