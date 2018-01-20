@@ -7636,7 +7636,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testscriptB))
-        self.assertTrue(greps(top, testsleepB)) # TODO: kill children as well (in default KillMode)
+        self.assertFalse(greps(top, testsleepB)) # kills children as well
         #
         log = lines(open(logfile).read())
         logg.info("LOG %s\n| %s", logfile, "\n| ".join(log))
@@ -7645,12 +7645,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         cmd = "killall {testsleepB}"
-        out, end = output2(cmd.format(**locals()))
-        logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(end, 0)
-        #
-        top = output(_top_recent)
-        logg.info("\n>>>\n%s", top)
+        sx____(cmd.format(**locals())) # cleanup before check
         self.assertFalse(greps(top, testsleepB))
         #
         self.rm_testdir()
@@ -7745,28 +7740,23 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} kill zzb.service -vv"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertNotEqual(end, 0) # not killed
+        self.assertEqual(end, 0) # actually killed
         #
         time.sleep(1) # kill is asynchronous
         top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
-        self.assertTrue(greps(top, testscriptB)) # still alive
-        self.assertTrue(greps(top, testsleepB)) 
+        self.assertFalse(greps(top, testscriptB)) 
+        self.assertFalse(greps(top, testsleepB)) # and it kills children
         #
         log = lines(open(logfile).read())
         logg.info("LOG %s\n| %s", logfile, "\n| ".join(log))
         self.assertTrue(greps(log, "ignored"))
         #
-        top = output(_top_recent)
-        logg.info("\n>>>\n%s", top)
-        cmd = "killall {testsleepB}"
-        out, end = output2(cmd.format(**locals()))
-        logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(end, 0)
-        #
         time.sleep(1) # kill is asynchronous
         top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
+        cmd = "killall {testsleepB}"
+        sx____(cmd.format(**locals())) # cleanup before check
         self.assertFalse(greps(top, testscriptB))
         self.assertFalse(greps(top, testsleepB))
         #
