@@ -30,6 +30,7 @@ else:
 DEBUG_AFTER = False
 
 # defaults for options
+_extra_vars = []
 _force = False
 _full = False
 _now = False
@@ -596,6 +597,7 @@ def sortedAfter(conflist, cmp = compareAfter):
 class Systemctl:
     def __init__(self):
         # from command line options or the defaults
+        self._extra_vars = _extra_vars
         self._force = _force
         self._full = _full
         self._init = _init
@@ -1180,6 +1182,8 @@ class Systemctl:
             logg.error("Unit %s could not be found.", unit)
             return False
         return self.get_env(conf)
+    def extra_vars(self):
+        return self._extra_vars # from command line
     def get_env(self, conf):
         env = os.environ.copy()
         for env_part in conf.data.getlist("Service", "Environment", []):
@@ -1188,6 +1192,16 @@ class Systemctl:
         for env_file in conf.data.getlist("Service", "EnvironmentFile", []):
             for name, value in self.read_env_file(env_file):
                 env[name] = self.expand_env(value, env)
+        logg.info("extra-vars %s", self.extra_vars())
+        for extra in self.extra_vars():
+            if extra.startswith("@"):
+                for name, value in self.read_env_file(extra[1:]):
+                    logg.info("override %s=%s", name, value)
+                    env[name] = self.expand_env(value, env)
+            else:
+                for name, value in self.read_env_part(extra):
+                    logg.info("override %s=%s", name, value)
+                    env[name] = value # a '$word' is not special here
         return env
     def expand_env(self, cmd, env):
         def get_env1(m):
@@ -3450,6 +3464,9 @@ if __name__ == "__main__":
         help="Print unit dependencies as a list instead of a tree (ignored)")
     _o.add_option("--no-pager", action="store_true",
         help="Do not pipe output into pager (ignored)")
+    #
+    _o.add_option("-e","--extra-vars", "--environment", metavar="NAME=VAL", action="append", default=[],
+        help="..override settings in the syntax of 'Environment='")
     _o.add_option("-v","--verbose", action="count", default=0,
         help="..increase debugging information level")
     _o.add_option("-4","--ipv4", action="store_true", default=False,
@@ -3462,6 +3479,7 @@ if __name__ == "__main__":
     logging.basicConfig(level = max(0, logging.FATAL - 10 * opt.verbose))
     logg.setLevel(max(0, logging.ERROR - 10 * opt.verbose))
     #
+    _extra_vars = opt.extra_vars
     _force = opt.force
     _full = opt.full
     _no_legend = opt.no_legend

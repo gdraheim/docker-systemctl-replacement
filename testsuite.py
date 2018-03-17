@@ -3945,6 +3945,101 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.rm_testdir()
         self.coverage()
+    def test_3170_may_override_environment_from_commandline(self):
+        """ check that --extra-vars can be given on the commandline
+            to override settings in Environment= and EnvironmentFile=."""
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        print_sh = os_path(root, "/usr/bin/print.sh")
+        logfile = os_path(root, "/var/log/print_sh.log")
+        service_file = os_path(root, "/etc/systemd/system/zzb zzc.service")
+        env_file = "/etc/sysconfig/my.conf"
+        extra_vars_file = "/etc/sysconfig/extra.conf"
+        env_text_file = os_path(root, env_file)
+        extra_vars_text_file = os_path(root, extra_vars_file)
+        text_file(env_text_file,"""
+            M="emm a"
+            N='enn i'
+        """)
+        text_file(extra_vars_text_file,"""
+            R="rob o"
+            Y='knew it'
+        """)
+        text_file(service_file,"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            Environment=X=x1
+            Environment="Y=y2 y3"
+            EnvironmentFile=%s
+            ExecStart=/usr/bin/sleep 3
+            ExecStartPost=%s X: $X ${X}
+            ExecStartPost=%s Y: $Y ${Y}
+            ExecStartPost=%s M: $M ${M}
+            ExecStartPost=%s N: $N ${N}
+            ExecStartPost=%s R: $R ${R}
+            ExecStartPost=%s S: $S ${S}
+            ExecStartPost=%s T: $T ${T}
+            [Install]
+            WantedBy=multi-user.target""" 
+            % (env_file, print_sh, print_sh, print_sh,
+               print_sh, print_sh, print_sh, print_sh, ))
+        text_file(logfile, "")
+        shell_file(print_sh, """
+            #! /bin/sh
+            logfile='{logfile}'
+            echo "'$1' '$2' '$3' '$4' '$5'" >> "$logfile"
+            """.format(**locals()))
+        #
+        cmd = "{systemctl} start 'zzb zzc.service' -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        log = lines(open(logfile))
+        logg.info("LOG \n%s", log)
+        X="'X:' 'x1' 'x1' '' ''"  #
+        Y="'Y:' 'y2' 'y3' 'y2 y3' ''" 
+        M="'M:' 'emm' 'a' 'emm a' ''" 
+        N="'N:' 'enn' 'i' 'enn i' ''" 
+        R="'R:' '' '' '' ''"
+        S="'S:' '' '' '' ''"
+        T="'T:' '' '' '' ''"
+        self.assertIn(X, log)
+        self.assertIn(Y, log)
+        self.assertIn(M, log)
+        self.assertIn(N, log)
+        self.assertIn(R, log)
+        self.assertIn(S, log)
+        self.assertIn(T, log)
+        #
+        cmd = "{systemctl} stop 'zzb zzc.service'"
+        out, end = output2(cmd.format(**locals()))
+        time.sleep(1)
+        cmd = "{systemctl} start 'zzb zzc.service' -vv -e X=now --environment 'M=more N=from' --extra-vars @" + extra_vars_file
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        log = lines(open(logfile))
+        logg.info("LOG \n%s", log)
+        X="'X:' 'now' 'now' '' ''"  #
+        Y="'Y:' 'knew' 'it' 'knew it' ''" 
+        M="'M:' 'more' 'more' '' ''" 
+        N="'N:' 'from' 'from' '' ''" 
+        R="'R:' 'rob' 'o' 'rob o' ''"
+        S="'S:' '' '' '' ''"
+        T="'T:' '' '' '' ''"
+        self.assertIn(X, log)
+        self.assertIn(Y, log)
+        self.assertIn(M, log)
+        self.assertIn(N, log)
+        self.assertIn(R, log)
+        self.assertIn(S, log)
+        self.assertIn(T, log)
+        #
+        self.rm_testdir()
+        self.coverage()
     def test_3201_service_config_cat(self):
         """ check that a name service config can be printed as-is"""
         testname = self.testname()
