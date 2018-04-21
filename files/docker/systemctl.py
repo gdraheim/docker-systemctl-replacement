@@ -3214,7 +3214,9 @@ class Systemctl:
         while True:
             try:
                 time.sleep(InitLoopSleep)
-                self.system_reap_zombies()
+                running = self.system_reap_zombies()
+                if not running:
+                    break
             except KeyboardInterrupt as e:
                 signal.signal(signal.SIGTERM, signal.SIG_DFL)
                 signal.signal(signal.SIGINT, signal.SIG_DFL)
@@ -3222,9 +3224,13 @@ class Systemctl:
         return None
     def system_reap_zombies(self):
         """ check to reap children """
+        selfpid = os.getpid()
+        running = 0
         for pid in os.listdir("/proc"):
             try: pid = int(pid)
             except: continue
+            if pid == selfpid:
+                continue
             proc_status = "/proc/%s/status" % pid
             if os.path.isfile(proc_status):
                 zombie = False
@@ -3243,6 +3249,10 @@ class Systemctl:
                     try: os.waitpid(pid, os.WNOHANG)
                     except OSError as e: 
                         logg.warning("reap zombie %s: %s", e.strerror)
+            if os.path.isfile(proc_status):
+                if pid > 1:
+                    running += 1
+        return running # except PID 0 and PID 1
     def pidlist_of(self, pid):
         try: pid = int(pid)
         except: return []
