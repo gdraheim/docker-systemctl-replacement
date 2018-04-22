@@ -74,6 +74,14 @@ def output2(cmd, shell=True):
     run = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE)
     out, err = run.communicate()
     return out, run.returncode
+def output3(cmd, shell=True):
+    if isinstance(cmd, basestring):
+        logg.info(": %s", cmd)
+    else:    
+        logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
+    run = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    out, err = run.communicate()
+    return out, err, run.returncode
 def _lines(lines):
     if isinstance(lines, basestring):
         lines = lines.split("\n")
@@ -3710,6 +3718,109 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.rm_zzfiles(root)
+        self.coverage()
+    def real_3080_two_service_starts_in_parallel(self):
+        self.test_3063_two_service_starts_in_parallel(True)
+    def test_3080_two_service_starts_in_parallel(self, real = None):
+        """ consider a situation where a 'systemctl start <service>' is
+            done from two programs at the same time. Ensure that there
+            is a locking that disallow then to run in parallel."""
+        vv = "-vv"
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir, real)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
+        testsleep = self.testname("sleep")
+        bindir = os_path(root, "/usr/bin")
+        self.makedirs(os_path(root, "/var/run"))
+        shell_file(os_path(testdir, "zzz.init"), """
+            #! /bin/bash
+            case "$1" in start) 
+               [ -d /var/run ] || mkdir -p /var/run
+               (
+                mkdir -p {root}/var/log
+                echo starting >{root}/var/log/zzz.log
+                {bindir}/{testsleep} 50 0<&- &>/dev/null &
+                echo $! > {root}/var/run/zzz.init.pid
+                echo started >>{root}/var/log/zzz.log
+                sleep 2
+                {systemctl} start zza.service >> {root}/var/log/zzz.log 2>&1 &
+               ) &
+               sleep 1
+               ps -o pid,ppid,args
+            ;; stop)
+               killall {testsleep}
+            ;; esac 
+            echo "done$1" >&2
+            exit 0
+            """.format(**locals()))
+        text_file(os_path(testdir, "zzz.service"),"""
+            [Unit]
+            Description=Testing Z
+            [Service]
+            Type=forking
+            PIDFile={root}/var/run/zzz.init.pid
+            ExecStart={root}/usr/bin/zzz.init start
+            ExecStop={root}/usr/bin/zzz.init stop
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        text_file(os_path(testdir, "zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            Type=simple
+            ExecStartPre={bindir}/{testsleep}pre 5
+            ExecStart={bindir}/{testsleep}now 10
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep+"pre"))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep+"now"))
+        copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/usr/bin/zzz.init"))
+        copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
+        copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
+        sh____("{systemctl} daemon-reload".format(**locals()))
+        #
+        cmd = "{systemctl} start zzz.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        logg.info("===== just started")
+        top = output(_top_recent)
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        time.sleep(3)
+        logg.info("===== after start")
+        top = output(_top_recent)
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        logfile = os_path(root, "/var/log/zzz.log")
+        if os.path.exists(logfile):
+            logtext = open(logfile).read()
+            logg.info("zzz.log => %s", logtext)
+        else:
+            logg.info("no zzz.log")
+        #
+        logg.info("====== start next")
+        cmd = "{systemctl} start zza.service {vv}"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        self.assertEqual(end, 0)
+        top = output(_top_recent)
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        #
+        self.assertTrue(greps(err, "\\(1\\) systemctl locked by"))
+        self.assertTrue(greps(err, "the service is already running on PID")) # FIXME: may not be?
+        #
+        kill_testsleep = "killall {testsleep}"
+        sx____(kill_testsleep.format(**locals()))
+        # self.rm_testdir()
+        # self.rm_zzfiles(root)
         self.coverage()
     def test_3101_missing_environment_file_makes_service_ignored(self):
         """ check that a missing EnvironmentFile spec makes the service to be ignored"""
