@@ -455,7 +455,7 @@ class waitlock:
     def __init__(self, unit):
         self.unit = unit # currently unused
         self.opened = None
-        self.lockfolder = _notify_socket_folder
+        self.lockfolder = os_path(_root, _notify_socket_folder)
         try:
             folder = self.lockfolder
             if not os.path.isdir(folder):
@@ -473,9 +473,9 @@ class waitlock:
                     logg.debug("holding %s", lockfile)
                     break
                 except BlockingIOError as e:
-                    whom = os.read(os.opened, 4096)
-                    os.lseek(os.openened, 0, os.SEEK_SET)
-                    logg.info("(%s) systemctl locked by %s", attempt, whom)
+                    whom = os.read(self.opened, 4096)
+                    os.lseek(self.opened, 0, os.SEEK_SET)
+                    logg.info("(%s) systemctl locked by %s", attempt, whom.rstrip())
                     time.sleep(1)
                     continue
         except Exception as e:
