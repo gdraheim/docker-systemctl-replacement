@@ -9854,6 +9854,275 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
+    def test_6180_systemctl_py_halt_to_exit_container(self):
+        """ check that we can 'halt' in a docker container to stop the service
+            and to exit the PID 1 as the last part of the service."""
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        testname = self.testname()
+        testdir = self.testdir()
+        images = IMAGES
+        image = self.local_image(CENTOS)
+        python = _python
+        python_coverage = _python_coverage
+        package = "yum"
+        if greps(open("/etc/issue"), "openSUSE"):
+           image = self.local_image(OPENSUSE)
+           package = "zypper"
+        systemctl_py = os.path.realpath(_systemctl_py)
+        systemctl_sh = os_path(testdir, "systemctl.sh")
+        systemctl_py_run = systemctl_py.replace("/","_")[1:]
+        cov_run = ""
+        if COVERAGE:
+            cov_run = _cov_run
+        shell_file(systemctl_sh,"""
+            #! /bin/sh
+            exec {cov_run} /{systemctl_py_run} "$@" -vv
+            """.format(**locals()))
+        text_file(os_path(testdir, "zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            Type=simple
+            ExecStart=testsleep 40
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(testdir, "zzc.service"),"""
+            [Unit]
+            Description=Testing C
+            [Service]
+            Type=simple
+            ExecStart=testsleep 50
+            [Install]
+            WantedBy=multi-user.target""")
+        #
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name={testname} {image} sleep 50"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {systemctl_py} {testname}:/{systemctl_py_run}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {systemctl_sh} {testname}:/usr/bin/systemctl"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
+        sh____(cmd.format(**locals()))
+        if package == "zypper":
+            cmd = "docker exec {testname} {package} mr --no-gpgcheck oss-update"
+            sh____(cmd.format(**locals()))
+            cmd = "docker exec {testname} {package} install -y {python}"
+            sh____(cmd.format(**locals()))
+        if COVERAGE:
+            cmd = "docker exec {testname} {package} install -y {python_coverage}"
+            sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl --version"
+        sh____(cmd.format(**locals()))
+        #
+        cmd = "docker cp {testdir}/zzb.service {testname}:/etc/systemd/system/zzb.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zzc.service {testname}:/etc/systemd/system/zzc.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl enable zzb.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl enable zzc.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl default-services -v"
+        # sh____(cmd.format(**locals()))
+        out2 = output(cmd.format(**locals()))
+        logg.info("\n>\n%s", out2)
+        cmd = "docker commit -c 'CMD [\"/usr/bin/systemctl\",\"init\",\"zzc.service\"]'  {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}x"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name {testname}x {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        time.sleep(2)
+        #
+        top_container2 = "docker exec {testname}x ps -eo pid,ppid,args"
+        top = output(top_container2.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, "testsleep 50"))
+        #
+        # vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv status check now
+        cmd = "docker inspect {testname}x"
+        inspected = output(cmd.format(**locals()))
+        state = json.loads(inspected)[0]["State"]
+        logg.info("Status = %s", state["Status"])
+        self.assertTrue(state["Running"])
+        self.assertEqual(state["Status"], "running")
+        #
+        cmd = "docker exec {testname}x systemctl halt"
+        sh____(cmd.format(**locals()))
+        InitLoopSleep = 5
+        waits = InitLoopSleep + 2
+        logg.info("waits %ss for the zombie-reaper to have cleaned up", waits)
+        time.sleep(waits)
+        #
+        cmd = "docker inspect {testname}x"
+        inspected = output(cmd.format(**locals()))
+        state = json.loads(inspected)[0]["State"]
+        logg.info("Status = %s", state["Status"])
+        logg.info("ExitCode = %s", state["ExitCode"])
+        self.assertFalse(state["Running"])
+        self.assertEqual(state["Status"], "exited")
+        #
+        cmd = "docker stop {testname}x" # <<< this is a no-op now
+        # sh____(cmd.format(**locals()))
+        out3 = output(cmd.format(**locals()))
+        logg.info("\n>\n%s", out3)
+        #
+        top_container = "docker exec {testname} ps -eo pid,ppid,args"
+        top = output(top_container.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, "testsleep 40"))
+        self.assertFalse(greps(top, "testsleep 50"))
+        #
+        if COVERAGE:
+            coverage_file = ".coverage." + testname
+            cmd = "docker cp {testname}x:.coverage {coverage_file}"
+            sh____(cmd.format(**locals()))
+            okay_coverage = "sed -i -e 's:/{systemctl_py_run}:{systemctl_py}:' {coverage_file}"
+            sh____(okay_coverage.format(**locals()))
+        #
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}x"
+        sx____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
+        self.rm_testdir()
+    def test_6190_systemctl_py_stop_last_service_to_exit_container(self):
+        """ check that we can 'stop <service>' in a docker container to stop the service
+            being the last service and to exit the PID 1 as the last part of the service."""
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        testname = self.testname()
+        testdir = self.testdir()
+        images = IMAGES
+        image = self.local_image(CENTOS)
+        python = _python
+        python_coverage = _python_coverage
+        package = "yum"
+        if greps(open("/etc/issue"), "openSUSE"):
+           image = self.local_image(OPENSUSE)
+           package = "zypper"
+        systemctl_py = os.path.realpath(_systemctl_py)
+        systemctl_sh = os_path(testdir, "systemctl.sh")
+        systemctl_py_run = systemctl_py.replace("/","_")[1:]
+        cov_run = ""
+        if COVERAGE:
+            cov_run = _cov_run
+        shell_file(systemctl_sh,"""
+            #! /bin/sh
+            exec {cov_run} /{systemctl_py_run} "$@" -vv
+            """.format(**locals()))
+        text_file(os_path(testdir, "zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            Type=simple
+            ExecStart=testsleep 40
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(testdir, "zzc.service"),"""
+            [Unit]
+            Description=Testing C
+            [Service]
+            Type=simple
+            ExecStart=testsleep 50
+            [Install]
+            WantedBy=multi-user.target""")
+        #
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name={testname} {image} sleep 50"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {systemctl_py} {testname}:/{systemctl_py_run}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {systemctl_sh} {testname}:/usr/bin/systemctl"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
+        sh____(cmd.format(**locals()))
+        if package == "zypper":
+            cmd = "docker exec {testname} {package} mr --no-gpgcheck oss-update"
+            sh____(cmd.format(**locals()))
+            cmd = "docker exec {testname} {package} install -y {python}"
+            sh____(cmd.format(**locals()))
+        if COVERAGE:
+            cmd = "docker exec {testname} {package} install -y {python_coverage}"
+            sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl --version"
+        sh____(cmd.format(**locals()))
+        #
+        cmd = "docker cp {testdir}/zzb.service {testname}:/etc/systemd/system/zzb.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zzc.service {testname}:/etc/systemd/system/zzc.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl enable zzb.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl enable zzc.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl default-services -v"
+        # sh____(cmd.format(**locals()))
+        out2 = output(cmd.format(**locals()))
+        logg.info("\n>\n%s", out2)
+        cmd = "docker commit -c 'CMD [\"/usr/bin/systemctl\",\"init\",\"zzc.service\"]'  {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}x"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name {testname}x {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        time.sleep(2)
+        #
+        top_container2 = "docker exec {testname}x ps -eo pid,ppid,args"
+        top = output(top_container2.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, "testsleep 50"))
+        #
+        cmd = "docker inspect {testname}x"
+        inspected = output(cmd.format(**locals()))
+        state = json.loads(inspected)[0]["State"]
+        logg.info("Status = %s", state["Status"])
+        self.assertTrue(state["Running"])
+        self.assertEqual(state["Status"], "running")
+        #
+        cmd = "docker exec {testname}x systemctl stop zzc.service" # <<<<<<<<<<<<<<<<<<<<<
+        sh____(cmd.format(**locals()))
+        InitLoopSleep = 5
+        waits = InitLoopSleep + 2
+        logg.info("waits %ss for the zombie-reaper to have cleaned up", waits)
+        time.sleep(waits)
+        #
+        cmd = "docker inspect {testname}x"
+        inspected = output(cmd.format(**locals()))
+        state = json.loads(inspected)[0]["State"]
+        logg.info("Status = %s", state["Status"])
+        logg.info("ExitCode = %s", state["ExitCode"])
+        self.assertFalse(state["Running"])
+        self.assertEqual(state["Status"], "exited")
+        #
+        cmd = "docker stop {testname}x" # <<< this is a no-op now
+        # sh____(cmd.format(**locals()))
+        out3 = output(cmd.format(**locals()))
+        logg.info("\n>\n%s", out3)
+        #
+        top_container = "docker exec {testname} ps -eo pid,ppid,args"
+        top = output(top_container.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, "testsleep 40"))
+        self.assertFalse(greps(top, "testsleep 50"))
+        #
+        if COVERAGE:
+            coverage_file = ".coverage." + testname
+            cmd = "docker cp {testname}x:.coverage {coverage_file}"
+            sh____(cmd.format(**locals()))
+            okay_coverage = "sed -i -e 's:/{systemctl_py_run}:{systemctl_py}:' {coverage_file}"
+            sh____(okay_coverage.format(**locals()))
+        #
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}x"
+        sx____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
+        self.rm_testdir()
     def test_6200_systemctl_py_switch_users_is_possible(self):
         """ check that we can put setuid/setgid definitions in a service
             specfile which also works on the pid file itself """
