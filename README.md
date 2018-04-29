@@ -81,17 +81,15 @@ deployment tool like Ansible.
 
 ## Installation as a systemctl-replacement
 
-Simply overwrite /usr/bin/systemctl - for an additional
-benefit you could try to lock updates of the systemd
-package so that no newer "systemctl" can be installed
-through a system update.
+Simply overwrite /usr/bin/systemctl - but remember that
+any package installation may update the real 'systemd'
+so that you have to do the overwrite after every major
+package installation. Or just do it firsthand.
 
-    - name: docker lock systemd
-      shell: |
-           test -d /run/systemd/system || mkdir /run/systemd/system # defeat newer ansible
-           yum update -y systemd; yum install -y yum-versionlock; yum versionlock systemd; 
+    - name: update systemd
+      package: name="systemd" state="latest"
       when: ansible_connection == 'docker'
-    - name: docker files
+    - name: install systemctl.py
       copy: src="files/docker/systemctl.py" dest="/usr/bin/systemctl"
       when: ansible_connection == 'docker'
 
