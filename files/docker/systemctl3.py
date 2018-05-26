@@ -44,17 +44,23 @@ _root = ""
 _unit_type = None
 _unit_property = None
 _show_all = False
+_user_mode = False
 
 # common default paths
 _default_target = "multi-user.target"
-_sysd_folder1 = "/etc/systemd/system"
-_sysd_folder2 = "/var/run/systemd/system"
-_sysd_folder3 = "/usr/lib/systemd/system"
-_sysd_folder4 = "/lib/systemd/system"
-_sysd_folder9 = None
-_sysv_folder1 = "/etc/init.d"
-_sysv_folder2 = "/var/run/init.d"
-_sysv_folder9 = None
+_sysd_system_folder1 = "/etc/systemd/system"
+_sysd_system_folder2 = "/var/run/systemd/system"
+_sysd_system_folder3 = "/usr/lib/systemd/system"
+_sysd_system_folder4 = "/lib/systemd/system"
+_sysd_system_folder9 = None
+_sysd_user_folder1 = "~/.config/systemd/user"
+_sysd_user_folder2 = "/etc/systemd/user"
+_sysd_user_folder3 = "~.local/share/systemd/user"
+_sysd_user_folder4 = "/usr/lib/systemd/user"
+_sysd_user_folder9 = None
+_sysv_init_folder1 = "/etc/init.d"
+_sysv_init_folder2 = "/var/run/init.d"
+_sysv_init_folder9 = None
 _preset_folder1 = "/etc/systemd/system-preset"
 _preset_folder2 = "/var/run/systemd/system-preset"
 _preset_folder3 = "/usr/lib/systemd/system-preset"
@@ -138,6 +144,11 @@ def os_path(root, path):
     while path.startswith(os.path.sep):
         path = path[1:]
     return os.path.join(root, path)
+
+def os_getlogin():
+    """ NOT using os.getlogin() """
+    import pwd
+    return pwd.getpwuid(os.geteuid()).pw_name
 
 def shutil_chown(filename, user = None, group = None):
     """ in python 3.3. there is shutil.chown """
@@ -455,7 +466,7 @@ class waitlock:
     def __init__(self, unit):
         self.unit = unit # currently unused
         self.opened = None
-        self.lockfolder = _notify_socket_folder
+        self.lockfolder = os_path(_root, _notify_socket_folder)
         try:
             folder = self.lockfolder
             if not os.path.isdir(folder):
@@ -473,9 +484,9 @@ class waitlock:
                     logg.debug("holding %s", lockfile)
                     break
                 except BlockingIOError as e:
-                    whom = os.read(os.opened, 4096)
-                    os.lseek(os.openened, 0, os.SEEK_SET)
-                    logg.info("(%s) systemctl locked by %s", attempt, whom)
+                    whom = os.read(self.opened, 4096)
+                    os.lseek(self.opened, 0, os.SEEK_SET)
+                    logg.info("(%s) systemctl locked by %s", attempt, whom.rstrip())
                     time.sleep(1)
                     continue
         except Exception as e:
@@ -655,9 +666,6 @@ class Systemctl:
         self._unit_property = _unit_property
         self._unit_type = _unit_type
         # some common constants that may be changed
-        self._sysd_folders = [ _sysd_folder1, _sysd_folder2, _sysd_folder3, _sysd_folder4, _sysd_folder9 ]
-        self._sysv_folders = [ _sysv_folder1, _sysv_folder2, _sysv_folder9 ]
-        self._preset_folders = [ _preset_folder1, _preset_folder2, _preset_folder3, _preset_folder4, _preset_folder9 ]
         self._notify_socket_folder = _notify_socket_folder
         self._notify_socket_name = _notify_socket_name
         self._pid_file_folder = _pid_file_folder 
@@ -671,12 +679,46 @@ class Systemctl:
         self._file_for_unit_sysd = None # name.service => /etc/systemd/system/name.service
         self._preset_file_list = None # /etc/systemd/system-preset/* => file content
         self._default_target = _default_target
+        self._user_mode = _user_mode
+        self._user_getlogin = os_getlogin()
+    def sysd_user_folder(self):
+        for folder in self.sysd_user_folders():
+            if folder: return folder
+        raise Exception("did not find any systemd/user folder")
+    def sysd_system_folder(self):
+        for folder in self.sysd_system_folders():
+            if folder: return folder
+        raise Exception("did not find any systemd/system folder")
     def sysd_folders(self):
-        return self._sysd_folders
+        """ if --user then these folders are preferred """
+        if self.user_mode():
+            for folder in self.sysd_user_folders():
+                yield folder
+        if True:
+            for folder in self.sysd_system_folders():
+                yield folder
+    def sysd_user_folders(self):
+        if _sysd_user_folder1: yield os.path.expanduser(_sysd_user_folder1)
+        if _sysd_user_folder2: yield os.path.expanduser(_sysd_user_folder2)
+        if _sysd_user_folder3: yield os.path.expanduser(_sysd_user_folder3)
+        if _sysd_user_folder4: yield os.path.expanduser(_sysd_user_folder4)
+        if _sysd_user_folder9: yield os.path.expanduser(_sysd_user_folder9)
+    def sysd_system_folders(self):
+        if _sysd_system_folder1: yield _sysd_system_folder1
+        if _sysd_system_folder2: yield _sysd_system_folder2
+        if _sysd_system_folder3: yield _sysd_system_folder3
+        if _sysd_system_folder4: yield _sysd_system_folder4
+        if _sysd_system_folder9: yield _sysd_system_folder9
     def sysv_folders(self):
-        return self._sysv_folders
+        if _sysv_init_folder1: yield _sysv_init_folder1
+        if _sysv_init_folder2: yield _sysv_init_folder2
+        if _sysv_init_folder9: yield _sysv_init_folder9
     def preset_folders(self):
-        return self._preset_folders
+        if _preset_folder1: yield _preset_folder1
+        if _preset_folder2: yield _preset_folder2
+        if _preset_folder3: yield _preset_folder3
+        if _preset_folder4: yield _preset_folder4
+        if _preset_folder9: yield _preset_folder9
     def unit_file(self, module = None): # -> filename?
         """ file path for the given module (sysv or systemd) """
         path = self.unit_sysd_file(module)
@@ -747,6 +789,33 @@ class Systemctl:
         if filename in self._file_for_unit_sysd.values(): return False
         if filename in self._file_for_unit_sysv.values(): return True
         return None # not True
+    def user(self):
+        return self._user_getlogin
+    def user_mode(self):
+        return self._user_mode
+    def is_user_conf(self, conf):
+        if not conf:
+            return False # no such conf >> ignored
+        filename = conf.filename()
+        if filename and "/user/" in filename:
+            return True
+        return False
+    def not_user_conf(self, conf):
+        """ conf can not be started as user service (when --user)"""
+        if not conf:
+            return True # no such conf >> ignored
+        if not self.user_mode():
+            logg.debug("%s no --user mode >> accept", conf.filename())
+            return False
+        if self.is_user_conf(conf):
+            logg.debug("%s is /user/ conf >> accept", conf.filename())
+            return False
+        # to allow for 'docker run -u user' with system services
+        user = conf.data.get("Service", "User", "")
+        if user and user == self.user():
+            logg.debug("%s with User=%s >> accept", conf.filename(), user)
+            return False
+        return True
     def load_unit_conf(self, module): # -> conf | None(not-found)
         """ read the unit file with a UnitParser (sysv or systemd) """
         try:
@@ -884,6 +953,7 @@ class Systemctl:
         return result + [ "", found, hint ]
     def list_service_unit_files(self, *modules): # -> [ (unit,enabled) ]
         """ show all the service units and the enabled status"""
+        logg.debug("list service unit files for %s", modules)
         result = {}
         enabled = {}
         for unit in self.match_units(modules):
@@ -891,11 +961,14 @@ class Systemctl:
             enabled[unit] = ""
             try: 
                 conf = self.get_unit_conf(unit)
+                if self.not_user_conf(conf):
+                    result[unit] = None
+                    continue
                 result[unit] = conf
                 enabled[unit] = self.enabled_from(conf)
             except Exception as e:
                 logg.warning("list-units: %s", e)
-        return [ (unit, enabled[unit]) for unit in sorted(result) ]
+        return [ (unit, enabled[unit]) for unit in sorted(result) if result[unit] ]
     def list_target_unit_files(self, *modules): # -> [ (unit,enabled) ]
         """ show all the target units and the enabled status"""
         result = {}
@@ -1490,6 +1563,9 @@ class Systemctl:
         if conf is None:
             logg.error("Unit %s could not be found.", unit)
             return False
+        if self.not_user_conf(conf):
+            logg.error("Unit %s not for --user mode", unit)
+            return False
         with waitlock(unit):
             logg.debug(" start unit %s => %s", unit, conf.filename())
             return self.start_unit_from(conf)
@@ -1727,6 +1803,9 @@ class Systemctl:
         if conf is None:
             logg.error("Unit %s could not be found.", unit)
             return False
+        if self.not_user_conf(conf):
+            logg.error("Unit %s not for --user mode", unit)
+            return False
         with waitlock(unit):
             logg.info(" stop unit %s => %s", unit, conf.filename())
             return self.stop_unit_from(conf)
@@ -1896,6 +1975,9 @@ class Systemctl:
         if conf is None:
             logg.error("Unit %s could not be found.", unit)
             return False
+        if self.not_user_conf(conf):
+            logg.error("Unit %s not for --user mode", unit)
+            return False
         with waitlock(unit):
             logg.info(" reload unit %s => %s", unit, conf.filename())
             return self.reload_unit_from(conf)
@@ -1966,6 +2048,9 @@ class Systemctl:
         if conf is None:
             logg.error("Unit %s could not be found.", unit)
             return False
+        if self.not_user_conf(conf):
+            logg.error("Unit %s not for --user mode", unit)
+            return False
         with waitlock(unit):
             logg.info(" restart unit %s => %s", unit, conf.filename())
             if not self.is_active_from(conf):
@@ -2004,6 +2089,9 @@ class Systemctl:
         if conf is None:
             logg.error("Unit %s could not be found.", unit)
             return False
+        if self.not_user_conf(conf):
+            logg.error("Unit %s not for --user mode", unit)
+            return False
         with waitlock(unit):
             logg.info(" try-restart unit %s => %s", unit, conf.filename())
             if self.is_active_from(conf):
@@ -2034,6 +2122,9 @@ class Systemctl:
         conf = self.load_unit_conf(unit)
         if conf is None:
             logg.error("Unit %s could not be found.", unit)
+            return False
+        if self.not_user_conf(conf):
+            logg.error("Unit %s not for --user mode", unit)
             return False
         with waitlock(unit):
             logg.info(" reload-or-restart unit %s => %s", unit, conf.filename())
@@ -2075,6 +2166,9 @@ class Systemctl:
         if conf is None:
             logg.error("Unit %s could not be found.", unit)
             return False
+        if self.not_user_conf(conf):
+            logg.error("Unit %s not for --user mode", unit)
+            return False
         with waitlock(unit):
             logg.info(" reload-or-try-restart unit %s => %s", unit, conf.filename())
             return self.reload_or_try_restart_unit_from(conf)
@@ -2110,6 +2204,9 @@ class Systemctl:
         conf = self.load_unit_conf(unit)
         if conf is None:
             logg.error("Unit %s could not be found.", unit)
+            return False
+        if self.not_user_conf(conf):
+            logg.error("Unit %s not for --user mode", unit)
             return False
         with waitlock(unit):
             logg.info(" kill unit %s => %s", unit, conf.filename())
@@ -2350,6 +2447,9 @@ class Systemctl:
         if not conf.loaded():
             logg.warning("Unit %s could not be found.", unit)
             return False
+        if self.not_user_conf(conf):
+            logg.error("Unit %s not for --user mode", unit)
+            return False
         return self.reset_failed_from(conf)
     def reset_failed_from(self, conf):
         if conf is None: return True
@@ -2497,6 +2597,9 @@ class Systemctl:
     def preset_modules(self, *modules):
         """ [UNIT]... -- set 'enabled' when in *.preset
         """
+        if self.user_mode():
+            logg.warning("preset makes no sense in --user mode")
+            return True
         found_all = True
         units = []
         for module in modules:
@@ -2534,18 +2637,35 @@ class Systemctl:
         """ 'preset' all services
         enable or disable services according to *.preset files
         """
+        if self.user_mode():
+            logg.warning("preset-all makes no sense in --user mode")
+            return True
         found_all = True
         units = self.match_units() # TODO: how to handle module arguments
         return self.preset_units(units) and found_all
     def wanted_from(self, conf, default = None):
         if not conf: return default
         return conf.data.get("Install", "WantedBy", default, True)
+    def enablefolders(self, wanted):
+        if self.user_mode():
+            for folder in self.sysd_user_folders():
+                 yield self.default_enablefolder(wanted, folder)
+        if True:
+            for folder in self.sysd_system_folders():
+                 yield self.default_enablefolder(wanted, folder)
     def enablefolder(self, wanted = None):
+        if self.user_mode():
+            systemd_user = self.systemd_user_folder()
+            return self.default_enablefolder(wanted, systemd_user)
+        else:
+            return self.default_enablefolder(wanted)
+    def default_enablefolder(self, wanted = None, basefolder = None):
+        basefolder = basefolder or self.sysd_system_folder()
         if not wanted: 
             return wanted
         if not wanted.endswith(".wants"):
             wanted = wanted + ".wants"
-        return os.path.join("/etc/systemd/system", wanted)
+        return os.path.join(basefolder, wanted)
     def enable_modules(self, *modules):
         """ [UNIT]... -- enable these units """
         found_all = True
@@ -2666,14 +2786,19 @@ class Systemctl:
         wanted = self.wanted_from(self.get_unit_conf(unit))
         if not wanted:
             return False # "static" is-enabled
-        folder = self.enablefolder(wanted)
-        if self._root:
-            folder = os_path(self._root, folder)
-        target = os.path.join(folder, os.path.basename(unit_file))
-        if os.path.isfile(target):
-            _f = self._force and "-f" or ""
-            logg.info("rm {_f} '{target}'".format(**locals()))
-            os.remove(target)
+        for folder in self.enablefolders(wanted):
+            if self._root:
+                folder = os_path(self._root, folder)
+            target = os.path.join(folder, os.path.basename(unit_file))
+            if os.path.isfile(target):
+                try:
+                    _f = self._force and "-f" or ""
+                    logg.info("rm {_f} '{target}'".format(**locals()))
+                    os.remove(target)
+                except IOError as e:
+                    logg.error("disable %s: %s", target, e)
+                except OSError as e:
+                    logg.error("disable %s: %s", target, e)
         return True
     def disable_unit_sysv(self, unit_file):
         rc3 = self._disable_unit_sysv(unit_file, self.rc3_root_folder())
@@ -2739,12 +2864,12 @@ class Systemctl:
         wanted = self.wanted_from(self.get_unit_conf(unit))
         if not wanted:
             return True # "static"
-        folder = self.enablefolder(wanted)
-        if self._root:
-            folder = os_path(self._root, folder)
-        target = os.path.join(folder, os.path.basename(unit_file))
-        if os.path.isfile(target):
-            return True
+        for folder in self.enablefolders(wanted):
+            if self._root:
+                folder = os_path(self._root, folder)
+            target = os.path.join(folder, os.path.basename(unit_file))
+            if os.path.isfile(target):
+                return True
         return False
     def enabled_unit(self, unit):
         conf = self.get_unit_conf(unit)
@@ -2759,12 +2884,12 @@ class Systemctl:
         wanted = self.wanted_from(conf)
         if not wanted:
             return "static"
-        folder = self.enablefolder(wanted)
-        if self._root:
-            folder = os_path(self._root, folder)
-        target = os.path.join(folder, os.path.basename(unit_file))
-        if os.path.isfile(target):
-            return "enabled"
+        for folder in self.enablefolders(wanted):
+            if self._root:
+                folder = os_path(self._root, folder)
+            target = os.path.join(folder, os.path.basename(unit_file))
+            if os.path.isfile(target):
+                return "enabled"
         return "disabled"
     def list_dependencies_modules(self, *modules):
         """ [UNIT]... show the dependency tree"
@@ -3105,17 +3230,60 @@ class Systemctl:
         logg.debug("ignored services filter for default.target:\n\t%s", igno)
         return self.enabled_default_services(sysv, default_target, igno)
     def enabled_default_services(self, sysv = "S", default_target = None, igno = []):
+        if self.user_mode():
+            return self.enabled_default_user_services(sysv, default_target, igno)
+        else:
+            return self.enabled_default_system_services(sysv, default_target, igno)
+    def enabled_default_user_services(self, sysv = "S", default_target = None, igno = []):
+        logg.debug("check for default user services")
         default_target = default_target or self._default_target
         default_services = []
-        for folder in self.sysd_folders():
-            if not folder:
+        for basefolder in self.sysd_user_folders():
+            if not basefolder:
                 continue
+            folder = self.default_enablefolder(default_target, basefolder)
             if self._root:
                 folder = os_path(self._root, folder)
-            enabled_folder = os.path.join(folder, default_target + ".wants")
-            if os.path.isdir(enabled_folder):
-                for unit in sorted(os.listdir(enabled_folder)):
-                    path = os.path.join(enabled_folder, unit)
+            if os.path.isdir(folder):
+                for unit in sorted(os.listdir(folder)):
+                    path = os.path.join(folder, unit)
+                    if os.path.isdir(path): continue
+                    if self._ignored_unit(unit, igno):
+                        continue # ignore
+                    if unit.endswith(".service"):
+                        default_services.append(unit)
+        for basefolder in self.sysd_system_folders():
+            if not basefolder:
+                continue
+            folder = self.default_enablefolder(default_target, basefolder)
+            if self._root:
+                folder = os_path(self._root, folder)
+            if os.path.isdir(folder):
+                for unit in sorted(os.listdir(folder)):
+                    path = os.path.join(folder, unit)
+                    if os.path.isdir(path): continue
+                    if self._ignored_unit(unit, igno):
+                        continue # ignore
+                    if unit.endswith(".service"):
+                        conf = self.load_unit_conf(unit)
+                        if self.not_user_conf(conf):
+                            pass 
+                        else:
+                            default_services.append(unit)
+        return default_services
+    def enabled_default_system_services(self, sysv = "S", default_target = None, igno = []):
+        logg.debug("check for default system services")
+        default_target = default_target or self._default_target
+        default_services = []
+        for basefolder in self.sysd_system_folders():
+            if not basefolder:
+                continue
+            folder = self.default_enablefolder(default_target, basefolder)
+            if self._root:
+                folder = os_path(self._root, folder)
+            if os.path.isdir(folder):
+                for unit in sorted(os.listdir(folder)):
+                    path = os.path.join(folder, unit)
                     if os.path.isdir(path): continue
                     if self._ignored_unit(unit, igno):
                         continue # ignore
@@ -3465,10 +3633,10 @@ if __name__ == "__main__":
         epilog="use 'help' command for more information")
     _o.add_option("--version", action="store_true",
         help="Show package version")
-    _o.add_option("--system", action="store_true",
-        help="Connect to system manager (only possibility)")
-    _o.add_option("--user", action="store_true",
-        help="Connect to user service manager (ignored)")
+    _o.add_option("--system", action="store_true", default=False,
+        help="Connect to system manager (default)") # overrides --user
+    _o.add_option("--user", action="store_true", default=_user_mode,
+        help="Connect to user service manager")
     # _o.add_option("-H", "--host", metavar="[USER@]HOST",
     #     help="Operate on remote host*")
     # _o.add_option("-M", "--machine", metavar="CONTAINER",
@@ -3557,6 +3725,11 @@ if __name__ == "__main__":
     # being PID 1 (or 0) in a container will imply --init
     _pid = os.getpid()
     _init = opt.init or _pid in [ 1, 0 ]
+    _user_mode = opt.user
+    if os.geteuid() and _pid in [ 1, 0 ]:
+        _user_mode = True
+    if opt.system:
+        _user_mode = False # override --user
     #
     if _root:
         _systemctl_debug_log = os_path(_root, _systemctl_debug_log)
@@ -3571,7 +3744,9 @@ if __name__ == "__main__":
         loggfile.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
         logg.addHandler(loggfile)
         logg.setLevel(logging.DEBUG)
-    logg.info("EXEC BEGIN %s %s", os.path.realpath(sys.argv[0]), " ".join(args))
+    logg.info("EXEC BEGIN %s %s%s%s", os.path.realpath(sys.argv[0]), " ".join(args),
+        _user_mode and " --user" or " --system", _init and " --init" or "", )
+    #
     #
     systemctl = Systemctl()
     if opt.version:
