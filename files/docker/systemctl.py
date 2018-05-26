@@ -509,6 +509,10 @@ def subprocess_wait(cmd, env=None, check = False, shell=False):
         logg.warning("returncode %i\n %s", run.returncode, cmd)
         raise Exception("command failed")
     return run
+def subprocess_waitpid(pid):
+    waitpid = collections.namedtuple("waitpid", ["pid", "returncode" ])
+    run_pid, run_returncode = os.waitpid(pid, 0)
+    return waitpid(run_pid, run_returncode)
 
 def time_to_seconds(text, maximum = None):
     if maximum is None:
@@ -1683,9 +1687,9 @@ class Systemctl:
                 if not child_pid: # pragma: no cover
                     os.setsid() # detach child process from parent
                     sys.exit(self.exec_start_from(conf, env)) # and exit after call
-                run_pid, run_returncode = os.waitpid(child_pid, 0)
-                if run_returncode and check:
-                    returncode = run_returncode
+                run = subprocess_waitpid(child_pid)
+                if run.returncode and check:
+                    returncode = run.returncode
                     service_result = "failed"
                     break
                 if pid_file:
@@ -1723,6 +1727,7 @@ class Systemctl:
                 logg.info("post-start %s", shell_cmd(sudo+newcmd))
                 run = subprocess_wait(sudo+newcmd, env)
             return True
+
     def exec_start_unit(self, unit):
         """ helper function to test the code that is normally forked off """
         conf = self.load_unit_conf(unit)

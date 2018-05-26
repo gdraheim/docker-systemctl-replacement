@@ -10923,7 +10923,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl start postgresql -vv"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} sleep 5"
+        cmd = "docker exec {testname} sh -c 'sleep 5; ps -ax'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} sh -c \"echo 'CREATE USER testuser_11 LOGIN ENCRYPTED PASSWORD '\\\"'Testuser.11'\\\" | runuser -u postgres /usr/bin/psql\""
         sh____(cmd.format(**locals()))
