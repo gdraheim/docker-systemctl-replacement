@@ -44,7 +44,7 @@ _root = ""
 _unit_type = None
 _unit_property = None
 _show_all = False
-_user_service = False
+_user_mode = False
 
 # common default paths
 _default_target = "multi-user.target"
@@ -679,7 +679,7 @@ class Systemctl:
         self._file_for_unit_sysd = None # name.service => /etc/systemd/system/name.service
         self._preset_file_list = None # /etc/systemd/system-preset/* => file content
         self._default_target = _default_target
-        self._user_service = _user_service
+        self._user_mode = _user_mode
         self._user_getlogin = os_getlogin()
     def sysd_user_folder(self):
         for folder in self.sysd_user_folders():
@@ -792,7 +792,7 @@ class Systemctl:
     def user(self):
         return self._user_getlogin
     def user_mode(self):
-        return self._user_service
+        return self._user_mode
     def is_user_conf(self, conf):
         if not conf:
             return False # no such conf >> ignored
@@ -3633,9 +3633,9 @@ if __name__ == "__main__":
         epilog="use 'help' command for more information")
     _o.add_option("--version", action="store_true",
         help="Show package version")
-    _o.add_option("--system", action="store_true",
-        help="Connect to system manager (default)")
-    _o.add_option("--user", action="store_true", default=_user_service,
+    _o.add_option("--system", action="store_true", default=False,
+        help="Connect to system manager (default)") # overrides --user
+    _o.add_option("--user", action="store_true", default=_user_mode,
         help="Connect to user service manager")
     # _o.add_option("-H", "--host", metavar="[USER@]HOST",
     #     help="Operate on remote host*")
@@ -3725,8 +3725,11 @@ if __name__ == "__main__":
     # being PID 1 (or 0) in a container will imply --init
     _pid = os.getpid()
     _init = opt.init or _pid in [ 1, 0 ]
-    _user_service = opt.user
-    logg.info("_user_service = %s", _user_service)
+    _user_mode = opt.user
+    if os.geteuid() and _pid in [ 1, 0 ]:
+        _user_mode = True
+    if opt.system:
+        _user_mode = False # override --user
     #
     if _root:
         _systemctl_debug_log = os_path(_root, _systemctl_debug_log)
@@ -3741,7 +3744,8 @@ if __name__ == "__main__":
         loggfile.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
         logg.addHandler(loggfile)
         logg.setLevel(logging.DEBUG)
-    logg.info("EXEC BEGIN %s %s", os.path.realpath(sys.argv[0]), " ".join(args))
+    logg.info("EXEC BEGIN %s %s%s%s", os.path.realpath(sys.argv[0]), " ".join(args),
+        _user_mode and " --user" or " --system", _init and " --init" or "", )
     #
     #
     systemctl = Systemctl()
