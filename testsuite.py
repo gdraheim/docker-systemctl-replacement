@@ -10822,7 +10822,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
 
     def test_7001_centos_httpd_dockerfile(self):
-        """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
+        """ WHEN using a systemd-enabled CentOS 7, 
             THEN we can create an image with an Apache HTTP service 
                  being installed and enabled.
             Without a special startup.sh script or container-cmd 
@@ -10835,20 +10835,39 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
         testname=self.testname()
-        port=self.testport()
+        testport=self.testport()
         name="centos-httpd"
-        dockerfile="centos-httpd.dockerfile"
         images = IMAGES
+        image = self.local_image(CENTOS)
+        systemctl_py = _systemctl_py
+        logg.info("%s:%s %s", testname, testport, image)
         # WHEN
-        cmd = "docker build . -f tests/{dockerfile} --tag {images}:{testname}"
-        sh____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run -d -p {port}:80 --name {testname} {images}:{testname}"
+        cmd = "docker run --detach --name={testname} {image} sleep 200"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} yum install -y httpd httpd-tools"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl enable httpd"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} sh -c 'echo TEST_OK > /var/www/html/index.html'"
+        sh____(cmd.format(**locals()))
+        cmd = "docker commit -c 'CMD [\"/usr/bin/systemctl\"]'  {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker stop {testname}"
+        sx____(cmd.format(**locals()))
+        #
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run -d -p {testport}:80 --name {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         # THEN
         tmp = self.testdir(testname)
-        cmd = "sleep 5; wget -O {tmp}/{testname}.txt http://127.0.0.1:{port}"
+        cmd = "sleep 5; wget -O {tmp}/{testname}.txt http://127.0.0.1:{testport}"
         sh____(cmd.format(**locals()))
         cmd = "grep OK {tmp}/{testname}.txt"
         sh____(cmd.format(**locals()))
@@ -10861,7 +10880,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_7002_centos_postgres_dockerfile(self):
-        """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
+        """ WHEN using a systemd-enabled CentOS 7, 
             THEN we can create an image with an PostgreSql DB service 
                  being installed and enabled.
             Without a special startup.sh script or container-cmd 
@@ -10875,23 +10894,61 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
         testname=self.testname()
-        port=self.testport()
+        testport=self.testport()
         name="centos-postgres"
-        dockerfile="centos-postgres.dockerfile"
         images = IMAGES
+        image = self.local_image(CENTOS)
+        systemctl_py = _systemctl_py
+        logg.info("%s:%s %s", testname, testport, image)
         psql = PSQL_TOOL
+        PG = "/var/lib/pgsql/data"
         # WHEN
-        cmd = "docker build . -f tests/{dockerfile} --tag {images}:{testname}"
-        sh____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run -d -p {port}:5432 --name {testname} {images}:{testname}"
+        cmd = "docker run --detach --name={testname} {image} sleep 200"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} yum install -y postgresql-server postgresql-utils"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} postgresql-setup initdb"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} sh -c \"sed -i -e 's/.*listen_addresses.*/listen_addresses = '\\\"'*'\\\"'/' {PG}/postgresql.conf\""
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} sh -c 'sed -i -e \"s/.*host.*ident/# &/\" {PG}/pg_hba.conf'"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} sh -c 'echo \"host all all 0.0.0.0/0 md5\" >> {PG}/pg_hba.conf'"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl start postgresql -vv"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} sleep 5"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} sh -c \"echo 'CREATE USER testuser_11 LOGIN ENCRYPTED PASSWORD '\\\"'Testuser.11'\\\" | runuser -u postgres /usr/bin/psql\""
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} sh -c \"echo 'CREATE USER testuser_OK LOGIN ENCRYPTED PASSWORD '\\\"'Testuser.OK'\\\" | runuser -u postgres /usr/bin/psql\""
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl stop postgresql -vv"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl enable postgresql"
+        sh____(cmd.format(**locals()))
+        cmd = "docker commit -c 'CMD [\"/usr/bin/systemctl\"]'  {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker stop {testname}"
+        sx____(cmd.format(**locals()))
+        #
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run -d -p {testport}:5432 --name {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} sleep 5"
         sh____(cmd.format(**locals()))
         # THEN
         tmp = self.testdir(testname)
         login = "export PGUSER=testuser_11; export PGPASSWORD=Testuser.11"
         query = "SELECT rolname FROM pg_roles"
-        cmd = "sleep 5; {login}; {psql} -p {port} -h 127.0.0.1 -d postgres -c '{query}' > {tmp}/{testname}.txt"
+        cmd = "{login}; {psql} -p {testport} -h 127.0.0.1 -d postgres -c '{query}' > {tmp}/{testname}.txt"
         sh____(cmd.format(**locals()))
         cmd = "grep testuser_ok {tmp}/{testname}.txt"
         sh____(cmd.format(**locals()))
