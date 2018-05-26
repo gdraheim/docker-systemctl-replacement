@@ -1,7 +1,7 @@
 FROM centos:centos7
 
 LABEL __copyright__="(C) Guido U. Draheim, licensed under the EUPL" \
-      __version__="1.0.2177"
+      __version__="1.0.2216"
 
 ENV PG /var/lib/pgsql/data
 
