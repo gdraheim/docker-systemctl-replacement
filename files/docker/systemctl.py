@@ -44,17 +44,18 @@ _root = ""
 _unit_type = None
 _unit_property = None
 _show_all = False
+_user_service = False
 
 # common default paths
 _default_target = "multi-user.target"
-_sysd_folder1 = "/etc/systemd/system"
-_sysd_folder2 = "/var/run/systemd/system"
-_sysd_folder3 = "/usr/lib/systemd/system"
-_sysd_folder4 = "/lib/systemd/system"
-_sysd_folder9 = None
-_sysv_folder1 = "/etc/init.d"
-_sysv_folder2 = "/var/run/init.d"
-_sysv_folder9 = None
+_sysd_system_folder1 = "/etc/systemd/system"
+_sysd_system_folder2 = "/var/run/systemd/system"
+_sysd_system_folder3 = "/usr/lib/systemd/system"
+_sysd_system_folder4 = "/lib/systemd/system"
+_sysd_system_folder9 = None
+_sysv_init_folder1 = "/etc/init.d"
+_sysv_init_folder2 = "/var/run/init.d"
+_sysv_init_folder9 = None
 _preset_folder1 = "/etc/systemd/system-preset"
 _preset_folder2 = "/var/run/systemd/system-preset"
 _preset_folder3 = "/usr/lib/systemd/system-preset"
@@ -138,6 +139,10 @@ def os_path(root, path):
     while path.startswith(os.path.sep):
         path = path[1:]
     return os.path.join(root, path)
+
+def os_getlogin():
+    """ NOT using os.getlogin() """
+    return pwd.getpwuid(os.geteuid()).pw_name
 
 def shutil_chown(filename, user = None, group = None):
     """ in python 3.3. there is shutil.chown """
@@ -655,9 +660,6 @@ class Systemctl:
         self._unit_property = _unit_property
         self._unit_type = _unit_type
         # some common constants that may be changed
-        self._sysd_folders = [ _sysd_folder1, _sysd_folder2, _sysd_folder3, _sysd_folder4, _sysd_folder9 ]
-        self._sysv_folders = [ _sysv_folder1, _sysv_folder2, _sysv_folder9 ]
-        self._preset_folders = [ _preset_folder1, _preset_folder2, _preset_folder3, _preset_folder4, _preset_folder9 ]
         self._notify_socket_folder = _notify_socket_folder
         self._notify_socket_name = _notify_socket_name
         self._pid_file_folder = _pid_file_folder 
@@ -671,12 +673,37 @@ class Systemctl:
         self._file_for_unit_sysd = None # name.service => /etc/systemd/system/name.service
         self._preset_file_list = None # /etc/systemd/system-preset/* => file content
         self._default_target = _default_target
+        self._user_service = _user_service
     def sysd_folders(self):
-        return self._sysd_folders
+        """ if --user then these folders are preferred """
+        if self._user_service:
+            for folder in self.sysd_user_folders():
+                yield folder
+        if True:
+            for folder in self.sysd_system_folders():
+                yield folder
+    def sysd_user_folders(self):
+        home = os.path.expanduser("~")
+        yield os_path(home, ".config/systemd/user")
+        yield "/etc/systemd/user"
+        yield os_path(home, ".local/share/systemd/user")
+        yield "/usr/lib/systemd/user"
+    def sysd_system_folders(self):
+        yield _sysd_system_folder1
+        yield _sysd_system_folder2
+        yield _sysd_system_folder3
+        yield _sysd_system_folder4
+        yield _sysd_system_folder9
     def sysv_folders(self):
-        return self._sysv_folders
+        yield _sysv_init_folder1
+        yield _sysv_init_folder2
+        yield _sysv_init_folder9
     def preset_folders(self):
-        return self._preset_folders
+        yield _preset_folder1
+        yield _preset_folder2
+        yield _preset_folder3
+        yield _preset_folder4
+        yield _preset_folder9
     def unit_file(self, module = None): # -> filename?
         """ file path for the given module (sysv or systemd) """
         path = self.unit_sysd_file(module)
@@ -3466,9 +3493,9 @@ if __name__ == "__main__":
     _o.add_option("--version", action="store_true",
         help="Show package version")
     _o.add_option("--system", action="store_true",
-        help="Connect to system manager (only possibility)")
-    _o.add_option("--user", action="store_true",
-        help="Connect to user service manager (ignored)")
+        help="Connect to system manager (default)")
+    _o.add_option("--user", action="store_true", default=_user_service,
+        help="Connect to user service manager")
     # _o.add_option("-H", "--host", metavar="[USER@]HOST",
     #     help="Operate on remote host*")
     # _o.add_option("-M", "--machine", metavar="CONTAINER",
@@ -3557,6 +3584,7 @@ if __name__ == "__main__":
     # being PID 1 (or 0) in a container will imply --init
     _pid = os.getpid()
     _init = opt.init or _pid in [ 1, 0 ]
+    _user_service = opt.user
     #
     if _root:
         _systemctl_debug_log = os_path(_root, _systemctl_debug_log)
@@ -3572,6 +3600,7 @@ if __name__ == "__main__":
         logg.addHandler(loggfile)
         logg.setLevel(logging.DEBUG)
     logg.info("EXEC BEGIN %s %s", os.path.realpath(sys.argv[0]), " ".join(args))
+    #
     #
     systemctl = Systemctl()
     if opt.version:
