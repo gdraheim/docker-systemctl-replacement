@@ -3231,9 +3231,9 @@ class Systemctl:
         return self.enabled_default_services(sysv, default_target, igno)
     def enabled_default_services(self, sysv = "S", default_target = None, igno = []):
         if self.user_mode():
-            return self.enabled_default_user_services()
+            return self.enabled_default_user_services(sysv, default_target, igno)
         else:
-            return self.enabled_default_system_services()
+            return self.enabled_default_system_services(sysv, default_target, igno)
     def enabled_default_user_services(self, sysv = "S", default_target = None, igno = []):
         logg.debug("check for default user services")
         default_target = default_target or self._default_target
