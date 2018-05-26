@@ -37,9 +37,6 @@ check: ; rm .coverage* ; ./testsuite.py -vv --coverage
 test_%: ; ./testsuite.py $@ -vv
 real_%: ; ./testsuite.py $@ -vv
 
-9: test_9001 test_9002 test_9003 test_9004 test_9005 test_9006
-9005 9006 9007: ; ./testsuite.py test_$@ -vv
-
 st_%:
 	$(MAKE) tmp/systemctl.py
 	rm .coverage* ; ./testsuite.py -vv --coverage te$@ \
