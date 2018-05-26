@@ -1,4 +1,0 @@
-- include: cleanrepo.yml
-- include: install_software.yml
-- include: install_systemd.yml
-- include: enable_software.yml

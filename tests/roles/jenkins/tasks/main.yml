@@ -1,6 +1,0 @@
-- include: software_upload.yml
-- include: software_download.yml
-  when: LOCAL is undefined
-- include: install_java.yml
-- include: install_software.yml
-- include: enable_software.yml

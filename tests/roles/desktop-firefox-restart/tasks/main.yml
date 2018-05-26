@@ -1,3 +1,0 @@
-- include: stop.yml
-- include: start.yml
-  when: STOP is undefined

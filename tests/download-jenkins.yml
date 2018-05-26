@@ -1,4 +1,0 @@
-- hosts: localhost
-  tasks:
-     - include_vars: "roles/jenkins/defaults/main.yml"
-     - include: "roles/jenkins/tasks/software_download.yml"
