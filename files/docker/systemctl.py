@@ -1680,23 +1680,19 @@ class Systemctl:
                     service_result = "timeout" # "could not start service"
         elif runs in [ "forking" ]:
             pid_file = self.pid_file_from(conf)
-            for cmd in conf.data.getlist("Service", "ExecStart", []):
-                check, cmd = checkstatus(cmd)
-                # newcmd = self.exec_cmd(cmd, env, conf)
-                child_pid = os.fork()
-                if not child_pid: # pragma: no cover
-                    os.setsid() # detach child process from parent
-                    sys.exit(self.exec_start_from(conf, env)) # and exit after call
-                run = subprocess_waitpid(child_pid)
-                if run.returncode and check:
-                    returncode = run.returncode
-                    service_result = "failed"
-                    break
-                if pid_file:
-                    pid = self.wait_pid_file(pid_file) # application PIDFile
-                    logg.info("%s start done PID %s [%s]", runs, pid, pid_file)
-                    if pid:
-                        env["MAINPID"] = str(pid)
+            child_pid = os.fork()
+            if not child_pid: # pragma: no cover
+                os.setsid() # detach child process from parent
+                sys.exit(self.exec_start_from(conf, env)) # and exit after call
+            run = subprocess_waitpid(child_pid)
+            if run.returncode and check:
+                returncode = run.returncode
+                service_result = "failed"
+            if pid_file:
+                pid = self.wait_pid_file(pid_file) # application PIDFile
+                logg.info("%s start done PID %s [%s]", runs, pid, pid_file)
+                if pid:
+                    env["MAINPID"] = str(pid)
             if not pid_file:
                 self.sleep()
                 logg.warning("No PIDFile for forking %s", conf.filename())
