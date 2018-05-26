@@ -1678,11 +1678,14 @@ class Systemctl:
             pid_file = self.pid_file_from(conf)
             for cmd in conf.data.getlist("Service", "ExecStart", []):
                 check, cmd = checkstatus(cmd)
-                newcmd = self.exec_cmd(cmd, env, conf)
-                logg.info("%s start %s", runs, shell_cmd(sudo+newcmd))
-                run = subprocess_wait(sudo+newcmd, env)
-                if run.returncode and check:
-                    returncode = run.returncode
+                # newcmd = self.exec_cmd(cmd, env, conf)
+                child_pid = os.fork()
+                if not child_pid: # pragma: no cover
+                    os.setsid() # detach child process from parent
+                    sys.exit(self.exec_start_from(conf, env)) # and exit after call
+                run_pid, run_returncode = os.waitpid(child_pid, 0)
+                if run_returncode and check:
+                    returncode = run_returncode
                     service_result = "failed"
                     break
                 if pid_file:
