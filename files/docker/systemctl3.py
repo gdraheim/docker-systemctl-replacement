@@ -509,6 +509,10 @@ def subprocess_wait(cmd, env=None, check = False, shell=False):
         logg.warning("returncode %i\n %s", run.returncode, cmd)
         raise Exception("command failed")
     return run
+def subprocess_waitpid(pid):
+    waitpid = collections.namedtuple("waitpid", ["pid", "returncode" ])
+    run_pid, run_returncode = os.waitpid(pid, 0)
+    return waitpid(run_pid, run_returncode)
 
 def time_to_seconds(text, maximum = None):
     if maximum is None:
@@ -1598,8 +1602,13 @@ class Systemctl:
                 cmd = "'%s' start" % exe
                 env["SYSTEMCTL_SKIP_REDIRECT"] = "yes"
                 newcmd = self.exec_cmd(cmd, env, conf)
-                logg.info("%s start %s", runs, shell_cmd(sudo+newcmd))
-                run = subprocess_wait(sudo+newcmd, env)
+                logg.info("%s start %s", runs, shell_cmd(newcmd))
+                # run = subprocess_wait(sudo+newcmd, env)
+                child_pid = os.fork()
+                if not child_pid: # pragma: no cover
+                    os.setsid() # detach child process from parent
+                    self.execve_from(conf, newcmd, env)
+                run = subprocess_waitpid(child_pid)
                 self.set_status_from(conf, "ExecMainCode", run.returncode)
                 logg.info("%s start done %s", runs, run.returncode or "OK")
                 active = run.returncode and "failed" or "active"
@@ -1613,8 +1622,13 @@ class Systemctl:
             for cmd in conf.data.getlist("Service", "ExecStart", []):
                 check, cmd = checkstatus(cmd)
                 newcmd = self.exec_cmd(cmd, env, conf)
-                logg.info("%s start %s", runs, shell_cmd(sudo+newcmd))
-                run = subprocess_wait(sudo+newcmd, env)
+                logg.info("%s start %s", runs, shell_cmd(newcmd))
+                # run = subprocess_wait(sudo+newcmd, env)
+                child_pid = os.fork()
+                if not child_pid: # pragma: no cover
+                    os.setsid() # detach child process from parent
+                    self.execve_from(conf, newcmd, env)
+                run = subprocess_waitpid(child_pid)
                 if run.returncode and check: 
                     returncode = run.returncode
                     service_result = "failed"
@@ -1679,17 +1693,21 @@ class Systemctl:
             for cmd in conf.data.getlist("Service", "ExecStart", []):
                 check, cmd = checkstatus(cmd)
                 newcmd = self.exec_cmd(cmd, env, conf)
-                logg.info("%s start %s", runs, shell_cmd(sudo+newcmd))
-                run = subprocess_wait(sudo+newcmd, env)
+                if not newcmd: continue
+                logg.info("%s start %s", runs, shell_cmd(newcmd))
+                child_pid = os.fork()
+                if not child_pid: # pragma: no cover
+                    os.setsid() # detach child process from parent
+                    self.execve_from(conf, newcmd, env)
+                run = subprocess_waitpid(child_pid)
                 if run.returncode and check:
                     returncode = run.returncode
                     service_result = "failed"
-                    break
-                if pid_file:
-                    pid = self.wait_pid_file(pid_file) # application PIDFile
-                    logg.info("%s start done PID %s [%s]", runs, pid, pid_file)
-                    if pid:
-                        env["MAINPID"] = str(pid)
+            if pid_file:
+                pid = self.wait_pid_file(pid_file) # application PIDFile
+                logg.info("%s start done PID %s [%s]", runs, pid, pid_file)
+                if pid:
+                    env["MAINPID"] = str(pid)
             if not pid_file:
                 self.sleep()
                 logg.warning("No PIDFile for forking %s", conf.filename())
@@ -1720,6 +1738,26 @@ class Systemctl:
                 logg.info("post-start %s", shell_cmd(sudo+newcmd))
                 run = subprocess_wait(sudo+newcmd, env)
             return True
+
+    def execve_from(self, conf, cmd, env):
+        """ this code is commonly run in a child process // returns exit-code"""
+        runs = conf.data.get("Service", "Type", "simple").lower()
+        logg.debug("%s process for %s", runs, conf.filename())
+        #
+        # os.setsid() # detach from parent // required to be done in caller code 
+        #
+        returncode = None
+        inp = open("/dev/zero")
+        out = self.open_journal_log(conf)
+        os.dup2(inp.fileno(), sys.stdin.fileno())
+        os.dup2(out.fileno(), sys.stdout.fileno())
+        os.dup2(out.fileno(), sys.stderr.fileno())
+        runuser = conf.data.get("Service", "User", "")
+        rungroup = conf.data.get("Service", "Group", "")
+        shutil_setuid(runuser, rungroup)
+        self.chdir_workingdir(conf, check = False)
+        os.execve(cmd[0], cmd, env)
+
     def exec_start_unit(self, unit):
         """ helper function to test the code that is normally forked off """
         conf = self.load_unit_conf(unit)

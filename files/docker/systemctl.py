@@ -1602,8 +1602,13 @@ class Systemctl:
                 cmd = "'%s' start" % exe
                 env["SYSTEMCTL_SKIP_REDIRECT"] = "yes"
                 newcmd = self.exec_cmd(cmd, env, conf)
-                logg.info("%s start %s", runs, shell_cmd(sudo+newcmd))
-                run = subprocess_wait(sudo+newcmd, env)
+                logg.info("%s start %s", runs, shell_cmd(newcmd))
+                # run = subprocess_wait(sudo+newcmd, env)
+                child_pid = os.fork()
+                if not child_pid: # pragma: no cover
+                    os.setsid() # detach child process from parent
+                    self.execve_from(conf, newcmd, env)
+                run = subprocess_waitpid(child_pid)
                 self.set_status_from(conf, "ExecMainCode", run.returncode)
                 logg.info("%s start done %s", runs, run.returncode or "OK")
                 active = run.returncode and "failed" or "active"
@@ -1617,8 +1622,13 @@ class Systemctl:
             for cmd in conf.data.getlist("Service", "ExecStart", []):
                 check, cmd = checkstatus(cmd)
                 newcmd = self.exec_cmd(cmd, env, conf)
-                logg.info("%s start %s", runs, shell_cmd(sudo+newcmd))
-                run = subprocess_wait(sudo+newcmd, env)
+                logg.info("%s start %s", runs, shell_cmd(newcmd))
+                # run = subprocess_wait(sudo+newcmd, env)
+                child_pid = os.fork()
+                if not child_pid: # pragma: no cover
+                    os.setsid() # detach child process from parent
+                    self.execve_from(conf, newcmd, env)
+                run = subprocess_waitpid(child_pid)
                 if run.returncode and check: 
                     returncode = run.returncode
                     service_result = "failed"
@@ -1684,6 +1694,7 @@ class Systemctl:
                 check, cmd = checkstatus(cmd)
                 newcmd = self.exec_cmd(cmd, env, conf)
                 if not newcmd: continue
+                logg.info("%s start %s", runs, shell_cmd(newcmd))
                 child_pid = os.fork()
                 if not child_pid: # pragma: no cover
                     os.setsid() # detach child process from parent
