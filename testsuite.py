@@ -46,6 +46,8 @@ OPENSUSE = "opensuse:42.3"
 DOCKER_SOCKET = "/var/run/docker.sock"
 PSQL_TOOL = "/usr/bin/psql"
 
+realpath = os.path.realpath
+
 def sh____(cmd, shell=True):
     if isinstance(cmd, basestring):
         logg.info(": %s", cmd)
@@ -1597,7 +1599,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl_py_dir = os.path.dirname(os.path.realpath(_systemctl_py))
+        systemctl_py_dir = os.path.dirname(realpath(_systemctl_py))
         unitconfparser_py = os_path(root, "/usr/bin/unitconfparser.py")
         service_file = os_path(root, "/etc/systemd/system/zzb.service")
         defaults = {"a1": "default1"}
@@ -3730,7 +3732,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir, real)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = _cov + realpath(_systemctl_py) + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
@@ -9744,7 +9746,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if greps(open("/etc/issue"), "openSUSE"):
            image = self.local_image(OPENSUSE)
            package = "zypper"
-        systemctl_py = os.path.realpath(_systemctl_py)
+        systemctl_py = realpath(_systemctl_py)
         systemctl_sh = os_path(testdir, "systemctl.sh")
         systemctl_py_run = systemctl_py.replace("/","_")[1:]
         cov_run = ""
@@ -9861,7 +9863,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if greps(open("/etc/issue"), "openSUSE"):
            image = self.local_image(OPENSUSE)
            package = "zypper"
-        systemctl_py = os.path.realpath(_systemctl_py)
+        systemctl_py = realpath(_systemctl_py)
         systemctl_sh = os_path(testdir, "systemctl.sh")
         systemctl_py_run = systemctl_py.replace("/","_")[1:]
         cov_run = ""
@@ -9979,7 +9981,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if greps(open("/etc/issue"), "openSUSE"):
            image = self.local_image(OPENSUSE)
            package = "zypper"
-        systemctl_py = os.path.realpath(_systemctl_py)
+        systemctl_py = realpath(_systemctl_py)
         systemctl_sh = os_path(testdir, "systemctl.sh")
         systemctl_py_run = systemctl_py.replace("/","_")[1:]
         cov_run = ""
@@ -10114,7 +10116,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if greps(open("/etc/issue"), "openSUSE"):
            image = self.local_image(OPENSUSE)
            package = "zypper"
-        systemctl_py = os.path.realpath(_systemctl_py)
+        systemctl_py = realpath(_systemctl_py)
         systemctl_sh = os_path(testdir, "systemctl.sh")
         systemctl_py_run = systemctl_py.replace("/","_")[1:]
         cov_run = ""
@@ -10247,7 +10249,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if greps(open("/etc/issue"), "openSUSE"):
            image = self.local_image(OPENSUSE)
            package = "zypper"
-        systemctl_py = os.path.realpath(_systemctl_py)
+        systemctl_py = realpath(_systemctl_py)
         systemctl_sh = os_path(testdir, "systemctl.sh")
         systemctl_py_run = systemctl_py.replace("/","_")[1:]
         cov_run = ""
@@ -10377,7 +10379,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if greps(open("/etc/issue"), "openSUSE"):
            image = self.local_image(OPENSUSE)
            package = "zypper"
-        systemctl_py = os.path.realpath(_systemctl_py)
+        systemctl_py = realpath(_systemctl_py)
         systemctl_sh = os_path(testdir, "systemctl.sh")
         systemctl_py_run = systemctl_py.replace("/","_")[1:]
         cov_run = ""
@@ -10528,7 +10530,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if greps(open("/etc/issue"), "openSUSE"):
            image = self.local_image(OPENSUSE)
            package = "zypper"
-        systemctl_py = os.path.realpath(_systemctl_py)
+        systemctl_py = realpath(_systemctl_py)
         systemctl_py_run = systemctl_py.replace("/","_")[1:]
         systemctl_sh = os_path(testdir, "systemctl.sh")
         testsleep_sh = os_path(testdir, "testsleep.sh")
@@ -10691,7 +10693,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             if greps(open("/etc/issue"), "openSUSE"):
                 image = self.local_image(OPENSUSE)
                 package = "zypper"
-        systemctl_py = os.path.realpath(_systemctl_py)
+        systemctl_py = realpath(_systemctl_py)
         systemctl_sh = os_path(testdir, "systemctl.sh")
         systemctl_py_run = systemctl_py.replace("/","_")[1:]
         shell_file(systemctl_sh,"""
