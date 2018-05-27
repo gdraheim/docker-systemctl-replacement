@@ -48,19 +48,19 @@ _user_mode = False
 
 # common default paths
 _default_target = "multi-user.target"
-_sysd_system_folder1 = "/etc/systemd/system"
-_sysd_system_folder2 = "/var/run/systemd/system"
-_sysd_system_folder3 = "/usr/lib/systemd/system"
-_sysd_system_folder4 = "/lib/systemd/system"
-_sysd_system_folder9 = None
-_sysd_user_folder1 = "~/.config/systemd/user"
-_sysd_user_folder2 = "/etc/systemd/user"
-_sysd_user_folder3 = "~.local/share/systemd/user"
-_sysd_user_folder4 = "/usr/lib/systemd/user"
-_sysd_user_folder9 = None
-_sysv_init_folder1 = "/etc/init.d"
-_sysv_init_folder2 = "/var/run/init.d"
-_sysv_init_folder9 = None
+_system_folder1 = "/etc/systemd/system"
+_system_folder2 = "/var/run/systemd/system"
+_system_folder3 = "/usr/lib/systemd/system"
+_system_folder4 = "/lib/systemd/system"
+_system_folder9 = None
+_user_folder1 = "~/.config/systemd/user"
+_user_folder2 = "/etc/systemd/user"
+_user_folder3 = "~.local/share/systemd/user"
+_user_folder4 = "/usr/lib/systemd/user"
+_user_folder9 = None
+_init_folder1 = "/etc/init.d"
+_init_folder2 = "/var/run/init.d"
+_init_folder9 = None
 _preset_folder1 = "/etc/systemd/system-preset"
 _preset_folder2 = "/var/run/systemd/system-preset"
 _preset_folder3 = "/usr/lib/systemd/system-preset"
@@ -685,38 +685,38 @@ class Systemctl:
         self._default_target = _default_target
         self._user_mode = _user_mode
         self._user_getlogin = os_getlogin()
-    def sysd_user_folder(self):
-        for folder in self.sysd_user_folders():
+    def user_folder(self):
+        for folder in self.user_folders():
             if folder: return folder
         raise Exception("did not find any systemd/user folder")
-    def sysd_system_folder(self):
-        for folder in self.sysd_system_folders():
+    def system_folder(self):
+        for folder in self.system_folders():
             if folder: return folder
         raise Exception("did not find any systemd/system folder")
     def sysd_folders(self):
         """ if --user then these folders are preferred """
         if self.user_mode():
-            for folder in self.sysd_user_folders():
+            for folder in self.user_folders():
                 yield folder
         if True:
-            for folder in self.sysd_system_folders():
+            for folder in self.system_folders():
                 yield folder
-    def sysd_user_folders(self):
-        if _sysd_user_folder1: yield os.path.expanduser(_sysd_user_folder1)
-        if _sysd_user_folder2: yield os.path.expanduser(_sysd_user_folder2)
-        if _sysd_user_folder3: yield os.path.expanduser(_sysd_user_folder3)
-        if _sysd_user_folder4: yield os.path.expanduser(_sysd_user_folder4)
-        if _sysd_user_folder9: yield os.path.expanduser(_sysd_user_folder9)
-    def sysd_system_folders(self):
-        if _sysd_system_folder1: yield _sysd_system_folder1
-        if _sysd_system_folder2: yield _sysd_system_folder2
-        if _sysd_system_folder3: yield _sysd_system_folder3
-        if _sysd_system_folder4: yield _sysd_system_folder4
-        if _sysd_system_folder9: yield _sysd_system_folder9
-    def sysv_folders(self):
-        if _sysv_init_folder1: yield _sysv_init_folder1
-        if _sysv_init_folder2: yield _sysv_init_folder2
-        if _sysv_init_folder9: yield _sysv_init_folder9
+    def user_folders(self):
+        if _user_folder1: yield os.path.expanduser(_user_folder1)
+        if _user_folder2: yield os.path.expanduser(_user_folder2)
+        if _user_folder3: yield os.path.expanduser(_user_folder3)
+        if _user_folder4: yield os.path.expanduser(_user_folder4)
+        if _user_folder9: yield os.path.expanduser(_user_folder9)
+    def system_folders(self):
+        if _system_folder1: yield _system_folder1
+        if _system_folder2: yield _system_folder2
+        if _system_folder3: yield _system_folder3
+        if _system_folder4: yield _system_folder4
+        if _system_folder9: yield _system_folder9
+    def init_folders(self):
+        if _init_folder1: yield _init_folder1
+        if _init_folder2: yield _init_folder2
+        if _init_folder9: yield _init_folder9
     def preset_folders(self):
         if _preset_folder1: yield _preset_folder1
         if _preset_folder2: yield _preset_folder2
@@ -762,7 +762,7 @@ class Systemctl:
         """ reads all init.d files, returns the first filename when unit is a '.service' """
         if self._file_for_unit_sysv is None:
             self._file_for_unit_sysv = {}
-            for folder in self.sysv_folders():
+            for folder in self.init_folders():
                 if not folder: 
                     continue
                 if self._root:
@@ -2686,10 +2686,10 @@ class Systemctl:
         return conf.data.get("Install", "WantedBy", default, True)
     def enablefolders(self, wanted):
         if self.user_mode():
-            for folder in self.sysd_user_folders():
+            for folder in self.user_folders():
                  yield self.default_enablefolder(wanted, folder)
         if True:
-            for folder in self.sysd_system_folders():
+            for folder in self.system_folders():
                  yield self.default_enablefolder(wanted, folder)
     def enablefolder(self, wanted = None):
         if self.user_mode():
@@ -2698,7 +2698,7 @@ class Systemctl:
         else:
             return self.default_enablefolder(wanted)
     def default_enablefolder(self, wanted = None, basefolder = None):
-        basefolder = basefolder or self.sysd_system_folder()
+        basefolder = basefolder or self.system_folder()
         if not wanted: 
             return wanted
         if not wanted.endswith(".wants"):
@@ -3276,7 +3276,7 @@ class Systemctl:
         logg.debug("check for default user services")
         default_target = default_target or self._default_target
         default_services = []
-        for basefolder in self.sysd_user_folders():
+        for basefolder in self.user_folders():
             if not basefolder:
                 continue
             folder = self.default_enablefolder(default_target, basefolder)
@@ -3290,7 +3290,7 @@ class Systemctl:
                         continue # ignore
                     if unit.endswith(".service"):
                         default_services.append(unit)
-        for basefolder in self.sysd_system_folders():
+        for basefolder in self.system_folders():
             if not basefolder:
                 continue
             folder = self.default_enablefolder(default_target, basefolder)
@@ -3313,7 +3313,7 @@ class Systemctl:
         logg.debug("check for default system services")
         default_target = default_target or self._default_target
         default_services = []
-        for basefolder in self.sysd_system_folders():
+        for basefolder in self.system_folders():
             if not basefolder:
                 continue
             folder = self.default_enablefolder(default_target, basefolder)
