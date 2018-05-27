@@ -10823,7 +10823,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         self.rm_testdir()
 
-    def test_7001_centos_httpd_dockerfile(self):
+    def test_7001_centos_httpd(self):
         """ WHEN using a systemd-enabled CentOS 7, 
             THEN we can create an image with an Apache HTTP service 
                  being installed and enabled.
@@ -10881,7 +10881,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_7002_centos_postgres_dockerfile(self):
+    def test_7002_centos_postgres(self):
         """ WHEN using a systemd-enabled CentOS 7, 
             THEN we can create an image with an PostgreSql DB service 
                  being installed and enabled.
