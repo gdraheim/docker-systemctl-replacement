@@ -1680,14 +1680,18 @@ class Systemctl:
                     service_result = "timeout" # "could not start service"
         elif runs in [ "forking" ]:
             pid_file = self.pid_file_from(conf)
-            child_pid = os.fork()
-            if not child_pid: # pragma: no cover
-                os.setsid() # detach child process from parent
-                sys.exit(self.exec_start_from(conf, env)) # and exit after call
-            run = subprocess_waitpid(child_pid)
-            if run.returncode and check:
-                returncode = run.returncode
-                service_result = "failed"
+            for cmd in conf.data.getlist("Service", "ExecStart", []):
+                check, cmd = checkstatus(cmd)
+                newcmd = self.exec_cmd(cmd, env, conf)
+                if not newcmd: continue
+                child_pid = os.fork()
+                if not child_pid: # pragma: no cover
+                    os.setsid() # detach child process from parent
+                    self.execve_from(conf, newcmd, env)
+                run = subprocess_waitpid(child_pid)
+                if run.returncode and check:
+                    returncode = run.returncode
+                    service_result = "failed"
             if pid_file:
                 pid = self.wait_pid_file(pid_file) # application PIDFile
                 logg.info("%s start done PID %s [%s]", runs, pid, pid_file)
@@ -1723,6 +1727,25 @@ class Systemctl:
                 logg.info("post-start %s", shell_cmd(sudo+newcmd))
                 run = subprocess_wait(sudo+newcmd, env)
             return True
+
+    def execve_from(self, conf, cmd, env):
+        """ this code is commonly run in a child process // returns exit-code"""
+        runs = conf.data.get("Service", "Type", "simple").lower()
+        logg.debug("%s process for %s", runs, conf.filename())
+        #
+        # os.setsid() # detach from parent // required to be done in caller code 
+        #
+        returncode = None
+        inp = open("/dev/zero")
+        out = self.open_journal_log(conf)
+        os.dup2(inp.fileno(), sys.stdin.fileno())
+        os.dup2(out.fileno(), sys.stdout.fileno())
+        os.dup2(out.fileno(), sys.stderr.fileno())
+        runuser = conf.data.get("Service", "User", "")
+        rungroup = conf.data.get("Service", "Group", "")
+        shutil_setuid(runuser, rungroup)
+        self.chdir_workingdir(conf, check = False)
+        os.execve(cmd[0], cmd, env)
 
     def exec_start_unit(self, unit):
         """ helper function to test the code that is normally forked off """
