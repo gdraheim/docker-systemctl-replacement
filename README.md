@@ -227,6 +227,28 @@ however, for example:
 
 ---
 
+## Testsuite and example images
+
+There is an extensive testsuite in the project that allows
+for a high line coverage of the tool. All the major functionality
+of the systemctl.py is being tested so that its usage in 
+continuous development pipeline will no break on updates of
+the script. If the systemctl.py script has some important
+changes in the implementation details it will be marked with
+an update of the major version. 
+
+Please run the `testsuite.py` or `make check` upon providing
+a patch. It takes a couple of minutes because it may download
+a number of packages during provisioning - with the help of the
+scripting of the gdraheim/docker-centos-repo-mirror project this 
+can be reduced a lot (it even runs without internet connection).
+
+Some real world examples have been cut out into a seperate
+project. This includes dockerfile and ansible based tests
+to provide common applications like webservers, databases
+and even a Jenkins application. You may want to have a look
+at https://github.com/gdraheim/docker-systemctl-images
+
 ## Something is not implemented
 
 Although this script has been developed for quite a while,
