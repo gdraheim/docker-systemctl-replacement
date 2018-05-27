@@ -1738,15 +1738,10 @@ class Systemctl:
                 logg.info("post-start %s", shell_cmd(sudo+newcmd))
                 run = subprocess_wait(sudo+newcmd, env)
             return True
-
     def execve_from(self, conf, cmd, env):
         """ this code is commonly run in a child process // returns exit-code"""
         runs = conf.data.get("Service", "Type", "simple").lower()
         logg.debug("%s process for %s", runs, conf.filename())
-        #
-        # os.setsid() # detach from parent // required to be done in caller code 
-        #
-        returncode = None
         inp = open("/dev/zero")
         out = self.open_journal_log(conf)
         os.dup2(inp.fileno(), sys.stdin.fileno())
@@ -1757,7 +1752,6 @@ class Systemctl:
         shutil_setuid(runuser, rungroup)
         self.chdir_workingdir(conf, check = False)
         os.execve(cmd[0], cmd, env)
-
     def exec_start_unit(self, unit):
         """ helper function to test the code that is normally forked off """
         conf = self.load_unit_conf(unit)
