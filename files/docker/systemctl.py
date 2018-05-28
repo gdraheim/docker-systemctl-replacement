@@ -1396,6 +1396,18 @@ class Systemctl:
         for part in shlex.split(cmd3):
             newcmd += [ re.sub("[$][{](\w+)[}]", lambda m: get_env2(m), part) ]
         return newcmd
+    def invalid(self, newcmd):
+        if not newcmd:
+            return True
+        if not newcmd[0]:
+            return True
+        if newcmd[0][0] != "/":
+            for x in xrange(DefaultTimeoutStopSec,0,-1):
+                logg.error("(%s) ExecCommands must use an absolute path\n\t this exec is wrong:   (%s)\n\t it should be (%s)", 
+                    x, shell_cmd(newcmd), "'/usr/bin/"+shell_cmd(newcmd)[1:])
+                time.sleep(1)
+            return True
+        return False
     def sudo_from(self, conf):
         """ calls runuser with a (non-priviledged) user """
         runuser = conf.data.get("Service", "User", "")
@@ -1967,6 +1979,7 @@ class Systemctl:
             for cmd in conf.data.getlist("Service", "ExecStopPost", []):
                 check, cmd = checkstatus(cmd)
                 newcmd = self.exec_cmd(cmd, env, conf)
+                self.invalid(newcmd)
                 logg.info("post-stop %s", shell_cmd(sudo+newcmd))
                 run = subprocess_wait(sudo+newcmd, env)
         return service_result == "success"
