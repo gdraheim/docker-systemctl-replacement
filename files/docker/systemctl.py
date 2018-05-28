@@ -1779,8 +1779,7 @@ class Systemctl:
         shutil_truncate(status_file)
         shutil_chown(pid_file, runuser, rungroup)
         shutil_chown(status_file, runuser, rungroup)
-        shutil_setuid(runuser, rungroup)
-        self.chdir_workingdir(conf, check = False)
+        # shutil_setuid(runuser, rungroup)
         if doRemainAfterExit:
             status_file = self.status_file_from(conf)
             if True:
@@ -1793,11 +1792,12 @@ class Systemctl:
             env["MAINPID"] = str(pid)
             newcmd = self.exec_cmd(cmd, env, conf)
             logg.info("%s start %s", runs, shell_cmd(newcmd))
-            run = subprocess.Popen(newcmd, env=env, close_fds=True, 
-                stdin=inp, stdout=out, stderr=out)
-            self.write_mainpid_from(conf, run.pid)
-            logg.info("%s started PID %s", runs, run.pid)
-            run.wait()
+            child_pid = os.fork()
+            if not child_pid: # pragma: no cover
+                self.execve_from(conf, newcmd, env)
+            self.write_mainpid_from(conf, child_pid)
+            logg.info("%s started PID %s", runs, child_pid)
+            run = subprocess_waitpid(child_pid)
             logg.info("%s stopped PID %s EXIT %s", runs, run.pid, run.returncode)
             returncode = run.returncode
             # pid = self.read_mainpid_from(conf, "")
