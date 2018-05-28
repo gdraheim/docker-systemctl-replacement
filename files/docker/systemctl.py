@@ -470,7 +470,7 @@ class waitlock:
         try:
             folder = self.lockfolder
             if not os.path.isdir(folder):
-                os.mkdir(folder)
+                os.makedirs(folder)
         except Exception as e:
             logg.warning("oops, %s", e)
     def __enter__(self):
