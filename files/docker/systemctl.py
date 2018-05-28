@@ -1402,7 +1402,7 @@ class Systemctl:
         if not newcmd[0]:
             return True
         if newcmd[0][0] != "/":
-            for x in xrange(DefaultTimeoutStopSec,0,-1):
+            for x in xrange(DefaultTimeoutStopSec / 2,0,-1):
                 logg.error("(%s) ExecCommands must use an absolute path\n\t this exec is wrong:   (%s)\n\t it should be (%s)", 
                     x, shell_cmd(newcmd), "'/usr/bin/"+shell_cmd(newcmd)[1:])
                 time.sleep(1)
@@ -1890,6 +1890,7 @@ class Systemctl:
                 check, cmd = checkstatus(cmd)
                 logg.debug("{env} %s", env)
                 newcmd = self.exec_cmd(cmd, env, conf)
+                self.invalid(newcmd)
                 logg.info("%s stop %s", runs, shell_cmd(sudo+newcmd))
                 run = subprocess_wait(sudo+newcmd, env)
                 if run.returncode and check: 
@@ -1916,6 +1917,7 @@ class Systemctl:
                 check, cmd = checkstatus(cmd)
                 env["MAINPID"] = str(self.read_mainpid_from(conf, ""))
                 newcmd = self.exec_cmd(cmd, env, conf)
+                self.invalid(newcmd)
                 logg.info("%s stop %s", runs, shell_cmd(sudo+newcmd))
                 run = subprocess_wait(sudo+newcmd, env)
                 # self.write_mainpid_from(conf, run.pid) # no ExecStop
@@ -1947,6 +1949,7 @@ class Systemctl:
                 check, cmd = checkstatus(cmd)
                 logg.debug("{env} %s", env)
                 newcmd = self.exec_cmd(cmd, env, conf)
+                self.invalid(newcmd)
                 logg.info("fork stop %s", shell_cmd(sudo+newcmd))
                 run = subprocess_wait(sudo+newcmd, env)
                 if run.returncode and check:
@@ -2056,6 +2059,7 @@ class Systemctl:
                 env["MAINPID"] = str(self.read_mainpid_from(conf, ""))
                 check, cmd = checkstatus(cmd)
                 newcmd = self.exec_cmd(cmd, env, conf)
+                self.invalid(newcmd)
                 logg.info("%s reload %s", runs, shell_cmd(sudo+newcmd))
                 run = subprocess_wait(sudo+newcmd, env)
                 if check and run.returncode: raise Exception("ExecReload")
