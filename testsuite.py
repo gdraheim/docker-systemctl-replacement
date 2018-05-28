@@ -2848,7 +2848,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Service]
             Type=simple
             ExecStart={bindir}/{testsleep} 50
-            ExecStop=killall {testsleep}
+            ExecStop=/usr/bin/killall {testsleep}
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
@@ -4556,7 +4556,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Service]
             Type=simple
             ExecStart={bindir}/zzz.sh
-            ExecStop=killall {testsleep}
+            ExecStop=/usr/bin/killall {testsleep}
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
@@ -4612,7 +4612,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Type=simple
             WorkingDirectory={workingdir}
             ExecStart={bindir}/zzz.sh
-            ExecStop=killall {testsleep}
+            ExecStop=/usr/bin/killall {testsleep}
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
@@ -4669,7 +4669,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Type=simple
             WorkingDirectory={workingdir}
             ExecStart={bindir}/zzz.sh
-            ExecStop=killall {testsleep}
+            ExecStop=/usr/bin/killall {testsleep}
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
@@ -4727,7 +4727,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Type=simple
             WorkingDirectory=-{workingdir}
             ExecStart={bindir}/zzz.sh
-            ExecStop=killall {testsleep}
+            ExecStop=/usr/bin/killall {testsleep}
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
@@ -9031,8 +9031,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing Z
             [Service]
             Type=simple
-            ExecStart=testsleep 50
-            ExecStop=killall testsleep
+            ExecStart=/usr/bin/testsleep 50
+            ExecStop=/usr/bin/killall testsleep
             [Install]
             WantedBy=multi-user.target""")
         #
@@ -9089,7 +9089,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing Z
             [Service]
             Type=simple
-            ExecStart=testsleep 50
+            ExecStart=/usr/bin/testsleep 50
             [Install]
             WantedBy=multi-user.target""")
         #
@@ -9313,8 +9313,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing Z
             [Service]
             Type=notify
-            ExecStart=testsleep 50
-            ExecStop=killall testsleep
+            ExecStart=/usr/bin/testsleep 50
+            ExecStop=/usr/bin/killall testsleep
             TimeoutSec=4
             [Install]
             WantedBy=multi-user.target""")
@@ -9375,7 +9375,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing B
             [Service]
             Type=simple
-            ExecStart=testsleep 40
+            ExecStart=/usr/bin/testsleep 40
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(testdir, "zzc.service"),"""
@@ -9383,7 +9383,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing C
             [Service]
             Type=simple
-            ExecStart=testsleep 50
+            ExecStart=/usr/bin/testsleep 50
             [Install]
             WantedBy=multi-user.target""")
         #
@@ -9454,7 +9454,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing B
             [Service]
             Type=simple
-            ExecStart=testsleep 40
+            ExecStart=/usr/bin/testsleep 40
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(testdir, "zzc.service"),"""
@@ -9462,7 +9462,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing C
             [Service]
             Type=simple
-            ExecStart=testsleep 50
+            ExecStart=/usr/bin/testsleep 50
             [Install]
             WantedBy=multi-user.target""")
         #
@@ -9542,7 +9542,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing B
             [Service]
             Type=simple
-            ExecStart=testsleep 40
+            ExecStart=/usr/bin/testsleep 40
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(testdir, "zzc.service"),"""
@@ -9550,7 +9550,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing C
             [Service]
             Type=simple
-            ExecStart=testsleep 50
+            ExecStart=/usr/bin/testsleep 50
             [Install]
             WantedBy=multi-user.target""")
         #
@@ -9630,7 +9630,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing B
             [Service]
             Type=simple
-            ExecStart=testsleep 40
+            ExecStart=/usr/bin/testsleep 40
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(testdir, "zzc.service"),"""
@@ -9638,7 +9638,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing C
             [Service]
             Type=simple
-            ExecStart=testsleep 50
+            ExecStart=/usr/bin/testsleep 50
             [Install]
             WantedBy=multi-user.target""")
         #
@@ -9764,7 +9764,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing B
             [Service]
             Type=simple
-            ExecStart=testsleep 40
+            ExecStart=/usr/bin/testsleep 40
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(testdir, "zzc.service"),"""
@@ -9772,7 +9772,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing C
             [Service]
             Type=simple
-            ExecStart=testsleep 50
+            ExecStart=/usr/bin/testsleep 50
             [Install]
             WantedBy=multi-user.target""")
         #
@@ -9881,7 +9881,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing B
             [Service]
             Type=simple
-            ExecStart=testsleep 40
+            ExecStart=/usr/bin/testsleep 40
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(testdir, "zzc.service"),"""
@@ -9889,7 +9889,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing C
             [Service]
             Type=simple
-            ExecStart=testsleep 50
+            ExecStart=/usr/bin/testsleep 50
             [Install]
             WantedBy=multi-user.target""")
         #
@@ -9996,7 +9996,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing B
             [Service]
             Type=simple
-            ExecStart=testsleep 40
+            ExecStart=/usr/bin/testsleep 40
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(testdir, "zzc.service"),"""
@@ -10004,7 +10004,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing C
             [Service]
             Type=simple
-            ExecStart=testsleep 50
+            ExecStart=/usr/bin/testsleep 50
             [Install]
             WantedBy=multi-user.target""")
         #
@@ -10131,7 +10131,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing B
             [Service]
             Type=simple
-            ExecStart=testsleep 40
+            ExecStart=/usr/bin/testsleep 40
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(testdir, "zzc.service"),"""
@@ -10139,7 +10139,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing C
             [Service]
             Type=simple
-            ExecStart=testsleep 50
+            ExecStart=/usr/bin/testsleep 50
             [Install]
             WantedBy=multi-user.target""")
         #
@@ -10265,7 +10265,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Service]
             Type=simple
             User=user1
-            ExecStart=testsleep 40
+            ExecStart=/usr/bin/testsleep 40
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(testdir, "zzc.service"),"""
@@ -10275,7 +10275,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Type=simple
             User=user1
             Group=group2
-            ExecStart=testsleep 50
+            ExecStart=/usr/bin/testsleep 50
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(testdir, "zzd.service"),"""
@@ -10284,7 +10284,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Service]
             Type=simple
             Group=group2
-            ExecStart=testsleep 60
+            ExecStart=/usr/bin/testsleep 60
             [Install]
             WantedBy=multi-user.target""")
         #
@@ -10395,7 +10395,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Service]
             Type=simple
             User=user1
-            ExecStart=testsleep 40
+            ExecStart=/usr/bin/testsleep 40
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(testdir, "zzc.service"),"""
@@ -10405,7 +10405,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Type=simple
             User=user1
             Group=group2
-            ExecStart=testsleep 50
+            ExecStart=/usr/bin/testsleep 50
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(testdir, "zzd.service"),"""
@@ -10414,7 +10414,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Service]
             Type=simple
             Group=group2
-            ExecStart=testsleep 60
+            ExecStart=/usr/bin/testsleep 60
             [Install]
             WantedBy=multi-user.target""")
         #
