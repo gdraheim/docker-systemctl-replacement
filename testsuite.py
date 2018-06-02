@@ -4966,7 +4966,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing Z
             [Service]
             Type=simple
-            ExecStart=/usr/bin/sleep 50
+            ExecStart=sleep 50
             TimeoutSec=10
             [Install]
             WantedBy=multi-user.target
@@ -5008,11 +5008,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing Z
             [Service]
             Type=simple
-            ExecStartPre=echo %n
+            ExecStartPre=/bin/echo %n
             ExecStart={bindir}/{testscript} 50
-            ExecStartPost=echo started $MAINPID
+            ExecStartPost=/bin/echo started $MAINPID
             ExecStop=/usr/bin/kill -3 $MAINPID
-            ExecStopPost=echo stopped $MAINPID
+            ExecStopPost=/bin/echo stopped $MAINPID
             ExecStopPost=/usr/bin/sleep 2
             ExecReload=/usr/bin/kill -10 $MAINPID
             KillSignal=SIGQUIT
@@ -7449,11 +7449,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing Z
             [Service]
             Type=simple
-            ExecStartPre=echo %n
+            ExecStartPre=/bin/echo %n
             ExecStart={bindir}/{testsleep} 20
-            ExecStartPost=echo started $MAINPID
+            ExecStartPost=/bin/echo started $MAINPID
             ExecStop=/usr/bin/kill $MAINPID
-            ExecStopPost=echo stopped $MAINPID
+            ExecStopPost=/bin/echo stopped $MAINPID
             ExecStopPost=/usr/bin/sleep 2
             [Install]
             WantedBy=multi-user.target
@@ -7463,11 +7463,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing E
             [Service]
             Type=simple
-            ExecStartPre=echo %n
+            ExecStartPre=/bin/echo %n
             ExecStart={bindir}/{testsleep} 3
-            ExecStartPost=echo started $MAINPID
+            ExecStartPost=/bin/echo started $MAINPID
             ExecStop=/usr/bin/kill $MAINPID
-            ExecStopPost=echo stopped $MAINPID
+            ExecStopPost=/bin/echo stopped $MAINPID
             ExecStopPost=/usr/bin/sleep 2
             [Install]
             WantedBy=multi-user.target
@@ -7477,11 +7477,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing F
             [Service]
             Type=simple
-            ExecStartPre=echo %n
+            ExecStartPre=/bin/echo %n
             ExecStart={bindir}/{testfail} 3
-            ExecStartPost=echo started $MAINPID
+            ExecStartPost=/bin/echo started $MAINPID
             ExecStop=/usr/bin/kill $MAINPID
-            ExecStopPost=echo stopped $MAINPID
+            ExecStopPost=/bin/echo stopped $MAINPID
             ExecStopPost=/usr/bin/sleep 2
             [Install]
             WantedBy=multi-user.target
@@ -7492,11 +7492,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Service]
             Type=simple
             RemainAfterExit=yes
-            ExecStartPre=echo %n
+            ExecStartPre=/bin/echo %n
             ExecStart={bindir}/{testsleep} 3
-            ExecStartPost=echo started $MAINPID
+            ExecStartPost=/bin/echo started $MAINPID
             ExecStop=/usr/bin/kill $MAINPID
-            ExecStopPost=echo stopped $MAINPID
+            ExecStopPost=/bin/echo stopped $MAINPID
             ExecStopPost=/usr/bin/sleep 2
             [Install]
             WantedBy=multi-user.target
@@ -7507,11 +7507,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Service]
             Type=simple
             RemainAfterExit=yes
-            ExecStartPre=echo %n
+            ExecStartPre=/bin/echo %n
             ExecStart={bindir}/{testfail} 3
-            ExecStartPost=echo started $MAINPID
+            ExecStartPost=/bin/echo started $MAINPID
             ExecStop=/usr/bin/kill $MAINPID
-            ExecStopPost=echo stopped $MAINPID
+            ExecStopPost=/bin/echo stopped $MAINPID
             ExecStopPost=/usr/bin/sleep 2
             [Install]
             WantedBy=multi-user.target
@@ -7992,11 +7992,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing B
             [Service]
             Type=simple
-            ExecStartPre=echo %n
+            ExecStartPre=/bin/echo %n
             ExecStart={bindir}/{testscriptB} 50
-            ExecStartPost=echo started $MAINPID
+            ExecStartPost=/bin/echo started $MAINPID
             ExecStop=/usr/bin/kill -3 $MAINPID
-            ExecStopPost=echo stopped $MAINPID
+            ExecStopPost=/bin/echo stopped $MAINPID
             ExecStopPost=/usr/bin/sleep 2
             ExecReload=/usr/bin/kill -10 $MAINPID
             # KillSignal=SIGQUIT
@@ -8101,11 +8101,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing B
             [Service]
             Type=simple
-            ExecStartPre=echo %n
+            ExecStartPre=/bin/echo %n
             ExecStart={bindir}/{testscriptB} 50
-            ExecStartPost=echo started $MAINPID
+            ExecStartPost=/bin/echo started $MAINPID
             ExecStop=/usr/bin/kill -3 $MAINPID
-            ExecStopPost=echo stopped $MAINPID
+            ExecStopPost=/bin/echo stopped $MAINPID
             ExecStopPost=/usr/bin/sleep 2
             ExecReload=/usr/bin/kill -10 $MAINPID
             # KillSignal=SIGQUIT
