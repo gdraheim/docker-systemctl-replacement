@@ -1613,11 +1613,11 @@ class Systemctl:
                 newcmd = self.exec_cmd(cmd, env, conf)
                 logg.info("%s start %s", runs, shell_cmd(newcmd))
                 # run = subprocess_wait(sudo+newcmd, env)
-                child_pid = os.fork()
-                if not child_pid: # pragma: no cover
+                forkpid = os.fork()
+                if not forkpid: # pragma: no cover
                     os.setsid() # detach child process from parent
                     self.execve_from(conf, newcmd, env)
-                run = subprocess_waitpid(child_pid)
+                run = subprocess_waitpid(forkpid)
                 self.set_status_from(conf, "ExecMainCode", run.returncode)
                 logg.info("%s start done %s", runs, run.returncode or "OK")
                 active = run.returncode and "failed" or "active"
@@ -1633,11 +1633,11 @@ class Systemctl:
                 newcmd = self.exec_cmd(cmd, env, conf)
                 logg.info("%s start %s", runs, shell_cmd(newcmd))
                 # run = subprocess_wait(sudo+newcmd, env)
-                child_pid = os.fork()
-                if not child_pid: # pragma: no cover
+                forkpid = os.fork()
+                if not forkpid: # pragma: no cover
                     os.setsid() # detach child process from parent
                     self.execve_from(conf, newcmd, env)
-                run = subprocess_waitpid(child_pid)
+                run = subprocess_waitpid(forkpid)
                 if run.returncode and check: 
                     returncode = run.returncode
                     service_result = "failed"
@@ -1664,15 +1664,15 @@ class Systemctl:
                 env["MAINPID"] = str(pid)
                 newcmd = self.exec_cmd(cmd, env, conf)
                 logg.info("%s start %s", runs, shell_cmd(newcmd))
-                child_pid = os.fork()
-                if not child_pid: # pragma: no cover
+                forkpid = os.fork()
+                if not forkpid: # pragma: no cover
                     os.setsid() # detach child process from parent
                     self.execve_from(conf, newcmd, env)
-                self.write_mainpid_from(conf, child_pid)
-                logg.info("%s started PID %s", runs, child_pid)
-                env["MAINPID"] = str(child_pid)
+                self.write_mainpid_from(conf, forkpid)
+                logg.info("%s started PID %s", runs, forkpid)
+                env["MAINPID"] = str(forkpid)
                 time.sleep(1)
-                run = subprocess_testpid(child_pid)
+                run = subprocess_testpid(forkpid)
                 if run.returncode is not None:
                     logg.info("%s stopped PID %s EXIT %s SIG-%s", 
                         runs, run.pid, run.returncode, run.signal)
@@ -1705,17 +1705,17 @@ class Systemctl:
                 env["MAINPID"] = str(mainpid)
                 newcmd = self.exec_cmd(cmd, env, conf)
                 logg.info("%s start %s", runs, shell_cmd(newcmd))
-                child_pid = os.fork()
-                if not child_pid: # pragma: no cover
+                forkpid = os.fork()
+                if not forkpid: # pragma: no cover
                     os.setsid() # detach child process from parent
                     self.execve_from(conf, newcmd, env)
-                # via NOTIFY # self.write_mainpid_from(conf, child_pid)
-                logg.info("%s started PID %s", runs, child_pid)
-                mainpid = child_pid
+                # via NOTIFY # self.write_mainpid_from(conf, forkpid)
+                logg.info("%s started PID %s", runs, forkpid)
+                mainpid = forkpid
                 self.write_mainpid_from(conf, mainpid)
                 env["MAINPID"] = str(mainpid)
                 time.sleep(1)
-                run = subprocess_testpid(child_pid)
+                run = subprocess_testpid(forkpid)
                 if run.returncode is not None:
                     logg.info("%s stopped PID %s EXIT %s SIG-%s", 
                         runs, run.pid, run.returncode, run.signal)
@@ -1748,12 +1748,12 @@ class Systemctl:
                 newcmd = self.exec_cmd(cmd, env, conf)
                 if not newcmd: continue
                 logg.info("%s start %s", runs, shell_cmd(newcmd))
-                child_pid = os.fork()
-                if not child_pid: # pragma: no cover
+                forkpid = os.fork()
+                if not forkpid: # pragma: no cover
                     os.setsid() # detach child process from parent
                     self.execve_from(conf, newcmd, env)
-                logg.info("%s started PID %s", runs, child_pid)
-                run = subprocess_waitpid(child_pid)
+                logg.info("%s started PID %s", runs, forkpid)
+                run = subprocess_waitpid(forkpid)
                 if run.returncode and check:
                     returncode = run.returncode
                     service_result = "failed"
