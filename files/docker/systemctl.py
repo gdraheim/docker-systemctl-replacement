@@ -1403,21 +1403,6 @@ class Systemctl:
         for part in shlex.split(cmd3):
             newcmd += [ re.sub("[$][{](\w+)[}]", lambda m: get_env2(m), part) ]
         return newcmd
-    def invalid(self, newcmd, conf = None):
-        timeout = DefaultTimeoutStopSec
-        if conf:
-            timeout = self.get_TimeoutStopSec(conf)
-        if not newcmd:
-            return True
-        if not newcmd[0]:
-            return True
-        if newcmd[0][0] != "/":
-            for x in xrange(timeout / 2,0,-1):
-                logg.error("(%s) ExecCommands must use an absolute path\n\t this exec is wrong:   (%s)\n\t it should be (%s)", 
-                    x, shell_cmd(newcmd), "'/usr/bin/"+shell_cmd(newcmd)[1:])
-                time.sleep(1)
-            return True
-        return False
     def sudo_from(self, conf):
         """ calls runuser with a (non-priviledged) user """
         runuser = conf.data.get("Service", "User", "")
@@ -1607,6 +1592,7 @@ class Systemctl:
         runs = conf.data.get("Service", "Type", "simple").lower()
         sudo = self.sudo_from(conf)
         env = self.get_env(conf)
+        self.exec_check_service(conf, env, "Exec") # all...
         # for StopPost on failure:
         returncode = 0
         service_result = "success"
@@ -1616,7 +1602,6 @@ class Systemctl:
             for cmd in conf.data.getlist("Service", "ExecStartPre", []):
                 check, cmd = checkstatus(cmd)
                 newcmd = self.exec_cmd(cmd, env, conf)
-                self.invalid(newcmd, conf)
                 logg.info(" pre-start %s", shell_cmd(sudo+newcmd))
                 run = subprocess_wait(sudo+newcmd, env)
         if runs in [ "sysv" ]:
@@ -1646,7 +1631,6 @@ class Systemctl:
             for cmd in conf.data.getlist("Service", "ExecStart", []):
                 check, cmd = checkstatus(cmd)
                 newcmd = self.exec_cmd(cmd, env, conf)
-                self.invalid(newcmd, conf)
                 logg.info("%s start %s", runs, shell_cmd(newcmd))
                 # run = subprocess_wait(sudo+newcmd, env)
                 child_pid = os.fork()
@@ -1679,7 +1663,6 @@ class Systemctl:
                 pid = self.read_mainpid_from(conf, "")
                 env["MAINPID"] = str(pid)
                 newcmd = self.exec_cmd(cmd, env, conf)
-                self.invalid(newcmd, conf)
                 logg.info("%s start %s", runs, shell_cmd(newcmd))
                 child_pid = os.fork()
                 if not child_pid: # pragma: no cover
@@ -1721,7 +1704,6 @@ class Systemctl:
                 mainpid = self.read_mainpid_from(conf, "")
                 env["MAINPID"] = str(mainpid)
                 newcmd = self.exec_cmd(cmd, env, conf)
-                self.invalid(newcmd, conf)
                 logg.info("%s start %s", runs, shell_cmd(newcmd))
                 child_pid = os.fork()
                 if not child_pid: # pragma: no cover
@@ -1765,7 +1747,6 @@ class Systemctl:
                 check, cmd = checkstatus(cmd)
                 newcmd = self.exec_cmd(cmd, env, conf)
                 if not newcmd: continue
-                self.invalid(newcmd, conf)
                 logg.info("%s start %s", runs, shell_cmd(newcmd))
                 child_pid = os.fork()
                 if not child_pid: # pragma: no cover
@@ -1803,7 +1784,6 @@ class Systemctl:
             for cmd in conf.data.getlist("Service", "ExecStopPost", []):
                 check, cmd = checkstatus(cmd)
                 newcmd = self.exec_cmd(cmd, env, conf)
-                self.invalid(newcmd, conf)
                 logg.info("post-fail %s", shell_cmd(sudo+newcmd))
                 run = subprocess_wait(sudo+newcmd, env)
             return False
@@ -1811,7 +1791,6 @@ class Systemctl:
             for cmd in conf.data.getlist("Service", "ExecStartPost", []):
                 check, cmd = checkstatus(cmd)
                 newcmd = self.exec_cmd(cmd, env, conf)
-                self.invalid(newcmd, conf)
                 logg.info("post-start %s", shell_cmd(sudo+newcmd))
                 run = subprocess_wait(sudo+newcmd, env)
             return True
@@ -1883,6 +1862,7 @@ class Systemctl:
         runs = conf.data.get("Service", "Type", "simple").lower()
         sudo = self.sudo_from(conf)
         env = self.get_env(conf)
+        self.exec_check_service(conf, env, "ExecStop")
         returncode = 0
         service_result = "success"
         if runs in [ "sysv" ]:
@@ -1909,7 +1889,6 @@ class Systemctl:
                 check, cmd = checkstatus(cmd)
                 logg.debug("{env} %s", env)
                 newcmd = self.exec_cmd(cmd, env, conf)
-                self.invalid(newcmd, conf)
                 logg.info("%s stop %s", runs, shell_cmd(sudo+newcmd))
                 run = subprocess_wait(sudo+newcmd, env)
                 if run.returncode and check: 
@@ -1936,7 +1915,6 @@ class Systemctl:
                 check, cmd = checkstatus(cmd)
                 env["MAINPID"] = str(self.read_mainpid_from(conf, ""))
                 newcmd = self.exec_cmd(cmd, env, conf)
-                self.invalid(newcmd, conf)
                 logg.info("%s stop %s", runs, shell_cmd(sudo+newcmd))
                 run = subprocess_wait(sudo+newcmd, env)
                 # self.write_mainpid_from(conf, run.pid) # no ExecStop
@@ -1968,7 +1946,6 @@ class Systemctl:
                 check, cmd = checkstatus(cmd)
                 logg.debug("{env} %s", env)
                 newcmd = self.exec_cmd(cmd, env, conf)
-                self.invalid(newcmd, conf)
                 logg.info("fork stop %s", shell_cmd(sudo+newcmd))
                 run = subprocess_wait(sudo+newcmd, env)
                 if run.returncode and check:
@@ -2001,7 +1978,6 @@ class Systemctl:
             for cmd in conf.data.getlist("Service", "ExecStopPost", []):
                 check, cmd = checkstatus(cmd)
                 newcmd = self.exec_cmd(cmd, env, conf)
-                self.invalid(newcmd, conf)
                 logg.info("post-stop %s", shell_cmd(sudo+newcmd))
                 run = subprocess_wait(sudo+newcmd, env)
         return service_result == "success"
@@ -2054,6 +2030,7 @@ class Systemctl:
         runs = conf.data.get("Service", "Type", "simple").lower()
         sudo = self.sudo_from(conf)
         env = self.get_env(conf)
+        self.exec_check_service(conf, env, "ExecReload")
         if runs in [ "sysv" ]:
             status_file = self.status_file_from(conf)
             if True:
@@ -2078,7 +2055,6 @@ class Systemctl:
                 env["MAINPID"] = str(self.read_mainpid_from(conf, ""))
                 check, cmd = checkstatus(cmd)
                 newcmd = self.exec_cmd(cmd, env, conf)
-                self.invalid(newcmd, conf)
                 logg.info("%s reload %s", runs, shell_cmd(sudo+newcmd))
                 run = subprocess_wait(sudo+newcmd, env)
                 if check and run.returncode: raise Exception("ExecReload")
@@ -3204,6 +3180,61 @@ class Systemctl:
                 logg.error(" %s: Failed to load environment files: %s", unit, env_file)
                 errors += 101
         return errors
+    def exec_check_service(self, conf, env, exectype = ""):
+        if not conf:
+            return True
+        if not conf.data.has_section("Service"):
+            return True #pragma: no cover
+        haveType = conf.data.get("Service", "Type", "simple")
+        if haveType in [ "sysv" ]:
+            return True # we don't care about that
+        abspath = 0
+        notexists = 0
+        for execs in [ "ExecStartPre", "ExecStart", "ExecStartPost", "ExecStop", "ExecStopPost", "ExecReload" ]:
+            if not execs.startswith(exectype):
+                continue
+            for cmd in conf.data.getlist("Service", execs, []):
+                check, cmd = checkstatus(cmd)
+                newcmd = self.exec_cmd(cmd, env, conf)
+                if not newcmd:
+                    continue
+                exe = newcmd[0]
+                if not exe:
+                    continue
+                if exe[0] != "/":
+                    logg.error(" Exec is not an absolute path:  %s=%s", execs, cmd)
+                    abspath += 1
+                if not os.path.isfile(exe):
+                    logg.error(" Exec command does not exist: (%s) %s", execs, exe)
+                    notexists += 1
+                    newexe1 = os.path.join("/usr/bin", exe)
+                    newexe2 = os.path.join("/bin", exe)
+                    if os.path.exists(newexe1):
+                        logg.error(" but this does exist: %s  %s", " " * len(execs), newexe1)
+                    elif os.path.exists(newexe2):
+                        logg.error(" but this does exist: %s      %s", " " * len(execs), newexe2)
+        if not abspath and not notexists:
+            return True
+        if True:
+            filename = conf.filename()
+            if len(filename) > 45: filename = "..." + filename[-42:]
+            logg.error(" !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+            logg.error(" Found %s problems in %s", abspath + notexists, filename)
+            time.sleep(1)
+            if abspath:
+                logg.error(" The SystemD commands must always be absolute paths by definition.")
+                time.sleep(1)
+                logg.error(" Earlier versions of systemctl.py did use a subshell thus using $PATH")
+                time.sleep(1)
+                logg.error(" however newer versions use execve just like the real SystemD daemon")
+                time.sleep(1)
+                logg.error(" so that your docker-only service scripts may start to fail suddenly.")
+                time.sleep(1)
+            if notexists:
+                logg.error(" Now %s executable paths were not found in the current environment.", notexists)
+                time.sleep(1)
+            logg.error(" !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        return False
     def show_modules(self, *modules):
         """ [PATTERN]... -- Show properties of one or more units
            Show properties of one or more units (or the manager itself).

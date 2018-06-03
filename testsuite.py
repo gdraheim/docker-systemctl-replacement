@@ -4798,7 +4798,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} stop zzz.service -vv"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        self.assertTrue(greps(err, "ExecCommands must use"))
+        self.assertTrue(greps(err, "Exec is not an absolute"))
         #
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
@@ -4834,7 +4834,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} stop zzz.service -vv"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        self.assertTrue(greps(err, "ExecCommands must use"))
+        self.assertTrue(greps(err, "Exec is not an absolute"))
         #
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
@@ -4870,7 +4870,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} reload zzz.service -vv"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        self.assertTrue(greps(err, "ExecCommands must use"))
+        self.assertTrue(greps(err, "Exec is not an absolute"))
         #
         cmd = "{systemctl} stop zzz.service -vv"
         out, err, end = output3(cmd.format(**locals()))
@@ -4906,7 +4906,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
         self.assertEqual(end, 0)
-        self.assertTrue(greps(err, "ExecCommands must use"))
+        self.assertTrue(greps(err, "Exec is not an absolute"))
         #
         cmd = "{systemctl} stop zzz.service -vv"
         out, err, end = output3(cmd.format(**locals()))
@@ -4942,7 +4942,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
         self.assertEqual(end, 0)
-        self.assertTrue(greps(err, "ExecCommands must use"))
+        self.assertTrue(greps(err, "Exec is not an absolute"))
         #
         cmd = "{systemctl} stop zzz.service -vv"
         out, err, end = output3(cmd.format(**locals()))
@@ -4978,7 +4978,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
         self.assertEqual(end, 1)
-        self.assertTrue(greps(err, "ExecCommands must use"))
+        self.assertTrue(greps(err, "Exec is not an absolute"))
         #
         cmd = "{systemctl} stop zzz.service -vv"
         out, err, end = output3(cmd.format(**locals()))
