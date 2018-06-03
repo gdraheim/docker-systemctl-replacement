@@ -1619,7 +1619,8 @@ class Systemctl:
                     self.execve_from(conf, newcmd, env)
                 run = subprocess_waitpid(forkpid)
                 self.set_status_from(conf, "ExecMainCode", run.returncode)
-                logg.info("%s start done %s", runs, run.returncode or "OK")
+                logg.info("%s start done (%s) <-%s>", runs, 
+                    run.returncode or "OK", run.signal or "")
                 active = run.returncode and "failed" or "active"
                 self.write_status_from(conf, AS=active )
                 return True
@@ -1641,9 +1642,11 @@ class Systemctl:
                 if run.returncode and check: 
                     returncode = run.returncode
                     service_result = "failed"
-                    logg.error("%s start %s (%s)", runs, service_result, returncode)
+                    logg.error("%s start %s (%s) <-%s>", runs, service_result, 
+                        run.returncode or "OK", run.signal or "")
                     break
-                logg.info("%s start done (%s)", runs, returncode)
+                logg.info("%s start done (%s) <-%s>", runs, 
+                    run.returncode or "OK", run.signal or "")
             if True:
                 self.set_status_from(conf, "ExecMainCode", returncode)
                 active = returncode and "failed" or "active"
@@ -1674,8 +1677,8 @@ class Systemctl:
                 time.sleep(1)
                 run = subprocess_testpid(forkpid)
                 if run.returncode is not None:
-                    logg.info("%s stopped PID %s EXIT %s SIG-%s", 
-                        runs, run.pid, run.returncode, run.signal)
+                    logg.info("%s stopped PID %s (%s) <-%s>", runs, run.pid, 
+                        run.returncode or "OK", run.signal or "")
                     if doRemainAfterExit:
                         self.set_status_from(conf, "ExecMainCode", run.returncode)
                         active = run.returncode and "failed" or "active"
@@ -1717,8 +1720,8 @@ class Systemctl:
                 time.sleep(1)
                 run = subprocess_testpid(forkpid)
                 if run.returncode is not None:
-                    logg.info("%s stopped PID %s EXIT %s SIG-%s", 
-                        runs, run.pid, run.returncode, run.signal)
+                    logg.info("%s stopped PID %s (%s) <-%s>", runs, run.pid, 
+                        run.returncode or "OK", run.signal or "")
                     if doRemainAfterExit:
                         self.set_status_from(conf, "ExecMainCode", run.returncode or 0)
                         active = run.returncode and "failed" or "active"
@@ -1757,8 +1760,8 @@ class Systemctl:
                 if run.returncode and check:
                     returncode = run.returncode
                     service_result = "failed"
-                logg.info("%s stopped PID %s EXIT %s SIG-%s", 
-                        runs, run.pid, run.returncode, run.signal)
+                logg.info("%s stopped PID %s (%s) <-%s>", runs, run.pid, 
+                    run.returncode or "OK", run.signal or "")
             if pid_file and service_result in [ "success" ]:
                 pid = self.wait_pid_file(pid_file) # application PIDFile
                 logg.info("%s start done PID %s [%s]", runs, pid, pid_file)
