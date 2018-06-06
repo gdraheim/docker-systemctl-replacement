@@ -1212,7 +1212,82 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(lines(out)), 2)
         self.rm_testdir()
         self.coverage()
-    def test_2020_show_unit_is_parseable(self):
+    def test_2140_show_environment_from_parts(self):
+        """ check that the result of 'environment UNIT' can 
+            list the settings from different locations."""
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/sysconfig/zzb.conf"),"""
+            DEF1='def1'
+            DEF2="def2"
+            DEF3=def3
+            """)
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            EnvironmentFile=/etc/sysconfig/zzb.conf
+            Environment=DEF5=def5
+            Environment=DEF6=def6
+            ExecStart=/usr/bin/printf $DEF1 $DEF2 \
+                                $DEF3 $DEF4 $DEF5
+            [Install]
+            WantedBy=multi-user.target""")
+        cmd = "{systemctl} environment zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertTrue(greps(out, r"^DEF1=def1"))
+        self.assertTrue(greps(out, r"^DEF2=def2"))
+        self.assertTrue(greps(out, r"^DEF3=def3"))
+        self.assertFalse(greps(out, r"^DEF4=def4"))
+        self.assertTrue(greps(out, r"^DEF5=def5"))
+        self.assertTrue(greps(out, r"^DEF6=def6"))
+        self.assertFalse(greps(out, r"^DEF7=def7"))
+        a_lines = len(lines(out))
+        #
+        self.rm_testdir()
+        self.coverage()
+    def test_2150_have_environment_with_multiple_parts(self):
+        """ check that the result of 'environment UNIT' can 
+            list the assignements that are crammed into one line."""
+        # https://www.freedesktop.org/software/systemd/man/systemd.exec.html#Environment=
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/sysconfig/zzb.conf"),"""
+            DEF1='def1'
+            DEF2="def2"
+            DEF3=def3
+            """)
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            EnvironmentFile=/etc/sysconfig/zzb.conf
+            Environment="VAR1=word1 word2" VAR2=word3 "VAR3=$word 5 6"
+            ExecStart=/usr/bin/printf $DEF1 $DEF2 \
+                                $VAR1 $VAR2 $VAR3
+            [Install]
+            WantedBy=multi-user.target""")
+        cmd = "{systemctl} environment zzb.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertTrue(greps(out, r"^DEF1=def1"))
+        self.assertTrue(greps(out, r"^DEF2=def2"))
+        self.assertTrue(greps(out, r"^DEF3=def3"))
+        self.assertTrue(greps(out, r"^VAR1=word1 word2"))
+        self.assertTrue(greps(out, r"^VAR2=word3"))
+        self.assertTrue(greps(out, r"^VAR3=\$word 5 6"))
+        a_lines = len(lines(out))
+        #
+        self.rm_testdir()
+        self.coverage()
+    def test_2220_show_unit_is_parseable(self):
         """ check that 'show UNIT' is machine-readable """
         testname = self.testname()
         testdir = self.testdir()
@@ -1257,7 +1332,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 self.assertEqual("word=value", line)
         self.rm_testdir()
         self.coverage()
-    def test_2021_show_unit_can_be_restricted_to_one_property(self):
+    def test_2221_show_unit_can_be_restricted_to_one_property(self):
         """ check that 'show UNIT' may return just one value if asked for"""
         testname = self.testname()
         testdir = self.testdir()
@@ -1297,7 +1372,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(lines(out), [ "PIDFile=" ])
         self.rm_testdir()
         self.coverage()
-    def test_2025_show_unit_for_multiple_matches(self):
+    def test_2225_show_unit_for_multiple_matches(self):
         """ check that the result of 'show UNIT' for multiple services is 
             concatenated but still machine readable. """
         testname = self.testname()
@@ -1366,7 +1441,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 self.assertEqual("word=value", line)
         self.rm_testdir()
         self.coverage()
-    def test_2027_show_unit_for_oneshot_service(self):
+    def test_2227_show_unit_for_oneshot_service(self):
         """ check that 'show UNIT' is machine-readable """
         testname = self.testname()
         testdir = self.testdir()
@@ -1416,7 +1491,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 self.assertEqual("word=value", line)
         self.rm_testdir()
         self.coverage()
-    def test_2030_show_unit_display_parsed_timeouts(self):
+    def test_2230_show_unit_display_parsed_timeouts(self):
         """ check that 'show UNIT' show parsed timeoutss """
         testname = self.testname()
         testdir = self.testdir()
@@ -1514,81 +1589,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         rep = lines(out)
         self.assertIn("TimeoutStartUSec=3min", rep)
         self.assertIn("TimeoutStopUSec=3min 2s", rep)
-        #
-        self.rm_testdir()
-        self.coverage()
-    def test_2140_show_environment_from_parts(self):
-        """ check that the result of 'environment UNIT' can 
-            list the settings from different locations."""
-        testname = self.testname()
-        testdir = self.testdir()
-        root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
-        text_file(os_path(root, "/etc/sysconfig/zzb.conf"),"""
-            DEF1='def1'
-            DEF2="def2"
-            DEF3=def3
-            """)
-        text_file(os_path(root, "/etc/systemd/system/zzb.service"),"""
-            [Unit]
-            Description=Testing B
-            [Service]
-            EnvironmentFile=/etc/sysconfig/zzb.conf
-            Environment=DEF5=def5
-            Environment=DEF6=def6
-            ExecStart=/usr/bin/printf $DEF1 $DEF2 \
-                                $DEF3 $DEF4 $DEF5
-            [Install]
-            WantedBy=multi-user.target""")
-        cmd = "{systemctl} environment zzb.service"
-        out, end = output2(cmd.format(**locals()))
-        logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(end, 0)
-        self.assertTrue(greps(out, r"^DEF1=def1"))
-        self.assertTrue(greps(out, r"^DEF2=def2"))
-        self.assertTrue(greps(out, r"^DEF3=def3"))
-        self.assertFalse(greps(out, r"^DEF4=def4"))
-        self.assertTrue(greps(out, r"^DEF5=def5"))
-        self.assertTrue(greps(out, r"^DEF6=def6"))
-        self.assertFalse(greps(out, r"^DEF7=def7"))
-        a_lines = len(lines(out))
-        #
-        self.rm_testdir()
-        self.coverage()
-    def test_2150_have_environment_with_multiple_parts(self):
-        """ check that the result of 'environment UNIT' can 
-            list the assignements that are crammed into one line."""
-        # https://www.freedesktop.org/software/systemd/man/systemd.exec.html#Environment=
-        testname = self.testname()
-        testdir = self.testdir()
-        root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
-        text_file(os_path(root, "/etc/sysconfig/zzb.conf"),"""
-            DEF1='def1'
-            DEF2="def2"
-            DEF3=def3
-            """)
-        text_file(os_path(root, "/etc/systemd/system/zzb.service"),"""
-            [Unit]
-            Description=Testing B
-            [Service]
-            EnvironmentFile=/etc/sysconfig/zzb.conf
-            Environment="VAR1=word1 word2" VAR2=word3 "VAR3=$word 5 6"
-            ExecStart=/usr/bin/printf $DEF1 $DEF2 \
-                                $VAR1 $VAR2 $VAR3
-            [Install]
-            WantedBy=multi-user.target""")
-        cmd = "{systemctl} environment zzb.service -vv"
-        out, end = output2(cmd.format(**locals()))
-        logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(end, 0)
-        self.assertTrue(greps(out, r"^DEF1=def1"))
-        self.assertTrue(greps(out, r"^DEF2=def2"))
-        self.assertTrue(greps(out, r"^DEF3=def3"))
-        self.assertTrue(greps(out, r"^VAR1=word1 word2"))
-        self.assertTrue(greps(out, r"^VAR2=word3"))
-        self.assertTrue(greps(out, r"^VAR3=\$word 5 6"))
-        a_lines = len(lines(out))
         #
         self.rm_testdir()
         self.coverage()
