@@ -2706,8 +2706,8 @@ class Systemctl:
                  yield self.default_enablefolder(wanted, folder)
     def enablefolder(self, wanted = None):
         if self.user_mode():
-            systemd_user = self.systemd_user_folder()
-            return self.default_enablefolder(wanted, systemd_user)
+            user_folder = self.user_folder()
+            return self.default_enablefolder(wanted, user_folder)
         else:
             return self.default_enablefolder(wanted)
     def default_enablefolder(self, wanted = None, basefolder = None):
@@ -2728,6 +2728,7 @@ class Systemctl:
                 found_all = False
                 continue
             for unit in matched:
+                logg.info("matched %s", unit) #++
                 if unit not in units:
                     units += [ unit ]
         return self.enable_units(units) and found_all
@@ -2745,7 +2746,14 @@ class Systemctl:
             logg.error("Unit %s could not be found.", unit)
             return False
         if self.is_sysv_file(unit_file):
+            if self.user_mode():
+                logg.error("Initscript %s not for --user mode", unit)
+                return False
             return self.enable_unit_sysv(unit_file)
+        conf = self.get_unit_conf(unit)
+        if self.not_user_conf(conf):
+            logg.error("Unit %s not for --user mode", unit)
+            return False
         wanted = self.wanted_from(self.get_unit_conf(unit))
         if not wanted: 
             return False # "static" is-enabled
@@ -2833,7 +2841,14 @@ class Systemctl:
             logg.error("Unit %s could not be found.", unit)
             return False
         if self.is_sysv_file(unit_file):
+            if self.user_mode():
+                logg.error("Initscript %s not for --user mode", unit)
+                return False
             return self.disable_unit_sysv(unit_file)
+        conf = self.get_unit_conf(unit)
+        if self.not_user_conf(conf):
+            logg.error("Unit %s not for --user mode", unit)
+            return False
         wanted = self.wanted_from(self.get_unit_conf(unit))
         if not wanted:
             return False # "static" is-enabled

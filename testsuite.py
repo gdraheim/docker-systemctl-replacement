@@ -1150,7 +1150,85 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.rm_testdir()
         self.coverage()
-    def test_2013_list_unit_files_common_targets(self):
+    def test_2010_list_unit_files_locations_user_mode(self):
+        """ check that unit files can be found for 'list-unit-files'
+            in different standard locations on disk. """
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/usr/lib/systemd/system/zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/lib/systemd/system/zzc.service"),"""
+            [Unit]
+            Description=Testing C
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/var/run/systemd/system/zzd.service"),"""
+            [Unit]
+            Description=Testing D
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/user/zzu.service"),"""
+            [Unit]
+            Description=Testing U
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/usr/lib/systemd/user/zzv.service"),"""
+            [Unit]
+            Description=Testing V
+            [Install]
+            WantedBy=multi-user.target""")
+        cmd = "{systemctl} --type=service list-unit-files --user"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertFalse(greps(out, r"zza.service\s+disabled"))
+        self.assertFalse(greps(out, r"zzb.service\s+disabled"))
+        self.assertFalse(greps(out, r"zzc.service\s+disabled"))
+        self.assertFalse(greps(out, r"zzd.service\s+disabled"))
+        self.assertTrue(greps(out, r"zzu.service\s+disabled"))
+        self.assertTrue(greps(out, r"zzv.service\s+disabled"))
+        self.assertIn("2 unit files listed.", out)
+        self.assertEqual(len(lines(out)), 5)
+        #
+        cmd = "{systemctl} enable zza.service --user -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 1)
+        cmd = "{systemctl} enable zzb.service --user -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 1)
+        cmd = "{systemctl} enable zzu.service --user"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        cmd = "{systemctl} enable zzv.service --user"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} --type=service list-unit-files --user"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertTrue(greps(out, r"zzu.service\s+enabled"))
+        self.assertTrue(greps(out, r"zzv.service\s+enabled"))
+        self.assertIn("2 unit files listed.", out)
+        self.assertEqual(len(lines(out)), 5)
+        #
+        self.rm_testdir()
+        self.coverage()
+    def test_2043_list_unit_files_common_targets(self):
         """ check that some unit target files can be found for 'list-unit-files' """
         testname = self.testname()
         testdir = self.testdir()
@@ -1189,7 +1267,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(lines(out)), num_targets + 2)
         self.rm_testdir()
         self.coverage()
-    def test_2014_list_unit_files_now(self):
+    def test_2044_list_unit_files_now(self):
         """ check that 'list-unit-files --now' presents a special debug list """
         testname = self.testname()
         testdir = self.testdir()
