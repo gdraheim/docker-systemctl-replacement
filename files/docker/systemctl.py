@@ -81,7 +81,6 @@ InitLoopSleep = 5
 ProcMaxDepth = 100
 MaxLockWait = None # equals DefaultMaximumTimeout
 
-_systemctl_lockfile = "/var/run/systemd/system"
 _notify_socket_folder = "/var/run/systemd" # alias /run/systemd
 _notify_socket_name = "notify" # NOTIFY_SOCKET="/var/run/systemd/notify"
 _pid_file_folder = "/var/run"
@@ -149,6 +148,18 @@ def os_getlogin():
     """ NOT using os.getlogin() """
     import pwd
     return pwd.getpwuid(os.geteuid()).pw_name
+
+def _var(path):
+    if not _user_mode:
+        return path
+    if path.startswith("/var"):
+        user = os_getlogin()
+        runtime = os.environ.get("XDG_RUNTIME_DIR", "/tmp/"+user)
+        if not os.path.isdir(runtime):
+            os.makedirs(runtime)
+            os.chmod(runtime, 0o700)
+        return path.replace("/var", runtime, 1)
+    return path
 
 def shutil_chown(filename, user = None, group = None):
     """ in python 3.3. there is shutil.chown """
@@ -466,7 +477,7 @@ class waitlock:
     def __init__(self, unit):
         self.unit = unit # currently unused
         self.opened = None
-        self.lockfolder = os_path(_root, _notify_socket_folder)
+        self.lockfolder = os_path(_root, _var(_notify_socket_folder))
         try:
             folder = self.lockfolder
             if not os.path.isdir(folder):
@@ -677,7 +688,7 @@ class Systemctl:
         self._unit_property = _unit_property
         self._unit_type = _unit_type
         # some common constants that may be changed
-        self._notify_socket_folder = _notify_socket_folder
+        self._notify_socket_folder = _var(_notify_socket_folder)
         self._notify_socket_name = _notify_socket_name
         self._pid_file_folder = _pid_file_folder 
         self._journal_log_folder = _journal_log_folder
@@ -1085,7 +1096,7 @@ class Systemctl:
         return pid_file or def_file
     def default_pid_file_from(self, conf): # -> text
         """ default file pattern where to store a pid """
-        folder = self._pid_file_folder
+        folder = _var(self._pid_file_folder)
         if self._root:
             folder = os_path(self._root, folder)
         filename = "%s.pid" % conf.name()
@@ -1128,7 +1139,7 @@ class Systemctl:
         # this not a real setting.
     def default_status_file(self, conf): # -> text
         """ default file pattern where to store a status mark """
-        folder = self._pid_file_folder
+        folder = _var(self._pid_file_folder)
         if self._root:
             folder = os_path(self._root, folder)
         name = "%s.status" % conf.name()
@@ -1406,7 +1417,7 @@ class Systemctl:
     def open_journal_log(self, conf):
         name = conf.filename()
         if name:
-            log_folder = self._journal_log_folder
+            log_folder = _var(self._journal_log_folder)
             if self._root:
                 log_folder = os_path(self._root, log_folder)
             log_file = name.replace(os.path.sep,".") + ".log"
@@ -1442,7 +1453,7 @@ class Systemctl:
         if runuser and os.geteuid() != 0:
             logg.error("can not exec notify-service from non-root caller")
             return None
-        notify_socket_folder = self._notify_socket_folder
+        notify_socket_folder = _var(self._notify_socket_folder)
         if self._root:
             notify_socket_folder = os_path(self._root, notify_socket_folder)
         notify_socket = os.path.join(notify_socket_folder, self._notify_socket_name)
@@ -3853,8 +3864,11 @@ if __name__ == "__main__":
         _user_mode = False # override --user
     #
     if _root:
-        _systemctl_debug_log = os_path(_root, _systemctl_debug_log)
-        _systemctl_extra_log = os_path(_root, _systemctl_extra_log)
+        _systemctl_debug_log = os_path(_root, _var(_systemctl_debug_log))
+        _systemctl_extra_log = os_path(_root, _var(_systemctl_extra_log))
+    elif _user_mode:
+        _systemctl_debug_log = _var(_systemctl_debug_log)
+        _systemctl_extra_log = _var(_systemctl_extra_log)
     if os.path.exists(_systemctl_extra_log):
         loggfile = logging.FileHandler(_systemctl_extra_log)
         loggfile.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
