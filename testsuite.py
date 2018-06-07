@@ -148,7 +148,10 @@ def os_path(root, path):
     while path.startswith(os.path.sep):
        path = path[1:]
     return os.path.join(root, path)
-
+def os_getlogin():
+    """ NOT using os.getlogin() """
+    import pwd
+    return pwd.getpwuid(os.geteuid()).pw_name
 
 class DockerSystemctlReplacementTest(unittest.TestCase):
     def caller_testname(self):
@@ -227,8 +230,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             os.makedirs(root_folder)
         return os.path.abspath(root_folder)
     def user(self):
-        import getpass
-        getpass.getuser()
+        return os_getlogin()
     def ip_container(self, name):
         values = output("docker inspect "+name)
         values = json.loads(values)
@@ -1152,7 +1154,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.coverage()
     def test_2010_list_unit_files_locations_user_mode(self):
         """ check that unit files can be found for 'list-unit-files'
-            in different standard locations on disk. """
+            in different standard locations on disk for --user mode """
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
@@ -1226,6 +1228,96 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertIn("2 unit files listed.", out)
         self.assertEqual(len(lines(out)), 5)
         #
+        self.rm_testdir()
+        self.coverage()
+    def test_2014_list_unit_files_locations_user_extra(self):
+        """ check that unit files can be found for 'list-unit-files'
+            in different standard locations on disk for --user mode
+            with some system files to be pinned on our user. """
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        user = self.user()
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            User={user}
+            [Install]
+            WantedBy=multi-user.target""".format(**locals()))
+        text_file(os_path(root, "/usr/lib/systemd/system/zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Sevice]
+            User={user}
+            [Install]
+            WantedBy=multi-user.target""".format(**locals()))
+        text_file(os_path(root, "/lib/systemd/system/zzc.service"),"""
+            [Unit]
+            Description=Testing C
+            [Sevice]
+            User={user}
+            [Install]
+            WantedBy=multi-user.target""".format(**locals()))
+        text_file(os_path(root, "/var/run/systemd/system/zzd.service"),"""
+            [Unit]
+            Description=Testing D
+            [Sevice]
+            User={user}
+            [Install]
+            WantedBy=multi-user.target""".format(**locals()))
+        text_file(os_path(root, "/etc/systemd/user/zzu.service"),"""
+            [Unit]
+            Description=Testing U
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/usr/lib/systemd/user/zzv.service"),"""
+            [Unit]
+            Description=Testing V
+            [Install]
+            WantedBy=multi-user.target""")
+        cmd = "{systemctl} --type=service list-unit-files --user"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertTrue(greps(out, r"zza.service\s+disabled"))
+        self.assertFalse(greps(out, r"zzb.service\s+disabled"))
+        self.assertFalse(greps(out, r"zzc.service\s+disabled"))
+        self.assertFalse(greps(out, r"zzd.service\s+disabled"))
+        self.assertTrue(greps(out, r"zzu.service\s+disabled"))
+        self.assertTrue(greps(out, r"zzv.service\s+disabled"))
+        self.assertIn("3 unit files listed.", out)
+        self.assertEqual(len(lines(out)), 6)
+        #
+        cmd = "{systemctl} enable zza.service --user -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        cmd = "{systemctl} enable zzb.service --user -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 1)
+        cmd = "{systemctl} enable zzu.service --user"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        cmd = "{systemctl} enable zzv.service --user"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} --type=service list-unit-files --user"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertTrue(greps(out, r"zza.service\s+enabled"))
+        self.assertTrue(greps(out, r"zzu.service\s+enabled"))
+        self.assertTrue(greps(out, r"zzv.service\s+enabled"))
+        self.assertIn("3 unit files listed.", out)
+        self.assertEqual(len(lines(out)), 6)
+        #
+        logg.info("enabled services for User=%s", user)
         self.rm_testdir()
         self.coverage()
     def test_2043_list_unit_files_common_targets(self):
@@ -11407,6 +11499,84 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "sleep 5; wget -O {tmp}/{testname}.txt http://127.0.0.1:{port}"
         sh____(cmd.format(**locals()))
         cmd = "grep OK {tmp}/{testname}.txt"
+        sh____(cmd.format(**locals()))
+        # CLEAN
+        cmd = "docker stop {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
+        self.rm_testdir()
+    def test_7502_centos_postgres_user(self):
+        """ WHEN using a systemd-enabled CentOS 7, 
+            THEN we can create an image with an PostgreSql DB service 
+                 being installed and enabled.
+            Without a special startup.sh script or container-cmd 
+            one can just start the image and in the container
+            expecting that the service is started. Instead of a normal root-based
+            start we use a --user mode start here. """
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
+        if _python.endswith("python3"): self.skipTest("no python3 on centos")
+        testname=self.testname()
+        testport=self.testport()
+        name="centos-postgres"
+        images = IMAGES
+        image = self.local_image(CENTOS)
+        systemctl_py = _systemctl_py
+        logg.info("%s:%s %s", testname, testport, image)
+        psql = PSQL_TOOL
+        PG = "/var/lib/pgsql/data"
+        # WHEN
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name={testname} {image} sleep 200"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} yum install -y postgresql-server postgresql-utils"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} postgresql-setup initdb"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} sh -c \"sed -i -e 's/.*listen_addresses.*/listen_addresses = '\\\"'*'\\\"'/' {PG}/postgresql.conf\""
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} sh -c 'sed -i -e \"s/.*host.*ident/# &/\" {PG}/pg_hba.conf'"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} sh -c 'echo \"host all all 0.0.0.0/0 md5\" >> {PG}/pg_hba.conf'"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl start postgresql -vv"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} sh -c 'sleep 5; ps -ax'"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} sh -c \"echo 'CREATE USER testuser_11 LOGIN ENCRYPTED PASSWORD '\\\"'Testuser.11'\\\" | runuser -u postgres /usr/bin/psql\""
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} sh -c \"echo 'CREATE USER testuser_OK LOGIN ENCRYPTED PASSWORD '\\\"'Testuser.OK'\\\" | runuser -u postgres /usr/bin/psql\""
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl stop postgresql -vv"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl enable postgresql"
+        sh____(cmd.format(**locals()))
+        cmd = "docker commit -c 'CMD [\"/usr/bin/systemctl\"]'  {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker stop {testname}"
+        sx____(cmd.format(**locals()))
+        #
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run -d -p {testport}:5432 --name {testname} -u postgres {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} sleep 5"
+        sh____(cmd.format(**locals()))
+        # THEN
+        tmp = self.testdir(testname)
+        login = "export PGUSER=testuser_11; export PGPASSWORD=Testuser.11"
+        query = "SELECT rolname FROM pg_roles"
+        cmd = "{login}; {psql} -p {testport} -h 127.0.0.1 -d postgres -c '{query}' > {tmp}/{testname}.txt"
+        sh____(cmd.format(**locals()))
+        cmd = "grep testuser_ok {tmp}/{testname}.txt"
         sh____(cmd.format(**locals()))
         # CLEAN
         cmd = "docker stop {testname}"
