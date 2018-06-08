@@ -9130,7 +9130,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} start zza"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertNotEqual(end, 0)
         cmd = "{systemctl} start zza.service"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
@@ -11508,14 +11507,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_7502_centos_postgres_user(self):
+    def test_7502_centos_postgres_user_mode_extra(self):
         """ WHEN using a systemd-enabled CentOS 7, 
             THEN we can create an image with an PostgreSql DB service 
                  being installed and enabled.
             Without a special startup.sh script or container-cmd 
             one can just start the image and in the container
             expecting that the service is started. Instead of a normal root-based
-            start we use a --user mode start here. """
+            start we use a --user mode start here. But we do not use special
+            user-mode *.service files."""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
@@ -11570,6 +11570,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} sleep 5"
         sh____(cmd.format(**locals()))
+        ############ the PID-1 has been run in systemctl.py --user mode #####
         # THEN
         tmp = self.testdir(testname)
         login = "export PGUSER=testuser_11; export PGPASSWORD=Testuser.11"
@@ -11584,7 +11585,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rm --force {testname}"
         sh____(cmd.format(**locals()))
         cmd = "docker rmi {images}:{testname}"
-        sx____(cmd.format(**locals()))
+        # sx____(cmd.format(**locals()))
         self.rm_testdir()
     # @unittest.expectedFailure
     def test_8001_issue_1_start_mariadb_centos_7_0(self):
