@@ -48,19 +48,19 @@ _user_mode = False
 
 # common default paths
 _default_target = "multi-user.target"
-_sysd_system_folder1 = "/etc/systemd/system"
-_sysd_system_folder2 = "/var/run/systemd/system"
-_sysd_system_folder3 = "/usr/lib/systemd/system"
-_sysd_system_folder4 = "/lib/systemd/system"
-_sysd_system_folder9 = None
-_sysd_user_folder1 = "~/.config/systemd/user"
-_sysd_user_folder2 = "/etc/systemd/user"
-_sysd_user_folder3 = "~.local/share/systemd/user"
-_sysd_user_folder4 = "/usr/lib/systemd/user"
-_sysd_user_folder9 = None
-_sysv_init_folder1 = "/etc/init.d"
-_sysv_init_folder2 = "/var/run/init.d"
-_sysv_init_folder9 = None
+_system_folder1 = "/etc/systemd/system"
+_system_folder2 = "/var/run/systemd/system"
+_system_folder3 = "/usr/lib/systemd/system"
+_system_folder4 = "/lib/systemd/system"
+_system_folder9 = None
+_user_folder1 = "~/.config/systemd/user"
+_user_folder2 = "/etc/systemd/user"
+_user_folder3 = "~.local/share/systemd/user"
+_user_folder4 = "/usr/lib/systemd/user"
+_user_folder9 = None
+_init_folder1 = "/etc/init.d"
+_init_folder2 = "/var/run/init.d"
+_init_folder9 = None
 _preset_folder1 = "/etc/systemd/system-preset"
 _preset_folder2 = "/var/run/systemd/system-preset"
 _preset_folder3 = "/usr/lib/systemd/system-preset"
@@ -81,7 +81,6 @@ InitLoopSleep = 5
 ProcMaxDepth = 100
 MaxLockWait = None # equals DefaultMaximumTimeout
 
-_systemctl_lockfile = "/var/run/systemd/system"
 _notify_socket_folder = "/var/run/systemd" # alias /run/systemd
 _notify_socket_name = "notify" # NOTIFY_SOCKET="/var/run/systemd/notify"
 _pid_file_folder = "/var/run"
@@ -149,6 +148,18 @@ def os_getlogin():
     """ NOT using os.getlogin() """
     import pwd
     return pwd.getpwuid(os.geteuid()).pw_name
+
+def _var(path):
+    if not _user_mode:
+        return path
+    if path.startswith("/var"):
+        user = os_getlogin()
+        runtime = os.environ.get("XDG_RUNTIME_DIR", "/tmp/run-"+user)
+        if not os.path.isdir(runtime):
+            os.makedirs(runtime)
+            os.chmod(runtime, 0o700)
+        return path.replace("/var", runtime, 1)
+    return path
 
 def shutil_chown(filename, user = None, group = None):
     """ in python 3.3. there is shutil.chown """
@@ -466,11 +477,11 @@ class waitlock:
     def __init__(self, unit):
         self.unit = unit # currently unused
         self.opened = None
-        self.lockfolder = os_path(_root, _notify_socket_folder)
+        self.lockfolder = os_path(_root, _var(_notify_socket_folder))
         try:
             folder = self.lockfolder
             if not os.path.isdir(folder):
-                os.mkdir(folder)
+                os.makedirs(folder)
         except Exception as e:
             logg.warning("oops, %s", e)
     def __enter__(self):
@@ -510,9 +521,16 @@ def subprocess_wait(cmd, env=None, check = False, shell=False):
         raise Exception("command failed")
     return run
 def subprocess_waitpid(pid):
-    waitpid = collections.namedtuple("waitpid", ["pid", "returncode" ])
-    run_pid, run_returncode = os.waitpid(pid, 0)
-    return waitpid(run_pid, run_returncode)
+    waitpid = collections.namedtuple("waitpid", ["pid", "returncode", "signal" ])
+    run_pid, run_stat = os.waitpid(pid, 0)
+    return waitpid(run_pid, os.WEXITSTATUS(run_stat), os.WTERMSIG(run_stat))
+def subprocess_testpid(pid):
+    testpid = collections.namedtuple("testpid", ["pid", "returncode", "signal" ])
+    run_pid, run_stat = os.waitpid(pid, os.WNOHANG)
+    if run_pid:
+        return testpid(run_pid, os.WEXITSTATUS(run_stat), os.WTERMSIG(run_stat))
+    else:
+        return testpid(pid, None, 0)
 
 def time_to_seconds(text, maximum = None):
     if maximum is None:
@@ -670,7 +688,7 @@ class Systemctl:
         self._unit_property = _unit_property
         self._unit_type = _unit_type
         # some common constants that may be changed
-        self._notify_socket_folder = _notify_socket_folder
+        self._notify_socket_folder = _var(_notify_socket_folder)
         self._notify_socket_name = _notify_socket_name
         self._pid_file_folder = _pid_file_folder 
         self._journal_log_folder = _journal_log_folder
@@ -685,38 +703,38 @@ class Systemctl:
         self._default_target = _default_target
         self._user_mode = _user_mode
         self._user_getlogin = os_getlogin()
-    def sysd_user_folder(self):
-        for folder in self.sysd_user_folders():
+    def user_folder(self):
+        for folder in self.user_folders():
             if folder: return folder
         raise Exception("did not find any systemd/user folder")
-    def sysd_system_folder(self):
-        for folder in self.sysd_system_folders():
+    def system_folder(self):
+        for folder in self.system_folders():
             if folder: return folder
         raise Exception("did not find any systemd/system folder")
     def sysd_folders(self):
         """ if --user then these folders are preferred """
         if self.user_mode():
-            for folder in self.sysd_user_folders():
+            for folder in self.user_folders():
                 yield folder
         if True:
-            for folder in self.sysd_system_folders():
+            for folder in self.system_folders():
                 yield folder
-    def sysd_user_folders(self):
-        if _sysd_user_folder1: yield os.path.expanduser(_sysd_user_folder1)
-        if _sysd_user_folder2: yield os.path.expanduser(_sysd_user_folder2)
-        if _sysd_user_folder3: yield os.path.expanduser(_sysd_user_folder3)
-        if _sysd_user_folder4: yield os.path.expanduser(_sysd_user_folder4)
-        if _sysd_user_folder9: yield os.path.expanduser(_sysd_user_folder9)
-    def sysd_system_folders(self):
-        if _sysd_system_folder1: yield _sysd_system_folder1
-        if _sysd_system_folder2: yield _sysd_system_folder2
-        if _sysd_system_folder3: yield _sysd_system_folder3
-        if _sysd_system_folder4: yield _sysd_system_folder4
-        if _sysd_system_folder9: yield _sysd_system_folder9
-    def sysv_folders(self):
-        if _sysv_init_folder1: yield _sysv_init_folder1
-        if _sysv_init_folder2: yield _sysv_init_folder2
-        if _sysv_init_folder9: yield _sysv_init_folder9
+    def user_folders(self):
+        if _user_folder1: yield os.path.expanduser(_user_folder1)
+        if _user_folder2: yield os.path.expanduser(_user_folder2)
+        if _user_folder3: yield os.path.expanduser(_user_folder3)
+        if _user_folder4: yield os.path.expanduser(_user_folder4)
+        if _user_folder9: yield os.path.expanduser(_user_folder9)
+    def system_folders(self):
+        if _system_folder1: yield _system_folder1
+        if _system_folder2: yield _system_folder2
+        if _system_folder3: yield _system_folder3
+        if _system_folder4: yield _system_folder4
+        if _system_folder9: yield _system_folder9
+    def init_folders(self):
+        if _init_folder1: yield _init_folder1
+        if _init_folder2: yield _init_folder2
+        if _init_folder9: yield _init_folder9
     def preset_folders(self):
         if _preset_folder1: yield _preset_folder1
         if _preset_folder2: yield _preset_folder2
@@ -762,7 +780,7 @@ class Systemctl:
         """ reads all init.d files, returns the first filename when unit is a '.service' """
         if self._file_for_unit_sysv is None:
             self._file_for_unit_sysv = {}
-            for folder in self.sysv_folders():
+            for folder in self.init_folders():
                 if not folder: 
                     continue
                 if self._root:
@@ -1078,7 +1096,7 @@ class Systemctl:
         return pid_file or def_file
     def default_pid_file_from(self, conf): # -> text
         """ default file pattern where to store a pid """
-        folder = self._pid_file_folder
+        folder = _var(self._pid_file_folder)
         if self._root:
             folder = os_path(self._root, folder)
         filename = "%s.pid" % conf.name()
@@ -1121,7 +1139,7 @@ class Systemctl:
         # this not a real setting.
     def default_status_file(self, conf): # -> text
         """ default file pattern where to store a status mark """
-        folder = self._pid_file_folder
+        folder = _var(self._pid_file_folder)
         if self._root:
             folder = os_path(self._root, folder)
         name = "%s.status" % conf.name()
@@ -1396,38 +1414,10 @@ class Systemctl:
         for part in shlex.split(cmd3):
             newcmd += [ re.sub("[$][{](\w+)[}]", lambda m: get_env2(m), part) ]
         return newcmd
-    def sudo_from(self, conf):
-        """ calls runuser with a (non-priviledged) user """
-        runuser = conf.data.get("Service", "User", "")
-        rungroup = conf.data.get("Service", "Group", "")
-        sudo = []
-        if os.geteuid() == 0:
-            bin_runuser = "/usr/sbin/runuser"
-            if os.path.isfile("/sbin/runuser"):
-                bin_runuser = "/sbin/runuser" # @$%! ubuntu
-            if runuser and rungroup:
-                sudo = [bin_runuser, "-g", rungroup, "-u", runuser, "--"]
-            elif runuser:
-                sudo = [bin_runuser, "-u", runuser, "--"]
-            elif rungroup:
-                sudo = [bin_runuser, "-g", rungroup, "--"]
-        elif os.path.exists("/usr/bin/sudo"):
-            if runuser and rungroup:
-                sudo = ["/usr/bin/sudo", "-n", "-H", "-g", rungroup, "-u", runuser, "--"]
-            elif runuser:
-                sudo = ["/usr/bin/sudo", "-n", "-H", "-u", runuser, "--"]
-            elif rungroup:
-                sudo = ["/usr/bin/sudo", "-n", "-H", "-g", rungroup, "--"]
-            if sudo and not self._no_ask_password:
-                logg.warning("non-root execution, better use --no-ask-password")
-        else:
-            if runuser or rungroup:
-               logg.error("can not find sudo but it is required for runuser")
-        return sudo
     def open_journal_log(self, conf):
         name = conf.filename()
         if name:
-            log_folder = self._journal_log_folder
+            log_folder = _var(self._journal_log_folder)
             if self._root:
                 log_folder = os_path(self._root, log_folder)
             log_file = name.replace(os.path.sep,".") + ".log"
@@ -1460,11 +1450,10 @@ class Systemctl:
         """ creates a notify-socket for the (non-privileged) user """
         NotifySocket = collections.namedtuple("NotifySocket", ["socket", "socketfile" ])
         runuser = conf.data.get("Service", "User", "")
-        sudo = ""
         if runuser and os.geteuid() != 0:
             logg.error("can not exec notify-service from non-root caller")
             return None
-        notify_socket_folder = self._notify_socket_folder
+        notify_socket_folder = _var(self._notify_socket_folder)
         if self._root:
             notify_socket_folder = os_path(self._root, notify_socket_folder)
         notify_socket = os.path.join(notify_socket_folder, self._notify_socket_name)
@@ -1581,9 +1570,10 @@ class Systemctl:
         if not conf: return
         if self.syntax_check(conf) > 100: return False
         timeout = self.get_TimeoutStartSec(conf)
+        doRemainAfterExit = to_bool(conf.data.get("Service", "RemainAfterExit", "no"))
         runs = conf.data.get("Service", "Type", "simple").lower()
-        sudo = self.sudo_from(conf)
         env = self.get_env(conf)
+        self.exec_check_service(conf, env, "Exec") # all...
         # for StopPost on failure:
         returncode = 0
         service_result = "success"
@@ -1593,8 +1583,13 @@ class Systemctl:
             for cmd in conf.data.getlist("Service", "ExecStartPre", []):
                 check, cmd = checkstatus(cmd)
                 newcmd = self.exec_cmd(cmd, env, conf)
-                logg.info(" pre-start %s", shell_cmd(sudo+newcmd))
-                run = subprocess_wait(sudo+newcmd, env)
+                logg.info(" pre-start %s", shell_cmd(newcmd))
+                forkpid = os.fork()
+                if not forkpid:
+                    self.execve_from(conf, newcmd, env)
+                run = subprocess_waitpid(forkpid)
+                logg.debug(" pre-start done (%s) <-%s>",
+                    run.returncode or "OK", run.signal or "")
         if runs in [ "sysv" ]:
             status_file = self.status_file_from(conf)
             if True:
@@ -1603,14 +1598,14 @@ class Systemctl:
                 env["SYSTEMCTL_SKIP_REDIRECT"] = "yes"
                 newcmd = self.exec_cmd(cmd, env, conf)
                 logg.info("%s start %s", runs, shell_cmd(newcmd))
-                # run = subprocess_wait(sudo+newcmd, env)
-                child_pid = os.fork()
-                if not child_pid: # pragma: no cover
+                forkpid = os.fork()
+                if not forkpid: # pragma: no cover
                     os.setsid() # detach child process from parent
                     self.execve_from(conf, newcmd, env)
-                run = subprocess_waitpid(child_pid)
+                run = subprocess_waitpid(forkpid)
                 self.set_status_from(conf, "ExecMainCode", run.returncode)
-                logg.info("%s start done %s", runs, run.returncode or "OK")
+                logg.info("%s start done (%s) <-%s>", runs, 
+                    run.returncode or "OK", run.signal or "")
                 active = run.returncode and "failed" or "active"
                 self.write_status_from(conf, AS=active )
                 return True
@@ -1623,18 +1618,19 @@ class Systemctl:
                 check, cmd = checkstatus(cmd)
                 newcmd = self.exec_cmd(cmd, env, conf)
                 logg.info("%s start %s", runs, shell_cmd(newcmd))
-                # run = subprocess_wait(sudo+newcmd, env)
-                child_pid = os.fork()
-                if not child_pid: # pragma: no cover
+                forkpid = os.fork()
+                if not forkpid: # pragma: no cover
                     os.setsid() # detach child process from parent
                     self.execve_from(conf, newcmd, env)
-                run = subprocess_waitpid(child_pid)
+                run = subprocess_waitpid(forkpid)
                 if run.returncode and check: 
                     returncode = run.returncode
                     service_result = "failed"
-                    logg.error("%s start %s (%s)", runs, service_result, returncode)
+                    logg.error("%s start %s (%s) <-%s>", runs, service_result, 
+                        run.returncode or "OK", run.signal or "")
                     break
-                logg.info("%s start done (%s)", runs, returncode)
+                logg.info("%s start done (%s) <-%s>", runs, 
+                    run.returncode or "OK", run.signal or "")
             if True:
                 self.set_status_from(conf, "ExecMainCode", returncode)
                 active = returncode and "failed" or "active"
@@ -1645,19 +1641,35 @@ class Systemctl:
             if self.is_active_pid(pid):
                 logg.warning("the service is already running on PID %s", pid)
                 return True
-            if not os.fork(): # pragma: no cover
-                os.setsid() # detach child process from parent
-                sys.exit(self.exec_start_from(conf, env)) # and exit after call
-            else:
-                # parent
-                pid = self.wait_pid_file_from(conf)
-                logg.info("%s start done PID %s", runs, pid)
-                time.sleep(1) # give it another second to come up
+            if doRemainAfterExit:
+                self.write_status_from(conf, AS="active")
+            cmdlist = conf.data.getlist("Service", "ExecStart", [])
+            for idx, cmd in enumerate(cmdlist):
+                logg.debug("ExecStart[%s]: %s", idx, cmd)
+            for cmd in cmdlist:
                 pid = self.read_mainpid_from(conf, "")
-                if pid:
-                   env["MAINPID"] = str(pid)
-                else:
-                   service_result = "timeout" # "could not start service"
+                env["MAINPID"] = str(pid)
+                newcmd = self.exec_cmd(cmd, env, conf)
+                logg.info("%s start %s", runs, shell_cmd(newcmd))
+                forkpid = os.fork()
+                if not forkpid: # pragma: no cover
+                    os.setsid() # detach child process from parent
+                    self.execve_from(conf, newcmd, env)
+                self.write_mainpid_from(conf, forkpid)
+                logg.info("%s started PID %s", runs, forkpid)
+                env["MAINPID"] = str(forkpid)
+                time.sleep(1)
+                run = subprocess_testpid(forkpid)
+                if run.returncode is not None:
+                    logg.info("%s stopped PID %s (%s) <-%s>", runs, run.pid, 
+                        run.returncode or "OK", run.signal or "")
+                    if doRemainAfterExit:
+                        self.set_status_from(conf, "ExecMainCode", run.returncode)
+                        active = run.returncode and "failed" or "active"
+                        self.write_status_from(conf, AS=active)
+                    if run.returncode:
+                        service_result = "failed"
+                        break
         elif runs in [ "notify" ]:
             # "notify" is the same as "simple" but we create a $NOTIFY_SOCKET 
             # and wait for startup completion by checking the socket messages
@@ -1669,12 +1681,40 @@ class Systemctl:
             if notify:
                 env["NOTIFY_SOCKET"] = notify.socketfile
                 logg.debug("use NOTIFY_SOCKET=%s", notify.socketfile)
-            if not os.fork(): # pragma: no cover
-                os.setsid() # detach child process from parent
-                sys.exit(self.exec_start_from(conf, env)) # and exit after call
-            else:
-                # parent
-                mainpid = self.wait_pid_file_from(conf) # fork is running
+            if doRemainAfterExit:
+                self.write_status_from(conf, AS="active")
+            cmdlist = conf.data.getlist("Service", "ExecStart", [])
+            for idx, cmd in enumerate(cmdlist):
+                logg.debug("ExecStart[%s]: %s", idx, cmd)
+            mainpid = None
+            for cmd in cmdlist:
+                mainpid = self.read_mainpid_from(conf, "")
+                env["MAINPID"] = str(mainpid)
+                newcmd = self.exec_cmd(cmd, env, conf)
+                logg.info("%s start %s", runs, shell_cmd(newcmd))
+                forkpid = os.fork()
+                if not forkpid: # pragma: no cover
+                    os.setsid() # detach child process from parent
+                    self.execve_from(conf, newcmd, env)
+                # via NOTIFY # self.write_mainpid_from(conf, forkpid)
+                logg.info("%s started PID %s", runs, forkpid)
+                mainpid = forkpid
+                self.write_mainpid_from(conf, mainpid)
+                env["MAINPID"] = str(mainpid)
+                time.sleep(1)
+                run = subprocess_testpid(forkpid)
+                if run.returncode is not None:
+                    logg.info("%s stopped PID %s (%s) <-%s>", runs, run.pid, 
+                        run.returncode or "OK", run.signal or "")
+                    if doRemainAfterExit:
+                        self.set_status_from(conf, "ExecMainCode", run.returncode or 0)
+                        active = run.returncode and "failed" or "active"
+                        self.write_status_from(conf, AS=active)
+                    if run.returncode:
+                        service_result = "failed"
+                        break
+            if service_result in [ "success" ] and mainpid:
+                logg.debug("okay, wating on socket for %ss", timeout)
                 results = self.wait_notify_socket(notify, timeout, mainpid)
                 if "MAINPID" in results:
                     new_pid = results["MAINPID"]
@@ -1695,15 +1735,18 @@ class Systemctl:
                 newcmd = self.exec_cmd(cmd, env, conf)
                 if not newcmd: continue
                 logg.info("%s start %s", runs, shell_cmd(newcmd))
-                child_pid = os.fork()
-                if not child_pid: # pragma: no cover
+                forkpid = os.fork()
+                if not forkpid: # pragma: no cover
                     os.setsid() # detach child process from parent
                     self.execve_from(conf, newcmd, env)
-                run = subprocess_waitpid(child_pid)
+                logg.info("%s started PID %s", runs, forkpid)
+                run = subprocess_waitpid(forkpid)
                 if run.returncode and check:
                     returncode = run.returncode
                     service_result = "failed"
-            if pid_file:
+                logg.info("%s stopped PID %s (%s) <-%s>", runs, run.pid, 
+                    run.returncode or "OK", run.signal or "")
+            if pid_file and service_result in [ "success" ]:
                 pid = self.wait_pid_file(pid_file) # application PIDFile
                 logg.info("%s start done PID %s [%s]", runs, pid, pid_file)
                 if pid:
@@ -1728,25 +1771,30 @@ class Systemctl:
             for cmd in conf.data.getlist("Service", "ExecStopPost", []):
                 check, cmd = checkstatus(cmd)
                 newcmd = self.exec_cmd(cmd, env, conf)
-                logg.info("post-fail %s", shell_cmd(sudo+newcmd))
-                run = subprocess_wait(sudo+newcmd, env)
+                logg.info("post-fail %s", shell_cmd(newcmd))
+                forkpid = os.fork()
+                if not forkpid:
+                    self.execve_from(conf, newcmd, env)
+                run = subprocess_waitpid(forkpid)
+                logg.debug("post-fail done (%s) <-%s>", 
+                    run.returncode or "OK", run.signal or "")
             return False
         else:
             for cmd in conf.data.getlist("Service", "ExecStartPost", []):
                 check, cmd = checkstatus(cmd)
                 newcmd = self.exec_cmd(cmd, env, conf)
-                logg.info("post-start %s", shell_cmd(sudo+newcmd))
-                run = subprocess_wait(sudo+newcmd, env)
+                logg.info("post-start %s", shell_cmd(newcmd))
+                forkpid = os.fork()
+                if not forkpid:
+                    self.execve_from(conf, newcmd, env)
+                run = subprocess_waitpid(forkpid)
+                logg.debug("post-start done (%s) <-%s>", 
+                    run.returncode or "OK", run.signal or "")
             return True
-
     def execve_from(self, conf, cmd, env):
         """ this code is commonly run in a child process // returns exit-code"""
         runs = conf.data.get("Service", "Type", "simple").lower()
         logg.debug("%s process for %s", runs, conf.filename())
-        #
-        # os.setsid() # detach from parent // required to be done in caller code 
-        #
-        returncode = None
         inp = open("/dev/zero")
         out = self.open_journal_log(conf)
         os.dup2(inp.fileno(), sys.stdin.fileno())
@@ -1756,65 +1804,18 @@ class Systemctl:
         rungroup = conf.data.get("Service", "Group", "")
         shutil_setuid(runuser, rungroup)
         self.chdir_workingdir(conf, check = False)
-        os.execve(cmd[0], cmd, env)
-
+        try:
+            os.execve(cmd[0], cmd, env)
+        except Exception, e:
+            logg.error("(%s): %s", shell_cmd(cmd), e)
+            sys.exit(1)
     def exec_start_unit(self, unit):
         """ helper function to test the code that is normally forked off """
         conf = self.load_unit_conf(unit)
         env = self.get_env(conf)
-        return self.exec_start_from(conf, env)
-    def exec_start_from(self, conf, env):
-        """ this code is commonly run in a child process // returns exit-code"""
-        runs = conf.data.get("Service", "Type", "simple").lower()
-        logg.debug("%s process for %s", runs, conf.filename())
-        #
-        # os.setsid() # detach from parent // required to be done in caller code 
-        #
-        returncode = None
-        status_file = self.status_file_from(conf)
-        pid_file = self.default_pid_file_from(conf)
-        inp = open("/dev/zero")
-        out = self.open_journal_log(conf)
-        os.dup2(inp.fileno(), sys.stdin.fileno())
-        os.dup2(out.fileno(), sys.stdout.fileno())
-        os.dup2(out.fileno(), sys.stderr.fileno())
-        doRemainAfterExit = to_bool(conf.data.get("Service", "RemainAfterExit", "no"))
-        runuser = conf.data.get("Service", "User", "")
-        rungroup = conf.data.get("Service", "Group", "")
-        shutil_truncate(pid_file)
-        shutil_truncate(status_file)
-        shutil_chown(pid_file, runuser, rungroup)
-        shutil_chown(status_file, runuser, rungroup)
-        shutil_setuid(runuser, rungroup)
-        self.chdir_workingdir(conf, check = False)
-        if doRemainAfterExit:
-            status_file = self.status_file_from(conf)
-            if True:
-                self.write_status_from(conf, AS="active")
-        cmdlist = conf.data.getlist("Service", "ExecStart", [])
-        for idx, cmd in enumerate(cmdlist):
-            logg.debug("ExecStart[%s]: %s", idx, cmd)
-        for cmd in cmdlist:
-            pid = self.read_mainpid_from(conf, "")
-            env["MAINPID"] = str(pid)
+        for cmd in conf.data.getlist("Service", "ExecStart", []):
             newcmd = self.exec_cmd(cmd, env, conf)
-            logg.info("%s start %s", runs, shell_cmd(newcmd))
-            run = subprocess.Popen(newcmd, env=env, close_fds=True, 
-                stdin=inp, stdout=out, stderr=out)
-            self.write_mainpid_from(conf, run.pid)
-            logg.info("%s started PID %s", runs, run.pid)
-            run.wait()
-            logg.info("%s stopped PID %s EXIT %s", runs, run.pid, run.returncode)
-            returncode = run.returncode
-            # pid = self.read_mainpid_from(conf, "")
-            # if str(pid) == str(run.pid):
-            #     self.write_mainpid_from(conf, "") # set empty
-        logg.debug("returncode %s", returncode)
-        if doRemainAfterExit:
-            self.set_status_from(conf, "ExecMainCode", returncode)
-            active = returncode and "failed" or "active"
-            self.write_status_from(conf, AS=active)
-        return returncode
+            return self.execve_from(conf, newcmd, env)
     def stop_modules(self, *modules):
         """ [UNIT]... -- stop these units """
         found_all = True
@@ -1856,8 +1857,8 @@ class Systemctl:
         if self.syntax_check(conf) > 100: return False
         timeout = self.get_TimeoutStopSec(conf)
         runs = conf.data.get("Service", "Type", "simple").lower()
-        sudo = self.sudo_from(conf)
         env = self.get_env(conf)
+        self.exec_check_service(conf, env, "ExecStop")
         returncode = 0
         service_result = "success"
         if runs in [ "sysv" ]:
@@ -1867,8 +1868,11 @@ class Systemctl:
                 cmd = "'%s' stop" % exe
                 env["SYSTEMCTL_SKIP_REDIRECT"] = "yes"
                 newcmd = self.exec_cmd(cmd, env, conf)
-                logg.info("%s stop %s", runs, shell_cmd(sudo+newcmd))
-                run = subprocess_wait(sudo+newcmd, env)
+                logg.info("%s stop %s", runs, shell_cmd(newcmd))
+                forkpid = os.fork()
+                if not forkpid:
+                    self.execve_from(conf, newcmd, env)
+                run = subprocess_waitpid(forkpid)
                 if run.returncode:
                     self.set_status_from(conf, "ExecStopCode", run.returncode)
                     self.write_status_from(conf, AS="failed")
@@ -1884,8 +1888,11 @@ class Systemctl:
                 check, cmd = checkstatus(cmd)
                 logg.debug("{env} %s", env)
                 newcmd = self.exec_cmd(cmd, env, conf)
-                logg.info("%s stop %s", runs, shell_cmd(sudo+newcmd))
-                run = subprocess_wait(sudo+newcmd, env)
+                logg.info("%s stop %s", runs, shell_cmd(newcmd))
+                forkpid = os.fork()
+                if not forkpid:
+                    self.execve_from(conf, newcmd, env)
+                run = subprocess_waitpid(forkpid)
                 if run.returncode and check: 
                     returncode = run.returncode
                     service_result = "failed"
@@ -1910,8 +1917,11 @@ class Systemctl:
                 check, cmd = checkstatus(cmd)
                 env["MAINPID"] = str(self.read_mainpid_from(conf, ""))
                 newcmd = self.exec_cmd(cmd, env, conf)
-                logg.info("%s stop %s", runs, shell_cmd(sudo+newcmd))
-                run = subprocess_wait(sudo+newcmd, env)
+                logg.info("%s stop %s", runs, shell_cmd(newcmd))
+                forkpid = os.fork()
+                if not forkpid:
+                    self.execve_from(conf, newcmd, env)
+                run = subprocess_waitpid(forkpid)
                 # self.write_mainpid_from(conf, run.pid) # no ExecStop
                 if run.returncode and check:
                     returncode = run.returncode
@@ -1941,8 +1951,11 @@ class Systemctl:
                 check, cmd = checkstatus(cmd)
                 logg.debug("{env} %s", env)
                 newcmd = self.exec_cmd(cmd, env, conf)
-                logg.info("fork stop %s", shell_cmd(sudo+newcmd))
-                run = subprocess_wait(sudo+newcmd, env)
+                logg.info("fork stop %s", shell_cmd(newcmd))
+                forkpid = os.fork()
+                if not forkpid:
+                    self.execve_from(conf, newcmd, env)
+                run = subprocess_waitpid(forkpid)
                 if run.returncode and check:
                     returncode = run.returncode
                     service_result = "failed"
@@ -1973,8 +1986,13 @@ class Systemctl:
             for cmd in conf.data.getlist("Service", "ExecStopPost", []):
                 check, cmd = checkstatus(cmd)
                 newcmd = self.exec_cmd(cmd, env, conf)
-                logg.info("post-stop %s", shell_cmd(sudo+newcmd))
-                run = subprocess_wait(sudo+newcmd, env)
+                logg.info("post-stop %s", shell_cmd(newcmd))
+                forkpid = os.fork()
+                if not forkpid:
+                    self.execve_from(conf, newcmd, env)
+                run = subprocess_waitpid(forkpid)
+                logg.debug("post-stop done (%s) <-%s>", 
+                    run.returncode or "OK", run.signal or "")
         return service_result == "success"
     def wait_vanished_pid(self, pid, timeout):
         if not pid:
@@ -2023,8 +2041,8 @@ class Systemctl:
         if not conf: return
         if self.syntax_check(conf) > 100: return False
         runs = conf.data.get("Service", "Type", "simple").lower()
-        sudo = self.sudo_from(conf)
         env = self.get_env(conf)
+        self.exec_check_service(conf, env, "ExecReload")
         if runs in [ "sysv" ]:
             status_file = self.status_file_from(conf)
             if True:
@@ -2032,8 +2050,11 @@ class Systemctl:
                 cmd = "'%s' reload" % exe
                 env["SYSTEMCTL_SKIP_REDIRECT"] = "yes"
                 newcmd = self.exec_cmd(cmd, env, conf)
-                logg.info("%s reload %s", runs, shell_cmd(sudo+newcmd))
-                run = subprocess_wait(sudo+newcmd, env)
+                logg.info("%s reload %s", runs, shell_cmd(newcmd))
+                forkpid = os.fork()
+                if not forkpid:
+                    self.execve_from(conf, newcmd, env)
+                run = subprocess_waitpid(forkpid)
                 self.set_status_from(conf, "ExecReloadCode", run.returncode)
                 if run.returncode:
                     self.write_status_from(conf, AS="failed")
@@ -2049,8 +2070,11 @@ class Systemctl:
                 env["MAINPID"] = str(self.read_mainpid_from(conf, ""))
                 check, cmd = checkstatus(cmd)
                 newcmd = self.exec_cmd(cmd, env, conf)
-                logg.info("%s reload %s", runs, shell_cmd(sudo+newcmd))
-                run = subprocess_wait(sudo+newcmd, env)
+                logg.info("%s reload %s", runs, shell_cmd(newcmd))
+                forkpid = os.fork()
+                if not forkpid:
+                    self.execve_from(conf, newcmd, env)
+                run = subprocess_waitpid(forkpid)
                 if check and run.returncode: raise Exception("ExecReload")
             self.sleep()
             return True
@@ -2686,19 +2710,19 @@ class Systemctl:
         return conf.data.get("Install", "WantedBy", default, True)
     def enablefolders(self, wanted):
         if self.user_mode():
-            for folder in self.sysd_user_folders():
+            for folder in self.user_folders():
                  yield self.default_enablefolder(wanted, folder)
         if True:
-            for folder in self.sysd_system_folders():
+            for folder in self.system_folders():
                  yield self.default_enablefolder(wanted, folder)
     def enablefolder(self, wanted = None):
         if self.user_mode():
-            systemd_user = self.systemd_user_folder()
-            return self.default_enablefolder(wanted, systemd_user)
+            user_folder = self.user_folder()
+            return self.default_enablefolder(wanted, user_folder)
         else:
             return self.default_enablefolder(wanted)
     def default_enablefolder(self, wanted = None, basefolder = None):
-        basefolder = basefolder or self.sysd_system_folder()
+        basefolder = basefolder or self.system_folder()
         if not wanted: 
             return wanted
         if not wanted.endswith(".wants"):
@@ -2715,6 +2739,7 @@ class Systemctl:
                 found_all = False
                 continue
             for unit in matched:
+                logg.info("matched %s", unit) #++
                 if unit not in units:
                     units += [ unit ]
         return self.enable_units(units) and found_all
@@ -2732,7 +2757,14 @@ class Systemctl:
             logg.error("Unit %s could not be found.", unit)
             return False
         if self.is_sysv_file(unit_file):
+            if self.user_mode():
+                logg.error("Initscript %s not for --user mode", unit)
+                return False
             return self.enable_unit_sysv(unit_file)
+        conf = self.get_unit_conf(unit)
+        if self.not_user_conf(conf):
+            logg.error("Unit %s not for --user mode", unit)
+            return False
         wanted = self.wanted_from(self.get_unit_conf(unit))
         if not wanted: 
             return False # "static" is-enabled
@@ -2820,7 +2852,14 @@ class Systemctl:
             logg.error("Unit %s could not be found.", unit)
             return False
         if self.is_sysv_file(unit_file):
+            if self.user_mode():
+                logg.error("Initscript %s not for --user mode", unit)
+                return False
             return self.disable_unit_sysv(unit_file)
+        conf = self.get_unit_conf(unit)
+        if self.not_user_conf(conf):
+            logg.error("Unit %s not for --user mode", unit)
+            return False
         wanted = self.wanted_from(self.get_unit_conf(unit))
         if not wanted:
             return False # "static" is-enabled
@@ -3174,6 +3213,61 @@ class Systemctl:
                 logg.error(" %s: Failed to load environment files: %s", unit, env_file)
                 errors += 101
         return errors
+    def exec_check_service(self, conf, env, exectype = ""):
+        if not conf:
+            return True
+        if not conf.data.has_section("Service"):
+            return True #pragma: no cover
+        haveType = conf.data.get("Service", "Type", "simple")
+        if haveType in [ "sysv" ]:
+            return True # we don't care about that
+        abspath = 0
+        notexists = 0
+        for execs in [ "ExecStartPre", "ExecStart", "ExecStartPost", "ExecStop", "ExecStopPost", "ExecReload" ]:
+            if not execs.startswith(exectype):
+                continue
+            for cmd in conf.data.getlist("Service", execs, []):
+                check, cmd = checkstatus(cmd)
+                newcmd = self.exec_cmd(cmd, env, conf)
+                if not newcmd:
+                    continue
+                exe = newcmd[0]
+                if not exe:
+                    continue
+                if exe[0] != "/":
+                    logg.error(" Exec is not an absolute path:  %s=%s", execs, cmd)
+                    abspath += 1
+                if not os.path.isfile(exe):
+                    logg.error(" Exec command does not exist: (%s) %s", execs, exe)
+                    notexists += 1
+                    newexe1 = os.path.join("/usr/bin", exe)
+                    newexe2 = os.path.join("/bin", exe)
+                    if os.path.exists(newexe1):
+                        logg.error(" but this does exist: %s  %s", " " * len(execs), newexe1)
+                    elif os.path.exists(newexe2):
+                        logg.error(" but this does exist: %s      %s", " " * len(execs), newexe2)
+        if not abspath and not notexists:
+            return True
+        if True:
+            filename = conf.filename()
+            if len(filename) > 45: filename = "..." + filename[-42:]
+            logg.error(" !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+            logg.error(" Found %s problems in %s", abspath + notexists, filename)
+            time.sleep(1)
+            if abspath:
+                logg.error(" The SystemD commands must always be absolute paths by definition.")
+                time.sleep(1)
+                logg.error(" Earlier versions of systemctl.py did use a subshell thus using $PATH")
+                time.sleep(1)
+                logg.error(" however newer versions use execve just like the real SystemD daemon")
+                time.sleep(1)
+                logg.error(" so that your docker-only service scripts may start to fail suddenly.")
+                time.sleep(1)
+            if notexists:
+                logg.error(" Now %s executable paths were not found in the current environment.", notexists)
+                time.sleep(1)
+            logg.error(" !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        return False
     def show_modules(self, *modules):
         """ [PATTERN]... -- Show properties of one or more units
            Show properties of one or more units (or the manager itself).
@@ -3276,7 +3370,7 @@ class Systemctl:
         logg.debug("check for default user services")
         default_target = default_target or self._default_target
         default_services = []
-        for basefolder in self.sysd_user_folders():
+        for basefolder in self.user_folders():
             if not basefolder:
                 continue
             folder = self.default_enablefolder(default_target, basefolder)
@@ -3290,7 +3384,7 @@ class Systemctl:
                         continue # ignore
                     if unit.endswith(".service"):
                         default_services.append(unit)
-        for basefolder in self.sysd_system_folders():
+        for basefolder in self.system_folders():
             if not basefolder:
                 continue
             folder = self.default_enablefolder(default_target, basefolder)
@@ -3313,7 +3407,7 @@ class Systemctl:
         logg.debug("check for default system services")
         default_target = default_target or self._default_target
         default_services = []
-        for basefolder in self.sysd_system_folders():
+        for basefolder in self.system_folders():
             if not basefolder:
                 continue
             folder = self.default_enablefolder(default_target, basefolder)
@@ -3770,8 +3864,11 @@ if __name__ == "__main__":
         _user_mode = False # override --user
     #
     if _root:
-        _systemctl_debug_log = os_path(_root, _systemctl_debug_log)
-        _systemctl_extra_log = os_path(_root, _systemctl_extra_log)
+        _systemctl_debug_log = os_path(_root, _var(_systemctl_debug_log))
+        _systemctl_extra_log = os_path(_root, _var(_systemctl_extra_log))
+    elif _user_mode:
+        _systemctl_debug_log = _var(_systemctl_debug_log)
+        _systemctl_extra_log = _var(_systemctl_extra_log)
     if os.path.exists(_systemctl_extra_log):
         loggfile = logging.FileHandler(_systemctl_extra_log)
         loggfile.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
