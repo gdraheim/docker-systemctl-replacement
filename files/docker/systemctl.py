@@ -1806,7 +1806,7 @@ class Systemctl:
         self.chdir_workingdir(conf, check = False)
         try:
             os.execve(cmd[0], cmd, env)
-        except Exception, e:
+        except Exception as e:
             logg.error("(%s): %s", shell_cmd(cmd), e)
             sys.exit(1)
     def exec_start_unit(self, unit):

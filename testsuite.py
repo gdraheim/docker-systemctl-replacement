@@ -11507,7 +11507,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_7502_centos_postgres_user_mode_extra(self):
+    def test_7502_centos_postgres_user_mode_container(self):
         """ WHEN using a systemd-enabled CentOS 7, 
             THEN we can create an image with an PostgreSql DB service 
                  being installed and enabled.
