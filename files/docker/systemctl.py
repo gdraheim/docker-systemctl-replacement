@@ -154,7 +154,7 @@ def _var(path):
         return path
     if path.startswith("/var"):
         user = os_getlogin()
-        runtime = os.environ.get("XDG_RUNTIME_DIR", "/tmp/"+user)
+        runtime = os.environ.get("XDG_RUNTIME_DIR", "/tmp/run-"+user)
         if not os.path.isdir(runtime):
             os.makedirs(runtime)
             os.chmod(runtime, 0o700)
