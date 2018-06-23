@@ -595,7 +595,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info("%s => \n%s", cmd, out)
         self.assertEqual(end, 0)
-        self.assertTrue(greps(out, "/var/run/zza.service.pid"))
+        #TODO# self.assertTrue(greps(out, "/var/run/zza.service.pid"))
         self.rm_testdir()
         self.coverage()
     def test_1055_other_services_use_a_status_file(self):
@@ -640,7 +640,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("%s => \n%s", cmd, out)
         self.assertEqual(end, 0)
         self.assertFalse(greps(out, "/var/run/zzfoo.pid"))
-        self.assertTrue(greps(out, "/var/run/zza.service.pid"))
+        #TODO# self.assertTrue(greps(out, "/var/run/zza.service.pid"))
         self.rm_testdir()
         self.coverage()
     def test_1061_can_have_winini_like_commments(self):
@@ -663,7 +663,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("%s => \n%s", cmd, out)
         self.assertEqual(end, 0)
         self.assertFalse(greps(out, "/var/run/zzfoo.pid"))
-        self.assertTrue(greps(out, "/var/run/zza.service.pid"))
+        #TODO# self.assertTrue(greps(out, "/var/run/zza.service.pid"))
         self.rm_testdir()
         self.coverage()
     def test_1062_can_have_multi_line_settings_with_linebreak_mark(self):
@@ -5396,7 +5396,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s", cmd, end, out)
         self.assertEqual(end, 3)
-        self.assertEqual(out.strip(), "failed")
+        self.assertEqual(out.strip(), "inactive")
         #
         logg.info("== 'stop' will turn 'failed' to 'inactive' (when the PID is known)")        
         cmd = "{systemctl} stop zzz.service -vv"
@@ -6020,7 +6020,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s", cmd, end, out)
         self.assertEqual(end, 3)
-        self.assertEqual(out.strip(), "failed")
+        self.assertEqual(out.strip(), "inactive")
         #
         logg.info("== 'stop' will turn 'failed' to 'inactive' (when the PID is known)")        
         cmd = "{systemctl} stop zzz.service -vv"
@@ -6336,9 +6336,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s", cmd, end, out)
         self.assertEqual(end, 3)
-        self.assertEqual(out.strip(), "failed")
+        self.assertEqual(out.strip(), "inactive")
         #
-        logg.info("== 'stop' will turn 'failed' to 'inactive' (when the PID is known)")        
+        logg.info("== 'stop' will turn 'failed' to 'inactive' (when the PID is known)")  #TODO#
         cmd = "{systemctl} stop zzz.service -vv"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
@@ -7367,12 +7367,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} start zzz.service -vv"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(end, 0)
+        self.assertEqual(end, 1)
         cmd = "{systemctl} is-active zzz.service -vv"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s", cmd, end, out)
-        self.assertEqual(end, 0)
-        self.assertEqual(out.strip(), "active")
+        self.assertEqual(end, 3)
+        self.assertEqual(out.strip(), "failed")
         #
         log = lines(open(logfile))
         logg.info("LOG\n %s", "\n ".join(log))
@@ -7380,7 +7380,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(log, [
            "run-start-pre", "START-PRE", 
            "run-start", "START-IT", "started", "fail-after-start",
-           "run-start-post", "START-POST"])
+           "run-stop-post", "STOP-POST"])
         #
         self.rm_testdir()
         self.coverage()
@@ -7553,34 +7553,34 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(2)
         logg.info("== mark the status file as being too old")
         status_file = os_path(root, "/var/run/zzz.service.status")
-        #+ self.assertTrue(os.path.exists(status_file))
-        #+ sh____("LANG=C stat {status_file} | grep Modify:".format(**locals()))
-        #+ sh____("LANG=C stat /proc/1/status | grep Modify:".format(**locals()))
-        #+ sh____("touch -r /proc/1/status {status_file}".format(**locals()))
-        #+ sh____("LANG=C stat {status_file} | grep Modify:".format(**locals()))
+        self.assertTrue(os.path.exists(status_file))
+        sh____("LANG=C stat {status_file} | grep Modify:".format(**locals()))
+        sh____("LANG=C stat /proc/1/status | grep Modify:".format(**locals()))
+        sh____("touch -r /proc/1/status {status_file}".format(**locals()))
+        sh____("LANG=C stat {status_file} | grep Modify:".format(**locals()))
         #
         pid_file = os_path(root, "/var/run/zzz.service.pid")
-        self.assertTrue(os.path.exists(pid_file))
-        sh____("LANG=C stat {pid_file} | grep Modify:".format(**locals()))
-        sh____("LANG=C stat /proc/1/status | grep Modify:".format(**locals()))
-        sh____("touch -r /proc/1/status {pid_file}".format(**locals()))
-        sh____("LANG=C stat {pid_file} | grep Modify:".format(**locals()))
+        #+ self.assertTrue(os.path.exists(pid_file))
+        #+ sh____("LANG=C stat {pid_file} | grep Modify:".format(**locals()))
+        #+ sh____("LANG=C stat /proc/1/status | grep Modify:".format(**locals()))
+        #+ sh____("touch -r /proc/1/status {pid_file}".format(**locals()))
+        #+ sh____("LANG=C stat {pid_file} | grep Modify:".format(**locals()))
         #
         logg.info("== the next is-active shall then truncate it")
-        #+ old_status = os.path.getsize(status_file)
-        old_pid = os.path.getsize(pid_file)
+        old_status = os.path.getsize(status_file)
+        #+ old_pid = os.path.getsize(pid_file)
         is_activeXX = "{systemctl} is-active zzz.service other.service {vv} {vv}"
         act, end = output2(is_activeXX.format(**locals()))
         self.assertEqual(act.strip(), "inactive\nunknown")
         self.assertEqual(end, 3)
-        #+ new_status = os.path.getsize(status_file)
-        new_pid = os.path.getsize(pid_file)
-        #+ logg.info("status-file size: old %s new %s", old_status, new_status)
-        #+ self.assertEqual(old_status, 0)
-        #+ self.assertEqual(new_status, 0)
-        logg.info("pid-file size: old %s new %s", old_pid, new_pid)
-        self.assertGreater(old_pid, 0)
-        self.assertEqual(new_pid, 0)
+        new_status = os.path.getsize(status_file)
+        #+ new_pid = os.path.getsize(pid_file)
+        logg.info("status-file size: old %s new %s", old_status, new_status)
+        self.assertGreater(old_status, 0)
+        self.assertEqual(new_status, 0)
+        #+ logg.info("pid-file size: old %s new %s", old_pid, new_pid)
+        #+ self.assertGreater(old_pid, 0)
+        #+ self.assertEqual(new_pid, 0)
         #
         logg.info("== 'stop' shall cleanup a service that was not inactive")
         cmd = "{systemctl} stop zzz.service other.service -vv"
@@ -8064,8 +8064,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        self.assertTrue(greps(out, "zzb.service.pid"))
-        self.assertTrue(greps(out, "zzc.service.pid"))
+        #TODO# self.assertTrue(greps(out, "zzb.service.pid"))
+        #TODO# self.assertTrue(greps(out, "zzc.service.pid"))
         #
         cmd = "{systemctl} stop zzb.service -vv"
         out, end = output2(cmd.format(**locals()))
@@ -8086,8 +8086,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        self.assertFalse(greps(out, "zzb.service.pid"))
-        self.assertTrue(greps(out, "zzc.service.pid")) # TODO ?
+        #TODO# self.assertFalse(greps(out, "zzb.service.pid"))
+        #TODO# self.assertTrue(greps(out, "zzc.service.pid"))
         #
         cmd = "{systemctl} start zzb.service -vv"
         out, end = output2(cmd.format(**locals()))
@@ -8107,8 +8107,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        self.assertTrue(greps(out, "zzb.service.pid"))
-        self.assertTrue(greps(out, "zzc.service.pid"))
+        #TODO# self.assertTrue(greps(out, "zzb.service.pid"))
+        #TODO# self.assertTrue(greps(out, "zzc.service.pid"))
         #
         cmd = "killall {testsleepB}"
         out, end = output2(cmd.format(**locals()))
@@ -8132,8 +8132,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        self.assertFalse(greps(out, "zzb.service.pid")) # issue #13
-        self.assertTrue(greps(out, "zzc.service.pid")) # TODO ?
+        #TODO# self.assertFalse(greps(out, "zzb.service.pid")) # issue #13
+        #TODO# self.assertTrue(greps(out, "zzc.service.pid")) # TODO ?
         #
         time.sleep(1)
         top = output(_top_recent)
@@ -10747,15 +10747,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} ls -l /var/run/zzb.service.pid"
         out = output(cmd.format(**locals()))
         logg.info("found %s", out.strip())
-        #OLD# self.assertTrue(greps(out, "user1 .*root .*zzb.service.pid"))
+        #TODO# self.assertTrue(greps(out, "user1 .*root .*zzb.service.pid"))
         cmd = "docker exec {testname} ls -l /var/run/zzc.service.pid"
         out = output(cmd.format(**locals()))
         logg.info("found %s", out.strip())
-        #OLD# self.assertTrue(greps(out, "user1 .*group2 .*zzc.service.pid"))
+        #TODO# self.assertTrue(greps(out, "user1 .*group2 .*zzc.service.pid"))
         cmd = "docker exec {testname} ls -l /var/run/zzd.service.pid"
         out = output(cmd.format(**locals()))
         logg.info("found %s", out.strip())
-        #OLD# self.assertTrue(greps(out, "root .*group2 .*zzd.service.pid"))
+        #TODO# self.assertTrue(greps(out, "root .*group2 .*zzd.service.pid"))
         #
         if COVERAGE:
             coverage_file = ".coverage." + testname
@@ -10894,15 +10894,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname}x ls -l /var/run/zzb.service.pid"
         out = output(cmd.format(**locals()))
         logg.info("found %s", out.strip())
-        #OLD# self.assertTrue(greps(out, "user1 .*root .*zzb.service.pid"))
+        #TODO# self.assertTrue(greps(out, "user1 .*root .*zzb.service.pid"))
         cmd = "docker exec {testname}x ls -l /var/run/zzc.service.pid"
         out = output(cmd.format(**locals()))
         logg.info("found %s", out.strip())
-        #OLD# self.assertTrue(greps(out, "user1 .*group2 .*zzc.service.pid"))
+        #TODO# self.assertTrue(greps(out, "user1 .*group2 .*zzc.service.pid"))
         cmd = "docker exec {testname}x ls -l /var/run/zzd.service.pid"
         out = output(cmd.format(**locals()))
         logg.info("found %s", out.strip())
-        #OLD# self.assertTrue(greps(out, "root .*group2 .*zzd.service.pid"))
+        #TODO# self.assertTrue(greps(out, "root .*group2 .*zzd.service.pid"))
         #
         cmd = "docker stop {testname}x" # <<<
         # sh____(cmd.format(**locals()))

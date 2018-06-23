@@ -1066,10 +1066,6 @@ class Systemctl:
         except Exception as e:
             logg.warning("bad read of pid file '%s': %s", pid_file, e)
         return pid
-    def wait_pid_file_from(self, conf, timeout = None):
-        pid_file = self.pid_file_from(conf)
-        def_file = self.default_pid_file_from(conf)
-        return self.wait_pid_file(pid_file or def_file, timeout)
     def wait_pid_file(self, pid_file, timeout = None): # -> pid?
         """ wait some seconds for the pid file to appear and return the pid """
         timeout = int(timeout or self._WaitProcFile)
@@ -1092,42 +1088,26 @@ class Systemctl:
         """ support for the testsuite.py """
         conf = self.get_unit_conf(unit)
         pid_file = self.pid_file_from(conf)
-        def_file = self.default_pid_file_from(conf)
-        return pid_file or def_file
-    def default_pid_file_from(self, conf): # -> text
-        """ default file pattern where to store a pid """
-        folder = _var(self._pid_file_folder)
-        if self._root:
-            folder = os_path(self._root, folder)
-        filename = "%s.pid" % conf.name()
-        return os.path.join(folder, filename)
+        return pid_file or ""
     def pid_file_from(self, conf, default = ""):
         """ get the specified pid file path (not a computed default) """
         return conf.data.get("Service", "PIDFile", default)
     def read_mainpid_from(self, conf, default):
         """ MAINPID is either the PIDFile content written from the application
-            or it is the default_pid_file written by this systemctl.py code """
+            or it is the value in the status file written by this systemctl.py code """
         pid_file = self.pid_file_from(conf)
         if pid_file:
             return self.read_pid_file(pid_file, default)
-        default_pid_file = self.default_pid_file_from(conf)
-        return self.read_pid_file(default_pid_file, default)
-    def write_mainpid_from(self, conf, pid):
-        default_pid_file = self.default_pid_file_from(conf)
-        return self.write_pid_file(default_pid_file, pid)
+        status = self.read_status_from(conf)
+        return status.get("MainPID", default)
     def clean_pid_file_from(self, conf):
         pid_file = self.pid_file_from(conf)
-        def_file = self.default_pid_file_from(conf)
         if pid_file and os.path.isfile(pid_file):
             try:
                 os.remove(pid_file)
             except OSError as e:
                 logg.warning("while rm %s: %s", pid_file, e)
-        if def_file and os.path.isfile(def_file):
-            try:
-                os.remove(def_file)
-            except OSError as e:
-                logg.warning("while rm %s: %s", def_file, e)
+        self.write_status_from(conf, MainPID=None)
     def get_status_file(self, unit): # for testing
         conf = self.get_unit_conf(unit)
         return self.status_file_from(conf)
@@ -1165,7 +1145,6 @@ class Systemctl:
             for key in sorted(status.keys()):
                 value = status[key]
                 if key.upper() == "AS": key = "ActiveState"
-                if key.upper() == "PID": key = "MainPID"
                 if key.upper() == "EXIT": key = "ExecMainCode"
                 if value is None:
                     try: del conf.status[key]
@@ -1662,7 +1641,7 @@ class Systemctl:
                 if not forkpid: # pragma: no cover
                     os.setsid() # detach child process from parent
                     self.execve_from(conf, newcmd, env)
-                self.write_mainpid_from(conf, forkpid)
+                self.write_status_from(conf, MainPID=forkpid)
                 logg.info("%s started PID %s", runs, forkpid)
                 env["MAINPID"] = str(forkpid)
                 time.sleep(1)
@@ -1703,10 +1682,10 @@ class Systemctl:
                 if not forkpid: # pragma: no cover
                     os.setsid() # detach child process from parent
                     self.execve_from(conf, newcmd, env)
-                # via NOTIFY # self.write_mainpid_from(conf, forkpid)
+                # via NOTIFY # self.write_status_from(conf, MainPID=forkpid)
                 logg.info("%s started PID %s", runs, forkpid)
                 mainpid = forkpid
-                self.write_mainpid_from(conf, mainpid)
+                self.write_status_from(conf, MainPID=mainpid)
                 env["MAINPID"] = str(mainpid)
                 time.sleep(1)
                 run = subprocess_testpid(forkpid)
@@ -1727,7 +1706,7 @@ class Systemctl:
                     new_pid = results["MAINPID"]
                     if new_pid and to_int(new_pid) != mainpid:
                         logg.info("NEW PID %s from sd_notify (was PID %s)", new_pid, mainpid)
-                        self.write_mainpid_from(conf, new_pid)
+                        self.write_status_from(conf, MainPID=new_pid)
                         mainpid = new_pid
                 logg.info("%s start done %s", runs, mainpid)
                 pid = self.read_mainpid_from(conf, "")
@@ -1919,6 +1898,8 @@ class Systemctl:
                 self.clean_status_from(conf) # "inactive"
         elif runs in [ "simple", "notify" ]:
             status_file = self.status_file_from(conf)
+            size = os.path.exists(status_file) and os.path.getsize(status_file)
+            logg.info("STATUS %s %s", status_file, size)
             pid = 0
             for cmd in conf.data.getlist("Service", "ExecStop", []):
                 check, cmd = checkstatus(cmd)
@@ -1929,7 +1910,7 @@ class Systemctl:
                 if not forkpid:
                     self.execve_from(conf, newcmd, env)
                 run = subprocess_waitpid(forkpid)
-                # self.write_mainpid_from(conf, run.pid) # no ExecStop
+                # self.write_status_from(conf, MainPID=run.pid) # no ExecStop
                 if run.returncode and check:
                     returncode = run.returncode
                     service_result = "failed"
@@ -1938,13 +1919,13 @@ class Systemctl:
             if pid:
                 if self.wait_vanished_pid(pid, timeout):
                     self.clean_pid_file_from(conf)
+                    self.clean_status_from(conf) # "inactive"
             else:
                 logg.info("%s sleep as no PID was found on Stop", runs)
                 self.sleep()
                 pid = self.read_mainpid_from(conf, "")
                 if not pid or not pid_exists(pid) or pid_zombie(pid):
                     self.clean_pid_file_from(conf)
-            if True:
                 self.clean_status_from(conf) # "inactive"
         elif runs in [ "forking" ]:
             status_file = self.status_file_from(conf)
@@ -2298,8 +2279,10 @@ class Systemctl:
         kill_signal = getattr(signal, useKillSignal)
         timeout = self.get_TimeoutStopSec(conf)
         status_file = self.status_file_from(conf)
-        self.clean_status_from(conf) # clear RemainAfterExit and TimeoutStartSec
+        size = os.path.exists(status_file) and os.path.getsize(status_file)
+        logg.info("STATUS %s %s", status_file, size)
         mainpid = to_int(self.read_mainpid_from(conf, mainpid or ""))
+        self.clean_status_from(conf) # clear RemainAfterExit and TimeoutStartSec
         if not mainpid:
             if useKillMode in ["control-group"]:
                 logg.warning("no main PID [%s]", conf.filename())
@@ -2436,12 +2419,12 @@ class Systemctl:
                 return "inactive"
         status_file = self.status_file_from(conf)
         if self.getsize(status_file):
-            state = self.get_status_from(conf, "ActiveState", "failed")
-            logg.info("get_status_from %s => %s", conf.name(), state)
-            return state
-        def_file = self.default_pid_file_from(conf)
+            state = self.get_status_from(conf, "ActiveState", "")
+            if state:
+                logg.info("get_status_from %s => %s", conf.name(), state)
+                return state
         pid = self.read_mainpid_from(conf, "")
-        logg.info("pid_file '%s' => PID %s", pid_file or def_file, pid)
+        logg.info("pid_file '%s' => PID %s", pid_file or status_file, pid)
         if pid:
             if not pid_exists(pid) or pid_zombie(pid):
                 return "failed"
@@ -2457,14 +2440,14 @@ class Systemctl:
                 return "dead"
         status_file = self.status_file_from(conf)
         if self.getsize(status_file):
-            state = self.get_status_from(conf, "ActiveState", "failed")
-            if state in [ "active" ]:
-                return self.get_status_from(conf, "SubState", "running")
-            else:
-                return self.get_status_from(conf, "SubState", "dead")
-        def_file = self.default_pid_file_from(conf)
+            state = self.get_status_from(conf, "ActiveState", "")
+            if state:
+                if state in [ "active" ]:
+                    return self.get_status_from(conf, "SubState", "running")
+                else:
+                    return self.get_status_from(conf, "SubState", "dead")
         pid = self.read_mainpid_from(conf, "")
-        logg.debug("pid_file '%s' => PID %s", pid_file or def_file, pid)
+        logg.debug("pid_file '%s' => PID %s", pid_file or status_file, pid)
         if pid:
             if not pid_exists(pid) or pid_zombie(pid):
                 return "failed"
@@ -2533,14 +2516,6 @@ class Systemctl:
             except Exception as e:
                 logg.error("while rm %s: %s", status_file, e)
         pid_file = self.pid_file_from(conf)
-        if pid_file and os.path.exists(pid_file):
-            try:
-                os.remove(pid_file)
-                done = True
-                logg.debug("done rm %s", pid_file)
-            except Exception as e:
-                logg.error("while rm %s: %s", pid_file, e)
-        pid_file = self.default_pid_file_from(conf)
         if pid_file and os.path.exists(pid_file):
             try:
                 os.remove(pid_file)
