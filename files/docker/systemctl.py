@@ -1164,11 +1164,14 @@ class Systemctl:
         if True:
             for key in sorted(status.keys()):
                 value = status[key]
-                if value is None: value = ""
                 if key.upper() == "AS": key = "ActiveState"
                 if key.upper() == "PID": key = "MainPID"
                 if key.upper() == "EXIT": key = "ExecMainCode"
-                conf.status[key] = value
+                if value is None:
+                    try: del conf.status[key]
+                    except KeyError: pass
+                else:
+                    conf.status[key] = value
         try:
             with open(status_file, "w") as f:
                 for key in sorted(conf.status):
@@ -1217,7 +1220,11 @@ class Systemctl:
     def set_status_from(self, conf, name, value):
         if conf.status is None:
             conf.status = self.read_status_from(conf)
-        conf.status[name] = value
+        if value is None:
+            try: del conf.status[name]
+            except KeyError: pass
+        else:
+            conf.status[name] = value
     #
     def get_boottime(self):
         for pid in xrange(10):
