@@ -491,23 +491,32 @@ class waitlock:
             for attempt in xrange(int(MaxLockWait or DefaultMaximumTimeout)):
                 try:
                     fcntl.flock(self.opened, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    st = os.fstat(self.opened)
+                    if not st.st_nlink:
+                        logg.info("lock got deleted, trying again")
+                        os.close(self.opened)
+                        self.opened = os.open(lockfile, os.O_RDWR | os.O_CREAT, 0o600)
+                        continue
                     os.write(self.opened, "{ 'systemctl': %s, 'unit': '%s' }\n" % (os.getpid(), self.unit))
                     logg.debug("holding %s", lockfile)
-                    break
+                    return True
                 except BlockingIOError as e:
                     whom = os.read(self.opened, 4096)
                     os.lseek(self.opened, 0, os.SEEK_SET)
                     logg.info("(%s) systemctl locked by %s", attempt, whom.rstrip())
                     time.sleep(1)
                     continue
+            logg.error("not able to get the lock to %s", self.unit or "global")
         except Exception as e:
             logg.warning("oops %s, %s", str(type(e)), e)
+        #TODO# raise Exception("no lock for %s", self.unit or "global")
+        return False
     def __exit__(self, type, value, traceback):
         try:
             os.lseek(self.opened, 0, os.SEEK_SET)
             os.ftruncate(self.opened, 0)
             fcntl.flock(self.opened, fcntl.LOCK_UN)
-            os.close(self.opened)
+            os.close(self.opened) # implies an unlock but that has happend like 6 seconds later
             self.opened = None
         except Exception as e:
             logg.warning("oops, %s", e)
