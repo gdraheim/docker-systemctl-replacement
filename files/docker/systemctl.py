@@ -29,7 +29,8 @@ else:
     string_types = str
     xrange = range
 
-DEBUG_AFTER = False
+DEBUG_AFTER = os.environ.get("DEBUG_AFTER", "") or False
+DEBUG_REMOVE = os.environ.get("DEBUG_REMOVE", "") or False
 
 # defaults for options
 _extra_vars = []
@@ -515,6 +516,10 @@ class waitlock:
         try:
             os.lseek(self.opened, 0, os.SEEK_SET)
             os.ftruncate(self.opened, 0)
+            if DEBUG_REMOVE: 
+                lockfile = os.path.join(self.lockfolder, str(self.unit or "global") + ".lock")
+                os.unlink(lockfile) # ino is kept allocated because opened by this process
+                logg.info("lockfile removed (%s)", lockfile)
             fcntl.flock(self.opened, fcntl.LOCK_UN)
             os.close(self.opened) # implies an unlock but that has happend like 6 seconds later
             self.opened = None
