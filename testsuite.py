@@ -11882,6 +11882,82 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         #
         self.rm_testdir()
+    def test_8031_centos_nginx_restart(self):
+        """ start/restart behaviour if a nginx has failed - issue #31 """
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if _python.endswith("python3"): self.skipTest("no python3 on centos")
+        testname=self.testname()
+        testdir = self.testdir(testname)
+        testport=self.testport()
+        images = IMAGES
+        image = self.local_image(CENTOS)
+        systemctl_py = _systemctl_py
+        logg.info("%s:%s %s", testname, testport, image)
+        #
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name={testname} {image} sleep 600"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} yum install -y epel-release"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} yum install -y nginx"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl enable nginx"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} rpm -q --list nginx"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'echo TEST_OK > /usr/share/nginx/html/index.html'"
+        sh____(cmd.format(**locals()))
+        #
+        container = self.ip_container(testname)
+        cmd = "docker exec {testname} touch /var/log/systemctl.debug.log"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl start nginx"
+        sh____(cmd.format(**locals()))
+        # THEN
+        time.sleep(5)
+        cmd = "wget -O {testdir}/result.txt http://{container}:80"
+        sh____(cmd.format(**locals()))
+        cmd = "grep OK {testdir}/result.txt"
+        sh____(cmd.format(**locals()))
+        # STOP
+        cmd = "docker exec {testname} systemctl status nginx"
+        sh____(cmd.format(**locals()))
+        #
+        top = output(_top_recent)
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, "nginx"))
+        #
+        cmd = "docker exec {testname} systemctl restart nginx"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0) # restart ok
+        top = output(_top_recent)
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, "nginx"))
+        #
+        cmd = "docker exec {testname} systemctl status nginx"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl stop nginx"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0) # down
+        cmd = "docker exec {testname} systemctl status nginx"
+        sx____(cmd.format(**locals()))
+        top = output(_top_recent)
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, "nginx"))
+        #
+        cmd = "docker cp {testname}:/var/log/systemctl.debug.log {testdir}/systemctl.debug.log"
+        sh____(cmd.format(**locals()))
+        cmd = "docker stop {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sh____(cmd.format(**locals()))
+        #
+        self.rm_testdir()
 
 if __name__ == "__main__":
     from optparse import OptionParser
