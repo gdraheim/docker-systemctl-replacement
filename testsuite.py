@@ -10762,6 +10762,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Service]
             Type=simple
             User=user1
+            Group=root
             ExecStart=/usr/bin/testsleep 40
             [Install]
             WantedBy=multi-user.target""")
@@ -10771,7 +10772,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Service]
             Type=simple
             User=user1
-            Group=group2
             ExecStart=/usr/bin/testsleep 50
             [Install]
             WantedBy=multi-user.target""")
@@ -10902,6 +10902,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Service]
             Type=simple
             User=user1
+            Group=root
             ExecStart=/usr/bin/testsleep 40
             [Install]
             WantedBy=multi-user.target""")
@@ -10911,7 +10912,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Service]
             Type=simple
             User=user1
-            Group=group2
             ExecStart=/usr/bin/testsleep 50
             [Install]
             WantedBy=multi-user.target""")
@@ -11072,6 +11072,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Service]
             Type=simple
             User=user1
+            Group=root
             WorkingDirectory=/srv
             ExecStart=/usr/bin/testsleep.sh 4
             [Install]
@@ -11082,7 +11083,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Service]
             Type=simple
             User=user1
-            Group=group2
             WorkingDirectory=/srv
             ExecStart=/usr/bin/testsleep.sh 5
             [Install]
