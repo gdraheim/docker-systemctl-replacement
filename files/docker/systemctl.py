@@ -184,6 +184,10 @@ def shutil_setuid(user = None, group = None):
         logg.debug("setgid %s '%s'", gid, group)
     if user:
         import pwd
+        if not group:
+            gid = pwd.getpwnam(user).pw_gid
+            os.setgid(gid)
+            logg.debug("setgid %s", gid)
         uid = pwd.getpwnam(user).pw_uid
         os.setuid(uid)
         logg.debug("setuid %s '%s'", uid, user)
