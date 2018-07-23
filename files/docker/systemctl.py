@@ -2968,6 +2968,59 @@ class Systemctl:
             if os.path.isfile(target):
                 return "enabled"
         return "disabled"
+    def mask_modules(self, *modules):
+        """ [UNIT]... -- disable non-startable units """
+        found_all = True
+        units = []
+        for module in modules:
+            matched = self.match_units([ module ])
+            if not matched:
+                logg.error("Unit %s could not be found.", unit_of(module))
+                found_all = False
+                continue
+            for unit in matched:
+                if unit not in units:
+                    units += [ unit ]
+        return self.mask_units(units) and found_all
+    def mask_units(self, units):
+        done = True
+        for unit in units:
+            if not self.mask_unit(unit):
+               done = False
+        return done
+    def mask_unit(self, unit):
+        logg.warning("mask %s not implemented - going to disable the unit", unit)
+        return self.disable_unit(unit)
+    def unmask_modules(self, *modules):
+        """ [UNIT]... -- re-enable non-startable units """
+        found_all = True
+        units = []
+        for module in modules:
+            matched = self.match_units([ module ])
+            if not matched:
+                logg.error("Unit %s could not be found.", unit_of(module))
+                found_all = False
+                continue
+            for unit in matched:
+                if unit not in units:
+                    units += [ unit ]
+        return self.unmask_units(units) and found_all
+    def unmask_units(self, units):
+        done = True
+        for unit in units:
+            if not self.unmask_unit(unit):
+               done = False
+        return done
+    def mask_unit(self, unit):
+        logg.warning("mask %s not implemented - going to disable the unit", unit)
+        self.disable_unit(unit)
+        unit_file = self.unit_file(unit)
+        if not unit_file:
+            logg.error("Unit %s could not be found.", unit)
+            return False
+    def mask_unit(self, unit):
+        logg.info("unmask %s not implemented - ignored", unit)
+        return True
     def list_dependencies_modules(self, *modules):
         """ [UNIT]... show the dependency tree"
         """
