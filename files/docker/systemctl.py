@@ -3011,16 +3011,9 @@ class Systemctl:
             if not self.unmask_unit(unit):
                done = False
         return done
-    def mask_unit(self, unit):
-        logg.warning("mask %s not implemented - going to disable the unit", unit)
-        self.disable_unit(unit)
-        unit_file = self.unit_file(unit)
-        if not unit_file:
-            logg.error("Unit %s could not be found.", unit)
-            return False
-    def mask_unit(self, unit):
-        logg.info("unmask %s not implemented - ignored", unit)
-        return True
+    def unmask_unit(self, unit):
+        logg.warning("unmask %s not implemented - going to enable the unit", unit)
+        return self.enable_unit(unit)
     def list_dependencies_modules(self, *modules):
         """ [UNIT]... show the dependency tree"
         """
