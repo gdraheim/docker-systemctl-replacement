@@ -3593,6 +3593,34 @@ class Systemctl:
         """ stop units from default system level """
         logg.info("system halt requested - %s", arg)
         self.stop_system_default()
+    def system_get_default(self):
+        """ get current default run-level"""
+        current = self._default_target
+        folder = os_path(self._root, self.mask_folder())
+        target = os.path.join(folder, "default.target")
+        if os.path.islink(target):
+            current = os.path.basename(os.readlink(target))
+        return current
+    def set_default_modules(self, *modules):
+        """ set current default run-level"""
+        current = self._default_target
+        folder = os_path(self._root, self.mask_folder())
+        target = os.path.join(folder, "default.target")
+        if os.path.islink(target):
+            current = os.path.basename(os.readlink(target))
+        for module in modules:
+            intended = os.path.join(folder, module)
+            if intended == current:
+                continue
+            if not os.path.isdir(intended):
+                logg.error("no such runlevel %s", intended)
+            if os.path.islink(target):
+                os.unlink(target)
+            if not os.path.isdir(folder):
+                os.makedirs(folder)
+            os.symlink(intended, target)
+            logg.info("Created symlink from %s %s", target, intended)
+        return True
     def init_modules(self, *modules):
         """ [UNIT*] -- init loop: '--init default' or '--init start UNIT*'
         The systemctl init service will start the enabled 'default' services, 
