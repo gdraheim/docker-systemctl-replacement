@@ -4249,7 +4249,88 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_zzfiles(root)
         self.rm_testdir()
         self.coverage()
-
+    def real_3104_unmask_service_removes_empty_file(self):
+        self.test_3104_unmask_service_removes_empty_file(True)
+    def test_3104_unmask_service_removes_empty_file(self, real = False):
+        """ check that a service can be unmasked """
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir, real)
+        vv = "-vv"
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
+        self.rm_zzfiles(root)
+        #
+        text_file(os_path(root, "/usr/lib/systemd/system/zza.service"),"""
+            [Unit]
+            Description=Testing A""")
+        text_file(os_path(root, "/usr/lib/systemd/system/zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            ExecStart=/usr/bin/sleep 2
+            [Install]
+            WantedBy=multi-user.target""")
+        cmd = "{systemctl} daemon-reload"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "{systemctl} enable zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        enabled_file = os_path(root, "/etc/systemd/system/multi-user.target.wants/zzb.service")
+        self.assertTrue(os.path.islink(enabled_file))
+        textB = file(enabled_file).read()
+        self.assertTrue(greps(textB, "Testing B"))
+        self.assertIn("\nDescription", textB)
+        cmd = "{systemctl} status zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertTrue(greps(out, "enabled"))
+        # .........................................
+        cmd = "{systemctl} mask zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        cmd = "{systemctl} status zzb.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertFalse(greps(out, "enabled"))
+        self.assertTrue(greps(out, "masked"))
+        if real: self.assertTrue(greps(out, "/dev/null"))
+        else: self.assertTrue(greps(out, "None, "))
+        mask_file = os_path(root, "/etc/systemd/system/zzb.service")
+        self.assertTrue(os.path.islink(mask_file))
+        target = os.readlink(mask_file)
+        self.assertEqual(target, "/dev/null")
+        cmd = "{systemctl} show zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertTrue(greps(out, "LoadState=masked"))
+        self.assertTrue(greps(out, "UnitFileState=masked"))
+        self.assertTrue(greps(out, "Id=zzb.service"))
+        self.assertTrue(greps(out, "Names=zzb.service"))
+        # .................................................
+        cmd = "{systemctl} unmask zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        cmd = "{systemctl} status zzb.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertTrue(greps(out, "enabled"))
+        self.assertFalse(greps(out, "masked"))
+        mask_file = os_path(root, "/etc/systemd/system/zzb.service")
+        self.assertFalse(os.path.exists(mask_file))
+        cmd = "{systemctl} show zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertTrue(greps(out, "LoadState=loaded"))
+        self.assertTrue(greps(out, "Id=zzb.service"))
+        self.assertTrue(greps(out, "Names=zzb.service"))
+        self.rm_zzfiles(root)
+        self.rm_testdir()
+        self.coverage()
     def test_3201_missing_environment_file_makes_service_ignored(self):
         """ check that a missing EnvironmentFile spec makes the service to be ignored"""
         testname = self.testname()
