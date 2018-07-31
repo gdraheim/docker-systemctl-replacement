@@ -2969,7 +2969,7 @@ class Systemctl:
                 return "enabled"
         return "disabled"
     def mask_modules(self, *modules):
-        """ [UNIT]... -- disable non-startable units """
+        """ [UNIT]... -- mask non-startable units """
         found_all = True
         units = []
         for module in modules:
@@ -2989,10 +2989,47 @@ class Systemctl:
                done = False
         return done
     def mask_unit(self, unit):
-        logg.warning("mask %s not implemented - going to disable the unit", unit)
-        return self.disable_unit(unit)
+        unit_file = self.unit_file(unit)
+        if not unit_file:
+            logg.error("Unit %s could not be found.", unit)
+            return False
+        if self.is_sysv_file(unit_file):
+            logg.error("Initscript %s can not be masked", unit)
+            return False
+        conf = self.get_unit_conf(unit)
+        if self.not_user_conf(conf):
+            logg.error("Unit %s not for --user mode", unit)
+            return False
+        folder = self.mask_folder()
+        if self._root:
+            folder = os_path(self._root, folder)
+        if not os.path.isdir(folder):
+            os.makedirs(folder)
+        target = os.path.join(folder, os.path.basename(unit_file))
+        if True:
+            _f = self._force and "-f" or ""
+            logg.info("ln -s {_f} /dev/null '{target}'".format(**locals()))
+        if self._force and os.path.islink(target):
+            os.remove(target)
+        if not os.path.exists(target):
+            os.symlink("/dev/null", target)
+            return True
+        else:
+            logg.error("mask target does already exist: %s", target)
+            return False
+    def mask_folder(self):
+        for folder in self.mask_folders():
+            if folder: return folder
+        raise Exception("did not find any systemd/system folder")
+    def mask_folders(self):
+        if self.user_mode():
+            for folder in self.user_folders():
+                 yield folder
+        if True:
+            for folder in self.system_folders():
+                 yield folder
     def unmask_modules(self, *modules):
-        """ [UNIT]... -- re-enable non-startable units """
+        """ [UNIT]... -- unmask non-startable units """
         found_all = True
         units = []
         for module in modules:
@@ -3012,8 +3049,30 @@ class Systemctl:
                done = False
         return done
     def unmask_unit(self, unit):
-        logg.warning("unmask %s not implemented - going to enable the unit", unit)
-        return self.enable_unit(unit)
+        unit_file = self.unit_file(unit)
+        if not unit_file:
+            logg.error("Unit %s could not be found.", unit)
+            return False
+        if self.is_sysv_file(unit_file):
+            logg.error("Initscript %s can not be un/masked", unit)
+            return False
+        conf = self.get_unit_conf(unit)
+        if self.not_user_conf(conf):
+            logg.error("Unit %s not for --user mode", unit)
+            return False
+        folder = self.mask_folder()
+        if self._root:
+            folder = os_path(self._root, folder)
+        target = os.path.join(folder, os.path.basename(unit_file))
+        if True:
+            _f = self._force and "-f" or ""
+            logg.info("rm {_f} '{target}'".format(**locals()))
+        if os.path.islink(target):
+            os.remove(target)
+            return True
+        else:
+            logg.error("target is not a symlink: %s", target)
+            return False
     def list_dependencies_modules(self, *modules):
         """ [UNIT]... show the dependency tree"
         """
