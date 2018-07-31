@@ -991,10 +991,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} get-default"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        if real: 
-            self.assertTrue(greps(out, runlevel))
-        else: 
-            self.assertTrue(greps(out, old)) # FIXME
+        self.assertTrue(greps(out, runlevel)) # <<<<<<<<<<
         cmd = "{systemctl} set-default {old}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
