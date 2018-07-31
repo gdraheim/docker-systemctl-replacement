@@ -1873,12 +1873,17 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.rm_testdir()
         self.coverage()
-    def test_3002_enable_service_creates_a_symlink(self):
+    def real_3002_enable_service_creates_a_symlink(self):
+        self.test_3002_enable_service_creates_a_symlink(True)
+    def test_3002_enable_service_creates_a_symlink(self, real = False):
         """ check that a service can be enabled """
         testname = self.testname()
         testdir = self.testdir()
-        root = self.root(testdir)
+        root = self.root(testdir, real)
         systemctl = _cov + _systemctl_py + " --root=" + root
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
+        self.rm_zzfiles(root)
+        #
         text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A""")
@@ -1896,14 +1901,20 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         textB = file(enabled_file).read()
         self.assertTrue(greps(textB, "Testing B"))
         self.assertIn("\nDescription", textB)
+        self.rm_zzfiles(root)
         self.rm_testdir()
         self.coverage()
-    def test_3003_disable_service_removes_the_symlink(self):
+    def real_3003_disable_service_removes_the_symlink(self):
+        self.test_3003_disable_service_removes_the_symlink(True)
+    def test_3003_disable_service_removes_the_symlink(self, real = False):
         """ check that a service can be enabled and disabled """
         testname = self.testname()
         testdir = self.testdir()
-        root = self.root(testdir)
+        root = self.root(testdir, real)
         systemctl = _cov + _systemctl_py + " --root=" + root
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
+        self.rm_zzfiles(root)
+        #
         text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A""")
@@ -1929,11 +1940,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         enabled_file = os_path(root, "/etc/systemd/system/multi-user.target.wants/zzb.service")
         self.assertTrue(os.path.islink(enabled_file))
         #
-        cmd = "{systemctl} enable other.service"
+        cmd = "{systemctl} enable zz-other.service"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertNotEqual(end, 0)
-        enabled_file = os_path(root, "/etc/systemd/system/multi-user.target.wants/other.service")
+        enabled_file = os_path(root, "/etc/systemd/system/multi-user.target.wants/zz-other.service")
         self.assertFalse(os.path.islink(enabled_file))
         #
         cmd = "{systemctl} disable zzb.service"
@@ -1950,20 +1961,26 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         enabled_file = os_path(root, "/etc/systemd/system/multi-user.target.wants/zzb.service")
         self.assertFalse(os.path.exists(enabled_file))
         #
-        cmd = "{systemctl} disable other.service"
+        cmd = "{systemctl} disable zz-other.service"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertNotEqual(end, 0)
         #
+        self.rm_zzfiles(root)
         self.rm_testdir()
         self.coverage()
-    def test_3004_list_unit_files_when_enabled(self):
+    def real_3004_list_unit_files_when_enabled(self):
+        self.test_3004_list_unit_files_when_enabled(True)
+    def test_3004_list_unit_files_when_enabled(self, real = False):
         """ check that two unit files can be found for 'list-unit-files'
             with an enabled status """
         testname = self.testname()
         testdir = self.testdir()
-        root = self.root(testdir)
+        root = self.root(testdir, real)
         systemctl = _cov + _systemctl_py + " --root=" + root
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
+        self.rm_zzfiles(root)
+        #
         text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A""")
@@ -1978,7 +1995,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 0)
         self.assertTrue(greps(out, r"zza.service\s+static"))
         self.assertTrue(greps(out, r"zzb.service\s+disabled"))
-        self.assertEqual(len(lines(out)), 2)
+        self.assertEqual(len(greps(out, "^zz")), 2)
         #
         cmd = "{systemctl} --no-legend enable zzb.service"
         out, end = output2(cmd.format(**locals()))
@@ -1993,7 +2010,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 0)
         self.assertTrue(greps(out, r"zza.service\s+static"))
         self.assertTrue(greps(out, r"zzb.service\s+enabled"))
-        self.assertEqual(len(lines(out)), 2)
+        self.assertEqual(len(greps(out, "^zz")), 2)
         #
         cmd = "{systemctl} --no-legend disable zzb.service"
         out, end = output2(cmd.format(**locals()))
@@ -2008,8 +2025,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 0)
         self.assertTrue(greps(out, r"zza.service\s+static"))
         self.assertTrue(greps(out, r"zzb.service\s+disabled"))
-        self.assertEqual(len(lines(out)), 2)
+        self.assertEqual(len(greps(out, "^zz")), 2)
         #
+        self.rm_zzfiles(root)
         self.rm_testdir()
         self.coverage()
     def real_3005_is_enabled_result_when_enabled(self):
@@ -2022,6 +2040,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         root = self.root(testdir, real)
         systemctl = _cov + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
+        self.rm_zzfiles(root)
+        #
         text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A""")
