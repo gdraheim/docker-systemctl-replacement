@@ -4117,7 +4117,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.rm_zzfiles(root)
         self.coverage()
-    def test_3101_missing_environment_file_makes_service_ignored(self):
+    def test_3201_missing_environment_file_makes_service_ignored(self):
         """ check that a missing EnvironmentFile spec makes the service to be ignored"""
         testname = self.testname()
         testdir = self.testdir()
@@ -4157,7 +4157,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
-    def test_3111_environment_files_are_included(self):
+    def test_3211_environment_files_are_included(self):
         """ check that environment specs are read correctly"""
         testname = self.testname()
         testdir = self.testdir()
@@ -4220,7 +4220,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.rm_testdir()
         self.coverage()
-    def test_3140_may_expand_environment_variables(self):
+    def test_3240_may_expand_environment_variables(self):
         """ check that different styles of environment
             variables get expanded."""
         testname = self.testname()
@@ -4286,7 +4286,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.rm_testdir()
         self.coverage()
-    def test_3150_may_expand_special_variables(self):
+    def test_3250_may_expand_special_variables(self):
         """ check that different flavours for special
             variables get expanded."""
         testname = self.testname()
@@ -4351,7 +4351,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.rm_testdir()
         self.coverage()
-    def test_3170_may_override_environment_from_commandline(self):
+    def test_3270_may_override_environment_from_commandline(self):
         """ check that --extra-vars can be given on the commandline
             to override settings in Environment= and EnvironmentFile=."""
         testname = self.testname()
