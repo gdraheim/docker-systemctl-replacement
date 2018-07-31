@@ -945,7 +945,71 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(out, r"g.service:.* there may be only one ExecReload statement")) # systemctl.py special
         self.assertFalse(greps(out, r"c.service:.* the use of /bin/kill is not recommended")) # systemctl.py special
         sh____("rm /etc/systemd/system/zz*")
-
+    def real_1201_get_default(self):
+        self.test_1201_get_default(True)
+    def test_1201_get_default(self, real = False):
+        """ check that get-default works"""
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir, real)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
+        self.rm_zzfiles(root)
+        #
+        cmd = "{systemctl} get-default"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        if real: self.assertTrue(greps(out, "graphical.target"))
+        else: self.assertTrue(greps(out, "multi-user.target"))
+        self.rm_zzfiles(root)
+        self.rm_testdir()
+        self.coverage()
+    def real_1211_set_default(self):
+        self.test_1211_set_default(True)
+    def test_1211_set_default(self, real = False):
+        """ check that set-default works"""
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir, real)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
+        self.rm_zzfiles(root)
+        #
+        cmd = "{systemctl} get-default"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        if real: 
+            old = "graphical.target"
+            self.assertTrue(greps(out, old))
+        else: 
+            old = "multi-user.target"
+            self.assertTrue(greps(out, old))
+        runlevel = "basic.target"
+        cmd = "{systemctl} set-default {runlevel}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "{systemctl} get-default"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        if real: 
+            self.assertTrue(greps(out, runlevel))
+        else: 
+            self.assertTrue(greps(out, old)) # FIXME
+        cmd = "{systemctl} set-default {old}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "{systemctl} get-default"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        if real: 
+            old = "graphical.target"
+            self.assertTrue(greps(out, old))
+        else: 
+            old = "multi-user.target"
+            self.assertTrue(greps(out, old))
+        self.rm_zzfiles(root)
+        self.rm_testdir()
+        self.coverage()
     def test_2001_can_create_test_services(self):
         """ check that two unit files can be created for testing """
         testname = self.testname()
