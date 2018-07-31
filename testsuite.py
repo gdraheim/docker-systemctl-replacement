@@ -4446,74 +4446,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.rm_testdir()
         self.coverage()
-    def test_3201_service_config_cat(self):
-        """ check that a name service config can be printed as-is"""
-        testname = self.testname()
-        testdir = self.testdir()
-        user = self.user()
-        root = self.root(testdir)
-        logfile = os_path(root, "/var/log/test.log")
-        systemctl = _cov + _systemctl_py + " --root=" + root
-        testsleep = self.testname("sleep")
-        bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zzs.service"),"""
-            [Unit]
-            Description=Testing S
-            After=foo.service
-            [Service]
-            Type=simple
-            ExecStart={bindir}{testsleep} 40
-            ExecStop=/usr/bin/killall {testsleep}
-            [Install]
-            WantedBy=multi-user.target
-            """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
-        copy_file(os_path(testdir, "zzs.service"), os_path(root, "/etc/systemd/system/zzs.service"))
-        #
-        cmd = "{systemctl} cat zzs.service -vv"
-        out, end = output2(cmd.format(**locals()))
-        logg.info(" %s =>%s \n%s", cmd, end, out)
-        self.assertEqual(end, 0)
-        orig = lines(open(os_path(root, "/etc/systemd/system/zzs.service")))
-        data = lines(out)
-        self.assertEqual(orig + [""], data)
-        #
-        self.rm_testdir()
-        self.coverage()
-    def test_3203_service_config_cat_plus_unknown(self):
-        """ check that a name service config can be printed as-is"""
-        testname = self.testname()
-        testdir = self.testdir()
-        user = self.user()
-        root = self.root(testdir)
-        logfile = os_path(root, "/var/log/test.log")
-        systemctl = _cov + _systemctl_py + " --root=" + root
-        testsleep = self.testname("sleep")
-        bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zzs.service"),"""
-            [Unit]
-            Description=Testing S
-            After=foo.service
-            [Service]
-            Type=simple
-            ExecStart={bindir}{testsleep} 40
-            ExecStop=/usr/bin/killall {testsleep}
-            [Install]
-            WantedBy=multi-user.target
-            """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
-        copy_file(os_path(testdir, "zzs.service"), os_path(root, "/etc/systemd/system/zzs.service"))
-        #
-        cmd = "{systemctl} cat zzs.service unknown.service -vv"
-        out, end = output2(cmd.format(**locals()))
-        logg.info(" %s =>%s \n%s", cmd, end, out)
-        self.assertEqual(end, 1)
-        orig = lines(open(os_path(root, "/etc/systemd/system/zzs.service")))
-        data = lines(out)
-        self.assertEqual(orig + [""], data)
-        #
-        self.rm_testdir()
-        self.coverage()
     def test_3301_service_config_show(self):
         """ check that a named service config can show its properties"""
         testname = self.testname()
@@ -5279,6 +5211,74 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
+        self.rm_testdir()
+        self.coverage()
+    def test_3901_service_config_cat(self):
+        """ check that a name service config can be printed as-is"""
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        logfile = os_path(root, "/var/log/test.log")
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        testsleep = self.testname("sleep")
+        bindir = os_path(root, "/usr/bin")
+        text_file(os_path(testdir, "zzs.service"),"""
+            [Unit]
+            Description=Testing S
+            After=foo.service
+            [Service]
+            Type=simple
+            ExecStart={bindir}{testsleep} 40
+            ExecStop=/usr/bin/killall {testsleep}
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_file(os_path(testdir, "zzs.service"), os_path(root, "/etc/systemd/system/zzs.service"))
+        #
+        cmd = "{systemctl} cat zzs.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        orig = lines(open(os_path(root, "/etc/systemd/system/zzs.service")))
+        data = lines(out)
+        self.assertEqual(orig + [""], data)
+        #
+        self.rm_testdir()
+        self.coverage()
+    def test_3903_service_config_cat_plus_unknown(self):
+        """ check that a name service config can be printed as-is"""
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        logfile = os_path(root, "/var/log/test.log")
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        testsleep = self.testname("sleep")
+        bindir = os_path(root, "/usr/bin")
+        text_file(os_path(testdir, "zzs.service"),"""
+            [Unit]
+            Description=Testing S
+            After=foo.service
+            [Service]
+            Type=simple
+            ExecStart={bindir}{testsleep} 40
+            ExecStop=/usr/bin/killall {testsleep}
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_file(os_path(testdir, "zzs.service"), os_path(root, "/etc/systemd/system/zzs.service"))
+        #
+        cmd = "{systemctl} cat zzs.service unknown.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 1)
+        orig = lines(open(os_path(root, "/etc/systemd/system/zzs.service")))
+        data = lines(out)
+        self.assertEqual(orig + [""], data)
+        #
         self.rm_testdir()
         self.coverage()
     def test_4030_simple_service_functions(self):
