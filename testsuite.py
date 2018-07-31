@@ -1890,8 +1890,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(os_path(root, "/etc/systemd/system/zzb.service"),"""
             [Unit]
             Description=Testing B
+            [Service]
+            ExecStart=/usr/bin/sleep 2
             [Install]
             WantedBy=multi-user.target""")
+        cmd = "{systemctl} daemon-reload"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         cmd = "{systemctl} enable zzb.service"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
@@ -1921,8 +1926,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(os_path(root, "/etc/systemd/system/zzb.service"),"""
             [Unit]
             Description=Testing B
+            [Service]
+            ExecStart=/usr/bin/sleep 2
             [Install]
             WantedBy=multi-user.target""")
+        cmd = "{systemctl} daemon-reload"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         cmd = "{systemctl} enable zzb.service"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
@@ -1987,8 +1997,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(os_path(root, "/etc/systemd/system/zzb.service"),"""
             [Unit]
             Description=Testing B
+            [Service]
+            ExecStart=/usr/bin/sleep 2
             [Install]
             WantedBy=multi-user.target""")
+        cmd = "{systemctl} daemon-reload"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         cmd = "{systemctl} --no-legend --type=service list-unit-files"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
@@ -2048,9 +2063,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(os_path(root, "/etc/systemd/system/zzb.service"),"""
             [Unit]
             Description=Testing B
+            [Service]
+            ExecStart=/usr/bin/sleep 2
             [Install]
             WantedBy=multi-user.target""")
         #
+        cmd = "{systemctl} daemon-reload"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         cmd = "{systemctl} is-enabled zza.service {vv}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
@@ -2103,11 +2123,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(os_path(root, "/etc/systemd/system/zzb.service"),"""
             [Unit]
             Description=Testing B
+            [Service]
+            ExecStart=/usr/bin/sleep 2
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(root, "/etc/systemd/system/zzc.service"),"""
             [Unit]
             Description=Testing C
+            [Service]
+            ExecStart=/usr/bin/sleep 2
             [Install]
             WantedBy=multi-user.target""")
         #
@@ -2326,11 +2350,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(os_path(root, "/etc/systemd/system/zzb.service"),"""
             [Unit]
             Description=Testing B
+            [Service]
+            ExecStart=/usr/bin/sleep 2
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(root, "/etc/systemd/system/zzc.service"),"""
             [Unit]
             Description=Testing C
+            [Service]
+            ExecStart=/usr/bin/sleep 2
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(root, "/etc/systemd/system-preset/our.preset"),"""
@@ -2393,11 +2421,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(os_path(root, "/etc/systemd/system/zzb.service"),"""
             [Unit]
             Description=Testing B
+            [Service]
+            ExecStart=/usr/bin/sleep 2
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(root, "/etc/systemd/system/zzc.service"),"""
             [Unit]
             Description=Testing C
+            [Service]
+            ExecStart=/usr/bin/sleep 2
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(root, "/etc/systemd/system-preset/our.preset"),"""
@@ -2468,11 +2500,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(os_path(root, "/etc/systemd/system/zzb.service"),"""
             [Unit]
             Description=Testing B
+            [Service]
+            ExecStart=/usr/bin/sleep 2
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(root, "/etc/systemd/system/zzc.service"),"""
             [Unit]
             Description=Testing C
+            [Service]
+            ExecStart=/usr/bin/sleep 2
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(root, "/etc/systemd/system-preset/our.preset"),"""
@@ -2585,11 +2621,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(os_path(root, "/etc/systemd/system/zzb.service"),"""
             [Unit]
             Description=Testing B
+            [Service]
+            ExecStart=/usr/bin/sleep 2
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(root, "/etc/systemd/system/zzc.service"),"""
             [Unit]
             Description=Testing C
+            [Service]
+            ExecStart=/usr/bin/sleep 2
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(root, "/etc/systemd/system-preset/our.preset"),"""
@@ -2698,11 +2738,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(os_path(root, "/etc/systemd/system/zzb.service"),"""
             [Unit]
             Description=Testing B
+            [Service]
+            ExecStart=/usr/bin/sleep 2
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(root, "/etc/systemd/system/zzc.service"),"""
             [Unit]
             Description=Testing C
+            [Service]
+            ExecStart=/usr/bin/sleep 2
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(root, "/etc/systemd/system-preset/our.preset"),"""
@@ -2801,11 +2845,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(os_path(root, "/etc/systemd/system/zzb.service"),"""
             [Unit]
             Description=Testing B
+            [Service]
+            ExecStart=/usr/bin/sleep 2
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(root, "/etc/systemd/system/zzc.service"),"""
             [Unit]
             Description=Testing C
+            [Service]
+            ExecStart=/usr/bin/sleep 2
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(root, "/etc/systemd/system-preset/our.preset"),"""
@@ -2904,11 +2952,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(os_path(root, "/etc/systemd/system/zzb.service"),"""
             [Unit]
             Description=Testing B
+            [Service]
+            ExecStart=/usr/bin/sleep 2
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(root, "/etc/systemd/system/zzc.service"),"""
             [Unit]
             Description=Testing C
+            [Service]
+            ExecStart=/usr/bin/sleep 2
             [Install]
             WantedBy=multi-user.target""")
         #
@@ -2958,21 +3010,29 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(os_path(root, "/etc/systemd/system/zzb.service"),"""
             [Unit]
             Description=Testing B
+            [Service]
+            ExecStart=/usr/bin/sleep 2
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(root, "/etc/systemd/system/zzc.service"),"""
             [Unit]
             Description=Testing C
+            [Service]
+            ExecStart=/usr/bin/sleep 2
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(root, "/etc/systemd/system/mount-disks.service"),"""
             [Unit]
             Description=Testing C
+            [Service]
+            ExecStart=/usr/bin/sleep 2
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(root, "/etc/systemd/system/network.service"),"""
             [Unit]
             Description=Testing C
+            [Service]
+            ExecStart=/usr/bin/sleep 2
             [Install]
             WantedBy=multi-user.target""")
         #
@@ -4117,6 +4177,70 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.rm_zzfiles(root)
         self.coverage()
+    def real_3102_mask_service_creates_empty_file(self):
+        self.test_3102_mask_service_creates_empty_file(True)
+    def test_3102_mask_service_creates_empty_file(self, real = False):
+        """ check that a service can be masked """
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir, real)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
+        self.rm_zzfiles(root)
+        #
+        text_file(os_path(root, "/usr/lib/systemd/system/zza.service"),"""
+            [Unit]
+            Description=Testing A""")
+        text_file(os_path(root, "/usr/lib/systemd/system/zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            ExecStart=/usr/bin/sleep 2
+            [Install]
+            WantedBy=multi-user.target""")
+        cmd = "{systemctl} daemon-reload"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "{systemctl} enable zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        enabled_file = os_path(root, "/etc/systemd/system/multi-user.target.wants/zzb.service")
+        self.assertTrue(os.path.islink(enabled_file))
+        textB = file(enabled_file).read()
+        self.assertTrue(greps(textB, "Testing B"))
+        self.assertIn("\nDescription", textB)
+        cmd = "{systemctl} status zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertTrue(greps(out, "enabled"))
+        # .........................................
+        cmd = "{systemctl} mask zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        cmd = "{systemctl} status zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertFalse(greps(out, "enabled"))
+        self.assertTrue(greps(out, "masked"))
+        self.assertTrue(greps(out, "/dev/null"))
+        mask_file = os_path(root, "/etc/systemd/system/zzb.service")
+        self.assertTrue(os.path.islink(mask_file))
+        target = os.readlink(mask_file)
+        self.assertEqual(target, "/dev/null")
+        cmd = "{systemctl} is-active zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertTrue(greps(out, "inactive"))
+        cmd = "{systemctl} is-enabled zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertTrue(greps(out, "masked"))
+        self.rm_zzfiles(root)
+        self.rm_testdir()
+        self.coverage()
+
     def test_3201_missing_environment_file_makes_service_ignored(self):
         """ check that a missing EnvironmentFile spec makes the service to be ignored"""
         testname = self.testname()
