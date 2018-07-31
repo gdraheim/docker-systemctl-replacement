@@ -353,10 +353,10 @@ class UnitConfigParser:
         initscript = False
         initinfo = False
         section = None
-        if os.path.isfile(filename):
-            self._files.append(filename)
         nextline = False
         name, text = "", ""
+        if os.path.isfile(filename):
+            self._files.append(filename)
         for orig_line in open(filename):
             if nextline:
                 text += orig_line
@@ -436,9 +436,14 @@ class UnitConf:
         self.data = data # UnitParser
         self.env = {}
         self.status = None
+        self.masked = None
     def loaded(self):
         files = self.data.filenames()
-        return len(files)
+        if self.masked:
+            return "masked"
+        if len(files):
+            return "loaded"
+        return ""
     def filename(self):
         """ returns the last filename that was parsed """
         files = self.data.filenames()
@@ -874,17 +879,22 @@ class Systemctl:
         if not path: return None
         if path in self._loaded_file_sysd:
             return self._loaded_file_sysd[path]
+        masked = None
+        if os.path.islink(path) and os.readlink(path).startswith("/dev"):
+            masked = os.readlink(path)
         unit = UnitParser()
-        unit.read_sysd(path)
-        override_d = path + ".d"
-        if os.path.isdir(override_d):
-            for name in os.listdir(override_d):
-                path = os.path.join(override_d, name)
-                if os.path.isdir(path):
-                    continue
-                if name.endswith(".conf"):
-                    unit.read_sysd(path)
+        if not masked:
+            unit.read_sysd(path)
+            override_d = path + ".d"
+            if os.path.isdir(override_d):
+                for name in os.listdir(override_d):
+                    path = os.path.join(override_d, name)
+                    if os.path.isdir(path):
+                        continue
+                    if name.endswith(".conf"):
+                        unit.read_sysd(path)
         conf = UnitConf(unit)
+        conf.masked = masked
         self._loaded_file_sysd[path] = conf
         return conf
     def load_sysv_unit_conf(self, module): # -> conf?
@@ -905,6 +915,7 @@ class Systemctl:
         data.set("Unit","Id", module)
         data.set("Unit", "Names", module)
         data.set("Unit", "Description", "NOT-FOUND "+module)
+        # assert(not data.loaded())
         return UnitConf(data)
     def get_unit_conf(self, module): # -> conf (conf | default-conf)
         """ accept that a unit does not exist 
@@ -2573,8 +2584,11 @@ class Systemctl:
     def status_unit(self, unit):
         conf = self.get_unit_conf(unit)
         result = "%s - %s" % (unit, self.get_description_from(conf))
-        if conf.loaded():
-            result += "\n    Loaded: loaded ({}, {})".format(conf.filename(), self.enabled_from(conf) )
+        loaded = conf.loaded()
+        if loaded:
+            filename = conf.filename()
+            enabled = self.enabled_from(conf)
+            result += "\n    Loaded: {loaded} ({filename}, {enabled})".format(**locals())
         else:
             result += "\n    Loaded: failed"
             return 3, result
@@ -2958,6 +2972,8 @@ class Systemctl:
             if state: 
                 return "enabled"
             return "disabled"
+        if conf.masked:
+            return "masked"
         wanted = self.wanted_from(conf)
         if not wanted:
             return "static"
@@ -3426,7 +3442,7 @@ class Systemctl:
         yield "MainPID", self.active_pid_from(conf) or "0"  # status["MainPID"] or PIDFile-read
         yield "SubState", self.get_substate_from(conf)      # status["SubState"] or notify-result
         yield "ActiveState", self.get_active_from(conf)     # status["ActiveState"]
-        yield "LoadState", conf.loaded() and "loaded" or "not-loaded"
+        yield "LoadState", conf.loaded() or "not-loaded"
         yield "UnitFileState", self.enabled_from(conf)
         yield "TimeoutStartUSec", seconds_to_time(self.get_TimeoutStartSec(conf))
         yield "TimeoutStopUSec", seconds_to_time(self.get_TimeoutStopSec(conf))
