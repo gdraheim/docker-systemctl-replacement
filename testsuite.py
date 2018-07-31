@@ -4184,6 +4184,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir, real)
+        vv = "-vv"
         systemctl = _cov + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         self.rm_zzfiles(root)
@@ -4219,20 +4220,28 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        cmd = "{systemctl} status zzb.service"
+        cmd = "{systemctl} status zzb.service {vv}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertFalse(greps(out, "enabled"))
         self.assertTrue(greps(out, "masked"))
-        self.assertTrue(greps(out, "/dev/null"))
+        if real: self.assertTrue(greps(out, "/dev/null"))
+        else: self.assertTrue(greps(out, "None, "))
         mask_file = os_path(root, "/etc/systemd/system/zzb.service")
         self.assertTrue(os.path.islink(mask_file))
         target = os.readlink(mask_file)
         self.assertEqual(target, "/dev/null")
+        cmd = "{systemctl} show zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertTrue(greps(out, "LoadState=masked"))
+        self.assertTrue(greps(out, "UnitFileState=masked"))
+        self.assertTrue(greps(out, "Id=zzb.service"))
+        self.assertTrue(greps(out, "Names=zzb.service"))
         cmd = "{systemctl} is-active zzb.service"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertTrue(greps(out, "inactive"))
+        if real: self.assertTrue(greps(out, "inactive"))
         cmd = "{systemctl} is-enabled zzb.service"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
