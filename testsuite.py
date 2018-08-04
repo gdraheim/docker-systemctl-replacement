@@ -9706,6 +9706,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         images = IMAGES
         image = self.local_image(CENTOS)
+        python = _python
         python_coverage = _python_coverage
         package = "yum"
         if greps(open("/etc/issue"), "openSUSE"):
@@ -9739,6 +9740,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         images = IMAGES
         image = self.local_image(CENTOS)
+        python = _python
         python_coverage = _python_coverage
         package = "yum"
         if greps(open("/etc/issue"), "openSUSE"):
@@ -9784,12 +9786,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
         sh____(cmd.format(**locals()))
+        if package == "zypper":
+            cmd = "docker exec {testname} {package} mr --no-gpgcheck oss-update"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
-            if package == "zypper":
-                cmd = "docker exec {testname} {package} mr --no-gpgcheck oss-update"
-                sh____(cmd.format(**locals()))
             cmd = "docker exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
+        else:
+            cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
+            sx____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
         #
@@ -9856,6 +9861,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         images = IMAGES
         image = self.local_image(CENTOS)
+        python = _python
         python_coverage = _python_coverage
         package = "yum"
         if greps(open("/etc/issue"), "openSUSE"):
@@ -9901,12 +9907,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
         sh____(cmd.format(**locals()))
+        if package == "zypper":
+            cmd = "docker exec {testname} {package} mr --no-gpgcheck oss-update"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
-            if package == "zypper":
-                cmd = "docker exec {testname} {package} mr --no-gpgcheck oss-update"
-                sh____(cmd.format(**locals()))
             cmd = "docker exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
+        else:
+            cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
+            sx____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
         #
@@ -10019,11 +10028,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if package == "zypper":
             cmd = "docker exec {testname} {package} mr --no-gpgcheck oss-update"
             sh____(cmd.format(**locals()))
-            cmd = "docker exec {testname} {package} install -y {python}"
-            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "docker exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
+        else:
+            cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
+            sx____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
         #
@@ -10154,11 +10164,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if package == "zypper":
             cmd = "docker exec {testname} {package} mr --no-gpgcheck oss-update"
             sh____(cmd.format(**locals()))
-            cmd = "docker exec {testname} {package} install -y {python}"
-            sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "docker exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
+        else:
+            cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
+            sx____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
         #
@@ -10242,6 +10253,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         images = IMAGES
         image = self.local_image(CENTOS)
+        python = _python
         python_coverage = _python_coverage
         package = "yum"
         if greps(open("/etc/issue"), "openSUSE"):
@@ -10296,12 +10308,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
         sh____(cmd.format(**locals()))
+        if package == "zypper":
+            cmd = "docker exec {testname} {package} mr --no-gpgcheck oss-update"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
-            if package == "zypper":
-                cmd = "docker exec {testname} {package} mr --no-gpgcheck oss-update"
-                sh____(cmd.format(**locals()))
             cmd = "docker exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
+        else:
+            cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
+            sx____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
         #
@@ -10372,6 +10387,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         images = IMAGES
         image = self.local_image(CENTOS)
+        python = _python
         python_coverage = _python_coverage
         package = "yum"
         if greps(open("/etc/issue"), "openSUSE"):
@@ -10426,12 +10442,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
         sh____(cmd.format(**locals()))
+        if package == "zypper":
+            cmd = "docker exec {testname} {package} mr --no-gpgcheck oss-update"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
-            if package == "zypper":
-                cmd = "docker exec {testname} {package} mr --no-gpgcheck oss-update"
-                sh____(cmd.format(**locals()))
             cmd = "docker exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
+        else:
+            cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
+            sx____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
         #
@@ -10523,6 +10542,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         images = IMAGES
         image = self.local_image(CENTOS)
+        python = _python
         python_coverage = _python_coverage
         package = "yum"
         if greps(open("/etc/issue"), "openSUSE"):
@@ -10601,7 +10621,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             cmd = "docker exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
         else:
-            cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/python || {package} install -y python'"
+            cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
             sx____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
@@ -10684,6 +10704,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         images = IMAGES
         image = self.local_image(CENTOS)
         package = "yum"
+        python = _python
         python_coverage = _python_coverage
         cov_run = ""
         if COVERAGE:
@@ -10737,12 +10758,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/{testsleep}"
         sh____(cmd.format(**locals()))
+        if package == "zypper":
+            cmd = "docker exec {testname} {package} mr --no-gpgcheck oss-update"
+            sh____(cmd.format(**locals()))
         if COVERAGE:
-            if package == "zypper":
-                cmd = "docker exec {testname} {package} mr --no-gpgcheck oss-update"
-                sh____(cmd.format(**locals()))
             cmd = "docker exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
+        else:
+            cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
+            sx____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
         #
