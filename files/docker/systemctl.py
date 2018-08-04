@@ -1429,18 +1429,24 @@ class Systemctl:
         for part in shlex.split(cmd3):
             newcmd += [ re.sub("[$][{](\w+)[}]", lambda m: get_env2(m), part) ]
         return newcmd
+    def path_journal_log(self, conf):
+        name = conf.filename() 
+        if not name:
+            return None
+        log_folder = _var(self._journal_log_folder)
+        if self._root:
+            log_folder = os_path(self._root, log_folder)
+        log_file = name.replace(os.path.sep,".") + ".log"
+        x = log_file.find(".", 1)
+        if x > 0: log_file = log_file[x+1:]
+        return os.path.join(log_folder, log_file)
     def open_journal_log(self, conf):
-        name = conf.filename()
-        if name:
-            log_folder = _var(self._journal_log_folder)
-            if self._root:
-                log_folder = os_path(self._root, log_folder)
-            log_file = name.replace(os.path.sep,".") + ".log"
-            x = log_file.find(".", 1)
-            if x > 0: log_file = log_file[x+1:]
+        log_file = self.path_journal_log(conf)
+        if log_file:
+            log_folder = os.path.dirname(log_file)
             if not os.path.isdir(log_folder):
                 os.makedirs(log_folder)
-            return open(os.path.join(log_folder, log_file), "w")
+            return open(os.path.join(log_file), "w")
         return open("/dev/null", "w")
     def chdir_workingdir(self, conf, check = True):
         """ if specified then change the working directory """
