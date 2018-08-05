@@ -20,6 +20,7 @@ import inspect
 import types
 import logging
 import re
+import sys
 from fnmatch import fnmatchcase as fnmatch
 from glob import glob
 import json
@@ -5488,6 +5489,127 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
+    def test_3700_systemctl_py_default_init_loop_in_testenv(self):
+        """ check that we can enable services in a test env to be run by an init-loop.
+            We expect here that the init-loop ends when all services are dead. """
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        testsleep = self.testname("sleep")
+        bindir = os_path(root, "/usr/bin")
+        text_file(os_path(testdir, "zza.service"),"""
+            [Unit]
+            Description=Testing A""")
+        text_file(os_path(testdir, "zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            Type=simple
+            ExecStartPre=/bin/echo starting B
+            ExecStart={bindir}/{testsleep} 10
+            ExecStartPost=/bin/echo running B
+            ExecStopPost=/bin/echo stopping B
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        text_file(os_path(testdir, "zzc.service"),"""
+            [Unit]
+            Description=Testing C
+            [Service]
+            Type=simple
+            ExecStartPre=/bin/echo starting C
+            ExecStart={bindir}/{testsleep} 13
+            ExecStartPost=/bin/echo running C
+            ExecStopPost=/bin/echo stopping C
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
+        copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
+        copy_file(os_path(testdir, "zzc.service"), os_path(root, "/etc/systemd/system/zzc.service"))
+        #
+        cmd = "{systemctl} enable zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        cmd = "{systemctl} enable zzc.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        cmd = "{systemctl} --version"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        cmd = "{systemctl} default-services -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertTrue(greps(out, "zzb.service"))
+        self.assertEqual(len(lines(out)), 2)
+        #
+        log_stdout = os.path.join(root, "systemctl.stdout.log")
+        log_stderr = os.path.join(root, "systemctl.stderr.log")
+        pid = os.fork()
+        if not pid:
+            new_stdout = os.open(log_stdout, os.O_WRONLY|os.O_CREAT|os.O_TRUNC)
+            new_stderr = os.open(log_stderr, os.O_WRONLY|os.O_CREAT|os.O_TRUNC)
+            os.dup2(new_stdout, 1)
+            os.dup2(new_stderr, 2)
+            systemctl_cmd = [ _systemctl_py, "--root="+root, "--init", "default", "-vv" ]
+            env = os.environ.copy()
+            env["EXIT_WHEN_NO_MORE_SERVICES"] = "yes"
+            env["SYSTEMCTL_INITLOOP"] = "2" 
+            os.execve(_systemctl_py, systemctl_cmd, env)
+        time.sleep(2)
+        logg.info("all services running [systemctl.py PID %s]", pid)
+        top = output(_top_recent)
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        cmd = "{systemctl} is-active zzb.service zzc.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertTrue(greps(out, "^active"))
+        self.assertFalse(greps(out, "inactive"))
+        self.assertFalse(greps(out, "failed"))
+        for check in xrange(9):
+            time.sleep(3)
+            top = output(_top_recent)
+            logg.info("[%s] checking for testsleep procs: \n>>>\n%s", 
+                check, greps(top, testsleep))
+            if not greps(top, testsleep):
+               break
+        logg.info("all services dead [systemctl.py PID %s]", pid)
+        top = output(_top_recent)
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, testsleep))
+        cmd = "{systemctl} is-active zzb.service zzc.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        self.assertFalse(greps(out, "^active"))
+        self.assertTrue(greps(out, "inactive"))
+        self.assertFalse(greps(out, "failed"))
+        #
+        os.kill(pid, 2) # SIGINT (clean up zombie?)
+        stdout = open(log_stdout).read()
+        stderr = open(log_stderr).read()
+        logg.info("-------------------------------- STDERR was\n%s", stderr)
+        logg.info("-------------------------------- STDOUT was\n%s", stdout)
+        self.assertTrue(greps(stderr, "no more services - exit init-loop"))
+        self.assertTrue(greps(stderr, "system is down"))
+        self.assertTrue(greps(stdout, "starting B"))
+        self.assertTrue(greps(stdout, "starting C"))
+        #
+        kill_testsleep = "killall {testsleep}"
+        sx____(kill_testsleep.format(**locals()))
+        self.rm_testdir()
+        self.coverage()
+
+
     def test_3901_service_config_cat(self):
         """ check that a name service config can be printed as-is"""
         testname = self.testname()
@@ -10245,6 +10367,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing B
             [Service]
             Type=simple
+            ExecStartPre=/bin/echo starting B
             ExecStart=/usr/bin/testsleep 40
             [Install]
             WantedBy=multi-user.target""")
@@ -10253,6 +10376,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing C
             [Service]
             Type=simple
+            ExecStartPre=/bin/echo starting C
             ExecStart=/usr/bin/testsleep 50
             [Install]
             WantedBy=multi-user.target""")
@@ -10297,23 +10421,38 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(top, "testsleep 40"))
         self.assertTrue(greps(top, "testsleep 50"))
         #
-        cmd = "docker exec {testname} systemctl halt -vvvv"
+        cmd = "docker logs {testname}x"
+        logs = output(cmd.format(**locals()))
+        logg.info("------- docker logs\n>\n%s", logs)
+        self.assertFalse(greps(logs, "starting B"))
+        self.assertFalse(greps(logs, "starting C"))
+        time.sleep(6) # INITLOOPS ticks at 5sec per default
+        cmd = "docker logs {testname}x"
+        logs = output(cmd.format(**locals()))
+        logg.info("------- docker logs\n>\n%s", logs)
+        self.assertTrue(greps(logs, "starting B"))
+        self.assertTrue(greps(logs, "starting C"))
+        #
+        cmd = "docker exec {testname}x systemctl halt -vvvv"
         # sh____(cmd.format(**locals()))
         out3 = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out3)
         #
-        top_container = "docker exec {testname} ps -eo pid,ppid,args"
+        top_container = "docker exec {testname}x ps -eo pid,ppid,args"
         top = output(top_container.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, "testsleep 40"))
         self.assertFalse(greps(top, "testsleep 50"))
         #
+        cmd = "docker logs {testname}x"
+        logs = output(cmd.format(**locals()))
+        logg.info("------- docker logs\n>\n%s", logs)
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}x"
         sx____(cmd.format(**locals()))
         cmd = "docker rmi {images}:{testname}"
-        sx____(cmd.format(**locals()))
+        # sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_5130_systemctl_py_run_default_services_from_simple_saved_container(self):
         """ check that we can enable services in a docker container to be run as default-services
