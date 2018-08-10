@@ -83,7 +83,7 @@ ProcMaxDepth = 100
 MaxLockWait = None # equals DefaultMaximumTimeout
 
 _notify_socket_folder = "/var/run/systemd" # alias /run/systemd
-_notify_socket_name = "notify" # NOTIFY_SOCKET="/var/run/systemd/notify"
+_notify_socket_name = "notifyL" # NOTIFY_SOCKET="/var/run/systemd/notifyL"
 _pid_file_folder = "/var/run"
 _journal_log_folder = "/var/log/journal"
 
