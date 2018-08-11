@@ -4562,7 +4562,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.rm_testdir()
         self.coverage()
-    def test_3250_may_expand_special_variables(self):
+    def test_3250_env_may_expand_special_variables(self):
         """ check that different flavours for special
             variables get expanded."""
         testname = self.testname()
@@ -4587,12 +4587,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStartPost=%s F %%p $X ${Y}
             ExecStartPost=%s G %%I $X ${Y}
             ExecStartPost=%s H %%i $X ${Y} $FOO
+            ExecStartPost=%s T %%T $X ${Y} 
+            ExecStartPost=%s V %%V $X ${Y} 
             ExecStartPost=%s Z %%Z $X ${Y} ${FOO}
             [Install]
             WantedBy=multi-user.target""" 
             % (print_sh, print_sh, print_sh, print_sh,
                print_sh, print_sh, print_sh, print_sh,
-               print_sh,))
+               print_sh, print_sh, print_sh))
         text_file(logfile, "")
         shell_file(print_sh, """
             #! /bin/sh
@@ -4609,11 +4611,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         A="'A' 'zzb' 'zzc.service' 'x1' 'y2 y3'"  # A %%N
         B="'B' 'zzb zzc.service' 'x1' 'y2 y3' ''" # B %%n
         C="'C' '%s' 'x1' 'y2 y3' ''" % service_file           # C %%f
-        D="'D' '%s' 'x1' 'y2 y3' ''" % os_path(root, "/var")  # D %%t
+        D="'D' '%s' 'x1' 'y2 y3' ''" % os_path(root, "/run")  # D %%t
         E="'E' 'zzb' 'zzc' 'x1' 'y2 y3'"  # E %%P
         F="'F' 'zzb zzc' 'x1' 'y2 y3' ''" # F %%p
         G="'G' 'x1' 'y2 y3' '' ''" # G %%I
         H="'H' '' 'x1' 'y2 y3' ''" # H %%i
+        T="'T' '%s' 'x1' 'y2 y3' ''" % os_path(root, "/tmp")  # T %%T
+        V="'V' '%s' 'x1' 'y2 y3' ''" % os_path(root, "/var/tmp")  # V %%V
         Z="'Z' '' 'x1' 'y2 y3' ''" # Z %%Z
         self.assertIn(A, log)
         self.assertIn(B, log)
@@ -4623,6 +4627,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertIn(F, log)
         self.assertIn(G, log)
         self.assertIn(H, log)
+        self.assertIn(T, log)
+        self.assertIn(V, log)
         self.assertIn(Z, log)
         #
         self.rm_testdir()

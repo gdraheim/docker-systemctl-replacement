@@ -557,15 +557,23 @@ def subprocess_testpid(pid):
     else:
         return testpid(pid, None, 0)
 
-def parse_unit(name): # -> object(unit, instance, suffix)
-    unit_name = name
-    suffix = unit_name.rfind(".")
-    if suffix > 0: unit_name = unit_name[:suffix]
+def parse_unit(name): # -> object(prefix, instance, suffix, ...., name, component)
+    unit_name, suffix = name, ""
+    has_suffix = name.rfind(".")
+    if has_suffix > 0: 
+        unit_name = name[:has_suffix]
+        suffix = name[has_suffix+1:]
     prefix, instance = unit_name, ""
-    if "@" in unit_name:
-        prefix, instance = unit_name.split("@", 1)
-    UnitName = collections.namedtuple("UnitName", ["name", "prefix", "instance", "suffix" ])
-    return UnitName(name, prefix, instance, suffix)
+    has_instance = unit_name.find("@")
+    if has_instance > 0:
+        prefix = unit_name[:has_instance]
+        instance = unit_name[has_instance+1:]
+    component = ""
+    has_component = prefix.rfind("-")
+    if has_component > 0: 
+        component = prefix[has_component+1:]
+    UnitName = collections.namedtuple("UnitName", ["name", "prefix", "instance", "suffix", "component" ])
+    return UnitName(name, prefix, instance, suffix, component)
 
 def time_to_seconds(text, maximum = None):
     if maximum is None:
@@ -1409,9 +1417,36 @@ class Systemctl:
             confs["p"] = sh_escape(unit.prefix)
             confs["I"] = unit.instance
             confs["i"] = sh_escape(unit.instance)
+            confs["J"] = unit.component
+            confs["j"] = sh_escape(unit.component)
             confs["f"] = sh_escape(conf.filename())
-            confs["t"] = os_path(self._root, "/run")
-            confs["T"] = os_path(self._root, "/tmp")
+            VARTMP = "/var/tmp"
+            TMP = "/tmp"
+            RUN = "/run"
+            DAT = "/var/lib"
+            LOG = "/var/log"
+            CACHE = "/var/cache"
+            CONFIG = "/etc"
+            HOME = "/root"
+            SHELL = "/bin/sh"
+            if self.user_mode():
+                VARTMP = os.environ.get("TMPDIR", os.environ.get("TEMP", os.environ.get("TMP", VARTMP)))
+                TMP = os.environ.get("TMPDIR", os.environ.get("TEMP", os.environ.get("TMP", TMP)))
+                RUN = os.environ.get("XDG_RUNTIME_DIR", RUN)
+                DAT = os.environ.get("XDG_CONFIG_HOME", DAT)
+                LOG = os.path.join(DAT, "log")
+                CACHE = os.environ.get("XDG_CACHE_HOME", CACHE)
+                CONFIG = os.environ.get("XDG_CONFIG_HOME", CONFIG)
+                HOME = os.environ.get("HOME", HOME)
+                SHELL = os.environ.get("SHELL", SHELL)
+            confs["V"] = os_path(self._root, VARTMP)
+            confs["T"] = os_path(self._root, TMP)
+            confs["t"] = os_path(self._root, RUN)
+            confs["S"] = os_path(self._root, DAT)
+            confs["s"] = SHELL
+            confs["h"] = HOME
+            confs["C"] = os_path(self._root, CACHE)
+            confs["E"] = os_path(self._root, CONFIG)
             return confs
         def get_conf1(m):
             confs = get_confs(conf)
