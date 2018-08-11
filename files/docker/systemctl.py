@@ -152,17 +152,28 @@ def os_getlogin():
     import pwd
     return pwd.getpwuid(os.geteuid()).pw_name
 
+def get_runtime_dir():
+    explicit = os.environ.get("XDG_RUNTIME_DIR", "")
+    if explicit: return explicit
+    user = os_getlogin()
+    return "/tmp/run-"+user
+
+def get_home():
+    explicit = os.environ.get("HOME", "")
+    if explicit: return explicit
+    return os.path.expanduser("~")
+
 def _var(path):
     if not _user_mode:
         return path
     if path.startswith("/var"):
-        user = os_getlogin()
-        runtime = os.environ.get("XDG_RUNTIME_DIR", "/tmp/run-"+user)
+        runtime = get_runtime_dir()
         if not os.path.isdir(runtime):
             os.makedirs(runtime)
             os.chmod(runtime, 0o700)
         return path.replace("/var", runtime, 1)
     return path
+
 
 def shutil_chown(filename, user = None, group = None):
     """ in python 3.3. there is shutil.chown """
@@ -1428,23 +1439,28 @@ class Systemctl:
             CACHE = "/var/cache"
             CONFIG = "/etc"
             HOME = "/root"
+            USER = "root"
+            UID = 0
             SHELL = "/bin/sh"
-            if self.user_mode():
+            if self.is_user_conf(conf):
+                USER = os_getlogin()
+                HOME = get_home()
+                RUN = os.environ.get("XDG_RUNTIME_DIR", get_runtime_dir())
+                CONFIG = os.environ.get("XDG_CONFIG_HOME", HOME + "/.config")
+                CACHE = os.environ.get("XDG_CACHE_HOME", HOME + "/.cache")
+                SHARE = os.environ.get("XDG_DATA_HOME", HOME + "/.local/share")
+                DAT = CONFIG
+                LOG = os.path.join(CONFIG, "log")
+                SHELL = os.environ.get("SHELL", SHELL)
                 VARTMP = os.environ.get("TMPDIR", os.environ.get("TEMP", os.environ.get("TMP", VARTMP)))
                 TMP = os.environ.get("TMPDIR", os.environ.get("TEMP", os.environ.get("TMP", TMP)))
-                RUN = os.environ.get("XDG_RUNTIME_DIR", RUN)
-                DAT = os.environ.get("XDG_CONFIG_HOME", DAT)
-                LOG = os.path.join(DAT, "log")
-                CACHE = os.environ.get("XDG_CACHE_HOME", CACHE)
-                CONFIG = os.environ.get("XDG_CONFIG_HOME", CONFIG)
-                HOME = os.environ.get("HOME", HOME)
-                SHELL = os.environ.get("SHELL", SHELL)
             confs["V"] = os_path(self._root, VARTMP)
             confs["T"] = os_path(self._root, TMP)
             confs["t"] = os_path(self._root, RUN)
             confs["S"] = os_path(self._root, DAT)
             confs["s"] = SHELL
             confs["h"] = HOME
+            confs["u"] = USER
             confs["C"] = os_path(self._root, CACHE)
             confs["E"] = os_path(self._root, CONFIG)
             return confs
