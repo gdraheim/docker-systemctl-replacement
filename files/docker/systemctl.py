@@ -1405,7 +1405,8 @@ class Systemctl:
             confs["N"] = conf.name()
             confs["n"] = sh_escape(conf.name())
             confs["f"] = sh_escape(conf.filename())
-            confs["t"] = os_path(self._root, "/var")
+            confs["t"] = os_path(self._root, "/run")
+            confs["T"] = os_path(self._root, "/tmp")
             unit = parse_unit(conf.name())
             confs["P"] = unit.prefix
             confs["p"] = sh_escape(unit.prefix)
