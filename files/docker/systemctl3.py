@@ -31,6 +31,8 @@ else:
 
 DEBUG_AFTER = os.environ.get("DEBUG_AFTER", "") or False
 DEBUG_REMOVE = os.environ.get("DEBUG_REMOVE", "") or False
+EXIT_WHEN_NO_MORE_PROCS = os.environ.get("EXIT_WHEN_NO_MORE_PROCS", "yes") or False
+EXIT_WHEN_NO_MORE_SERVICES = os.environ.get("EXIT_WHEN_NO_MORE_SERVICES", "") or False
 
 # defaults for options
 _extra_vars = []
@@ -78,7 +80,7 @@ DefaultWaitKillProc = 9
 DefaultTimeoutStartSec = 9 # officially 90
 DefaultTimeoutStopSec = 9  # officially 90
 DefaultMaximumTimeout = 200
-InitLoopSleep = 5
+InitLoopSleep = int(os.environ.get("SYSTEMCTL_INITLOOP", 5))
 ProcMaxDepth = 100
 MaxLockWait = None # equals DefaultMaximumTimeout
 
@@ -555,6 +557,24 @@ def subprocess_testpid(pid):
     else:
         return testpid(pid, None, 0)
 
+def parse_unit(name): # -> object(prefix, instance, suffix, ...., name, component)
+    unit_name, suffix = name, ""
+    has_suffix = name.rfind(".")
+    if has_suffix > 0: 
+        unit_name = name[:has_suffix]
+        suffix = name[has_suffix+1:]
+    prefix, instance = unit_name, ""
+    has_instance = unit_name.find("@")
+    if has_instance > 0:
+        prefix = unit_name[:has_instance]
+        instance = unit_name[has_instance+1:]
+    component = ""
+    has_component = prefix.rfind("-")
+    if has_component > 0: 
+        component = prefix[has_component+1:]
+    UnitName = collections.namedtuple("UnitName", ["name", "prefix", "instance", "suffix", "component" ])
+    return UnitName(name, prefix, instance, suffix, component)
+
 def time_to_seconds(text, maximum = None):
     if maximum is None:
         maximum = DefaultMaximumTimeout
@@ -726,6 +746,8 @@ class Systemctl:
         self._default_target = _default_target
         self._user_mode = _user_mode
         self._user_getlogin = os_getlogin()
+        self._log_file = {} # init-loop
+        self._log_hold = {} # init-loop
     def user_folder(self):
         for folder in self.user_folders():
             if folder: return folder
@@ -1388,20 +1410,43 @@ class Systemctl:
             confs={ "%": "%" }
             if not conf:
                 return confs
-            confs["N"] = conf.name()
-            confs["n"] = sh_escape(conf.name())
+            unit = parse_unit(conf.name())
+            confs["N"] = unit.name
+            confs["n"] = sh_escape(unit.name)
+            confs["P"] = unit.prefix
+            confs["p"] = sh_escape(unit.prefix)
+            confs["I"] = unit.instance
+            confs["i"] = sh_escape(unit.instance)
+            confs["J"] = unit.component
+            confs["j"] = sh_escape(unit.component)
             confs["f"] = sh_escape(conf.filename())
-            confs["t"] = os_path(self._root, "/var")
-            unit_name = conf.name()
-            suffix = unit_name.rfind(".")
-            if suffix > 0: unit_name = unit_name[:suffix]
-            prefix, instance = unit_name, ""
-            if "@" in unit_name:
-                prefix, instance = unit_name.split("@", 1)
-            confs["P"] = prefix
-            confs["p"] = sh_escape(prefix)
-            confs["I"] = instance
-            confs["i"] = sh_escape(instance)
+            VARTMP = "/var/tmp"
+            TMP = "/tmp"
+            RUN = "/run"
+            DAT = "/var/lib"
+            LOG = "/var/log"
+            CACHE = "/var/cache"
+            CONFIG = "/etc"
+            HOME = "/root"
+            SHELL = "/bin/sh"
+            if self.user_mode():
+                VARTMP = os.environ.get("TMPDIR", os.environ.get("TEMP", os.environ.get("TMP", VARTMP)))
+                TMP = os.environ.get("TMPDIR", os.environ.get("TEMP", os.environ.get("TMP", TMP)))
+                RUN = os.environ.get("XDG_RUNTIME_DIR", RUN)
+                DAT = os.environ.get("XDG_CONFIG_HOME", DAT)
+                LOG = os.path.join(DAT, "log")
+                CACHE = os.environ.get("XDG_CACHE_HOME", CACHE)
+                CONFIG = os.environ.get("XDG_CONFIG_HOME", CONFIG)
+                HOME = os.environ.get("HOME", HOME)
+                SHELL = os.environ.get("SHELL", SHELL)
+            confs["V"] = os_path(self._root, VARTMP)
+            confs["T"] = os_path(self._root, TMP)
+            confs["t"] = os_path(self._root, RUN)
+            confs["S"] = os_path(self._root, DAT)
+            confs["s"] = SHELL
+            confs["h"] = HOME
+            confs["C"] = os_path(self._root, CACHE)
+            confs["E"] = os_path(self._root, CONFIG)
             return confs
         def get_conf1(m):
             confs = get_confs(conf)
@@ -1429,18 +1474,24 @@ class Systemctl:
         for part in shlex.split(cmd3):
             newcmd += [ re.sub("[$][{](\w+)[}]", lambda m: get_env2(m), part) ]
         return newcmd
+    def path_journal_log(self, conf):
+        name = conf.filename() 
+        if not name:
+            return None
+        log_folder = _var(self._journal_log_folder)
+        if self._root:
+            log_folder = os_path(self._root, log_folder)
+        log_file = name.replace(os.path.sep,".") + ".log"
+        x = log_file.find(".", 1)
+        if x > 0: log_file = log_file[x+1:]
+        return os.path.join(log_folder, log_file)
     def open_journal_log(self, conf):
-        name = conf.filename()
-        if name:
-            log_folder = _var(self._journal_log_folder)
-            if self._root:
-                log_folder = os_path(self._root, log_folder)
-            log_file = name.replace(os.path.sep,".") + ".log"
-            x = log_file.find(".", 1)
-            if x > 0: log_file = log_file[x+1:]
+        log_file = self.path_journal_log(conf)
+        if log_file:
+            log_folder = os.path.dirname(log_file)
             if not os.path.isdir(log_folder):
                 os.makedirs(log_folder)
-            return open(os.path.join(log_folder, log_file), "w")
+            return open(os.path.join(log_file), "a")
         return open("/dev/null", "w")
     def chdir_workingdir(self, conf, check = True):
         """ if specified then change the working directory """
@@ -1556,14 +1607,16 @@ class Systemctl:
         /// SPECIAL: may run the init-loop and 
             stop the named units afterwards """
         done = True
+        started_units = []
         for unit in self.sortedAfter(units):
+            started_units.append(unit)
             if not self.start_unit(unit):
                 done = False
         if init:
             logg.info("init-loop start")
-            sig = self.init_loop_until_stop()
+            sig = self.init_loop_until_stop(started_units)
             logg.info("init-loop %s", sig)
-            for unit in self.sortedBefore(units):
+            for unit in reversed(started_units):
                 self.stop_unit(unit)
         return done
     def start_unit(self, unit):
@@ -2453,7 +2506,7 @@ class Systemctl:
                 logg.info("get_status_from %s => %s", conf.name(), state)
                 return state
         pid = self.read_mainpid_from(conf, "")
-        logg.info("pid_file '%s' => PID %s", pid_file or status_file, pid)
+        logg.debug("pid_file '%s' => PID %s", pid_file or status_file, pid)
         if pid:
             if not pid_exists(pid) or pid_zombie(pid):
                 return "failed"
@@ -3578,7 +3631,7 @@ class Systemctl:
         logg.info(" -- system is up")
         if init:
             logg.info("init-loop start")
-            sig = self.init_loop_until_stop()
+            sig = self.init_loop_until_stop(default_services)
             logg.info("init-loop %s", sig)
             self.stop_system_default()
     def stop_system_default(self):
@@ -3636,7 +3689,7 @@ class Systemctl:
         (and no unit is started/stoppped wether given or not).
         """
         if self._now:
-            return self.init_loop_until_stop()
+            return self.init_loop_until_stop([])
         if not modules:
             # alias 'systemctl --init default'
             return self.start_system_default(init = True)
@@ -3653,23 +3706,81 @@ class Systemctl:
                 if unit not in units:
                     units += [ unit ]
         return self.start_units(units, init = True) # and found_all
-    def init_loop_until_stop(self):
+    def start_log_files(self, units):
+        self._log_file = {}
+        self._log_hold = {}
+        for unit in units:
+            conf = self.load_unit_conf(unit)
+            if not conf: continue
+            log_path = self.path_journal_log(conf)
+            try:
+                opened = open(log_path)
+                fd = opened.fileno()
+                fl = fcntl.fcntl(fd, fcntl.F_GETFL)
+                fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
+                self._log_file[unit] = opened
+                self._log_hold[unit] = ""
+            except Exception, e:
+                logg.error("can not open %s log: %s\n\t%s", unit, log_path, e)
+    def read_log_files(self, units):
+        for unit in units:
+            if unit in self._log_file:
+                new_text = self._log_file[unit].read()
+                text = self._log_hold[unit] + new_text
+                if not text: continue
+                lines = text.split("\n")
+                if not text.endswith("\n"):
+                    self._log_hold[unit] = lines[-1]
+                    lines = lines[:-1]
+                for line in lines:
+                    os.write(1, unit+": "+line+"\n")
+                    try: os.fsync(1)
+                    except: pass
+    def stop_log_files(self, units):
+        for unit in units:
+            try:
+                if unit in self._log_file:
+                    if self._log_file[unit]:
+                        self._log_file[unit].close()
+            except Exception, e:
+                logg.error("can not close log: %s\n\t%s", unit, e)
+        self._log_file = {}
+        self._log_hold = {}
+    def init_loop_until_stop(self, units):
         """ this is the init-loop - it checks for any zombies to be reaped and
             waits for an interrupt. When a SIGTERM /SIGINT /Control-C signal
             is received then the signal name is returned. Any other signal will 
             just raise an Exception like one would normally expect. """
         signal.signal(signal.SIGINT, lambda signum, frame: ignore_signals_and_raise_keyboard_interrupt("SIGINT"))
         signal.signal(signal.SIGTERM, lambda signum, frame: ignore_signals_and_raise_keyboard_interrupt("SIGTERM"))
+        self.start_log_files(units)
         while True:
             try:
                 time.sleep(InitLoopSleep)
+                self.read_log_files(units)
+                ##### the reaper goes round
                 running = self.system_reap_zombies()
-                if not running:
-                    break
+                if EXIT_WHEN_NO_MORE_PROCS:
+                    if not running:
+                        logg.info("no more procs - exit init-loop")
+                        break
+                if EXIT_WHEN_NO_MORE_SERVICES:
+                    active = False
+                    for unit in units:
+                        conf = self.load_unit_conf(unit)
+                        if not conf: continue
+                        if self.is_active_from(conf):
+                            active = True
+                    if not active:
+                        logg.info("no more services - exit init-loop")
+                        break
             except KeyboardInterrupt as e:
                 signal.signal(signal.SIGTERM, signal.SIG_DFL)
                 signal.signal(signal.SIGINT, signal.SIG_DFL)
                 return e.message or "STOPPED"
+        self.read_log_files(units)
+        self.read_log_files(units)
+        self.stop_log_files(units)
         return None
     def system_reap_zombies(self):
         """ check to reap children """
