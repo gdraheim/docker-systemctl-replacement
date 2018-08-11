@@ -3,7 +3,7 @@
 Be warned, the systemctl.py user-mode is not identical with the systemd user-manager behaviour.
 
 Both concepts can be explicitly selected when running "systemctl --user" however.
-For systemctl.py it enabled the user-mode while for systemd it opens the socket
+For systemctl.py it enables the user-mode while for systemd it opens the socket
 to send commands to the user-manager. Such a user-manager exists when you have
 a graphical desktop running.
 
@@ -22,8 +22,8 @@ Let's get back to systemctl.py. It does behave similar to systemd's systemctl in
 it will only search x/systemd/system directories when in system-mode. It ignores any
 files in x/systemd/user directories. However if in user-mode then x/systemd/user
 directories are searched - and just like the systemd user-manager it will also find
-*.service files under the user's home directory at "~/.config/systemd/user"
-and "~.local/share/systemd/user".
+*.service files under the user's home directory at `"~/.config/systemd/user"`
+and `"~.local/share/systemd/user"`.
 
 So when running "systemctl --user list-units" you will get a very different list
 of services. That accounts for both systemctl.py and systemd systemctl. Give it a try.
