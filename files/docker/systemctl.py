@@ -557,6 +557,16 @@ def subprocess_testpid(pid):
     else:
         return testpid(pid, None, 0)
 
+def parse_unit(name): # -> object(unit, instance, suffix)
+    unit_name = name
+    suffix = unit_name.rfind(".")
+    if suffix > 0: unit_name = unit_name[:suffix]
+    prefix, instance = unit_name, ""
+    if "@" in unit_name:
+        prefix, instance = unit_name.split("@", 1)
+    UnitName = collections.namedtuple("UnitName", ["name", "prefix", "instance", "suffix" ])
+    return UnitName(name, prefix, instance, suffix)
+
 def time_to_seconds(text, maximum = None):
     if maximum is None:
         maximum = DefaultMaximumTimeout
@@ -1396,16 +1406,11 @@ class Systemctl:
             confs["n"] = sh_escape(conf.name())
             confs["f"] = sh_escape(conf.filename())
             confs["t"] = os_path(self._root, "/var")
-            unit_name = conf.name()
-            suffix = unit_name.rfind(".")
-            if suffix > 0: unit_name = unit_name[:suffix]
-            prefix, instance = unit_name, ""
-            if "@" in unit_name:
-                prefix, instance = unit_name.split("@", 1)
-            confs["P"] = prefix
-            confs["p"] = sh_escape(prefix)
-            confs["I"] = instance
-            confs["i"] = sh_escape(instance)
+            unit = parse_unit(conf.name())
+            confs["P"] = unit.prefix
+            confs["p"] = sh_escape(unit.prefix)
+            confs["I"] = unit.instance
+            confs["i"] = sh_escape(unit.instance)
             return confs
         def get_conf1(m):
             confs = get_confs(conf)
