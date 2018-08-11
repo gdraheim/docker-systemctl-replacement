@@ -1402,16 +1402,16 @@ class Systemctl:
             confs={ "%": "%" }
             if not conf:
                 return confs
-            confs["N"] = conf.name()
-            confs["n"] = sh_escape(conf.name())
-            confs["f"] = sh_escape(conf.filename())
-            confs["t"] = os_path(self._root, "/run")
-            confs["T"] = os_path(self._root, "/tmp")
             unit = parse_unit(conf.name())
+            confs["N"] = unit.name
+            confs["n"] = sh_escape(unit.name)
             confs["P"] = unit.prefix
             confs["p"] = sh_escape(unit.prefix)
             confs["I"] = unit.instance
             confs["i"] = sh_escape(unit.instance)
+            confs["f"] = sh_escape(conf.filename())
+            confs["t"] = os_path(self._root, "/run")
+            confs["T"] = os_path(self._root, "/tmp")
             return confs
         def get_conf1(m):
             confs = get_confs(conf)
