@@ -84,8 +84,8 @@ InitLoopSleep = int(os.environ.get("SYSTEMCTL_INITLOOP", 5))
 ProcMaxDepth = 100
 MaxLockWait = None # equals DefaultMaximumTimeout
 
+# The systemd default is NOTIFY_SOCKET="/var/run/systemd/notify"
 _notify_socket_folder = "/var/run/systemd" # alias /run/systemd
-_notify_socket_name = "notify" # NOTIFY_SOCKET="/var/run/systemd/notify"
 _pid_file_folder = "/var/run"
 _journal_log_folder = "/var/log/journal"
 
@@ -743,7 +743,6 @@ class Systemctl:
         self._unit_type = _unit_type
         # some common constants that may be changed
         self._notify_socket_folder = _var(_notify_socket_folder)
-        self._notify_socket_name = _notify_socket_name
         self._pid_file_folder = _pid_file_folder 
         self._journal_log_folder = _journal_log_folder
         self._WaitProcFile = DefaultWaitProcFile
@@ -1538,15 +1537,18 @@ class Systemctl:
         notify_socket_folder = _var(self._notify_socket_folder)
         if self._root:
             notify_socket_folder = os_path(self._root, notify_socket_folder)
-        notify_socket = os.path.join(notify_socket_folder, self._notify_socket_name)
+        notify_socket = os.path.join(notify_socket_folder, "notify." + str(conf.name() or "systemctl"))
         socketfile = socketfile or notify_socket
-        if not os.path.isdir(os.path.dirname(socketfile)):
-            os.makedirs(os.path.dirname(socketfile))
-        if os.path.exists(socketfile):
-            os.unlink(socketfile)
+        try:
+            if not os.path.isdir(os.path.dirname(socketfile)):
+                os.makedirs(os.path.dirname(socketfile))
+            if os.path.exists(socketfile):
+                os.unlink(socketfile)
+        except Exception, e:
+            logg.warning("error %s: %s", socketfile, e)
         sock = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
         sock.bind(socketfile)
-        os.chmod(socketfile, 0o777)
+        os.chmod(socketfile, 0o777) # the service my run under some User=setting
         return NotifySocket(sock, socketfile)
     def read_notify_socket(self, notify, timeout):
         notify.socket.settimeout(timeout or DefaultMaximumTimeout)
