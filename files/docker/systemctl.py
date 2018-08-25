@@ -31,7 +31,7 @@ else:
 
 DEBUG_AFTER = os.environ.get("DEBUG_AFTER", "") or False
 DEBUG_REMOVE = os.environ.get("DEBUG_REMOVE", "") or False
-EXIT_WHEN_NO_MORE_PROCS = os.environ.get("EXIT_WHEN_NO_MORE_PROCS", "yes") or False
+EXIT_WHEN_NO_MORE_PROCS = os.environ.get("EXIT_WHEN_NO_MORE_PROCS", "") or False
 EXIT_WHEN_NO_MORE_SERVICES = os.environ.get("EXIT_WHEN_NO_MORE_SERVICES", "") or False
 
 # defaults for options
@@ -754,6 +754,8 @@ class Systemctl:
         self._file_for_unit_sysd = None # name.service => /etc/systemd/system/name.service
         self._preset_file_list = None # /etc/systemd/system-preset/* => file content
         self._default_target = _default_target
+        self.exit_when_no_more_procs = EXIT_WHEN_NO_MORE_PROCS or False
+        self.exit_when_no_more_services = EXIT_WHEN_NO_MORE_SERVICES or False
         self._user_mode = _user_mode
         self._user_getlogin = os_getlogin()
         self._log_file = {} # init-loop
@@ -3712,6 +3714,8 @@ class Systemctl:
             # alias 'systemctl --init default'
             return self.start_system_default(init = True)
         #
+        # otherwise quit when the init-services have died
+        self.exit_when_no_more_procs = True
         found_all = True
         units = []
         for module in modules:
@@ -3778,11 +3782,11 @@ class Systemctl:
                 self.read_log_files(units)
                 ##### the reaper goes round
                 running = self.system_reap_zombies()
-                if EXIT_WHEN_NO_MORE_PROCS:
+                if self.exit_when_no_more_procs:
                     if not running:
                         logg.info("no more procs - exit init-loop")
                         break
-                if EXIT_WHEN_NO_MORE_SERVICES:
+                if self.exit_when_no_more_services:
                     active = False
                     for unit in units:
                         conf = self.load_unit_conf(unit)
@@ -4164,7 +4168,7 @@ if __name__ == "__main__":
     systemctl = Systemctl()
     if opt.version:
         args = [ "version" ]
-    if not args: 
+    if not args:
         if _init:
             args = [ "init" ] # alias "--init default"
         else:
