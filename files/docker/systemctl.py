@@ -4151,12 +4151,12 @@ if __name__ == "__main__":
     elif _user_mode:
         _systemctl_debug_log = _var(_systemctl_debug_log)
         _systemctl_extra_log = _var(_systemctl_extra_log)
-    if os.path.exists(_systemctl_extra_log):
+    if os.access(_systemctl_extra_log, os.W_OK):
         loggfile = logging.FileHandler(_systemctl_extra_log)
         loggfile.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
         logg.addHandler(loggfile)
         logg.setLevel(max(0, logging.INFO - 10 * opt.verbose))
-    if os.path.exists(_systemctl_debug_log):
+    if os.access(_systemctl_debug_log, os.W_OK):
         loggfile = logging.FileHandler(_systemctl_debug_log)
         loggfile.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
         logg.addHandler(loggfile)
