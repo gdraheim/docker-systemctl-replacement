@@ -28,7 +28,7 @@ import json
 logg = logging.getLogger("TESTING")
 _python = "/usr/bin/python"
 _systemctl_py = "files/docker/systemctl.py"
-_top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* ' | grep -v -e ' ps ' -e ' grep ' -e 'kworker/'"
+_top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* ' | grep -v -e '<defunct>' -e ' ps ' -e ' grep ' -e 'kworker/'"
 _top_list = "ps -eo etime,pid,ppid,args --sort etime,pid"
 _cov = ""
 _cov_run = "coverage2 run '--omit=*/six.py' --append -- "
@@ -100,12 +100,21 @@ def lines(text):
     for line in _lines(text):
         lines.append(line.rstrip())
     return lines
-def grep(pattern, lines):
+def each_grep(pattern, lines):
     for line in _lines(lines):
        if re.search(pattern, line.rstrip()):
            yield line.rstrip()
+def grep(pattern, lines):
+    return list(each_grep(pattern, lines))
 def greps(lines, pattern):
-    return list(grep(pattern, lines))
+    return list(each_grep(pattern, lines))
+def running(lines):
+    return list(each_non_defunct(lines))
+def each_non_defunct(lines):
+    for line in lines:
+        if '<defunct>' in line:
+            continue
+        yield line
 
 def download(base_url, filename, into):
     if not os.path.isdir(into):
@@ -10073,7 +10082,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top_container = "docker exec {testname} ps -eo pid,ppid,args"
         top = output(top_container.format(**locals()))
         logg.info("\n>>>\n%s", top)
-        self.assertFalse(greps(top, "testsleep"))
+        self.assertFalse(running(greps(top, "testsleep")))
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
@@ -10128,7 +10137,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top_container = "docker exec {testname} ps -eo pid,ppid,args"
         top = output(top_container.format(**locals()))
         logg.info("\n>>>\n%s", top)
-        self.assertFalse(greps(top, "testsleep"))
+        self.assertFalse(running(greps(top, "testsleep")))
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
@@ -10210,7 +10219,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top_container = "docker exec {testname} ps -eo pid,ppid,args"
         top = output(top_container.format(**locals()))
         logg.info("\n>>>\n%s", top)
-        self.assertFalse(greps(top, "testsleep"))
+        self.assertFalse(running(greps(top, "testsleep")))
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
@@ -10290,7 +10299,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top_container = "docker exec {testname} ps -eo pid,ppid,args"
         top = output(top_container.format(**locals()))
         logg.info("\n>>>\n%s", top)
-        self.assertFalse(greps(top, "testsleep"))
+        self.assertFalse(running(greps(top, "testsleep")))
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
@@ -10356,7 +10365,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top_container = "docker exec {testname} ps -eo pid,ppid,args"
         top = output(top_container.format(**locals()))
         logg.info("\n>>>\n%s", top)
-        self.assertFalse(greps(top, "testsleep"))
+        self.assertFalse(running(greps(top, "testsleep")))
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
