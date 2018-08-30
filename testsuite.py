@@ -300,6 +300,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             add_hosts = self.with_local_opensuse_mirror(version)
             if add_hosts:
                 return "--add-host '{add_hosts}' {image}".format(**locals())
+        if image.startswith("opensuse/leap:"):
+            version = image[len("opensuse/leap:"):]
+            add_hosts = self.with_local_opensuse_mirror(version)
+            if add_hosts:
+                return "--add-host '{add_hosts}' {image}".format(**locals())
         return image
     def drop_container(self, name):
         cmd = "docker rm --force {name}"
