@@ -44,7 +44,7 @@ TESTED += [ "opensuse:42.2", "opensuse:42.3", "opensuse/leap:15.0" ]
 TESTED += [ "ubuntu:14.04" ]
 
 IMAGES = "localhost:5000/systemctl/testing"
-CENTOS = "centos:7.4.1708"
+CENTOS = "centos:7.5.1804"
 UBUNTU = "ubuntu:14.04"
 OPENSUSE = "opensuse:42.3"
 
