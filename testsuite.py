@@ -10550,7 +10550,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rm --force {testname}x"
         sx____(cmd.format(**locals()))
         cmd = "docker rmi {images}:{testname}"
-        # sx____(cmd.format(**locals()))
+        sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_5130_systemctl_py_run_default_services_from_simple_saved_container(self):
         """ check that we can enable services in a docker container to be run as default-services
@@ -12230,7 +12230,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rm --force {testname}"
         sh____(cmd.format(**locals()))
         cmd = "docker rmi {images}:{testname}"
-        # sx____(cmd.format(**locals()))
+        sx____(cmd.format(**locals()))
         self.rm_testdir()
     # @unittest.expectedFailure
     def test_8001_issue_1_start_mariadb_centos_7_0(self):
