@@ -46,7 +46,7 @@ TESTED += [ "ubuntu:14.04" ]
 IMAGES = "localhost:5000/systemctl/testing"
 CENTOS = "centos:7.5.1804"
 UBUNTU = "ubuntu:14.04"
-OPENSUSE = "opensuse:42.3"
+OPENSUSE = "opensuse/leap:15.0"
 
 DOCKER_SOCKET = "/var/run/docker.sock"
 PSQL_TOOL = "/usr/bin/psql"
