@@ -3718,21 +3718,26 @@ class Systemctl:
         target = os.path.join(folder, "default.target")
         if os.path.islink(target):
             current = os.path.basename(os.readlink(target))
-        msg = ""
+        err, msg = 0, ""
         for module in modules:
-            intended = os.path.join(folder, module)
-            if intended == current:
+            if module == current:
                 continue
-            if not os.path.isdir(intended):
-                logg.error("no such runlevel %s", intended)
+            targetfile = None
+            for targetname, targetpath in self.each_target_file():
+                if targetname == module:
+                    targetfile = targetpath
+            if not targetfile:
+                err, msg = 3, "No such runlevel %s" % (module)
+                continue
+            #
             if os.path.islink(target):
                 os.unlink(target)
-            if not os.path.isdir(folder):
-                os.makedirs(folder)
-            os.symlink(intended, target)
-            msg = "Created symlink from %s %s" % (target, intended)
+            if not os.path.isdir(os.path.dirname(target)):
+                os.makedirs(os.path.dirname(target))
+            os.symlink(targetfile, target)
+            msg = "Created symlink from %s -> %s" % (target, targetfile)
             logg.debug("%s", msg)
-        return (0, msg)
+        return (err, msg)
     def init_modules(self, *modules):
         """ [UNIT*] -- init loop: '--init default' or '--init start UNIT*'
         The systemctl init service will start the enabled 'default' services, 
