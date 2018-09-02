@@ -450,6 +450,7 @@ class UnitConf:
         self.env = {}
         self.status = None
         self.masked = None
+        self.module = None
     def loaded(self):
         files = self.data.filenames()
         if self.masked:
@@ -465,7 +466,7 @@ class UnitConf:
         return None
     def name(self):
         """ the unit id or defaults to the file name """
-        name = ""
+        name = self.module or ""
         filename = self.filename()
         if filename:
             name = os.path.basename(filename)
@@ -929,6 +930,7 @@ class Systemctl:
                         unit.read_sysd(path)
         conf = UnitConf(unit)
         conf.masked = masked
+        conf.module = module
         self._loaded_file_sysd[path] = conf
         return conf
     def load_sysv_unit_conf(self, module): # -> conf?
@@ -1642,6 +1644,7 @@ class Systemctl:
     def start_unit(self, unit):
         conf = self.load_unit_conf(unit)
         if conf is None:
+            logg.debug("unit could not be loaded (%s)", unit)
             logg.error("Unit %s could not be found.", unit)
             return False
         if self.not_user_conf(conf):
@@ -3309,11 +3312,29 @@ class Systemctl:
             result.append(line)
         return result
     def sortedAfter(self, unitlist):
+        """ get correct start order for the unit list (ignoring masked units) """
         conflist = [ self.get_unit_conf(unit) for unit in unitlist ]
+        if True:
+            conflist = []
+            for unit in unitlist:
+                conf = self.get_unit_conf(unit)
+                if conf.masked:
+                    logg.debug("ignoring masked unit %s", unit)
+                    continue
+                conflist.append(conf)
         sortlist = sortedAfter(conflist)
         return [ item.name() for item in sortlist ]
     def sortedBefore(self, unitlist):
+        """ get correct start order for the unit list (ignoring masked units) """
         conflist = [ self.get_unit_conf(unit) for unit in unitlist ]
+        if True:
+            conflist = []
+            for unit in unitlist:
+                conf = self.get_unit_conf(unit)
+                if conf.masked:
+                    logg.debug("ignoring masked unit %s", unit)
+                    continue
+                conflist.append(conf)
         sortlist = sortedAfter(reversed(conflist))
         return [ item.name() for item in reversed(sortlist) ]
     def system_daemon_reload(self):
