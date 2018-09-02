@@ -3710,11 +3710,15 @@ class Systemctl:
         return current
     def set_default_modules(self, *modules):
         """ set current default run-level"""
+        if not modules:
+            logg.debug(".. no runlevel given")
+            return (1, "Too few arguments")
         current = self._default_target
         folder = os_path(self._root, self.mask_folder())
         target = os.path.join(folder, "default.target")
         if os.path.islink(target):
             current = os.path.basename(os.readlink(target))
+        msg = ""
         for module in modules:
             intended = os.path.join(folder, module)
             if intended == current:
@@ -3726,8 +3730,9 @@ class Systemctl:
             if not os.path.isdir(folder):
                 os.makedirs(folder)
             os.symlink(intended, target)
-            logg.info("Created symlink from %s %s", target, intended)
-        return True
+            msg = "Created symlink from %s %s" % (target, intended)
+            logg.debug("%s", msg)
+        return (0, msg)
     def init_modules(self, *modules):
         """ [UNIT*] -- init loop: '--init default' or '--init start UNIT*'
         The systemctl init service will start the enabled 'default' services, 
