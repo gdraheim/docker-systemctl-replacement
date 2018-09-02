@@ -45,7 +45,8 @@ TESTED += [ "ubuntu:14.04" ]
 
 IMAGES = "localhost:5000/systemctl/testing"
 CENTOS = "centos:7.5.1804"
-UBUNTU = "ubuntu:14.04"
+# UBUNTU = "ubuntu:14.04"
+UBUNTU = "ubuntu:18.04"
 OPENSUSE = "opensuse/leap:15.0"
 
 DOCKER_SOCKET = "/var/run/docker.sock"
@@ -251,11 +252,35 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not values or "NetworkSettings" not in values[0]:
             logg.critical(" docker inspect %s => %s ", name, values)
         return values[0]["NetworkSettings"]["IPAddress"]    
+    def with_local_ubuntu_mirror(self, ver = None):
+        """ detects a local ubuntu mirror or starts a local
+            docker container with a ubunut repo mirror. It
+            will return the extra_hosts setting to start
+            other docker containers"""
+        rmi = "localhost:5000/mirror-packages"
+        rep = "ubuntu-repo"
+        ver = ver or UBUNTU.split(":")[1]
+        image = "{rmi}/{rep}:{ver}".format(**locals())
+        container = "{rep}-{ver}".format(**locals())
+        images = output("docker images {image}".format(**locals()))
+        running = output("docker ps")
+        if greps(images, rep) and not greps(running, container):
+            cmd = "docker rm --force {container}"
+            sx____(cmd.format(**locals()))
+            cmd = "docker run --detach --name {container} {image}"
+            sh____(cmd.format(**locals()))
+        running = output("docker ps")
+        if greps(running, container):
+            ip_a = self.ip_container(container)
+            logg.info("%s => %s", container, ip_a)
+            results = { "archive.ubuntu.com" : ip_a, "security.ubuntu.com" : ip_a }
+            return results
+        return {}
     def with_local_centos_mirror(self, ver = None):
         """ detects a local centos mirror or starts a local
             docker container with a centos repo mirror. It
             will return the setting for extrahosts"""
-        rmi = "localhost:5000"
+        rmi = "localhost:5000/mirror-packages"
         rep = "centos-repo"
         ver = ver or CENTOS.split(":")[1]
         find_repo_image = "docker images {rmi}/{rep}:{ver}"
@@ -279,7 +304,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             docker container with a centos repo mirror. It
             will return the extra_hosts setting to start
             other docker containers"""
-        rmi = "localhost:5000"
+        rmi = "localhost:5000/mirror-packages"
         rep = "opensuse-repo"
         ver = ver or OPENSUSE.split(":")[1]
         find_repo_image = "docker images {rmi}/{rep}:{ver}"
@@ -298,6 +323,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             logg.info("--add-host %s", result)
             return result
         return ""
+    def add_hosts(self, hosts):
+        return " ".join(["--add-host %s:%s" % (host, ip_a) for host, ip_a in hosts.items() ])
+        # for host, ip_a in mapping.items():
+        #    yield "--add-host {host}:{ip_a}"
     def local_image(self, image):
         """ attach local centos-repo / opensuse-repo to docker-start enviroment.
             Effectivly when it is required to 'docker start centos:x.y' then do
@@ -318,6 +347,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             add_hosts = self.with_local_opensuse_mirror(version)
             if add_hosts:
                 return "--add-host '{add_hosts}' {image}".format(**locals())
+        if image.startswith("ubuntu:"):
+            version = image[len("ubuntu:"):]
+            hosts = self.with_local_ubuntu_mirror(version)
+            if hosts:
+                options = self.add_hosts(hosts)
+                logg.info("%s %s", options, image)
+                return "{options} {image}".format(**locals())
         return image
     def drop_container(self, name):
         cmd = "docker rm --force {name}"
@@ -12107,7 +12143,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         port=self.testport()
         images = IMAGES
-        image = "ubuntu:16.04"
+        # image = self.local_image("ubuntu:16.04")
+        image = self.local_image("ubuntu:18.04")
         python_base = os.path.basename(_python)
         systemctl_py = _systemctl_py
         logg.info("%s:%s %s", testname, port, image)
