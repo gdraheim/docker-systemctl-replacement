@@ -332,6 +332,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Effectivly when it is required to 'docker start centos:x.y' then do
             'docker start centos-repo:x.y' before and extend the original to 
             'docker start --add-host mirror...:centos-repo centos:x.y'. """
+        if os.environ.get("NONLOCAL",""):
+            return image
         if image.startswith("centos:"):
             version = image[len("centos:"):]
             add_hosts = self.with_local_centos_mirror(version)
