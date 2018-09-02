@@ -12539,6 +12539,61 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         #
         self.rm_testdir()
+    def test_8034_ubuntu_testing_mask_unmask_with_saved_container(self):
+        """ Checking the issue 34 on Ubuntu """
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        testname = self.testname()
+        testdir = self.testdir(testname)
+        port=self.testport()
+        images = IMAGES
+        # image = self.local_image("ubuntu:16.04")
+        image = self.local_image("ubuntu:18.04")
+        python_base = os.path.basename(_python)
+        systemctl_py = _systemctl_py
+        logg.info("%s:%s %s", testname, port, image)
+        #
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name={testname} {image} sleep 200"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} apt-get update"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} apt-get install -y python"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} apt-get install -y rsyslog"
+        sh____(cmd.format(**locals()))
+        ## container = self.ip_container(testname)
+        cmd = "docker exec {testname} touch /var/log/systemctl.debug.log"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl status rsyslog.service"
+        sx____(cmd.format(**locals()))
+        cmd = "docker exec {testname} ls -l /etc/systemd/system"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl mask rsyslog.service"
+        sx____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl status rsyslog.service"
+        sx____(cmd.format(**locals()))
+        cmd = "docker exec {testname} ls -l /etc/systemd/system"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl start rsyslog.service"
+        sx____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl unmask rsyslog.service"
+        sx____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl status rsyslog.service"
+        sx____(cmd.format(**locals()))
+        cmd = "docker exec {testname} ls -l /etc/systemd/system"
+        sh____(cmd.format(**locals()))
+        #
+        cmd = "docker cp {testname}:/var/log/systemctl.debug.log {testdir}/systemctl.debug.log"
+        sh____(cmd.format(**locals()))
+        cmd = "docker stop {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sh____(cmd.format(**locals()))
+        #
+        self.rm_testdir()
 
 if __name__ == "__main__":
     from optparse import OptionParser
