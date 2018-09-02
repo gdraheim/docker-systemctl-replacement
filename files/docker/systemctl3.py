@@ -92,13 +92,12 @@ _journal_log_folder = "/var/log/journal"
 _systemctl_debug_log = "/var/log/systemctl.debug.log"
 _systemctl_extra_log = "/var/log/systemctl.log"
 
-_runlevel_targets = [ "runlevel0.target", "runlevel1.target", "runlevel2.target", "runlevel3.target", "runlevel4.target", "runlevel5.target", "runlevel6.target" ]
 _default_targets = [ "poweroff.target", "rescue.target", "sysinit.target", "basic.target", "multi-user.target", "graphical.target", "reboot.target" ]
 _feature_targets = [ "network.target", "remote-fs.target", "local-fs.target", "timers.target", "nfs-client.target" ]
-_all_common_targets = [ "default.target" ] + _default_targets + _runlevel_targets + _feature_targets
+_all_common_targets = [ "default.target" ] + _default_targets + _feature_targets
 
 # inside a docker we pretend the following
-_all_common_enabled = [ "default.target", "runlevel3.target", "multi-user.target", "remote-fs.target" ]
+_all_common_enabled = [ "default.target", "multi-user.target", "remote-fs.target" ]
 _all_common_disabled = [ "graphical.target", "resue.target", "nfs-client.target" ]
 
 _runlevel_mappings = {} # the official list
@@ -1056,18 +1055,32 @@ class Systemctl:
             except Exception as e:
                 logg.warning("list-units: %s", e)
         return [ (unit, enabled[unit]) for unit in sorted(result) if result[unit] ]
+    def each_target_file(self):
+        folders = self.system_folders()
+        if self.user_mode():
+            folders = self.user_folders()
+        for folder in folders:
+            if not os.path.isdir(folder):
+                continue
+            for filename in os.listdir(folder):
+                if filename.endswith(".target"):
+                    yield (filename, os.path.join(folder, filename))
     def list_target_unit_files(self, *modules): # -> [ (unit,enabled) ]
         """ show all the target units and the enabled status"""
-        result = {}
         enabled = {}
+        targets = {}
+        for target, filepath in self.each_target_file():
+            logg.info("target %s", filepath)
+            targets[target] = filepath
+            enabled[target] = "static"
         for unit in _all_common_targets:
-            result[unit] = None
+            targets[unit] = None
             enabled[unit] = "static"
             if unit in _all_common_enabled:
                 enabled[unit] = "enabled"
             if unit in _all_common_disabled:
-                enabled[unit] = "enabled"
-        return [ (unit, enabled[unit]) for unit in sorted(result) ]
+                enabled[unit] = "disabled"
+        return [ (unit, enabled[unit]) for unit in sorted(targets) ]
     def show_list_unit_files(self, *modules): # -> [ (unit,enabled) ]
         """[PATTERN]... -- List installed unit files
         List installed unit files and their enablement state (as reported
@@ -3697,24 +3710,34 @@ class Systemctl:
         return current
     def set_default_modules(self, *modules):
         """ set current default run-level"""
+        if not modules:
+            logg.debug(".. no runlevel given")
+            return (1, "Too few arguments")
         current = self._default_target
         folder = os_path(self._root, self.mask_folder())
         target = os.path.join(folder, "default.target")
         if os.path.islink(target):
             current = os.path.basename(os.readlink(target))
+        err, msg = 0, ""
         for module in modules:
-            intended = os.path.join(folder, module)
-            if intended == current:
+            if module == current:
                 continue
-            if not os.path.isdir(intended):
-                logg.error("no such runlevel %s", intended)
+            targetfile = None
+            for targetname, targetpath in self.each_target_file():
+                if targetname == module:
+                    targetfile = targetpath
+            if not targetfile:
+                err, msg = 3, "No such runlevel %s" % (module)
+                continue
+            #
             if os.path.islink(target):
                 os.unlink(target)
-            if not os.path.isdir(folder):
-                os.makedirs(folder)
-            os.symlink(intended, target)
-            logg.info("Created symlink from %s %s", target, intended)
-        return True
+            if not os.path.isdir(os.path.dirname(target)):
+                os.makedirs(os.path.dirname(target))
+            os.symlink(targetfile, target)
+            msg = "Created symlink from %s -> %s" % (target, targetfile)
+            logg.debug("%s", msg)
+        return (err, msg)
     def init_modules(self, *modules):
         """ [UNIT*] -- init loop: '--init default' or '--init start UNIT*'
         The systemctl init service will start the enabled 'default' services, 
