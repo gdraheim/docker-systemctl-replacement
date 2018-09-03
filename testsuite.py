@@ -10760,9 +10760,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         python = _python
         python_coverage = _python_coverage
         package = "yum"
-        if greps(open("/etc/issue"), "openSUSE"):
+        if COVERAGE and greps(open("/etc/issue"), "openSUSE"):
            image = self.local_image(OPENSUSE)
            package = "zypper"
+        if "centos" in image and python.endswith("python3"): 
+           self.skipTest("no python3 on centos")
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
@@ -10794,9 +10796,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         python = _python
         python_coverage = _python_coverage
         package = "yum"
-        if greps(open("/etc/issue"), "openSUSE"):
+        if COVERAGE and greps(open("/etc/issue"), "openSUSE"):
            image = self.local_image(OPENSUSE)
            package = "zypper"
+        if "centos" in image and python.endswith("python3"): 
+           self.skipTest("no python3 on centos")
         systemctl_py = realpath(_systemctl_py)
         systemctl_sh = os_path(testdir, "systemctl.sh")
         systemctl_py_run = systemctl_py.replace("/","_")[1:]
@@ -10915,9 +10919,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         python = _python
         python_coverage = _python_coverage
         package = "yum"
-        if greps(open("/etc/issue"), "openSUSE"):
+        if COVERAGE and greps(open("/etc/issue"), "openSUSE"):
            image = self.local_image(OPENSUSE)
            package = "zypper"
+        if "centos" in image and python.endswith("python3"): 
+           self.skipTest("no python3 on centos")
         systemctl_py = realpath(_systemctl_py)
         systemctl_sh = os_path(testdir, "systemctl.sh")
         systemctl_py_run = systemctl_py.replace("/","_")[1:]
@@ -11036,9 +11042,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         python = _python
         python_coverage = _python_coverage
         package = "yum"
-        if greps(open("/etc/issue"), "openSUSE"):
+        if COVERAGE and greps(open("/etc/issue"), "openSUSE"):
            image = self.local_image(OPENSUSE)
            package = "zypper"
+        if "centos" in image and python.endswith("python3"): 
+           self.skipTest("no python3 on centos")
         systemctl_py = realpath(_systemctl_py)
         systemctl_sh = os_path(testdir, "systemctl.sh")
         systemctl_py_run = systemctl_py.replace("/","_")[1:]
@@ -11172,9 +11180,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         python = _python
         python_coverage = _python_coverage
         package = "yum"
-        if greps(open("/etc/issue"), "openSUSE"):
+        if COVERAGE and greps(open("/etc/issue"), "openSUSE"):
            image = self.local_image(OPENSUSE)
            package = "zypper"
+        if "centos" in image and python.endswith("python3"): 
+           self.skipTest("no python3 on centos")
         systemctl_py = realpath(_systemctl_py)
         systemctl_sh = os_path(testdir, "systemctl.sh")
         systemctl_py_run = systemctl_py.replace("/","_")[1:]
@@ -11307,9 +11317,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         python = _python
         python_coverage = _python_coverage
         package = "yum"
-        if greps(open("/etc/issue"), "openSUSE"):
+        if COVERAGE and greps(open("/etc/issue"), "openSUSE"):
            image = self.local_image(OPENSUSE)
            package = "zypper"
+        if "centos" in image and python.endswith("python3"): 
+           self.skipTest("no python3 on centos")
         systemctl_py = realpath(_systemctl_py)
         systemctl_sh = os_path(testdir, "systemctl.sh")
         systemctl_py_run = systemctl_py.replace("/","_")[1:]
@@ -11444,9 +11456,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         python = _python
         python_coverage = _python_coverage
         package = "yum"
-        if greps(open("/etc/issue"), "openSUSE"):
+        if COVERAGE and greps(open("/etc/issue"), "openSUSE"):
            image = self.local_image(OPENSUSE)
            package = "zypper"
+        if "centos" in image and python.endswith("python3"): 
+           self.skipTest("no python3 on centos")
         systemctl_py = realpath(_systemctl_py)
         systemctl_sh = os_path(testdir, "systemctl.sh")
         systemctl_py_run = systemctl_py.replace("/","_")[1:]
@@ -11602,9 +11616,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         python = _python
         python_coverage = _python_coverage
         package = "yum"
-        if greps(open("/etc/issue"), "openSUSE"):
+        if COVERAGE and greps(open("/etc/issue"), "openSUSE"):
            image = self.local_image(OPENSUSE)
            package = "zypper"
+        if "centos" in image and python.endswith("python3"): 
+           self.skipTest("no python3 on centos")
         systemctl_py = realpath(_systemctl_py)
         systemctl_py_run = systemctl_py.replace("/","_")[1:]
         systemctl_sh = os_path(testdir, "systemctl.sh")
@@ -11766,9 +11782,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cov_run = ""
         if COVERAGE:
             cov_run = _cov_run
-            if greps(open("/etc/issue"), "openSUSE"):
-                image = self.local_image(OPENSUSE)
-                package = "zypper"
+        if COVERAGE and greps(open("/etc/issue"), "openSUSE"):
+            image = self.local_image(OPENSUSE)
+            package = "zypper"
+        if "centos" in image and python.endswith("python3"): 
+           self.skipTest("no python3 on centos")
         systemctl_py = realpath(_systemctl_py)
         systemctl_sh = os_path(testdir, "systemctl.sh")
         systemctl_py_run = systemctl_py.replace("/","_")[1:]
