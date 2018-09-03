@@ -461,7 +461,7 @@ class UnitConf:
         """ returns the last filename that was parsed """
         files = self.data.filenames()
         if files:
-            return files[-1]
+            return files[0]
         return None
     def name(self):
         """ the unit id or defaults to the file name """
