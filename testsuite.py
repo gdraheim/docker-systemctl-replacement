@@ -49,6 +49,7 @@ IMAGE = ""
 CENTOS = "centos:7.5.1804"
 UBUNTU = "ubuntu:18.04"
 OPENSUSE = "opensuse/leap:15.0"
+SOMETIME = ""
 
 DOCKER_SOCKET = "/var/run/docker.sock"
 PSQL_TOOL = "/usr/bin/psql"
@@ -9929,10 +9930,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         python = _python
         python_coverage = _python_coverage
         systemctl_py = _systemctl_py
+        sometime = SOMETIME or 100
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run --detach --name={testname} {image} sleep 50"
+        cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} bash -c 'ls -l /{python} || {package} install -y {python}'"
         sx____(cmd.format(**locals()))
@@ -9961,6 +9963,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         python = _python
         python_coverage = _python_coverage
         systemctl_py = _systemctl_py
+        sometime = SOMETIME or 100
         text_file(os_path(testdir, "zza.service"),"""
             [Unit]
             Description=Testing A""")
@@ -9977,7 +9980,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run --detach --name={testname} {image} sleep 50"
+        cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} bash -c 'ls -l /{python} || {package} install -y {python}'"
         sx____(cmd.format(**locals()))
@@ -10018,6 +10021,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         python = _python
         python_coverage = _python_coverage
         systemctl_py = _systemctl_py
+        sometime = SOMETIME or 100
         text_file(os_path(testdir, "zza.service"),"""
             [Unit]
             Description=Testing A""")
@@ -10034,7 +10038,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run --detach --name={testname} {image} sleep 50"
+        cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} bash -c 'ls -l /{python} || {package} install -y {python}'"
         sx____(cmd.format(**locals()))
@@ -10084,6 +10088,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         python = _python
         python_coverage = _python_coverage
         systemctl_py = _systemctl_py
+        sometime = SOMETIME or 100
         shell_file(os_path(testdir, "killall"),"""
             #! /bin/sh
             ps -eo pid,comm | { while read pid comm; do
@@ -10103,7 +10108,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run --detach --name={testname} {image} sleep 50"
+        cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} bash -c 'ls -l /{python} || {package} install -y {python}'"
         sx____(cmd.format(**locals()))
@@ -10156,6 +10161,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         python = _python
         python_coverage = _python_coverage
         systemctl_py = _systemctl_py
+        sometime = SOMETIME or 100
         text_file(os_path(testdir, "zzz.service"),"""
             [Unit]
             Description=Testing Z
@@ -10167,7 +10173,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run --detach --name={testname} {image} sleep 50"
+        cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} bash -c 'ls -l /{python} || {package} install -y {python}'"
         sx____(cmd.format(**locals()))
@@ -10218,6 +10224,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         python = _python
         python_coverage = _python_coverage
         systemctl_py = _systemctl_py
+        sometime = SOMETIME or 100
         shell_file(os_path(testdir, "killall"),"""
             #! /bin/sh
             ps -eo pid,comm | { while read pid comm; do
@@ -10252,7 +10259,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run --detach --name={testname} {image} sleep 50"
+        cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} bash -c 'ls -l /{python} || {package} install -y {python}'"
         sx____(cmd.format(**locals()))
@@ -10307,6 +10314,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         python = _python
         python_coverage = _python_coverage
         systemctl_py = _systemctl_py
+        sometime = SOMETIME or 100
         shell_file(os_path(testdir, "killall"),"""
             #! /bin/sh
             ps -eo pid,comm | { while read pid comm; do
@@ -10339,7 +10347,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run --detach --name={testname} {image} sleep 50"
+        cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} bash -c 'ls -l /{python} || {package} install -y {python}'"
         sx____(cmd.format(**locals()))
@@ -10394,6 +10402,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         python = _python
         python_coverage = _python_coverage
         systemctl_py = _systemctl_py
+        sometime = SOMETIME or 100
         shell_file(os_path(testdir, "killall"),"""
             #! /bin/sh
             ps -eo pid,comm | { while read pid comm; do
@@ -10414,7 +10423,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run --detach --name={testname} {image} sleep 50"
+        cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} bash -c 'ls -l /{python} || {package} install -y {python}'"
         sx____(cmd.format(**locals()))
@@ -10467,6 +10476,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         python = _python
         python_coverage = _python_coverage
         systemctl_py = _systemctl_py
+        sometime = SOMETIME or 100
         text_file(os_path(testdir, "zza.service"),"""
             [Unit]
             Description=Testing A""")
@@ -10489,7 +10499,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run --detach --name={testname} {image} sleep 50"
+        cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} bash -c 'ls -l /{python} || {package} install -y {python}'"
         sx____(cmd.format(**locals()))
@@ -10553,6 +10563,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         python_coverage = _python_coverage
         systemctl_py = _systemctl_py
         images = IMAGES
+        sometime = SOMETIME or 100
         text_file(os_path(testdir, "zza.service"),"""
             [Unit]
             Description=Testing A""")
@@ -10577,7 +10588,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run --detach --name={testname} {image} sleep 50"
+        cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} bash -c 'ls -l /{python} || {package} install -y {python}'"
         sx____(cmd.format(**locals()))
@@ -10665,6 +10676,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         python_coverage = _python_coverage
         systemctl_py = _systemctl_py
         images = IMAGES
+        sometime = SOMETIME or 100
         text_file(os_path(testdir, "zza.service"),"""
             [Unit]
             Description=Testing A""")
@@ -10687,7 +10699,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run --detach --name={testname} {image} sleep 50"
+        cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} bash -c 'ls -l /{python} || {package} install -y {python}'"
         sx____(cmd.format(**locals()))
@@ -10759,6 +10771,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         python = _python
         python_coverage = _python_coverage
         systemctl_py = _systemctl_py
+        sometime = SOMETIME or 100
         text_file(os_path(testdir, "zza.service"),"""
             [Unit]
             Description=Testing A""")
@@ -10781,7 +10794,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run --detach --name={testname} {image} sleep 50"
+        cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} bash -c 'ls -l /{python} || {package} install -y {python}'"
         sx____(cmd.format(**locals()))
@@ -10854,10 +10867,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if _python.endswith("python3") and "centos" in image: 
            self.skipTest("no python3 on centos")
         package = package_tool(image)
+        sometime = SOMETIME or 100
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run --detach --name={testname} {image} sleep 50"
+        cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
         if package == "zypper":
             cmd = "docker exec {testname} {package} mr --no-gpgcheck oss-update"
@@ -10895,6 +10909,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cov_run = ""
         if COVERAGE:
             cov_run = _cov_run
+        sometime = SOMETIME or 100
         shell_file(systemctl_sh,"""
             #! /bin/sh
             exec {cov_run} /{systemctl_py_run} "$@" -vv
@@ -10921,7 +10936,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run --detach --name={testname} {image} sleep 50"
+        cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/{systemctl_py_run}"
         sh____(cmd.format(**locals()))
@@ -11017,6 +11032,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cov_run = ""
         if COVERAGE:
             cov_run = _cov_run
+        sometime = SOMETIME or 100
         shell_file(systemctl_sh,"""
             #! /bin/sh
             exec {cov_run} /{systemctl_py_run} "$@" -vv
@@ -11043,7 +11059,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run --detach --name={testname} {image} sleep 50"
+        cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/{systemctl_py_run}"
         sh____(cmd.format(**locals()))
@@ -11139,6 +11155,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cov_run = ""
         if COVERAGE:
             cov_run = _cov_run
+        sometime = SOMETIME or 100
         shell_file(systemctl_sh,"""
             #! /bin/sh
             exec {cov_run} /{systemctl_py_run} "$@" -vv
@@ -11162,7 +11179,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run --detach --name={testname} {image} sleep 50"
+        cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/{systemctl_py_run}"
         sh____(cmd.format(**locals()))
@@ -11276,6 +11293,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cov_run = ""
         if COVERAGE:
             cov_run = _cov_run
+        sometime = SOMETIME or 100
         shell_file(systemctl_sh,"""
             #! /bin/sh
             exec {cov_run} /{systemctl_py_run} "$@" -vv
@@ -11299,7 +11317,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run --detach --name={testname} {image} sleep 50"
+        cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/{systemctl_py_run}"
         sh____(cmd.format(**locals()))
@@ -11412,6 +11430,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cov_run = ""
         if COVERAGE:
             cov_run = _cov_run
+        sometime = SOMETIME or 200
         shell_file(systemctl_sh,"""
             #! /bin/sh
             exec {cov_run} /{systemctl_py_run} "$@" -vv
@@ -11447,7 +11466,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run --detach --name={testname} {image} sleep 150"
+        cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/{systemctl_py_run}"
         sh____(cmd.format(**locals()))
@@ -11550,6 +11569,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cov_run = ""
         if COVERAGE:
             cov_run = _cov_run
+        sometime = SOMETIME or 100
         shell_file(systemctl_sh,"""
             #! /bin/sh
             exec {cov_run} /{systemctl_py_run} "$@" -vv
@@ -11585,7 +11605,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run --detach --name={testname} {image} sleep 50"
+        cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/{systemctl_py_run}"
         sh____(cmd.format(**locals()))
@@ -11710,6 +11730,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cov_run = ""
         if COVERAGE:
             cov_run = _cov_run
+        sometime = SOMETIME or 100
         shell_file(systemctl_sh,"""
             #! /bin/sh
             exec {cov_run} /{systemctl_py_run} "$@" -vv
@@ -11757,7 +11778,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run --detach --name={testname} {image} sleep 50"
+        cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/{systemctl_py_run}"
         sh____(cmd.format(**locals()))
@@ -11871,6 +11892,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl_py = realpath(_systemctl_py)
         systemctl_sh = os_path(testdir, "systemctl.sh")
         systemctl_py_run = systemctl_py.replace("/","_")[1:]
+        sometime = SOMETIME or 100
         shell_file(systemctl_sh,"""
             #! /bin/sh
             exec {cov_run} /{systemctl_py_run} "$@" -vv
@@ -11906,7 +11928,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run --detach --name={testname} {image} sleep 50"
+        cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/{systemctl_py_run}"
         sh____(cmd.format(**locals()))
@@ -12021,11 +12043,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testport=self.testport()
         name="centos-httpd"
         systemctl_py = _systemctl_py
+        sometime = SOMETIME or 200
         logg.info("%s:%s %s", testname, testport, image)
         # WHEN
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run --detach --name={testname} {image} sleep 200"
+        cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
@@ -12081,13 +12104,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testport=self.testport()
         name="centos-postgres"
         systemctl_py = _systemctl_py
+        sometime = SOMETIME or 200
         logg.info("%s:%s %s", testname, testport, image)
         psql = PSQL_TOOL
         PG = "/var/lib/pgsql/data"
         # WHEN
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run --detach --name={testname} {image} sleep 200"
+        cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
@@ -12159,11 +12183,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir(testname)
         testport=self.testport()
         systemctl_py = _systemctl_py
+        sometime = SOMETIME or 200
         logg.info("%s:%s %s", testname, testport, image)
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run --detach --name={testname} {image} sleep 200"
+        cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
@@ -12234,11 +12259,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         image = self.local_image(UBUNTU)
         python_base = os.path.basename(_python)
         systemctl_py = _systemctl_py
+        sometime = SOMETIME or 2000
         logg.info("%s:%s %s", testname, port, image)
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run --detach --name={testname} {image} sleep 2000"
+        cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} apt-get update"
         sh____(cmd.format(**locals()))
@@ -12295,13 +12321,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testport=self.testport()
         name="centos-postgres"
         systemctl_py = _systemctl_py
+        sometime = SOMETIME or 200
         logg.info("%s:%s %s", testname, testport, image)
         psql = PSQL_TOOL
         PG = "/var/lib/pgsql/data"
         # WHEN
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run --detach --name={testname} {image} sleep 200"
+        cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
@@ -12375,10 +12402,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         systemctl_py = _systemctl_py
+        sometime = SOMETIME or 400
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
         # mariadb has a TimeoutSec=300 in the unit config:
-        cmd = "docker run --detach --name={testname} {image} sleep 400"
+        cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
@@ -12438,9 +12466,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         systemctl_py = _systemctl_py
+        sometime = SOMETIME or 100
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run --detach --name={testname} {image} sleep 50"
+        cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
@@ -12482,11 +12511,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir(testname)
         testport=self.testport()
         systemctl_py = _systemctl_py
+        sometime = SOMETIME or 600
         logg.info("%s:%s %s", testname, testport, image)
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run --detach --name={testname} {image} sleep 600"
+        cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
@@ -12565,11 +12595,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir(testname)
         testport=self.testport()
         systemctl_py = _systemctl_py
+        sometime = SOMETIME or 600
         logg.info("%s:%s %s", testname, testport, image)
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run --detach --name={testname} {image} sleep 600"
+        cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
@@ -12642,11 +12673,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         port=self.testport()
         python_base = os.path.basename(_python)
         systemctl_py = _systemctl_py
+        sometime = SOMETIME or 200
         logg.info("%s:%s %s", testname, port, image)
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run --detach --name={testname} {image} sleep 200"
+        cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
@@ -12703,6 +12735,8 @@ if __name__ == "__main__":
        help="additionally save the output log to a file [%default]")
     _o.add_option("--xmlresults", metavar="FILE", default=None,
        help="capture results as a junit xml file [%default]")
+    _o.add_option("--sometime", metavar="SECONDS", default=SOMETIME,
+       help="SOMETIME=%default (use 666)")
     _o.add_option("--opensuse", metavar="NAME", default=OPENSUSE,
        help="OPENSUSE=%default")
     _o.add_option("--ubuntu", metavar="NAME", default=UBUNTU,
