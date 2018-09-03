@@ -45,6 +45,7 @@ TESTED_OS += [ "opensuse:42.2", "opensuse:42.3", "opensuse/leap:15.0" ]
 TESTED_OS += [ "ubuntu:14.04", "ubuntu:16.04", "ubuntu:18.04" ]
 
 IMAGES = "localhost:5000/systemctl/testing"
+IMAGE = ""
 CENTOS = "centos:7.5.1804"
 UBUNTU = "ubuntu:18.04"
 OPENSUSE = "opensuse/leap:15.0"
@@ -9919,9 +9920,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ check that we can run systemctl.py inside a docker container """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
+        images = IMAGES
+        image = IMAGE or CENTOS
         testname = self.testname()
         testdir = self.testdir()
-        image= CENTOS
         python = _python
         systemctl_py = _systemctl_py
         #
@@ -9945,9 +9947,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ check that we can enable services in a docker container """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
+        images = IMAGES
+        image = IMAGE or CENTOS
         testname = self.testname()
         testdir = self.testdir()
-        image= CENTOS
         systemctl_py = _systemctl_py
         text_file(os_path(testdir, "zza.service"),"""
             [Unit]
@@ -9995,9 +9998,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ check that we can enable services in a docker container to have default-services"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
+        images = IMAGES
+        image = IMAGE or CENTOS
         testname = self.testname()
         testdir = self.testdir()
-        image= CENTOS
         systemctl_py = _systemctl_py
         text_file(os_path(testdir, "zza.service"),"""
             [Unit]
@@ -10054,9 +10058,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ check that we can start simple services in a container"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
+        images = IMAGES
+        image = IMAGE or CENTOS
         testname = self.testname()
         testdir = self.testdir()
-        image= CENTOS
         systemctl_py = _systemctl_py
         shell_file(os_path(testdir, "killall"),"""
             #! /bin/sh
@@ -10119,9 +10124,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ check that we can start simple services in a container"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
+        images = IMAGES
+        image = IMAGE or CENTOS
         testname = self.testname()
         testdir = self.testdir()
-        image= CENTOS
         systemctl_py = _systemctl_py
         text_file(os_path(testdir, "zzz.service"),"""
             [Unit]
@@ -10174,9 +10180,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ check that we can start forking services in a container w/ PIDFile"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
+        images = IMAGES
+        image = IMAGE or CENTOS
         testname = self.testname()
         testdir = self.testdir()
-        image= CENTOS
         systemctl_py = _systemctl_py
         shell_file(os_path(testdir, "killall"),"""
             #! /bin/sh
@@ -10256,9 +10263,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ check that we can start forking services in a container without PIDFile"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
+        images = IMAGES
+        image = IMAGE or CENTOS
         testname = self.testname()
         testdir = self.testdir()
-        image= CENTOS
         systemctl_py = _systemctl_py
         shell_file(os_path(testdir, "killall"),"""
             #! /bin/sh
@@ -10336,9 +10344,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ check that we can start simple services in a container w/ notify timeout"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
+        images = IMAGES
+        image = IMAGE or CENTOS
         testname = self.testname()
         testdir = self.testdir()
-        image= CENTOS
         systemctl_py = _systemctl_py
         shell_file(os_path(testdir, "killall"),"""
             #! /bin/sh
@@ -10402,9 +10411,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ check that we can enable services in a docker container to be run as default-services"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
+        images = IMAGES
+        image = IMAGE or CENTOS
         testname = self.testname()
         testdir = self.testdir()
-        image= CENTOS
         systemctl_py = _systemctl_py
         text_file(os_path(testdir, "zza.service"),"""
             [Unit]
@@ -10480,9 +10490,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             after it has been restarted from a commit-saved container image"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
+        images = IMAGES
+        image = IMAGE or CENTOS
         testname = self.testname()
         testdir = self.testdir()
-        image= CENTOS
         systemctl_py = _systemctl_py
         images = IMAGES
         text_file(os_path(testdir, "zza.service"),"""
@@ -10585,9 +10596,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             after it has been restarted from a commit-saved container image"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
+        images = IMAGES
+        image = IMAGE or CENTOS
         testname = self.testname()
         testdir = self.testdir()
-        image= CENTOS
         systemctl_py = _systemctl_py
         images = IMAGES
         text_file(os_path(testdir, "zza.service"),"""
@@ -10673,11 +10685,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             after it has been restarted from a commit-saved container image"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
+        images = IMAGES
+        image = IMAGE or CENTOS
         testname = self.testname()
         testdir = self.testdir()
-        image= CENTOS
         systemctl_py = _systemctl_py
-        images = IMAGES
         text_file(os_path(testdir, "zza.service"),"""
             [Unit]
             Description=Testing A""")
@@ -10760,10 +10772,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_6000_precheck_coverage_install(self):
         """ Allow to have a coverage tool be installed."""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        images = IMAGES
+        image = self.local_image(IMAGE or CENTOS)
         testname = self.testname()
         testdir = self.testdir()
-        images = IMAGES
-        image = self.local_image(CENTOS)
         python = _python
         python_coverage = _python_coverage
         if COVERAGE and greps(open("/etc/issue"), "openSUSE"):
@@ -10795,10 +10807,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             after it has been restarted from a commit-saved container image.
             This includes some corage on the init-services."""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        images = IMAGES
+        image = self.local_image(IMAGE or CENTOS)
         testname = self.testname()
         testdir = self.testdir()
-        images = IMAGES
-        image = self.local_image(CENTOS)
         python = _python
         python_coverage = _python_coverage
         if COVERAGE and greps(open("/etc/issue"), "openSUSE"):
@@ -10917,10 +10929,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             after it has been restarted from a commit-saved container image.
             This includes some corage on the init-services."""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        images = IMAGES
+        image = self.local_image(IMAGE or CENTOS)
         testname = self.testname()
         testdir = self.testdir()
-        images = IMAGES
-        image = self.local_image(CENTOS)
         python = _python
         python_coverage = _python_coverage
         if COVERAGE and greps(open("/etc/issue"), "openSUSE"):
@@ -11039,10 +11051,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ check that we can 'halt' in a docker container to stop the service
             and to exit the PID 1 as the last part of the service."""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        images = IMAGES
+        image = self.local_image(IMAGE or CENTOS)
         testname = self.testname()
         testdir = self.testdir()
-        images = IMAGES
-        image = self.local_image(CENTOS)
         python = _python
         python_coverage = _python_coverage
         if COVERAGE and greps(open("/etc/issue"), "openSUSE"):
@@ -11176,10 +11188,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ check that we can 'stop <service>' in a docker container to stop the service
             being the last service and to exit the PID 1 as the last part of the service."""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        images = IMAGES
+        image = self.local_image(IMAGE or CENTOS)
         testname = self.testname()
         testdir = self.testdir()
-        images = IMAGES
-        image = self.local_image(CENTOS)
         python = _python
         python_coverage = _python_coverage
         if COVERAGE and greps(open("/etc/issue"), "openSUSE"):
@@ -11312,10 +11324,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ check that we can put setuid/setgid definitions in a service
             specfile which also works on the pid file itself """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        images = IMAGES
+        image = self.local_image(IMAGE or CENTOS)
         testname = self.testname()
         testdir = self.testdir()
-        images = IMAGES
-        image = self.local_image(CENTOS)
         python = _python
         python_coverage = _python_coverage
         if COVERAGE and greps(open("/etc/issue"), "openSUSE"):
@@ -11450,10 +11462,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ check that we can put setuid/setgid definitions in a service
             specfile which also works on the pid file itself """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        images = IMAGES
+        image = self.local_image(IMAGE or CENTOS)
         testname = self.testname()
         testdir = self.testdir()
-        images = IMAGES
-        image = self.local_image(CENTOS)
         python = _python
         python_coverage = _python_coverage
         if COVERAGE and greps(open("/etc/issue"), "openSUSE"):
@@ -11609,10 +11621,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ check that we can put workingdir and setuid/setgid definitions in a service
             and code parts for that are actually executed (test case without fork before) """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        images = IMAGES
+        image = self.local_image(IMAGE or CENTOS)
         testname = self.testname()
         testdir = self.testdir()
-        images = IMAGES
-        image = self.local_image(CENTOS)
         python = _python
         python_coverage = _python_coverage
         if COVERAGE and greps(open("/etc/issue"), "openSUSE"):
@@ -11771,10 +11783,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_6600_systemctl_py_can_reap_zombies_in_a_container(self):
         """ check that we can reap zombies in a container managed by systemctl.py"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        images = IMAGES
+        image = self.local_image(IMAGE or CENTOS)
         testname = self.testname()
         testdir = self.testdir()
-        images = IMAGES
-        image = self.local_image(CENTOS)
         python = _python
         python_coverage = _python_coverage
         cov_run = ""
@@ -11931,11 +11943,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             in the webserver containing that text. """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
+        images = IMAGES
+        image = self.local_image(CENTOS)
         testname=self.testname()
         testport=self.testport()
         name="centos-httpd"
-        images = IMAGES
-        image = self.local_image(CENTOS)
         systemctl_py = _systemctl_py
         logg.info("%s:%s %s", testname, testport, image)
         # WHEN
@@ -12280,11 +12292,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # signal that it's mysqld_safe controller does not ignore.
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
+        # image = "centos:centos7.0.1406" # <<<< can not yum-install mariadb-server ?
+        # image = "centos:centos7.1.1503"
+        image = self.local_image(IMAGE or CENTOS)
         testname = self.testname()
         testdir = self.testdir()
-        # image= "centos:centos7.0.1406" # <<<< can not yum-install mariadb-server ?
-        # image= "centos:centos7.1.1503"
-        image = self.local_image(CENTOS)
         systemctl_py = _systemctl_py
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
@@ -12343,9 +12355,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # but our unit parser did not regard ";" as starting a comment
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
+        images = IMAGES
+        image = self.local_image(IMAGE or CENTOS)
         testname = self.testname()
         testdir = self.testdir()
-        image= self.local_image(CENTOS)
         systemctl_py = _systemctl_py
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
@@ -12384,11 +12397,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ start/restart behaviour if a httpd has failed - issue #11 """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
+        images = IMAGES
+        image = self.local_image(CENTOS)
         testname=self.testname()
         testdir = self.testdir(testname)
         testport=self.testport()
-        images = IMAGES
-        image = self.local_image(CENTOS)
         systemctl_py = _systemctl_py
         logg.info("%s:%s %s", testname, testport, image)
         #
@@ -12466,11 +12479,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ start/restart behaviour if a nginx has failed - issue #31 """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
+        images = IMAGES
+        image = self.local_image(CENTOS)
         testname=self.testname()
         testdir = self.testdir(testname)
         testport=self.testport()
-        images = IMAGES
-        image = self.local_image(CENTOS)
         systemctl_py = _systemctl_py
         logg.info("%s:%s %s", testname, testport, image)
         #
@@ -12541,12 +12554,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_8034_ubuntu_testing_mask_unmask_with_saved_container(self):
         """ Checking the issue 34 on Ubuntu """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
-        testname = self.testname()
-        testdir = self.testdir(testname)
-        port=self.testport()
         images = IMAGES
         # image = self.local_image("ubuntu:16.04")
         image = self.local_image(UBUNTU)
+        testname = self.testname()
+        testdir = self.testdir(testname)
+        port=self.testport()
         python_base = os.path.basename(_python)
         systemctl_py = _systemctl_py
         logg.info("%s:%s %s", testname, port, image)
@@ -12610,15 +12623,21 @@ if __name__ == "__main__":
        help="additionally save the output log to a file [%default]")
     _o.add_option("--xmlresults", metavar="FILE", default=None,
        help="capture results as a junit xml file [%default]")
-    _o.add_option("--opensuse", metavar="NAME", default=OPENSUSE)
-    _o.add_option("--ubuntu", metavar="NAME", default=UBUNTU)
-    _o.add_option("--centos", metavar="NAME", default=CENTOS)
+    _o.add_option("--opensuse", metavar="NAME", default=OPENSUSE,
+       help="OPENSUSE=%default")
+    _o.add_option("--ubuntu", metavar="NAME", default=UBUNTU,
+       help="UBUNTU=%default")
+    _o.add_option("--centos", metavar="NAME", default=CENTOS,
+       help="CENTOS=%default")
+    _o.add_option("--image", metavar="NAME", default=IMAGE,
+       help="IMAGE=%default (or CENTOS)")
     opt, args = _o.parse_args()
     logging.basicConfig(level = logging.WARNING - opt.verbose * 5)
     #
     OPENSUSE = opt.opensuse
     UBUNTU = opt.ubuntu
     CENTOS = opt.centos
+    IMAGE = opt.image
     if CENTOS in CENTOSVER:
        CENTOS = CENTOSVER[CENTOS]
     if ":" not in CENTOS:
@@ -12637,6 +12656,9 @@ if __name__ == "__main__":
         beep(); time.sleep(2)
     if CENTOS not in TESTED_OS:
         logg.warning("  --centos '%s' was never TESTED!!!", UBUNTU)
+        beep(); time.sleep(2)
+    if IMAGE not in TESTED_OS:
+        logg.warning("  --image '%s' was never TESTED!!!", IMAGE)
         beep(); time.sleep(2)
     #
     _systemctl_py = opt.systemctl_py
