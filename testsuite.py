@@ -5639,7 +5639,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Service]
             Type=simple
             ExecStartPre=/bin/echo starting C
-            ExecStart={bindir}/{testsleep} 13
+            ExecStart={bindir}/{testsleep} 15
             ExecStartPost=/bin/echo running C
             ExecStopPost=/bin/echo stopping C
             [Install]
