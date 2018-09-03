@@ -174,19 +174,6 @@ def _var(path):
     return path
 
 
-def shutil_chown(filename, user = None, group = None):
-    """ in python 3.3. there is shutil.chown """
-    uid = -1
-    gid = -1
-    if group:
-        import grp
-        gid = grp.getgrnam(group).gr_gid
-    if user:
-        import pwd
-        uid = pwd.getpwnam(user).pw_uid
-    if os.path.exists(filename):
-        os.chown(filename, uid, gid)
-
 def shutil_setuid(user = None, group = None):
     """ set fork-child uid/gid """
     if group:
