@@ -32,28 +32,60 @@ DJ docker-jenkins: ; ./testsuite.py test_900*
 
 COVERAGE=--coverage
 est_%: ; rm .coverage* ; ./testsuite.py t$@ -vv --coverage
-coverage: ; rm .coverage* ; ./testsuite.py -vv --coverage test_1 test_2 test_3 test_4 test_6
-check: ; rm .coverage* ; ./testsuite.py -vv --coverage
 test_%: ; ./testsuite.py $@ -vv
 real_%: ; ./testsuite.py $@ -vv
 
-st_%:
-	$(MAKE) tmp/systemctl.py
-	rm .coverage* ; ./testsuite.py -vv --coverage te$@ \
-	   '--with=tmp/systemctl.py' --python=/usr/bin/python3
-check3:
-	$(MAKE) tmp/systemctl.py
-	rm .coverage* ; ./testsuite.py -vv --coverage \
+check: check2018
+	@ echo please run 'make checks' now
+18 check2018: ; ./testsuite.py -vv --opensuse=15.0 --centos=7.5 --ubuntu=18.04
+17 check2017: ; ./testsuite.py -vv --opensuse=42.3 --centos=7.4 --ubuntu=16.04
+16 check2016: ; ./testsuite.py -vv --opensuse=42.2 --centos=7.3 --ubuntu=16.04
+
+check3: 
+	$(MAKE) tmp_systemctl_py_3
+	./testsuite.py -vv --opensuse=15.0 --centos=7.5 --ubuntu=18.04 \
 	  '--with=tmp/systemctl.py' --python=/usr/bin/python3
+
+checks: 
+	- rm .coverage* 
+	$(MAKE) checks2_coverage
+	for i in .coverage*; do mv $$i $i$.2; done
+	$(MAKE) checks3_coverage
+	for i in .coverage*; do mv $$i $i$.3; done
+	coverage combine && coverage report && coverage annotate
+checks2:  
+	rm .coverage* ; $(MAKE) checks2_coverage
+checks2_coverage:
+	$(MAKE) tmp_systemctl_py_2
+	./testsuite.py -vv --coverage \
+	   '--with=tmp/systemctl.py'
+checks3: 
+	rm .coverage* ; $(MAKE) checks3_coverage
+checks3_coverage: 
+	$(MAKE) tmp_systemctl_py_3
+	./testsuite.py -vv --coverage \
+	  '--with=tmp/systemctl.py' --python=/usr/bin/python3
+coverage: coverage2
+coverage2: 
+	$(MAKE) tmp_systemctl_py_2
+	rm .coverage* ; ./testsuite.py -vv --coverage test_1 test_2 test_3 test_4 test_6 \
+	  '--with=tmp/systemctl.py'
 coverage3:
-	$(MAKE) tmp/systemctl.py
+	$(MAKE) tmp_systemctl_py_3
 	rm .coverage* ; ./testsuite.py -vv --coverage test_1 test_2 test_3 test_4 test_6 \
 	  '--with=tmp/systemctl.py' --python=/usr/bin/python3
 
-tmp/systemctl.py : files/docker/systemctl.py
-	test -d tmp || mkdir tmp
-	cp files/docker/systemctl.py tmp/systemctl.py
-	sed -i -e "s|/usr/bin/python|/usr/bin/python3|" tmp/systemctl.py
+tmp_systemctl_py_2:
+	@ test -d tmp || mkdir tmp
+	@ cp files/docker/systemctl.py tmp/systemctl.py
+tmp_systemctl_py_3:
+	@ test -d tmp || mkdir tmp
+	@ cp files/docker/systemctl.py tmp/systemctl.py
+	@ sed -i -e "s|/usr/bin/python|/usr/bin/python3|" tmp/systemctl.py
+st_%:
+	$(MAKE) tmp_systemctl_py_3
+	rm .coverage* ; ./testsuite.py -vv --coverage te$@ \
+	   '--with=tmp/systemctl.py' --python=/usr/bin/python3
 
 op opensuse: ; ./testsuite.py make_opensuse
 ub ubuntu:   ; ./testsuite.py make_ubuntu
@@ -62,3 +94,5 @@ ce centos:   ; ./testsuite.py make_centos
 clean:
 	- rm .coverage*
 	- rm -rf tmp/tmp.test_*
+	- rm -rf tmp/systemctl.py
+
