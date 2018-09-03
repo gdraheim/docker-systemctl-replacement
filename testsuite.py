@@ -9926,12 +9926,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         python = _python
+        python_coverage = _python_coverage
         systemctl_py = _systemctl_py
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
         cmd = "docker run --detach --name={testname} {image} sleep 50"
         sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
+        sx____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl --version"
@@ -9953,6 +9956,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             self.skipTest("no python3 on centos")
         testname = self.testname()
         testdir = self.testdir()
+        python = _python
+        python_coverage = _python_coverage
         systemctl_py = _systemctl_py
         text_file(os_path(testdir, "zza.service"),"""
             [Unit]
@@ -9972,6 +9977,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "docker run --detach --name={testname} {image} sleep 50"
         sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
+        sx____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zza.service {testname}:/etc/systemd/system/zza.service"
@@ -10005,6 +10012,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             self.skipTest("no python3 on centos")
         testname = self.testname()
         testdir = self.testdir()
+        python = _python
+        python_coverage = _python_coverage
         systemctl_py = _systemctl_py
         text_file(os_path(testdir, "zza.service"),"""
             [Unit]
@@ -10024,6 +10033,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "docker run --detach --name={testname} {image} sleep 50"
         sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
+        sx____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zza.service {testname}:/etc/systemd/system/zza.service"
@@ -10066,6 +10077,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             self.skipTest("no python3 on centos")
         testname = self.testname()
         testdir = self.testdir()
+        python = _python
+        python_coverage = _python_coverage
         systemctl_py = _systemctl_py
         shell_file(os_path(testdir, "killall"),"""
             #! /bin/sh
@@ -10088,6 +10101,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "docker run --detach --name={testname} {image} sleep 50"
         sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
+        sx____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
         cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
@@ -10133,6 +10148,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             self.skipTest("no python3 on centos")
         testname = self.testname()
         testdir = self.testdir()
+        python = _python
+        python_coverage = _python_coverage
         systemctl_py = _systemctl_py
         text_file(os_path(testdir, "zzz.service"),"""
             [Unit]
@@ -10147,6 +10164,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "docker run --detach --name={testname} {image} sleep 50"
         sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
+        sx____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
         cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
@@ -10190,6 +10209,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             self.skipTest("no python3 on centos")
         testname = self.testname()
         testdir = self.testdir()
+        python = _python
+        python_coverage = _python_coverage
         systemctl_py = _systemctl_py
         shell_file(os_path(testdir, "killall"),"""
             #! /bin/sh
@@ -10227,6 +10248,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "docker run --detach --name={testname} {image} sleep 50"
         sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
+        sx____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
         cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
@@ -10274,6 +10297,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             self.skipTest("no python3 on centos")
         testname = self.testname()
         testdir = self.testdir()
+        python = _python
+        python_coverage = _python_coverage
         systemctl_py = _systemctl_py
         shell_file(os_path(testdir, "killall"),"""
             #! /bin/sh
@@ -10309,6 +10334,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "docker run --detach --name={testname} {image} sleep 50"
         sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
+        sx____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
         cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
@@ -10356,6 +10383,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             self.skipTest("no python3 on centos")
         testname = self.testname()
         testdir = self.testdir()
+        python = _python
+        python_coverage = _python_coverage
         systemctl_py = _systemctl_py
         shell_file(os_path(testdir, "killall"),"""
             #! /bin/sh
@@ -10379,6 +10408,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "docker run --detach --name={testname} {image} sleep 50"
         sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
+        sx____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
         cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
@@ -10424,6 +10455,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             self.skipTest("no python3 on centos")
         testname = self.testname()
         testdir = self.testdir()
+        python = _python
+        python_coverage = _python_coverage
         systemctl_py = _systemctl_py
         text_file(os_path(testdir, "zza.service"),"""
             [Unit]
@@ -10449,6 +10482,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "docker run --detach --name={testname} {image} sleep 50"
         sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
+        sx____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
         cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
@@ -10504,6 +10539,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             self.skipTest("no python3 on centos")
         testname = self.testname()
         testdir = self.testdir()
+        python = _python
+        python_coverage = _python_coverage
         systemctl_py = _systemctl_py
         images = IMAGES
         text_file(os_path(testdir, "zza.service"),"""
@@ -10532,6 +10569,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "docker run --detach --name={testname} {image} sleep 50"
         sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
+        sx____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
         cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
@@ -10611,6 +10650,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             self.skipTest("no python3 on centos")
         testname = self.testname()
         testdir = self.testdir()
+        python = _python
+        python_coverage = _python_coverage
         systemctl_py = _systemctl_py
         images = IMAGES
         text_file(os_path(testdir, "zza.service"),"""
@@ -10637,6 +10678,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "docker run --detach --name={testname} {image} sleep 50"
         sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
+        sx____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
         cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
@@ -10701,6 +10744,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             self.skipTest("no python3 on centos")
         testname = self.testname()
         testdir = self.testdir()
+        python = _python
+        python_coverage = _python_coverage
         systemctl_py = _systemctl_py
         text_file(os_path(testdir, "zza.service"),"""
             [Unit]
@@ -10726,6 +10771,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "docker run --detach --name={testname} {image} sleep 50"
         sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
+        sx____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
         cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
@@ -10877,8 +10924,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             cmd = "docker exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
         else:
-            cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
-            sx____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
         #
