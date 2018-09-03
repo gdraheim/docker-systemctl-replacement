@@ -39,13 +39,13 @@ _python_coverage = "python-coverage"
 _python3coverage = "python3-coverage"
 COVERAGE = False
 
-TESTED = [ "centos:7.3.1611", "centos:7.4.1708", "centos:7.5.1804" ]
-TESTED += [ "opensuse:42.2", "opensuse:42.3", "opensuse/leap:15.0" ]
-TESTED += [ "ubuntu:14.04" ]
+CENTOSVER = { "7.3": "7.3.1611", "7.4": "7.4.1708", "7.5": "7.5.1804" }
+TESTED_OS = [ "centos:7.3.1611", "centos:7.4.1708", "centos:7.5.1804" ]
+TESTED_OS += [ "opensuse:42.2", "opensuse:42.3", "opensuse/leap:15.0" ]
+TESTED_OS += [ "ubuntu:14.04", "ubuntu:16.04", "ubuntu:18.04" ]
 
 IMAGES = "localhost:5000/systemctl/testing"
 CENTOS = "centos:7.5.1804"
-# UBUNTU = "ubuntu:14.04"
 UBUNTU = "ubuntu:18.04"
 OPENSUSE = "opensuse/leap:15.0"
 
@@ -116,6 +116,17 @@ def each_non_defunct(lines):
         if '<defunct>' in line:
             continue
         yield line
+
+def beep():
+    if os.name == "nt":
+        import winsound
+        frequency = 2500
+        duration = 1000 
+        winsound.Beep(frequency, duration)
+    else:
+        # using 'sox' on Linux as "\a" is usually disabled
+        # sx___("play -n synth 0.1 tri  1000.0")
+        sx____("play -V1 -q -n -c1 synth 0.1 sine 500")
 
 def download(base_url, filename, into):
     if not os.path.isdir(into):
@@ -12583,8 +12594,34 @@ if __name__ == "__main__":
        help="additionally save the output log to a file [%default]")
     _o.add_option("--xmlresults", metavar="FILE", default=None,
        help="capture results as a junit xml file [%default]")
+    _o.add_option("--opensuse", metavar="NAME", default=OPENSUSE)
+    _o.add_option("--ubuntu", metavar="NAME", default=UBUNTU)
+    _o.add_option("--centos", metavar="NAME", default=CENTOS)
     opt, args = _o.parse_args()
     logging.basicConfig(level = logging.WARNING - opt.verbose * 5)
+    #
+    OPENSUSE = opt.opensuse
+    UBUNTU = opt.ubuntu
+    CENTOS = opt.centos
+    if CENTOS in CENTOSVER:
+       CENTOS = CENTOSVER[CENTOS]
+    if ":" not in CENTOS:
+        CENTOS = "centos:" + CENTOS
+    if ":" not in OPENSUSE and "42" in OPENSUSE: 
+        OPENSUSE = "opensuse:" + OPENSUSE
+    if ":" not in OPENSUSE: 
+        OPENSUSE = "opensuse/leap:" + OPENSUSE
+    if ":" not in UBUNTU: 
+        UBUNTU = "ubuntu:" + UBUNTU
+    if OPENSUSE not in TESTED_OS:
+        logg.warning("  --opensuse '%s' was never TESTED!!!", OPENSUSE)
+        beep(); time.sleep(2)
+    if UBUNTU not in TESTED_OS:
+        logg.warning("  --ubuntu '%s' was never TESTED!!!", UBUNTU)
+        beep(); time.sleep(2)
+    if CENTOS not in TESTED_OS:
+        logg.warning("  --centos '%s' was never TESTED!!!", UBUNTU)
+        beep(); time.sleep(2)
     #
     _systemctl_py = opt.systemctl_py
     _python = opt.python
