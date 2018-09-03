@@ -1548,7 +1548,7 @@ class Systemctl:
                 os.makedirs(os.path.dirname(socketfile))
             if os.path.exists(socketfile):
                 os.unlink(socketfile)
-        except Exception, e:
+        except Exception as e:
             logg.warning("error %s: %s", socketfile, e)
         sock = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
         sock.bind(socketfile)
@@ -3773,7 +3773,7 @@ class Systemctl:
                 fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
                 self._log_file[unit] = opened
                 self._log_hold[unit] = ""
-            except Exception, e:
+            except Exception as e:
                 logg.error("can not open %s log: %s\n\t%s", unit, log_path, e)
     def read_log_files(self, units):
         for unit in units:
@@ -3795,7 +3795,7 @@ class Systemctl:
                 if unit in self._log_file:
                     if self._log_file[unit]:
                         self._log_file[unit].close()
-            except Exception, e:
+            except Exception as e:
                 logg.error("can not close log: %s\n\t%s", unit, e)
         self._log_file = {}
         self._log_hold = {}
