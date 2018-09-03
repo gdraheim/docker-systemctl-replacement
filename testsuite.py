@@ -12146,7 +12146,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         port=self.testport()
         images = IMAGES
         # image = self.local_image("ubuntu:16.04")
-        image = self.local_image("ubuntu:18.04")
+        image = self.local_image(UBUNTU)
         python_base = os.path.basename(_python)
         systemctl_py = _systemctl_py
         logg.info("%s:%s %s", testname, port, image)
@@ -12547,7 +12547,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         port=self.testport()
         images = IMAGES
         # image = self.local_image("ubuntu:16.04")
-        image = self.local_image("ubuntu:18.04")
+        image = self.local_image(UBUNTU)
         python_base = os.path.basename(_python)
         systemctl_py = _systemctl_py
         logg.info("%s:%s %s", testname, port, image)
