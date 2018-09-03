@@ -260,22 +260,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         rmi = "localhost:5000/mirror-packages"
         rep = "ubuntu-repo"
         ver = ver or UBUNTU.split(":")[1]
-        image = "{rmi}/{rep}:{ver}".format(**locals())
-        container = "{rep}-{ver}".format(**locals())
-        images = output("docker images {image}".format(**locals()))
-        running = output("docker ps")
-        if greps(images, rep) and not greps(running, container):
-            cmd = "docker rm --force {container}"
-            sx____(cmd.format(**locals()))
-            cmd = "docker run --detach --name {container} {image}"
-            sh____(cmd.format(**locals()))
-        running = output("docker ps")
-        if greps(running, container):
-            ip_a = self.ip_container(container)
-            logg.info("%s => %s", container, ip_a)
-            results = { "archive.ubuntu.com" : ip_a, "security.ubuntu.com" : ip_a }
-            return results
-        return {}
+        return self.with_local(rmi, rep, ver, "archive.ubuntu.com", "security.ubuntu.com")
     def with_local_centos_mirror(self, ver = None):
         """ detects a local centos mirror or starts a local
             docker container with a centos repo mirror. It
@@ -283,22 +268,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         rmi = "localhost:5000/mirror-packages"
         rep = "centos-repo"
         ver = ver or CENTOS.split(":")[1]
-        find_repo_image = "docker images {rmi}/{rep}:{ver}"
-        images = output(find_repo_image.format(**locals()))
-        running = output("docker ps")
-        if greps(images, rep) and not greps(running, rep+ver):
-            cmd = "docker rm --force {rep}{ver}"
-            sx____(cmd.format(**locals()))
-            cmd = "docker run --detach --name {rep}{ver} {rmi}/{rep}:{ver}"
-            sh____(cmd.format(**locals()))
-        running = output("docker ps")
-        if greps(running, rep+ver):
-            ip_a = self.ip_container(rep+ver)
-            logg.info("%s%s => %s", rep, ver, ip_a)
-            result = "mirrorlist.centos.org:%s" % ip_a
-            logg.info("--add-host %s", result)
-            return result
-        return ""
+        return self.with_local(rmi, rep, ver, "mirrorlist.centos.org")
     def with_local_opensuse_mirror(self, ver = None):
         """ detects a local opensuse mirror or starts a local
             docker container with a centos repo mirror. It
@@ -307,22 +277,29 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         rmi = "localhost:5000/mirror-packages"
         rep = "opensuse-repo"
         ver = ver or OPENSUSE.split(":")[1]
-        find_repo_image = "docker images {rmi}/{rep}:{ver}"
-        images = output(find_repo_image.format(**locals()))
-        running = output("docker ps")
-        if greps(images, rep) and not greps(running, rep+ver):
-            cmd = "docker rm --force {rep}{ver}"
-            sx____(cmd.format(**locals()))
-            cmd = "docker run --detach --name {rep}{ver} {rmi}/{rep}:{ver}"
+        return self.with_local(rmi, rep, ver, "download.opensuse.org")
+    def with_local(self, rmi, rep, ver, *hosts):
+        image = "{rmi}/{rep}:{ver}".format(**locals())
+        container = "{rep}-{ver}".format(**locals())
+        out, err, ok = output3("docker inspect {image}".format(**locals()))
+        image_found = json.loads(out)
+        if not image_found:
+           return {}
+        out, err, ok = output3("docker inspect {container}".format(**locals()))
+        container_found = json.loads(out)
+        if container_found:
+            container_image_id = container_found[0]["Image"]
+            latest_image_id = image_found[0]["Id"]
+            if latest_image_id != container_image_id:
+                cmd = "docker rm --force {container}"
+                sx____(cmd.format(**locals()))
+                container_found = []
+        if not container_found:
+            cmd = "docker run --detach --name {container} {image}"
             sh____(cmd.format(**locals()))
-        running = output("docker ps")
-        if greps(running, rep+ver):
-            ip_a = self.ip_container(rep+ver)
-            logg.info("%s%s => %s", rep, ver, ip_a)
-            result = "download.opensuse.org:%s" % ip_a
-            logg.info("--add-host %s", result)
-            return result
-        return ""
+        ip_a = self.ip_container(container)
+        logg.info("%s => %s", container, ip_a)
+        return dict(zip(hosts, [ ip_a ] * len(hosts)))
     def add_hosts(self, hosts):
         return " ".join(["--add-host %s:%s" % (host, ip_a) for host, ip_a in hosts.items() ])
         # for host, ip_a in mapping.items():
@@ -334,28 +311,23 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             'docker start --add-host mirror...:centos-repo centos:x.y'. """
         if os.environ.get("NONLOCAL",""):
             return image
+        hosts = {}
         if image.startswith("centos:"):
             version = image[len("centos:"):]
-            add_hosts = self.with_local_centos_mirror(version)
-            if add_hosts:
-                return "--add-host '{add_hosts}' {image}".format(**locals())
-        if image.startswith("opensuse:"):
-            version = image[len("opensuse:"):]
-            add_hosts = self.with_local_opensuse_mirror(version)
-            if add_hosts:
-                return "--add-host '{add_hosts}' {image}".format(**locals())
+            hosts = self.with_local_centos_mirror(version)
         if image.startswith("opensuse/leap:"):
             version = image[len("opensuse/leap:"):]
-            add_hosts = self.with_local_opensuse_mirror(version)
-            if add_hosts:
-                return "--add-host '{add_hosts}' {image}".format(**locals())
+            hosts = self.with_local_opensuse_mirror(version)
+        if image.startswith("opensuse:"):
+            version = image[len("opensuse:"):]
+            hosts = self.with_local_opensuse_mirror(version)
         if image.startswith("ubuntu:"):
             version = image[len("ubuntu:"):]
             hosts = self.with_local_ubuntu_mirror(version)
-            if hosts:
-                options = self.add_hosts(hosts)
-                logg.info("%s %s", options, image)
-                return "{options} {image}".format(**locals())
+        if hosts:
+            add_hosts = self.add_hosts(hosts)
+            logg.info("%s %s", add_hosts, image)
+            return "{add_hosts} {image}".format(**locals())
         return image
     def drop_container(self, name):
         cmd = "docker rm --force {name}"
@@ -12153,7 +12125,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run --detach --name={testname} {image} sleep 200"
+        cmd = "docker run --detach --name={testname} {image} sleep 2000"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} apt-get update"
         sh____(cmd.format(**locals()))
