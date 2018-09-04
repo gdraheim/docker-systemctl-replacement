@@ -35,12 +35,19 @@ est_%: ; rm .coverage* ; ./testsuite.py t$@ -vv --coverage
 test_%: ; ./testsuite.py $@ -vv
 real_%: ; ./testsuite.py $@ -vv
 
+opensuse/test_%: ; ./testsuite.py $(notdir $@) -vv --image=opensuse/leap:15.0
+ubuntu/test_%:   ; ./testsuite.py $(notdir $@) -vv --image=ubuntu:18.04
+
 check: check2018
 	@ echo please run 'make checks' now
 18 check2018: ; ./testsuite.py -vv --opensuse=15.0 --centos=7.5 --ubuntu=18.04
 17 check2017: ; ./testsuite.py -vv --opensuse=42.3 --centos=7.4 --ubuntu=16.04
 16 check2016: ; ./testsuite.py -vv --opensuse=42.2 --centos=7.3 --ubuntu=16.04
 
+check2: 
+	$(MAKE) tmp_systemctl_py_2
+	./testsuite.py -vv --opensuse=15.0 --centos=7.5 --ubuntu=18.04 \
+	  '--with=tmp/systemctl.py' --python=/usr/bin/python
 check3: 
 	$(MAKE) tmp_systemctl_py_3
 	./testsuite.py -vv --opensuse=15.0 --centos=7.5 --ubuntu=18.04 \
