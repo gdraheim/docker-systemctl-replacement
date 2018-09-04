@@ -174,19 +174,6 @@ def _var(path):
     return path
 
 
-def shutil_chown(filename, user = None, group = None):
-    """ in python 3.3. there is shutil.chown """
-    uid = -1
-    gid = -1
-    if group:
-        import grp
-        gid = grp.getgrnam(group).gr_gid
-    if user:
-        import pwd
-        uid = pwd.getpwnam(user).pw_uid
-    if os.path.exists(filename):
-        os.chown(filename, uid, gid)
-
 def shutil_setuid(user = None, group = None):
     """ set fork-child uid/gid """
     if group:
@@ -461,7 +448,7 @@ class UnitConf:
         """ returns the last filename that was parsed """
         files = self.data.filenames()
         if files:
-            return files[-1]
+            return files[0]
         return None
     def name(self):
         """ the unit id or defaults to the file name """
@@ -520,7 +507,8 @@ class waitlock:
                         os.close(self.opened)
                         self.opened = os.open(lockfile, os.O_RDWR | os.O_CREAT, 0o600)
                         continue
-                    os.write(self.opened, "{ 'systemctl': %s, 'unit': '%s' }\n" % (os.getpid(), self.unit))
+                    content = "{ 'systemctl': %s, 'unit': '%s' }\n" % (os.getpid(), self.unit)
+                    os.write(self.opened, content.encode("utf-8"))
                     logg.debug("holding %s", lockfile)
                     return True
                 except BlockingIOError as e:
@@ -1233,7 +1221,9 @@ class Systemctl:
             with open(status_file, "w") as f:
                 for key in sorted(conf.status):
                     value = conf.status[key]
-                    f.write("{}={}\n".format(key, str(value)))
+                    content = "{}={}\n".format(key, str(value))
+                    logg.info("writing to %s\n\t%s", status_file, content)
+                    f.write(content)
         except IOError as e:
             logg.error("writing STATUS %s: %s\n\t to status file %s", status, e, status_file)
         return True
@@ -1561,7 +1551,7 @@ class Systemctl:
                 os.makedirs(os.path.dirname(socketfile))
             if os.path.exists(socketfile):
                 os.unlink(socketfile)
-        except Exception, e:
+        except Exception as e:
             logg.warning("error %s: %s", socketfile, e)
         sock = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
         sock.bind(socketfile)
@@ -3786,7 +3776,7 @@ class Systemctl:
                 fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
                 self._log_file[unit] = opened
                 self._log_hold[unit] = ""
-            except Exception, e:
+            except Exception as e:
                 logg.error("can not open %s log: %s\n\t%s", unit, log_path, e)
     def read_log_files(self, units):
         for unit in units:
@@ -3799,7 +3789,8 @@ class Systemctl:
                     self._log_hold[unit] = lines[-1]
                     lines = lines[:-1]
                 for line in lines:
-                    os.write(1, unit+": "+line+"\n")
+                    content = unit+": "+line+"\n"
+                    os.write(1, content.encode("utf-8"))
                     try: os.fsync(1)
                     except: pass
     def stop_log_files(self, units):
@@ -3808,7 +3799,7 @@ class Systemctl:
                 if unit in self._log_file:
                     if self._log_file[unit]:
                         self._log_file[unit].close()
-            except Exception, e:
+            except Exception as e:
                 logg.error("can not close log: %s\n\t%s", unit, e)
         self._log_file = {}
         self._log_hold = {}
