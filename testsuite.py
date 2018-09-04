@@ -11061,7 +11061,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
     def test_5120_systemctl_py_run_default_services_from_saved_container(self):
         """ check that we can enable services in a docker container to be run as default-services
-            after it has been restarted from a commit-saved container image"""
+            after it has been restarted from a commit-saved container image (with --init default)"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
         image = self.local_image(IMAGE or CENTOS)
@@ -11177,7 +11177,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
     def test_5130_systemctl_py_run_default_services_from_simple_saved_container(self):
         """ check that we can enable services in a docker container to be run as default-services
-            after it has been restarted from a commit-saved container image"""
+            after it has been restarted from a commit-saved container image (without any arg)"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
         image = self.local_image(IMAGE or CENTOS)
@@ -11522,6 +11522,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             sh____(cmd.format(**locals()))
             okay_coverage = "sed -i -e 's:/{systemctl_py_run}:{systemctl_py}:' {coverage_file}"
             sh____(okay_coverage.format(**locals()))
+            cmd = "docker cp {testname}x:.coverage {coverage_file}_x"
+            sh____(cmd.format(**locals()))
+            cmd = "sed -i -e 's:/{systemctl_py_run}:{systemctl_py}:' {coverage_file}_x"
+            sh____(cmd.format(**locals()))
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
@@ -11650,6 +11654,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             sh____(cmd.format(**locals()))
             okay_coverage = "sed -i -e 's:/{systemctl_py_run}:{systemctl_py}:' {coverage_file}"
             sh____(okay_coverage.format(**locals()))
+            cmd = "docker cp {testname}x:.coverage {coverage_file}_x"
+            sh____(cmd.format(**locals()))
+            cmd = "sed -i -e 's:/{systemctl_py_run}:{systemctl_py}:' {coverage_file}_x"
+            sh____(cmd.format(**locals()))
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
@@ -11724,6 +11732,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             sx____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} touch /var/log/systemctl.debug.log"
+        sh____(cmd.format(**locals()))
         #
         cmd = "docker exec {testname} mkdir -p /etc/systemd/system"
         sx____(cmd.format(**locals()))
@@ -11736,6 +11746,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} systemctl enable zzc.service"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl default-services -v"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} touch /var/log/systemctl.debug.log {testdir}/systemctl.debug.log"
         # sh____(cmd.format(**locals()))
         out2 = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out2)
@@ -11780,6 +11792,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out3 = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out3)
         #
+        cmd = "docker cp {testname}x:/var/log/systemctl.debug.log {testdir}/systemctl.debug.log"
+        sh____(cmd.format(**locals()))
+        log = lines(open(testdir+"/systemctl.debug.log"))
+        logg.info("systemctl.debug.log>\n%s", "\n".join(log))
+        #
         top_container = "docker exec {testname} ps -eo pid,ppid,args"
         top = output(top_container.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -11792,6 +11809,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             sh____(cmd.format(**locals()))
             okay_coverage = "sed -i -e 's:/{systemctl_py_run}:{systemctl_py}:' {coverage_file}"
             sh____(okay_coverage.format(**locals()))
+            cmd = "docker cp {testname}x:.coverage {coverage_file}_x"
+            sh____(cmd.format(**locals()))
+            cmd = "sed -i -e 's:/{systemctl_py_run}:{systemctl_py}:' {coverage_file}_x"
+            sh____(cmd.format(**locals()))
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
@@ -11866,6 +11887,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             sx____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} touch /var/log/systemctl.debug.log"
+        sh____(cmd.format(**locals()))
         #
         cmd = "docker exec {testname} mkdir -p /etc/systemd/system"
         sx____(cmd.format(**locals()))
@@ -11921,6 +11944,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out3 = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out3)
         #
+        cmd = "docker logs {testname}x"
+        logs = output(cmd.format(**locals()))
+        logg.info("\n>\n%s", logs)
+        #
+        cmd = "docker cp {testname}x:/var/log/systemctl.debug.log {testdir}/systemctl.debug.log"
+        sh____(cmd.format(**locals()))
+        log = lines(open(testdir+"/systemctl.debug.log"))
+        logg.info("systemctl.debug.log>\n\t%s", "\n\t".join(log))
+        #
         top_container = "docker exec {testname} ps -eo pid,ppid,args"
         top = output(top_container.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -11933,6 +11965,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             sh____(cmd.format(**locals()))
             okay_coverage = "sed -i -e 's:/{systemctl_py_run}:{systemctl_py}:' {coverage_file}"
             sh____(okay_coverage.format(**locals()))
+            cmd = "docker cp {testname}x:.coverage {coverage_file}_x"
+            sh____(cmd.format(**locals()))
+            cmd = "sed -i -e 's:/{systemctl_py_run}:{systemctl_py}:' {coverage_file}_x"
+            sh____(cmd.format(**locals()))
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
@@ -12077,6 +12113,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             cmd = "docker cp {testname}:.coverage {coverage_file}"
             sh____(cmd.format(**locals()))
             cmd = "sed -i -e 's:/{systemctl_py_run}:{systemctl_py}:' {coverage_file}"
+            sh____(cmd.format(**locals()))
+            cmd = "docker cp {testname}x:.coverage {coverage_file}_x"
+            sh____(cmd.format(**locals()))
+            cmd = "sed -i -e 's:/{systemctl_py_run}:{systemctl_py}:' {coverage_file}_x"
             sh____(cmd.format(**locals()))
         #
         cmd = "docker rm --force {testname}"
@@ -12570,6 +12610,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             cmd = "docker cp {testname}x:.coverage {coverage_file}"
             sh____(cmd.format(**locals()))
             cmd = "sed -i -e 's:/{systemctl_py_run}:{systemctl_py}:' {coverage_file}"
+            sh____(cmd.format(**locals()))
+            cmd = "docker cp {testname}x:.coverage {coverage_file}_x"
+            sh____(cmd.format(**locals()))
+            cmd = "sed -i -e 's:/{systemctl_py_run}:{systemctl_py}:' {coverage_file}_x"
             sh____(cmd.format(**locals()))
         #
         cmd = "docker rm --force {testname}"
