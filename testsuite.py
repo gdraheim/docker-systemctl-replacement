@@ -319,9 +319,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, err, ok = output3("docker inspect {container}".format(**locals()))
         container_found = json.loads(out)
         if container_found:
-            container_image_id = container_found[0]["Image"]
+            container_status = container_found[0]["State"]["Status"]
+            logg.info("::: %s -> %s", container, container_status)
             latest_image_id = image_found[0]["Id"]
-            if latest_image_id != container_image_id:
+            container_image_id = container_found[0]["Image"]
+            if latest_image_id != container_image_id or container_status not in ["running"]:
                 cmd = "docker rm --force {container}"
                 sx____(cmd.format(**locals()))
                 container_found = []
@@ -329,7 +331,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             cmd = "docker run --detach --name {container} {image}"
             sh____(cmd.format(**locals()))
         ip_a = self.ip_container(container)
-        logg.info("%s => %s", container, ip_a)
+        logg.info("::: %s => %s", container, ip_a)
         return dict(zip(hosts, [ ip_a ] * len(hosts)))
     def add_hosts(self, hosts):
         return " ".join(["--add-host %s:%s" % (host, ip_a) for host, ip_a in hosts.items() ])
@@ -11875,15 +11877,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zz6.service {testname}:/etc/systemd/system/zz6.service"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} systemctl __exec_start_unit zz4.service -vv"
+        cmd = "docker exec {testname} systemctl __test_start_unit zz4.service -vv"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} cp .coverage .coverage.{testname}.4"
         sx____(cmd.format(**locals()))
-        cmd = "docker exec {testname} systemctl __exec_start_unit zz5.service -vv"
+        cmd = "docker exec {testname} systemctl __test_start_unit zz5.service -vv"
         sh____(cmd.format(**locals())) 
         cmd = "docker exec {testname} cp .coverage .coverage.{testname}.5"
         sx____(cmd.format(**locals()))
-        cmd = "docker exec {testname} systemctl __exec_start_unit zz6.service -vv"
+        cmd = "docker exec {testname} systemctl __test_start_unit zz6.service -vv"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} cp .coverage .coverage.{testname}.6"
         sx____(cmd.format(**locals()))
