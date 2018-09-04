@@ -50,11 +50,20 @@ check: check2018
 17 check2017: ; ./testsuite.py -vv --opensuse=42.3 --centos=7.4 --ubuntu=16.04
 16 check2016: ; ./testsuite.py -vv --opensuse=42.2 --centos=7.3 --ubuntu=16.04
 
-check2: 
+2/test_%:
+	$(MAKE) tmp_systemctl_py_2
+	./testsuite.py -vv $(notdir $@) --sometime=666 \
+	  '--with=tmp/systemctl.py' --python=/usr/bin/python
+3/test_%:
+	$(MAKE) tmp_systemctl_py_3
+	./testsuite.py -vv $(notdir $@) --sometime=666 \
+	  '--with=tmp/systemctl.py' --python=/usr/bin/python3
+
+check2:
 	$(MAKE) tmp_systemctl_py_2
 	./testsuite.py -vv \
 	  '--with=tmp/systemctl.py' --python=/usr/bin/python
-check3: 
+check3:
 	$(MAKE) tmp_systemctl_py_3
 	./testsuite.py -vv \
 	  '--with=tmp/systemctl.py' --python=/usr/bin/python3
