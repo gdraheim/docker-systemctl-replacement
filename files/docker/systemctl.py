@@ -536,14 +536,6 @@ class waitlock:
         except Exception as e:
             logg.warning("oops, %s", e)
 
-def subprocess_wait(cmd, env=None, check = False, shell=False):
-    # logg.warning("running = %s", cmd)
-    run = subprocess.Popen(cmd, shell=shell, env=env)
-    run.wait()
-    if check and run.returncode: 
-        logg.warning("returncode %i\n %s", run.returncode, cmd)
-        raise Exception("command failed")
-    return run
 def subprocess_waitpid(pid):
     waitpid = collections.namedtuple("waitpid", ["pid", "returncode", "signal" ])
     run_pid, run_stat = os.waitpid(pid, 0)
