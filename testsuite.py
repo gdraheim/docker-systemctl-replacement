@@ -2426,22 +2426,25 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(out, r"^static"))
         self.assertEqual(len(lines(out)), 0)
         cmd = "{systemctl} is-enabled zz-not-existing-service.service zzc.service"
-        out, end = output2(cmd.format(**locals()))
-        logg.info(" %s =>%s\n%s", cmd, end, out)
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
         self.assertEqual(end, 1)
         self.assertTrue(greps(out, r"^disabled"))
         self.assertFalse(greps(out, r"^enabled"))
         self.assertEqual(len(lines(out)), 1)
+        self.assertTrue(greps(err, "Unit zz-not-existing-service.service could not be found."))
         #
         cmd = "{systemctl} --no-legend enable zz-not-existing-service.service"
-        out, end = output2(cmd.format(**locals()))
-        logg.info(" %s =>%s\n%s", cmd, end, out)
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
         self.assertEqual(end, 1)
+        self.assertTrue(greps(err, "Unit zz-not-existing-service.service could not be found."))
         #
         cmd = "{systemctl} --no-legend disable zz-not-existing-service.service"
-        out, end = output2(cmd.format(**locals()))
-        logg.info(" %s =>%s\n%s", cmd, end, out)
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
         self.assertEqual(end, 1)
+        self.assertTrue(greps(err, "Unit zz-not-existing-service.service could not be found."))
         #
         self.rm_testdir()
         self.coverage()
@@ -4650,6 +4653,49 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "Id=zzb.service"))
         self.assertTrue(greps(out, "Names=zzb.service"))
         self.rm_zzfiles(root)
+        self.rm_testdir()
+        self.coverage()
+    def test_3108_is_masked_for_nonexistant_service(self):
+        """ check that mask/unmask reports correctly for non-existant services """
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/zzc.service"),"""
+            [Unit]
+            Description=Testing C
+            [Service]
+            ExecStart=/usr/bin/sleep 2
+            [Install]
+            WantedBy=multi-user.target""")
+        #
+        cmd = "{systemctl} is-enabled zz-not-existing.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 1)
+        self.assertFalse(greps(out, r"^static"))
+        self.assertEqual(len(lines(out)), 0)
+        cmd = "{systemctl} is-enabled zz-not-existing-service.service zzc.service"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 1)
+        self.assertTrue(greps(out, r"^disabled"))
+        self.assertFalse(greps(out, r"^enabled"))
+        self.assertEqual(len(lines(out)), 1)
+        self.assertTrue(greps(err, "Unit zz-not-existing-service.service could not be found."))
+        #
+        cmd = "{systemctl} --no-legend mask zz-not-existing-service.service"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 1)
+        self.assertTrue(greps(err, "Unit zz-not-existing-service.service could not be found."))
+        #
+        cmd = "{systemctl} --no-legend unmask zz-not-existing-service.service"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 1)
+        self.assertTrue(greps(err, "Unit zz-not-existing-service.service could not be found."))
+        #
         self.rm_testdir()
         self.coverage()
     def test_3201_missing_environment_file_makes_service_ignored(self):
