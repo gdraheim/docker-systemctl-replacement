@@ -1063,7 +1063,28 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
         self.assertTrue(greps(err, "Unknown operation incorrect."))
+        self.assertTrue(greps(out, "units listed.."))
         self.assertEqual(end, 1)
+        self.rm_zzfiles(root)
+        self.rm_testdir()
+        self.coverage()
+    def real_1111_default_command(self):
+        self.test_1111_default_command(True)
+    def test_1111_default_command(self, real = False):
+        """ check that default commands work"""
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir, real)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
+        self.rm_zzfiles(root)
+        #
+        cmd = "{systemctl}"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertTrue(greps(out, "units listed."))
+        self.assertTrue(greps(out, "To show all installed unit files use 'systemctl list-unit-files'."))
+        self.assertEqual(end, 0)
         self.rm_zzfiles(root)
         self.rm_testdir()
         self.coverage()
