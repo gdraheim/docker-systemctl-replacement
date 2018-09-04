@@ -2405,6 +2405,46 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.rm_testdir()
         self.coverage()
+    def test_3008_is_enabled_for_nonexistant_service(self):
+        """ check that 'is-enabled' reports correctly for non-existant services """
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/zzc.service"),"""
+            [Unit]
+            Description=Testing C
+            [Service]
+            ExecStart=/usr/bin/sleep 2
+            [Install]
+            WantedBy=multi-user.target""")
+        #
+        cmd = "{systemctl} is-enabled zz-not-existing.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 1)
+        self.assertFalse(greps(out, r"^static"))
+        self.assertEqual(len(lines(out)), 0)
+        cmd = "{systemctl} is-enabled zz-not-existing-service.service zzc.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 1)
+        self.assertTrue(greps(out, r"^disabled"))
+        self.assertFalse(greps(out, r"^enabled"))
+        self.assertEqual(len(lines(out)), 1)
+        #
+        cmd = "{systemctl} --no-legend enable zz-not-existing-service.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 1)
+        #
+        cmd = "{systemctl} --no-legend disable zz-not-existing-service.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 1)
+        #
+        self.rm_testdir()
+        self.coverage()
     def test_3009_sysv_service_enable(self):
         """ check that we manage SysV services in a root env
             with basic enable/disable commands, also being
