@@ -3872,16 +3872,6 @@ class Systemctl:
                 pidlist = pids[:]
                 continue
         return pids
-    def pidlist_modules(self, *units):
-        for unit in self.match_units(units):
-            conf = self.get_unit_conf(unit)
-            pid = self.read_mainpid_from(conf, "")
-            yield unit, self.pidlist_of(pid)
-    def mainpid_modules(self, *units):
-        for unit in self.match_units(units):
-            conf = self.get_unit_conf(unit)
-            pid = self.read_mainpid_from(conf, "")
-            yield unit, pid
     def etc_hosts(self):
         path = "/etc/hosts"
         if self._root:
