@@ -11664,12 +11664,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl_sh = os_path(testdir, "systemctl.sh")
         systemctl_py_run = systemctl_py.replace("/","_")[1:]
         cov_run = ""
+        cov_option = ""
         if COVERAGE:
             cov_run = _cov_run
+            cov_option = "--coverage"
         sometime = SOMETIME or 100
         shell_file(systemctl_sh,"""
             #! /bin/sh
-            exec {cov_run} /{systemctl_py_run} "$@" -vv
+            exec {cov_run} /{systemctl_py_run} "$@" -vv {cov_option}
             """.format(**locals()))
         text_file(os_path(testdir, "zzb.service"),"""
             [Unit]
@@ -11827,12 +11829,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl_sh = os_path(testdir, "systemctl.sh")
         testsleep_sh = os_path(testdir, "testsleep.sh")
         cov_run = ""
+        cov_option = ""
         if COVERAGE:
             cov_run = _cov_run
+            cov_option = "--coverage"
         sometime = SOMETIME or 100
         shell_file(systemctl_sh,"""
             #! /bin/sh
-            exec {cov_run} /{systemctl_py_run} "$@" -vv --coverage
+            exec {cov_run} /{systemctl_py_run} "$@" -vv {cov_option}
             """.format(**locals()))
         shell_file(testsleep_sh,"""
             #! /bin/sh
@@ -11982,8 +11986,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         python = os.path.basename(_python)
         python_coverage = _python_coverage
         cov_run = ""
+        cov_option = ""
         if COVERAGE:
             cov_run = _cov_run
+            cov_option = "--coverage"
         if COVERAGE and self.local_system():
            image = self.local_image(self.local_system())
         if _python.endswith("python3") and "centos" in image: 
@@ -11996,7 +12002,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sometime = SOMETIME or 100
         shell_file(systemctl_sh,"""
             #! /bin/sh
-            exec {cov_run} /{systemctl_py_run} "$@" -vv
+            exec {cov_run} /{systemctl_py_run} "$@" -vv {cov_option}
             """.format(**locals()))
         user = self.user()
         testsleep = self.testname("sleep")
@@ -12094,11 +12100,18 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname}x kill {pid}"
         sh____(cmd.format(**locals()))
         #
+        time.sleep(1)
         cmd = "docker exec {testname}x ps -eo state,pid,ppid,args"
         top = output(cmd.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "Z .*sleep.*<defunct>")) # <<< we have zombie!
-        time.sleep(4)
+        for attempt in xrange(10):
+            time.sleep(3)
+            cmd = "docker exec {testname}x ps -eo state,pid,ppid,args"
+            top = output(cmd.format(**locals()))
+            logg.info("\n[%s]>>>\n%s", attempt, top)
+            if not greps(top, "<defunct>"):
+                break
         #
         cmd = "docker exec {testname}x ps -eo state,pid,ppid,args"
         top = output(cmd.format(**locals()))
