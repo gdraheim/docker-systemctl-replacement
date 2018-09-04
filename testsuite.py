@@ -12041,7 +12041,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cov_option = ""
         if COVERAGE:
             cov_run = _cov_run
-            cov_option = "--coverage" # TODO: not used in test_6600
+            cov_option = "--coverage"
         if COVERAGE and self.local_system():
            image = self.local_image(self.local_system())
         if _python.endswith("python3") and "centos" in image: 
@@ -12054,7 +12054,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sometime = SOMETIME or 100
         shell_file(systemctl_sh,"""
             #! /bin/sh
-            exec {cov_run} /{systemctl_py_run} "$@" -vv
+            exec {cov_run} /{systemctl_py_run} "$@" -vv {cov_option}
             """.format(**locals()))
         user = self.user()
         testsleep = self.testname("sleep")
@@ -12094,6 +12094,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker cp {systemctl_sh} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
         cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/{testsleep}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} touch /var/log/systemctl.debug.log"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
