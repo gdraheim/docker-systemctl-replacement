@@ -11832,7 +11832,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sometime = SOMETIME or 100
         shell_file(systemctl_sh,"""
             #! /bin/sh
-            exec {cov_run} /{systemctl_py_run} "$@" -vv
+            exec {cov_run} /{systemctl_py_run} "$@" -vv --coverage
             """.format(**locals()))
         shell_file(testsleep_sh,"""
             #! /bin/sh

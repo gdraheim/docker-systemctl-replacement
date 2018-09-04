@@ -29,6 +29,7 @@ else:
     string_types = str
     xrange = range
 
+COVERAGE = False
 DEBUG_AFTER = os.environ.get("DEBUG_AFTER", "") or False
 DEBUG_REMOVE = os.environ.get("DEBUG_REMOVE", "") or False
 EXIT_WHEN_NO_MORE_PROCS = os.environ.get("EXIT_WHEN_NO_MORE_PROCS", "") or False
@@ -1891,7 +1892,10 @@ class Systemctl:
         shutil_setuid(runuser, rungroup)
         self.chdir_workingdir(conf, check = False)
         try:
-            os.execve(cmd[0], cmd, env)
+            if COVERAGE:
+                os.spawnvpe(os.P_NOWAIT, cmd[0], cmd, env)
+            else: # pragma: nocover
+                os.execve(cmd[0], cmd, env)
         except Exception as e:
             logg.error("(%s): %s", shell_cmd(cmd), e)
             sys.exit(1)
@@ -4129,6 +4133,8 @@ if __name__ == "__main__":
     _o.add_option("--no-pager", action="store_true",
         help="Do not pipe output into pager (ignored)")
     #
+    _o.add_option("--coverage", action="store_true", default=COVERAGE,
+        help="..support for coverage (no execve)")
     _o.add_option("-e","--extra-vars", "--environment", metavar="NAME=VAL", action="append", default=[],
         help="..override settings in the syntax of 'Environment='")
     _o.add_option("-v","--verbose", action="count", default=0,
@@ -4143,6 +4149,7 @@ if __name__ == "__main__":
     logging.basicConfig(level = max(0, logging.FATAL - 10 * opt.verbose))
     logg.setLevel(max(0, logging.ERROR - 10 * opt.verbose))
     #
+    COVERAGE = opt.coverage
     _extra_vars = opt.extra_vars
     _force = opt.force
     _full = opt.full
