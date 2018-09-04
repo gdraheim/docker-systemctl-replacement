@@ -328,7 +328,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 sx____(cmd.format(**locals()))
                 container_found = []
         if not container_found:
-            cmd = "docker run --detach --name {container} {image}"
+            cmd = "docker run --rm=true --detach --name {container} {image}"
             sh____(cmd.format(**locals()))
         ip_a = self.ip_container(container)
         logg.info("::: %s => %s", container, ip_a)
