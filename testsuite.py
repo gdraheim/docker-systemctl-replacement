@@ -1063,7 +1063,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
         self.assertTrue(greps(err, "Unknown operation incorrect."))
-        self.assertTrue(greps(out, "units listed.."))
+        self.assertFalse(greps(out, "units listed."))
         self.assertEqual(end, 1)
         self.rm_zzfiles(root)
         self.rm_testdir()
