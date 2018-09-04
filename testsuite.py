@@ -10994,12 +10994,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl_sh = os_path(testdir, "systemctl.sh")
         systemctl_py_run = systemctl_py.replace("/","_")[1:]
         cov_run = ""
+        cov_option = ""
         if COVERAGE:
             cov_run = _cov_run
+            cov_option = "--coverage"
         sometime = SOMETIME or 100
         shell_file(systemctl_sh,"""
             #! /bin/sh
-            exec {cov_run} /{systemctl_py_run} "$@" -vv
+            exec {cov_run} /{systemctl_py_run} "$@" -vv {cov_option}
             """.format(**locals()))
         text_file(os_path(testdir, "zza.service"),"""
             [Unit]
@@ -11119,12 +11121,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl_sh = os_path(testdir, "systemctl.sh")
         systemctl_py_run = systemctl_py.replace("/","_")[1:]
         cov_run = ""
+        cov_option = ""
         if COVERAGE:
             cov_run = _cov_run
+            cov_option = "--coverage"
         sometime = SOMETIME or 100
         shell_file(systemctl_sh,"""
             #! /bin/sh
-            exec {cov_run} /{systemctl_py_run} "$@" -vv
+            exec {cov_run} /{systemctl_py_run} "$@" -vv {cov_option}
             """.format(**locals()))
         text_file(os_path(testdir, "zza.service"),"""
             [Unit]
@@ -11244,12 +11248,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl_sh = os_path(testdir, "systemctl.sh")
         systemctl_py_run = systemctl_py.replace("/","_")[1:]
         cov_run = ""
+        cov_option = ""
         if COVERAGE:
             cov_run = _cov_run
+            cov_option = "--coverage"
         sometime = SOMETIME or 100
         shell_file(systemctl_sh,"""
             #! /bin/sh
-            exec {cov_run} /{systemctl_py_run} "$@" -vv
+            exec {cov_run} /{systemctl_py_run} "$@" -vv {cov_option}
             """.format(**locals()))
         text_file(os_path(testdir, "zzb.service"),"""
             [Unit]
@@ -11384,12 +11390,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl_sh = os_path(testdir, "systemctl.sh")
         systemctl_py_run = systemctl_py.replace("/","_")[1:]
         cov_run = ""
+        cov_option = ""
         if COVERAGE:
             cov_run = _cov_run
+            cov_option = "--coverage"
         sometime = SOMETIME or 100
         shell_file(systemctl_sh,"""
             #! /bin/sh
-            exec {cov_run} /{systemctl_py_run} "$@" -vv
+            exec {cov_run} /{systemctl_py_run} "$@" -vv {cov_option}
             """.format(**locals()))
         text_file(os_path(testdir, "zzb.service"),"""
             [Unit]
@@ -11523,12 +11531,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl_sh = os_path(testdir, "systemctl.sh")
         systemctl_py_run = systemctl_py.replace("/","_")[1:]
         cov_run = ""
+        cov_option = ""
         if COVERAGE:
             cov_run = _cov_run
+            cov_option = "--coverage"
         sometime = SOMETIME or 200
         shell_file(systemctl_sh,"""
             #! /bin/sh
-            exec {cov_run} /{systemctl_py_run} "$@" -vv
+            exec {cov_run} /{systemctl_py_run} "$@" -vv {cov_option}
             """.format(**locals()))
         text_file(os_path(testdir, "zzb.service"),"""
             [Unit]
