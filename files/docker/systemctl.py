@@ -4218,7 +4218,7 @@ if __name__ == "__main__":
         found = True
         result = command_func()
     if not found:
-        logg.error("EXEC END no method for '%s'", command)
+        logg.error("Unknown operation %s.", command)
         sys.exit(1)
     #
     sys.exit(print_result(result))

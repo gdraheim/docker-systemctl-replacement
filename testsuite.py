@@ -1048,6 +1048,25 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(out, r"g.service:.* there may be only one ExecReload statement")) # systemctl.py special
         self.assertFalse(greps(out, r"c.service:.* the use of /bin/kill is not recommended")) # systemctl.py special
         sh____("rm /etc/systemd/system/zz*")
+    def real_1101_get_bad_command(self):
+        self.test_1101_bad_command(True)
+    def test_1101_bad_command(self, real = False):
+        """ check that unknown commands work"""
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir, real)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
+        self.rm_zzfiles(root)
+        #
+        cmd = "{systemctl} incorrect"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertTrue(greps(err, "Unknown operation incorrect."))
+        self.assertEqual(end, 1)
+        self.rm_zzfiles(root)
+        self.rm_testdir()
+        self.coverage()
     def real_1201_get_default(self):
         self.test_1201_get_default(True)
     def test_1201_get_default(self, real = False):
