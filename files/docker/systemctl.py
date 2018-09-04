@@ -1882,6 +1882,7 @@ class Systemctl:
         try:
             if COVERAGE:
                 os.spawnvpe(os.P_NOWAIT, cmd[0], cmd, env)
+                sys.exit(0)
             else: # pragma: nocover
                 os.execve(cmd[0], cmd, env)
         except Exception as e:
