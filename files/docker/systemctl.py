@@ -1093,21 +1093,6 @@ class Systemctl:
         """ Unit.Description could be empty sometimes """
         if not conf: return default or ""
         return conf.data.get("Unit", "Description", default or "")
-    def write_pid_file(self, pid_file, pid): # -> bool(written)
-        """ if a pid_file is known then path is created and the
-            give pid is written as the only content. """
-        if not pid_file: 
-            logg.debug("pid %s but no pid_file", pid)
-            return False
-        dirpath = os.path.dirname(os.path.abspath(pid_file))
-        if not os.path.isdir(dirpath):
-            os.makedirs(dirpath)
-        try:
-            with open(pid_file, "w") as f:
-                f.write("{}\n".format(pid))
-        except IOError as e:
-            logg.error("writing PID %s: %s\n\t to pid_file %s", pid, e, pid_file)
-        return True
     def read_pid_file(self, pid_file, default = None):
         pid = default
         if not pid_file:
