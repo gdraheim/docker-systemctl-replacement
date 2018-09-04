@@ -71,9 +71,9 @@ check3:
 checks: 
 	- rm .coverage* 
 	$(MAKE) checks2_coverage
-	for i in .coverage*; do mv $$i $$i.2; done
+	for i in .coverage*; do mv $$i $$i.cov2; done
 	$(MAKE) checks3_coverage
-	for i in .coverage*; do mv $$i $$i.3; done
+	for i in .coverage*; do mv $$i $$i.cov3; done
 	coverage combine && coverage report && coverage annotate
 checks2:  
 	rm .coverage* ; $(MAKE) checks2_coverage
