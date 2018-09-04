@@ -35,8 +35,14 @@ est_%: ; rm .coverage* ; ./testsuite.py t$@ -vv --coverage
 test_%: ; ./testsuite.py $@ -vv
 real_%: ; ./testsuite.py $@ -vv
 
-opensuse/test_%: ; ./testsuite.py $(notdir $@) -vv --image=opensuse/leap:15.0
-ubuntu/test_%:   ; ./testsuite.py $(notdir $@) -vv --image=ubuntu:18.04
+15.0/test_%:  ; ./testsuite.py $(notdir $@) -vv --image=opensuse/leap:15.0
+42.3/test_%:  ; ./testsuite.py $(notdir $@) -vv --image=opensuse:42.3
+42.2/test_%:  ; ./testsuite.py $(notdir $@) -vv --image=opensuse:42.2
+18.04/test_%: ; ./testsuite.py $(notdir $@) -vv --image=ubuntu:18.04
+16.04/test_%: ; ./testsuite.py $(notdir $@) -vv --image=ubuntu:16.04
+7.5/test_%:   ; ./testsuite.py $(notdir $@) -vv --image=centos:7.5.1804
+7.4/test_%:   ; ./testsuite.py $(notdir $@) -vv --image=centos:7.4.1708
+7.3/test_%:   ; ./testsuite.py $(notdir $@) -vv --image=centos:7.3.1611
 
 check: check2018
 	@ echo please run 'make checks' now
@@ -46,11 +52,11 @@ check: check2018
 
 check2: 
 	$(MAKE) tmp_systemctl_py_2
-	./testsuite.py -vv --opensuse=15.0 --centos=7.5 --ubuntu=18.04 \
+	./testsuite.py -vv \
 	  '--with=tmp/systemctl.py' --python=/usr/bin/python
 check3: 
 	$(MAKE) tmp_systemctl_py_3
-	./testsuite.py -vv --opensuse=15.0 --centos=7.5 --ubuntu=18.04 \
+	./testsuite.py -vv \
 	  '--with=tmp/systemctl.py' --python=/usr/bin/python3
 
 checks: 
