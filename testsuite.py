@@ -11774,16 +11774,21 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "docker exec {testname}x systemctl halt"
         sh____(cmd.format(**locals()))
-        InitLoopSleep = 5
-        waits = InitLoopSleep + 2
-        logg.info("waits %ss for the zombie-reaper to have cleaned up", waits)
-        time.sleep(waits)
         #
-        cmd = "docker inspect {testname}x"
-        inspected = output(cmd.format(**locals()))
-        state = json.loads(inspected)[0]["State"]
-        logg.info("Status = %s", state["Status"])
-        logg.info("ExitCode = %s", state["ExitCode"])
+        waits = 3
+        for attempt in xrange(10):
+            logg.info("[%s] waits %ss for the zombie-reaper to have cleaned up", attempt, waits)
+            time.sleep(waits)
+            cmd = "docker inspect {testname}x"
+            inspected = output(cmd.format(**locals()))
+            state = json.loads(inspected)[0]["State"]
+            logg.info("Status = %s", state["Status"])
+            logg.info("ExitCode = %s", state["ExitCode"])
+            if state["Status"] in ["exited"]:
+                break
+            top_container = "docker exec {testname}x ps -eo pid,ppid,args"
+            top = output(top_container.format(**locals()))
+            logg.info("\n>>>\n%s", top)
         self.assertFalse(state["Running"])
         self.assertEqual(state["Status"], "exited")
         #
@@ -11795,9 +11800,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker cp {testname}x:/var/log/systemctl.debug.log {testdir}/systemctl.debug.log"
         sh____(cmd.format(**locals()))
         log = lines(open(testdir+"/systemctl.debug.log"))
-        logg.info("systemctl.debug.log>\n%s", "\n".join(log))
+        logg.info("systemctl.debug.log>\n\t%s", "\n\t".join(log))
+        self.assertTrue(greps(log, "no more procs - exit init-loop"))
         #
-        top_container = "docker exec {testname} ps -eo pid,ppid,args"
+        top_container = "docker exec {testname}x ps -eo pid,ppid,args"
         top = output(top_container.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, "testsleep 40"))
@@ -11926,16 +11932,21 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "docker exec {testname}x systemctl stop zzc.service" # <<<<<<<<<<<<<<<<<<<<<
         sh____(cmd.format(**locals()))
-        InitLoopSleep = 5
-        waits = InitLoopSleep + 2
-        logg.info("waits %ss for the zombie-reaper to have cleaned up", waits)
-        time.sleep(waits)
         #
-        cmd = "docker inspect {testname}x"
-        inspected = output(cmd.format(**locals()))
-        state = json.loads(inspected)[0]["State"]
-        logg.info("Status = %s", state["Status"])
-        logg.info("ExitCode = %s", state["ExitCode"])
+        waits = 3
+        for attempt in xrange(10):
+            logg.info("[%s] waits %ss for the zombie-reaper to have cleaned up", attempt, waits)
+            time.sleep(waits)
+            cmd = "docker inspect {testname}x"
+            inspected = output(cmd.format(**locals()))
+            state = json.loads(inspected)[0]["State"]
+            logg.info("Status = %s", state["Status"])
+            logg.info("ExitCode = %s", state["ExitCode"])
+            if state["Status"] in ["exited"]:
+                break
+            top_container = "docker exec {testname}x ps -eo pid,ppid,args"
+            top = output(top_container.format(**locals()))
+            logg.info("\n>>>\n%s", top)
         self.assertFalse(state["Running"])
         self.assertEqual(state["Status"], "exited")
         #
@@ -11952,8 +11963,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         log = lines(open(testdir+"/systemctl.debug.log"))
         logg.info("systemctl.debug.log>\n\t%s", "\n\t".join(log))
+        self.assertTrue(greps(log, "no more procs - exit init-loop"))
         #
-        top_container = "docker exec {testname} ps -eo pid,ppid,args"
+        top_container = "docker exec {testname}x ps -eo pid,ppid,args"
         top = output(top_container.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, "testsleep 40"))
@@ -12114,10 +12126,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             sh____(cmd.format(**locals()))
             cmd = "sed -i -e 's:/{systemctl_py_run}:{systemctl_py}:' {coverage_file}"
             sh____(cmd.format(**locals()))
-            cmd = "docker cp {testname}x:.coverage {coverage_file}_x"
-            sh____(cmd.format(**locals()))
-            cmd = "sed -i -e 's:/{systemctl_py_run}:{systemctl_py}:' {coverage_file}_x"
-            sh____(cmd.format(**locals()))
+            # cmd = "docker cp {testname}x:.coverage {coverage_file}_x"
+            # sh____(cmd.format(**locals()))
+            # cmd = "sed -i -e 's:/{systemctl_py_run}:{systemctl_py}:' {coverage_file}_x"
+            # sh____(cmd.format(**locals()))
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))

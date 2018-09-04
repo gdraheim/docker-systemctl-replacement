@@ -1881,7 +1881,7 @@ class Systemctl:
         self.chdir_workingdir(conf, check = False)
         try:
             if COVERAGE:
-                os.spawnvpe(os.P_NOWAIT, cmd[0], cmd, env)
+                os.spawnvpe(os.P_WAIT, cmd[0], cmd, env)
                 sys.exit(0)
             else: # pragma: nocover
                 os.execve(cmd[0], cmd, env)
