@@ -507,7 +507,8 @@ class waitlock:
                         os.close(self.opened)
                         self.opened = os.open(lockfile, os.O_RDWR | os.O_CREAT, 0o600)
                         continue
-                    os.write(self.opened, "{ 'systemctl': %s, 'unit': '%s' }\n" % (os.getpid(), self.unit))
+                    content = "{ 'systemctl': %s, 'unit': '%s' }\n" % (os.getpid(), self.unit)
+                    os.write(self.opened, content.encode("utf-8"))
                     logg.debug("holding %s", lockfile)
                     return True
                 except BlockingIOError as e:
