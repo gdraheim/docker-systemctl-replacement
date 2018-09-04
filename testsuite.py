@@ -1624,6 +1624,92 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.rm_testdir()
         self.coverage()
+    def real_2147_show_environment_from_some_parts(self):
+        self.test_2147_show_environment_from_some_parts(True)
+    def test_2147_show_environment_from_some_parts(self, real = False):
+        """ check that the result of 'environment UNIT' can 
+            list the settings from different locations."""
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir, real)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        if real: systemctl = "/usr/bin/systemctl"
+        text_file(os_path(root, "/etc/sysconfig/zzb.conf"),"""
+            DEF1='def1'
+            DEF2="def2"
+            DEF3=def3
+            """)
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            EnvironmentFile=/etc/sysconfig/zzb.conf
+            EnvironmentFile=-/etc/sysconfig/zz-not-existant.conf
+            Environment=DEF5=def5
+            Environment=DEF6=def6
+            ExecStart=/usr/bin/printf $DEF1 $DEF2 \
+                                $DEF3 $DEF4 $DEF5
+            [Install]
+            WantedBy=multi-user.target""")
+        cmd = "{systemctl} environment zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertTrue(greps(out, r"^DEF1=def1"))
+        self.assertTrue(greps(out, r"^DEF2=def2"))
+        self.assertTrue(greps(out, r"^DEF3=def3"))
+        self.assertFalse(greps(out, r"^DEF4=def4"))
+        self.assertTrue(greps(out, r"^DEF5=def5"))
+        self.assertTrue(greps(out, r"^DEF6=def6"))
+        self.assertFalse(greps(out, r"^DEF7=def7"))
+        a_lines = len(lines(out))
+        #
+        self.rm_testdir()
+        self.rm_zzfiles(root)
+        self.coverage()
+    def real_2148_show_environment_from_some_bad_parts(self):
+        self.test_2148_show_environment_from_some_bad_parts(True)
+    def test_2148_show_environment_from_some_bad_parts(self, real = False):
+        """ check that the result of 'environment UNIT' can 
+            list the settings from different locations."""
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir, real)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        if real: systemctl = "/usr/bin/systemctl"
+        text_file(os_path(root, "/etc/sysconfig/zzb.conf"),"""
+            DEF1='def1'
+            DEF2="def2"
+            DEF3=def3
+            """)
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            EnvironmentFile=/etc/sysconfig/zzb.conf
+            EnvironmentFile=/etc/sysconfig/zz-not-existant.conf
+            Environment=DEF5=def5
+            Environment=DEF6=def6
+            ExecStart=/usr/bin/printf $DEF1 $DEF2 \
+                                $DEF3 $DEF4 $DEF5
+            [Install]
+            WantedBy=multi-user.target""")
+        cmd = "{systemctl} environment zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertTrue(greps(out, r"^DEF1=def1"))
+        self.assertTrue(greps(out, r"^DEF2=def2"))
+        self.assertTrue(greps(out, r"^DEF3=def3"))
+        self.assertFalse(greps(out, r"^DEF4=def4"))
+        self.assertTrue(greps(out, r"^DEF5=def5"))
+        self.assertTrue(greps(out, r"^DEF6=def6"))
+        self.assertFalse(greps(out, r"^DEF7=def7"))
+        a_lines = len(lines(out))
+        #
+        self.rm_testdir()
+        self.rm_zzfiles(root)
+        self.coverage()
     def test_2150_have_environment_with_multiple_parts(self):
         """ check that the result of 'environment UNIT' can 
             list the assignements that are crammed into one line."""
@@ -1965,6 +2051,48 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertIn("TimeoutStopUSec=3min 2s", rep)
         #
         self.rm_testdir()
+        self.coverage()
+    def real_2240_show_environment_from_parts(self):
+        self.test_2240_show_environment_from_parts(True)
+    def test_2240_show_environment_from_parts(self, real = False):
+        """ check that the result of 'show -p Environment UNIT' can 
+            list the settings from different locations."""
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir, real)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        if real: systemctl = "/usr/bin/systemctl"
+        text_file(os_path(root, "/etc/sysconfig/zzb.conf"),"""
+            DEF1='def1'
+            DEF2="def2"
+            DEF3=def3
+            """)
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            EnvironmentFile=/etc/sysconfig/zzb.conf
+            Environment=DEF5=def5
+            Environment=DEF6=def6
+            ExecStart=/usr/bin/printf $DEF1 $DEF2 \
+                                $DEF3 $DEF4 $DEF5
+            [Install]
+            WantedBy=multi-user.target""")
+        cmd = "{systemctl} show -p Environment zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertFalse(greps(out, r"DEF1=def1"))
+        self.assertFalse(greps(out, r"DEF2=def2"))
+        self.assertFalse(greps(out, r"DEF3=def3"))
+        self.assertFalse(greps(out, r"DEF4=def4"))
+        self.assertTrue(greps(out, r"DEF5=def5"))
+        self.assertTrue(greps(out, r"DEF6=def6"))
+        self.assertFalse(greps(out, r"DEF7=def7"))
+        a_lines = len(lines(out))
+        #
+        self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
     def test_2290_show_unit_not_found(self):
         """ check when 'show UNIT' not found  """
