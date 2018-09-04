@@ -1875,7 +1875,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_2900_class_UnitConfParser(self):
         """ using systemctl.py as a helper library for 
             the UnitConfParser functions."""
-        python = _python
+        python_exe = _python
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
@@ -1884,7 +1884,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         service_file = os_path(root, "/etc/systemd/system/zzb.service")
         defaults = {"a1": "default1"}
         shell_file(unitconfparser_py,"""
-            #! {python}
+            #! {python_exe}
             from __future__ import print_function
             import sys
             sys.path += [ "{systemctl_py_dir}" ]
@@ -9927,7 +9927,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         package = package_tool(image)
-        python = _python
+        python = os.path.basename(_python)
         python_coverage = _python_coverage
         systemctl_py = _systemctl_py
         sometime = SOMETIME or 100
@@ -9936,7 +9936,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'ls -l /{python} || {package} install -y {python}'"
+        cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
         sx____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
@@ -9960,7 +9960,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         package = package_tool(image)
-        python = _python
+        python = os.path.basename(_python)
         python_coverage = _python_coverage
         systemctl_py = _systemctl_py
         sometime = SOMETIME or 100
@@ -9982,10 +9982,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'ls -l /{python} || {package} install -y {python}'"
+        cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
         sx____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} mkdir -p /etc/systemd/system"
+        sx____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zza.service {testname}:/etc/systemd/system/zza.service"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zzb.service {testname}:/etc/systemd/system/zzb.service"
@@ -10018,7 +10020,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         package = package_tool(image)
-        python = _python
+        python = os.path.basename(_python)
         python_coverage = _python_coverage
         systemctl_py = _systemctl_py
         sometime = SOMETIME or 100
@@ -10040,10 +10042,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'ls -l /{python} || {package} install -y {python}'"
+        cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
         sx____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} mkdir -p /etc/systemd/system"
+        sx____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zza.service {testname}:/etc/systemd/system/zza.service"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zzb.service {testname}:/etc/systemd/system/zzb.service"
@@ -10085,7 +10089,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         package = package_tool(image)
-        python = _python
+        python = os.path.basename(_python)
         python_coverage = _python_coverage
         systemctl_py = _systemctl_py
         sometime = SOMETIME or 100
@@ -10110,7 +10114,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'ls -l /{python} || {package} install -y {python}'"
+        cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
         sx____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
@@ -10118,6 +10122,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/killall {testname}:/usr/bin/killall"
         sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} mkdir -p /etc/systemd/system"
+        sx____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zzz.service {testname}:/etc/systemd/system/zzz.service"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl enable zzz.service"
@@ -10158,7 +10164,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         package = package_tool(image)
-        python = _python
+        python = os.path.basename(_python)
         python_coverage = _python_coverage
         systemctl_py = _systemctl_py
         sometime = SOMETIME or 100
@@ -10175,12 +10181,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'ls -l /{python} || {package} install -y {python}'"
+        cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
         sx____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
         cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
         sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} mkdir -p /etc/systemd/system"
+        sx____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zzz.service {testname}:/etc/systemd/system/zzz.service"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl enable zzz.service"
@@ -10221,7 +10229,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         package = package_tool(image)
-        python = _python
+        python = os.path.basename(_python)
         python_coverage = _python_coverage
         systemctl_py = _systemctl_py
         sometime = SOMETIME or 100
@@ -10261,7 +10269,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'ls -l /{python} || {package} install -y {python}'"
+        cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
         sx____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
@@ -10269,6 +10277,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/killall {testname}:/usr/bin/killall"
         sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} mkdir -p /etc/systemd/system"
+        sx____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zzz.service {testname}:/etc/systemd/system/zzz.service"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zzz.init {testname}:/usr/bin/zzz.init"
@@ -10311,7 +10321,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         package = package_tool(image)
-        python = _python
+        python = os.path.basename(_python)
         python_coverage = _python_coverage
         systemctl_py = _systemctl_py
         sometime = SOMETIME or 100
@@ -10349,7 +10359,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'ls -l /{python} || {package} install -y {python}'"
+        cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
         sx____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
@@ -10357,6 +10367,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/killall {testname}:/usr/bin/killall"
         sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} mkdir -p /etc/systemd/system"
+        sx____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zzz.service {testname}:/etc/systemd/system/zzz.service"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zzz.init {testname}:/usr/bin/zzz.init"
@@ -10399,7 +10411,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         package = package_tool(image)
-        python = _python
+        python = os.path.basename(_python)
         python_coverage = _python_coverage
         systemctl_py = _systemctl_py
         sometime = SOMETIME or 100
@@ -10425,7 +10437,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'ls -l /{python} || {package} install -y {python}'"
+        cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
         sx____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
@@ -10433,6 +10445,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/killall {testname}:/usr/bin/killall"
         sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} mkdir -p /etc/systemd/system"
+        sx____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zzz.service {testname}:/etc/systemd/system/zzz.service"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl enable zzz.service"
@@ -10473,7 +10487,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         package = package_tool(image)
-        python = _python
+        python = os.path.basename(_python)
         python_coverage = _python_coverage
         systemctl_py = _systemctl_py
         sometime = SOMETIME or 100
@@ -10501,12 +10515,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'ls -l /{python} || {package} install -y {python}'"
+        cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
         sx____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
         cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
         sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} mkdir -p /etc/systemd/system"
+        sx____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zza.service {testname}:/etc/systemd/system/zza.service"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zzb.service {testname}:/etc/systemd/system/zzb.service"
@@ -10559,7 +10575,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         package = package_tool(image)
-        python = _python
+        python = os.path.basename(_python)
         python_coverage = _python_coverage
         systemctl_py = _systemctl_py
         images = IMAGES
@@ -10590,12 +10606,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'ls -l /{python} || {package} install -y {python}'"
+        cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
         sx____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
         cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
         sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} mkdir -p /etc/systemd/system"
+        sx____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zza.service {testname}:/etc/systemd/system/zza.service"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zzb.service {testname}:/etc/systemd/system/zzb.service"
@@ -10672,7 +10690,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         package = package_tool(image)
-        python = _python
+        python = os.path.basename(_python)
         python_coverage = _python_coverage
         systemctl_py = _systemctl_py
         images = IMAGES
@@ -10701,12 +10719,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'ls -l /{python} || {package} install -y {python}'"
+        cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
         sx____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
         cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
         sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} mkdir -p /etc/systemd/system"
+        sx____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zza.service {testname}:/etc/systemd/system/zza.service"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zzb.service {testname}:/etc/systemd/system/zzb.service"
@@ -10768,7 +10788,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         package = package_tool(image)
-        python = _python
+        python = os.path.basename(_python)
         python_coverage = _python_coverage
         systemctl_py = _systemctl_py
         sometime = SOMETIME or 100
@@ -10796,12 +10816,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'ls -l /{python} || {package} install -y {python}'"
+        cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
         sx____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
         cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
         sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} mkdir -p /etc/systemd/system"
+        sx____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zza.service {testname}:/etc/systemd/system/zza.service"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zzb.service {testname}:/etc/systemd/system/zzb.service"
@@ -10860,7 +10882,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         image = self.local_image(IMAGE or CENTOS)
         testname = self.testname()
         testdir = self.testdir()
-        python = _python
+        python = os.path.basename(_python)
         python_coverage = _python_coverage
         if COVERAGE and greps(open("/etc/issue"), "openSUSE"):
            image = self.local_image(OPENSUSE)
@@ -10873,7 +10895,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        if package == "zypper":
+        if image in ["opensuse:42.3"]:
             cmd = "docker exec {testname} {package} mr --no-gpgcheck oss-update"
             sh____(cmd.format(**locals()))
             ## https://github.com/openSUSE/docker-containers/issues/64
@@ -10896,7 +10918,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         image = self.local_image(IMAGE or CENTOS)
         testname = self.testname()
         testdir = self.testdir()
-        python = _python
+        python = os.path.basename(_python)
         python_coverage = _python_coverage
         if COVERAGE and greps(open("/etc/issue"), "openSUSE"):
            image = self.local_image(OPENSUSE)
@@ -10944,18 +10966,20 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
         sh____(cmd.format(**locals()))
-        if package == "zypper":
+        if image in ["opensuse:42.3"]:
             cmd = "docker exec {testname} {package} mr --no-gpgcheck oss-update"
             sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "docker exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
         else:
-            cmd = "docker exec {testname} bash -c 'ls -l /{python} || {package} install -y {python}'"
+            cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
             sx____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
         #
+        cmd = "docker exec {testname} mkdir -p /etc/systemd/system"
+        sx____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zza.service {testname}:/etc/systemd/system/zza.service"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zzb.service {testname}:/etc/systemd/system/zzb.service"
@@ -11019,7 +11043,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         image = self.local_image(IMAGE or CENTOS)
         testname = self.testname()
         testdir = self.testdir()
-        python = _python
+        python = os.path.basename(_python)
         python_coverage = _python_coverage
         if COVERAGE and greps(open("/etc/issue"), "openSUSE"):
            image = self.local_image(OPENSUSE)
@@ -11067,18 +11091,20 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
         sh____(cmd.format(**locals()))
-        if package == "zypper":
+        if image in ["opensuse:42.3"]:
             cmd = "docker exec {testname} {package} mr --no-gpgcheck oss-update"
             sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "docker exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
         else:
-            cmd = "docker exec {testname} bash -c 'ls -l /{python} || {package} install -y {python}'"
+            cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
             sx____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
         #
+        cmd = "docker exec {testname} mkdir -p /etc/systemd/system"
+        sx____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zza.service {testname}:/etc/systemd/system/zza.service"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zzb.service {testname}:/etc/systemd/system/zzb.service"
@@ -11142,7 +11168,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         image = self.local_image(IMAGE or CENTOS)
         testname = self.testname()
         testdir = self.testdir()
-        python = _python
+        python = os.path.basename(_python)
         python_coverage = _python_coverage
         if COVERAGE and greps(open("/etc/issue"), "openSUSE"):
            image = self.local_image(OPENSUSE)
@@ -11187,18 +11213,20 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
         sh____(cmd.format(**locals()))
-        if package == "zypper":
+        if image in ["opensuse:42.3"]:
             cmd = "docker exec {testname} {package} mr --no-gpgcheck oss-update"
             sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "docker exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
         else:
-            cmd = "docker exec {testname} bash -c 'ls -l /{python} || {package} install -y {python}'"
+            cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
             sx____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
         #
+        cmd = "docker exec {testname} mkdir -p /etc/systemd/system"
+        sx____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zzb.service {testname}:/etc/systemd/system/zzb.service"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zzc.service {testname}:/etc/systemd/system/zzc.service"
@@ -11280,7 +11308,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         image = self.local_image(IMAGE or CENTOS)
         testname = self.testname()
         testdir = self.testdir()
-        python = _python
+        python = os.path.basename(_python)
         python_coverage = _python_coverage
         if COVERAGE and greps(open("/etc/issue"), "openSUSE"):
            image = self.local_image(OPENSUSE)
@@ -11325,18 +11353,20 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
         sh____(cmd.format(**locals()))
-        if package == "zypper":
+        if image in ["opensuse:42.3"]:
             cmd = "docker exec {testname} {package} mr --no-gpgcheck oss-update"
             sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "docker exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
         else:
-            cmd = "docker exec {testname} bash -c 'ls -l /{python} || {package} install -y {python}'"
+            cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
             sx____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
         #
+        cmd = "docker exec {testname} mkdir -p /etc/systemd/system"
+        sx____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zzb.service {testname}:/etc/systemd/system/zzb.service"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zzc.service {testname}:/etc/systemd/system/zzc.service"
@@ -11417,7 +11447,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         image = self.local_image(IMAGE or CENTOS)
         testname = self.testname()
         testdir = self.testdir()
-        python = _python
+        python = os.path.basename(_python)
         python_coverage = _python_coverage
         if COVERAGE and greps(open("/etc/issue"), "openSUSE"):
            image = self.local_image(OPENSUSE)
@@ -11474,14 +11504,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
         sh____(cmd.format(**locals()))
-        if package == "zypper":
+        if image in ["opensuse:42.3"]:
             cmd = "docker exec {testname} {package} mr --no-gpgcheck oss-update"
             sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "docker exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
         else:
-            cmd = "docker exec {testname} bash -c 'ls -l /{python} || {package} install -y {python}'"
+            cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
             sx____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
@@ -11496,6 +11526,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd user1 -g group2"
         sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} mkdir -p /etc/systemd/system"
+        sx____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zzb.service {testname}:/etc/systemd/system/zzb.service"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zzc.service {testname}:/etc/systemd/system/zzc.service"
@@ -11556,7 +11588,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         image = self.local_image(IMAGE or CENTOS)
         testname = self.testname()
         testdir = self.testdir()
-        python = _python
+        python = os.path.basename(_python)
         python_coverage = _python_coverage
         if COVERAGE and greps(open("/etc/issue"), "openSUSE"):
            image = self.local_image(OPENSUSE)
@@ -11613,14 +11645,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
         sh____(cmd.format(**locals()))
-        if package == "zypper":
+        if image in ["opensuse:42.3"]:
             cmd = "docker exec {testname} {package} mr --no-gpgcheck oss-update"
             sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "docker exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
         else:
-            cmd = "docker exec {testname} bash -c 'ls -l /{python} || {package} install -y {python}'"
+            cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
             sx____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
@@ -11629,6 +11661,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd user1 -g group2"
         sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} mkdir -p /etc/systemd/system"
+        sx____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zzb.service {testname}:/etc/systemd/system/zzb.service"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zzc.service {testname}:/etc/systemd/system/zzc.service"
@@ -11716,7 +11750,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         image = self.local_image(IMAGE or CENTOS)
         testname = self.testname()
         testdir = self.testdir()
-        python = _python
+        python = os.path.basename(_python)
         python_coverage = _python_coverage
         if COVERAGE and greps(open("/etc/issue"), "openSUSE"):
            image = self.local_image(OPENSUSE)
@@ -11790,14 +11824,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} chmod 755 /usr/bin/testsleep.sh"
         sh____(cmd.format(**locals()))
-        if package == "zypper":
+        if image in ["opensuse:42.3"]:
             cmd = "docker exec {testname} {package} mr --no-gpgcheck oss-update"
             sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "docker exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
         else:
-            cmd = "docker exec {testname} bash -c 'ls -l /{python} || {package} install -y {python}'"
+            cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
             sx____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
@@ -11812,6 +11846,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd user1 -g group2"
         sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} mkdir -p /etc/systemd/system"
+        sx____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zz4.service {testname}:/etc/systemd/system/zz4.service"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zz5.service {testname}:/etc/systemd/system/zz5.service"
@@ -11879,7 +11915,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         image = self.local_image(IMAGE or CENTOS)
         testname = self.testname()
         testdir = self.testdir()
-        python = _python
+        python = os.path.basename(_python)
         python_coverage = _python_coverage
         cov_run = ""
         if COVERAGE:
@@ -11936,18 +11972,20 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/{testsleep}"
         sh____(cmd.format(**locals()))
-        if package == "zypper":
+        if image in ["opensuse:42.3"]:
             cmd = "docker exec {testname} {package} mr --no-gpgcheck oss-update"
             sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "docker exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
         else:
-            cmd = "docker exec {testname} bash -c 'ls -l /{python} || {package} install -y {python}'"
+            cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
             sx____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
         #
+        cmd = "docker exec {testname} mkdir -p /etc/systemd/system"
+        sx____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zzz.service {testname}:/etc/systemd/system/zzz.service"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zzz.init {testname}:/usr/bin/zzz.init"
@@ -12039,6 +12077,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         image = self.local_image(CENTOS)
         if _python.endswith("python3") and "centos" in image: 
             self.skipTest("no python3 on centos")
+        package = package_tool(image)
         testname=self.testname()
         testport=self.testport()
         name="centos-httpd"
@@ -12052,7 +12091,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} yum install -y httpd httpd-tools"
+        cmd = "docker exec {testname} {package} install -y httpd httpd-tools"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
@@ -12100,6 +12139,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         image = self.local_image(CENTOS)
         if _python.endswith("python3") and "centos" in image: 
             self.skipTest("no python3 on centos")
+        package = package_tool(image)
         testname=self.testname()
         testport=self.testport()
         name="centos-postgres"
@@ -12115,7 +12155,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} yum install -y postgresql-server postgresql-utils"
+        cmd = "docker exec {testname} {package} install -y postgresql-server postgresql-utils"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
@@ -12179,6 +12219,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         image = self.local_image(CENTOS)
         if _python.endswith("python3") and "centos" in image: 
             self.skipTest("no python3 on centos")
+        package = package_tool(image)
         testname=self.testname()
         testdir = self.testdir(testname)
         testport=self.testport()
@@ -12192,7 +12233,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} yum install -y httpd httpd-tools"
+        cmd = "docker exec {testname} {package} install -y httpd httpd-tools"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl enable httpd"
         sh____(cmd.format(**locals()))
@@ -12257,7 +12298,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         images = IMAGES
         # image = self.local_image("ubuntu:16.04")
         image = self.local_image(UBUNTU)
-        python_base = os.path.basename(_python)
+        python = os.path.basename(_python)
         systemctl_py = _systemctl_py
         sometime = SOMETIME or 2000
         logg.info("%s:%s %s", testname, port, image)
@@ -12268,7 +12309,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} apt-get update"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} apt-get install -y apache2 {python_base}"
+        cmd = "docker exec {testname} apt-get install -y apache2 {python}"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
@@ -12317,6 +12358,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         image = self.local_image(CENTOS)
         if _python.endswith("python3") and "centos" in image: 
             self.skipTest("no python3 on centos")
+        package = package_tool(image)
         testname=self.testname()
         testport=self.testport()
         name="centos-postgres"
@@ -12332,7 +12374,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} yum install -y postgresql-server postgresql-utils"
+        cmd = "docker exec {testname} {package} install -y postgresql-server postgresql-utils"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
@@ -12591,6 +12633,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         image = self.local_image(CENTOS)
         if _python.endswith("python3") and "centos" in image: 
             self.skipTest("no python3 on centos")
+        package = package_tool(image)
         testname=self.testname()
         testdir = self.testdir(testname)
         testport=self.testport()
@@ -12604,9 +12647,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} yum install -y epel-release"
+        cmd = "docker exec {testname} {package} install -y epel-release"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} yum install -y nginx"
+        cmd = "docker exec {testname} {package} install -y nginx"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl enable nginx"
         sh____(cmd.format(**locals()))
@@ -12671,7 +12714,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir(testname)
         port=self.testport()
-        python_base = os.path.basename(_python)
+        python = os.path.basename(_python)
         systemctl_py = _systemctl_py
         sometime = SOMETIME or 200
         logg.info("%s:%s %s", testname, port, image)
@@ -12684,7 +12727,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} apt-get update"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} apt-get install -y python"
+        cmd = "docker exec {testname} apt-get install -y {python}"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} apt-get install -y rsyslog"
         sh____(cmd.format(**locals()))
