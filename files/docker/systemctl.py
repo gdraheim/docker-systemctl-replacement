@@ -1222,7 +1222,8 @@ class Systemctl:
                 for key in sorted(conf.status):
                     value = conf.status[key]
                     content = "{}={}\n".format(key, str(value))
-                    f.write(content.encode("utf-8"))
+                    logg.info("writing to %s\n\t%s", status_file, content)
+                    f.write(content)
         except IOError as e:
             logg.error("writing STATUS %s: %s\n\t to status file %s", status, e, status_file)
         return True
@@ -3788,7 +3789,8 @@ class Systemctl:
                     self._log_hold[unit] = lines[-1]
                     lines = lines[:-1]
                 for line in lines:
-                    os.write(1, unit+": "+line+"\n")
+                    content = unit+": "+line+"\n"
+                    os.write(1, content.encode("utf-8"))
                     try: os.fsync(1)
                     except: pass
     def stop_log_files(self, units):
