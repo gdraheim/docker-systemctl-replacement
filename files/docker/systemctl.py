@@ -3744,7 +3744,10 @@ class Systemctl:
             for unit in matched:
                 if unit not in units:
                     units += [ unit ]
-        return self.start_units(units, init = True) # and found_all
+        logg.info("init %s -> start %s", ",".join(modules), ",".join(units))
+        done = self.start_units(units, init = True) 
+        logg.info("-- init is done")
+        return done # and found_all
     def start_log_files(self, units):
         self._log_file = {}
         self._log_hold = {}

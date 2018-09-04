@@ -6177,6 +6177,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             os.execve(_systemctl_py, systemctl_cmd, env)
         time.sleep(2)
         logg.info("all services running [systemctl.py PID %s]", pid)
+        txt_stdout = lines(open(log_stdout))
+        txt_stderr = lines(open(log_stderr))
+        logg.info("-- %s>\n\t%s", log_stdout, "\n\t".join(txt_stdout))
+        logg.info("-- %s>\n\t%s", log_stderr, "\n\t".join(txt_stderr))
+        #
         top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
@@ -6194,6 +6199,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 check, greps(top, testsleep))
             if not greps(top, testsleep):
                break
+        time.sleep(2)
         logg.info("all services dead [systemctl.py PID %s]", pid)
         top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
@@ -6207,16 +6213,138 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(out, "failed"))
         #
         os.kill(pid, 2) # SIGINT (clean up zombie?)
-        stdout = open(log_stdout).read()
-        stderr = open(log_stderr).read()
-        logg.info("---  %s", log_stderr)
-        logg.info("-------------------------------- STDERR was\n%s", stderr)
-        logg.info("---  %s", log_stdout)
-        logg.info("-------------------------------- STDOUT was\n%s", stdout)
-        self.assertTrue(greps(stderr, "no more services - exit init-loop"))
-        self.assertTrue(greps(stderr, "system is down"))
-        self.assertTrue(greps(stdout, "starting B"))
-        self.assertTrue(greps(stdout, "starting C"))
+        txt_stdout = lines(open(log_stdout))
+        txt_stderr = lines(open(log_stderr))
+        logg.info("-- %s>\n\t%s", log_stdout, "\n\t".join(txt_stdout))
+        logg.info("-- %s>\n\t%s", log_stderr, "\n\t".join(txt_stderr))
+        self.assertTrue(greps(txt_stderr, "no more services - exit init-loop"))
+        self.assertTrue(greps(txt_stderr, "system is down"))
+        self.assertTrue(greps(txt_stdout, "starting B"))
+        self.assertTrue(greps(txt_stdout, "starting C"))
+        #
+        kill_testsleep = "killall {testsleep}"
+        sx____(kill_testsleep.format(**locals()))
+        self.rm_testdir()
+        self.coverage()
+    def test_3710_systemctl_py_init_explicit_loop_in_testenv(self):
+        """ check that we can init services in a test env to be run by an init-loop.
+            We expect here that the init-loop ends when those services are dead. """
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        testsleep = self.testname("sleep")
+        bindir = os_path(root, "/usr/bin")
+        text_file(os_path(testdir, "zza.service"),"""
+            [Unit]
+            Description=Testing A""")
+        text_file(os_path(testdir, "zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            Type=simple
+            ExecStartPre=/bin/echo starting B
+            ExecStart={bindir}/{testsleep} 10
+            ExecStartPost=/bin/echo running B
+            ExecStopPost=/bin/echo stopping B
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        text_file(os_path(testdir, "zzc.service"),"""
+            [Unit]
+            Description=Testing C
+            [Service]
+            Type=simple
+            ExecStartPre=/bin/echo starting C
+            ExecStart={bindir}/{testsleep} 15
+            ExecStartPost=/bin/echo running C
+            ExecStopPost=/bin/echo stopping C
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
+        copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
+        copy_file(os_path(testdir, "zzc.service"), os_path(root, "/etc/systemd/system/zzc.service"))
+        #
+        cmd = "{systemctl} enable zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        cmd = "{systemctl} enable zzc.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        cmd = "{systemctl} --version"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        cmd = "{systemctl} default-services -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertTrue(greps(out, "zzb.service"))
+        self.assertEqual(len(lines(out)), 2)
+        #
+        log_stdout = os.path.join(root, "systemctl.stdout.log")
+        log_stderr = os.path.join(root, "systemctl.stderr.log")
+        pid = os.fork()
+        if not pid:
+            new_stdout = os.open(log_stdout, os.O_WRONLY|os.O_CREAT|os.O_TRUNC)
+            new_stderr = os.open(log_stderr, os.O_WRONLY|os.O_CREAT|os.O_TRUNC)
+            os.dup2(new_stdout, 1)
+            os.dup2(new_stderr, 2)
+            systemctl_cmd = [ _systemctl_py, "--root="+root, "init", "zzb.service", "zzc.service", "-vv" ]
+            env = os.environ.copy()
+            env["SYSTEMCTL_INITLOOP"] = "2" 
+            os.execve(_systemctl_py, systemctl_cmd, env)
+        time.sleep(3)
+        logg.info("all services running [systemctl.py PID %s]", pid)
+        txt_stdout = lines(open(log_stdout))
+        txt_stderr = lines(open(log_stderr))
+        logg.info("-- %s>\n\t%s", log_stdout, "\n\t".join(txt_stdout))
+        logg.info("-- %s>\n\t%s", log_stderr, "\n\t".join(txt_stderr))
+        #
+        top = output(_top_recent)
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        cmd = "{systemctl} is-active zzb.service zzc.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertTrue(greps(out, "^active"))
+        self.assertFalse(greps(out, "inactive"))
+        self.assertFalse(greps(out, "failed"))
+        for check in xrange(9):
+            time.sleep(3)
+            top = output(_top_recent)
+            logg.info("[%s] checking for testsleep procs: \n>>>\n%s", 
+                check, greps(top, testsleep))
+            if not greps(top, testsleep):
+               break
+        time.sleep(2)
+        logg.info("all services dead [systemctl.py PID %s]", pid)
+        top = output(_top_recent)
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, testsleep))
+        cmd = "{systemctl} is-active zzb.service zzc.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        self.assertFalse(greps(out, "^active"))
+        self.assertTrue(greps(out, "inactive"))
+        self.assertFalse(greps(out, "failed"))
+        #
+        os.kill(pid, 2) # SIGINT (clean up zombie?)
+        txt_stdout = lines(open(log_stdout))
+        txt_stderr = lines(open(log_stderr))
+        logg.info("-- %s>\n\t%s", log_stdout, "\n\t".join(txt_stdout))
+        logg.info("-- %s>\n\t%s", log_stderr, "\n\t".join(txt_stderr))
+        self.assertTrue(greps(txt_stderr, "no more services - exit init-loop"))
+        self.assertTrue(greps(txt_stderr, "init is done"))
+        self.assertTrue(greps(txt_stdout, "starting B"))
+        self.assertTrue(greps(txt_stdout, "starting C"))
         #
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
