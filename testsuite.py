@@ -31,9 +31,9 @@ _systemctl_py = "files/docker/systemctl.py"
 _top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* ' | grep -v -e '<defunct>' -e ' ps ' -e ' grep ' -e 'kworker/'"
 _top_list = "ps -eo etime,pid,ppid,args --sort etime,pid"
 _cov = ""
-_cov_run = "coverage2 run '--omit=*/six.py' --append -- "
+_cov_run = "coverage2 run '--omit=*/six.py' '--omit=*/extern/*.py' --append -- "
 _cov_cmd = "coverage2"
-_cov3run = "coverage3 run '--omit=*/six.py' --append -- "
+_cov3run = "coverage3 run '--omit=*/six.py' '--omit=*/extern/*.py' --append -- "
 _cov3cmd = "coverage3"
 _python_coverage = "python-coverage"
 _python3coverage = "python3-coverage"
@@ -11999,7 +11999,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cov_option = ""
         if COVERAGE:
             cov_run = _cov_run
-            cov_option = "--coverage"
+            cov_option = "--coverage" # TODO: not used in test_6600
         if COVERAGE and self.local_system():
            image = self.local_image(self.local_system())
         if _python.endswith("python3") and "centos" in image: 
@@ -12012,7 +12012,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sometime = SOMETIME or 100
         shell_file(systemctl_sh,"""
             #! /bin/sh
-            exec {cov_run} /{systemctl_py_run} "$@" -vv {cov_option}
+            exec {cov_run} /{systemctl_py_run} "$@" -vv
             """.format(**locals()))
         user = self.user()
         testsleep = self.testname("sleep")
