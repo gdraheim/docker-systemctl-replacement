@@ -59,6 +59,15 @@ check: check2018
 	./testsuite.py -vv $(notdir $@) --sometime=666 \
 	  '--with=tmp/systemctl.py' --python=/usr/bin/python3
 
+2/est_%:
+	$(MAKE) tmp_systemctl_py_2
+	./testsuite.py -vv t$(notdir $@) --sometime=666 --coverage \
+	  '--with=tmp/systemctl.py' --python=/usr/bin/python
+3/est_%:
+	$(MAKE) tmp_systemctl_py_3
+	./testsuite.py -vv t$(notdir $@) --sometime=666 --coverage \
+	  '--with=tmp/systemctl.py' --python=/usr/bin/python3
+
 check2:
 	$(MAKE) tmp_systemctl_py_2
 	./testsuite.py -vv \
