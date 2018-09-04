@@ -3288,6 +3288,81 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.rm_testdir()
         self.coverage()
+    def test_3025_default_user_services(self):
+        """ check the 'default-services' to know the enabled services """
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        user = self.user()
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
+            [Unit]
+            Description=Testing A""")
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            ExecStart=/usr/bin/sleep 2
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/system/zzc.service"),"""
+            [Unit]
+            Description=Testing C
+            [Service]
+            ExecStart=/usr/bin/sleep 2
+            User={user}
+            [Install]
+            WantedBy=multi-user.target""".format(**locals()))
+        configs = os.path.expanduser("~/.config")
+        text_file(os_path(root, configs+"/systemd/user/zzd.service"),"""
+            [Unit]
+            Description=Testing D
+            [Service]
+            ExecStart=/usr/bin/sleep 2
+            [Install]
+            WantedBy=multi-user.target""".format(**locals()))
+        #
+        cmd = "{systemctl} list-unit-files --user"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertGreater(len(lines(out)), 4)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} default-services --user"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 0)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} --no-legend enable zzc.service --user"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} default-services --user"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 1)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} --no-legend enable zzd.service --user"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} default-services --user"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 2)
+        self.assertEqual(end, 0)
+        #
+        self.assertFalse(greps(out, "a.service"))
+        self.assertFalse(greps(out, "b.service"))
+        self.assertTrue(greps(out, "c.service"))
+        self.assertTrue(greps(out, "d.service"))
+        #
+        self.rm_testdir()
+        self.coverage()
     def test_3030_systemctl_py_start_simple(self):
         """ check that we can start simple services with root env"""
         testname = self.testname()
