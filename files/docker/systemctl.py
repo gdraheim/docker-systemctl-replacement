@@ -1221,7 +1221,8 @@ class Systemctl:
             with open(status_file, "w") as f:
                 for key in sorted(conf.status):
                     value = conf.status[key]
-                    f.write("{}={}\n".format(key, str(value)))
+                    content = "{}={}\n".format(key, str(value))
+                    f.write(content.encode("utf-8"))
         except IOError as e:
             logg.error("writing STATUS %s: %s\n\t to status file %s", status, e, status_file)
         return True
