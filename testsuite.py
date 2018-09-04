@@ -2094,6 +2094,65 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.rm_zzfiles(root)
         self.coverage()
+    def real_2250_show_environment_max_depth(self):
+        self.test_2250_show_environment_max_depth(True)
+    def test_2250_show_environment_max_depth(self, real = False):
+        """ check that the result of 'show -p Environment UNIT' can 
+            list the settings from different locations."""
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir, real)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        if real: systemctl = "/usr/bin/systemctl"
+        text_file(os_path(root, "/etc/sysconfig/zzb.conf"),"""
+            DEF1='def1'
+            DEF2="def2"
+            DEF3=def3
+            """)
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            EnvironmentFile=/etc/sysconfig/zzb.conf
+            Environment=DEF5=def5
+            Environment=DEF6=$DEF5
+            ExecStart=/usr/bin/printf x.$DEF1.$DEF2.$DEF3.$DEF4.$DEF5
+            [Install]
+            WantedBy=multi-user.target""")
+        cmd = "{systemctl} daemon-reload"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "{systemctl} show -p Environment zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertFalse(greps(out, r"DEF1=def1"))
+        self.assertFalse(greps(out, r"DEF2=def2"))
+        self.assertFalse(greps(out, r"DEF3=def3"))
+        self.assertFalse(greps(out, r"DEF4=def4"))
+        self.assertTrue(greps(out, r"DEF5=def5"))
+        self.assertTrue(greps(out, r"DEF6=[$]DEF5"))
+        self.assertFalse(greps(out, r"DEF7=def7"))
+        a_lines = len(lines(out))
+        cmd = "{systemctl} show -p EnvironmentFile zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "{systemctl} stop zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "{systemctl} start zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "{systemctl} stop zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "{systemctl} status zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        #
+        self.rm_testdir()
+        self.rm_zzfiles(root)
+        self.coverage()
     def test_2290_show_unit_not_found(self):
         """ check when 'show UNIT' not found  """
         testname = self.testname()
