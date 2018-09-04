@@ -1926,6 +1926,29 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.rm_testdir()
         self.coverage()
+    def test_2290_show_unit_not_found(self):
+        """ check when 'show UNIT' not found  """
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            TimeoutStartSec=29
+            TimeoutStopSec=60
+            """)
+        cmd = "{systemctl} show zz-not-existing.service"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        rep = lines(out)
+        self.assertIn("LoadState=not-found", rep)
+        self.assertIn("ActiveState=inactive", rep)
+        self.assertIn("SubState=dead", rep)
+        self.assertIn("Id=zz-not-existing.service", rep)
+        ##
     def test_2900_class_UnitConfParser(self):
         """ using systemctl.py as a helper library for 
             the UnitConfParser functions."""

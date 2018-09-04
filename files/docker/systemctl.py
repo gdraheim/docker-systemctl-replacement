@@ -3474,6 +3474,7 @@ class Systemctl:
            for formatted human-readable output.
   
            NOTE: only a subset of properties is implemented """
+        notfound = []
         found_all = True
         units = []
         for module in modules:
@@ -3481,11 +3482,14 @@ class Systemctl:
             if not matched:
                 logg.error("Unit %s could not be found.", unit_of(module))
                 found_all = False
+                notfound += [ "Id="+module, "Name=s"+module, "Description="+module ]
+                notfound += [ "ActiveState=inactive", "SubState=dead" ]
+                notfound += [ "%s=%s" % ("LoadState", "not-found") ]
                 continue
             for unit in matched:
                 if unit not in units:
                     units += [ unit ]
-        return self.show_units(units) # and found_all
+        return self.show_units(units) + notfound # and found_all
     def show_units(self, units):
         logg.debug("show --property=%s", self._unit_property)
         result = []
