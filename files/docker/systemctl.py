@@ -3726,11 +3726,13 @@ class Systemctl:
         if self._now:
             return self.init_loop_until_stop([])
         if not modules:
-            # alias 'systemctl --init default'
+            # almost like 'systemctl --init default'
+            # but the container is exted when no_more_procs
+            self.exit_when_no_more_procs = True
             return self.start_system_default(init = True)
         #
-        # otherwise quit when the init-services have died
-        self.exit_when_no_more_procs = True
+        # otherwise quit when all the init-services have died
+        self.exit_when_no_more_services = True
         found_all = True
         units = []
         for module in modules:
