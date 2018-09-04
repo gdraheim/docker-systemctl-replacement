@@ -2361,14 +2361,6 @@ class Systemctl:
         with waitlock(unit):
             logg.info(" kill unit %s => %s", unit, conf.filename())
             return self.kill_unit_from(conf)
-    def kill_stopped_unit_from(self, conf, mainpid = None):
-        if not mainpid:
-            return True
-        useKillMode = conf.data.get("Service", "KillMode", "control-group")
-        if useKillMode.lower() in ["no", "none"]:
-            logg.info("kill on stop is disabled by KillMode=%s", useKillMode)
-            return False
-        self.kill_unit_from(conf, mainpid)
     def kill_unit_from(self, conf, mainpid = None):
         if not conf: return None
         started = time.time()
