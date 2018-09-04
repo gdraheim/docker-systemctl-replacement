@@ -62,6 +62,17 @@ def package_tool(image):
     if "ubuntu" in image:
         return "apt-get"
     return "yum"
+def refresh_tool(image):
+    ## https://github.com/openSUSE/docker-containers/issues/64
+    #  {package} rr oss-update"
+    #  {package} ar -f http://download.opensuse.org/update/leap/42.3/oss/openSUSE:Leap:42.3:Update.repo"
+    if image in ["opensuse:42.3"]:
+        return "bash -c 'zypper mr --no-gpgcheck oss-update && zypper refresh'"
+    if "opensuse" in image:
+        return "zypper refresh"
+    if "ubuntu" in image:
+        return "apt-get update"
+    return "true"
 
 def sh____(cmd, shell=True):
     if isinstance(cmd, basestring):
@@ -9927,6 +9938,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         package = package_tool(image)
+        refresh = refresh_tool(image)
         python = os.path.basename(_python)
         python_coverage = _python_coverage
         systemctl_py = _systemctl_py
@@ -9960,6 +9972,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         package = package_tool(image)
+        refresh = refresh_tool(image)
         python = os.path.basename(_python)
         python_coverage = _python_coverage
         systemctl_py = _systemctl_py
@@ -10020,6 +10033,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         package = package_tool(image)
+        refresh = refresh_tool(image)
         python = os.path.basename(_python)
         python_coverage = _python_coverage
         systemctl_py = _systemctl_py
@@ -10089,6 +10103,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         package = package_tool(image)
+        refresh = refresh_tool(image)
         python = os.path.basename(_python)
         python_coverage = _python_coverage
         systemctl_py = _systemctl_py
@@ -10164,6 +10179,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         package = package_tool(image)
+        refresh = refresh_tool(image)
         python = os.path.basename(_python)
         python_coverage = _python_coverage
         systemctl_py = _systemctl_py
@@ -10229,6 +10245,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         package = package_tool(image)
+        refresh = refresh_tool(image)
         python = os.path.basename(_python)
         python_coverage = _python_coverage
         systemctl_py = _systemctl_py
@@ -10321,6 +10338,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         package = package_tool(image)
+        refresh = refresh_tool(image)
         python = os.path.basename(_python)
         python_coverage = _python_coverage
         systemctl_py = _systemctl_py
@@ -10411,6 +10429,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         package = package_tool(image)
+        refresh = refresh_tool(image)
         python = os.path.basename(_python)
         python_coverage = _python_coverage
         systemctl_py = _systemctl_py
@@ -10487,6 +10506,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         package = package_tool(image)
+        refresh = refresh_tool(image)
         python = os.path.basename(_python)
         python_coverage = _python_coverage
         systemctl_py = _systemctl_py
@@ -10575,6 +10595,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         package = package_tool(image)
+        refresh = refresh_tool(image)
         python = os.path.basename(_python)
         python_coverage = _python_coverage
         systemctl_py = _systemctl_py
@@ -10690,6 +10711,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         package = package_tool(image)
+        refresh = refresh_tool(image)
         python = os.path.basename(_python)
         python_coverage = _python_coverage
         systemctl_py = _systemctl_py
@@ -10788,6 +10810,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         package = package_tool(image)
+        refresh = refresh_tool(image)
         python = os.path.basename(_python)
         python_coverage = _python_coverage
         systemctl_py = _systemctl_py
@@ -10889,22 +10912,18 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if _python.endswith("python3") and "centos" in image: 
            self.skipTest("no python3 on centos")
         package = package_tool(image)
+        refresh = refresh_tool(image)
         sometime = SOMETIME or 100
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
         cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        if image in ["opensuse:42.3"]:
-            cmd = "docker exec {testname} {package} mr --no-gpgcheck oss-update"
-            sh____(cmd.format(**locals()))
-            ## https://github.com/openSUSE/docker-containers/issues/64
-            #cmd = "docker exec {testname} {package} rr oss-update"
-            #sh____(cmd.format(**locals()))
-            #cmd = "docker exec {testname} {package} ar -f http://download.opensuse.org/update/leap/42.3/oss/openSUSE:Leap:42.3:Update.repo"
-            #sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} {package} install -y {python_coverage}"
+        cmd = "docker exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        if COVERAGE:
+            cmd = "docker exec {testname} {package} install -y {python_coverage}"
+            sh____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
@@ -10925,6 +10944,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if _python.endswith("python3") and "centos" in image: 
            self.skipTest("no python3 on centos")
         package = package_tool(image)
+        refresh = refresh_tool(image)
         systemctl_py = realpath(_systemctl_py)
         systemctl_sh = os_path(testdir, "systemctl.sh")
         systemctl_py_run = systemctl_py.replace("/","_")[1:]
@@ -10966,9 +10986,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
         sh____(cmd.format(**locals()))
-        if image in ["opensuse:42.3"]:
-            cmd = "docker exec {testname} {package} mr --no-gpgcheck oss-update"
-            sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} {refresh}"
+        sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "docker exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
@@ -11050,6 +11069,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if _python.endswith("python3") and "centos" in image: 
            self.skipTest("no python3 on centos")
         package = package_tool(image)
+        refresh = refresh_tool(image)
         systemctl_py = realpath(_systemctl_py)
         systemctl_sh = os_path(testdir, "systemctl.sh")
         systemctl_py_run = systemctl_py.replace("/","_")[1:]
@@ -11091,9 +11111,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
         sh____(cmd.format(**locals()))
-        if image in ["opensuse:42.3"]:
-            cmd = "docker exec {testname} {package} mr --no-gpgcheck oss-update"
-            sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} {refresh}"
+        sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "docker exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
@@ -11175,6 +11194,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if _python.endswith("python3") and "centos" in image: 
            self.skipTest("no python3 on centos")
         package = package_tool(image)
+        refresh = refresh_tool(image)
         systemctl_py = realpath(_systemctl_py)
         systemctl_sh = os_path(testdir, "systemctl.sh")
         systemctl_py_run = systemctl_py.replace("/","_")[1:]
@@ -11213,9 +11233,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
         sh____(cmd.format(**locals()))
-        if image in ["opensuse:42.3"]:
-            cmd = "docker exec {testname} {package} mr --no-gpgcheck oss-update"
-            sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} {refresh}"
+        sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "docker exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
@@ -11315,6 +11334,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if _python.endswith("python3") and "centos" in image: 
            self.skipTest("no python3 on centos")
         package = package_tool(image)
+        refresh = refresh_tool(image)
         systemctl_py = realpath(_systemctl_py)
         systemctl_sh = os_path(testdir, "systemctl.sh")
         systemctl_py_run = systemctl_py.replace("/","_")[1:]
@@ -11353,9 +11373,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
         sh____(cmd.format(**locals()))
-        if image in ["opensuse:42.3"]:
-            cmd = "docker exec {testname} {package} mr --no-gpgcheck oss-update"
-            sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} {refresh}"
+        sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "docker exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
@@ -11454,6 +11473,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if _python.endswith("python3") and "centos" in image: 
            self.skipTest("no python3 on centos")
         package = package_tool(image)
+        refresh = refresh_tool(image)
         systemctl_py = realpath(_systemctl_py)
         systemctl_sh = os_path(testdir, "systemctl.sh")
         systemctl_py_run = systemctl_py.replace("/","_")[1:]
@@ -11504,9 +11524,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
         sh____(cmd.format(**locals()))
-        if image in ["opensuse:42.3"]:
-            cmd = "docker exec {testname} {package} mr --no-gpgcheck oss-update"
-            sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} {refresh}"
+        sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "docker exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
@@ -11595,6 +11614,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if _python.endswith("python3") and "centos" in image: 
            self.skipTest("no python3 on centos")
         package = package_tool(image)
+        refresh = refresh_tool(image)
         systemctl_py = realpath(_systemctl_py)
         systemctl_sh = os_path(testdir, "systemctl.sh")
         systemctl_py_run = systemctl_py.replace("/","_")[1:]
@@ -11645,9 +11665,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
         sh____(cmd.format(**locals()))
-        if image in ["opensuse:42.3"]:
-            cmd = "docker exec {testname} {package} mr --no-gpgcheck oss-update"
-            sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} {refresh}"
+        sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "docker exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
@@ -11757,6 +11776,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if _python.endswith("python3") and "centos" in image: 
            self.skipTest("no python3 on centos")
         package = package_tool(image)
+        refresh = refresh_tool(image)
         systemctl_py = realpath(_systemctl_py)
         systemctl_py_run = systemctl_py.replace("/","_")[1:]
         systemctl_sh = os_path(testdir, "systemctl.sh")
@@ -11824,9 +11844,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} chmod 755 /usr/bin/testsleep.sh"
         sh____(cmd.format(**locals()))
-        if image in ["opensuse:42.3"]:
-            cmd = "docker exec {testname} {package} mr --no-gpgcheck oss-update"
-            sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} {refresh}"
+        sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "docker exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
@@ -11925,6 +11944,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if _python.endswith("python3") and "centos" in image: 
            self.skipTest("no python3 on centos")
         package = package_tool(image)
+        refresh = refresh_tool(image)
         systemctl_py = realpath(_systemctl_py)
         systemctl_sh = os_path(testdir, "systemctl.sh")
         systemctl_py_run = systemctl_py.replace("/","_")[1:]
@@ -11972,9 +11992,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/{testsleep}"
         sh____(cmd.format(**locals()))
-        if image in ["opensuse:42.3"]:
-            cmd = "docker exec {testname} {package} mr --no-gpgcheck oss-update"
-            sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} {refresh}"
+        sh____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "docker exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
@@ -12078,6 +12097,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if _python.endswith("python3") and "centos" in image: 
             self.skipTest("no python3 on centos")
         package = package_tool(image)
+        refresh = refresh_tool(image)
         testname=self.testname()
         testport=self.testport()
         name="centos-httpd"
@@ -12140,6 +12160,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if _python.endswith("python3") and "centos" in image: 
             self.skipTest("no python3 on centos")
         package = package_tool(image)
+        refresh = refresh_tool(image)
         testname=self.testname()
         testport=self.testport()
         name="centos-postgres"
@@ -12220,6 +12241,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if _python.endswith("python3") and "centos" in image: 
             self.skipTest("no python3 on centos")
         package = package_tool(image)
+        refresh = refresh_tool(image)
         testname=self.testname()
         testdir = self.testdir(testname)
         testport=self.testport()
@@ -12359,6 +12381,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if _python.endswith("python3") and "centos" in image: 
             self.skipTest("no python3 on centos")
         package = package_tool(image)
+        refresh = refresh_tool(image)
         testname=self.testname()
         testport=self.testport()
         name="centos-postgres"
@@ -12634,6 +12657,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if _python.endswith("python3") and "centos" in image: 
             self.skipTest("no python3 on centos")
         package = package_tool(image)
+        refresh = refresh_tool(image)
         testname=self.testname()
         testdir = self.testdir(testname)
         testport=self.testport()
@@ -12814,7 +12838,7 @@ if __name__ == "__main__":
     if CENTOS not in TESTED_OS:
         logg.warning("  --centos '%s' was never TESTED!!!", UBUNTU)
         beep(); time.sleep(2)
-    if IMAGE not in TESTED_OS:
+    if IMAGE and IMAGE not in TESTED_OS:
         logg.warning("  --image '%s' was never TESTED!!!", IMAGE)
         beep(); time.sleep(2)
     #
