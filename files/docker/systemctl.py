@@ -2084,12 +2084,12 @@ class Systemctl:
     def wait_vanished_pid(self, pid, timeout):
         if not pid:
             return True
-        logg.info("wait for PID %s to vanish", pid)
+        logg.info("wait for PID %s to vanish (%ss)", pid, timeout)
         for x in xrange(int(timeout)):
             if not self.is_active_pid(pid):
                 logg.info("wait for PID %s is done (%s.)", pid, x)
                 return True
-            self.sleep()
+            time.sleep(1)
         logg.info("wait for PID %s failed (%s.)", pid, x)
         return False
     def reload_modules(self, *modules):
