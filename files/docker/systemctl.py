@@ -3955,11 +3955,12 @@ class Systemctl:
             for arg in sorted(argz):
                 name = argz[arg]
                 method = getattr(self, name)
-                doc = getattr(method, "__doc__")
-                if doc is None:
-                    if not self._show_all:
-                        continue
-                    doc = "..."
+                doc = "..."
+                doctext = getattr(method, "__doc__")
+                if doctext:
+                    doc = doctext
+                elif not self._show_all:
+                    continue # pragma: nocover
                 firstline = doc.split("\n")[0]
                 if "--" not in firstline:
                     print(" ",arg,"--", firstline.strip())
