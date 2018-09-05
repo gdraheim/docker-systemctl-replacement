@@ -9778,7 +9778,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.coverage()
     def test_4211_systemctl_py_dependencies_basic_reorder(self):
         """ check list-dependencies - standard order of starting
-            units is simply the command line order"""
+            units is simply the command line order (After case)"""
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -9870,6 +9870,107 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(log[0], "stop-C")
         self.assertEqual(log[1], "stop-A")
         self.assertEqual(log[2], "stop-B")
+        os.remove(logfile)
+        #
+        kill_testsleep = "killall {testsleep}"
+        sx____(kill_testsleep.format(**locals()))
+        self.rm_testdir()
+        self.coverage()
+    def test_4251_systemctl_py_dependencies_basic_reorder(self):
+        """ check list-dependencies - standard order of starting
+            units is simply the command line order (Before case)"""
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        logfile = os_path(root, "/var/log/"+testname+".log")
+        testsleep = self.testname("sleep")
+        bindir = os_path(root, "/usr/bin")
+        text_file(os_path(testdir, "zza.service"),"""
+            [Unit]
+            Description=Testing A
+            Before=zzb.service
+            [Service]
+            Type=simple
+            ExecStartPre={bindir}/logger 'start-A'
+            ExecStart={bindir}/{testsleep} 30
+            ExecStopPost={bindir}/logger 'stop-A'
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        text_file(os_path(testdir, "zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            Type=simple
+            ExecStartPre={bindir}/logger 'start-B'
+            ExecStart={bindir}/{testsleep} 40
+            ExecStopPost={bindir}/logger 'stop-B'
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        text_file(os_path(testdir, "zzc.service"),"""
+            [Unit]
+            Description=Testing C
+            Before=zza.service
+            [Service]
+            Type=simple
+            ExecStartPre={bindir}/logger 'start-C'
+            ExecStart={bindir}/{testsleep} 50
+            ExecStopPost={bindir}/logger 'stop-C'
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        shell_file(os_path(testdir, "logger"),"""
+            #! /bin/sh
+            echo "$@" >> {logfile}
+            cat {logfile} | sed -e "s|^| : |"
+            true
+            """.format(**locals()))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(os_path(testdir, "logger"), os_path(bindir, "logger"))
+        copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
+        copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
+        copy_file(os_path(testdir, "zzc.service"), os_path(root, "/etc/systemd/system/zzc.service"))
+        os.makedirs(os_path(root, "/var/run"))
+        os.makedirs(os_path(root, "/var/log"))
+        #
+        list_dependencies = "{systemctl} list-dependencies zza.service --now"
+        deps  = output(list_dependencies.format(**locals()))
+        logg.info("deps \n%s", deps)
+        #
+        cmd = "{systemctl} start zza.service zzb.service zzc.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = output(_top_recent)
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep+" 40"))
+        #
+        # inspect logfile
+        log = lines(open(logfile))
+        logg.info("logs \n| %s", "\n| ".join(log))
+        self.assertEqual(log[0], "start-C")
+        self.assertEqual(log[1], "start-A")
+        self.assertEqual(log[2], "start-B")
+        os.remove(logfile)
+        #
+        cmd = "{systemctl} stop zza.service zzb.service zzc.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        time.sleep(1)
+        top = output(_top_recent)
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, testsleep+" 40"))
+        #
+        # inspect logfile
+        log = lines(open(logfile))
+        logg.info("logs \n| %s", "\n| ".join(log))
+        self.assertEqual(log[0], "stop-B")
+        self.assertEqual(log[1], "stop-A")
+        self.assertEqual(log[2], "stop-C")
         os.remove(logfile)
         #
         kill_testsleep = "killall {testsleep}"
