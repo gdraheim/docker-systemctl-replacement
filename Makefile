@@ -84,7 +84,7 @@ checks:
 	$(MAKE) checks3_coverage
 	for i in .coverage*; do mv $$i $$i.cov3; done
 	coverage combine && coverage report && coverage annotate
-	test -l tmp/systemctl.py,cover
+	ls -l tmp/systemctl.py,cover
 checks2:  
 	rm .coverage* ; $(MAKE) checks2_coverage
 checks2_coverage:
