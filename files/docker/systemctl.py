@@ -1199,11 +1199,11 @@ class Systemctl:
             with open(status_file, "w") as f:
                 for key in sorted(conf.status):
                     if key == "MainPID" and str(value) == "0":
-                        logg.error("ignore writing MainPID=0")
+                        logg.warning("ignore writing MainPID=0")
                         continue
                     value = conf.status[key]
                     content = "{}={}\n".format(key, str(value))
-                    logg.info("writing to %s\n\t%s", status_file, content)
+                    logg.debug("writing to %s\n\t%s", status_file, content.strip())
                     f.write(content)
         except IOError as e:
             logg.error("writing STATUS %s: %s\n\t to status file %s", status, e, status_file)
