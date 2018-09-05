@@ -31,9 +31,9 @@ _systemctl_py = "files/docker/systemctl.py"
 _top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* ' | grep -v -e '<defunct>' -e ' ps ' -e ' grep ' -e 'kworker/'"
 _top_list = "ps -eo etime,pid,ppid,args --sort etime,pid"
 _cov = ""
-_cov_run = "coverage2 run '--omit=*/six.py,*/extern/*.py' --append -- "
+_cov_run = "coverage2 run '--omit=*/six.py,*/extern/*.py,*/unitconfparser.py' --append -- "
 _cov_cmd = "coverage2"
-_cov3run = "coverage3 run '--omit=*/six.py,*/extern/*.py' --append -- "
+_cov3run = "coverage3 run '--omit=*/six.py,*/extern/*.py,*/unitconfparser.py' --append -- "
 _cov3cmd = "coverage3"
 _python_coverage = "python-coverage"
 _python3coverage = "python3-coverage"
@@ -3604,7 +3604,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(lines(out)), 0)
         self.assertEqual(end, 0)
         #
-        cmd = "{systemctl} --no-legend enable zzc.service --user"
+        cmd = "{systemctl} --no-legend enable zzc.service"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
@@ -3620,7 +3620,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         #
-        cmd = "{systemctl} default-services --user"
+        cmd = "{systemctl} default-services --user -vv"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(len(lines(out)), 2)
