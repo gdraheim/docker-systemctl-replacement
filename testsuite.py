@@ -3892,7 +3892,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
-    def test_3041_systemctl_py_run_default_services_in_testenv(self):
+    def test_3049_systemctl_py_run_default_services_in_testenv(self):
         """ check that we can enable services in a test env to be run as default-services"""
         testname = self.testname()
         testdir = self.testdir()
