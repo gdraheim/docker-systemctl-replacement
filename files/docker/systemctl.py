@@ -3828,6 +3828,7 @@ class Systemctl:
                 signal.signal(signal.SIGTERM, signal.SIG_DFL)
                 signal.signal(signal.SIGINT, signal.SIG_DFL)
                 return e.message or "STOPPED"
+        logg.debug("done - init loop")
         self.read_log_files(units)
         self.read_log_files(units)
         self.stop_log_files(units)
