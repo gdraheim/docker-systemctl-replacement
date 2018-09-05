@@ -9788,9 +9788,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ignored () {begin}
               date +%T,ignored >> {logfile}
             {end}
+            sighup () {begin}
+              date +%T,sighup >> {logfile}
+            {end}
             trap "stops" 3
             trap "reload" 10
             trap "ignored" 15
+            trap "sighup" 1
             date +%T,starting >> {logfile}
             {bindir}/{testsleepB} $1 >> {logfile} 2>&1 &
             while kill -0 $!; do 
@@ -9840,6 +9844,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         log = lines(open(logfile).read())
         logg.info("LOG %s\n| %s", logfile, "\n| ".join(log))
         self.assertTrue(greps(log, "ignored"))
+        self.assertFalse(greps(log, "sighup"))
         #
         top = output(_top_recent)
         logg.info("\n>>>\n%s", top)
@@ -9898,9 +9903,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ignored () {begin}
               date +%T,ignored >> {logfile}
             {end}
+            sighup () {begin}
+              date +%T,sighup >> {logfile}
+            {end}
             trap "stops" 3
             trap "reload" 10
             trap "ignored" 15
+            trap "sighup" 1
             date +%T,starting >> {logfile}
             {bindir}/{testsleepB} $1 >> {logfile} 2>&1 &
             while kill -0 $!; do 
@@ -9950,6 +9959,124 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         log = lines(open(logfile).read())
         logg.info("LOG %s\n| %s", logfile, "\n| ".join(log))
         self.assertTrue(greps(log, "ignored"))
+        self.assertFalse(greps(log, "sighup"))
+        #
+        time.sleep(1) # kill is asynchronous
+        top = output(_top_recent)
+        logg.info("\n>>>\n%s", top)
+        cmd = "killall {testsleepB}"
+        sx____(cmd.format(**locals())) # cleanup before check
+        self.assertFalse(greps(top, testscriptB))
+        self.assertFalse(greps(top, testsleepB))
+        #
+        self.rm_testdir()
+        self.coverage()
+    def test_4151_systemctl_kill_sendsighup(self):
+        """ systemctl kill with sighup"""
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        testsleep = self.testname("testsleep")
+        testsleepB = testsleep+"B"
+        testsleepC = testsleep+"C"
+        testscriptB = self.testname("testscriptB.sh")
+        testscriptC = self.testname("testscriptC.sh")
+        logfile = os_path(root, "/var/log/test.log")
+        bindir = os_path(root, "/usr/bin")
+        begin = "{"
+        end = "}"
+        text_file(logfile, "")
+        text_file(os_path(testdir, "zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            Type=simple
+            ExecStartPre=/bin/echo %n
+            ExecStart={bindir}/{testscriptB} 50
+            ExecStartPost=/bin/echo started $MAINPID
+            ExecStop=/usr/bin/kill -3 $MAINPID
+            ExecStopPost=/bin/echo stopped $MAINPID
+            ExecStopPost=/usr/bin/sleep 2
+            ExecReload=/usr/bin/kill -10 $MAINPID
+            # KillSignal=SIGQUIT
+            SendSIGHUP=yes
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        shell_file(os_path(bindir, testscriptB),"""
+            #! /bin/sh
+            date +%T,enter > {logfile}
+            stops () {begin}
+              date +%T,stopping >> {logfile}
+              killall {testsleep}
+              date +%T,stopped >> {logfile}
+            {end}
+            reload () {begin}
+              date +%T,reloading >> {logfile}
+              date +%T,reloaded >> {logfile}
+            {end}
+            ignored () {begin}
+              date +%T,ignored >> {logfile}
+            {end}
+            sighup () {begin}
+              date +%T,sighup >> {logfile}
+            {end}
+            trap "stops" 3
+            trap "reload" 10
+            trap "ignored" 15
+            trap "sighup" 1
+            date +%T,starting >> {logfile}
+            {bindir}/{testsleepB} $1 >> {logfile} 2>&1 &
+            while kill -0 $!; do 
+               # use 'kill -0' to check the existance of the child
+               date +%T,waiting >> {logfile}
+               # use 'wait' for children AND external signals
+               wait
+            done
+            date +%T,leaving >> {logfile}
+            trap - 3 10 15
+            date +%T,leave >> {logfile}
+        """.format(**locals()))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleepB))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleepC))
+        copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
+        #
+        cmd = "{systemctl} start zzb.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        #
+        top = output(_top_recent)
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleepB))
+        #
+        cmd = "{systemctl} stop zzb.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        #
+        top = output(_top_recent)
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testscriptB))
+        self.assertTrue(greps(top, testsleepB))
+        #
+        cmd = "{systemctl} kill zzb.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0) # actually killed
+        #
+        time.sleep(1) # kill is asynchronous
+        top = output(_top_recent)
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, testscriptB)) 
+        self.assertFalse(greps(top, testsleepB)) # and it kills children
+        #
+        log = lines(open(logfile).read())
+        logg.info("LOG %s\n| %s", logfile, "\n| ".join(log))
+        self.assertTrue(greps(log, "ignored"))
+        self.assertTrue(greps(log, "sighup"))
         #
         time.sleep(1) # kill is asynchronous
         top = output(_top_recent)
