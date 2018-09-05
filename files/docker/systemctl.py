@@ -2158,7 +2158,10 @@ class Systemctl:
                 if not forkpid:
                     self.execve_from(conf, newcmd, env) # pragma: nocover
                 run = subprocess_waitpid(forkpid)
-                if check and run.returncode: raise Exception("ExecReload")
+                if check and run.returncode: 
+                    logg.error("Job for %s failed because the control process exited with error code. (%s)", 
+                        conf.name(), run.returncode)
+                    return False
             self.sleep()
             return True
         elif runs in [ "oneshot" ]:

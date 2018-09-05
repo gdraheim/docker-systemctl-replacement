@@ -6101,6 +6101,57 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
+    def real_3609_exitcode_from_ExecReload(self):
+        self.test_3609_exitcode_from_ExecReload(True)
+    def test_3609_exitcode_from_ExecReload(self, real = False):
+        """ check that we get a warning when ExecReload has an error"""
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir, real)
+        vv = "-vv"
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
+        testsleep = self.testname("sleep")
+        bindir = os_path(root, "/usr/bin")
+        text_file(os_path(testdir, "zzz.service"),"""
+            [Unit]
+            Description=Testing Z
+            [Service]
+            Type=simple
+            ExecStart={bindir}/{testsleep} 50
+            ExecReload=/usr/bin/killall -q some-unknown-program
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
+        cmd = "{systemctl} start zzz.service {vv}"
+        sx____("{systemctl} daemon-reload".format(**locals()))
+        #
+        cmd = "{systemctl} start zzz.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} reload zzz.service {vv}"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertTrue(greps(err, "Job for zzz.service failed because the control process exited with error code."))
+        #
+        cmd = "{systemctl} is-active zzz.service {vv}"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        #
+        cmd = "{systemctl} stop zzz.service {vv}"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        #
+        kill_testsleep = "killall {testsleep}"
+        sx____(kill_testsleep.format(**locals()))
+        self.rm_testdir()
+        self.rm_zzfiles(root)
+        self.coverage()
     def test_3700_systemctl_py_default_init_loop_in_testenv(self):
         """ check that we can enable services in a test env to be run by an init-loop.
             We expect here that the init-loop ends when all services are dead. """
