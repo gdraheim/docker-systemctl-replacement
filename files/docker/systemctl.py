@@ -1255,6 +1255,8 @@ class Systemctl:
             conf.status[name] = value
     #
     def get_boottime(self):
+        if COVERAGE:
+            self.get_boottime_oldest()
         for pid in xrange(10):
             proc = "/proc/%s/status" % pid
             try:
@@ -1262,6 +1264,8 @@ class Systemctl:
                     return os.path.getmtime(proc)
             except Exception as e: # pragma: nocover
                 logg.warning("could not access %s: %s", proc, e)
+        return self.get_boottime_oldest()
+    def get_boottime_oldest(self):
         # otherwise get the oldest entry in /proc
         booted = time.time()
         for name in os.listdir("/proc"):
