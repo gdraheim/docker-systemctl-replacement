@@ -1717,6 +1717,7 @@ class Systemctl:
                 logg.warning("the service is already running on PID %s", pid)
                 return True
             if doRemainAfterExit:
+                logg.debug("%s RemainAfterExit -> AS=active", runs)
                 self.write_status_from(conf, AS="active")
             cmdlist = conf.data.getlist("Service", "ExecStart", [])
             for idx, cmd in enumerate(cmdlist):
@@ -1757,6 +1758,7 @@ class Systemctl:
                 env["NOTIFY_SOCKET"] = notify.socketfile
                 logg.debug("use NOTIFY_SOCKET=%s", notify.socketfile)
             if doRemainAfterExit:
+                logg.debug("%s RemainAfterExit -> AS=active", runs)
                 self.write_status_from(conf, AS="active")
             cmdlist = conf.data.getlist("Service", "ExecStart", [])
             for idx, cmd in enumerate(cmdlist):
