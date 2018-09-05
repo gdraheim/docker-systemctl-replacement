@@ -3517,10 +3517,6 @@ class Systemctl:
         """
         logg.info("try read unit %s", unit)
         conf = self.get_unit_conf(unit)
-        if not conf:
-            notfound += [ "Id="+module, "Name=s"+module, "Description="+module ]
-            notfound += [ "ActiveState=inactive", "SubState=dead" ]
-            notfound += [ "%s=%s" % ("LoadState", "not-found") ]
         for entry in self.each_unit_items(unit, conf):
             yield entry
     def each_unit_items(self, unit, conf):
