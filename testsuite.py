@@ -5516,7 +5516,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 0)
         data = lines(out)
         self.assertTrue(greps(data, "ActiveState=active"))
-        self.assertEqual(len(data), 1)
+        self.assertEqual(len(data), 3)
         #
         cmd = "{systemctl} show zzs.service other.service -vv -p 'MainPID'"
         out, end = output2(cmd.format(**locals()))
@@ -5524,7 +5524,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 0)
         data = lines(out)
         self.assertTrue(greps(data, "MainPID=[123456789][1234567890]*")) # <<<<
-        self.assertEqual(len(data), 1)
+        self.assertEqual(len(data), 3)
         #
         # cleanup
         kill_testsleep = "killall {testsleep}"

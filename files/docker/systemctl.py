@@ -3482,10 +3482,8 @@ class Systemctl:
             matched = self.match_units([ module ])
             if not matched:
                 logg.error("Unit %s could not be found.", unit_of(module))
+                units += [ module ]
                 found_all = False
-                notfound += [ "Id="+module, "Name=s"+module, "Description="+module ]
-                notfound += [ "ActiveState=inactive", "SubState=dead" ]
-                notfound += [ "%s=%s" % ("LoadState", "not-found") ]
                 continue
             for unit in matched:
                 if unit not in units:
@@ -3495,7 +3493,7 @@ class Systemctl:
         logg.debug("show --property=%s", self._unit_property)
         result = []
         for unit in units:
-            if result: result += [ "", "" ]
+            if result: result += [ "" ]
             for var, value in self.show_unit_items(unit):
                 if self._unit_property:
                     if self._unit_property != var:
@@ -3510,9 +3508,18 @@ class Systemctl:
         """
         logg.info("try read unit %s", unit)
         conf = self.get_unit_conf(unit)
+        if not conf:
+            notfound += [ "Id="+module, "Name=s"+module, "Description="+module ]
+            notfound += [ "ActiveState=inactive", "SubState=dead" ]
+            notfound += [ "%s=%s" % ("LoadState", "not-found") ]
         for entry in self.each_unit_items(unit, conf):
             yield entry
     def each_unit_items(self, unit, conf):
+        loaded = conf.loaded()
+        if not loaded:
+            loaded = "not-loaded"
+            if "NOT-FOUND" in self.get_description_from(conf):
+                loaded = "not-found"
         yield "Id", unit
         yield "Names", unit
         yield "Description", self.get_description_from(conf) # conf.data.get("Unit", "Description")
@@ -3520,7 +3527,7 @@ class Systemctl:
         yield "MainPID", self.active_pid_from(conf) or "0"  # status["MainPID"] or PIDFile-read
         yield "SubState", self.get_substate_from(conf)      # status["SubState"] or notify-result
         yield "ActiveState", self.get_active_from(conf)     # status["ActiveState"]
-        yield "LoadState", conf.loaded() or "not-loaded"
+        yield "LoadState", loaded
         yield "UnitFileState", self.enabled_from(conf)
         yield "TimeoutStartUSec", seconds_to_time(self.get_TimeoutStartSec(conf))
         yield "TimeoutStopUSec", seconds_to_time(self.get_TimeoutStopSec(conf))
