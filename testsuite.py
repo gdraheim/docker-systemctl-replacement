@@ -374,17 +374,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         ip_a = self.ip_container(container)
         logg.info("::: %s => %s", container, ip_a)
         return dict(zip(hosts, [ ip_a ] * len(hosts)))
-    def add_hosts(self, hosts):
-        return " ".join(["--add-host %s:%s" % (host, ip_a) for host, ip_a in hosts.items() ])
-        # for host, ip_a in mapping.items():
-        #    yield "--add-host {host}:{ip_a}"
-    def local_image(self, image):
+    def with_local_mirror(self, image):
         """ attach local centos-repo / opensuse-repo to docker-start enviroment.
             Effectivly when it is required to 'docker start centos:x.y' then do
             'docker start centos-repo:x.y' before and extend the original to 
             'docker start --add-host mirror...:centos-repo centos:x.y'. """
-        if os.environ.get("NONLOCAL",""):
-            return image
         hosts = {}
         if image.startswith("centos:"):
             version = image[len("centos:"):]
@@ -398,11 +392,40 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if image.startswith("ubuntu:"):
             version = image[len("ubuntu:"):]
             hosts = self.with_local_ubuntu_mirror(version)
+        return hosts
+    def add_hosts(self, hosts):
+        return " ".join(["--add-host %s:%s" % (host, ip_a) for host, ip_a in hosts.items() ])
+        # for host, ip_a in mapping.items():
+        #    yield "--add-host {host}:{ip_a}"
+    def local_image(self, image):
+        """ attach local centos-repo / opensuse-repo to docker-start enviroment.
+            Effectivly when it is required to 'docker start centos:x.y' then do
+            'docker start centos-repo:x.y' before and extend the original to 
+            'docker start --add-host mirror...:centos-repo centos:x.y'. """
+        if os.environ.get("NONLOCAL",""):
+            return image
+        hosts =  self.with_local_mirror(image)
         if hosts:
             add_hosts = self.add_hosts(hosts)
-            logg.info("%s %s", add_hosts, image)
+            logg.debug("%s %s", add_hosts, image)
             return "{add_hosts} {image}".format(**locals())
         return image
+    def local_addhosts(self, dockerfile):
+        image = ""
+        for line in open(dockerfile):
+            m = re.match('[Ff][Rr][Oo][Mm] *"([^"]*)"', line)
+            if m: 
+                image = m.group(1)
+                break
+            m = re.match("[Ff][Rr][Oo][Mm] *(\w[^ ]*)", line)
+            if m: 
+                image = m.group(1).strip()
+                break
+        logg.debug("--\n-- '%s' FROM '%s'", dockerfile, image)
+        if image:
+            hosts = self.with_local_mirror(image)
+            return self.add_hosts(hosts)
+        return ""
     def drop_container(self, name):
         cmd = "docker rm --force {name}"
         sx____(cmd.format(**locals()))
