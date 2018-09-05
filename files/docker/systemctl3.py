@@ -29,6 +29,7 @@ else:
     string_types = str
     xrange = range
 
+COVERAGE = False
 DEBUG_AFTER = os.environ.get("DEBUG_AFTER", "") or False
 DEBUG_REMOVE = os.environ.get("DEBUG_REMOVE", "") or False
 EXIT_WHEN_NO_MORE_PROCS = os.environ.get("EXIT_WHEN_NO_MORE_PROCS", "") or False
@@ -536,14 +537,6 @@ class waitlock:
         except Exception as e:
             logg.warning("oops, %s", e)
 
-def subprocess_wait(cmd, env=None, check = False, shell=False):
-    # logg.warning("running = %s", cmd)
-    run = subprocess.Popen(cmd, shell=shell, env=env)
-    run.wait()
-    if check and run.returncode: 
-        logg.warning("returncode %i\n %s", run.returncode, cmd)
-        raise Exception("command failed")
-    return run
 def subprocess_waitpid(pid):
     waitpid = collections.namedtuple("waitpid", ["pid", "returncode", "signal" ])
     run_pid, run_stat = os.waitpid(pid, 0)
@@ -1100,21 +1093,6 @@ class Systemctl:
         """ Unit.Description could be empty sometimes """
         if not conf: return default or ""
         return conf.data.get("Unit", "Description", default or "")
-    def write_pid_file(self, pid_file, pid): # -> bool(written)
-        """ if a pid_file is known then path is created and the
-            give pid is written as the only content. """
-        if not pid_file: 
-            logg.debug("pid %s but no pid_file", pid)
-            return False
-        dirpath = os.path.dirname(os.path.abspath(pid_file))
-        if not os.path.isdir(dirpath):
-            os.makedirs(dirpath)
-        try:
-            with open(pid_file, "w") as f:
-                f.write("{}\n".format(pid))
-        except IOError as e:
-            logg.error("writing PID %s: %s\n\t to pid_file %s", pid, e, pid_file)
-        return True
     def read_pid_file(self, pid_file, default = None):
         pid = default
         if not pid_file:
@@ -1220,9 +1198,12 @@ class Systemctl:
         try:
             with open(status_file, "w") as f:
                 for key in sorted(conf.status):
+                    if key == "MainPID" and str(value) == "0":
+                        logg.warning("ignore writing MainPID=0")
+                        continue
                     value = conf.status[key]
                     content = "{}={}\n".format(key, str(value))
-                    logg.info("writing to %s\n\t%s", status_file, content)
+                    logg.debug("writing to %s\n\t%s", status_file, content.strip())
                     f.write(content)
         except IOError as e:
             logg.error("writing STATUS %s: %s\n\t to status file %s", status, e, status_file)
@@ -1274,6 +1255,8 @@ class Systemctl:
             conf.status[name] = value
     #
     def get_boottime(self):
+        if COVERAGE:
+            self.get_boottime_oldest()
         for pid in xrange(10):
             proc = "/proc/%s/status" % pid
             try:
@@ -1281,6 +1264,8 @@ class Systemctl:
                     return os.path.getmtime(proc)
             except Exception as e: # pragma: nocover
                 logg.warning("could not access %s: %s", proc, e)
+        return self.get_boottime_oldest()
+    def get_boottime_oldest(self):
         # otherwise get the oldest entry in /proc
         booted = time.time()
         for name in os.listdir("/proc"):
@@ -1679,8 +1664,8 @@ class Systemctl:
                 newcmd = self.exec_cmd(cmd, env, conf)
                 logg.info(" pre-start %s", shell_cmd(newcmd))
                 forkpid = os.fork()
-                if not forkpid:
-                    self.execve_from(conf, newcmd, env)
+                if not forkpid: 
+                    self.execve_from(conf, newcmd, env) # pragma: nocover
                 run = subprocess_waitpid(forkpid)
                 logg.debug(" pre-start done (%s) <-%s>",
                     run.returncode or "OK", run.signal or "")
@@ -1736,6 +1721,7 @@ class Systemctl:
                 logg.warning("the service is already running on PID %s", pid)
                 return True
             if doRemainAfterExit:
+                logg.debug("%s RemainAfterExit -> AS=active", runs)
                 self.write_status_from(conf, AS="active")
             cmdlist = conf.data.getlist("Service", "ExecStart", [])
             for idx, cmd in enumerate(cmdlist):
@@ -1776,6 +1762,7 @@ class Systemctl:
                 env["NOTIFY_SOCKET"] = notify.socketfile
                 logg.debug("use NOTIFY_SOCKET=%s", notify.socketfile)
             if doRemainAfterExit:
+                logg.debug("%s RemainAfterExit -> AS=active", runs)
                 self.write_status_from(conf, AS="active")
             cmdlist = conf.data.getlist("Service", "ExecStart", [])
             for idx, cmd in enumerate(cmdlist):
@@ -1868,7 +1855,7 @@ class Systemctl:
                 logg.info("post-fail %s", shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
-                    self.execve_from(conf, newcmd, env)
+                    self.execve_from(conf, newcmd, env) # pragma: nocover
                 run = subprocess_waitpid(forkpid)
                 logg.debug("post-fail done (%s) <-%s>", 
                     run.returncode or "OK", run.signal or "")
@@ -1880,7 +1867,7 @@ class Systemctl:
                 logg.info("post-start %s", shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
-                    self.execve_from(conf, newcmd, env)
+                    self.execve_from(conf, newcmd, env) # pragma: nocover
                 run = subprocess_waitpid(forkpid)
                 logg.debug("post-start done (%s) <-%s>", 
                     run.returncode or "OK", run.signal or "")
@@ -1899,11 +1886,15 @@ class Systemctl:
         shutil_setuid(runuser, rungroup)
         self.chdir_workingdir(conf, check = False)
         try:
-            os.execve(cmd[0], cmd, env)
+            if COVERAGE:
+                os.spawnvpe(os.P_WAIT, cmd[0], cmd, env)
+                sys.exit(0)
+            else: # pragma: nocover
+                os.execve(cmd[0], cmd, env)
         except Exception as e:
             logg.error("(%s): %s", shell_cmd(cmd), e)
             sys.exit(1)
-    def exec_start_unit(self, unit):
+    def test_start_unit(self, unit):
         """ helper function to test the code that is normally forked off """
         conf = self.load_unit_conf(unit)
         env = self.get_env(conf)
@@ -1965,7 +1956,7 @@ class Systemctl:
                 logg.info("%s stop %s", runs, shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
-                    self.execve_from(conf, newcmd, env)
+                    self.execve_from(conf, newcmd, env) # pragma: nocover
                 run = subprocess_waitpid(forkpid)
                 if run.returncode:
                     self.set_status_from(conf, "ExecStopCode", run.returncode)
@@ -1985,7 +1976,7 @@ class Systemctl:
                 logg.info("%s stop %s", runs, shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
-                    self.execve_from(conf, newcmd, env)
+                    self.execve_from(conf, newcmd, env) # pragma: nocover
                 run = subprocess_waitpid(forkpid)
                 if run.returncode and check: 
                     returncode = run.returncode
@@ -2016,7 +2007,7 @@ class Systemctl:
                 logg.info("%s stop %s", runs, shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
-                    self.execve_from(conf, newcmd, env)
+                    self.execve_from(conf, newcmd, env) # pragma: nocover
                 run = subprocess_waitpid(forkpid)
                 # self.write_status_from(conf, MainPID=run.pid) # no ExecStop
                 if run.returncode and check:
@@ -2050,7 +2041,7 @@ class Systemctl:
                 logg.info("fork stop %s", shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
-                    self.execve_from(conf, newcmd, env)
+                    self.execve_from(conf, newcmd, env) # pragma: nocover
                 run = subprocess_waitpid(forkpid)
                 if run.returncode and check:
                     returncode = run.returncode
@@ -2085,7 +2076,7 @@ class Systemctl:
                 logg.info("post-stop %s", shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
-                    self.execve_from(conf, newcmd, env)
+                    self.execve_from(conf, newcmd, env) # pragma: nocover
                 run = subprocess_waitpid(forkpid)
                 logg.debug("post-stop done (%s) <-%s>", 
                     run.returncode or "OK", run.signal or "")
@@ -2093,12 +2084,12 @@ class Systemctl:
     def wait_vanished_pid(self, pid, timeout):
         if not pid:
             return True
-        logg.info("wait for PID %s to vanish", pid)
+        logg.info("wait for PID %s to vanish (%ss)", pid, timeout)
         for x in xrange(int(timeout)):
             if not self.is_active_pid(pid):
                 logg.info("wait for PID %s is done (%s.)", pid, x)
                 return True
-            self.sleep()
+            time.sleep(1)
         logg.info("wait for PID %s failed (%s.)", pid, x)
         return False
     def reload_modules(self, *modules):
@@ -2149,7 +2140,7 @@ class Systemctl:
                 logg.info("%s reload %s", runs, shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
-                    self.execve_from(conf, newcmd, env)
+                    self.execve_from(conf, newcmd, env) # pragma: nocover
                 run = subprocess_waitpid(forkpid)
                 self.set_status_from(conf, "ExecReloadCode", run.returncode)
                 if run.returncode:
@@ -2169,9 +2160,12 @@ class Systemctl:
                 logg.info("%s reload %s", runs, shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
-                    self.execve_from(conf, newcmd, env)
+                    self.execve_from(conf, newcmd, env) # pragma: nocover
                 run = subprocess_waitpid(forkpid)
-                if check and run.returncode: raise Exception("ExecReload")
+                if check and run.returncode: 
+                    logg.error("Job for %s failed because the control process exited with error code. (%s)", 
+                        conf.name(), run.returncode)
+                    return False
             self.sleep()
             return True
         elif runs in [ "oneshot" ]:
@@ -2369,14 +2363,6 @@ class Systemctl:
         with waitlock(unit):
             logg.info(" kill unit %s => %s", unit, conf.filename())
             return self.kill_unit_from(conf)
-    def kill_stopped_unit_from(self, conf, mainpid = None):
-        if not mainpid:
-            return True
-        useKillMode = conf.data.get("Service", "KillMode", "control-group")
-        if useKillMode.lower() in ["no", "none"]:
-            logg.info("kill on stop is disabled by KillMode=%s", useKillMode)
-            return False
-        self.kill_unit_from(conf, mainpid)
     def kill_unit_from(self, conf, mainpid = None):
         if not conf: return None
         started = time.time()
@@ -3498,23 +3484,25 @@ class Systemctl:
            for formatted human-readable output.
   
            NOTE: only a subset of properties is implemented """
+        notfound = []
         found_all = True
         units = []
         for module in modules:
             matched = self.match_units([ module ])
             if not matched:
                 logg.error("Unit %s could not be found.", unit_of(module))
+                units += [ module ]
                 found_all = False
                 continue
             for unit in matched:
                 if unit not in units:
                     units += [ unit ]
-        return self.show_units(units) # and found_all
+        return self.show_units(units) + notfound # and found_all
     def show_units(self, units):
         logg.debug("show --property=%s", self._unit_property)
         result = []
         for unit in units:
-            if result: result += [ "", "" ]
+            if result: result += [ "" ]
             for var, value in self.show_unit_items(unit):
                 if self._unit_property:
                     if self._unit_property != var:
@@ -3532,6 +3520,11 @@ class Systemctl:
         for entry in self.each_unit_items(unit, conf):
             yield entry
     def each_unit_items(self, unit, conf):
+        loaded = conf.loaded()
+        if not loaded:
+            loaded = "not-loaded"
+            if "NOT-FOUND" in self.get_description_from(conf):
+                loaded = "not-found"
         yield "Id", unit
         yield "Names", unit
         yield "Description", self.get_description_from(conf) # conf.data.get("Unit", "Description")
@@ -3539,7 +3532,7 @@ class Systemctl:
         yield "MainPID", self.active_pid_from(conf) or "0"  # status["MainPID"] or PIDFile-read
         yield "SubState", self.get_substate_from(conf)      # status["SubState"] or notify-result
         yield "ActiveState", self.get_active_from(conf)     # status["ActiveState"]
-        yield "LoadState", conf.loaded() or "not-loaded"
+        yield "LoadState", loaded
         yield "UnitFileState", self.enabled_from(conf)
         yield "TimeoutStartUSec", seconds_to_time(self.get_TimeoutStartSec(conf))
         yield "TimeoutStopUSec", seconds_to_time(self.get_TimeoutStopSec(conf))
@@ -3745,11 +3738,13 @@ class Systemctl:
         if self._now:
             return self.init_loop_until_stop([])
         if not modules:
-            # alias 'systemctl --init default'
+            # almost like 'systemctl --init default'
+            # but the container is exted when no_more_procs
+            self.exit_when_no_more_procs = True
             return self.start_system_default(init = True)
         #
-        # otherwise quit when the init-services have died
-        self.exit_when_no_more_procs = True
+        # otherwise quit when all the init-services have died
+        self.exit_when_no_more_services = True
         found_all = True
         units = []
         for module in modules:
@@ -3761,7 +3756,10 @@ class Systemctl:
             for unit in matched:
                 if unit not in units:
                     units += [ unit ]
-        return self.start_units(units, init = True) # and found_all
+        logg.info("init %s -> start %s", ",".join(modules), ",".join(units))
+        done = self.start_units(units, init = True) 
+        logg.info("-- init is done")
+        return done # and found_all
     def start_log_files(self, units):
         self._log_file = {}
         self._log_hold = {}
@@ -3835,6 +3833,7 @@ class Systemctl:
                 signal.signal(signal.SIGTERM, signal.SIG_DFL)
                 signal.signal(signal.SIGINT, signal.SIG_DFL)
                 return e.message or "STOPPED"
+        logg.debug("done - init loop")
         self.read_log_files(units)
         self.read_log_files(units)
         self.stop_log_files(units)
@@ -3896,16 +3895,6 @@ class Systemctl:
                 pidlist = pids[:]
                 continue
         return pids
-    def pidlist_modules(self, *units):
-        for unit in self.match_units(units):
-            conf = self.get_unit_conf(unit)
-            pid = self.read_mainpid_from(conf, "")
-            yield unit, self.pidlist_of(pid)
-    def mainpid_modules(self, *units):
-        for unit in self.match_units(units):
-            conf = self.get_unit_conf(unit)
-            pid = self.read_mainpid_from(conf, "")
-            yield unit, pid
     def etc_hosts(self):
         path = "/etc/hosts"
         if self._root:
@@ -3966,11 +3955,12 @@ class Systemctl:
             for arg in sorted(argz):
                 name = argz[arg]
                 method = getattr(self, name)
-                doc = getattr(method, "__doc__")
-                if doc is None:
-                    if not self._show_all:
-                        continue
-                    doc = "..."
+                doc = "..."
+                doctext = getattr(method, "__doc__")
+                if doctext:
+                    doc = doctext
+                elif not self._show_all:
+                    continue # pragma: nocover
                 firstline = doc.split("\n")[0]
                 if "--" not in firstline:
                     print(" ",arg,"--", firstline.strip())
@@ -4145,6 +4135,8 @@ if __name__ == "__main__":
     _o.add_option("--no-pager", action="store_true",
         help="Do not pipe output into pager (ignored)")
     #
+    _o.add_option("--coverage", action="store_true", default=COVERAGE,
+        help="..support for coverage (no execve)")
     _o.add_option("-e","--extra-vars", "--environment", metavar="NAME=VAL", action="append", default=[],
         help="..override settings in the syntax of 'Environment='")
     _o.add_option("-v","--verbose", action="count", default=0,
@@ -4159,6 +4151,7 @@ if __name__ == "__main__":
     logging.basicConfig(level = max(0, logging.FATAL - 10 * opt.verbose))
     logg.setLevel(max(0, logging.ERROR - 10 * opt.verbose))
     #
+    COVERAGE = opt.coverage
     _extra_vars = opt.extra_vars
     _force = opt.force
     _full = opt.full
@@ -4244,7 +4237,7 @@ if __name__ == "__main__":
         found = True
         result = command_func()
     if not found:
-        logg.error("EXEC END no method for '%s'", command)
+        logg.error("Unknown operation %s.", command)
         sys.exit(1)
     #
     sys.exit(print_result(result))
