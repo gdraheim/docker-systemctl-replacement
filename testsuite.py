@@ -13899,17 +13899,19 @@ if __name__ == "__main__":
         if xmlresults:
             import xmlrunner
             Runner = xmlrunner.XMLTestRunner
-            Runner(xmlresults).run(suite)
+            result = Runner(xmlresults).run(suite)
         else:
             Runner = unittest.TextTestRunner
-            Runner(verbosity=opt.verbose).run(suite)
+            result = Runner(verbosity=opt.verbose).run(suite)
     else:
         Runner = unittest.TextTestRunner
         if xmlresults:
             import xmlrunner
             Runner = xmlrunner.XMLTestRunner
-        Runner(logfile.stream, verbosity=opt.verbose).run(suite)
+        result = Runner(logfile.stream, verbosity=opt.verbose).run(suite)
     if opt.coverage:
         print(" " + _cov_cmd + " combine")
         print(" " + _cov_cmd + " report " + _systemctl_py)
         print(" " + _cov_cmd + " annotate " + _systemctl_py)
+    if not result.wasSuccessful():
+        sys.exit(1)
