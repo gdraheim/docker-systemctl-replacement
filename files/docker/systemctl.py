@@ -69,15 +69,11 @@ _preset_folder2 = "/var/run/systemd/system-preset"
 _preset_folder3 = "/usr/lib/systemd/system-preset"
 _preset_folder4 = "/lib/systemd/system-preset"
 _preset_folder9 = None
-_waitprocfile = 100
-_waitkillproc = 10
 
 MinimumWait = 2
 MinimumYield = 0.5
-MinimumWaitProcFile = 9
-MinimumWaitKillProc = 9
-DefaultWaitProcFile = int(os.environ.get("SYSTEMCTL_WAIT_PROC_FILE"))
-DefaultWaitKillProc = int(os.enviorn.get("SYSTEMCTL_WAIT_KILL_PROC"))
+MinimumTimeoutStartSec = 4
+MinimumTimeoutStopSec = 4
 DefaultTimeoutStartSec = int(os.environ.get("SYSTEMCTL_TIMEOUT_START_SEC", 90)) # official value
 DefaultTimeoutStopSec = int(os.environ.get("SYSTEMCTL_TIMEOUT_STOP_SEC", 90))   # official value
 DefaultMaximumTimeout = int(os.environ.get("SYSTEMCTL_MAXIMUM_TIMEOUT", 200))   # overrides all other
@@ -729,8 +725,6 @@ class Systemctl:
         self._notify_socket_folder = _var(_notify_socket_folder)
         self._pid_file_folder = _pid_file_folder 
         self._journal_log_folder = _journal_log_folder
-        self._WaitProcFile = DefaultWaitProcFile
-        self._WaitKillProc = DefaultWaitKillProc
         # and the actual internal runtime state
         self._loaded_file_sysv = {} # /etc/init.d/name => config data
         self._loaded_file_sysd = {} # /etc/systemd/system/name.service => config data
@@ -1114,19 +1108,19 @@ class Systemctl:
         return pid
     def wait_pid_file(self, pid_file, timeout = None): # -> pid?
         """ wait some seconds for the pid file to appear and return the pid """
-        timeout = int(timeout or self._WaitProcFile)
-        timeout = max(timeout, MinimumWaitProcFile)        
+        timeout = int(timeout or (DefaultTimeoutStartSec/2))
+        timeout = max(timeout, (MinimumTimeoutStartSec))
         dirpath = os.path.dirname(os.path.abspath(pid_file))
         for x in xrange(timeout):
             if not os.path.isdir(dirpath):
-                time.sleep(1) # until WaitProcFile
+                time.sleep(1) # until TimeoutStartSec/2
                 continue
             pid = self.read_pid_file(pid_file)
             if not pid:
-                time.sleep(1) # until WaitProcFile
+                time.sleep(1) # until TimeoutStartSec/2
                 continue
             if not pid_exists(pid):
-                time.sleep(1) # until WaitProcFile
+                time.sleep(1) # until TimeoutStartSec/2
                 continue
             return pid
         return None
@@ -4151,13 +4145,11 @@ if __name__ == "__main__":
     COVERAGE = opt.coverage
     if "sleep" in COVERAGE:
          MinimumWait = 4
-         MinimumWaitProcFile = 4
-         MinimumWaitKillProc = 4
+         MinimumTimeoutStartSec = 9
+         MinimumTimeoutStopSec = 9
     if "quick" in COVERAGE:
-         MinimumWaitProcFile = 2
-         MinimumWaitKillProc = 2
-         DefaultWaitProcFile = 5
-         DefaultWaitKillProc = 5
+         MinimumTimeoutStartSec = 4
+         MinimumTimeoutStopSec = 4
          DefaultTimeoutStartSec = 9
          DefaultTimeoutStopSec = 9
     _extra_vars = opt.extra_vars
