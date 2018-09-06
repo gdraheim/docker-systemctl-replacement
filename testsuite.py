@@ -5085,7 +5085,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 echo zzz `date +%M:%S` started pid >>{logfile}
                 sleep 2
                 echo zzz `date +%M:%S` starting zza >>{logfile}
-                {systemctl} start zza.service {vv} >>{logfile} 2>&1
+                {systemctl} start zza.service {vv} {removelockfile} >>{logfile} 2>&1
                 echo zzz `date +%M:%S` started zza >>{logfile}
                ) &
                sleep 1
