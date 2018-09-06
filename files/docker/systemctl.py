@@ -29,11 +29,11 @@ else:
     string_types = str
     xrange = range
 
-COVERAGE = False
-DEBUG_AFTER = os.environ.get("DEBUG_AFTER", "") or False
-DEBUG_REMOVE = os.environ.get("DEBUG_REMOVE", "") or False
-EXIT_WHEN_NO_MORE_PROCS = os.environ.get("EXIT_WHEN_NO_MORE_PROCS", "") or False
-EXIT_WHEN_NO_MORE_SERVICES = os.environ.get("EXIT_WHEN_NO_MORE_SERVICES", "") or False
+COVERAGE = os.environ.get("SYSTEMCTL_COVERAGE", "")
+DEBUG_AFTER = os.environ.get("SYSTEMCTL_DEBUG_AFTER", "") or False
+DEBUG_REMOVE = os.environ.get("SYSTEMCTL_DEBUG_REMOVE", "") or False
+EXIT_WHEN_NO_MORE_PROCS = os.environ.get("SYSTEMCTL_EXIT_WHEN_NO_MORE_PROCS", "") or False
+EXIT_WHEN_NO_MORE_SERVICES = os.environ.get("SYSTEMCTL_EXIT_WHEN_NO_MORE_SERVICES", "") or False
 
 # defaults for options
 _extra_vars = []
@@ -78,9 +78,9 @@ MinimumWaitProcFile = 9
 MinimumWaitKillProc = 3
 DefaultWaitProcFile = 100
 DefaultWaitKillProc = 9
-DefaultTimeoutStartSec = 9 # officially 90
-DefaultTimeoutStopSec = 9  # officially 90
-DefaultMaximumTimeout = 200
+DefaultTimeoutStartSec = int(os.environ.get("SYSTEMCTL_TIMEOUT_START_SEC", 90)) # official value
+DefaultTimeoutStopSec = int(os.environ.get("SYSTEMCTL_TIMEOUT_STOP_SEC", 90))   # official value
+DefaultMaximumTimeout = int(os.environ.get("SYSTEMCTL_MAXIMUM_TIMEOUT", 200))   # overrides all other
 InitLoopSleep = int(os.environ.get("SYSTEMCTL_INITLOOP", 5))
 ProcMaxDepth = 100
 MaxLockWait = None # equals DefaultMaximumTimeout
@@ -1255,7 +1255,7 @@ class Systemctl:
             conf.status[name] = value
     #
     def get_boottime(self):
-        if COVERAGE:
+        if "oldest" in COVERAGE:
             self.get_boottime_oldest()
         for pid in xrange(10):
             proc = "/proc/%s/status" % pid
@@ -1886,7 +1886,7 @@ class Systemctl:
         shutil_setuid(runuser, rungroup)
         self.chdir_workingdir(conf, check = False)
         try:
-            if COVERAGE:
+            if "spawn" in COVERAGE:
                 os.spawnvpe(os.P_WAIT, cmd[0], cmd, env)
                 sys.exit(0)
             else: # pragma: nocover
@@ -4135,8 +4135,8 @@ if __name__ == "__main__":
     _o.add_option("--no-pager", action="store_true",
         help="Do not pipe output into pager (ignored)")
     #
-    _o.add_option("--coverage", action="store_true", default=COVERAGE,
-        help="..support for coverage (no execve)")
+    _o.add_option("--coverage", action="OPTIONLIST", default=COVERAGE,
+        help="..support for coverage (e.g. spawn,oldest) [%default]")
     _o.add_option("-e","--extra-vars", "--environment", metavar="NAME=VAL", action="append", default=[],
         help="..override settings in the syntax of 'Environment='")
     _o.add_option("-v","--verbose", action="count", default=0,

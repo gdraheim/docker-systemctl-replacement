@@ -6507,7 +6507,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             os.dup2(new_stderr, 2)
             systemctl_cmd = [ _systemctl_py, "--root="+root, "--init", "default", "-vv" ]
             env = os.environ.copy()
-            env["EXIT_WHEN_NO_MORE_SERVICES"] = "yes"
+            env["SYSTEMCTL_EXIT_WHEN_NO_MORE_SERVICES"] = "yes"
             env["SYSTEMCTL_INITLOOP"] = "2" 
             os.execve(_systemctl_py, systemctl_cmd, env)
         time.sleep(2)
@@ -12118,7 +12118,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cov_option = ""
         if COVERAGE:
             cov_run = _cov_run
-            cov_option = "--coverage"
+            cov_option = "--coverage=spawn,oldest"
         sometime = SOMETIME or 100
         shell_file(systemctl_sh,"""
             #! /bin/sh
@@ -12249,7 +12249,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cov_option = ""
         if COVERAGE:
             cov_run = _cov_run
-            cov_option = "--coverage"
+            cov_option = "--coverage=spawn,oldest"
         sometime = SOMETIME or 100
         shell_file(systemctl_sh,"""
             #! /bin/sh
@@ -12380,7 +12380,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cov_option = ""
         if COVERAGE:
             cov_run = _cov_run
-            cov_option = "--coverage"
+            cov_option = "--coverage=spawn,oldest"
         sometime = SOMETIME or 100
         shell_file(systemctl_sh,"""
             #! /bin/sh
@@ -12541,7 +12541,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cov_option = ""
         if COVERAGE:
             cov_run = _cov_run
-            cov_option = "--coverage"
+            cov_option = "--coverage=spawn,oldest"
         sometime = SOMETIME or 100
         shell_file(systemctl_sh,"""
             #! /bin/sh
@@ -12705,7 +12705,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cov_option = ""
         if COVERAGE:
             cov_run = _cov_run
-            cov_option = "--coverage"
+            cov_option = "--coverage=spawn,oldest"
         sometime = SOMETIME or 100
         shell_file(systemctl_sh,"""
             #! /bin/sh
@@ -12866,7 +12866,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cov_option = ""
         if COVERAGE:
             cov_run = _cov_run
-            cov_option = "--coverage"
+            cov_option = "--coverage=spawn,oldest"
         sometime = SOMETIME or 100
         shell_file(systemctl_sh,"""
             #! /bin/sh
@@ -13028,7 +13028,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cov_option = ""
         if COVERAGE:
             cov_run = _cov_run
-            cov_option = "--coverage"
+            cov_option = "--coverage=spawn,oldest"
         sometime = SOMETIME or 200
         shell_file(systemctl_sh,"""
             #! /bin/sh
@@ -13175,7 +13175,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cov_option = ""
         if COVERAGE:
             cov_run = _cov_run
-            cov_option = "--coverage"
+            cov_option = "--coverage=spawn"
         sometime = SOMETIME or 100
         shell_file(systemctl_sh,"""
             #! /bin/sh
@@ -13340,7 +13340,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cov_option = ""
         if COVERAGE:
             cov_run = _cov_run
-            cov_option = "--coverage"
+            cov_option = "--coverage=spawn"
         sometime = SOMETIME or 100
         shell_file(systemctl_sh,"""
             #! /bin/sh
@@ -13497,7 +13497,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cov_option = ""
         if COVERAGE:
             cov_run = _cov_run
-            cov_option = "--coverage"
+            cov_option = "--coverage=spawn"
         if COVERAGE and self.local_system():
            image = self.local_image(self.local_system())
         if _python.endswith("python3") and "centos" in image: 
