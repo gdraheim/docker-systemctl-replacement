@@ -432,12 +432,12 @@ class UnitConfigParser:
 UnitParser = UnitConfigParser
 
 class UnitConf:
-    def __init__(self, data):
+    def __init__(self, data, module = None):
         self.data = data # UnitParser
         self.env = {}
         self.status = None
         self.masked = None
-        self.module = None
+        self.module = module
     def loaded(self):
         files = self.data.filenames()
         if self.masked:
@@ -911,9 +911,8 @@ class Systemctl:
                         continue
                     if name.endswith(".conf"):
                         unit.read_sysd(path)
-        conf = UnitConf(unit)
+        conf = UnitConf(unit, module)
         conf.masked = masked
-        conf.module = module
         self._loaded_file_sysd[path] = conf
         return conf
     def load_sysv_unit_conf(self, module): # -> conf?
@@ -924,7 +923,7 @@ class Systemctl:
             return self._loaded_file_sysv[path]
         unit = UnitParser()
         unit.read_sysv(path)
-        conf = UnitConf(unit)
+        conf = UnitConf(unit, module)
         self._loaded_file_sysv[path] = conf
         return conf
     def default_unit_conf(self, module): # -> conf
@@ -935,7 +934,7 @@ class Systemctl:
         data.set("Unit", "Names", module)
         data.set("Unit", "Description", "NOT-FOUND "+module)
         # assert(not data.loaded())
-        return UnitConf(data)
+        return UnitConf(data, module)
     def get_unit_conf(self, module): # -> conf (conf | default-conf)
         """ accept that a unit does not exist 
             and return a unit conf that says 'not-loaded' """
