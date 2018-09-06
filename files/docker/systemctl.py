@@ -31,7 +31,6 @@ else:
 
 COVERAGE = os.environ.get("SYSTEMCTL_COVERAGE", "")
 DEBUG_AFTER = os.environ.get("SYSTEMCTL_DEBUG_AFTER", "") or False
-DEBUG_REMOVE = os.environ.get("SYSTEMCTL_DEBUG_REMOVE", "") or False
 EXIT_WHEN_NO_MORE_PROCS = os.environ.get("SYSTEMCTL_EXIT_WHEN_NO_MORE_PROCS", "") or False
 EXIT_WHEN_NO_MORE_SERVICES = os.environ.get("SYSTEMCTL_EXIT_WHEN_NO_MORE_SERVICES", "") or False
 
@@ -499,39 +498,42 @@ class waitlock:
     def __enter__(self):
         try:
             lockfile = os.path.join(self.lockfolder, str(self.unit or "global") + ".lock")
+            lockname = os.path.basename(lockfile)
             self.opened = os.open(lockfile, os.O_RDWR | os.O_CREAT, 0o600)
             for attempt in xrange(int(MaxLockWait or DefaultMaximumTimeout)):
                 try:
+                    logg.info("[%s] %s. trying %s _______ ", os.getpid(), attempt, lockname)
                     fcntl.flock(self.opened, fcntl.LOCK_EX | fcntl.LOCK_NB)
                     st = os.fstat(self.opened)
                     if not st.st_nlink:
-                        logg.info("lock got deleted, trying again")
+                        logg.info("[%s] %s. %s got deleted, trying again", os.getpid(), attempt, lockname)
                         os.close(self.opened)
                         self.opened = os.open(lockfile, os.O_RDWR | os.O_CREAT, 0o600)
                         continue
                     content = "{ 'systemctl': %s, 'unit': '%s' }\n" % (os.getpid(), self.unit)
                     os.write(self.opened, content.encode("utf-8"))
-                    logg.debug("holding %s", lockfile)
+                    logg.debug("[%s] %s. holding lock on %s", os.getpid(), attempt, lockname)
                     return True
                 except BlockingIOError as e:
                     whom = os.read(self.opened, 4096)
                     os.lseek(self.opened, 0, os.SEEK_SET)
-                    logg.info("(%s) systemctl locked by %s", attempt, whom.rstrip())
+                    logg.info("[%s] %s. systemctl locked by %s", os.getpid(), attempt, whom.rstrip())
                     time.sleep(1) # until MaxLockWait
                     continue
-            logg.error("not able to get the lock to %s", self.unit or "global")
+            logg.error("[%s] not able to get the lock to %s", os.getpid(), lockname)
         except Exception as e:
-            logg.warning("oops %s, %s", str(type(e)), e)
+            logg.warning("[%s] oops %s, %s", os.getpid(), str(type(e)), e)
         #TODO# raise Exception("no lock for %s", self.unit or "global")
         return False
     def __exit__(self, type, value, traceback):
         try:
             os.lseek(self.opened, 0, os.SEEK_SET)
             os.ftruncate(self.opened, 0)
-            if DEBUG_REMOVE: 
+            if "removelockfile" in COVERAGE: # actually an optional implementation
                 lockfile = os.path.join(self.lockfolder, str(self.unit or "global") + ".lock")
+                lockname = os.path.basename(lockfile)
                 os.unlink(lockfile) # ino is kept allocated because opened by this process
-                logg.info("lockfile removed (%s)", lockfile)
+                logg.info("[%s] lockfile removed for %s", os.getpid(), lockname)
             fcntl.flock(self.opened, fcntl.LOCK_UN)
             os.close(self.opened) # implies an unlock but that has happend like 6 seconds later
             self.opened = None
@@ -4132,7 +4134,7 @@ if __name__ == "__main__":
     _o.add_option("--no-pager", action="store_true",
         help="Do not pipe output into pager (ignored)")
     #
-    _o.add_option("--coverage", action="OPTIONLIST", default=COVERAGE,
+    _o.add_option("--coverage", metavar="OPTIONLIST", default=COVERAGE,
         help="..support for coverage (e.g. spawn,oldest,sleep) [%default]")
     _o.add_option("-e","--extra-vars", "--environment", metavar="NAME=VAL", action="append", default=[],
         help="..override settings in the syntax of 'Environment='")
