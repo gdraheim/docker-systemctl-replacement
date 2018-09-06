@@ -6478,6 +6478,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
+        quick = "--coverage=quick"
         systemctl = _cov + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
@@ -6499,7 +6500,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         #
-        cmd = "{systemctl} stop zzz.service -vv"
+        cmd = "{systemctl} stop zzz.service -vv {quick}"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
         self.assertTrue(greps(err, "Exec is not an absolute"))
