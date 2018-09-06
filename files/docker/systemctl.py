@@ -73,7 +73,7 @@ _preset_folder9 = None
 _waitprocfile = 100
 _waitkillproc = 10
 
-MinimumSleep = 2
+MinimumWait = 2
 MinimumWaitProcFile = 9
 MinimumWaitKillProc = 3
 DefaultWaitProcFile = 100
@@ -1308,7 +1308,7 @@ class Systemctl:
     #
     def sleep(self, seconds = None): 
         """ just sleep """
-        seconds = seconds or MinimumSleep
+        seconds = seconds or 1
         time.sleep(seconds)
     def read_env_file(self, env_file): # -> generate[ (name,value) ]
         """ EnvironmentFile=<name> is being scanned """
@@ -1833,7 +1833,7 @@ class Systemctl:
                 if pid:
                     env["MAINPID"] = str(pid)
             if not pid_file:
-                self.sleep()
+                self.sleep(MinimumWait)
                 logg.warning("No PIDFile for forking %s", conf.filename())
                 status_file = self.status_file_from(conf)
                 self.set_status_from(conf, "ExecMainCode", returncode)
@@ -2021,7 +2021,7 @@ class Systemctl:
                     self.clean_status_from(conf) # "inactive"
             else:
                 logg.info("%s sleep as no PID was found on Stop", runs)
-                self.sleep()
+                self.sleep(MinimumWait)
                 pid = self.read_mainpid_from(conf, "")
                 if not pid or not pid_exists(pid) or pid_zombie(pid):
                     self.clean_pid_file_from(conf)
@@ -2053,7 +2053,7 @@ class Systemctl:
                     self.clean_pid_file_from(conf)
             else:
                 logg.info("%s sleep as no PID was found on Stop", runs)
-                self.sleep()
+                self.sleep(MinimumWait)
                 pid = self.read_mainpid_from(conf, "")
                 if not pid or not pid_exists(pid) or pid_zombie(pid):
                     self.clean_pid_file_from(conf)
@@ -2166,7 +2166,7 @@ class Systemctl:
                     logg.error("Job for %s failed because the control process exited with error code. (%s)", 
                         conf.name(), run.returncode)
                     return False
-            self.sleep()
+            self.sleep(1)
             return True
         elif runs in [ "oneshot" ]:
             logg.debug("ignored run type '%s' for reload", runs)
@@ -4136,7 +4136,7 @@ if __name__ == "__main__":
         help="Do not pipe output into pager (ignored)")
     #
     _o.add_option("--coverage", action="OPTIONLIST", default=COVERAGE,
-        help="..support for coverage (e.g. spawn,oldest) [%default]")
+        help="..support for coverage (e.g. spawn,oldest,sleep) [%default]")
     _o.add_option("-e","--extra-vars", "--environment", metavar="NAME=VAL", action="append", default=[],
         help="..override settings in the syntax of 'Environment='")
     _o.add_option("-v","--verbose", action="count", default=0,
@@ -4152,6 +4152,10 @@ if __name__ == "__main__":
     logg.setLevel(max(0, logging.ERROR - 10 * opt.verbose))
     #
     COVERAGE = opt.coverage
+    if "sleep" in COVERAGE:
+         MinimumWait = 9
+         MinimumWaitProcFile = 9
+         MinimumWaitKillProc = 9
     _extra_vars = opt.extra_vars
     _force = opt.force
     _full = opt.full
