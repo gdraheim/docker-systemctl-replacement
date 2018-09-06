@@ -70,7 +70,6 @@ _preset_folder3 = "/usr/lib/systemd/system-preset"
 _preset_folder4 = "/lib/systemd/system-preset"
 _preset_folder9 = None
 
-MinimumWait = 2
 MinimumYield = 0.5
 MinimumTimeoutStartSec = 4
 MinimumTimeoutStopSec = 4
@@ -1824,7 +1823,7 @@ class Systemctl:
                 if pid:
                     env["MAINPID"] = str(pid)
             if not pid_file:
-                time.sleep(MinimumWait)
+                time.sleep(MinimumTimeoutStartSec)
                 logg.warning("No PIDFile for forking %s", conf.filename())
                 status_file = self.status_file_from(conf)
                 self.set_status_from(conf, "ExecMainCode", returncode)
@@ -2012,7 +2011,7 @@ class Systemctl:
                     self.clean_status_from(conf) # "inactive"
             else:
                 logg.info("%s sleep as no PID was found on Stop", runs)
-                time.sleep(MinimumWait)
+                time.sleep(MinimumTimeoutStopSec)
                 pid = self.read_mainpid_from(conf, "")
                 if not pid or not pid_exists(pid) or pid_zombie(pid):
                     self.clean_pid_file_from(conf)
@@ -2044,7 +2043,7 @@ class Systemctl:
                     self.clean_pid_file_from(conf)
             else:
                 logg.info("%s sleep as no PID was found on Stop", runs)
-                time.sleep(MinimumWait)
+                time.sleep(MinimumTimeoutStopSec)
                 pid = self.read_mainpid_from(conf, "")
                 if not pid or not pid_exists(pid) or pid_zombie(pid):
                     self.clean_pid_file_from(conf)
@@ -4144,9 +4143,8 @@ if __name__ == "__main__":
     #
     COVERAGE = opt.coverage
     if "sleep" in COVERAGE:
-         MinimumWait = 4
-         MinimumTimeoutStartSec = 9
-         MinimumTimeoutStopSec = 9
+         MinimumTimeoutStartSec = 7
+         MinimumTimeoutStopSec = 7
     if "quick" in COVERAGE:
          MinimumTimeoutStartSec = 4
          MinimumTimeoutStopSec = 4
