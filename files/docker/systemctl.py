@@ -1479,25 +1479,24 @@ class Systemctl:
         for part in shlex.split(cmd3):
             newcmd += [ re.sub("[$][{](\w+)[}]", lambda m: get_env2(m), part) ]
         return newcmd
-    def path_journal_log(self, conf):
-        name = conf.filename() 
-        if not name:
-            return None
+    def path_journal_log(self, conf): # never None
+        """ /var/log/zzz.service.log or /var/log/default.unit.log """
+        filename = os.path.basename(conf.filename() or "")
+        unitname = (conf.name() or "default")+".unit"
+        name = filename or unitname
         log_folder = _var(self._journal_log_folder)
         if self._root:
             log_folder = os_path(self._root, log_folder)
         log_file = name.replace(os.path.sep,".") + ".log"
-        x = log_file.find(".", 1)
-        if x > 0: log_file = log_file[x+1:]
+        if log_file.startswith("."):
+            log_file = "dot."+log_file
         return os.path.join(log_folder, log_file)
     def open_journal_log(self, conf):
         log_file = self.path_journal_log(conf)
-        if log_file:
-            log_folder = os.path.dirname(log_file)
-            if not os.path.isdir(log_folder):
-                os.makedirs(log_folder)
-            return open(os.path.join(log_file), "a")
-        return open("/dev/null", "w")
+        log_folder = os.path.dirname(log_file)
+        if not os.path.isdir(log_folder):
+            os.makedirs(log_folder)
+        return open(os.path.join(log_file), "a")
     def chdir_workingdir(self, conf, check = True):
         """ if specified then change the working directory """
         # the original systemd will start in '/' even if User= is given
