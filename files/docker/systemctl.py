@@ -75,9 +75,9 @@ _waitkillproc = 10
 MinimumWait = 2
 MinimumYield = 0.5
 MinimumWaitProcFile = 9
-MinimumWaitKillProc = 3
-DefaultWaitProcFile = 100
-DefaultWaitKillProc = 9
+MinimumWaitKillProc = 9
+DefaultWaitProcFile = int(os.environ.get("SYSTEMCTL_WAIT_PROC_FILE"))
+DefaultWaitKillProc = int(os.enviorn.get("SYSTEMCTL_WAIT_KILL_PROC"))
 DefaultTimeoutStartSec = int(os.environ.get("SYSTEMCTL_TIMEOUT_START_SEC", 90)) # official value
 DefaultTimeoutStopSec = int(os.environ.get("SYSTEMCTL_TIMEOUT_STOP_SEC", 90))   # official value
 DefaultMaximumTimeout = int(os.environ.get("SYSTEMCTL_MAXIMUM_TIMEOUT", 200))   # overrides all other
@@ -4150,9 +4150,16 @@ if __name__ == "__main__":
     #
     COVERAGE = opt.coverage
     if "sleep" in COVERAGE:
-         MinimumWait = 9
-         MinimumWaitProcFile = 9
-         MinimumWaitKillProc = 9
+         MinimumWait = 4
+         MinimumWaitProcFile = 4
+         MinimumWaitKillProc = 4
+    if "quick" in COVERAGE:
+         MinimumWaitProcFile = 2
+         MinimumWaitKillProc = 2
+         DefaultWaitProcFile = 5
+         DefaultWaitKillProc = 5
+         DefaultTimeoutStartSec = 9
+         DefaultTimeoutStopSec = 9
     _extra_vars = opt.extra_vars
     _force = opt.force
     _full = opt.full
