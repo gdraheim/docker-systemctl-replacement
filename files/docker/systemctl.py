@@ -2453,7 +2453,7 @@ class Systemctl:
         for module in modules:
             units = self.match_units([ module ])
             if not units:
-                logg.error("Failed to get unit file state for %s: No such file", unit_of(module))
+                logg.error("Unit %s could not be found.", unit_of(module))
                 results += [ "unknown" ]
                 continue
             for unit in units:
@@ -2546,7 +2546,7 @@ class Systemctl:
         for module in modules:
             units = self.match_units([ module ])
             if not units:
-                logg.error("Failed to get unit file state for %s: No such file", unit_of(module))
+                logg.error("Unit %s could not be found.", unit_of(module))
                 results += [ "unknown" ]
                 continue
             for unit in units:
