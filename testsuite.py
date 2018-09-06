@@ -6972,6 +6972,143 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
+    def test_3801_start_some_unknown(self):
+        """ check start some unknown unit fails okay"""
+        self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        #
+        cmd = "{systemctl} start zz-unknown.service -vv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 1)
+        self.assertTrue(greps(err, "Unit zz-unknown.service could not be found."))
+        #
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def test_3802_stop_some_unknown(self):
+        """ check stop some unknown unit fails okay"""
+        self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        #
+        cmd = "{systemctl} stop zz-unknown.service -vv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 1)
+        self.assertTrue(greps(err, "Unit zz-unknown.service could not be found."))
+        #
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def test_3803_restart_some_unknown(self):
+        """ check restart some unknown unit fails okay"""
+        self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        #
+        cmd = "{systemctl} restart zz-unknown.service -vv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 1)
+        self.assertTrue(greps(err, "Unit zz-unknown.service could not be found."))
+        #
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def test_3804_reload_some_unknown(self):
+        """ check reload some unknown unit fails okay"""
+        self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        #
+        cmd = "{systemctl} reload zz-unknown.service -vv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 1)
+        self.assertTrue(greps(err, "Unit zz-unknown.service could not be found."))
+        #
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def test_3805_reload_or_restart_some_unknown(self):
+        """ check reload-or-restart some unknown unit fails okay"""
+        self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        #
+        cmd = "{systemctl} reload-or-restart zz-unknown.service -vv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 1)
+        self.assertTrue(greps(err, "Unit zz-unknown.service could not be found."))
+        #
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def test_3806_reload_or_try_restart_some_unknown(self):
+        """ check reload-or-try-restart some unknown unit fails okay"""
+        self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        #
+        cmd = "{systemctl} reload-or-try-restart zz-unknown.service -vv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 1)
+        self.assertTrue(greps(err, "Unit zz-unknown.service could not be found."))
+        #
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def test_3807_try_restart_some_unknown(self):
+        """ check try-restart some unknown unit fails okay"""
+        self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        #
+        cmd = "{systemctl} try-restart zz-unknown.service -vv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 1)
+        self.assertTrue(greps(err, "Unit zz-unknown.service could not be found."))
+        #
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def test_3809_reset_failed_some_unknown(self):
+        """ check reset-failed some unknown unit fails okay"""
+        self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = _cov + _systemctl_py + " --root=" + root
+        #
+        cmd = "{systemctl} reset-failed zz-unknown.service -vv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 1)
+        self.assertTrue(greps(err, "Unit zz-unknown.service could not be found."))
+        #
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+
     def test_3901_service_config_cat(self):
         """ check that a name service config can be printed as-is"""
         self.begin()
