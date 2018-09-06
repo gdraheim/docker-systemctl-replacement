@@ -448,6 +448,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         print("                 # " + local_image)
         print("  docker exec -it "+name+" bash")
+    def begin(self):
+        self._started = time.time()
+        logg.info("[[%s]]", datetime.datetime.fromtimestamp(self._started).strftime("%H:%M:%S"))
+    def end(self, maximum = 66):
+        runtime = time.time() - self._started
+        self.assertLess(runtime, maximum)
     #
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     #
@@ -929,6 +935,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(lines(out)), 1)
     def test_1090_syntax_errors_are_shown_on_daemon_reload(self):
         """ check that preset files do work internally"""
+        self.begin()
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
@@ -988,6 +995,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, r"g.service: there may be only one ExecStart statement"))
         self.assertTrue(greps(out, r"g.service: there may be only one ExecStop statement"))
         self.assertTrue(greps(out, r"c.service: the use of /bin/kill is not recommended"))
+        self.end()
     def real_1090_syntax_errors_are_shown_in_journal_after_try_start(self):
         """ check that preset files do work internally"""
         testname = self.testname()
@@ -6917,6 +6925,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_4030_simple_service_functions(self):
         """ check that we manage simple services in a root env
             with commands like start, restart, stop, etc"""
+        self.begin()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -7259,11 +7268,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
+        self.end()
     def test_4032_forking_service_functions(self):
         """ check that we manage forking services in a root env
             with basic run-service commands: start, stop, restart,
             reload, try-restart, reload-or-restart, kill and
             reload-or-try-restart."""
+        self.begin()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -7568,11 +7579,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
         self.rm_testdir()
         self.coverage()
+        self.end()
     def test_4035_notify_service_functions(self):
         """ check that we manage notify services in a root env
             with basic run-service commands: start, stop, restart,
             reload, try-restart, reload-or-restart, kill and
             reload-or-try-restart."""
+        self.begin()
         if not os.path.exists("/usr/bin/socat"):
             self.skipTest("missing /usr/bin/socat")
         testname = self.testname()
@@ -7880,11 +7893,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
         self.rm_testdir()
         self.coverage()
+        self.end()
     def test_4036_notify_service_functions_with_reload(self):
         """ check that we manage notify services in a root env
             with basic run-service commands: start, stop, restart,
             reload, try-restart, reload-or-restart, kill and
             reload-or-try-restart. (with ExecReload)"""
+        self.begin()
         if not os.path.exists("/usr/bin/socat"):
             self.skipTest("missing /usr/bin/socat")
         # self.skipTest("unfinished (bad functionality?)") # TODO
@@ -8197,11 +8212,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.rm_testdir()
         self.coverage()
+        self.end()
     def test_4037_oneshot_service_functions(self):
         """ check that we manage oneshot services in a root env
             with basic run-service commands: start, stop, restart,
             reload, try-restart, reload-or-restart, kill and
             reload-or-try-restart."""
+        self.begin()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -8387,12 +8404,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
         self.rm_testdir()
         self.coverage()
+        self.end()
     def test_4038_oneshot_and_unknown_service_functions(self):
         """ check that we manage multiple services even when some
             services are not actually known. Along with oneshot serivce
             with basic run-service commands: start, stop, restart,
             reload, try-restart, reload-or-restart, kill and
             reload-or-try-restart / we have only different exit-code."""
+        self.begin()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -8578,11 +8597,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
         self.rm_testdir()
         self.coverage()
+        self.end()
     def test_4039_sysv_service_functions(self):
         """ check that we manage SysV services in a root env
             with basic run-service commands: start, stop, restart,
             reload, try-restart, reload-or-restart, kill and
             reload-or-try-restart."""
+        self.begin()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -8861,11 +8882,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
         self.rm_testdir()
         self.coverage()
-
+        self.end()
     def test_4050_forking_service_failed_functions(self):
         """ check that we manage forking services in a root env
             with basic run-service commands: start, stop, restart,
             checking the executions when some part fails."""
+        self.begin()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -9140,10 +9162,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.rm_testdir()
         self.coverage()
+        self.end()
     def test_4060_oneshot_truncate_old_status(self):
         """ check that we manage a service that has some old .status
             file being around. That is a reboot has occurred and the
             information is not relevant to the current system state."""
+        self.begin()
         self.rm_testdir()
         vv = "-vv"
         testname = self.testname()
@@ -9244,10 +9268,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
         self.rm_testdir()
         self.coverage()
+        self.end()
     def test_4065_simple_truncate_old_pid(self):
         """ check that we manage a service that has some old .pid
             file being around. That is a reboot has occurred and the
             information is not relevant to the current system state."""
+        self.begin()
         vv = "-vv"
         testname = self.testname()
         testdir = self.testdir()
@@ -9352,6 +9378,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.rm_testdir()
         self.coverage()
+        self.end()
     def real_4090_simple_service_RemainAfterExit(self):
         self.test_4090_simple_service_RemainAfterExit(True)
     def test_4090_simple_service_RemainAfterExit(self, real = None):
@@ -9359,11 +9386,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             with commands like start, restart, stop, etc where
             RemainAfterExit=yes says the service is okay even
             when ExecStart has finished."""
-        vv = "-vv"
+        self.begin()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir, real)
+        vv = "-vv"
         systemctl = _cov + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         testsleep = self.testname("testsleep")
@@ -9651,8 +9679,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.rm_zzfiles(root)
         self.coverage()
+        self.end()
     def test_4101_systemctl_py_kill_basic_behaviour(self):
         """ check systemctl_py kill basic behaviour"""
+        self.begin()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -9754,8 +9784,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.rm_testdir()
         self.coverage()
+        self.end()
     def test_4105_systemctl_py_kill_in_stop(self):
         """ check systemctl_py kill from ExecStop"""
+        self.begin()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -9899,8 +9931,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.rm_testdir()
         self.coverage()
+        self.end()
     def test_4120_systemctl_kill_ignore_behaviour(self):
         """ systemctl kill ignore behaviour"""
+        self.begin()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -10013,8 +10047,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.rm_testdir()
         self.coverage()
+        self.end()
     def test_4121_systemctl_kill_ignore_nokill_behaviour(self):
         """ systemctl kill ignore and nokill behaviour"""
+        self.begin()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -10130,8 +10166,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.rm_testdir()
         self.coverage()
+        self.end()
     def test_4151_systemctl_kill_sendsighup(self):
         """ systemctl kill with sighup"""
+        self.begin()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -10247,10 +10285,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.rm_testdir()
         self.coverage()
-
+        self.end()
     def test_4201_systemctl_py_dependencies_plain_start_order(self):
         """ check list-dependencies - standard order of starting
             units is simply the command line order"""
+        self.begin()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -10346,9 +10385,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
+        self.end()
     def test_4211_systemctl_py_dependencies_basic_reorder(self):
         """ check list-dependencies - standard order of starting
             units is simply the command line order (After case)"""
+        self.begin()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -10446,9 +10487,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
+        self.end()
     def test_4251_systemctl_py_dependencies_basic_reorder(self):
         """ check list-dependencies - standard order of starting
             units is simply the command line order (Before case)"""
+        self.begin()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -10547,9 +10590,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
+        self.end()
     def test_4301_systemctl_py_list_dependencies_with_after(self):
         """ check list-dependencies - standard order of starting
             units is simply the command line order"""
+        self.begin()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -10621,9 +10666,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
+        self.end()
     def test_4302_systemctl_py_list_dependencies_with_wants(self):
         """ check list-dependencies - standard order of starting
             units is simply the command line order"""
+        self.begin()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -10718,9 +10765,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
+        self.end()
     def test_4303_systemctl_py_list_dependencies_with_requires(self):
         """ check list-dependencies - standard order of starting
             units is simply the command line order"""
+        self.begin()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -10815,9 +10864,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
+        self.end()
     def test_4401_systemctl_py_list_dependencies_with_after(self):
         """ check list-dependencies - standard order of starting
             units is simply the command line order"""
+        self.begin()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -10889,9 +10940,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
+        self.end()
     def test_4402_systemctl_py_list_dependencies_with_wants(self):
         """ check list-dependencies - standard order of starting
             units is simply the command line order"""
+        self.begin()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -10987,9 +11040,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
+        self.end()
     def test_4403_systemctl_py_list_dependencies_with_requires(self):
         """ check list-dependencies - standard order of starting
             units is simply the command line order"""
+        self.begin()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -11085,8 +11140,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
+        self.end()
     def test_4900_unreadable_files_can_be_handled(self):
         """ a file may exist but it is unreadable"""
+        self.begin()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -11210,8 +11267,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.rm_testdir()
         self.coverage()
+        self.end()
     def test_4901_unsupported_run_type_for_service(self):
         """ a service file may exist but the run type is not supported"""
+        self.begin()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -11252,7 +11311,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertNotEqual(end, 0)
         self.rm_testdir()
         self.coverage()
-
+        self.end()
     def test_5001_systemctl_py_inside_container(self):
         """ check that we can run systemctl.py inside a docker container """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
