@@ -8892,6 +8892,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
+        quick = "--coverage=quick"
         systemctl = _cov + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         logfile = os_path(root, "/var/log/"+testsleep+".log")
@@ -9088,7 +9089,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 0)
         #
         logg.info("== 'stop' may have a failed item ")
-        cmd = "{systemctl} stop zzz.service -vv"
+        cmd = "{systemctl} stop zzz.service -vv {quick}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertNotEqual(end, 0)
@@ -9939,6 +9940,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
+        quick = "--coverage=quick"
         systemctl = _cov + _systemctl_py + " --root=" + root
         testsleep = self.testname("testsleep")
         testsleepB = testsleep+"B"
@@ -10013,7 +10015,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleepB))
         #
-        cmd = "{systemctl} stop zzb.service -vv"
+        cmd = "{systemctl} stop zzb.service -vv {quick}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
@@ -10055,6 +10057,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
+        quick = "--coverage=quick"
         systemctl = _cov + _systemctl_py + " --root=" + root
         testsleep = self.testname("testsleep")
         testsleepB = testsleep+"B"
@@ -10130,7 +10133,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleepB))
         #
-        cmd = "{systemctl} stop zzb.service -vv"
+        cmd = "{systemctl} stop zzb.service -vv {quick}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
@@ -10174,6 +10177,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
+        quick = "--coverage=quick"
         systemctl = _cov + _systemctl_py + " --root=" + root
         testsleep = self.testname("testsleep")
         testsleepB = testsleep+"B"
@@ -10249,7 +10253,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleepB))
         #
-        cmd = "{systemctl} stop zzb.service -vv"
+        cmd = "{systemctl} stop zzb.service -vv {quick}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
