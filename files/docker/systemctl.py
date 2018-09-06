@@ -74,6 +74,7 @@ _waitprocfile = 100
 _waitkillproc = 10
 
 MinimumWait = 2
+MinimumYield = 0.5
 MinimumWaitProcFile = 9
 MinimumWaitKillProc = 3
 DefaultWaitProcFile = 100
@@ -516,7 +517,7 @@ class waitlock:
                     whom = os.read(self.opened, 4096)
                     os.lseek(self.opened, 0, os.SEEK_SET)
                     logg.info("(%s) systemctl locked by %s", attempt, whom.rstrip())
-                    time.sleep(1)
+                    time.sleep(1) # until MaxLockWait
                     continue
             logg.error("not able to get the lock to %s", self.unit or "global")
         except Exception as e:
@@ -1117,14 +1118,14 @@ class Systemctl:
         dirpath = os.path.dirname(os.path.abspath(pid_file))
         for x in xrange(timeout):
             if not os.path.isdir(dirpath):
-                self.sleep(1)
+                time.sleep(1) # until WaitProcFile
                 continue
             pid = self.read_pid_file(pid_file)
             if not pid:
-                self.sleep(1)
+                time.sleep(1) # until WaitProcFile
                 continue
             if not pid_exists(pid):
-                self.sleep(1)
+                time.sleep(1) # until WaitProcFile
                 continue
             return pid
         return None
@@ -1306,10 +1307,6 @@ class Systemctl:
             logg.warning("while reading file size: %s\n of %s", e, filename)
             return 0
     #
-    def sleep(self, seconds = None): 
-        """ just sleep """
-        seconds = seconds or 1
-        time.sleep(seconds)
     def read_env_file(self, env_file): # -> generate[ (name,value) ]
         """ EnvironmentFile=<name> is being scanned """
         if env_file.startswith("-"):
@@ -1559,7 +1556,7 @@ class Systemctl:
     def wait_notify_socket(self, notify, timeout, pid = None):
         if not notify:
             logg.info("no $NOTIFY_SOCKET, waiting %s", timeout)
-            time.sleep(timeout)
+            time.sleep(timeout) # for TimeoutStartSec
             return {}
         if not os.path.exists(notify.socketfile):
             logg.info("no $NOTIFY_SOCKET exists")
@@ -1573,11 +1570,11 @@ class Systemctl:
                 logg.info("dead PID %s", pid)
                 return results
             if not attempt: # first one
-                time.sleep(1)
+                time.sleep(1) # until TimeoutStartSec
                 continue
             result = self.read_notify_socket(notify, 1) # sleep max 1 second
             if not result: # timeout
-                time.sleep(1)
+                time.sleep(1) # until TimeoutStartSec
                 continue
             for name, value in self.read_env_part(result):
                 results[name] = value
@@ -1738,7 +1735,7 @@ class Systemctl:
                 self.write_status_from(conf, MainPID=forkpid)
                 logg.info("%s started PID %s", runs, forkpid)
                 env["MAINPID"] = str(forkpid)
-                time.sleep(1)
+                time.sleep(MinimumYield)
                 run = subprocess_testpid(forkpid)
                 if run.returncode is not None:
                     logg.info("%s stopped PID %s (%s) <-%s>", runs, run.pid, 
@@ -1782,7 +1779,7 @@ class Systemctl:
                 mainpid = forkpid
                 self.write_status_from(conf, MainPID=mainpid)
                 env["MAINPID"] = str(mainpid)
-                time.sleep(1)
+                time.sleep(MinimumYield)
                 run = subprocess_testpid(forkpid)
                 if run.returncode is not None:
                     logg.info("%s stopped PID %s (%s) <-%s>", runs, run.pid, 
@@ -1833,7 +1830,7 @@ class Systemctl:
                 if pid:
                     env["MAINPID"] = str(pid)
             if not pid_file:
-                self.sleep(MinimumWait)
+                time.sleep(MinimumWait)
                 logg.warning("No PIDFile for forking %s", conf.filename())
                 status_file = self.status_file_from(conf)
                 self.set_status_from(conf, "ExecMainCode", returncode)
@@ -2021,7 +2018,7 @@ class Systemctl:
                     self.clean_status_from(conf) # "inactive"
             else:
                 logg.info("%s sleep as no PID was found on Stop", runs)
-                self.sleep(MinimumWait)
+                time.sleep(MinimumWait)
                 pid = self.read_mainpid_from(conf, "")
                 if not pid or not pid_exists(pid) or pid_zombie(pid):
                     self.clean_pid_file_from(conf)
@@ -2053,7 +2050,7 @@ class Systemctl:
                     self.clean_pid_file_from(conf)
             else:
                 logg.info("%s sleep as no PID was found on Stop", runs)
-                self.sleep(MinimumWait)
+                time.sleep(MinimumWait)
                 pid = self.read_mainpid_from(conf, "")
                 if not pid or not pid_exists(pid) or pid_zombie(pid):
                     self.clean_pid_file_from(conf)
@@ -2089,7 +2086,7 @@ class Systemctl:
             if not self.is_active_pid(pid):
                 logg.info("wait for PID %s is done (%s.)", pid, x)
                 return True
-            time.sleep(1)
+            time.sleep(1) # until TimeoutStopSec
         logg.info("wait for PID %s failed (%s.)", pid, x)
         return False
     def reload_modules(self, *modules):
@@ -2166,7 +2163,7 @@ class Systemctl:
                     logg.error("Job for %s failed because the control process exited with error code. (%s)", 
                         conf.name(), run.returncode)
                     return False
-            self.sleep(1)
+            time.sleep(MinimumYield)
             return True
         elif runs in [ "oneshot" ]:
             logg.debug("ignored run type '%s' for reload", runs)
@@ -2414,7 +2411,7 @@ class Systemctl:
             if time.time() > started + timeout:
                 logg.info("service PIDs not stopped after %s", timeout)
                 break
-            self.sleep(1) # until timeout
+            time.sleep(1) # until TimeoutStopSec
         if dead or not doSendSIGKILL:
             logg.info("done kill PID %s %s", mainpid, dead and "OK")
             return dead
@@ -2423,12 +2420,12 @@ class Systemctl:
             for pid in pidlist:
                 if pid != mainpid:
                     self._kill_pid(pid, signal.SIGKILL)
-            self.sleep(1)
+            time.sleep(MinimumYield)
         # useKillMode in [ "control-group", "mixed", "process" ]
         if pid_exists(mainpid):
             logg.info("hard kill PID %s", mainpid)
             self._kill_pid(mainpid, signal.SIGKILL)
-            self.sleep(1)
+            time.sleep(MinimumYield)
         dead = not pid_exists(mainpid) or pid_zombie(mainpid)
         logg.info("done hard kill PID %s %s", mainpid, dead and "OK")
         return dead
