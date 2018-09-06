@@ -2570,11 +2570,11 @@ class Systemctl:
         for module in modules:
             units = self.match_units([ module ])
             if not units:
-                logg.error("Failed to reset failed state of unit %s: No such file", unit_of(module))
+                logg.error("Unit %s could not be found.", unit_of(module))
                 return 1
             for unit in units:
                 if not self.reset_failed_unit(unit):
-                    logg.error("Failed to reset failed state of unit %s: not loaded", unit_of(module))
+                    logg.error("Unit %s could not be reset.", unit_of(module))
                     status = False
                 break
         return status
