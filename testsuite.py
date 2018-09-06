@@ -4806,6 +4806,143 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.rm_zzfiles(root)
         self.coverage()
+    def real_3070_check_prestart_is_activating(self):
+        self.test_3063_check_prestart_is_activating(True)
+    def test_3070_check_prestart_is_activating(self, real = None):
+        """ consider a situation where a 'systemctl start <service>' is
+            taking a bit longer to start. Especially some pre-start
+            must be blocking while being in state 'activating'"""
+        vv = "-vv"
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir, real)
+        systemctl = _cov + realpath(_systemctl_py) + " --root=" + root
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
+        testsleep = self.testname("sleep")
+        bindir = os_path(root, "/usr/bin")
+        logfile = os.path.join(os.path.abspath(testdir), "zzz.log")
+        self.makedirs(os_path(root, "/var/run"))
+        shell_file(os_path(testdir, "zzz.init"), """
+            #! /bin/bash
+            case "$1" in start) 
+               [ -d /var/run ] || mkdir -p /var/run
+               (
+                mkdir -p {root}/var/log
+                echo `date +%M:%S` starting pid >{logfile}
+                {bindir}/{testsleep} 50 0<&- &>/dev/null &
+                echo $! > {root}/var/run/zzz.init.pid
+                echo `date +%M:%S` started pid >>{logfile}
+                sleep 1
+                echo `date +%M:%S` starting zza >>{logfile}
+                {systemctl} start zza.service >> {logfile} 2>&1 
+                echo `date +%M:%S` started zza >>{logfile}
+               ) &
+               sleep 1
+               ps -o pid,ppid,args
+            ;; stop)
+               killall {testsleep}
+            ;; esac 
+            echo "done$1" >&2
+            exit 0
+            """.format(**locals()))
+        text_file(os_path(testdir, "zzz.service"),"""
+            [Unit]
+            Description=Testing Z
+            [Service]
+            Type=forking
+            PIDFile={root}/var/run/zzz.init.pid
+            ExecStart={root}/usr/bin/zzz.init start
+            ExecStop={root}/usr/bin/zzz.init stop
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        text_file(os_path(testdir, "zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            Type=simple
+            ExecStartPre={bindir}/{testsleep}pre 5
+            ExecStart={bindir}/{testsleep}now 10
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep+"pre"))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep+"now"))
+        copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/usr/bin/zzz.init"))
+        copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
+        copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
+        sh____("{systemctl} daemon-reload".format(**locals()))
+        #
+        cmd = "{systemctl} enable zza.service zzz.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        cmd = "{systemctl} start zzz.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        logg.info("===== [0] just started")
+        top = greps(output(_top_recent), "sleep")
+        logg.info("top>>>\n| %s", "\n| ".join(top))
+        self.assertFalse(greps(top, testsleep+"pre"))
+        self.assertFalse(greps(top, testsleep+"now"))
+        log0 = lines(open(logfile))
+        logg.info("zzz.log>\n\t%s", "\n\t".join(log0))
+        time.sleep(2)
+        logg.info("===== [1] after start")
+        cmd = "{systemctl} is-active zza.service zzz.service {vv}"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        top = greps(output(_top_recent), "sleep")
+        logg.info("top>>>\n| %s", "\n| ".join(top))
+        self.assertTrue(greps(top, testsleep+"pre"))
+        self.assertFalse(greps(top, testsleep+"now"))
+        log1 = lines(open(logfile))
+        logg.info("zzz.log>\n\t%s", "\n\t".join(log1))
+        time.sleep(2)
+        #
+        logg.info("===== [2] some later")
+        cmd = "{systemctl} is-active zza.service zzz.service {vv}"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        top = greps(output(_top_recent), "sleep")
+        logg.info("top>>>\n| %s", "\n| ".join(top))
+        self.assertTrue(greps(top, testsleep+"pre"))
+        self.assertFalse(greps(top, testsleep+"now"))
+        log2 = lines(open(logfile))
+        logg.info("zzz.log>\n\t%s", "\n\t".join(log2))
+        time.sleep(2)
+        #
+        logg.info("===== [3] some more later")
+        cmd = "{systemctl} is-active zza.service zzz.service {vv}"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        top = greps(output(_top_recent), "sleep")
+        logg.info("top>>>\n| %s", "\n| ".join(top))
+        self.assertFalse(greps(top, testsleep+"pre"))
+        self.assertTrue(greps(top, testsleep+"now"))
+        log3 = lines(open(logfile))
+        logg.info("zzz.log>\n\t%s", "\n\t".join(log3))
+        time.sleep(2)
+        logg.info("===== [4] even more later")
+        cmd = "{systemctl} is-active zza.service zzz.service {vv}"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        top = greps(output(_top_recent), "sleep")
+        logg.info("top>>>\n| %s", "\n| ".join(top))
+        self.assertFalse(greps(top, testsleep+"pre"))
+        self.assertTrue(greps(top, testsleep+"now"))
+        log4 = lines(open(logfile))
+        logg.info("zzz.log>\n\t%s", "\n\t".join(log4))
+        time.sleep(2)
+        #
+        kill_testsleep = "killall {testsleep}"
+        sx____(kill_testsleep.format(**locals()))
+        self.rm_testdir()
+        self.rm_zzfiles(root)
+        self.coverage()
     def real_3080_two_service_starts_in_parallel(self):
         self.test_3063_two_service_starts_in_parallel(True)
     def test_3080_two_service_starts_in_parallel(self, real = None):
@@ -4821,6 +4958,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
+        logfile = os.path.join(os.path.abspath(testdir), "zzz.log")
         self.makedirs(os_path(root, "/var/run"))
         shell_file(os_path(testdir, "zzz.init"), """
             #! /bin/bash
@@ -4828,12 +4966,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                [ -d /var/run ] || mkdir -p /var/run
                (
                 mkdir -p {root}/var/log
-                echo starting >{root}/var/log/zzz.log
+                echo `date +%M:%S` starting pid >{logfile}
                 {bindir}/{testsleep} 50 0<&- &>/dev/null &
                 echo $! > {root}/var/run/zzz.init.pid
-                echo started >>{root}/var/log/zzz.log
+                echo `date +%M:%S` started pid >>{logfile}
                 sleep 2
-                {systemctl} start zza.service >> {root}/var/log/zzz.log 2>&1 &
+                echo `date +%M:%S` starting zza >>{logfile}
+                {systemctl} start zza.service >> {logfile} 2>&1 
+                echo `date +%M:%S` started zza >>{logfile}
                ) &
                sleep 1
                ps -o pid,ppid,args
@@ -4872,36 +5012,43 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         sh____("{systemctl} daemon-reload".format(**locals()))
         #
+        cmd = "{systemctl} enable zza.service zzz.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         cmd = "{systemctl} start zzz.service {vv}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        logg.info("===== just started")
-        top = output(_top_recent)
-        logg.info("\n>>>\n%s", top)
+        logg.info("===== [0] just started")
+        top = greps(output(_top_recent), "sleep")
+        logg.info("top>>>\n| %s", "\n| ".join(top))
         self.assertTrue(greps(top, testsleep))
+        log1 = lines(open(logfile))
+        logg.info("zzz.log>\n\t%s", "\n\t".join(log1))
         time.sleep(3)
-        logg.info("===== after start")
-        top = output(_top_recent)
-        logg.info("\n>>>\n%s", top)
+        logg.info("===== [1] after start")
+        top = greps(output(_top_recent), "sleep")
+        logg.info("top>>>\n| %s", "\n| ".join(top))
         self.assertTrue(greps(top, testsleep))
-        logfile = os_path(root, "/var/log/zzz.log")
-        if os.path.exists(logfile):
-            logtext = open(logfile).read()
-            logg.info("zzz.log => %s", logtext)
-        else:
-            logg.info("no zzz.log")
+        log1 = lines(open(logfile))
+        logg.info("zzz.log>\n\t%s", "\n\t".join(log1))
         #
-        logg.info("====== start next")
+        logg.info("====== [2] start next")
+        cmd = "{systemctl} is-active zza.service zzz.service {vv}"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
         cmd = "{systemctl} start zza.service {vv}"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
         self.assertEqual(end, 0)
-        top = output(_top_recent)
-        logg.info("\n>>>\n%s", top)
+        top = greps(output(_top_recent), "sleep")
+        logg.info("top>>>\n| %s", "\n| ".join(top))
         self.assertTrue(greps(top, testsleep))
+        log1 = lines(open(logfile))
+        logg.info("zzz.log>\n\t%s", "\n\t".join(log1))
         #
-        self.assertTrue(greps(err, "\\(1\\) systemctl locked by"))
+        self.assertTrue(greps(err, "1. systemctl locked by"))
         self.assertTrue(greps(err, "the service is already running on PID")) # FIXME: may not be?
         #
         kill_testsleep = "killall {testsleep}"
@@ -4915,14 +5062,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             is a locking that disallows them to run in parallel. In this
             scenario we test what happens if the lockfile is deleted in between."""
         vv = "-vv"
+        removelockfile="--coverage=removelockfile,sleep"
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir, real)
         systemctl = _cov + realpath(_systemctl_py) + " --root=" + root
-        if real: vv, systemctl = "", "/usr/bin/systemctl"
+        if real: vv, removelockfile, systemctl = "", "", "/usr/bin/systemctl"
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
+        logfile = os.path.join(os.path.abspath(testdir), "zzz.log")
         self.makedirs(os_path(root, "/var/run"))
         shell_file(os_path(testdir, "zzz.init"), """
             #! /bin/bash
@@ -4930,12 +5079,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                [ -d /var/run ] || mkdir -p /var/run
                (
                 mkdir -p {root}/var/log
-                echo starting >{root}/var/log/zzz.log
+                echo zzz `date +%M:%S` starting pid >{logfile}
                 {bindir}/{testsleep} 50 0<&- &>/dev/null &
                 echo $! > {root}/var/run/zzz.init.pid
-                echo started >>{root}/var/log/zzz.log
+                echo zzz `date +%M:%S` started pid >>{logfile}
                 sleep 2
-                {systemctl} start zza.service >> {root}/var/log/zzz.log 2>&1 &
+                echo zzz `date +%M:%S` starting zza >>{logfile}
+                {systemctl} start zza.service >> {logfile} 2>&1 
+                echo zzz `date +%M:%S` started zza >>{logfile}
                ) &
                sleep 1
                ps -o pid,ppid,args
@@ -4974,37 +5125,45 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         sh____("{systemctl} daemon-reload".format(**locals()))
         #
-        cmd = "DEBUG_REMOVE=2 {systemctl} start zzz.service {vv}"
+        cmd = "{systemctl} enable zza.service zzz.service {vv}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        logg.info("===== just started")
-        top = output(_top_recent)
-        logg.info("\n>>>\n%s", top)
+        cmd = "{systemctl} start zzz.service {vv} {removelockfile}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        logg.info("===== [0] just started")
+        top = greps(output(_top_recent), "sleep")
+        logg.info("top>>>\n| %s", "\n| ".join(top))
         self.assertTrue(greps(top, testsleep))
-        time.sleep(3)
-        logg.info("===== after start")
-        top = output(_top_recent)
-        logg.info("\n>>>\n%s", top)
+        log1 = lines(open(logfile))
+        logg.info("zzz.log>\n\t%s", "\n\t".join(log1))
+        time.sleep(2)
+        logg.info("===== [1] after start")
+        top = greps(output(_top_recent), "sleep")
+        logg.info("top>>>\n| %s", "\n| ".join(top))
         self.assertTrue(greps(top, testsleep))
-        logfile = os_path(root, "/var/log/zzz.log")
-        if os.path.exists(logfile):
-            logtext = open(logfile).read()
-            logg.info("zzz.log => %s", logtext)
-        else:
-            logg.info("no zzz.log")
+        log1 = lines(open(logfile))
+        logg.info("zzz.log>\n\t%s", "\n\t".join(log1))
         #
         logg.info("====== start next")
-        cmd = "DEBUG_REMOVE=2 {systemctl} start zza.service {vv}"
+        cmd = "{systemctl} is-active zza.service zzz.service {vv}"
         out, err, end = output3(cmd.format(**locals()))
-        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        cmd = "{systemctl} start zza.service {vv} {removelockfile}"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
         self.assertEqual(end, 0)
-        top = output(_top_recent)
-        logg.info("\n>>>\n%s", top)
+        top = greps(output(_top_recent), "sleep")
+        logg.info("top>>>\n| %s", "\n| ".join(top))
         self.assertTrue(greps(top, testsleep))
+        log1 = lines(open(logfile))
+        logg.info("zzz.log>\n\t%s", "\n\t".join(log1))
         #
-        self.assertTrue(greps(err, "\\(1\\) systemctl locked by"))
+        self.assertTrue(greps(err, "1. systemctl locked by"))
         self.assertTrue(greps(err, "the service is already running on PID"))
+        self.assertTrue(greps(err, "lock got deleted, trying again"))
         self.assertTrue(greps(err, "lock got deleted, trying again"))
         #
         kill_testsleep = "killall {testsleep}"
