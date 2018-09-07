@@ -725,7 +725,6 @@ class Systemctl:
         self._unit_property = _unit_property
         self._unit_type = _unit_type
         # some common constants that may be changed
-        self._notify_socket_folder = _var(_notify_socket_folder)
         self._pid_file_folder = _pid_file_folder 
         self._journal_log_folder = _journal_log_folder
         # and the actual internal runtime state
@@ -1520,7 +1519,7 @@ class Systemctl:
         if runuser and os.geteuid() != 0:
             logg.error("can not exec notify-service from non-root caller")
             return None
-        notify_socket_folder = _var(self._notify_socket_folder)
+        notify_socket_folder = _var(_notify_socket_folder)
         if self._root:
             notify_socket_folder = os_path(self._root, notify_socket_folder)
         notify_socket = os.path.join(notify_socket_folder, "notify." + str(conf.name() or "systemctl"))
