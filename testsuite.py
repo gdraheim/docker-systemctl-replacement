@@ -7352,17 +7352,35 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
-    def test_4030_simple_service_functions(self):
+    def test_4030_simple_service_functions_system(self):
         """ check that we manage simple services in a root env
             with commands like start, restart, stop, etc"""
         self.begin()
         testname = self.testname()
         testdir = self.testdir()
+        self.simple_service_functions("system", testname, testdir)
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def test_4031_simple_service_functions_user(self):
+        """ check that we manage simple services in a root env
+            with commands like start, restart, stop, etc"""
+        self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        self.simple_service_functions("user", testname, testdir)
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def simple_service_functions(self, system, testname, testdir):
+        """ check that we manage simple services in a root env
+            with commands like start, restart, stop, etc"""
         user = self.user()
         root = self.root(testdir)
         systemctl = _cov + _systemctl_py + " --root=" + root
-        testsleep = self.testname("testsleep")
-        testscript = self.testname("testscript.sh")
+        systemctl += " --{system}".format(**locals())
+        testsleep = testname+"_testsleep"
+        testscript = testname+"_testscript.sh"
         logfile = os_path(root, "/var/log/test.log")
         bindir = os_path(root, "/usr/bin")
         begin = "{"
@@ -7411,7 +7429,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             date +%T,leave >> {logfile}
         """.format(**locals()))
         copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
-        copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
+        zzz_service = os_path(root, "/etc/systemd/{system}/zzz.service".format(**locals()))
+        copy_file(os_path(testdir, "zzz.service"), zzz_service)
         #
         cmd = "{systemctl} enable zzz.service -vv"
         sh____(cmd.format(**locals()))
@@ -7696,9 +7715,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # cleanup
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
-        self.rm_testdir()
-        self.coverage()
-        self.end()
     def test_4032_forking_service_functions(self):
         """ check that we manage forking services in a root env
             with basic run-service commands: start, stop, restart,
