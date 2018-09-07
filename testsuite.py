@@ -12767,7 +12767,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl_sh = os_path(testdir, "systemctl.sh")
         systemctl_py_run = systemctl_py.replace("/","_")[1:]
         cov_run = ""
-        cov_option = ""
+        cov_option = "--system"
         if COVERAGE:
             cov_run = _cov_run
             cov_option = "--coverage=spawn,oldest"
@@ -12898,7 +12898,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl_sh = os_path(testdir, "systemctl.sh")
         systemctl_py_run = systemctl_py.replace("/","_")[1:]
         cov_run = ""
-        cov_option = ""
+        cov_option = "--system"
         if COVERAGE:
             cov_run = _cov_run
             cov_option = "--coverage=spawn,oldest"
@@ -12965,7 +12965,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out2 = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out2)
         # .........................................vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-        cmd = "docker commit -c 'CMD [\"/usr/bin/systemctl\",\"init\",\"zzc.service\"]'  {testname} {images}:{testname}"
+        cmd = "docker commit -c 'CMD [\"/usr/bin/systemctl\",\"init\",\"zzc.service\",\"{cov_option}\"]'  {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}x"
         sx____(cmd.format(**locals()))
@@ -13029,7 +13029,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl_sh = os_path(testdir, "systemctl.sh")
         systemctl_py_run = systemctl_py.replace("/","_")[1:]
         cov_run = ""
-        cov_option = ""
+        cov_option = "--system"
         if COVERAGE:
             cov_run = _cov_run
             cov_option = "--coverage=spawn,oldest"
@@ -13094,7 +13094,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # sh____(cmd.format(**locals()))
         out2 = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out2)
-        cmd = "docker commit -c 'CMD [\"/usr/bin/systemctl\",\"init\"]'  {testname} {images}:{testname}"
+        cmd = "docker commit -c 'CMD [\"/usr/bin/systemctl\",\"init\",\"{cov_option}\"]'  {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}x"
         sx____(cmd.format(**locals()))
@@ -13190,7 +13190,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl_sh = os_path(testdir, "systemctl.sh")
         systemctl_py_run = systemctl_py.replace("/","_")[1:]
         cov_run = ""
-        cov_option = ""
+        cov_option = "--system"
         if COVERAGE:
             cov_run = _cov_run
             cov_option = "--coverage=spawn,oldest"
@@ -13253,7 +13253,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # sh____(cmd.format(**locals()))
         out2 = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out2)
-        cmd = "docker commit -c 'CMD [\"/usr/bin/systemctl\",\"init\"]'  {testname} {images}:{testname}"
+        cmd = "docker commit -c 'CMD [\"/usr/bin/systemctl\",\"init\",\"{cov_option}\"]'  {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}x"
         sx____(cmd.format(**locals()))
@@ -13354,7 +13354,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl_sh = os_path(testdir, "systemctl.sh")
         systemctl_py_run = systemctl_py.replace("/","_")[1:]
         cov_run = ""
-        cov_option = ""
+        cov_option = "--system"
         if COVERAGE:
             cov_run = _cov_run
             cov_option = "--coverage=spawn,oldest"
@@ -13419,7 +13419,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # sh____(cmd.format(**locals()))
         out2 = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out2)
-        cmd = "docker commit -c 'CMD [\"/usr/bin/systemctl\",\"init\",\"zzc.service\"]'  {testname} {images}:{testname}"
+        cmd = "docker commit -c 'CMD [\"/usr/bin/systemctl\",\"init\",\"zzc.service\",\"{cov_option}\"]'  {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}x"
         sx____(cmd.format(**locals()))
@@ -13515,7 +13515,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl_sh = os_path(testdir, "systemctl.sh")
         systemctl_py_run = systemctl_py.replace("/","_")[1:]
         cov_run = ""
-        cov_option = ""
+        cov_option = "--system"
         if COVERAGE:
             cov_run = _cov_run
             cov_option = "--coverage=spawn,oldest"
@@ -13578,7 +13578,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # sh____(cmd.format(**locals()))
         out2 = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out2)
-        cmd = "docker commit -c 'CMD [\"/usr/bin/systemctl\",\"init\",\"zzc.service\"]'  {testname} {images}:{testname}"
+        cmd = "docker commit -c 'CMD [\"/usr/bin/systemctl\",\"init\",\"zzc.service\",\"{cov_option}\"]'  {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}x"
         sx____(cmd.format(**locals()))
@@ -13677,7 +13677,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl_sh = os_path(testdir, "systemctl.sh")
         systemctl_py_run = systemctl_py.replace("/","_")[1:]
         cov_run = ""
-        cov_option = ""
+        cov_option = "--system"
         if COVERAGE:
             cov_run = _cov_run
             cov_option = "--coverage=spawn,oldest"
@@ -13824,7 +13824,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl_sh = os_path(testdir, "systemctl.sh")
         systemctl_py_run = systemctl_py.replace("/","_")[1:]
         cov_run = ""
-        cov_option = ""
+        cov_option = "--system"
         if COVERAGE:
             cov_run = _cov_run
             cov_option = "--coverage=spawn"
@@ -13906,7 +13906,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out2 = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out2)
         # .........................................vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-        cmd = "docker commit -c 'CMD [\"/usr/bin/systemctl\"]'  {testname} {images}:{testname}"
+        cmd = "docker commit -c 'CMD [\"/usr/bin/systemctl\",\"{cov_option}\"]'  {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}x"
         sx____(cmd.format(**locals()))
@@ -13989,7 +13989,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl_sh = os_path(testdir, "systemctl.sh")
         testsleep_sh = os_path(testdir, "testsleep.sh")
         cov_run = ""
-        cov_option = ""
+        cov_option = "--system"
         if COVERAGE:
             cov_run = _cov_run
             cov_option = "--coverage=spawn"
@@ -14146,7 +14146,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         python = os.path.basename(_python)
         python_coverage = _python_coverage
         cov_run = ""
-        cov_option = ""
+        cov_option = "--system"
         if COVERAGE:
             cov_run = _cov_run
             cov_option = "--coverage=spawn"
@@ -14228,7 +14228,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out2 = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out2)
         #
-        cmd = "docker commit -c 'CMD [\"/usr/bin/systemctl\"]'  {testname} {images}:{testname}"
+        cmd = "docker commit -c 'CMD [\"/usr/bin/systemctl\",\"{cov_option}\"]'  {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}x"
         sx____(cmd.format(**locals()))
