@@ -8042,7 +8042,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertNotEqual(ps6[0], ps7[0])
         #
         logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
-    def test_4035_notify_service_functions(self):
+    def test_4034_notify_service_functions_system(self):
         """ check that we manage notify services in a root env
             with basic run-service commands: start, stop, restart,
             reload, try-restart, reload-or-restart, kill and
@@ -8052,10 +8052,29 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             self.skipTest("missing /usr/bin/socat")
         testname = self.testname()
         testdir = self.testdir()
+        self.notify_service_functions("system", testname, testdir)
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def test_4035_notify_service_functions_user(self):
+        """ check that we manage notify services in a root env
+            with basic run-service commands: start, stop, restart,
+            reload, try-restart, reload-or-restart, kill and
+            reload-or-try-restart."""
+        self.begin()
+        if not os.path.exists("/usr/bin/socat"):
+            self.skipTest("missing /usr/bin/socat")
+        testname = self.testname()
+        testdir = self.testdir()
+        self.notify_service_functions("user", testname, testdir)
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def notify_service_functions(self, system, testname, testdir):
         user = self.user()
         root = self.root(testdir)
         systemctl = _cov + _systemctl_py + " --root=" + root
-        testsleep = self.testname("sleep")
+        testsleep = testname+"_sleep"
         logfile = os_path(root, "/var/log/"+testsleep+".log")
         bindir = os_path(root, "/usr/bin")
         os.makedirs(os_path(root, "/var/run"))
@@ -8107,6 +8126,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
+        zzz_service = "/etc/systemd/{system}/zzz.service".format(**locals())
         copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/usr/bin/zzz.init"))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
@@ -8353,9 +8373,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertNotEqual(ps6[0], ps7[0])
         #
         logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
-        self.rm_testdir()
-        self.coverage()
-        self.end()
     def test_4036_notify_service_functions_with_reload(self):
         """ check that we manage notify services in a root env
             with basic run-service commands: start, stop, restart,
