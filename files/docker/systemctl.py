@@ -1515,10 +1515,6 @@ class Systemctl:
     def notify_socket_from(self, conf, socketfile = None):
         """ creates a notify-socket for the (non-privileged) user """
         NotifySocket = collections.namedtuple("NotifySocket", ["socket", "socketfile" ])
-        runuser = conf.data.get("Service", "User", "")
-        if runuser and os.geteuid() != 0:
-            logg.error("can not exec notify-service from non-root caller")
-            return None
         notify_socket_folder = _var(_notify_socket_folder)
         if self._root:
             notify_socket_folder = os_path(self._root, notify_socket_folder)
