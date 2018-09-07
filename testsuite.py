@@ -12834,7 +12834,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out2 = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out2)
         #
-        cmd = "docker commit -c 'CMD \"/usr/bin/systemctl\"'  {testname} {images}:{testname}"
+        cmd = "docker commit -c 'CMD [\"/usr/bin/systemctl\",\"{cov_option}\"]'  {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}x"
         sx____(cmd.format(**locals()))
