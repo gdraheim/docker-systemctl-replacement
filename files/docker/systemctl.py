@@ -159,10 +159,14 @@ def get_home():
     return os.path.expanduser("~")
 
 def _var(path):
+    """ assumes that the path starts with /var - and when
+        in --user mode it is moved to /run/user/1001/run/
+        or as a fallback path to /tmp/run-{user}/ so that
+        you may find /var/log in /tmp/run-{user}/log .."""
     if not _user_mode:
         return path
-    if path.startswith("/var"):
-        runtime = get_runtime_dir()
+    if path.startswith("/var"): 
+        runtime = get_runtime_dir() # $XDG_RUNTIME_DIR
         if not os.path.isdir(runtime):
             os.makedirs(runtime)
             os.chmod(runtime, 0o700)
