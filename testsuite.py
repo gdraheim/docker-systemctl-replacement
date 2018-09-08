@@ -227,7 +227,7 @@ def os_getlogin():
     return pwd.getpwuid(os.geteuid()).pw_name
 
 ############ local mirror helpers #############
-def ip_container(self, name):
+def ip_container(name):
     values = output("docker inspect "+name)
     values = json.loads(values)
     if not values or "NetworkSettings" not in values[0]:
