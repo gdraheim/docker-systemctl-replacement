@@ -15035,12 +15035,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         #
         self.rm_testdir()
-    def test_8034_ubuntu_testing_mask_unmask_with_saved_container(self):
+    def test_8034_testing_mask_unmask(self):
         """ Checking the issue 34 on Ubuntu """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
         # image = self.local_image("ubuntu:16.04")
-        image = self.local_image(UBUNTU)
+        image = self.local_image(IMAGE or UBUNTU)
+        package = package_tool(image)
+        refresh = refresh_tool(image)
         testname = self.testname()
         testdir = self.testdir(testname)
         port=self.testport()
@@ -15055,11 +15057,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} apt-get update"
+        cmd = "docker exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} apt-get install -y {python}"
+        cmd = "docker exec {testname} {package} install -y {python}"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} apt-get install -y rsyslog"
+        cmd = "docker exec {testname} {package} install -y rsyslog"
         sh____(cmd.format(**locals()))
         ## container = self.ip_container(testname)
         cmd = "docker exec {testname} touch /var/log/systemctl.debug.log"
