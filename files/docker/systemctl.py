@@ -1126,11 +1126,10 @@ class Systemctl:
                 continue
             return pid
         return None
-    def get_pid_file(self, unit): # -> text
+    def test_pid_file(self, unit): # -> text
         """ support for the testsuite.py """
         conf = self.get_unit_conf(unit)
-        pid_file = self.pid_file_from(conf)
-        return pid_file or ""
+        return self.pid_file_from(conf) or self.status_file_from(conf)
     def pid_file_from(self, conf, default = ""):
         """ get the specified pid file path (not a computed default) """
         return conf.data.get("Service", "PIDFile", default)

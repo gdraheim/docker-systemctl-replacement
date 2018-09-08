@@ -737,7 +737,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         textA = file(os_path(root, "/etc/systemd/system/zza.service")).read()
         self.assertTrue(greps(textA, "Testing A"))
         self.assertTrue(greps(textA, "PIDFile="))
-        cmd = "{systemctl} __get_pid_file zza.service"
+        cmd = "{systemctl} __test_pid_file zza.service"
         out, end = output2(cmd.format(**locals()))
         logg.info("%s => \n%s", cmd, out)
         self.assertEqual(end, 0)
@@ -759,11 +759,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         textA = file(os_path(root, "/etc/systemd/system/zza.service")).read()
         self.assertTrue(greps(textA, "Testing A"))
         self.assertFalse(greps(textA, "PIDFile="))
-        cmd = "{systemctl} __get_pid_file zza.service"
+        cmd = "{systemctl} __test_pid_file zza.service"
         out, end = output2(cmd.format(**locals()))
         logg.info("%s => \n%s", cmd, out)
         self.assertEqual(end, 0)
-        if TODO: self.assertTrue(greps(out, "/var/run/zza.service.pid"))
+        self.assertTrue(greps(out, "/var/run/zza.service.status"))
         self.rm_testdir()
         self.coverage()
     def test_1055_other_services_use_a_status_file(self):
@@ -803,12 +803,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         textA = file(os_path(root, "/etc/systemd/system/zza.service")).read()
         self.assertTrue(greps(textA, "Testing A"))
         self.assertTrue(greps(textA, "PIDFile="))
-        cmd = "{systemctl} __get_pid_file zza.service"
+        cmd = "{systemctl} __test_pid_file zza.service"
         out, end = output2(cmd.format(**locals()))
         logg.info("%s => \n%s", cmd, out)
         self.assertEqual(end, 0)
         self.assertFalse(greps(out, "/var/run/zzfoo.pid"))
-        if TODO: self.assertTrue(greps(out, "/var/run/zza.service.pid"))
+        self.assertTrue(greps(out, "/var/run/zza.service.status"))
         self.rm_testdir()
         self.coverage()
     def test_1061_can_have_winini_like_commments(self):
@@ -826,12 +826,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         textA = file(os_path(root, "/etc/systemd/system/zza.service")).read()
         self.assertTrue(greps(textA, "Testing A"))
         self.assertTrue(greps(textA, "PIDFile="))
-        cmd = "{systemctl} __get_pid_file zza.service"
+        cmd = "{systemctl} __test_pid_file zza.service"
         out, end = output2(cmd.format(**locals()))
         logg.info("%s => \n%s", cmd, out)
         self.assertEqual(end, 0)
         self.assertFalse(greps(out, "/var/run/zzfoo.pid"))
-        if TODO: self.assertTrue(greps(out, "/var/run/zza.service.pid"))
+        self.assertTrue(greps(out, "/var/run/zza.service.status"))
         self.rm_testdir()
         self.coverage()
     def test_1062_can_have_multi_line_settings_with_linebreak_mark(self):
@@ -857,6 +857,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 0)
         self.assertTrue(greps(out, "Testing A"))
         self.assertTrue(greps(out, "quite special"))
+        cmd = "{systemctl} __test_pid_file zza.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s => \n%s", cmd, out)
+        self.assertEqual(end, 0)
+        self.assertTrue(greps(out, "/var/run/zzfoo.pid"))
         self.rm_testdir()
         self.coverage()
     def test_1063_but_a_missing_linebreak_is_a_syntax_error(self):
@@ -883,6 +888,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 0)
         self.assertFalse(greps(out, "Testing A"))
         self.assertFalse(greps(out, "quite special"))
+        cmd = "{systemctl} __test_pid_file zza.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s => \n%s", cmd, out)
+        self.assertEqual(end, 0)
+        self.assertFalse(greps(out, "/var/run/zzfoo.pid"))
         self.rm_testdir()
         self.coverage()
     def test_1070_external_env_files_can_be_parsed(self):

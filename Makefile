@@ -35,6 +35,7 @@ est_%: ; rm .coverage* ; ./testsuite.py t$@ -vv --coverage
 test_%: ; ./testsuite.py $@ -vv
 real_%: ; ./testsuite.py $@ -vv
 
+todo/test_%:  ; ./testsuite.py $(notdir $@) -vv --todo
 15.0/test_%:  ; ./testsuite.py $(notdir $@) -vv --image=opensuse/leap:15.0
 42.3/test_%:  ; ./testsuite.py $(notdir $@) -vv --image=opensuse:42.3
 42.2/test_%:  ; ./testsuite.py $(notdir $@) -vv --image=opensuse:42.2
