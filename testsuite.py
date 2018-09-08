@@ -13084,7 +13084,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(len(ps7), 1)
         self.assertNotEqual(ps6[0], ps7[0])
         #
-        logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
+        logg.info("LOG\n%s", " "+output("docker exec {testname} cat {logfile}".format(**locals())).replace("\n","\n "))
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
     def test_5034_notify_service_functions_system(self):
@@ -13452,7 +13452,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(len(ps7), 1)
         self.assertNotEqual(ps6[0], ps7[0])
         #
-        logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
+        logg.info("LOG\n%s", " "+output("docker exec {testname} cat {logfile}".format(**locals())).replace("\n","\n "))
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
@@ -13826,7 +13826,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(len(ps7), 1)
         self.assertNotEqual(ps6[0], ps7[0])
         #
-        logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
+        logg.info("LOG\n%s", " "+output("docker exec {testname} cat {logfile}".format(**locals())).replace("\n","\n "))
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
@@ -14066,7 +14066,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.1")))
         self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
         #
-        logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
+        logg.info("LOG\n%s", " "+output("docker exec {testname} cat {logfile}".format(**locals())).replace("\n","\n "))
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
     def test_5042_oneshot_and_unknown_service_functions(self):
@@ -14293,7 +14293,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.1")))
         self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
         #
-        logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
+        logg.info("LOG\n%s", " "+output("docker exec {testname} cat {logfile}".format(**locals())).replace("\n","\n "))
         self.rm_testdir()
         self.coverage()
         cmd = "docker rm --force {testname}"
@@ -14614,7 +14614,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(len(ps7), 1)
         self.assertNotEqual(ps6[0], ps7[0])
         #
-        logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
+        logg.info("LOG\n%s", " "+output("docker exec {testname} cat {logfile}".format(**locals())).replace("\n","\n "))
         self.rm_testdir()
         self.coverage()
         cmd = "docker rm --force {testname}"
