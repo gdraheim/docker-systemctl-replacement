@@ -7464,8 +7464,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
               date +%T,reloading >> {logfile}
               date +%T,reloaded >> {logfile}
             {end}
-            trap "stops" 3
-            trap "reload" 10
+            trap "stops" 3   # SIGQUIT
+            trap "reload" 10 # SIGUSR1
             date +%T,starting >> {logfile}
             {bindir}/{testsleep} $1 >> {logfile} 2>&1 &
             while kill -0 $!; do 
@@ -7475,7 +7475,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                wait
             done
             date +%T,leaving >> {logfile}
-            trap - 3 10
+            trap - 3 10 # SIGQUIT SIGUSR1
             date +%T,leave >> {logfile}
         """.format(**locals()))
         copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
@@ -10554,10 +10554,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             sighup () {begin}
               date +%T,sighup >> {logfile}
             {end}
-            trap "stops" 3
-            trap "reload" 10
-            trap "ignored" 15
-            trap "sighup" 1
+            trap "stops" 3     # SIGQUIT
+            trap "reload" 10   # SIGUSR1
+            trap "ignored" 15  # SIGTERM
+            trap "sighup" 1    # SIGHUP
             date +%T,starting >> {logfile}
             {bindir}/{testsleepB} $1 >> {logfile} 2>&1 &
             while kill -0 $!; do 
@@ -10567,7 +10567,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                wait
             done
             date +%T,leaving >> {logfile}
-            trap - 3 10 15
+            trap - 3 10 15 # SIGQUIT SIGUSR1 SIGTERM
             date +%T,leave >> {logfile}
         """.format(**locals()))
         copy_tool("/usr/bin/sleep", os_path(bindir, testsleepB))
@@ -10672,10 +10672,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             sighup () {begin}
               date +%T,sighup >> {logfile}
             {end}
-            trap "stops" 3
-            trap "reload" 10
-            trap "ignored" 15
-            trap "sighup" 1
+            trap "stops" 3    # SIGQUIT
+            trap "reload" 10  # SIGUSR1
+            trap "ignored" 15 # SIGTERM
+            trap "sighup" 1   # SIGHUP
             date +%T,starting >> {logfile}
             {bindir}/{testsleepB} $1 >> {logfile} 2>&1 &
             while kill -0 $!; do 
@@ -10685,7 +10685,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                wait
             done
             date +%T,leaving >> {logfile}
-            trap - 3 10 15
+            trap - 3 10 15 # SIGQUIT SIGUSR1 SIGTERM
             date +%T,leave >> {logfile}
         """.format(**locals()))
         copy_tool("/usr/bin/sleep", os_path(bindir, testsleepB))
@@ -10792,10 +10792,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             sighup () {begin}
               date +%T,sighup >> {logfile}
             {end}
-            trap "stops" 3
-            trap "reload" 10
-            trap "ignored" 15
-            trap "sighup" 1
+            trap "stops" 3      # SIGQUIT
+            trap "reload" 10    # SIGUSR1
+            trap "ignored" 15   # SIGTERM
+            trap "sighup" 1     # SIGHUP
             date +%T,starting >> {logfile}
             {bindir}/{testsleepB} $1 >> {logfile} 2>&1 &
             while kill -0 $!; do 
@@ -10805,7 +10805,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                wait
             done
             date +%T,leaving >> {logfile}
-            trap - 3 10 15
+            trap - 3 10 15  # SIGQUIT SIGUSR1 SIGTERM
             date +%T,leave >> {logfile}
         """.format(**locals()))
         copy_tool("/usr/bin/sleep", os_path(bindir, testsleepB))
