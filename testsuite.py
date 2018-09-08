@@ -28,8 +28,6 @@ import json
 logg = logging.getLogger("TESTING")
 _python = "/usr/bin/python"
 _systemctl_py = "files/docker/systemctl.py"
-_python_coverage = "python-coverage"
-_python3coverage = "python3-coverage"
 COVERAGE = "" # make it an image name = detect_local_system()
 
 CENTOSVER = { "7.3": "7.3.1611", "7.4": "7.4.1708", "7.5": "7.5.1804" }
@@ -94,9 +92,11 @@ def coverage_run(image = None, python = None):
     return coverage_tool(image, python) + options
 def coverage_package(image = None, python = None):
     python = python or _python
+    package = "python-coverage"
     if python.endswith("3"):
-        return "python3-coverage"
-    return "python-coverage"
+        package = "python3-coverage"
+    logg.info("detect coverage_package for %s => %s", python, package)
+    return package
 def cover(image = None, python = None):
     if not COVERAGE: return ""
     return coverage_run(image, python)
@@ -11871,7 +11871,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         python = os.path.basename(_python)
-        python_coverage = coverage_package()
+        python_coverage = coverage_package(image)
         systemctl_py = _systemctl_py
         sometime = SOMETIME or 188
         #
@@ -11905,7 +11905,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         python = os.path.basename(_python)
-        python_coverage = coverage_package()
+        python_coverage = coverage_package(image)
         systemctl_py = _systemctl_py
         sometime = SOMETIME or 188
         text_file(os_path(testdir, "zza.service"),"""
@@ -11966,7 +11966,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         python = os.path.basename(_python)
-        python_coverage = coverage_package()
+        python_coverage = coverage_package(image)
         systemctl_py = _systemctl_py
         sometime = SOMETIME or 188
         text_file(os_path(testdir, "zza.service"),"""
@@ -12036,7 +12036,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         python = os.path.basename(_python)
-        python_coverage = coverage_package()
+        python_coverage = coverage_package(image)
         systemctl_py = _systemctl_py
         sometime = SOMETIME or 188
         shell_file(os_path(testdir, "killall"),"""
@@ -12112,7 +12112,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         python = os.path.basename(_python)
-        python_coverage = coverage_package()
+        python_coverage = coverage_package(image)
         systemctl_py = _systemctl_py
         sometime = SOMETIME or 188
         text_file(os_path(testdir, "zzz.service"),"""
@@ -12178,7 +12178,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         python = os.path.basename(_python)
-        python_coverage = coverage_package()
+        python_coverage = coverage_package(image)
         systemctl_py = _systemctl_py
         sometime = SOMETIME or 188
         shell_file(os_path(testdir, "killall"),"""
@@ -12271,7 +12271,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         python = os.path.basename(_python)
-        python_coverage = coverage_package()
+        python_coverage = coverage_package(image)
         systemctl_py = _systemctl_py
         sometime = SOMETIME or 188
         shell_file(os_path(testdir, "killall"),"""
@@ -12362,7 +12362,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         python = os.path.basename(_python)
-        python_coverage = coverage_package()
+        python_coverage = coverage_package(image)
         systemctl_py = _systemctl_py
         sometime = SOMETIME or 188
         shell_file(os_path(testdir, "killall"),"""
@@ -12439,7 +12439,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         python = os.path.basename(_python)
-        python_coverage = coverage_package()
+        python_coverage = coverage_package(image)
         systemctl_py = _systemctl_py
         sometime = SOMETIME or 188
         text_file(os_path(testdir, "zza.service"),"""
@@ -12528,7 +12528,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         python = os.path.basename(_python)
-        python_coverage = coverage_package()
+        python_coverage = coverage_package(image)
         systemctl_py = _systemctl_py
         images = IMAGES
         sometime = SOMETIME or 188
@@ -12644,7 +12644,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         python = os.path.basename(_python)
-        python_coverage = coverage_package()
+        python_coverage = coverage_package(image)
         systemctl_py = _systemctl_py
         images = IMAGES
         sometime = SOMETIME or 188
@@ -12743,7 +12743,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         python = os.path.basename(_python)
-        python_coverage = coverage_package()
+        python_coverage = coverage_package(image)
         systemctl_py = _systemctl_py
         sometime = SOMETIME or 188
         text_file(os_path(testdir, "zza.service"),"""
@@ -12843,6 +12843,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         sometime = SOMETIME or 188
+        #
+        logg.info("image = %s | python = %s | coverage = %s", image, python, python_coverage)
+        if python.endswith("3"):
+            self.assertIn(python, python_coverage)
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
