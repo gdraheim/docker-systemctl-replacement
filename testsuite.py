@@ -12290,7 +12290,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # self.assertGreater(len(lines(out2)), 2)
         #
         self.rm_testdir()
-    def test_5030_systemctl_py_start_simple(self):
+    def test_5080_systemctl_py_start_simple(self):
         """ check that we can start simple services in a container"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -12366,7 +12366,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_5031_systemctl_py_start_extra_simple(self):
+    def test_5081_systemctl_py_start_extra_simple(self):
         """ check that we can start simple services in a container"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -12432,7 +12432,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_5032_systemctl_py_start_forking(self):
+    def test_5082_systemctl_py_start_forking(self):
         """ check that we can start forking services in a container w/ PIDFile"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -12525,7 +12525,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_5033_systemctl_py_start_forking_without_pid_file(self):
+    def test_5083_systemctl_py_start_forking_without_pid_file(self):
         """ check that we can start forking services in a container without PIDFile"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -12616,7 +12616,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_5035_systemctl_py_start_notify_by_timeout(self):
+    def test_5085_systemctl_py_start_notify_by_timeout(self):
         """ check that we can start simple services in a container w/ notify timeout"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
