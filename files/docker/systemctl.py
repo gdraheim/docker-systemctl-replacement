@@ -1518,8 +1518,21 @@ class Systemctl:
         notify_socket_folder = _var(_notify_socket_folder)
         if self._root:
             notify_socket_folder = os_path(self._root, notify_socket_folder)
-        notify_socket = os.path.join(notify_socket_folder, "notify." + str(conf.name() or "systemctl"))
+        notify_name = "notify." + str(conf.name() or "systemctl")
+        notify_socket = os.path.join(notify_socket_folder, notify_name)
         socketfile = socketfile or notify_socket
+        if len(socketfile) > 100:
+            # https://unix.stackexchange.com/questions/367008/
+            # why-is-socket-path-length-limited-to-a-hundred-chars
+            logg.info("old notify socketfile (%s) = %s", len(socketfile), socketfile)
+            user = os_getlogin()
+            if not _user_mode: user = "system"
+            notify_socket_folder = _var(_notify_socket_folder)
+            prefixlength = len(user)+len(notify_socket_folder)+4
+            notify_name = user+"."+notify_name[0:min(100-prefixlength,len(notify_name))]
+            socketfile = os.path.join(notify_socket_folder, notify_name)
+            # occurs during testsuite.py for ~user/test.tmp/root path
+            logg.info("new notify socketfile (%s) = %s", len(socketfile), socketfile)
         try:
             if not os.path.isdir(os.path.dirname(socketfile)):
                 os.makedirs(os.path.dirname(socketfile))

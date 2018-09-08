@@ -8388,12 +8388,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
-    @unittest.expectedFailure
     def test_4037_notify_service_functions_with_reload_user(self):
         """ check that we manage notify services in a root env
             with basic run-service commands: start, stop, restart,
             reload, try-restart, reload-or-restart, kill and
             reload-or-try-restart. (with ExecReload)"""
+        # test_4037 is triggering len(socketfile) > 100 | "new notify socketfile"
         self.begin()
         if not os.path.exists("/usr/bin/socat"):
             self.skipTest("missing /usr/bin/socat")
