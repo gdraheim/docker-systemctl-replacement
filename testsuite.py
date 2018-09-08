@@ -30,7 +30,7 @@ _python = "/usr/bin/python"
 _systemctl_py = "files/docker/systemctl.py"
 _python_coverage = "python-coverage"
 _python3coverage = "python3-coverage"
-COVERAGE = False
+COVERAGE = "" # make it an image name = detect_local_system()
 
 CENTOSVER = { "7.3": "7.3.1611", "7.4": "7.4.1708", "7.5": "7.5.1804" }
 TESTED_OS = [ "centos:7.3.1611", "centos:7.4.1708", "centos:7.5.1804" ]
@@ -12833,13 +12833,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ Allow to have a coverage tool be installed."""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
-        image = self.local_image(IMAGE or CENTOS)
+        image = self.local_image(COVERAGE or IMAGE or CENTOS)
         testname = self.testname()
         testdir = self.testdir()
         python = os.path.basename(_python)
-        python_coverage = coverage_package()
-        if COVERAGE and self.local_system():
-           image = self.local_image(self.local_system())
+        python_coverage = coverage_package(image)
         if _python.endswith("python3") and "centos" in image: 
            self.skipTest("no python3 on centos")
         package = package_tool(image)
@@ -12865,13 +12863,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             This includes some corage on the init-services."""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
-        image = self.local_image(IMAGE or CENTOS)
+        image = self.local_image(COVERAGE or IMAGE or CENTOS)
         testname = self.testname()
         testdir = self.testdir()
         python = os.path.basename(_python)
-        python_coverage = coverage_package()
-        if COVERAGE and self.local_system():
-           image = self.local_image(self.local_system())
+        python_coverage = coverage_package(image)
         if _python.endswith("python3") and "centos" in image: 
            self.skipTest("no python3 on centos")
         package = package_tool(image)
@@ -12995,13 +12991,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             This includes some corage on the init-services."""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
-        image = self.local_image(IMAGE or CENTOS)
+        image = self.local_image(COVERAGE or IMAGE or CENTOS)
         testname = self.testname()
         testdir = self.testdir()
         python = os.path.basename(_python)
-        python_coverage = coverage_package()
-        if COVERAGE and self.local_system():
-           image = self.local_image(self.local_system())
+        python_coverage = coverage_package(image)
         if _python.endswith("python3") and "centos" in image: 
            self.skipTest("no python3 on centos")
         package = package_tool(image)
@@ -13125,13 +13119,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             and to exit the PID 1 as the last part of the service."""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
-        image = self.local_image(IMAGE or CENTOS)
+        image = self.local_image(COVERAGE or IMAGE or CENTOS)
         testname = self.testname()
         testdir = self.testdir()
         python = os.path.basename(_python)
-        python_coverage = coverage_package()
-        if COVERAGE and self.local_system():
-           image = self.local_image(self.local_system())
+        python_coverage = coverage_package(image)
         if _python.endswith("python3") and "centos" in image: 
            self.skipTest("no python3 on centos")
         package = package_tool(image)
@@ -13285,13 +13277,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             being the last service and to exit the PID 1 as the last part of the service."""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
-        image = self.local_image(IMAGE or CENTOS)
+        image = self.local_image(COVERAGE or IMAGE or CENTOS)
         testname = self.testname()
         testdir = self.testdir()
         python = os.path.basename(_python)
-        python_coverage = coverage_package()
-        if COVERAGE and self.local_system():
-           image = self.local_image(self.local_system())
+        python_coverage = coverage_package(image)
         if _python.endswith("python3") and "centos" in image: 
            self.skipTest("no python3 on centos")
         package = package_tool(image)
@@ -13448,13 +13438,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             and to exit the PID 1 as the last part of the service."""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
-        image = self.local_image(IMAGE or CENTOS)
+        image = self.local_image(COVERAGE or IMAGE or CENTOS)
         testname = self.testname()
         testdir = self.testdir()
         python = os.path.basename(_python)
-        python_coverage = coverage_package()
-        if COVERAGE and self.local_system():
-           image = self.local_image(self.local_system())
+        python_coverage = coverage_package(image)
         if _python.endswith("python3") and "centos" in image: 
            self.skipTest("no python3 on centos")
         package = package_tool(image)
@@ -13608,13 +13596,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             being the last service and to exit the PID 1 as the last part of the service."""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
-        image = self.local_image(IMAGE or CENTOS)
+        image = self.local_image(COVERAGE or IMAGE or CENTOS)
         testname = self.testname()
         testdir = self.testdir()
         python = os.path.basename(_python)
-        python_coverage = coverage_package()
-        if COVERAGE and self.local_system():
-           image = self.local_image(self.local_system())
+        python_coverage = coverage_package(image)
         if _python.endswith("python3") and "centos" in image: 
            self.skipTest("no python3 on centos")
         package = package_tool(image)
@@ -13769,13 +13755,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             specfile which also works on the pid file itself """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
-        image = self.local_image(IMAGE or CENTOS)
+        image = self.local_image(COVERAGE or IMAGE or CENTOS)
         testname = self.testname()
         testdir = self.testdir()
         python = os.path.basename(_python)
-        python_coverage = coverage_package()
-        if COVERAGE and self.local_system():
-           image = self.local_image(self.local_system())
+        python_coverage = coverage_package(image)
         if _python.endswith("python3") and "centos" in image: 
            self.skipTest("no python3 on centos")
         package = package_tool(image)
@@ -13915,13 +13899,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             specfile which also works on the pid file itself """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
-        image = self.local_image(IMAGE or CENTOS)
+        image = self.local_image(COVERAGE or IMAGE or CENTOS)
         testname = self.testname()
         testdir = self.testdir()
         python = os.path.basename(_python)
-        python_coverage = coverage_package()
-        if COVERAGE and self.local_system():
-           image = self.local_image(self.local_system())
+        python_coverage = coverage_package(image)
         if _python.endswith("python3") and "centos" in image: 
            self.skipTest("no python3 on centos")
         package = package_tool(image)
@@ -14078,13 +14060,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             and code parts for that are actually executed (test case without fork before) """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
-        image = self.local_image(IMAGE or CENTOS)
+        image = self.local_image(COVERAGE or IMAGE or CENTOS)
         testname = self.testname()
         testdir = self.testdir()
         python = os.path.basename(_python)
-        python_coverage = coverage_package()
-        if COVERAGE and self.local_system():
-           image = self.local_image(self.local_system())
+        python_coverage = coverage_package(image)
         if _python.endswith("python3") and "centos" in image: 
            self.skipTest("no python3 on centos")
         package = package_tool(image)
@@ -14244,17 +14224,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ check that we can reap zombies in a container managed by systemctl.py"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
-        image = self.local_image(IMAGE or CENTOS)
+        image = self.local_image(COVERAGE or IMAGE or CENTOS)
         testname = self.testname()
         testdir = self.testdir()
         python = os.path.basename(_python)
-        python_coverage = coverage_package()
+        python_coverage = coverage_package(image)
         cov_run = cover()
         cov_option = "--system"
         if COVERAGE:
             cov_option = "--coverage=spawn"
-        if COVERAGE and self.local_system():
-           image = self.local_image(self.local_system())
         if _python.endswith("python3") and "centos" in image: 
            self.skipTest("no python3 on centos")
         package = package_tool(image)
@@ -15190,7 +15168,7 @@ if __name__ == "__main__":
         logg.info("xml results into %s", opt.xmlresults)
     #
     if opt.coverage:
-        COVERAGE = True
+        COVERAGE = detect_local_system() # so that coverage files can be merged
         if opt.coverage > 1:
             if os.path.exists(".coverage"):
                 logg.info("rm .coverage")
