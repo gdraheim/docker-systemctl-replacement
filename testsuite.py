@@ -226,6 +226,17 @@ def os_getlogin():
     import pwd
     return pwd.getpwuid(os.geteuid()).pw_name
 
+############ local mirror helpers #############
+def ip_container(self, name):
+    values = output("docker inspect "+name)
+    values = json.loads(values)
+    if not values or "NetworkSettings" not in values[0]:
+        logg.critical(" docker inspect %s => %s ", name, values)
+    return values[0]["NetworkSettings"]["IPAddress"]
+
+
+############ the real testsuite ##############
+
 class DockerSystemctlReplacementTest(unittest.TestCase):
     def caller_testname(self):
         name = get_caller_caller_name()
@@ -304,12 +315,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         return os.path.abspath(root_folder)
     def user(self):
         return os_getlogin()
-    def ip_container(self, name):
-        values = output("docker inspect "+name)
-        values = json.loads(values)
-        if not values or "NetworkSettings" not in values[0]:
-            logg.critical(" docker inspect %s => %s ", name, values)
-        return values[0]["NetworkSettings"]["IPAddress"]
     def local_system(self):
         distro, version = "", ""
         if os.path.exists("/etc/os-release"):
@@ -398,7 +403,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not container_found:
             cmd = "docker run --rm=true --detach --name {container} {image}"
             sh____(cmd.format(**locals()))
-        ip_a = self.ip_container(container)
+        ip_a = ip_container(container)
         logg.info("::: %s => %s", container, ip_a)
         return dict(zip(hosts, [ ip_a ] * len(hosts)))
     def with_local_mirror(self, image):
@@ -14589,7 +14594,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         ## sh____(start_container.format(**locals()))
         ## time.sleep(3)
         #
-        container = self.ip_container(testname)
+        container = ip_container(testname)
         cmd = "docker exec {testname} touch /var/log/systemctl.debug.log"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl start httpd"
@@ -14911,7 +14916,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} bash -c 'echo TEST_OK > /var/www/html/index.html'"
         sh____(cmd.format(**locals()))
         #
-        container = self.ip_container(testname)
+        container = ip_container(testname)
         cmd = "docker exec {testname} touch /var/log/systemctl.debug.log"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl start httpd"
@@ -15001,7 +15006,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} bash -c 'echo TEST_OK > /usr/share/nginx/html/index.html'"
         sh____(cmd.format(**locals()))
         #
-        container = self.ip_container(testname)
+        container = ip_container(testname)
         cmd = "docker exec {testname} touch /var/log/systemctl.debug.log"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl start nginx"
@@ -15076,7 +15081,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} {package} install -y rsyslog"
         sh____(cmd.format(**locals()))
-        ## container = self.ip_container(testname)
+        ## container = ip_container(testname)
         cmd = "docker exec {testname} touch /var/log/systemctl.debug.log"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl status rsyslog.service"
