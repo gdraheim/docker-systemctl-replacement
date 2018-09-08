@@ -10858,6 +10858,246 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
+    def test_4160_systemctl_kill_process_hard(self):
+        """ systemctl kill needs to be hard"""
+        self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        quick = "--coverage=quick"
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        testsleep = self.testname("testsleep")
+        testsleepB = testsleep+"B"
+        testsleepC = testsleep+"C"
+        testscriptB = self.testname("testscriptB.sh")
+        testscriptC = self.testname("testscriptC.sh")
+        logfile = os_path(root, "/var/log/test.log")
+        bindir = os_path(root, "/usr/bin")
+        begin = "{"
+        end = "}"
+        text_file(logfile, "")
+        text_file(os_path(testdir, "zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            Type=simple
+            ExecStartPre=/bin/echo %n
+            ExecStart={bindir}/{testscriptB} 111
+            ExecStartPost=/bin/echo started $MAINPID
+            ExecStop=/usr/bin/kill -3 $MAINPID
+            ExecStopPost=/bin/echo stopped $MAINPID
+            ExecStopPost=/usr/bin/sleep 2
+            ExecReload=/usr/bin/kill -10 $MAINPID
+            KillMode=process
+            KillSignal=SIGQUIT
+            # SendSIGHUP=yes
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        shell_file(os_path(bindir, testscriptB),"""
+            #! /bin/sh
+            date +%T,enter > {logfile}
+            stops () {begin}
+              date +%T,stopfails >> {logfile}
+              # killall {testsleep} ############## kill ignored
+            {end}
+            reload () {begin}
+              date +%T,reloading >> {logfile}
+              date +%T,reloaded >> {logfile}
+            {end}
+            ignored () {begin}
+              date +%T,ignored >> {logfile}
+            {end}
+            sighup () {begin}
+              date +%T,sighup >> {logfile}
+            {end}
+            trap "stops" 3      # SIGQUIT
+            trap "reload" 10    # SIGUSR1
+            trap "ignored" 15   # SIGTERM
+            trap "sighup" 1     # SIGHUP
+            date +%T,starting >> {logfile}
+            {bindir}/{testsleepB} $1 >> {logfile} 2>&1 &
+            while kill -0 $!; do 
+               # use 'kill -0' to check the existance of the child
+               date +%T,waiting >> {logfile}
+               # use 'wait' for children AND external signals
+               wait
+            done
+            date +%T,leaving >> {logfile}
+            trap - 3 10 15  # SIGQUIT SIGUSR1 SIGTERM
+            date +%T,leave >> {logfile}
+        """.format(**locals()))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleepB))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleepC))
+        copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
+        #
+        cmd = "{systemctl} start zzb.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        #
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleepB))
+        #
+        cmd = "{systemctl} stop zzb.service -vv {quick}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        #
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testscriptB))
+        self.assertTrue(greps(top, testsleepB))
+        #
+        cmd = "{systemctl} kill zzb.service -vv {quick}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0) # actually killed
+        #
+        time.sleep(1) # kill is asynchronous
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, testscriptB)) 
+        self.assertTrue(greps(top, testsleepB))
+        #
+        log = lines(open(logfile).read())
+        logg.info("LOG %s\n| %s", logfile, "\n| ".join(log))
+        # self.assertTrue(greps(log, "ignored"))
+        # self.assertTrue(greps(log, "sighup"))
+        #
+        time.sleep(1) # kill is asynchronous
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        cmd = "killall {testsleepB}"
+        sx____(cmd.format(**locals())) # cleanup before check
+        self.assertFalse(greps(top, testscriptB))
+        self.assertTrue(greps(top, testsleepB)) ##TODO?##
+        #
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def test_4161_systemctl_kill_mixed_hard(self):
+        """ systemctl kill needs to be hard"""
+        self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        quick = "--coverage=quick"
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        testsleep = self.testname("testsleep")
+        testsleepB = testsleep+"B"
+        testsleepC = testsleep+"C"
+        testscriptB = self.testname("testscriptB.sh")
+        testscriptC = self.testname("testscriptC.sh")
+        logfile = os_path(root, "/var/log/test.log")
+        bindir = os_path(root, "/usr/bin")
+        begin = "{"
+        end = "}"
+        text_file(logfile, "")
+        text_file(os_path(testdir, "zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            Type=simple
+            ExecStartPre=/bin/echo %n
+            ExecStart={bindir}/{testscriptB} 111
+            ExecStartPost=/bin/echo started $MAINPID
+            ExecStop=/usr/bin/kill -3 $MAINPID
+            ExecStopPost=/bin/echo stopped $MAINPID
+            ExecStopPost=/usr/bin/sleep 2
+            ExecReload=/usr/bin/kill -10 $MAINPID
+            KillMode=mixed
+            KillSignal=SIGQUIT
+            # SendSIGHUP=yes
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        shell_file(os_path(bindir, testscriptB),"""
+            #! /bin/sh
+            date +%T,enter > {logfile}
+            stops () {begin}
+              date +%T,stopfails >> {logfile}
+              # killall {testsleep} ############## kill ignored
+            {end}
+            reload () {begin}
+              date +%T,reloading >> {logfile}
+              date +%T,reloaded >> {logfile}
+            {end}
+            ignored () {begin}
+              date +%T,ignored >> {logfile}
+            {end}
+            sighup () {begin}
+              date +%T,sighup >> {logfile}
+            {end}
+            trap "stops" 3      # SIGQUIT
+            trap "reload" 10    # SIGUSR1
+            trap "ignored" 15   # SIGTERM
+            trap "sighup" 1     # SIGHUP
+            date +%T,starting >> {logfile}
+            {bindir}/{testsleepB} $1 >> {logfile} 2>&1 &
+            while kill -0 $!; do 
+               # use 'kill -0' to check the existance of the child
+               date +%T,waiting >> {logfile}
+               # use 'wait' for children AND external signals
+               wait
+            done
+            date +%T,leaving >> {logfile}
+            trap - 3 10 15  # SIGQUIT SIGUSR1 SIGTERM
+            date +%T,leave >> {logfile}
+        """.format(**locals()))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleepB))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleepC))
+        copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
+        #
+        cmd = "{systemctl} start zzb.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        #
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleepB))
+        #
+        cmd = "{systemctl} stop zzb.service -vv {quick}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        #
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testscriptB))
+        self.assertTrue(greps(top, testsleepB))
+        #
+        cmd = "{systemctl} kill zzb.service -vv {quick}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0) # actually killed
+        #
+        time.sleep(1) # kill is asynchronous
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, testscriptB)) 
+        self.assertFalse(greps(top, testsleepB)) ##TODO?##
+        #
+        log = lines(open(logfile).read())
+        logg.info("LOG %s\n| %s", logfile, "\n| ".join(log))
+        # self.assertTrue(greps(log, "ignored"))
+        # self.assertTrue(greps(log, "sighup"))
+        #
+        time.sleep(1) # kill is asynchronous
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        cmd = "killall {testsleepB}"
+        sx____(cmd.format(**locals())) # cleanup before check
+        self.assertFalse(greps(top, testscriptB))
+        self.assertFalse(greps(top, testsleepB))
+        #
+        self.rm_testdir()
+        self.coverage()
+        self.end()
     def test_4201_systemctl_py_dependencies_plain_start_order(self):
         """ check list-dependencies - standard order of starting
             units is simply the command line order"""
