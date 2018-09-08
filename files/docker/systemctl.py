@@ -501,11 +501,11 @@ class waitlock:
             self.opened = os.open(lockfile, os.O_RDWR | os.O_CREAT, 0o600)
             for attempt in xrange(int(MaxLockWait or DefaultMaximumTimeout)):
                 try:
-                    logg.info("[%s] %s. trying %s _______ ", os.getpid(), attempt, lockname)
+                    logg.debug("[%s] %s. trying %s _______ ", os.getpid(), attempt, lockname)
                     fcntl.flock(self.opened, fcntl.LOCK_EX | fcntl.LOCK_NB)
                     st = os.fstat(self.opened)
                     if not st.st_nlink:
-                        logg.info("[%s] %s. %s got deleted, trying again", os.getpid(), attempt, lockname)
+                        logg.debug("[%s] %s. %s got deleted, trying again", os.getpid(), attempt, lockname)
                         os.close(self.opened)
                         self.opened = os.open(lockfile, os.O_RDWR | os.O_CREAT, 0o600)
                         continue
@@ -532,7 +532,7 @@ class waitlock:
                 lockfile = os.path.join(self.lockfolder, str(self.unit or "global") + ".lock")
                 lockname = os.path.basename(lockfile)
                 os.unlink(lockfile) # ino is kept allocated because opened by this process
-                logg.info("[%s] lockfile removed for %s", os.getpid(), lockname)
+                logg.debug("[%s] lockfile removed for %s", os.getpid(), lockname)
             fcntl.flock(self.opened, fcntl.LOCK_UN)
             os.close(self.opened) # implies an unlock but that has happend like 6 seconds later
             self.opened = None
