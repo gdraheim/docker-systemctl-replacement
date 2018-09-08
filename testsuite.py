@@ -28,11 +28,6 @@ import json
 logg = logging.getLogger("TESTING")
 _python = "/usr/bin/python"
 _systemctl_py = "files/docker/systemctl.py"
-_cov = ""
-_cov_run = "coverage2 run '--omit=*/six.py,*/extern/*.py,*/unitconfparser.py' --append -- "
-_cov_cmd = "coverage2"
-_cov3run = "coverage3 run '--omit=*/six.py,*/extern/*.py,*/unitconfparser.py' --append -- "
-_cov3cmd = "coverage3"
 _python_coverage = "python-coverage"
 _python3coverage = "python3-coverage"
 COVERAGE = False
@@ -510,7 +505,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
     def test_1002_systemctl_version(self):
-        systemctl = _cov + _systemctl_py 
+        systemctl = cover() + _systemctl_py 
         cmd = "{systemctl} --version"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
@@ -529,7 +524,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "[+]SYSVINIT"))
     def test_1003_systemctl_help(self):
         """ the '--help' option and 'help' command do work """
-        systemctl = _cov + _systemctl_py
+        systemctl = cover() + _systemctl_py
         cmd = "{systemctl} --help"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
@@ -548,7 +543,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.coverage()
     def test_1005_systemctl_help_command(self):
         """ for any command, 'help command' shows the documentation """
-        systemctl = _cov + _systemctl_py
+        systemctl = cover() + _systemctl_py
         cmd = "{systemctl} help list-unit-files" 
         out, end = output2(cmd.format(**locals()))
         logg.info("%s\n%s", cmd, out)
@@ -558,7 +553,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.coverage()
     def test_1006_systemctl_help_command_other(self):
         """ for a non-existant command, 'help command' just shows the list """
-        systemctl = _cov + _systemctl_py
+        systemctl = cover() + _systemctl_py
         cmd = "{systemctl} help list-foo" 
         out, end = output2(cmd.format(**locals()))
         logg.info("%s\n%s", cmd, out)
@@ -568,7 +563,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.coverage()
     def test_1010_systemctl_daemon_reload(self):
         """ daemon-reload always succeeds (does nothing) """
-        systemctl = _cov + _systemctl_py
+        systemctl = cover() + _systemctl_py
         cmd = "{systemctl} daemon-reload"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
@@ -581,7 +576,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ daemon-reload always succeeds (does nothing) """
         testdir = self.testdir()
         root = self.root(testdir, real)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         if real: systemctl = "/usr/bin/systemctl"
         text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
@@ -602,7 +597,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ when /var/log/systemctl.log exists then print INFO messages into it"""
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         logfile = os_path(root, "/var/log/systemctl.log")
         text_file(logfile,"")
         #
@@ -618,7 +613,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ when /var/log/systemctl.debug.log exists then print DEBUG messages into it"""
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         logfile = os_path(root, "/var/log/systemctl.debug.log")
         text_file(logfile,"")
         #
@@ -634,7 +629,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ we can force --ipv4 for /etc/hosts """
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/hosts"),"""
             127.0.0.1 localhost localhost4
             ::1 localhost localhost6""")
@@ -662,7 +657,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ we can force --ipv6 for /etc/hosts """
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/hosts"),"""
             127.0.0.1 localhost localhost4
             ::1 localhost localhost6""")
@@ -691,7 +686,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A""")
@@ -705,7 +700,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A""")
@@ -723,7 +718,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A
@@ -745,7 +740,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A
@@ -767,7 +762,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A
@@ -789,7 +784,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A
@@ -812,7 +807,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A
@@ -835,7 +830,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A \
@@ -861,7 +856,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A 
@@ -886,7 +881,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A 
@@ -920,7 +915,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A""")
@@ -971,7 +966,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A""")
@@ -1118,7 +1113,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir, real)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         self.rm_zzfiles(root)
         #
@@ -1138,7 +1133,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir, real)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         self.rm_zzfiles(root)
         #
@@ -1158,7 +1153,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir, real)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         self.rm_zzfiles(root)
         #
@@ -1177,7 +1172,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir, real)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         self.rm_zzfiles(root)
         #
@@ -1218,7 +1213,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A""")
@@ -1238,7 +1233,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A""")
@@ -1270,7 +1265,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A""")
@@ -1301,7 +1296,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A""")
@@ -1334,7 +1329,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A""")
@@ -1357,7 +1352,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A
@@ -1425,7 +1420,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A
@@ -1505,7 +1500,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         root = self.root(testdir)
         user = self.user()
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A
@@ -1592,7 +1587,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A""")
@@ -1631,7 +1626,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A""")
@@ -1655,7 +1650,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/sysconfig/zzb.conf"),"""
             DEF1='def1'
             DEF2="def2"
@@ -1695,7 +1690,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir, real)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         if real: systemctl = "/usr/bin/systemctl"
         text_file(os_path(root, "/etc/sysconfig/zzb.conf"),"""
             DEF1='def1'
@@ -1738,7 +1733,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir, real)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         if real: systemctl = "/usr/bin/systemctl"
         text_file(os_path(root, "/etc/sysconfig/zzb.conf"),"""
             DEF1='def1'
@@ -1780,7 +1775,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/sysconfig/zzb.conf"),"""
             DEF1='def1'
             DEF2="def2"
@@ -1815,7 +1810,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A""")
@@ -1860,7 +1855,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A""")
@@ -1901,7 +1896,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A""")
@@ -1969,7 +1964,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A
@@ -2019,7 +2014,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A
@@ -2123,7 +2118,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir, real)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         if real: systemctl = "/usr/bin/systemctl"
         text_file(os_path(root, "/etc/sysconfig/zzb.conf"),"""
             DEF1='def1'
@@ -2165,7 +2160,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir, real)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         if real: systemctl = "/usr/bin/systemctl"
         text_file(os_path(root, "/etc/sysconfig/zzb.conf"),"""
             DEF1='def1'
@@ -2221,7 +2216,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A
@@ -2244,7 +2239,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A
@@ -2333,7 +2328,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                                 $DEF6 $DEF7
             [Install]
             WantedBy=multi-user.target""")
-        testrun = _cov + unitconfparser_py
+        testrun = cover() + unitconfparser_py
         cmd = "{testrun} {service_file}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
@@ -2377,7 +2372,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir, real)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         self.rm_zzfiles(root)
         #
@@ -2415,7 +2410,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir, real)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         self.rm_zzfiles(root)
         #
@@ -2488,7 +2483,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir, real)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         self.rm_zzfiles(root)
         #
@@ -2556,7 +2551,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir, real)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         self.rm_zzfiles(root)
         #
@@ -2621,7 +2616,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A""")
@@ -2711,7 +2706,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/zzc.service"),"""
             [Unit]
             Description=Testing C
@@ -2759,7 +2754,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         logfile = os_path(root, "/var/log/"+testsleep+".log")
         bindir = os_path(root, "/usr/bin")
@@ -2896,7 +2891,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A""")
@@ -2972,7 +2967,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/zzb.service"),"""
             [Unit]
             Description=Testing B
@@ -3053,7 +3048,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/zzb.service"),"""
             [Unit]
             Description=Testing B
@@ -3176,7 +3171,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/zzb.service"),"""
             [Unit]
             Description=Testing B
@@ -3292,7 +3287,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A""")
@@ -3401,7 +3396,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A""")
@@ -3510,7 +3505,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A""")
@@ -3570,7 +3565,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A""")
@@ -3657,7 +3652,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         root = self.root(testdir)
         user = self.user()
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A""")
@@ -3734,7 +3729,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         text_file(os_path(testdir, "zzz.service"),"""
@@ -3792,7 +3787,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         text_file(os_path(testdir, "zzz.service"),"""
@@ -3849,7 +3844,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         os.makedirs(os_path(root, "/var/run"))
@@ -3925,7 +3920,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         os.makedirs(os_path(root, "/var/run"))
@@ -3999,7 +3994,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         text_file(os_path(testdir, "zzz.service"),"""
@@ -4058,7 +4053,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         text_file(os_path(testdir, "zzz.service"),"""
@@ -4115,7 +4110,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         os.makedirs(os_path(root, "/var/run"))
@@ -4192,7 +4187,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         os.makedirs(os_path(root, "/var/run"))
@@ -4266,7 +4261,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         text_file(os_path(testdir, "zza.service"),"""
@@ -4346,7 +4341,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir, real)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
@@ -4483,7 +4478,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir, real)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
@@ -4634,7 +4629,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir, real)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         bindir = os_path(root, "/usr/bin")
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         testsleep = self.testname("sleep")
@@ -4725,7 +4720,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir, real)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         bindir = os_path(root, "/usr/bin")
         testsleep = self.testname("sleep")
@@ -4817,7 +4812,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir, real)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
@@ -4913,7 +4908,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir, real)
-        systemctl = _cov + realpath(_systemctl_py) + " --root=" + root
+        systemctl = cover() + realpath(_systemctl_py) + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
@@ -5052,7 +5047,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir, real)
-        systemctl = _cov + realpath(_systemctl_py) + " --root=" + root
+        systemctl = cover() + realpath(_systemctl_py) + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
@@ -5167,7 +5162,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir, real)
-        systemctl = _cov + realpath(_systemctl_py) + " --root=" + root
+        systemctl = cover() + realpath(_systemctl_py) + " --root=" + root
         if real: vv, removelockfile, systemctl = "", "", "/usr/bin/systemctl"
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
@@ -5281,7 +5276,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         root = self.root(testdir, real)
         vv = "-vv"
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         self.rm_zzfiles(root)
         #
@@ -5355,7 +5350,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         root = self.root(testdir, real)
         vv = "-vv"
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         self.rm_zzfiles(root)
         #
@@ -5436,7 +5431,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/zzc.service"),"""
             [Unit]
             Description=Testing C
@@ -5482,7 +5477,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         text_file(os_path(testdir, "zzz.service"),"""
@@ -5525,7 +5520,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = self.root(testdir)
         logfile = os_path(root, "/var/log/test.log")
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         text_file(os_path(testdir, "zzz.service"),"""
@@ -5589,7 +5584,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         print_sh = os_path(root, "/usr/bin/print.sh")
         logfile = os_path(root, "/var/log/print_sh.log")
         text_file(os_path(root, "/etc/sysconfig/b.conf"),"""
@@ -5657,7 +5652,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         print_sh = os_path(root, "/usr/bin/print.sh")
         logfile = os_path(root, "/var/log/print_sh.log")
         service_file = os_path(root, "/etc/systemd/system/zzb zzc.service")
@@ -5731,7 +5726,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         print_sh = os_path(root, "/usr/bin/print.sh")
         logfile = os_path(root, "/var/log/print_sh.log")
         service_file = os_path(root, "/etc/systemd/user/zzb zzc.service")
@@ -5806,7 +5801,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         print_sh = os_path(root, "/usr/bin/print.sh")
         logfile = os_path(root, "/var/log/print_sh.log")
         service_file = os_path(root, "/etc/systemd/system/zzb zzc.service")
@@ -5904,7 +5899,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = self.root(testdir)
         logfile = os_path(root, "/var/log/test.log")
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         text_file(os_path(testdir, "zzs.service"),"""
@@ -5987,7 +5982,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = self.root(testdir)
         logfile = os_path(root, "/var/log/test.log")
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         text_file(os_path(testdir, "zzs.service"),"""
@@ -6047,7 +6042,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = self.root(testdir)
         logfile = os_path(root, "/var/log/test.log")
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         text_file(os_path(testdir, "zzs.service"),"""
@@ -6107,7 +6102,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = self.root(testdir)
         logfile = os_path(root, "/var/log/test.log")
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         text_file(os_path(testdir, "zzs.service"),"""
@@ -6170,7 +6165,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = self.root(testdir)
         logfile = os_path(root, "/var/log/test.log")
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         text_file(os_path(testdir, "zzs.service"),"""
@@ -6233,7 +6228,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = self.root(testdir)
         logfile = os_path(root, "/var/log/test.log")
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         text_file(os_path(testdir, "zzz.service"),"""
@@ -6289,7 +6284,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = self.root(testdir)
         logfile = os_path(root, "/var/log/test.log")
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         workingdir = "/var/testsleep"
@@ -6348,7 +6343,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = self.root(testdir)
         logfile = os_path(root, "/var/log/test.log")
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         workingdir = "/var/testsleep"
@@ -6408,7 +6403,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = self.root(testdir)
         logfile = os_path(root, "/var/log/test.log")
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         workingdir = "/var/testsleep"
@@ -6467,7 +6462,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         text_file(os_path(testdir, "zzz.service"),"""
@@ -6507,7 +6502,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = self.root(testdir)
         quick = "--coverage=quick"
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         text_file(os_path(testdir, "zzz.service"),"""
@@ -6545,7 +6540,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         text_file(os_path(testdir, "zzz.service"),"""
@@ -6587,7 +6582,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         text_file(os_path(testdir, "zzz.service"),"""
@@ -6625,7 +6620,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         text_file(os_path(testdir, "zzz.service"),"""
@@ -6663,7 +6658,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         text_file(os_path(testdir, "zzz.service"),"""
@@ -6704,7 +6699,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = self.root(testdir, real)
         vv = "-vv"
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
@@ -6755,7 +6750,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         text_file(os_path(testdir, "zza.service"),"""
@@ -6882,7 +6877,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         text_file(os_path(testdir, "zza.service"),"""
@@ -7006,7 +7001,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         #
         cmd = "{systemctl} start zz-unknown.service -vv"
         out, err, end = output3(cmd.format(**locals()))
@@ -7023,7 +7018,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         #
         cmd = "{systemctl} stop zz-unknown.service -vv"
         out, err, end = output3(cmd.format(**locals()))
@@ -7040,7 +7035,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         #
         cmd = "{systemctl} restart zz-unknown.service -vv"
         out, err, end = output3(cmd.format(**locals()))
@@ -7057,7 +7052,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         #
         cmd = "{systemctl} reload zz-unknown.service -vv"
         out, err, end = output3(cmd.format(**locals()))
@@ -7074,7 +7069,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         #
         cmd = "{systemctl} reload-or-restart zz-unknown.service -vv"
         out, err, end = output3(cmd.format(**locals()))
@@ -7091,7 +7086,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         #
         cmd = "{systemctl} reload-or-try-restart zz-unknown.service -vv"
         out, err, end = output3(cmd.format(**locals()))
@@ -7108,7 +7103,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         #
         cmd = "{systemctl} try-restart zz-unknown.service -vv"
         out, err, end = output3(cmd.format(**locals()))
@@ -7125,7 +7120,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         #
         cmd = "{systemctl} kill zz-unknown.service -vv"
         out, err, end = output3(cmd.format(**locals()))
@@ -7142,7 +7137,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         #
         cmd = "{systemctl} reset-failed zz-unknown.service -vv"
         out, err, end = output3(cmd.format(**locals()))
@@ -7159,7 +7154,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         #
         cmd = "{systemctl} mask zz-unknown.service -vv"
         out, err, end = output3(cmd.format(**locals()))
@@ -7176,7 +7171,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         #
         cmd = "{systemctl} unmask zz-unknown.service -vv"
         out, err, end = output3(cmd.format(**locals()))
@@ -7193,7 +7188,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         #
         cmd = "{systemctl} enable zz-unknown.service -vv"
         out, err, end = output3(cmd.format(**locals()))
@@ -7210,7 +7205,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         #
         cmd = "{systemctl} disable zz-unknown.service -vv"
         out, err, end = output3(cmd.format(**locals()))
@@ -7227,7 +7222,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         #
         cmd = "{systemctl} is-enabled zz-unknown.service -vv"
         out, err, end = output3(cmd.format(**locals()))
@@ -7244,7 +7239,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         #
         cmd = "{systemctl} is-failed zz-unknown.service -vv"
         out, err, end = output3(cmd.format(**locals()))
@@ -7261,7 +7256,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         #
         cmd = "{systemctl} is-active zz-unknown.service -vv"
         out, err, end = output3(cmd.format(**locals()))
@@ -7279,7 +7274,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         #
         cmd = "{systemctl} get-preset zz-unknown.service -vv"
         out, err, end = output3(cmd.format(**locals()))
@@ -7296,7 +7291,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         #
         cmd = "{systemctl} status zz-unknown.service -vv"
         out, err, end = output3(cmd.format(**locals()))
@@ -7316,7 +7311,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = self.root(testdir)
         logfile = os_path(root, "/var/log/test.log")
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         text_file(os_path(testdir, "zzs.service"),"""
@@ -7352,7 +7347,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = self.root(testdir)
         logfile = os_path(root, "/var/log/test.log")
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         text_file(os_path(testdir, "zzs.service"),"""
@@ -7405,7 +7400,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             with commands like start, restart, stop, etc"""
         user = self.user()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         systemctl += " --{system}".format(**locals())
         testsleep = testname+"_testsleep"
         testscript = testname+"_testscript.sh"
@@ -7770,7 +7765,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def forking_service_functions(self, system, testname, testdir):
         user = self.user()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         systemctl += " --{system}".format(**locals())
         testsleep = testname+"_sleep"
         logfile = os_path(root, "/var/log/"+testsleep+".log")
@@ -8101,7 +8096,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def notify_service_functions(self, system, testname, testdir):
         user = self.user()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = testname+"_sleep"
         logfile = os_path(root, "/var/log/"+testsleep+".log")
         bindir = os_path(root, "/usr/bin")
@@ -8435,7 +8430,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def notify_service_functions_with_reload(self, system, testname, testdir):
         user = self.user()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         systemctl += " --{system}".format(**locals())
         testsleep = self.testname("sleep")
         logfile = os_path(root, "/var/log/"+testsleep+".log")
@@ -8764,7 +8759,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def oneshot_service_functions(self, system, testname, testdir):
         user = self.user()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         systemctl += " --{system}".format(**locals())
         testsleep = self.testname("sleep")
         logfile = os_path(root, "/var/log/"+testsleep+".log")
@@ -8956,7 +8951,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         logfile = os_path(root, "/var/log/"+testsleep+".log")
         bindir = os_path(root, "/usr/bin")
@@ -9148,7 +9143,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         logfile = os_path(root, "/var/log/"+testsleep+".log")
         bindir = os_path(root, "/usr/bin")
@@ -9433,7 +9428,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = self.root(testdir)
         quick = "--coverage=quick"
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         logfile = os_path(root, "/var/log/"+testsleep+".log")
         bindir = os_path(root, "/usr/bin")
@@ -9715,7 +9710,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         logfile = os_path(root, "/var/log/"+testsleep+".log")
         bindir = os_path(root, "/usr/bin")
@@ -9821,7 +9816,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = self.root(testdir)
         logfile = os_path(root, "/var/log/test.log")
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         text_file(os_path(testdir, "zzz.service"),"""
@@ -9933,7 +9928,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = self.root(testdir, real)
         vv = "-vv"
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         testsleep = self.testname("testsleep")
         testfail = self.testname("testfail.sh")
@@ -10228,7 +10223,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         testsleepB = testsleep+"B"
         testsleepC = testsleep+"C"
@@ -10333,7 +10328,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         testsleepB = testsleep+"B"
         testsleepC = testsleep+"C"
@@ -10481,7 +10476,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = self.root(testdir)
         quick = "--coverage=quick"
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("testsleep")
         testsleepB = testsleep+"B"
         testsleepC = testsleep+"C"
@@ -10598,7 +10593,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = self.root(testdir)
         quick = "--coverage=quick"
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("testsleep")
         testsleepB = testsleep+"B"
         testsleepC = testsleep+"C"
@@ -10718,7 +10713,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = self.root(testdir)
         quick = "--coverage=quick"
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("testsleep")
         testsleepB = testsleep+"B"
         testsleepC = testsleep+"C"
@@ -10838,7 +10833,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         logfile = os_path(root, "/var/log/"+testname+".log")
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
@@ -10938,7 +10933,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         logfile = os_path(root, "/var/log/"+testname+".log")
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
@@ -11040,7 +11035,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         logfile = os_path(root, "/var/log/"+testname+".log")
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
@@ -11143,7 +11138,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         logfile = os_path(root, "/var/log/"+testname+".log")
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
@@ -11219,7 +11214,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         logfile = os_path(root, "/var/log/"+testname+".log")
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
@@ -11318,7 +11313,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         logfile = os_path(root, "/var/log/"+testname+".log")
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
@@ -11417,7 +11412,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         logfile = os_path(root, "/var/log/"+testname+".log")
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
@@ -11493,7 +11488,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         logfile = os_path(root, "/var/log/"+testname+".log")
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
@@ -11593,7 +11588,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         logfile = os_path(root, "/var/log/"+testname+".log")
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
@@ -11692,7 +11687,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         logfile = os_path(root, "/var/log/"+testname+".log")
         text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
@@ -11819,7 +11814,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
-        systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl = cover() + _systemctl_py + " --root=" + root
         logfile = os_path(root, "/var/log/"+testname+".log")
         text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
@@ -11868,7 +11863,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         python = os.path.basename(_python)
-        python_coverage = _python_coverage
+        python_coverage = coverage_package()
         systemctl_py = _systemctl_py
         sometime = SOMETIME or 188
         #
@@ -11902,7 +11897,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         python = os.path.basename(_python)
-        python_coverage = _python_coverage
+        python_coverage = coverage_package()
         systemctl_py = _systemctl_py
         sometime = SOMETIME or 188
         text_file(os_path(testdir, "zza.service"),"""
@@ -11963,7 +11958,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         python = os.path.basename(_python)
-        python_coverage = _python_coverage
+        python_coverage = coverage_package()
         systemctl_py = _systemctl_py
         sometime = SOMETIME or 188
         text_file(os_path(testdir, "zza.service"),"""
@@ -12033,7 +12028,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         python = os.path.basename(_python)
-        python_coverage = _python_coverage
+        python_coverage = coverage_package()
         systemctl_py = _systemctl_py
         sometime = SOMETIME or 188
         shell_file(os_path(testdir, "killall"),"""
@@ -12109,7 +12104,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         python = os.path.basename(_python)
-        python_coverage = _python_coverage
+        python_coverage = coverage_package()
         systemctl_py = _systemctl_py
         sometime = SOMETIME or 188
         text_file(os_path(testdir, "zzz.service"),"""
@@ -12175,7 +12170,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         python = os.path.basename(_python)
-        python_coverage = _python_coverage
+        python_coverage = coverage_package()
         systemctl_py = _systemctl_py
         sometime = SOMETIME or 188
         shell_file(os_path(testdir, "killall"),"""
@@ -12268,7 +12263,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         python = os.path.basename(_python)
-        python_coverage = _python_coverage
+        python_coverage = coverage_package()
         systemctl_py = _systemctl_py
         sometime = SOMETIME or 188
         shell_file(os_path(testdir, "killall"),"""
@@ -12359,7 +12354,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         python = os.path.basename(_python)
-        python_coverage = _python_coverage
+        python_coverage = coverage_package()
         systemctl_py = _systemctl_py
         sometime = SOMETIME or 188
         shell_file(os_path(testdir, "killall"),"""
@@ -12436,7 +12431,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         python = os.path.basename(_python)
-        python_coverage = _python_coverage
+        python_coverage = coverage_package()
         systemctl_py = _systemctl_py
         sometime = SOMETIME or 188
         text_file(os_path(testdir, "zza.service"),"""
@@ -12525,7 +12520,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         python = os.path.basename(_python)
-        python_coverage = _python_coverage
+        python_coverage = coverage_package()
         systemctl_py = _systemctl_py
         images = IMAGES
         sometime = SOMETIME or 188
@@ -12641,7 +12636,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         python = os.path.basename(_python)
-        python_coverage = _python_coverage
+        python_coverage = coverage_package()
         systemctl_py = _systemctl_py
         images = IMAGES
         sometime = SOMETIME or 188
@@ -12740,7 +12735,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         python = os.path.basename(_python)
-        python_coverage = _python_coverage
+        python_coverage = coverage_package()
         systemctl_py = _systemctl_py
         sometime = SOMETIME or 188
         text_file(os_path(testdir, "zza.service"),"""
@@ -12834,7 +12829,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         python = os.path.basename(_python)
-        python_coverage = _python_coverage
+        python_coverage = coverage_package()
         if COVERAGE and self.local_system():
            image = self.local_image(self.local_system())
         if _python.endswith("python3") and "centos" in image: 
@@ -12866,7 +12861,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         python = os.path.basename(_python)
-        python_coverage = _python_coverage
+        python_coverage = coverage_package()
         if COVERAGE and self.local_system():
            image = self.local_image(self.local_system())
         if _python.endswith("python3") and "centos" in image: 
@@ -12876,10 +12871,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl_py = realpath(_systemctl_py)
         systemctl_sh = os_path(testdir, "systemctl.sh")
         systemctl_py_run = systemctl_py.replace("/","_")[1:]
-        cov_run = ""
+        cov_run = cover()
         cov_option = "--system"
         if COVERAGE:
-            cov_run = _cov_run
             cov_option = "--coverage=spawn,oldest"
         sometime = SOMETIME or 188
         shell_file(systemctl_sh,"""
@@ -12997,7 +12991,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         python = os.path.basename(_python)
-        python_coverage = _python_coverage
+        python_coverage = coverage_package()
         if COVERAGE and self.local_system():
            image = self.local_image(self.local_system())
         if _python.endswith("python3") and "centos" in image: 
@@ -13007,10 +13001,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl_py = realpath(_systemctl_py)
         systemctl_sh = os_path(testdir, "systemctl.sh")
         systemctl_py_run = systemctl_py.replace("/","_")[1:]
-        cov_run = ""
+        cov_run = cover()
         cov_option = "--system"
         if COVERAGE:
-            cov_run = _cov_run
             cov_option = "--coverage=spawn,oldest"
         sometime = SOMETIME or 188
         shell_file(systemctl_sh,"""
@@ -13128,7 +13121,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         python = os.path.basename(_python)
-        python_coverage = _python_coverage
+        python_coverage = coverage_package()
         if COVERAGE and self.local_system():
            image = self.local_image(self.local_system())
         if _python.endswith("python3") and "centos" in image: 
@@ -13138,10 +13131,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl_py = realpath(_systemctl_py)
         systemctl_sh = os_path(testdir, "systemctl.sh")
         systemctl_py_run = systemctl_py.replace("/","_")[1:]
-        cov_run = ""
+        cov_run = cover()
         cov_option = "--system"
         if COVERAGE:
-            cov_run = _cov_run
             cov_option = "--coverage=spawn,oldest"
         sometime = SOMETIME or 188
         shell_file(systemctl_sh,"""
@@ -13289,7 +13281,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         python = os.path.basename(_python)
-        python_coverage = _python_coverage
+        python_coverage = coverage_package()
         if COVERAGE and self.local_system():
            image = self.local_image(self.local_system())
         if _python.endswith("python3") and "centos" in image: 
@@ -13299,10 +13291,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl_py = realpath(_systemctl_py)
         systemctl_sh = os_path(testdir, "systemctl.sh")
         systemctl_py_run = systemctl_py.replace("/","_")[1:]
-        cov_run = ""
+        cov_run = cover()
         cov_option = "--system"
         if COVERAGE:
-            cov_run = _cov_run
             cov_option = "--coverage=spawn,oldest"
         sometime = SOMETIME or 188
         shell_file(systemctl_sh,"""
@@ -13453,7 +13444,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         python = os.path.basename(_python)
-        python_coverage = _python_coverage
+        python_coverage = coverage_package()
         if COVERAGE and self.local_system():
            image = self.local_image(self.local_system())
         if _python.endswith("python3") and "centos" in image: 
@@ -13463,10 +13454,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl_py = realpath(_systemctl_py)
         systemctl_sh = os_path(testdir, "systemctl.sh")
         systemctl_py_run = systemctl_py.replace("/","_")[1:]
-        cov_run = ""
+        cov_run = cover()
         cov_option = "--system"
         if COVERAGE:
-            cov_run = _cov_run
             cov_option = "--coverage=spawn,oldest"
         sometime = SOMETIME or 188
         shell_file(systemctl_sh,"""
@@ -13614,7 +13604,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         python = os.path.basename(_python)
-        python_coverage = _python_coverage
+        python_coverage = coverage_package()
         if COVERAGE and self.local_system():
            image = self.local_image(self.local_system())
         if _python.endswith("python3") and "centos" in image: 
@@ -13624,10 +13614,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl_py = realpath(_systemctl_py)
         systemctl_sh = os_path(testdir, "systemctl.sh")
         systemctl_py_run = systemctl_py.replace("/","_")[1:]
-        cov_run = ""
+        cov_run = cover()
         cov_option = "--system"
         if COVERAGE:
-            cov_run = _cov_run
             cov_option = "--coverage=spawn,oldest"
         sometime = SOMETIME or 188
         shell_file(systemctl_sh,"""
@@ -13776,7 +13765,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         python = os.path.basename(_python)
-        python_coverage = _python_coverage
+        python_coverage = coverage_package()
         if COVERAGE and self.local_system():
            image = self.local_image(self.local_system())
         if _python.endswith("python3") and "centos" in image: 
@@ -13786,10 +13775,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl_py = realpath(_systemctl_py)
         systemctl_sh = os_path(testdir, "systemctl.sh")
         systemctl_py_run = systemctl_py.replace("/","_")[1:]
-        cov_run = ""
+        cov_run = cover()
         cov_option = "--system"
         if COVERAGE:
-            cov_run = _cov_run
             cov_option = "--coverage=spawn,oldest"
         sometime = SOMETIME or 288
         shell_file(systemctl_sh,"""
@@ -13923,7 +13911,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         python = os.path.basename(_python)
-        python_coverage = _python_coverage
+        python_coverage = coverage_package()
         if COVERAGE and self.local_system():
            image = self.local_image(self.local_system())
         if _python.endswith("python3") and "centos" in image: 
@@ -13933,10 +13921,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl_py = realpath(_systemctl_py)
         systemctl_sh = os_path(testdir, "systemctl.sh")
         systemctl_py_run = systemctl_py.replace("/","_")[1:]
-        cov_run = ""
+        cov_run = cover()
         cov_option = "--system"
         if COVERAGE:
-            cov_run = _cov_run
             cov_option = "--coverage=spawn"
         sometime = SOMETIME or 188
         shell_file(systemctl_sh,"""
@@ -14087,7 +14074,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         python = os.path.basename(_python)
-        python_coverage = _python_coverage
+        python_coverage = coverage_package()
         if COVERAGE and self.local_system():
            image = self.local_image(self.local_system())
         if _python.endswith("python3") and "centos" in image: 
@@ -14098,10 +14085,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl_py_run = systemctl_py.replace("/","_")[1:]
         systemctl_sh = os_path(testdir, "systemctl.sh")
         testsleep_sh = os_path(testdir, "testsleep.sh")
-        cov_run = ""
+        cov_run = cover()
         cov_option = "--system"
         if COVERAGE:
-            cov_run = _cov_run
             cov_option = "--coverage=spawn"
         sometime = SOMETIME or 188
         shell_file(systemctl_sh,"""
@@ -14254,11 +14240,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         python = os.path.basename(_python)
-        python_coverage = _python_coverage
-        cov_run = ""
+        python_coverage = coverage_package()
+        cov_run = cover()
         cov_option = "--system"
         if COVERAGE:
-            cov_run = _cov_run
             cov_option = "--coverage=spawn"
         if COVERAGE and self.local_system():
            image = self.local_image(self.local_system())
@@ -15180,11 +15165,6 @@ if __name__ == "__main__":
     #
     _systemctl_py = opt.systemctl_py
     _python = opt.python
-    _python_version = output(_python + " --version 2>&1")
-    if "Python 3" in _python_version:
-        _cov_run = _cov3run
-        _cov_cmd = _cov3cmd
-        _python_coverage = _python3coverage
     #
     logfile = None
     if opt.logfile:
@@ -15203,7 +15183,6 @@ if __name__ == "__main__":
     #
     if opt.coverage:
         COVERAGE = True
-        _cov = _cov_run
         if opt.coverage > 1:
             if os.path.exists(".coverage"):
                 logg.info("rm .coverage")
@@ -15237,8 +15216,8 @@ if __name__ == "__main__":
             Runner = xmlrunner.XMLTestRunner
         result = Runner(logfile.stream, verbosity=opt.verbose).run(suite)
     if opt.coverage:
-        print(" " + _cov_cmd + " combine")
-        print(" " + _cov_cmd + " report " + _systemctl_py)
-        print(" " + _cov_cmd + " annotate " + _systemctl_py)
+        print(" " + coverage_tool() + " combine")
+        print(" " + coverage_tool() + " report " + _systemctl_py)
+        print(" " + coverage_tool() + " annotate " + _systemctl_py)
     if not result.wasSuccessful():
         sys.exit(1)
