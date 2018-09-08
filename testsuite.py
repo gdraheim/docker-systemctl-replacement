@@ -95,7 +95,7 @@ def coverage_run(image = None, python = None):
 def coverage_package(image = None, python = None):
     python = python or _python
     if python.endswith("3"):
-        "python3-coverage"
+        return "python3-coverage"
     return "python-coverage"
 def cover(image = None, python = None):
     if not COVERAGE: return ""
