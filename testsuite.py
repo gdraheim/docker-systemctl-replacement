@@ -233,7 +233,7 @@ def ip_container(self, name):
     if not values or "NetworkSettings" not in values[0]:
         logg.critical(" docker inspect %s => %s ", name, values)
     return values[0]["NetworkSettings"]["IPAddress"]
-def detect_local_system(self):
+def detect_local_system():
     """ checks the controller host (a real machine / your laptop) 
         and returns a matching image name for it (docker style) """
     distro, version = "", ""
