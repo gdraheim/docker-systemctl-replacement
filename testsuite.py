@@ -5192,20 +5192,22 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir = os_path(root, "/usr/bin")
         logfile = os.path.join(os.path.abspath(testdir), "zzz.log")
         self.makedirs(os_path(root, "/var/run"))
+        if os.path.exists(logfile):
+            os.remove(logfile)
         shell_file(os_path(testdir, "zzz.init"), """
             #! /bin/bash
             case "$1" in start) 
                [ -d /var/run ] || mkdir -p /var/run
                (
                 mkdir -p {root}/var/log
-                echo zzz `date +%M:%S` starting pid >{logfile}
+                echo zzz `date +%M:%S` "[$$]" starting pid >>{logfile}
                 {bindir}/{testsleep} 111 0<&- &>/dev/null &
                 echo $! > {root}/var/run/zzz.init.pid
-                echo zzz `date +%M:%S` started pid >>{logfile}
+                echo zzz `date +%M:%S` "[$$]" started pid >>{logfile}
                 sleep 2
-                echo zzz `date +%M:%S` starting zza >>{logfile}
-                {systemctl} start zza.service {vv} {removelockfile} >>{logfile} 2>&1
-                echo zzz `date +%M:%S` started zza >>{logfile}
+                echo zzz `date +%M:%S` "[$$]" starting zza >>{logfile}
+                {systemctl} start zza.service {vv} {vv} {removelockfile} >>{logfile} 2>&1
+                echo zzz `date +%M:%S` "[$$]" started zza >>{logfile}
                ) &
                sleep 1
                ps -o pid,ppid,args
@@ -5267,23 +5269,24 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("zzz.log>\n\t%s", "\n\t".join(log1))
         #
         logg.info("====== start next")
-        cmd = "{systemctl} is-active zza.service zzz.service {vv}"
-        out, err, end = output3(cmd.format(**locals()))
-        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        cmd = "{systemctl} start zza.service {vv} {removelockfile}"
+        # cmd = "{systemctl} is-active zza.service zzz.service {vv}"
+        # out, err, end = output3(cmd.format(**locals()))
+        # logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        cmd = "{systemctl} start zza.service {vv} {vv} {removelockfile}"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
         self.assertEqual(end, 0)
         top = greps(_recent(output(_top_list)), "sleep")
         logg.info("top>>>\n| %s", "\n| ".join(top))
         self.assertTrue(greps(top, testsleep))
-        log1 = lines(open(logfile))
-        logg.info("zzz.log>\n\t%s", "\n\t".join(log1))
         #
         self.assertTrue(greps(err, "1. systemctl locked by"))
         self.assertTrue(greps(err, "the service is already running on PID"))
         self.assertTrue(greps(err, "lock got deleted, trying again"))
         self.assertTrue(greps(err, "lock got deleted, trying again"))
+        #
+        log1 = lines(open(logfile))
+        logg.info("zzz.log>\n\t%s", "\n\t".join(log1))
         #
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
