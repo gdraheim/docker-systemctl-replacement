@@ -6250,7 +6250,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(top, testsleep))
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
-        # self.rm_testdir()
+        self.rm_testdir()
         self.coverage()
         self.end()
     def test_3531_systemctl_py_simple_in_workingdirectory(self):
@@ -6309,7 +6309,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(top, testsleep))
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
-        # self.rm_testdir()
+        self.rm_testdir()
         self.coverage()
         self.end()
     def test_3532_systemctl_py_with_bad_workingdirectory(self):
@@ -6369,7 +6369,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(top, testsleep))
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
-        # self.rm_testdir()
+        self.rm_testdir()
         self.coverage()
         self.end()
     def test_3533_systemctl_py_with_bad_workingdirectory(self):
@@ -6429,7 +6429,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(top, testsleep))
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
-        # self.rm_testdir()
+        self.rm_testdir()
         self.coverage()
         self.end()
     def test_3601_non_absolute_ExecStopPost(self):
