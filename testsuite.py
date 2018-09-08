@@ -10221,10 +10221,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} is-active zzx.service {vv}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s", cmd, end, out)
-        if TODO or real: self.assertEqual(end, 0)
-        else: self.assertEqual(end, 3)
-        if TODO or real: self.assertEqual(out.strip(), "active")
-        else: self.assertEqual(out.strip(), "failed")
+        self.assertEqual(end, 0)
+        self.assertEqual(out.strip(), "active")
         self.assertEqual(end, 0) 
         self.assertEqual(out.strip(), "active")
         #
