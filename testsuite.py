@@ -570,7 +570,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("%s\n%s", cmd, out)
         self.assertEqual(end, 1)
         self.assertFalse(greps(out, "for more information"))
-        self.assertTrue(greps(out, "reload-or-try-restart"))
+        self.assertFalse(greps(out, "reload-or-try-restart"))
+        self.assertTrue(greps(out, "no such command"))
         self.coverage()
     def test_1010_systemctl_daemon_reload(self):
         """ daemon-reload always succeeds (does nothing) """
