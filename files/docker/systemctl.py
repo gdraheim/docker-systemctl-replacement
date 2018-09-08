@@ -170,7 +170,7 @@ def _var(path):
         if not os.path.isdir(runtime):
             os.makedirs(runtime)
             os.chmod(runtime, 0o700)
-        return path.replace("/var", runtime, 1)
+        return re.sub("^(/var)?", get_runtime_dir(), _notify_socket_folder)
     return path
 
 
@@ -1522,14 +1522,11 @@ class Systemctl:
         notify_socket = os.path.join(notify_socket_folder, notify_name)
         socketfile = socketfile or notify_socket
         if len(socketfile) > 100:
-            # https://unix.stackexchange.com/questions/367008/
-            # why-is-socket-path-length-limited-to-a-hundred-chars
-            logg.info("old notify socketfile (%s) = %s", len(socketfile), socketfile)
-            user = os_getlogin()
-            if not _user_mode: user = "system"
-            notify_socket_folder = _var(_notify_socket_folder)
-            prefixlength = len(user)+len(notify_socket_folder)+4
-            notify_name = user+"."+notify_name[0:min(100-prefixlength,len(notify_name))]
+            logg.debug("https://unix.stackexchange.com/questions/367008/%s",
+                       "why-is-socket-path-length-limited-to-a-hundred-chars")
+            logg.debug("old notify socketfile (%s) = %s", len(socketfile), socketfile)
+            notify_socket_folder = re.sub("^(/var)?", get_runtime_dir(), _notify_socket_folder)
+            notify_name = notify_name[0:min(100-len(notify_socket_folder),len(notify_name))]
             socketfile = os.path.join(notify_socket_folder, notify_name)
             # occurs during testsuite.py for ~user/test.tmp/root path
             logg.info("new notify socketfile (%s) = %s", len(socketfile), socketfile)
