@@ -1555,10 +1555,6 @@ class Systemctl:
                 logg.debug("socket.timeout %s", e)
         return result
     def wait_notify_socket(self, notify, timeout, pid = None):
-        if not notify:
-            logg.info("no $NOTIFY_SOCKET, waiting %s", timeout)
-            time.sleep(timeout) # for TimeoutStartSec
-            return {}
         if not os.path.exists(notify.socketfile):
             logg.info("no $NOTIFY_SOCKET exists")
             return {}
