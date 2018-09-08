@@ -54,7 +54,9 @@ def _recent(top_list):
     result = []
     for line in lines(top_list):
         if "[kworker" in line: continue
-        if "/mplayer" in line: continue
+        if " containerd-shim " in line: continue
+        if " mplayer " in line: continue
+        if " chrome " in line: continue
         if "/chrome" in line: continue
         if "/testsuite" in line: continue
         if _top_list in line: continue
@@ -160,7 +162,7 @@ def greps(lines, pattern):
 def running(lines):
     return list(each_non_defunct(lines))
 def each_non_defunct(lines):
-    for line in lines:
+    for line in _lines(lines):
         if '<defunct>' in line:
             continue
         yield line
@@ -15027,7 +15029,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} systemctl status nginx"
         sh____(cmd.format(**locals()))
         #
-        top = _recent(output(_top_list))
+        top = _recent(running(output(_top_list)))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "nginx"))
         #
@@ -15035,7 +15037,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0) # restart ok
-        top = _recent(output(_top_list))
+        top = _recent(running(output(_top_list)))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "nginx"))
         #
@@ -15047,7 +15049,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 0) # down
         cmd = "docker exec {testname} systemctl status nginx"
         sx____(cmd.format(**locals()))
-        top = _recent(output(_top_list))
+        top = _recent(running(output(_top_list)))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, "nginx"))
         #
