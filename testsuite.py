@@ -12383,7 +12383,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             stops () {begin}
               date +%T,stopping >> {logfile}
               killall {testsleep} >> {logfile} 2>&1
-              date +%T,stopped $? >> {logfile}
+              date +%T,stopped >> {logfile}
             {end}
             reload () {begin}
               date +%T,reloading >> {logfile}
@@ -12443,7 +12443,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(out.strip(), "inactive")
         #
         logg.info("== 'start' shall start a service that is NOT is-active ")
-        cmd = "docker exec {testname} {systemctl} start zzz.service -vv -vv"
+        cmd = "docker exec {testname} {systemctl} start zzz.service -vv"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
@@ -12459,12 +12459,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(out.strip(), "active")
         #
         logg.info("== 'stop' shall stop a service that is-active")
-        cmd = "docker exec {testname} {systemctl} stop zzz.service -vv -vv {quick}"
+        cmd = "docker exec {testname} {systemctl} stop zzz.service -vv {quick}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
         cmd = "docker exec {testname} cat {logfile}"
         sh____(cmd.format(**locals()))
-        self.assertEqual(end, 0)
         top = _recent(output("docker exec {testname} ps -eo etime,pid,ppid,args".format(**locals())))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
@@ -12475,14 +12475,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(out.strip(), "inactive")
         #
         # inspect the service's log
-        log = lines(open(logfile))
+        log = lines(output("docker exec {testname} cat {logfile}".format(**locals())))
         logg.info("LOG\n %s", "\n ".join(log))
         self.assertTrue(greps(log, "enter"))
         self.assertTrue(greps(log, "leave"))
         self.assertTrue(greps(log, "starting"))
         self.assertTrue(greps(log, "stopped"))
         self.assertFalse(greps(log, "reload"))
-        os.remove(logfile)
+        sh____("docker exec {testname} rm {logfile}".format(**locals()))
         #
         logg.info("== 'restart' shall start a service that NOT is-active")        
         cmd = "docker exec {testname} {systemctl} restart zzz.service -vv"
@@ -12500,14 +12500,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top1= top
         #
         # inspect the service's log
-        log = lines(open(logfile))
+        log = lines(output("docker exec {testname} cat {logfile}".format(**locals())))
         logg.info("LOG\n %s", "\n ".join(log))
         self.assertTrue(greps(log, "enter"))
         self.assertFalse(greps(log, "leave"))
         self.assertTrue(greps(log, "starting"))
         self.assertFalse(greps(log, "stopped"))
         self.assertFalse(greps(log, "reload"))
-        os.remove(logfile)
+        sh____("docker exec {testname} rm {logfile}".format(**locals()))
         #
         logg.info("== 'restart' shall restart a service that is-active")        
         cmd = "docker exec {testname} {systemctl} restart zzz.service -vv"
@@ -12542,12 +12542,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertNotEqual(ps1[0], ps2[0])
         #
         # inspect the service's log
-        log = lines(open(logfile))
+        log = lines(output("docker exec {testname} cat {logfile}".format(**locals())))
         logg.info("LOG\n %s", "\n ".join(log))
         self.assertTrue(greps(log, "enter"))
         self.assertTrue(greps(log, "starting"))
         self.assertFalse(greps(log, "reload"))
-        os.remove(logfile)
+        sh____("docker exec {testname} rm {logfile}".format(**locals()))
         #
         #
         logg.info("== 'reload' will NOT restart a service that is-active")        
@@ -12573,14 +12573,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(ps2[0], ps3[0])
         #
         # inspect the service's log
-        log = lines(open(logfile))
+        log = lines(output("docker exec {testname} cat {logfile}".format(**locals())))
         logg.info("LOG\n %s", "\n ".join(log))
         self.assertFalse(greps(log, "enter"))
         self.assertFalse(greps(log, "leave"))
         self.assertFalse(greps(log, "starting"))
         self.assertFalse(greps(log, "stopped"))
         self.assertTrue(greps(log, "reload"))
-        os.remove(logfile)
+        sh____("docker exec {testname} rm {logfile}".format(**locals()))
         #
         logg.info("== 'reload-or-restart' will restart a service that is-active (if ExecReload)")        
         cmd = "docker exec {testname} {systemctl} reload-or-restart zzz.service -vv"
