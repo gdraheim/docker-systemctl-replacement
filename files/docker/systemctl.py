@@ -170,7 +170,7 @@ def _var(path):
         if not os.path.isdir(runtime):
             os.makedirs(runtime)
             os.chmod(runtime, 0o700)
-        return re.sub("^(/var)?", get_runtime_dir(), _notify_socket_folder)
+        return re.sub("^(/var)?", get_runtime_dir(), path)
     return path
 
 
