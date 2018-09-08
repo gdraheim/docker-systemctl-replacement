@@ -8180,7 +8180,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         zzz_service = "/etc/systemd/{system}/zzz.service".format(**locals())
         copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/usr/bin/zzz.init"))
-        copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
+        copy_file(os_path(testdir, "zzz.service"), os_path(root, zzz_service))
         #
         cmd = "{systemctl} enable zzz.service -vv"
         sh____(cmd.format(**locals()))
@@ -8760,10 +8760,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertNotEqual(ps6[0], ps7[0])
         #
         logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
-        self.rm_testdir()
-        self.rm_testdir()
-        self.coverage()
-        self.end()
     def test_4040_oneshot_service_functions(self):
         """ check that we manage oneshot services in a root env
             with basic run-service commands: start, stop, restart,
@@ -12290,6 +12286,2341 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # self.assertGreater(len(lines(out2)), 2)
         #
         self.rm_testdir()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    def test_5030_simple_service_functions_system(self):
+        """ check that we manage simple services in a root env
+            with commands like start, restart, stop, etc"""
+        self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        self.simple_service_functions("system", testname, testdir)
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def test_5031_simple_service_functions_user(self):
+        """ check that we manage simple services in a root env
+            with commands like start, restart, stop, etc"""
+        self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        self.simple_service_functions("user", testname, testdir)
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def simple_service_functions(self, system, testname, testdir):
+        """ check that we manage simple services in a root env
+            with commands like start, restart, stop, etc"""
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        images = IMAGES
+        image = self.local_image(COVERAGE or IMAGE or CENTOS)
+        python = os.path.basename(_python)
+        python_coverage = coverage_package(image)
+        if _python.endswith("python3") and "centos" in image: 
+           self.skipTest("no python3 on centos")
+        package = package_tool(image)
+        refresh = refresh_tool(image)
+        sometime = SOMETIME or 188
+        #
+        user = self.user()
+        root = ""
+        systemctl_py = realpath(_systemctl_py)
+        systemctl = cover() + "/usr/bin/systemctl"
+        systemctl += " --{system}".format(**locals())
+        testsleep = testname+"_testsleep"
+        testscript = testname+"_testscript.sh"
+        logfile = os_path(root, "/var/log/test.log")
+        bindir = os_path(root, "/usr/bin")
+        begin = "{"
+        end = "}"
+        text_file(os_path(testdir, "zzz.service"),"""
+            [Unit]
+            Description=Testing Z
+            [Service]
+            Type=simple
+            ExecStartPre=/bin/echo %n
+            ExecStart={bindir}/{testscript} 111
+            ExecStartPost=/bin/echo started $MAINPID
+            ExecStop=/usr/bin/kill -3 $MAINPID
+            ExecStopPost=/bin/echo stopped $MAINPID
+            ExecStopPost=/usr/bin/sleep 2
+            ExecReload=/usr/bin/kill -10 $MAINPID
+            KillSignal=SIGQUIT
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        shell_file(os_path(testdir, testscript),"""
+            #! /bin/sh
+            date +%T,enter > {logfile}
+            stops () {begin}
+              date +%T,stopping >> {logfile}
+              killall {testsleep}
+              date +%T,stopped >> {logfile}
+            {end}
+            reload () {begin}
+              date +%T,reloading >> {logfile}
+              date +%T,reloaded >> {logfile}
+            {end}
+            trap "stops" 3   # SIGQUIT
+            trap "reload" 10 # SIGUSR1
+            date +%T,starting >> {logfile}
+            {bindir}/{testsleep} $1 >> {logfile} 2>&1 &
+            while kill -0 $!; do 
+               # use 'kill -0' to check the existance of the child
+               date +%T,waiting >> {logfile}
+               # use 'wait' for children AND external signals
+               wait
+            done
+            date +%T,leaving >> {logfile}
+            trap - 3 10 # SIGQUIT SIGUSR1
+            date +%T,leave >> {logfile}
+        """.format(**locals()))
+
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
+        sx____(cmd.format(**locals()))
+        cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} mkdir -p /etc/systemd/system"
+        sx____(cmd.format(**locals()))
+        if COVERAGE:
+            cmd = "docker exec {testname} {package} install -y {python_coverage}"
+            sh____(cmd.format(**locals()))
+        else:
+            cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
+            sx____(cmd.format(**locals()))
+
+        cmd = "docker cp /usr/bin/sleep {testname}:{bindir}/{testsleep}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/{testscript} {testname}:{bindir}/{testscript}"
+        sh____(cmd.format(**locals()))
+        zzz_service = "/etc/systemd/{system}/zzz.service".format(**locals())
+        cmd = "docker cp {testdir}/zzz.service {testname}:{zzz_service}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} touch {logfile}"
+        sh____(cmd.format(**locals()))
+        #
+        cmd = "docker exec {testname} {systemctl} enable zzz.service -vv"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        self.assertEqual(out.strip(), "inactive")
+        #
+        logg.info("== 'start' shall start a service that is NOT is-active ")
+        cmd = "docker exec {testname} {systemctl} start zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(out.strip(), "active")
+        #
+        logg.info("== 'stop' shall stop a service that is-active")
+        cmd = "docker exec {testname} {systemctl} stop zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        self.assertEqual(out.strip(), "inactive")
+        #
+        # inspect the service's log
+        log = lines(open(logfile))
+        logg.info("LOG\n %s", "\n ".join(log))
+        self.assertTrue(greps(log, "enter"))
+        self.assertTrue(greps(log, "leave"))
+        self.assertTrue(greps(log, "starting"))
+        self.assertTrue(greps(log, "stopped"))
+        self.assertFalse(greps(log, "reload"))
+        os.remove(logfile)
+        #
+        logg.info("== 'restart' shall start a service that NOT is-active")        
+        cmd = "docker exec {testname} {systemctl} restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(out.strip(), "active")
+        top1= top
+        #
+        # inspect the service's log
+        log = lines(open(logfile))
+        logg.info("LOG\n %s", "\n ".join(log))
+        self.assertTrue(greps(log, "enter"))
+        self.assertFalse(greps(log, "leave"))
+        self.assertTrue(greps(log, "starting"))
+        self.assertFalse(greps(log, "stopped"))
+        self.assertFalse(greps(log, "reload"))
+        os.remove(logfile)
+        #
+        logg.info("== 'restart' shall restart a service that is-active")        
+        cmd = "docker exec {testname} {systemctl} restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(out.strip(), "active")
+        top2 = top
+        #
+        logg.info("-- and we check that there is a new PID for the service process")
+        def find_pids(ps_output, command):
+            pids = []
+            for line in ps_output.split("\n"):
+                if command not in line: continue
+                m = re.match(r"\s*[\d:]*\s+(\S+)\s+(\S+)\s+(.*)", line)
+                pid, ppid, args = m.groups()
+                # logg.info("  %s | %s | %s", pid, ppid, args)
+                pids.append(pid)
+            return pids
+        ps1 = find_pids(top1, testsleep)
+        ps2 = find_pids(top2, testsleep)
+        logg.info("found PIDs %s and %s", ps1, ps2)
+        self.assertTrue(len(ps1), 1)
+        self.assertTrue(len(ps2), 1)
+        self.assertNotEqual(ps1[0], ps2[0])
+        #
+        # inspect the service's log
+        log = lines(open(logfile))
+        logg.info("LOG\n %s", "\n ".join(log))
+        self.assertTrue(greps(log, "enter"))
+        self.assertTrue(greps(log, "starting"))
+        self.assertFalse(greps(log, "reload"))
+        os.remove(logfile)
+        #
+        #
+        logg.info("== 'reload' will NOT restart a service that is-active")        
+        cmd = "docker exec {testname} {systemctl} reload zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(out.strip(), "active")
+        top3 = top
+        #
+        logg.info("-- and we check that there is NO new PID for the service process")
+        ps3 = find_pids(top3, testsleep)
+        logg.info("found PIDs %s and %s", ps2, ps3)
+        self.assertTrue(len(ps2), 1)
+        self.assertTrue(len(ps3), 1)
+        self.assertEqual(ps2[0], ps3[0])
+        #
+        # inspect the service's log
+        log = lines(open(logfile))
+        logg.info("LOG\n %s", "\n ".join(log))
+        self.assertFalse(greps(log, "enter"))
+        self.assertFalse(greps(log, "leave"))
+        self.assertFalse(greps(log, "starting"))
+        self.assertFalse(greps(log, "stopped"))
+        self.assertTrue(greps(log, "reload"))
+        os.remove(logfile)
+        #
+        logg.info("== 'reload-or-restart' will restart a service that is-active (if ExecReload)")        
+        cmd = "docker exec {testname} {systemctl} reload-or-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(out.strip(), "active")
+        top4 = top
+        #
+        logg.info("-- and we check that there is NO new PID for the service process (if ExecReload)")
+        ps4 = find_pids(top4, testsleep)
+        logg.info("found PIDs %s and %s", ps3, ps4)
+        self.assertTrue(len(ps3), 1)
+        self.assertTrue(len(ps4), 1)
+        self.assertEqual(ps3[0], ps4[0])
+        #
+        logg.info("== 'kill' will bring is-active non-active as well (when the PID is known)")        
+        cmd = "docker exec {testname} {systemctl} kill zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        self.assertEqual(out.strip(), "inactive")
+        #
+        logg.info("== 'stop' will turn 'failed' to 'inactive' (when the PID is known)")        
+        cmd = "docker exec {testname} {systemctl} stop zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertNotEqual(end, 0) # no PID known so 'kill $MAINPID' fails
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        self.assertEqual(out.strip(), "inactive")
+        #
+        logg.info("== 'reload-or-try-restart' will not start a not-active service")        
+        cmd = "docker exec {testname} {systemctl} reload-or-try-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        self.assertEqual(out.strip(), "inactive")
+        #
+        logg.info("== 'try-restart' will not start a not-active service")        
+        cmd = "docker exec {testname} {systemctl} try-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        self.assertEqual(out.strip(), "inactive")
+        #
+        logg.info("== 'reload-or-restart' will start a not-active service")        
+        cmd = "docker exec {testname} {systemctl} reload-or-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(out.strip(), "active")
+        top5 = top
+        #
+        logg.info("== 'reload-or-try-restart' will NOT restart an is-active service (with ExecReload)")        
+        cmd = "docker exec {testname} {systemctl} reload-or-try-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(out.strip(), "active")
+        top6 = top
+        #
+        logg.info("-- and we check that there is NO new PID for the service process (if ExecReload)")
+        ps5 = find_pids(top5, testsleep)
+        ps6 = find_pids(top6, testsleep)
+        logg.info("found PIDs %s and %s", ps5, ps6)
+        self.assertTrue(len(ps5), 1)
+        self.assertTrue(len(ps6), 1)
+        self.assertEqual(ps5[0], ps6[0])
+        #
+        logg.info("== 'try-restart' will restart an is-active service")        
+        cmd = "docker exec {testname} {systemctl} try-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(out.strip(), "active")
+        top7 = top
+        #
+        logg.info("-- and we check that there is a new PID for the service process")
+        ps7 = find_pids(top7, testsleep)
+        logg.info("found PIDs %s and %s", ps6, ps7)
+        self.assertTrue(len(ps6), 1)
+        self.assertTrue(len(ps7), 1)
+        self.assertNotEqual(ps6[0], ps7[0])
+
+        #
+        # cleanup
+        kill_testsleep = "killall {testsleep}"
+        sx____(kill_testsleep.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+    def test_5032_forking_service_functions_system(self):
+        """ check that we manage forking services in a root env
+            with basic run-service commands: start, stop, restart,
+            reload, try-restart, reload-or-restart, kill and
+            reload-or-try-restart."""
+        self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        self.forking_service_functions("system", testname, testdir)
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def test_5033_forking_service_functions_user(self):
+        """ check that we manage forking services in a root env
+            with basic run-service commands: start, stop, restart,
+            reload, try-restart, reload-or-restart, kill and
+            reload-or-try-restart."""
+        self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        self.forking_service_functions("user", testname, testdir)
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def forking_service_functions(self, system, testname, testdir):
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        images = IMAGES
+        image = self.local_image(COVERAGE or IMAGE or CENTOS)
+        python = os.path.basename(_python)
+        python_coverage = coverage_package(image)
+        if _python.endswith("python3") and "centos" in image: 
+           self.skipTest("no python3 on centos")
+        package = package_tool(image)
+        refresh = refresh_tool(image)
+        sometime = SOMETIME or 188
+        #
+        user = self.user()
+        root = ""
+        systemctl_py = realpath(_systemctl_py)
+        systemctl = cover() + "/usr/bin/systemctl"
+        systemctl += " --{system}".format(**locals())
+        testsleep = testname+"_sleep"
+        logfile = os_path(root, "/var/log/"+testsleep+".log")
+        bindir = os_path(root, "/usr/bin")
+        os.makedirs(os_path(root, "/var/run"))
+        begin = "{" ; end = "}"
+        shell_file(os_path(testdir, "zzz.init"), """
+            #! /bin/bash
+            logfile={logfile}
+            start() {begin} 
+               [ -d /var/run ] || mkdir -p /var/run
+               ({bindir}/{testsleep} 111 0<&- &>/dev/null &
+                echo $! > {root}/var/run/zzz.init.pid
+               ) &
+               wait %1
+               # ps -o pid,ppid,args
+            {end}
+            stop() {begin}
+               killall {testsleep}
+            {end}
+            case "$1" in start)
+               date "+START.%T" >> $logfile
+               start >> $logfile 2>&1
+               date "+start.%T" >> $logfile
+            ;; stop)
+               date "+STOP.%T" >> $logfile
+               stop >> $logfile 2>&1
+               date "+stop.%T" >> $logfile
+            ;; restart)
+               date "+RESTART.%T" >> $logfile
+               stop >> $logfile 2>&1
+               start >> $logfile 2>&1
+               date "+.%T" >> $logfile
+            ;; reload)
+               date "+RELOAD.%T" >> $logfile
+               echo "...." >> $logfile 2>&1
+               date "+reload.%T" >> $logfile
+            ;; esac 
+            echo "done$1" >&2
+            exit 0
+            """.format(**locals()))
+        text_file(os_path(testdir, "zzz.service"),"""
+            [Unit]
+            Description=Testing Z
+            [Service]
+            Type=forking
+            PIDFile={root}/var/run/zzz.init.pid
+            ExecStart={root}/usr/bin/zzz.init start
+            ExecStop={root}/usr/bin/zzz.init stop
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
+        sx____(cmd.format(**locals()))
+        cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} mkdir -p /etc/systemd/system"
+        sx____(cmd.format(**locals()))
+        if COVERAGE:
+            cmd = "docker exec {testname} {package} install -y {python_coverage}"
+            sh____(cmd.format(**locals()))
+        else:
+            cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
+            sx____(cmd.format(**locals()))
+
+        zzz_service = "/etc/systemd/{system}/zzz.service".format(**locals())
+        cmd = "docker cp /usr/bin/sleep {testname}:{bindir}/{testsleep}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zzz.init {testname}:/usr/bin/zzz.init"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zzz.service {testname}:{zzz_service}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} touch {logfile}"
+        sh____(cmd.format(**locals()))
+        #
+        cmd = "docker exec {testname} {systemctl} enable zzz.service -vv"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        self.assertEqual(out.strip(), "inactive")
+        #
+        logg.info("== 'start' shall start a service that is NOT is-active ")
+        cmd = "docker exec {testname} {systemctl} start zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(out.strip(), "active")
+        #
+        logg.info("== 'stop' shall stop a service that is-active")
+        cmd = "docker exec {testname} {systemctl} stop zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        self.assertEqual(out.strip(), "inactive")
+        #
+        logg.info("== 'restart' shall start a service that NOT is-active")        
+        cmd = "docker exec {testname} {systemctl} restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(out.strip(), "active")
+        top1= top
+        #
+        logg.info("== 'restart' shall restart a service that is-active")        
+        cmd = "docker exec {testname} {systemctl} restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(out.strip(), "active")
+        top2 = top
+        #
+        logg.info("-- and we check that there is a new PID for the service process")
+        def find_pids(ps_output, command):
+            pids = []
+            for line in ps_output.split("\n"):
+                if command not in line: continue
+                m = re.match(r"\s*[\d:]*\s+(\S+)\s+(\S+)\s+(.*)", line)
+                pid, ppid, args = m.groups()
+                # logg.info("  %s | %s | %s", pid, ppid, args)
+                pids.append(pid)
+            return pids
+        ps1 = find_pids(top1, testsleep)
+        ps2 = find_pids(top2, testsleep)
+        logg.info("found PIDs %s and %s", ps1, ps2)
+        self.assertTrue(len(ps1), 1)
+        self.assertTrue(len(ps2), 1)
+        self.assertNotEqual(ps1[0], ps2[0])
+        #
+        logg.info("== 'reload' will NOT restart a service that is-active")        
+        cmd = "docker exec {testname} {systemctl} reload zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(out.strip(), "active")
+        top3 = top
+        #
+        logg.info("-- and we check that there is NO new PID for the service process")
+        ps3 = find_pids(top3, testsleep)
+        logg.info("found PIDs %s and %s", ps2, ps3)
+        self.assertTrue(len(ps2), 1)
+        self.assertTrue(len(ps3), 1)
+        self.assertEqual(ps2[0], ps3[0])
+        #
+        logg.info("== 'reload-or-restart' will restart a service that is-active (if no ExecReload)")        
+        cmd = "docker exec {testname} {systemctl} reload-or-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(out.strip(), "active")
+        top4 = top
+        #
+        logg.info("-- and we check that there is a new PID for the service process (if no ExecReload)")
+        ps4 = find_pids(top4, testsleep)
+        logg.info("found PIDs %s and %s", ps3, ps4)
+        self.assertTrue(len(ps3), 1)
+        self.assertTrue(len(ps4), 1)
+        self.assertNotEqual(ps3[0], ps4[0])
+        #
+        logg.info("== 'kill' will bring is-active non-active as well (when the PID is known)")        
+        cmd = "docker exec {testname} {systemctl} kill zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        self.assertEqual(out.strip(), "failed")
+        #
+        logg.info("== 'stop' will turn 'failed' to 'inactive' (when the PID is known)")        
+        cmd = "docker exec {testname} {systemctl} stop zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        self.assertEqual(out.strip(), "inactive")
+        #
+        logg.info("== 'reload-or-try-restart' will not start a not-active service")        
+        cmd = "docker exec {testname} {systemctl} reload-or-try-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        self.assertEqual(out.strip(), "inactive")
+        #
+        logg.info("== 'try-restart' will not start a not-active service")        
+        cmd = "docker exec {testname} {systemctl} try-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        self.assertEqual(out.strip(), "inactive")
+        #
+        logg.info("== 'reload-or-restart' will start a not-active service")        
+        cmd = "docker exec {testname} {systemctl} reload-or-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(out.strip(), "active")
+        top5 = top
+        #
+        logg.info("== 'reload-or-try-restart' will restart an is-active service (with no ExecReload)")        
+        cmd = "docker exec {testname} {systemctl} try-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(out.strip(), "active")
+        top6 = top
+        #
+        logg.info("-- and we check that there is a new PID for the service process (if no ExecReload)")
+        ps5 = find_pids(top5, testsleep)
+        ps6 = find_pids(top6, testsleep)
+        logg.info("found PIDs %s and %s", ps5, ps6)
+        self.assertTrue(len(ps5), 1)
+        self.assertTrue(len(ps6), 1)
+        self.assertNotEqual(ps5[0], ps6[0])
+        #
+        logg.info("== 'try-restart' will restart an is-active service")        
+        cmd = "docker exec {testname} {systemctl} try-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(out.strip(), "active")
+        top7 = top
+        #
+        logg.info("-- and we check that there is a new PID for the service process")
+        ps7 = find_pids(top7, testsleep)
+        logg.info("found PIDs %s and %s", ps6, ps7)
+        self.assertTrue(len(ps6), 1)
+        self.assertTrue(len(ps7), 1)
+        self.assertNotEqual(ps6[0], ps7[0])
+        #
+        logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+    def test_5034_notify_service_functions_system(self):
+        """ check that we manage notify services in a root env
+            with basic run-service commands: start, stop, restart,
+            reload, try-restart, reload-or-restart, kill and
+            reload-or-try-restart."""
+        self.begin()
+        if not os.path.exists("/usr/bin/socat"):
+            self.skipTest("missing /usr/bin/socat")
+        testname = self.testname()
+        testdir = self.testdir()
+        self.notify_service_functions("system", testname, testdir)
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def test_5035_notify_service_functions_user(self):
+        """ check that we manage notify services in a root env
+            with basic run-service commands: start, stop, restart,
+            reload, try-restart, reload-or-restart, kill and
+            reload-or-try-restart."""
+        self.begin()
+        if not os.path.exists("/usr/bin/socat"):
+            self.skipTest("missing /usr/bin/socat")
+        testname = self.testname()
+        testdir = self.testdir()
+        self.notify_service_functions("user", testname, testdir)
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def notify_service_functions(self, system, testname, testdir):
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        images = IMAGES
+        image = self.local_image(COVERAGE or IMAGE or CENTOS)
+        python = os.path.basename(_python)
+        python_coverage = coverage_package(image)
+        if _python.endswith("python3") and "centos" in image: 
+           self.skipTest("no python3 on centos")
+        package = package_tool(image)
+        refresh = refresh_tool(image)
+        sometime = SOMETIME or 188
+        #
+        user = self.user()
+        root = ""
+        systemctl_py = realpath(_systemctl_py)
+        systemctl = cover() + "/usr/bin/systemctl"
+        testsleep = testname+"_sleep"
+        logfile = os_path(root, "/var/log/"+testsleep+".log")
+        bindir = os_path(root, "/usr/bin")
+        os.makedirs(os_path(root, "/var/run"))
+        begin = "{" ; end = "}"
+        shell_file(os_path(testdir, "zzz.init"), """
+            #! /bin/bash
+            logfile={logfile}
+            start() {begin} 
+                ls -l  $NOTIFY_SOCKET
+                {bindir}/{testsleep} 111 0<&- &>/dev/null &
+                echo "MAINPID=$!" | socat -v -d - UNIX-CLIENT:$NOTIFY_SOCKET
+                echo "READY=1" | socat -v -d - UNIX-CLIENT:$NOTIFY_SOCKET
+                wait %1
+                # ps -o pid,ppid,args
+            {end}
+            stop() {begin}
+                killall {testsleep}
+            {end}
+            case "$1" in start)
+               date "+START.%T" >> $logfile
+               start >> $logfile 2>&1
+               date "+start.%T" >> $logfile
+            ;; stop)
+               date "+STOP.%T" >> $logfile
+               stop >> $logfile 2>&1
+               date "+stop.%T" >> $logfile
+            ;; restart)
+               date "+RESTART.%T" >> $logfile
+               stop >> $logfile 2>&1
+               start >> $logfile 2>&1
+               date "+.%T" >> $logfile
+            ;; reload)
+               date "+RELOAD.%T" >> $logfile
+               echo "...." >> $logfile 2>&1
+               date "+reload.%T" >> $logfile
+            ;; esac 
+            echo "done$1" >&2
+            exit 0
+            """.format(**locals()))
+        text_file(os_path(testdir, "zzz.service"),"""
+            [Unit]
+            Description=Testing Z
+            [Service]
+            Type=notify
+            # PIDFile={root}/var/run/zzz.init.pid
+            ExecStart={root}/usr/bin/zzz.init start
+            ExecStop={root}/usr/bin/zzz.init stop
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
+        sx____(cmd.format(**locals()))
+        cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} mkdir -p /etc/systemd/system"
+        sx____(cmd.format(**locals()))
+        if COVERAGE:
+            cmd = "docker exec {testname} {package} install -y {python_coverage}"
+            sh____(cmd.format(**locals()))
+        else:
+            cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
+            sx____(cmd.format(**locals()))
+
+        zzz_service = "/etc/systemd/{system}/zzz.service".format(**locals())
+        cmd = "docker cp /usr/bin/sleep {testname}:{bindir}/{testsleep}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zzz.init {testname}:/usr/bin/zzz.init"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zzz.service {testname}:{zzz_service}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} touch {logfile}"
+        sh____(cmd.format(**locals()))
+        #
+        cmd = "docker exec {testname} {systemctl} enable zzz.service -vv"
+        sh____(cmd.format(**locals()))
+        #
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        self.assertEqual(out.strip(), "inactive")
+        #
+        logg.info("== 'start' shall start a service that is NOT is-active ")
+        cmd = "docker exec {testname} {systemctl} start zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(out.strip(), "active")
+        #
+        logg.info("== 'stop' shall stop a service that is-active")
+        cmd = "docker exec {testname} {systemctl} stop zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        self.assertEqual(out.strip(), "inactive")
+        #
+        logg.info("== 'restart' shall start a service that NOT is-active")        
+        cmd = "docker exec {testname} {systemctl} restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(out.strip(), "active")
+        top1= top
+        #
+        logg.info("== 'restart' shall restart a service that is-active")        
+        cmd = "docker exec {testname} {systemctl} restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(out.strip(), "active")
+        top2 = top
+        #
+        logg.info("-- and we check that there is a new PID for the service process")
+        def find_pids(ps_output, command):
+            pids = []
+            for line in ps_output.split("\n"):
+                if command not in line: continue
+                m = re.match(r"\s*[\d:]*\s+(\S+)\s+(\S+)\s+(.*)", line)
+                pid, ppid, args = m.groups()
+                # logg.info("  %s | %s | %s", pid, ppid, args)
+                pids.append(pid)
+            return pids
+        ps1 = find_pids(top1, testsleep)
+        ps2 = find_pids(top2, testsleep)
+        logg.info("found PIDs %s and %s", ps1, ps2)
+        self.assertTrue(len(ps1), 1)
+        self.assertTrue(len(ps2), 1)
+        self.assertNotEqual(ps1[0], ps2[0])
+        #
+        logg.info("== 'reload' will NOT restart a service that is-active")        
+        cmd = "docker exec {testname} {systemctl} reload zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(out.strip(), "active")
+        top3 = top
+        #
+        logg.info("-- and we check that there is NO new PID for the service process")
+        ps3 = find_pids(top3, testsleep)
+        logg.info("found PIDs %s and %s", ps2, ps3)
+        self.assertTrue(len(ps2), 1)
+        self.assertTrue(len(ps3), 1)
+        self.assertEqual(ps2[0], ps3[0])
+        #
+        logg.info("== 'reload-or-restart' will restart a service that is-active (if no ExecReload)")        
+        cmd = "docker exec {testname} {systemctl} reload-or-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(out.strip(), "active")
+        top4 = top
+        #
+        logg.info("-- and we check that there is a new PID for the service process (if no ExecReload)")
+        ps4 = find_pids(top4, testsleep)
+        logg.info("found PIDs %s and %s", ps3, ps4)
+        self.assertTrue(len(ps3), 1)
+        self.assertTrue(len(ps4), 1)
+        self.assertNotEqual(ps3[0], ps4[0])
+        #
+        logg.info("== 'kill' will bring is-active non-active as well (when the PID is known)")        
+        cmd = "docker exec {testname} {systemctl} kill zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        self.assertEqual(out.strip(), "inactive")
+        #
+        logg.info("== 'stop' will turn 'failed' to 'inactive' (when the PID is known)")        
+        cmd = "docker exec {testname} {systemctl} stop zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        self.assertEqual(out.strip(), "inactive")
+        #
+        logg.info("== 'reload-or-try-restart' will not start a not-active service")        
+        cmd = "docker exec {testname} {systemctl} reload-or-try-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        self.assertEqual(out.strip(), "inactive")
+        #
+        logg.info("== 'try-restart' will not start a not-active service")        
+        cmd = "docker exec {testname} {systemctl} try-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        self.assertEqual(out.strip(), "inactive")
+        #
+        logg.info("== 'reload-or-restart' will start a not-active service")        
+        cmd = "docker exec {testname} {systemctl} reload-or-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(out.strip(), "active")
+        top5 = top
+        #
+        logg.info("== 'reload-or-try-restart' will restart an is-active service (with no ExecReload)")        
+        cmd = "docker exec {testname} {systemctl} try-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(out.strip(), "active")
+        top6 = top
+        #
+        logg.info("-- and we check that there is a new PID for the service process (if no ExecReload)")
+        ps5 = find_pids(top5, testsleep)
+        ps6 = find_pids(top6, testsleep)
+        logg.info("found PIDs %s and %s", ps5, ps6)
+        self.assertTrue(len(ps5), 1)
+        self.assertTrue(len(ps6), 1)
+        self.assertNotEqual(ps5[0], ps6[0])
+        #
+        logg.info("== 'try-restart' will restart an is-active service")        
+        cmd = "docker exec {testname} {systemctl} try-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(out.strip(), "active")
+        top7 = top
+        #
+        logg.info("-- and we check that there is a new PID for the service process")
+        ps7 = find_pids(top7, testsleep)
+        logg.info("found PIDs %s and %s", ps6, ps7)
+        self.assertTrue(len(ps6), 1)
+        self.assertTrue(len(ps7), 1)
+        self.assertNotEqual(ps6[0], ps7[0])
+        #
+        logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
+        #
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+    def test_5036_notify_service_functions_with_reload(self):
+        """ check that we manage notify services in a root env
+            with basic run-service commands: start, stop, restart,
+            reload, try-restart, reload-or-restart, kill and
+            reload-or-try-restart. (with ExecReload)"""
+        self.begin()
+        if not os.path.exists("/usr/bin/socat"):
+            self.skipTest("missing /usr/bin/socat")
+        testname = self.testname()
+        testdir = self.testdir()
+        self.notify_service_functions_with_reload("system", testname, testdir)
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def test_5037_notify_service_functions_with_reload_user(self):
+        """ check that we manage notify services in a root env
+            with basic run-service commands: start, stop, restart,
+            reload, try-restart, reload-or-restart, kill and
+            reload-or-try-restart. (with ExecReload)"""
+        # test_5037 is triggering len(socketfile) > 100 | "new notify socketfile"
+        self.begin()
+        if not os.path.exists("/usr/bin/socat"):
+            self.skipTest("missing /usr/bin/socat")
+        testname = self.testname()
+        testdir = self.testdir()
+        self.notify_service_functions_with_reload("user", testname, testdir)
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def notify_service_functions_with_reload(self, system, testname, testdir):
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        images = IMAGES
+        image = self.local_image(COVERAGE or IMAGE or CENTOS)
+        python = os.path.basename(_python)
+        python_coverage = coverage_package(image)
+        if _python.endswith("python3") and "centos" in image: 
+           self.skipTest("no python3 on centos")
+        package = package_tool(image)
+        refresh = refresh_tool(image)
+        sometime = SOMETIME or 188
+        #
+        user = self.user()
+        root = ""
+        systemctl_py = realpath(_systemctl_py)
+        systemctl = cover() + "/usr/bin/systemctl"
+        systemctl += " --{system}".format(**locals())
+        testsleep = self.testname("sleep")
+        logfile = os_path(root, "/var/log/"+testsleep+".log")
+        bindir = os_path(root, "/usr/bin")
+        os.makedirs(os_path(root, "/var/run"))
+        begin = "{" ; end = "}"
+        shell_file(os_path(testdir, "zzz.init"), """
+            #! /bin/bash
+            logfile={logfile}
+            start() {begin} 
+                ls -l  $NOTIFY_SOCKET
+                {bindir}/{testsleep} 111 0<&- &>/dev/null &
+                echo "MAINPID=$!" | socat -v -d - UNIX-CLIENT:$NOTIFY_SOCKET
+                echo "READY=1" | socat -v -d - UNIX-CLIENT:$NOTIFY_SOCKET
+                wait %1
+                # ps -o pid,ppid,args
+            {end}
+            stop() {begin}
+                killall {testsleep}
+            {end}
+            case "$1" in start)
+               date "+START.%T" >> $logfile
+               start >> $logfile 2>&1
+               date "+start.%T" >> $logfile
+            ;; stop)
+               date "+STOP.%T" >> $logfile
+               stop >> $logfile 2>&1
+               date "+stop.%T" >> $logfile
+            ;; restart)
+               date "+RESTART.%T" >> $logfile
+               stop >> $logfile 2>&1
+               start >> $logfile 2>&1
+               date "+.%T" >> $logfile
+            ;; reload)
+               date "+RELOAD.%T" >> $logfile
+               echo "...." >> $logfile 2>&1
+               date "+reload.%T" >> $logfile
+            ;; esac 
+            echo "done$1" >&2
+            exit 0
+            """.format(**locals()))
+        text_file(os_path(testdir, "zzz.service"),"""
+            [Unit]
+            Description=Testing Z
+            [Service]
+            Type=notify
+            # PIDFile={root}/var/run/zzz.init.pid
+            ExecStart={root}/usr/bin/zzz.init start
+            ExecReload={root}/usr/bin/zzz.init reload
+            ExecStop={root}/usr/bin/zzz.init stop
+            TimeoutRestartSec=4
+            TimeoutReloadSec=4
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
+        sx____(cmd.format(**locals()))
+        cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} mkdir -p /etc/systemd/system"
+        sx____(cmd.format(**locals()))
+        if COVERAGE:
+            cmd = "docker exec {testname} {package} install -y {python_coverage}"
+            sh____(cmd.format(**locals()))
+        else:
+            cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
+            sx____(cmd.format(**locals()))
+
+        zzz_service = "/etc/systemd/{system}/zzz.service".format(**locals())
+        cmd = "docker cp /usr/bin/sleep {testname}:{bindir}/{testsleep}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zzz.init {testname}:/usr/bin/zzz.init"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zzz.service {testname}:{zzz_service}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} touch {logfile}"
+        sh____(cmd.format(**locals()))
+        #
+        cmd = "docker exec {testname} {systemctl} enable zzz.service -vv"
+        sh____(cmd.format(**locals()))
+        #
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        self.assertEqual(out.strip(), "inactive")
+        #
+        logg.info("== 'start' shall start a service that is NOT is-active ")
+        cmd = "docker exec {testname} {systemctl} start zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(out.strip(), "active")
+        #
+        logg.info("== 'stop' shall stop a service that is-active")
+        cmd = "docker exec {testname} {systemctl} stop zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        self.assertEqual(out.strip(), "inactive")
+        #
+        logg.info("== 'restart' shall start a service that NOT is-active")        
+        cmd = "docker exec {testname} {systemctl} restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(out.strip(), "active")
+        top1= top
+        #
+        logg.info("== 'restart' shall restart a service that is-active")        
+        cmd = "docker exec {testname} {systemctl} restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(out.strip(), "active")
+        top2 = top
+        #
+        logg.info("-- and we check that there is a new PID for the service process")
+        def find_pids(ps_output, command):
+            pids = []
+            for line in ps_output.split("\n"):
+                if command not in line: continue
+                m = re.match(r"\s*[\d:]*\s+(\S+)\s+(\S+)\s+(.*)", line)
+                pid, ppid, args = m.groups()
+                # logg.info("  %s | %s | %s", pid, ppid, args)
+                pids.append(pid)
+            return pids
+        ps1 = find_pids(top1, testsleep)
+        ps2 = find_pids(top2, testsleep)
+        logg.info("found PIDs %s and %s", ps1, ps2)
+        self.assertTrue(len(ps1), 1)
+        self.assertTrue(len(ps2), 1)
+        self.assertNotEqual(ps1[0], ps2[0])
+        #
+        logg.info("== 'reload' will NOT restart a service that is-active")        
+        cmd = "docker exec {testname} {systemctl} reload zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(out.strip(), "active")
+        top3 = top
+        #
+        logg.info("-- and we check that there is NO new PID for the service process")
+        ps3 = find_pids(top3, testsleep)
+        logg.info("found PIDs %s and %s", ps2, ps3)
+        self.assertTrue(len(ps2), 1)
+        self.assertTrue(len(ps3), 1)
+        self.assertEqual(ps2[0], ps3[0])
+        #
+        logg.info("== 'reload-or-restart' will restart a service that is-active (if no ExecReload)")        
+        cmd = "docker exec {testname} {systemctl} reload-or-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(out.strip(), "active")
+        top4 = top
+        #
+        logg.info("-- and we check that there is the same PID for the service process (if ExecReload)")
+        ps4 = find_pids(top4, testsleep)
+        logg.info("found PIDs %s and %s", ps3, ps4)
+        self.assertTrue(len(ps3), 1)
+        self.assertTrue(len(ps4), 1)
+        self.assertEqual(ps3[0], ps4[0])
+        #
+        logg.info("== 'kill' will bring is-active non-active as well (when the PID is known)")        
+        cmd = "docker exec {testname} {systemctl} kill zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        self.assertEqual(out.strip(), "inactive")
+        #
+        logg.info("== 'stop' will turn 'failed' to 'inactive' (when the PID is known)")  #TODO#
+        cmd = "docker exec {testname} {systemctl} stop zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        self.assertEqual(out.strip(), "inactive")
+        #
+        logg.info("== 'reload-or-try-restart' will not start a not-active service")        
+        cmd = "docker exec {testname} {systemctl} reload-or-try-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        self.assertEqual(out.strip(), "inactive")
+        #
+        logg.info("== 'try-restart' will not start a not-active service")        
+        cmd = "docker exec {testname} {systemctl} try-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        self.assertEqual(out.strip(), "inactive")
+        #
+        logg.info("== 'reload-or-restart' will start a not-active service")        
+        cmd = "docker exec {testname} {systemctl} reload-or-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(out.strip(), "active")
+        top5 = top
+        #
+        logg.info("== 'reload-or-try-restart' will restart an is-active service (with no ExecReload)")        
+        cmd = "docker exec {testname} {systemctl} try-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(out.strip(), "active")
+        top6 = top
+        #
+        logg.info("-- and we check that there is a new PID for the service process (if no ExecReload)")
+        ps5 = find_pids(top5, testsleep)
+        ps6 = find_pids(top6, testsleep)
+        logg.info("found PIDs %s and %s", ps5, ps6)
+        self.assertTrue(len(ps5), 1)
+        self.assertTrue(len(ps6), 1)
+        self.assertNotEqual(ps5[0], ps6[0])
+        #
+        logg.info("== 'try-restart' will restart an is-active service")        
+        cmd = "docker exec {testname} {systemctl} try-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(out.strip(), "active")
+        top7 = top
+        #
+        logg.info("-- and we check that there is a new PID for the service process")
+        ps7 = find_pids(top7, testsleep)
+        logg.info("found PIDs %s and %s", ps6, ps7)
+        self.assertTrue(len(ps6), 1)
+        self.assertTrue(len(ps7), 1)
+        self.assertNotEqual(ps6[0], ps7[0])
+        #
+        logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
+        #
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+    def test_5040_oneshot_service_functions(self):
+        """ check that we manage oneshot services in a root env
+            with basic run-service commands: start, stop, restart,
+            reload, try-restart, reload-or-restart, kill and
+            reload-or-try-restart."""
+        self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        self.oneshot_service_functions("system", testname, testdir)
+    def test_5041_oneshot_service_functions_user(self):
+        """ check that we manage oneshot services in a root env
+            with basic run-service commands: start, stop, restart,
+            reload, try-restart, reload-or-restart, kill and
+            reload-or-try-restart."""
+        self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        self.oneshot_service_functions("user", testname, testdir)
+    def oneshot_service_functions(self, system, testname, testdir):
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        images = IMAGES
+        image = self.local_image(COVERAGE or IMAGE or CENTOS)
+        python = os.path.basename(_python)
+        python_coverage = coverage_package(image)
+        if _python.endswith("python3") and "centos" in image: 
+           self.skipTest("no python3 on centos")
+        package = package_tool(image)
+        refresh = refresh_tool(image)
+        sometime = SOMETIME or 188
+        #
+        user = self.user()
+        root = ""
+        systemctl_py = realpath(_systemctl_py)
+        systemctl = cover() + "/usr/bin/systemctl"
+        systemctl += " --{system}".format(**locals())
+        testsleep = self.testname("sleep")
+        logfile = os_path(root, "/var/log/"+testsleep+".log")
+        bindir = os_path(root, "/usr/bin")
+        os.makedirs(os_path(root, "/var/run"))
+        begin = "{" ; end = "}"
+        text_file(os_path(testdir, "zzz.service"),"""
+            [Unit]
+            Description=Testing Z
+            [Service]
+            Type=oneshot
+            ExecStartPre={bindir}/backup {root}/var/tmp/test.1 {root}/var/tmp/test.2
+            ExecStart=/usr/bin/touch {root}/var/tmp/test.1
+            ExecStop=/usr/bin/rm {root}/var/tmp/test.1
+            ExecStopPost=/usr/bin/rm -f {root}/var/tmp/test.2
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        shell_file(os_path(testdir, "backup"), """
+           #! /bin/sh
+           set -x
+           test ! -f "$1" || mv -v "$1" "$2"
+        """)
+
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
+        sx____(cmd.format(**locals()))
+        cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} mkdir -p /etc/systemd/system"
+        sx____(cmd.format(**locals()))
+        if COVERAGE:
+            cmd = "docker exec {testname} {package} install -y {python_coverage}"
+            sh____(cmd.format(**locals()))
+        else:
+            cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
+            sx____(cmd.format(**locals()))
+
+        zzz_service = "/etc/systemd/{system}/zzz.service".format(**locals())
+        cmd = "docker cp /usr/bin/sleep {testname}:{bindir}/{testsleep}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zzz.service {testname}:{zzz_service}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} touch {logfile}"
+        sh____(cmd.format(**locals()))
+
+        copy_tool(os_path(testdir, "backup"), os_path(root, "/usr/bin/backup"))
+        text_file(os_path(root, "/var/tmp/test.0"), """..""")
+        #
+        cmd = "docker exec {testname} {systemctl} enable zzz.service -vv"
+        sh____(cmd.format(**locals()))
+        #
+        is_active = "{systemctl} is-active zzz.service -vv"
+        act, end = output2(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "inactive")
+        self.assertEqual(end, 3)
+        #
+        logg.info("== 'start' shall start a service that is NOT is-active ")
+        cmd = "docker exec {testname} {systemctl} start zzz.service -vvvv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertEqual(end, 0)
+        act, end = output2(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "active")
+        self.assertEqual(end, 0)
+        self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        #
+        logg.info("== 'stop' shall stop a service that is-active")
+        cmd = "docker exec {testname} {systemctl} stop zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertEqual(end, 0)
+        act, end = output2(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "inactive")
+        self.assertEqual(end, 3)
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        #
+        logg.info("== 'restart' shall start a service that NOT is-active")        
+        cmd = "docker exec {testname} {systemctl} restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertEqual(end, 0)
+        act, end = output2(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "active")
+        self.assertEqual(end, 0)
+        self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        #
+        logg.info("== 'restart' shall restart a service that is-active")        
+        cmd = "docker exec {testname} {systemctl} restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertEqual(end, 0)
+        act, end = output2(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "active")
+        self.assertEqual(end, 0)
+        self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        #
+        logg.info("== 'reload' will NOT restart a service that is-active")        
+        cmd = "docker exec {testname} {systemctl} reload zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertEqual(end, 0)
+        act, end = output2(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "active")
+        self.assertEqual(end, 0)
+        self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        #
+        logg.info("== 'reload-or-restart' will restart a service that is-active")        
+        cmd = "docker exec {testname} {systemctl} reload-or-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertEqual(end, 0)
+        act, end = output2(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "active")
+        self.assertEqual(end, 0)
+        #
+        logg.info("== 'stop' will brings it back to 'inactive'")        
+        cmd = "docker exec {testname} {systemctl} stop zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertEqual(end, 0)
+        act, end = output2(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "inactive")
+        self.assertEqual(end, 3)
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        #
+        logg.info("== 'reload-or-try-restart' will not start a not-active service")        
+        cmd = "docker exec {testname} {systemctl} reload-or-try-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertEqual(end, 0)
+        act, end = output2(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "inactive")
+        self.assertEqual(end, 3)
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        #
+        logg.info("== 'try-restart' will not start a not-active service")        
+        cmd = "docker exec {testname} {systemctl} try-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertEqual(end, 0)
+        act, end = output2(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "inactive")
+        self.assertEqual(end, 3)
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        #
+        logg.info("== 'reload-or-restart' will start a not-active service")        
+        cmd = "docker exec {testname} {systemctl} reload-or-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertEqual(end, 0)
+        act, end = output2(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "active")
+        self.assertEqual(end, 0)
+        self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        #
+        logg.info("== 'reload-or-try-restart' will restart an is-active service")        
+        cmd = "docker exec {testname} {systemctl} reload-or-try-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertEqual(end, 0)
+        act, end = output2(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "active")
+        self.assertEqual(end, 0)
+        self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        #
+        logg.info("== 'try-restart' will restart an is-active service")        
+        cmd = "docker exec {testname} {systemctl} try-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertEqual(end, 0)
+        act, end = output2(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "active")
+        self.assertEqual(end, 0)
+        self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        #
+        logg.info("== 'stop' will brings it back to 'inactive'")        
+        cmd = "docker exec {testname} {systemctl} stop zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertEqual(end, 0)
+        act, end = output2(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "inactive")
+        self.assertEqual(end, 3)
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        #
+        logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+    def test_5042_oneshot_and_unknown_service_functions(self):
+        """ check that we manage multiple services even when some
+            services are not actually known. Along with oneshot serivce
+            with basic run-service commands: start, stop, restart,
+            reload, try-restart, reload-or-restart, kill and
+            reload-or-try-restart / we have only different exit-code."""
+        self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        images = IMAGES
+        image = self.local_image(COVERAGE or IMAGE or CENTOS)
+        python = os.path.basename(_python)
+        python_coverage = coverage_package(image)
+        if _python.endswith("python3") and "centos" in image: 
+           self.skipTest("no python3 on centos")
+        package = package_tool(image)
+        refresh = refresh_tool(image)
+        sometime = SOMETIME or 188
+        #
+        user = self.user()
+        root = ""
+        systemctl_py = realpath(_systemctl_py)
+        systemctl = cover() + "/usr/bin/systemctl"
+        testsleep = self.testname("sleep")
+        logfile = os_path(root, "/var/log/"+testsleep+".log")
+        bindir = os_path(root, "/usr/bin")
+        os.makedirs(os_path(root, "/var/run"))
+        begin = "{" ; end = "}"
+        text_file(os_path(testdir, "zzz.service"),"""
+            [Unit]
+            Description=Testing Z
+            [Service]
+            Type=oneshot
+            ExecStartPre={bindir}/backup {root}/var/tmp/test.1 {root}/var/tmp/test.2
+            ExecStart=/usr/bin/touch {root}/var/tmp/test.1
+            ExecStop=/usr/bin/rm {root}/var/tmp/test.1
+            ExecStopPost=/usr/bin/rm -f {root}/var/tmp/test.2
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        shell_file(os_path(testdir, "backup"), """
+           #! /bin/sh
+           set -x
+           test ! -f "$1" || mv -v "$1" "$2"
+        """)
+
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
+        sx____(cmd.format(**locals()))
+        cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} mkdir -p /etc/systemd/system"
+        sx____(cmd.format(**locals()))
+        if COVERAGE:
+            cmd = "docker exec {testname} {package} install -y {python_coverage}"
+            sh____(cmd.format(**locals()))
+        else:
+            cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
+            sx____(cmd.format(**locals()))
+
+        cmd = "docker cp /usr/bin/sleep {testname}:{bindir}/{testsleep}"
+        sh____(cmd.format(**locals()))
+        copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
+        sh____(cmd.format(**locals()))
+        copy_tool(os_path(testdir, "backup"), os_path(root, "/usr/bin/backup"))
+        sh____(cmd.format(**locals()))
+        text_file(os_path(root, "/var/tmp/test.0"), """..""")
+        cmd = "docker exec {testname} touch {logfile}"
+        sh____(cmd.format(**locals()))
+        #
+        cmd = "docker exec {testname} {systemctl} enable zzz.service -vv"
+        sh____(cmd.format(**locals()))
+        is_active = "{systemctl} is-active zzz.service other.service -vv"
+        act, end = output2(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "inactive\nunknown")
+        self.assertEqual(end, 3)
+        #
+        logg.info("== 'start' shall start a service that is NOT is-active ")
+        cmd = "docker exec {testname} {systemctl} start zzz.service other.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertNotEqual(end, 0)
+        is_active = "{systemctl} is-active zzz.service other.service -vv"
+        act, end = output2(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "active\nunknown")
+        self.assertEqual(end, 3) 
+        self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        #
+        logg.info("== 'stop' shall stop a service that is-active")
+        cmd = "docker exec {testname} {systemctl} stop zzz.service other.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertNotEqual(end, 0)
+        act, end = output2(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "inactive\nunknown")
+        self.assertEqual(end, 3)
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        #
+        logg.info("== 'restart' shall start a service that NOT is-active")        
+        cmd = "docker exec {testname} {systemctl} restart zzz.service other.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertNotEqual(end, 0)
+        act, end = output2(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "active\nunknown")
+        self.assertEqual(end, 3)
+        self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        #
+        logg.info("== 'restart' shall restart a service that is-active")        
+        cmd = "docker exec {testname} {systemctl} restart zzz.service other.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertNotEqual(end, 0)
+        act, end = output2(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "active\nunknown")
+        self.assertEqual(end, 3)
+        self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        #
+        logg.info("== 'reload' will NOT restart a service that is-active")        
+        cmd = "docker exec {testname} {systemctl} reload zzz.service other.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertNotEqual(end, 0)
+        act, end = output2(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "active\nunknown")
+        self.assertEqual(end, 3)
+        self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        #
+        logg.info("== 'reload-or-restart' will restart a service that is-active")        
+        cmd = "docker exec {testname} {systemctl} reload-or-restart zzz.service other.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertNotEqual(end, 0)
+        act, end = output2(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "active\nunknown")
+        self.assertEqual(end, 3)
+        #
+        logg.info("== 'stop' will brings it back to 'inactive'")        
+        cmd = "docker exec {testname} {systemctl} stop zzz.service other.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertNotEqual(end, 0)
+        act, end = output2(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "inactive\nunknown")
+        self.assertEqual(end, 3)
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        #
+        logg.info("== 'reload-or-try-restart' will not start a not-active service")        
+        cmd = "docker exec {testname} {systemctl} reload-or-try-restart zzz.service other.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertNotEqual(end, 0)
+        act, end = output2(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "inactive\nunknown")
+        self.assertEqual(end, 3)
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        #
+        logg.info("== 'try-restart' will not start a not-active service")        
+        cmd = "docker exec {testname} {systemctl} try-restart zzz.service other.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertNotEqual(end, 0)
+        act, end = output2(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "inactive\nunknown")
+        self.assertEqual(end, 3)
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        #
+        logg.info("== 'reload-or-restart' will start a not-active service")        
+        cmd = "docker exec {testname} {systemctl} reload-or-restart zzz.service other.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertNotEqual(end, 0)
+        act, end = output2(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "active\nunknown")
+        self.assertEqual(end, 3)
+        self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        #
+        logg.info("== 'reload-or-try-restart' will restart an is-active service")        
+        cmd = "docker exec {testname} {systemctl} reload-or-try-restart zzz.service other.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertNotEqual(end, 0)
+        act, end = output2(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "active\nunknown")
+        self.assertEqual(end, 3)
+        self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        #
+        logg.info("== 'try-restart' will restart an is-active service")        
+        cmd = "docker exec {testname} {systemctl} try-restart zzz.service other.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertNotEqual(end, 0)
+        act, end = output2(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "active\nunknown")
+        self.assertEqual(end, 3)
+        self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        #
+        logg.info("== 'stop' will brings it back to 'inactive'")        
+        cmd = "docker exec {testname} {systemctl} stop zzz.service other.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s =>\n%s", cmd, out)
+        self.assertNotEqual(end, 0)
+        act, end = output2(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "inactive\nunknown")
+        self.assertEqual(end, 3)
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        #
+        logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
+        self.rm_testdir()
+        self.coverage()
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        self.end()
+    def test_5044_sysv_service_functions(self):
+        """ check that we manage SysV services in a root env
+            with basic run-service commands: start, stop, restart,
+            reload, try-restart, reload-or-restart, kill and
+            reload-or-try-restart."""
+        self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        images = IMAGES
+        image = self.local_image(COVERAGE or IMAGE or CENTOS)
+        python = os.path.basename(_python)
+        python_coverage = coverage_package(image)
+        if _python.endswith("python3") and "centos" in image: 
+           self.skipTest("no python3 on centos")
+        package = package_tool(image)
+        refresh = refresh_tool(image)
+        sometime = SOMETIME or 188
+        #
+        user = self.user()
+        root = ""
+        systemctl_py = realpath(_systemctl_py)
+        systemctl = cover() + "/usr/bin/systemctl"
+        testsleep = self.testname("sleep")
+        logfile = os_path(root, "/var/log/"+testsleep+".log")
+        bindir = os_path(root, "/usr/bin")
+        os.makedirs(os_path(root, "/var/run"))
+        begin = "{" ; end = "}"
+        shell_file(os_path(testdir, "zzz.init"), """
+            #! /bin/bash
+            ### BEGIN INIT INFO
+            # Required-Start: $local_fs $remote_fs $syslog $network 
+            # Required-Stop:  $local_fs $remote_fs $syslog $network
+            # Default-Start:  3 5
+            # Default-Stop:   0 1 2 6
+            # Short-Description: Testing Z
+            # Description:    Allows for SysV testing
+            ### END INIT INFO
+            logfile={logfile}
+            sleeptime=111
+            start() {begin} 
+               [ -d /var/run ] || mkdir -p /var/run
+               ({bindir}/{testsleep} $sleeptime 0<&- &>/dev/null &
+                echo $! > {root}/var/run/zzz.init.pid
+               ) &
+               wait %1
+               # ps -o pid,ppid,args
+               cat "RUNNING `cat {root}/var/run/zzz.init.pid`"
+            {end}
+            stop() {begin}
+               killall {testsleep}
+            {end}
+            case "$1" in start)
+               date "+START.%T" >> $logfile
+               start >> $logfile 2>&1
+               date "+start.%T" >> $logfile
+            ;; stop)
+               date "+STOP.%T" >> $logfile
+               stop >> $logfile 2>&1
+               date "+stop.%T" >> $logfile
+            ;; restart)
+               date "+RESTART.%T" >> $logfile
+               stop >> $logfile 2>&1
+               start >> $logfile 2>&1
+               date "+.%T" >> $logfile
+            ;; reload)
+               date "+RELOAD.%T" >> $logfile
+               echo "...." >> $logfile 2>&1
+               date "+reload.%T" >> $logfile
+            ;; esac 
+            echo "done$1" >&2
+            exit 0
+            """.format(**locals()))
+
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
+        sx____(cmd.format(**locals()))
+        cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} mkdir -p /etc/systemd/system"
+        sx____(cmd.format(**locals()))
+        if COVERAGE:
+            cmd = "docker exec {testname} {package} install -y {python_coverage}"
+            sh____(cmd.format(**locals()))
+        else:
+            cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
+            sx____(cmd.format(**locals()))
+
+        cmd = "docker cp /usr/bin/sleep {testname}:{bindir}/{testsleep}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zzz.init {testname}:/etc/init.d/zzz"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} touch {logfile}"
+        sh____(cmd.format(**locals()))
+        #
+        cmd = "docker exec {testname} {systemctl} enable zzz.service -vv"
+        sh____(cmd.format(**locals()))
+        #
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        self.assertEqual(out.strip(), "inactive")
+        #
+        logg.info("== 'start' shall start a service that is NOT is-active ")
+        cmd = "docker exec {testname} {systemctl} start zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(out.strip(), "active")
+        #
+        logg.info("== 'stop' shall stop a service that is-active")
+        cmd = "docker exec {testname} {systemctl} stop zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        self.assertEqual(out.strip(), "inactive")
+        #
+        logg.info("== 'restart' shall start a service that NOT is-active")        
+        cmd = "docker exec {testname} {systemctl} restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(out.strip(), "active")
+        top1= top
+        #
+        logg.info("== 'restart' shall restart a service that is-active")        
+        cmd = "docker exec {testname} {systemctl} restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(out.strip(), "active")
+        top2 = top
+        #
+        logg.info("-- and we check that there is a new PID for the service process")
+        def find_pids(ps_output, command):
+            pids = []
+            for line in ps_output.split("\n"):
+                if command not in line: continue
+                m = re.match(r"\s*[\d:]*\s+(\S+)\s+(\S+)\s+(.*)", line)
+                pid, ppid, args = m.groups()
+                # logg.info("  %s | %s | %s", pid, ppid, args)
+                pids.append(pid)
+            return pids
+        ps1 = find_pids(top1, testsleep)
+        ps2 = find_pids(top2, testsleep)
+        logg.info("found PIDs %s and %s", ps1, ps2)
+        self.assertTrue(len(ps1), 1)
+        self.assertTrue(len(ps2), 1)
+        self.assertNotEqual(ps1[0], ps2[0])
+        #
+        logg.info("== 'reload' will NOT restart a service that is-active")        
+        cmd = "docker exec {testname} {systemctl} reload zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(out.strip(), "active")
+        top3 = top
+        #
+        logg.info("-- and we check that there is NO new PID for the service process")
+        ps3 = find_pids(top3, testsleep)
+        logg.info("found PIDs %s and %s", ps2, ps3)
+        self.assertTrue(len(ps2), 1)
+        self.assertTrue(len(ps3), 1)
+        self.assertEqual(ps2[0], ps3[0])
+        #
+        logg.info("== 'reload-or-restart' may restart a service that is-active")        
+        cmd = "docker exec {testname} {systemctl} reload-or-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(out.strip(), "active")
+        #
+        logg.info("== 'stop' will turn 'failed' to 'inactive' (when the PID is known)")        
+        cmd = "docker exec {testname} {systemctl} stop zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        self.assertEqual(out.strip(), "inactive")
+        #
+        logg.info("== 'reload-or-try-restart' will not start a not-active service")        
+        cmd = "docker exec {testname} {systemctl} reload-or-try-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        self.assertEqual(out.strip(), "inactive")
+        #
+        logg.info("== 'try-restart' will not start a not-active service")        
+        cmd = "docker exec {testname} {systemctl} try-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        self.assertEqual(out.strip(), "inactive")
+        #
+        logg.info("== 'reload-or-restart' will start a not-active service")        
+        cmd = "docker exec {testname} {systemctl} reload-or-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(out.strip(), "active")
+        top5 = top
+        #
+        logg.info("== 'reload-or-try-restart' will restart an is-active service (with no ExecReload)")        
+        cmd = "docker exec {testname} {systemctl} reload-or-try-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(out.strip(), "active")
+        top6 = top
+        #
+        logg.info("== 'try-restart' will restart an is-active service")        
+        cmd = "docker exec {testname} {systemctl} try-restart zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(out.strip(), "active")
+        top7 = top
+        #
+        logg.info("-- and we check that there is a new PID for the service process")
+        ps6 = find_pids(top6, testsleep)
+        ps7 = find_pids(top7, testsleep)
+        logg.info("found PIDs %s and %s", ps6, ps7)
+        self.assertTrue(len(ps6), 1)
+        self.assertTrue(len(ps7), 1)
+        self.assertNotEqual(ps6[0], ps7[0])
+        #
+        logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
+        self.rm_testdir()
+        self.coverage()
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        self.end()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     def test_5080_systemctl_py_start_simple(self):
         """ check that we can start simple services in a container"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -13123,6 +15454,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
             cmd = "docker exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
+        else:
+            cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
+            sx____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
