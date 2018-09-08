@@ -233,7 +233,49 @@ def ip_container(self, name):
     if not values or "NetworkSettings" not in values[0]:
         logg.critical(" docker inspect %s => %s ", name, values)
     return values[0]["NetworkSettings"]["IPAddress"]
-
+def detect_local_system(self):
+    """ checks the controller host (a real machine / your laptop) 
+        and returns a matching image name for it (docker style) """
+    distro, version = "", ""
+    if os.path.exists("/etc/os-release"):
+        # rhel:7.4 # VERSION="7.4 (Maipo)" ID="rhel" VERSION_ID="7.4"
+        # centos:7.3  # VERSION="7 (Core)" ID="centos" VERSION_ID="7"
+        # centos:7.4  # VERSION="7 (Core)" ID="centos" VERSION_ID="7"
+        # centos:7.5.1804  # VERSION="7 (Core)" ID="centos" VERSION_ID="7"
+        # opensuse:42.3 # VERSION="42.3" ID=opensuse VERSION_ID="42.3"
+        # opensuse/leap:15.0 # VERSION="15.0" ID="opensuse-leap" VERSION_ID="15.0"
+        # ubuntu:16.04 # VERSION="16.04.3 LTS (Xenial Xerus)" ID=ubuntu VERSION_ID="16.04"
+        # ubuntu:18.04 # VERSION="18.04.1 LTS (Bionic Beaver)" ID=ubuntu VERSION_ID="18.04"
+        for line in open("/etc/os-release"):
+            key, value = "", ""
+            m = re.match('^([_\\w]+)=([^"].*).*', line.strip())
+            if m:
+                key, value = m.group(1), m.group(2)
+            m = re.match('^([_\\w]+)="([^"]*)".*', line.strip())
+            if m:
+                key, value = m.group(1), m.group(2)
+            # logg.debug("%s => '%s' '%s'", line.strip(), key, value)
+            if key in ["ID"]:
+                distro = value.replace("-","/")
+            if key in ["VERSION_ID"]:
+                version = value
+    if os.path.exists("/etc/redhat-release"):
+        for line in open("/etc/redhat-release"):
+            m = re.search("release (\\d+[.]\\d+).*", line)
+            if m:
+                distro = "rhel"
+                version = m.group(1)
+    if os.path.exists("/etc/centos-release"):
+        # CentOS Linux release 7.5.1804 (Core)
+        for line in open("/etc/centos-release"):
+            m = re.search("release (\\d+[.]\\d+).*", line)
+            if m:
+                distro = "centos"
+                version = m.group(1)
+    logg.info(":: local_system %s:%s", distro, version)
+    if distro and version:
+        return "%s:%s" % (distro, version)
+    return ""
 
 ############ the real testsuite ##############
 
@@ -316,46 +358,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def user(self):
         return os_getlogin()
     def local_system(self):
-        distro, version = "", ""
-        if os.path.exists("/etc/os-release"):
-            # rhel:7.4 # VERSION="7.4 (Maipo)" ID="rhel" VERSION_ID="7.4"
-            # centos:7.3  # VERSION="7 (Core)" ID="centos" VERSION_ID="7"
-            # centos:7.4  # VERSION="7 (Core)" ID="centos" VERSION_ID="7"
-            # centos:7.5.1804  # VERSION="7 (Core)" ID="centos" VERSION_ID="7"
-            # opensuse:42.3 # VERSION="42.3" ID=opensuse VERSION_ID="42.3"
-            # opensuse/leap:15.0 # VERSION="15.0" ID="opensuse-leap" VERSION_ID="15.0"
-            # ubuntu:16.04 # VERSION="16.04.3 LTS (Xenial Xerus)" ID=ubuntu VERSION_ID="16.04"
-            # ubuntu:18.04 # VERSION="18.04.1 LTS (Bionic Beaver)" ID=ubuntu VERSION_ID="18.04"
-            for line in open("/etc/os-release"):
-                key, value = "", ""
-                m = re.match('^([_\\w]+)=([^"].*).*', line.strip())
-                if m:
-                    key, value = m.group(1), m.group(2)
-                m = re.match('^([_\\w]+)="([^"]*)".*', line.strip())
-                if m:
-                    key, value = m.group(1), m.group(2)
-                # logg.debug("%s => '%s' '%s'", line.strip(), key, value)
-                if key in ["ID"]:
-                    distro = value.replace("-","/")
-                if key in ["VERSION_ID"]:
-                    version = value
-        if os.path.exists("/etc/redhat-release"):
-            for line in open("/etc/redhat-release"):
-                m = re.search("release (\\d+[.]\\d+).*", line)
-                if m:
-                    distro = "rhel"
-                    version = m.group(1)
-        if os.path.exists("/etc/centos-release"):
-            # CentOS Linux release 7.5.1804 (Core)
-            for line in open("/etc/centos-release"):
-                m = re.search("release (\\d+[.]\\d+).*", line)
-                if m:
-                    distro = "centos"
-                    version = m.group(1)
-        logg.info(":: local_system %s:%s", distro, version)
-        if distro and version:
-            return "%s:%s" % (distro, version)
-        return ""
+        return detect_local_system()
     def with_local_ubuntu_mirror(self, ver = None):
         """ detects a local ubuntu mirror or starts a local
             docker container with a ubunut repo mirror. It
