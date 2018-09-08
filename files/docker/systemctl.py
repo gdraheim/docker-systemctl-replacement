@@ -3931,6 +3931,7 @@ class Systemctl:
     def show_help(self, *args):
         """[command] -- show this help
         """
+        lines = []
         okay = True
         prog = os.path.basename(sys.argv[0])
         if not args:
@@ -3947,9 +3948,9 @@ class Systemctl:
                    arg = name[:-len("_modules")].replace("_","-")
                 if arg:
                    argz[arg] = name
-            print(prog, "command","[options]...")
-            print("")
-            print("Commands:")
+            lines.append("%s command [options]..." % prog)
+            lines.append("")
+            lines.append("Commands:")
             for arg in sorted(argz):
                 name = argz[arg]
                 method = getattr(self, name)
@@ -3960,11 +3961,11 @@ class Systemctl:
                 elif not self._show_all:
                     continue # pragma: nocover
                 firstline = doc.split("\n")[0]
+                doc_text = firstline.strip()
                 if "--" not in firstline:
-                    print(" ",arg,"--", firstline.strip())
-                else:
-                    print(" ", arg, firstline.strip())
-            return True
+                    doc_text = "-- " + doc_text
+                lines.append(" %s %s" % (arg, firstline.strip()))
+            return lines
         for arg in args:
             arg = arg.replace("-","_")
             func1 = getattr(self.__class__, arg+"_modules", None)
@@ -3976,20 +3977,20 @@ class Systemctl:
                 print("error: no such command '%s'" % arg)
                 okay = False
             else:
+                doc_text = "..."
                 doc = getattr(func, "__doc__", None)
-                if doc is None:
+                if doc:
+                    doc_text = doc.replace("\n","\n\n", 1).strip()
+                    if "--" not in doc_text:
+                        doc_text = "-- " + doc_text
+                else: 
                     logg.debug("__doc__ of %s is none", func_name)
-                    if not self._show_all:
-                        continue
-                    print(prog, arg, "...")
-                elif "--" in doc:
-                    print(prog, arg, doc.replace("\n","\n\n", 1))
-                else:
-                    print(prog, arg, "--", doc.replace("\n","\n\n", 1))
+                    if not self._show_all: continue
+                lines.append("%s %s %s" % (prog, arg, doc_text))
         if not okay:
             self.show_help()
             return False
-        return True
+        return lines
     def systemd_version(self):
         """ the the version line for systemd compatibility """
         return "systemd 219\n  - via systemctl.py %s" % __version__
