@@ -8723,9 +8723,21 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.begin()
         testname = self.testname()
         testdir = self.testdir()
+        self.oneshot_service_functions("system", testname, testdir)
+    def test_4041_oneshot_service_functions_user(self):
+        """ check that we manage oneshot services in a root env
+            with basic run-service commands: start, stop, restart,
+            reload, try-restart, reload-or-restart, kill and
+            reload-or-try-restart."""
+        self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        self.oneshot_service_functions("user", testname, testdir)
+    def oneshot_service_functions(self, system, testname, testdir):
         user = self.user()
         root = self.root(testdir)
         systemctl = _cov + _systemctl_py + " --root=" + root
+        systemctl += " --{system}".format(**locals())
         testsleep = self.testname("sleep")
         logfile = os_path(root, "/var/log/"+testsleep+".log")
         bindir = os_path(root, "/usr/bin")
@@ -8749,8 +8761,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
            set -x
            test ! -f "$1" || mv -v "$1" "$2"
         """)
+        zzz_service = "/etc/systemd/{system}/zzz.service".format(**locals())
         copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
-        copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
+        copy_file(os_path(testdir, "zzz.service"), os_path(root, zzz_service))
         copy_tool(os_path(testdir, "backup"), os_path(root, "/usr/bin/backup"))
         text_file(os_path(root, "/var/tmp/test.0"), """..""")
         #
