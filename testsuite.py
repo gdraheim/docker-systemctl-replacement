@@ -7572,7 +7572,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("-- and we check that there is a new PID for the service process")
         def find_pids(ps_output, command):
             pids = []
-            for line in ps_output.split("\n"):
+            for line in _lines(ps_output):
                 if command not in line: continue
                 m = re.match(r"\s*[\d:]*\s+(\S+)\s+(\S+)\s+(.*)", line)
                 pid, ppid, args = m.groups()
@@ -7921,7 +7921,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("-- and we check that there is a new PID for the service process")
         def find_pids(ps_output, command):
             pids = []
-            for line in ps_output.split("\n"):
+            for line in _lines(ps_output):
                 if command not in line: continue
                 m = re.match(r"\s*[\d:]*\s+(\S+)\s+(\S+)\s+(.*)", line)
                 pid, ppid, args = m.groups()
@@ -8252,7 +8252,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("-- and we check that there is a new PID for the service process")
         def find_pids(ps_output, command):
             pids = []
-            for line in ps_output.split("\n"):
+            for line in _lines(ps_output):
                 if command not in line: continue
                 m = re.match(r"\s*[\d:]*\s+(\S+)\s+(\S+)\s+(.*)", line)
                 pid, ppid, args = m.groups()
@@ -8588,7 +8588,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("-- and we check that there is a new PID for the service process")
         def find_pids(ps_output, command):
             pids = []
-            for line in ps_output.split("\n"):
+            for line in _lines(ps_output):
                 if command not in line: continue
                 m = re.match(r"\s*[\d:]*\s+(\S+)\s+(\S+)\s+(.*)", line)
                 pid, ppid, args = m.groups()
@@ -9294,7 +9294,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("-- and we check that there is a new PID for the service process")
         def find_pids(ps_output, command):
             pids = []
-            for line in ps_output.split("\n"):
+            for line in _lines(ps_output):
                 if command not in line: continue
                 m = re.match(r"\s*[\d:]*\s+(\S+)\s+(\S+)\s+(.*)", line)
                 pid, ppid, args = m.groups()
@@ -12527,7 +12527,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("-- and we check that there is a new PID for the service process")
         def find_pids(ps_output, command):
             pids = []
-            for line in ps_output.split("\n"):
+            for line in _lines(ps_output):
                 if command not in line: continue
                 m = re.match(r"\s*[\d:]*\s+(\S+)\s+(\S+)\s+(.*)", line)
                 pid, ppid, args = m.groups()
@@ -14472,7 +14472,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("-- and we check that there is a new PID for the service process")
         def find_pids(ps_output, command):
             pids = []
-            for line in lines(ps_output):
+            for line in _lines(ps_output):
                 if command not in line: continue
                 m = re.match(r"\s*[\d:]*\s+(\S+)\s+(\S+)\s+(.*)", line)
                 pid, ppid, args = m.groups()
