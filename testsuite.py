@@ -14738,7 +14738,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     #
     #
     #
-    def test_5080_systemctl_py_start_simple(self):
+    def test_5430_systemctl_py_start_simple(self):
         """ check that we can start simple services in a container"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -14818,7 +14818,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_5081_systemctl_py_start_extra_simple(self):
+    def test_5431_systemctl_py_start_extra_simple(self):
         """ check that we can start simple services in a container"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -14889,7 +14889,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_5082_systemctl_py_start_forking(self):
+    def test_5432_systemctl_py_start_forking(self):
         """ check that we can start forking services in a container w/ PIDFile"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -14984,7 +14984,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_5083_systemctl_py_start_forking_without_pid_file(self):
+    def test_5433_systemctl_py_start_forking_without_pid_file(self):
         """ check that we can start forking services in a container without PIDFile"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -15077,7 +15077,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_5085_systemctl_py_start_notify_by_timeout(self):
+    def test_5435_systemctl_py_start_notify_by_timeout(self):
         """ check that we can start simple services in a container w/ notify timeout"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -15158,7 +15158,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_5100_systemctl_py_run_default_services_in_container(self):
+    def test_5500_systemctl_py_run_default_services_in_container(self):
         """ check that we can enable services in a docker container to be run as default-services"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -15250,7 +15250,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_5120_systemctl_py_run_default_services_from_saved_container(self):
+    def test_5520_systemctl_py_run_default_services_from_saved_container(self):
         """ check that we can enable services in a docker container to be run as default-services
             after it has been restarted from a commit-saved container image (with --init default)"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -15371,7 +15371,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_5130_systemctl_py_run_default_services_from_simple_saved_container(self):
+    def test_5530_systemctl_py_run_default_services_from_simple_saved_container(self):
         """ check that we can enable services in a docker container to be run as default-services
             after it has been restarted from a commit-saved container image (without any arg)"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -15475,7 +15475,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_5133_systemctl_py_run_default_services_from_single_service_saved_container(self):
+    def test_5533_systemctl_py_run_default_services_from_single_service_saved_container(self):
         """ check that we can enable services in a docker container to be run as default-services
             after it has been restarted from a commit-saved container image"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
