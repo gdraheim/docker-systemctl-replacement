@@ -17935,7 +17935,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.bad_usermode_notify_service_functions_with_reload("User=foo", testname, testdir)
         self.coverage()
         self.end(266) #TODO# too long?
-    def usermode_notify_service_functions_with_reload(self, system, testname, testdir):
+    def bad_usermode_notify_service_functions_with_reload(self, extra, testname, testdir):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
         image = self.local_image(COVERAGE or IMAGE or CENTOS)
