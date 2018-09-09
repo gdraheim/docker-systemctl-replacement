@@ -17421,8 +17421,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} {systemctl} stop zzz.service -vv {quick}"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
-        self.assertEqual(end, 1)
-        self.assertTrue(greps(err, "Unit zzz.service not for --user mode"))
+        self.assertEqual(end, 1) #TODO?
+        #TODO?# self.assertTrue(greps(err, "Unit zzz.service not for --user mode"))
         #
         logg.info("== 'restart' shall start a service that NOT is-active")        
         cmd = "docker exec {testname} {systemctl} restart zzz.service -vvvv"
@@ -17491,7 +17491,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.begin()
         testname = self.testname()
         testdir = self.testdir()
-        self.forking_service_functions("User=foo", testname, testdir)
+        self.bad_usermode_forking_service_functions("User=foo", testname, testdir)
         self.rm_testdir()
         self.end()
     def bad_usermode_forking_service_functions(self, extra, testname, testdir):
@@ -17616,9 +17616,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
-        self.assertEqual(end, 1)
-        self.assertTrue(greps(err, "Unit zzz.service not for --user mode"))
-        self.assertEqual(out.strip(), "inactive")
+        self.assertEqual(end, 3)
+        #TODO?# self.assertTrue(greps(err, "Unit zzz.service not for --user mode"))
+        self.assertEqual(out.strip(), "unknown")
         #
         logg.info("== 'start' shall start a service that is NOT is-active ")
         cmd = "docker exec {testname} {systemctl} start zzz.service -vvvv {quick}"
@@ -17838,8 +17838,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
-        self.assertEqual(end, 1)
-        self.assertTrue(greps(err, "Unit zzz.service not for --user mode"))
+        self.assertEqual(end, 3)
+        #TODO?# self.assertTrue(greps(err, "Unit zzz.service not for --user mode"))
         self.assertEqual(out.strip(), "unknown")
         #
         logg.info("== 'start' shall start a service that is NOT is-active ")
@@ -17935,7 +17935,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.bad_usermode_notify_service_functions_with_reload("User=foo", testname, testdir)
         self.coverage()
         self.end(266) #TODO# too long?
-    def usermode_notify_service_functions_with_reload(self, system, testname, testdir):
+    def bad_usermode_notify_service_functions_with_reload(self, extra, testname, testdir):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
         image = self.local_image(COVERAGE or IMAGE or CENTOS)
@@ -18063,8 +18063,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
-        self.assertEqual(end, 1)
-        self.assertTrue(greps(err, "Unit zzz.service not for --user mode"))
+        self.assertEqual(end, 3)
+        #TODO?# self.assertTrue(greps(err, "Unit zzz.service not for --user mode"))
         self.assertEqual(out.strip(), "unknown")
         #
         logg.info("== 'start' shall start a service that is NOT is-active ")
@@ -18254,7 +18254,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
         self.assertEqual(end, 1)
         self.assertTrue(greps(err, "Unit zzz.service not for --user mode"))
-        self.assertEqual(out.strip(), "unknown")
+        self.assertEqual(out.strip(), "") #TODO#
         #
         logg.info("== 'start' shall start a service that is NOT is-active ")
         cmd = "docker exec {testname} {systemctl} start zzz.service -vvvv {quick}"
