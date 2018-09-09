@@ -12122,7 +12122,56 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
-    def test_5001_systemctl_py_inside_container(self):
+    #
+    #
+    ###########################################################################
+    #
+    #                           INSIDE A CONTAINER
+    #
+    ###########################################################################
+    #
+    #
+    def prep_coverage(self, testname, cov_option = None):
+        """ install a shell-wrapper /usr/bin/systemctl (testdir/systemctl.sh)
+            which calls the develop systemctl.py prefixed by our coverage tool.
+            .
+            The weird name for systemctl_py_run is special for save_coverage().
+            We take the realpath of our develop systemctl.py on purpose here.
+        """
+        testdir = self.testdir(testname)
+        cov_run = cover()
+        cov_option = cov_option or ""
+        systemctl_py = realpath(_systemctl_py)
+        systemctl_sh = os_path(testdir, "systemctl.sh")
+        systemctl_py_run = systemctl_py.replace("/","_")[1:]
+        shell_file(systemctl_sh,"""
+            #! /bin/sh
+            exec {cov_run} /{systemctl_py_run} "$@" -vv {cov_option}
+            """.format(**locals()))
+        cmd = "docker cp {systemctl_py} {testname}:/{systemctl_py_run}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {systemctl_sh} {testname}:/usr/bin/systemctl"
+        sh____(cmd.format(**locals()))
+    def save_coverage(self, *testnames):
+        """ copies the images' /.coverage to our local ./.coverage.image file.
+            Since the path of systemctl.py inside the container is different
+            than our develop systemctl.py we have to patch the .coverage file.
+            .
+            Some older coverage2 did use a binary format, so the we had ensured
+            the path of systemctl.py inside the container has the exact same
+            length as the realpath of our develop systemctl.py outside the
+            container. That way 'coverage combine' maps the results correctly."""
+        if not COVERAGE:
+            return
+        systemctl_py = realpath(_systemctl_py)
+        systemctl_py_run = systemctl_py.replace("/","_")[1:]
+        for testname in testnames:
+            coverage_file = ".coverage." + testname
+            cmd = "docker cp {testname}:.coverage .coverage.{testname}"
+            sh____(cmd.format(**locals()))
+            cmd = "sed -i -e 's:/{systemctl_py_run}:{systemctl_py}:' .coverage.{testname}"
+            sh____(cmd.format(**locals()))
+    def test_5000_systemctl_py_inside_container(self):
         """ check that we can run systemctl.py inside a docker container """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -12151,6 +12200,43 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out)
         #
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        self.assertTrue(greps(out, "systemctl.py"))
+        #
+        self.rm_testdir()
+    def test_5001_coverage_systemctl_py_inside_container(self):
+        """ check that we can run systemctl.py with coverage inside a docker container """
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        images = IMAGES
+        image = self.local_image(COVERAGE or IMAGE or CENTOS) # <<<< need to use COVERAGE image here
+        if _python.endswith("python3") and "centos" in image: 
+            self.skipTest("no python3 on centos")
+        testname = self.testname()
+        testdir = self.testdir()
+        package = package_tool(image)
+        refresh = refresh_tool(image)
+        python = os.path.basename(_python)
+        python_coverage = coverage_package(image) # <<<< and install the tool for the COVERAGE image
+        systemctl_py = _systemctl_py
+        sometime = SOMETIME or 188
+        #
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
+        sx____(cmd.format(**locals()))
+        if COVERAGE:
+             cmd = "docker exec {testname} {package} install -y {python_coverage}" # <<<< like here
+             sx____(cmd.format(**locals()))
+        self.prep_coverage(testname)     ### setup a shell-wrapper /usr/bin/systemctl calling systemctl.py
+        cmd = "docker exec {testname} systemctl --version"
+        sh____(cmd.format(**locals()))
+        out = output(cmd.format(**locals()))
+        logg.info("\n>\n%s", out)
+        #
+        self.save_coverage(testname)     ### fetch {image}:.coverage and set path to develop systemctl.py
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
         self.assertTrue(greps(out, "systemctl.py"))
@@ -15464,41 +15550,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         self.rm_testdir()
 
-    def test_6000_precheck_coverage_install(self):
-        """ Allow to have a coverage tool be installed."""
-        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
-        images = IMAGES
-        image = self.local_image(COVERAGE or IMAGE or CENTOS)
-        testname = self.testname()
-        testdir = self.testdir()
-        python = os.path.basename(_python)
-        python_coverage = coverage_package(image)
-        if _python.endswith("python3") and "centos" in image: 
-           self.skipTest("no python3 on centos")
-        package = package_tool(image)
-        refresh = refresh_tool(image)
-        sometime = SOMETIME or 188
-        #
-        logg.info("image = %s | python = %s | coverage = %s", image, python, python_coverage)
-        if python.endswith("3"):
-            self.assertIn(python, python_coverage)
-        #
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
-        cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
-        sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} {refresh}"
-        sh____(cmd.format(**locals()))
-        if COVERAGE:
-            cmd = "docker exec {testname} {package} install -y {python_coverage}"
-            sh____(cmd.format(**locals()))
-        else:
-            cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
-            sx____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
-        self.rm_testdir()
-
     def test_6130_systemctl_py_run_default_services_from_simple_saved_container(self):
         """ check that we can enable services in a docker container to be run as default-services
             after it has been restarted from a commit-saved container image.
@@ -16878,14 +16929,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
            self.skipTest("no python3 on centos")
         package = package_tool(image)
         refresh = refresh_tool(image)
-        systemctl_py = realpath(_systemctl_py)
-        systemctl_sh = os_path(testdir, "systemctl.sh")
-        systemctl_py_run = systemctl_py.replace("/","_")[1:]
         sometime = SOMETIME or 188
-        shell_file(systemctl_sh,"""
-            #! /bin/sh
-            exec {cov_run} /{systemctl_py_run} "$@" -vv {cov_option}
-            """.format(**locals()))
         user = self.user()
         testsleep = self.testname("sleep")
         shell_file(os_path(testdir, "zzz.init"), """
@@ -16912,16 +16956,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
-
-
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
         cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
-        sh____(cmd.format(**locals()))
-        cmd = "docker cp {systemctl_py} {testname}:/{systemctl_py_run}"
-        sh____(cmd.format(**locals()))
-        cmd = "docker cp {systemctl_sh} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
         cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/{testsleep}"
         sh____(cmd.format(**locals()))
@@ -16929,12 +16967,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
+        sx____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "docker exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
-        else:
-            cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
-            sx____(cmd.format(**locals()))
+        self.prep_coverage(testname, cov_option) 
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
         #
@@ -17007,16 +17045,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out3 = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out3)
         #
-        if COVERAGE:
-            coverage_file = ".coverage." + testname
-            cmd = "docker cp {testname}x:.coverage {coverage_file}"
-            sh____(cmd.format(**locals()))
-            cmd = "sed -i -e 's:/{systemctl_py_run}:{systemctl_py}:' {coverage_file}"
-            sh____(cmd.format(**locals()))
-            cmd = "docker cp {testname}x:.coverage {coverage_file}_x"
-            sh____(cmd.format(**locals()))
-            cmd = "sed -i -e 's:/{systemctl_py_run}:{systemctl_py}:' {coverage_file}_x"
-            sh____(cmd.format(**locals()))
+        self.save_coverage(testname, testname+"x")
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
