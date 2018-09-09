@@ -12148,6 +12148,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl_py_run = systemctl_py.replace("/","_")[1:]
         shell_file(systemctl_sh,"""
             #! /bin/sh
+            cd /tmp
             exec {cov_run} /{systemctl_py_run} "$@" -vv {cov_option}
             """.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/{systemctl_py_run}"
@@ -12169,7 +12170,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl_py_run = systemctl_py.replace("/","_")[1:]
         for testname in testnames:
             coverage_file = ".coverage." + testname
-            cmd = "docker cp {testname}:.coverage .coverage.{testname}"
+            cmd = "docker cp {testname}:/tmp/.coverage .coverage.{testname}"
             sh____(cmd.format(**locals()))
             cmd = "sed -i -e 's:/{systemctl_py_run}:{systemctl_py}:' .coverage.{testname}"
             sh____(cmd.format(**locals()))
@@ -14896,6 +14897,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} chown somebody /tmp/.coverage"
+        sx____(cmd.format(**locals()))
         #
         cmd = "docker commit -c 'CMD [\"/usr/bin/systemctl\"]' -c 'USER somebody' {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
@@ -15081,6 +15084,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd somebody -g nobody -m"
         sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl --version"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} chown somebody /tmp/.coverage"
+        sx____(cmd.format(**locals()))
         #
         cmd = "docker commit -c 'CMD [\"/usr/bin/systemctl\"]' -c 'USER somebody' {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
@@ -15507,6 +15514,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd somebody -g nobody -m"
         sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl --version"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} chown somebody /tmp/.coverage"
+        sx____(cmd.format(**locals()))
         #
         cmd = "docker commit -c 'CMD [\"/usr/bin/systemctl\"]' -c 'USER somebody' {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
@@ -15889,6 +15900,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd somebody -g nobody -m"
         sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl --version"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} chown somebody /tmp/.coverage"
+        sx____(cmd.format(**locals()))
         #
         cmd = "docker commit -c 'CMD [\"/usr/bin/systemctl\"]' -c 'USER somebody' {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
@@ -16284,6 +16299,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd somebody -g nobody -m"
         sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl --version"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} chown somebody /tmp/.coverage"
+        sx____(cmd.format(**locals()))
         #
         cmd = "docker commit -c 'CMD [\"/usr/bin/systemctl\"]' -c 'USER somebody' {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
@@ -16643,6 +16662,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
         #
+        cmd = "docker exec {testname} systemctl --version"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} chown somebody /tmp/.coverage"
+        sx____(cmd.format(**locals()))
+        #
         cmd = "docker commit -c 'CMD [\"/usr/bin/systemctl\"]' -c 'USER somebody' {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         cmd = "docker rm -f {testname}"
@@ -16916,6 +16940,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("found testfiles:\n%s", testfiles)
         self.assertFalse(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
+        #
+        cmd = "docker exec {testname} systemctl --version"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} chown somebody /tmp/.coverage"
+        sx____(cmd.format(**locals()))
         #
         cmd = "docker commit -c 'CMD [\"/usr/bin/systemctl\"]' -c 'USER somebody' {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
@@ -17208,6 +17237,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd somebody -g nobody -m"
         sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl --version"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} chown somebody /tmp/.coverage"
+        sx____(cmd.format(**locals()))
         #
         cmd = "docker commit -c 'CMD [\"/usr/bin/systemctl\"]' -c 'USER somebody' {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
@@ -17354,6 +17387,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd somebody -g nobody -m"
         sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl --version"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} chown somebody /tmp/.coverage"
+        sx____(cmd.format(**locals()))
         #
         cmd = "docker commit -c 'CMD [\"/usr/bin/systemctl\"]' -c 'USER somebody' {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
@@ -17559,6 +17596,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd somebody -g nobody -m"
         sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl --version"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} chown somebody /tmp/.coverage"
+        sx____(cmd.format(**locals()))
         #
         cmd = "docker commit -c 'CMD [\"/usr/bin/systemctl\"]' -c 'USER somebody' {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
@@ -17776,6 +17817,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd somebody -g nobody -m"
         sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl --version"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} chown somebody /tmp/.coverage"
+        sx____(cmd.format(**locals()))
         #
         cmd = "docker commit -c 'CMD [\"/usr/bin/systemctl\"]' -c 'USER somebody' {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
@@ -17997,6 +18042,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd somebody -g nobody -m"
         sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl --version"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} chown somebody /tmp/.coverage"
+        sx____(cmd.format(**locals()))
         #
         cmd = "docker commit -c 'CMD [\"/usr/bin/systemctl\"]' -c 'USER somebody' {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
@@ -18181,6 +18230,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("found testfiles:\n%s", testfiles)
         self.assertFalse(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
+        #
+        cmd = "docker exec {testname} systemctl --version"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} chown somebody /tmp/.coverage"
+        sx____(cmd.format(**locals()))
         #
         cmd = "docker commit -c 'CMD [\"/usr/bin/systemctl\"]' -c 'USER somebody' {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
