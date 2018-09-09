@@ -12392,7 +12392,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     #  compare the following with the test_4030 series
     #
     #
-    def test_5030_runuser_simple_service_functions_system(self):
+    def test_5030_simple_service_functions_system(self):
         """ check that we manage simple services in a root env
             with commands like start, restart, stop, etc"""
         self.begin()
@@ -14865,6 +14865,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
 
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
         cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
@@ -14887,6 +14889,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} chmod 666 {logfile}"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd somebody -g nobody -m"
+        sh____(cmd.format(**locals()))
+        #
+        cmd = "docker commit -c 'CMD [\"/usr/bin/systemctl\"]' -c 'USER somebody' {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm -f {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker run -d --name {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         #
         cmd = "docker exec {testname} {systemctl} enable zzz.service -vv"
@@ -15180,6 +15189,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
     def test_5132_usermode_forking_service_functions_system(self):
         """ check that we manage forking services in a root env
             with basic run-service commands: start, stop, restart,
@@ -15276,6 +15287,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
 
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
         cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
@@ -15298,6 +15311,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} chmod 666 {logfile}"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd somebody -g nobody -m"
+        sh____(cmd.format(**locals()))
+        #
+        cmd = "docker commit -c 'CMD [\"/usr/bin/systemctl\"]' -c 'USER somebody' {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm -f {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker run -d --name {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         #
         cmd = "docker exec {testname} {systemctl} enable zzz.service -vv"
@@ -15545,6 +15565,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
     def test_5134_usermode_notify_service_functions_system(self):
         """ check that we manage notify services in a root env
             with basic run-service commands: start, stop, restart,
@@ -15641,6 +15663,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
 
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
         cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
@@ -15665,6 +15689,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} chmod 666 {logfile}"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd somebody -g nobody -m"
+        sh____(cmd.format(**locals()))
+        #
+        cmd = "docker commit -c 'CMD [\"/usr/bin/systemctl\"]' -c 'USER somebody' {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm -f {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker run -d --name {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         #
         cmd = "docker exec {testname} {systemctl} enable zzz.service -vv"
@@ -15921,6 +15952,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
     def test_5136_usermode_notify_service_functions_with_reload(self):
         """ check that we manage notify services in a root env
             with basic run-service commands: start, stop, restart,
@@ -16022,6 +16055,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
 
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
         cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
@@ -16046,6 +16081,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} chmod 666 {logfile}"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd somebody -g nobody -m"
+        sh____(cmd.format(**locals()))
+        #
+        cmd = "docker commit -c 'CMD [\"/usr/bin/systemctl\"]' -c 'USER somebody' {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm -f {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker run -d --name {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         #
         cmd = "docker exec {testname} {systemctl} enable zzz.service -vv"
@@ -16295,6 +16337,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
     def test_5140_usermode_oneshot_service_functions(self):
         """ check that we manage oneshot services in a root env
             with basic run-service commands: start, stop, restart,
@@ -16356,6 +16400,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
 
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
         cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
@@ -16385,6 +16431,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("found testfiles:\n%s", testfiles)
         self.assertFalse(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
+        #
+        cmd = "docker commit -c 'CMD [\"/usr/bin/systemctl\"]' -c 'USER somebody' {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm -f {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker run -d --name {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
         #
         cmd = "docker exec {testname} {systemctl} enable zzz.service -vv"
         sh____(cmd.format(**locals()))
@@ -16565,6 +16618,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
     def test_5142_usermode_oneshot_and_unknown_service_functions(self):
         """ check that we manage multiple services even when some
             services are not actually known. Along with oneshot serivce
@@ -16615,6 +16670,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
 
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
         cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
@@ -16643,6 +16700,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("found testfiles:\n%s", testfiles)
         self.assertFalse(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
+        #
+        cmd = "docker commit -c 'CMD [\"/usr/bin/systemctl\"]' -c 'USER somebody' {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm -f {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker run -d --name {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
         #
         cmd = "docker exec {testname} {systemctl} enable zzz.service -vv"
         sh____(cmd.format(**locals()))
@@ -16823,6 +16887,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
         self.rm_testdir()
         self.end()
     def test_5144_usermode_sysv_service_functions(self):
@@ -16901,6 +16967,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
 
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
         cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
@@ -16920,6 +16988,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} chmod 666 {logfile}"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd somebody -g nobody -m"
+        sh____(cmd.format(**locals()))
+        #
+        cmd = "docker commit -c 'CMD [\"/usr/bin/systemctl\"]' -c 'USER somebody' {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm -f {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker run -d --name {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         #
         cmd = "docker exec {testname} {systemctl} enable zzz.service -vv"
@@ -17143,6 +17218,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.save_coverage(testname)
         #
         cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
         self.end()
