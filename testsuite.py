@@ -201,7 +201,7 @@ def text_file(filename, content):
     logg.info("::: made %s", filename)
 def shell_file(filename, content):
     text_file(filename, content)
-    os.chmod(filename, 0770)
+    os.chmod(filename, 0775)
 def copy_file(filename, target):
     targetdir = os.path.dirname(target)
     if not os.path.isdir(targetdir):
@@ -209,7 +209,7 @@ def copy_file(filename, target):
     shutil.copyfile(filename, target)
 def copy_tool(filename, target):
     copy_file(filename, target)
-    os.chmod(target, 0750)
+    os.chmod(target, 0755)
 
 def get_caller_name():
     frame = inspect.currentframe().f_back.f_back
@@ -12442,6 +12442,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Testing Z
             [Service]
+            User=nobody
             Type=simple
             ExecStartPre=/bin/echo %n
             ExecStart={bindir}/{testscript} 111
@@ -12503,6 +12504,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} touch {logfile}"
         sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} chmod 666 {logfile}"
+        sh____(cmd.format(**locals()))
         #
         cmd = "docker exec {testname} {systemctl} enable zzz.service -vv"
         sh____(cmd.format(**locals()))
@@ -12533,6 +12536,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
+        time.sleep(1) # kill is async
         cmd = "docker exec {testname} cat {logfile}"
         sh____(cmd.format(**locals()))
         top = _recent(output("docker exec {testname} ps -eo etime,pid,ppid,args".format(**locals())))
@@ -12552,10 +12556,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(log, "starting"))
         self.assertTrue(greps(log, "stopped"))
         self.assertFalse(greps(log, "reload"))
-        sh____("docker exec {testname} rm {logfile}".format(**locals()))
+        sh____("docker exec {testname} truncate -s0 {logfile}".format(**locals()))
         #
         logg.info("== 'restart' shall start a service that NOT is-active")        
-        cmd = "docker exec {testname} {systemctl} restart zzz.service -vv"
+        cmd = "docker exec {testname} {systemctl} restart zzz.service -vvvv"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
@@ -12577,7 +12581,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(log, "starting"))
         self.assertFalse(greps(log, "stopped"))
         self.assertFalse(greps(log, "reload"))
-        sh____("docker exec {testname} rm {logfile}".format(**locals()))
+        sh____("docker exec {testname} truncate -s0 {logfile}".format(**locals()))
         #
         logg.info("== 'restart' shall restart a service that is-active")        
         cmd = "docker exec {testname} {systemctl} restart zzz.service -vv"
@@ -12617,7 +12621,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(log, "enter"))
         self.assertTrue(greps(log, "starting"))
         self.assertFalse(greps(log, "reload"))
-        sh____("docker exec {testname} rm {logfile}".format(**locals()))
+        sh____("docker exec {testname} truncate -s0 {logfile}".format(**locals()))
         #
         #
         logg.info("== 'reload' will NOT restart a service that is-active")        
@@ -12650,7 +12654,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(log, "starting"))
         self.assertFalse(greps(log, "stopped"))
         self.assertTrue(greps(log, "reload"))
-        sh____("docker exec {testname} rm {logfile}".format(**locals()))
+        sh____("docker exec {testname} truncate -s0 {logfile}".format(**locals()))
         #
         logg.info("== 'reload-or-restart' will restart a service that is-active (if ExecReload)")        
         cmd = "docker exec {testname} {systemctl} reload-or-restart zzz.service -vv"
