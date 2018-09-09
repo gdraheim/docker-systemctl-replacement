@@ -12838,7 +12838,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = ""
         systemctl_py = realpath(_systemctl_py)
-        systemctl = cover() + "/usr/bin/systemctl"
+        systemctl = "/usr/bin/systemctl" # path in container
         systemctl += " --{system}".format(**locals())
         testsleep = testname+"_sleep"
         logfile = os_path(root, "/var/log/"+testsleep+".log")
@@ -13205,7 +13205,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = ""
         systemctl_py = realpath(_systemctl_py)
-        systemctl = cover() + "/usr/bin/systemctl"
+        systemctl = "/usr/bin/systemctl" # path in container
         systemctl += " --{system}".format(**locals())
         testsleep = testname+"_sleep"
         logfile = os_path(root, "/var/log/"+testsleep+".log")
@@ -13585,7 +13585,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = ""
         systemctl_py = realpath(_systemctl_py)
-        systemctl = cover() + "/usr/bin/systemctl"
+        systemctl = "/usr/bin/systemctl" # path in container
         systemctl += " --{system}".format(**locals())
         testsleep = self.testname("sleep")
         logfile = os_path(root, "/var/log/"+testsleep+".log")
@@ -13959,7 +13959,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = ""
         systemctl_py = realpath(_systemctl_py)
-        systemctl = cover() + "/usr/bin/systemctl"
+        systemctl = "/usr/bin/systemctl" # path in container
         systemctl += " --{system}".format(**locals())
         testsleep = self.testname("sleep")
         logfile = os_path(root, "/var/log/"+testsleep+".log")
@@ -14223,7 +14223,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = ""
         systemctl_py = realpath(_systemctl_py)
-        systemctl = cover() + "/usr/bin/systemctl"
+        systemctl = "/usr/bin/systemctl" # path in container
         testsleep = self.testname("sleep")
         logfile = os_path(root, "/var/log/"+testsleep+".log")
         bindir = os_path(root, "/usr/bin")
@@ -14486,7 +14486,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = ""
         systemctl_py = realpath(_systemctl_py)
-        systemctl = cover() + "/usr/bin/systemctl"
+        systemctl = "/usr/bin/systemctl" # path in container
         testsleep = self.testname("sleep")
         logfile = os_path(root, "/var/log/"+testsleep+".log")
         bindir = os_path(root, "/usr/bin")
@@ -14828,7 +14828,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = ""
         systemctl_py = realpath(_systemctl_py)
-        systemctl = cover() + "/usr/bin/systemctl"
+        systemctl = "/usr/bin/systemctl" # path in container
         systemctl += " --user"
         # systemctl += " --{system}".format(**locals())
         testsleep = testname+"_testsleep"
@@ -14996,7 +14996,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = ""
         systemctl_py = realpath(_systemctl_py)
-        systemctl = cover() + "/usr/bin/systemctl"
+        systemctl = "/usr/bin/systemctl" # path in container
         systemctl += " --user"
         # systemctl += " --{system}".format(**locals())
         testsleep = testname+"_testsleep"
@@ -15421,7 +15421,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = ""
         systemctl_py = realpath(_systemctl_py)
-        systemctl = cover() + "/usr/bin/systemctl"
+        systemctl = "/usr/bin/systemctl" # path in container
         systemctl += " --user"
         # systemctl += " --{system}".format(**locals())
         testsleep = testname+"_sleep"
@@ -15801,7 +15801,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = ""
         systemctl_py = realpath(_systemctl_py)
-        systemctl = cover() + "/usr/bin/systemctl"
+        systemctl = "/usr/bin/systemctl" # path in container
         systemctl += " --user"
         # systemctl += " --{system}".format(**locals())
         testsleep = testname+"_sleep"
@@ -16193,7 +16193,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = ""
         systemctl_py = realpath(_systemctl_py)
-        systemctl = cover() + "/usr/bin/systemctl"
+        systemctl = "/usr/bin/systemctl" # path in container
         systemctl += " --user"
         # systemctl += " --{system}".format(**locals())
         testsleep = self.testname("sleep")
@@ -16579,7 +16579,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = ""
         systemctl_py = realpath(_systemctl_py)
-        systemctl = cover() + "/usr/bin/systemctl"
+        systemctl = "/usr/bin/systemctl" # path in container
         systemctl += " --user"
         # systemctl += " --{system}".format(**locals())
         testsleep = self.testname("sleep")
@@ -16855,7 +16855,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = ""
         systemctl_py = realpath(_systemctl_py)
-        systemctl = cover() + "/usr/bin/systemctl"
+        systemctl = "/usr/bin/systemctl" # path in container
         systemctl += " --user"
         testsleep = self.testname("sleep")
         logfile = os_path(root, "/var/log/"+testsleep+".log")
@@ -17130,7 +17130,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = ""
         systemctl_py = realpath(_systemctl_py)
-        systemctl = cover() + "/usr/bin/systemctl"
+        systemctl = "/usr/bin/systemctl" # path in container
         systemctl += " --user"
         testsleep = self.testname("sleep")
         logfile = os_path(root, "/var/log/"+testsleep+".log")
