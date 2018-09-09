@@ -14595,6 +14595,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
+        time.sleep(1) # killall is async
         top = _recent(output("docker exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(running(greps(top, testsleep)))
