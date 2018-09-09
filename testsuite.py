@@ -8125,6 +8125,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
+        systemctl += " --{system}".format(**locals())
         testsleep = testname+"_sleep"
         logfile = os_path(root, "/var/log/"+testsleep+".log")
         bindir = os_path(root, "/usr/bin")
@@ -13100,7 +13101,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.notify_service_functions("system", testname, testdir)
         self.rm_testdir()
         self.coverage()
-        self.end()
+        logg.error("too long") # TODO
+        self.end(200)
     def test_5035_notify_service_functions_user(self):
         """ check that we manage notify services in a root env
             with basic run-service commands: start, stop, restart,
@@ -13114,7 +13116,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.notify_service_functions("user", testname, testdir)
         self.rm_testdir()
         self.coverage()
-        self.end()
+        logg.error("too long") # TODO
+        self.end(200)
     def notify_service_functions(self, system, testname, testdir):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -13126,11 +13129,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         sometime = SOMETIME or 188
+        quick = "--coverage=quick"
         #
         user = self.user()
         root = ""
         systemctl_py = realpath(_systemctl_py)
         systemctl = cover() + "/usr/bin/systemctl"
+        systemctl += " --{system}".format(**locals())
         testsleep = testname+"_sleep"
         logfile = os_path(root, "/var/log/"+testsleep+".log")
         bindir = os_path(root, "/usr/bin")
@@ -13221,7 +13226,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(out.strip(), "inactive")
         #
         logg.info("== 'start' shall start a service that is NOT is-active ")
-        cmd = "docker exec {testname} {systemctl} start zzz.service -vv"
+        sh____("docker exec {testname} ls -l /var/run".format(**locals()))
+        cmd = "docker exec {testname} {systemctl} start zzz.service -vv -vv {quick}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
@@ -13249,13 +13255,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(out.strip(), "inactive")
         #
         logg.info("== 'restart' shall start a service that NOT is-active")        
-        cmd = "docker exec {testname} {systemctl} restart zzz.service -vv"
+        cmd = "docker exec {testname} {systemctl} restart zzz.service -vv {quick}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(end, 0)
+        cmd = "docker exec {testname} cat {logfile}"
+        sh____(cmd.format(**locals()))    
         top = _recent(output("docker exec {testname} ps -eo etime,pid,ppid,args".format(**locals())))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
+        self.assertEqual(end, 0)
+        #
         cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s", cmd, end, out)
@@ -13264,13 +13273,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top1= top
         #
         logg.info("== 'restart' shall restart a service that is-active")        
-        cmd = "docker exec {testname} {systemctl} restart zzz.service -vv"
+        cmd = "docker exec {testname} {systemctl} restart zzz.service -vv {quick}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(end, 0)
+        cmd = "docker exec {testname} cat {logfile}"
+        sh____(cmd.format(**locals()))    
         top = _recent(output("docker exec {testname} ps -eo etime,pid,ppid,args".format(**locals())))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
+        self.assertEqual(end, 0)
+        #
         cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s", cmd, end, out)
@@ -13318,7 +13330,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(ps2[0], ps3[0])
         #
         logg.info("== 'reload-or-restart' will restart a service that is-active (if no ExecReload)")        
-        cmd = "docker exec {testname} {systemctl} reload-or-restart zzz.service -vv"
+        cmd = "docker exec {testname} {systemctl} reload-or-restart zzz.service -vv {quick}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
@@ -13365,7 +13377,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(out.strip(), "inactive")
         #
         logg.info("== 'reload-or-try-restart' will not start a not-active service")        
-        cmd = "docker exec {testname} {systemctl} reload-or-try-restart zzz.service -vv"
+        cmd = "docker exec {testname} {systemctl} reload-or-try-restart zzz.service -vv {quick}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
@@ -13393,7 +13405,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(out.strip(), "inactive")
         #
         logg.info("== 'reload-or-restart' will start a not-active service")        
-        cmd = "docker exec {testname} {systemctl} reload-or-restart zzz.service -vv"
+        cmd = "docker exec {testname} {systemctl} reload-or-restart zzz.service -vv {quick}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
@@ -13408,7 +13420,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top5 = top
         #
         logg.info("== 'reload-or-try-restart' will restart an is-active service (with no ExecReload)")        
-        cmd = "docker exec {testname} {systemctl} try-restart zzz.service -vv"
+        cmd = "docker exec {testname} {systemctl} try-restart zzz.service -vv {quick}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
@@ -13431,7 +13443,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertNotEqual(ps5[0], ps6[0])
         #
         logg.info("== 'try-restart' will restart an is-active service")        
-        cmd = "docker exec {testname} {systemctl} try-restart zzz.service -vv"
+        cmd = "docker exec {testname} {systemctl} try-restart zzz.service -vv {quick}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
