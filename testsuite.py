@@ -14207,7 +14207,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         root = ""
         systemctl_py = realpath(_systemctl_py)
         systemctl = cover() + "/usr/bin/systemctl"
-        systemctl += " --{system}".format(**locals())
         testsleep = self.testname("sleep")
         logfile = os_path(root, "/var/log/"+testsleep+".log")
         bindir = os_path(root, "/usr/bin")
@@ -14252,10 +14251,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} touch {logfile}"
         sh____(cmd.format(**locals()))
+        testfiles = output("docker exec {testname} find /var/tmp -name test.*".format(**locals()))
+        logg.info("found testfiles:\n%s", testfiles)
+        self.assertFalse(greps(testfiles, "/var/tmp/test.1"))
+        self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
         #
         cmd = "docker exec {testname} {systemctl} enable zzz.service -vv"
         sh____(cmd.format(**locals()))
-        is_active = "{systemctl} is-active zzz.service other.service -vv"
+        is_active = "docker exec {testname} {systemctl} is-active zzz.service other.service -vv"
         act, end = output2(is_active.format(**locals()))
         self.assertEqual(act.strip(), "inactive\nunknown")
         self.assertEqual(end, 3)
@@ -14265,12 +14268,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info("%s =>\n%s", cmd, out)
         self.assertNotEqual(end, 0)
-        is_active = "{systemctl} is-active zzz.service other.service -vv"
+        is_active = "docker exec {testname} {systemctl} is-active zzz.service other.service -vv"
         act, end = output2(is_active.format(**locals()))
         self.assertEqual(act.strip(), "active\nunknown")
         self.assertEqual(end, 3) 
-        self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
-        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        testfiles = output("docker exec {testname} find /var/tmp -name test.*".format(**locals()))
+        logg.info("found testfiles:\n%s", testfiles)
+        self.assertTrue(greps(testfiles, "/var/tmp/test.1"))
+        self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
         #
         logg.info("== 'stop' shall stop a service that is-active")
         cmd = "docker exec {testname} {systemctl} stop zzz.service other.service -vv {quick}"
@@ -14280,8 +14285,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         act, end = output2(is_active.format(**locals()))
         self.assertEqual(act.strip(), "inactive\nunknown")
         self.assertEqual(end, 3)
-        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.1")))
-        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        testfiles = output("docker exec {testname} find /var/tmp -name test.*".format(**locals()))
+        logg.info("found testfiles:\n%s", testfiles)
+        self.assertFalse(greps(testfiles, "/var/tmp/test.1"))
+        self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
         #
         logg.info("== 'restart' shall start a service that NOT is-active")        
         cmd = "docker exec {testname} {systemctl} restart zzz.service other.service -vv {quick}"
@@ -14291,8 +14298,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         act, end = output2(is_active.format(**locals()))
         self.assertEqual(act.strip(), "active\nunknown")
         self.assertEqual(end, 3)
-        self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
-        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        testfiles = output("docker exec {testname} find /var/tmp -name test.*".format(**locals()))
+        logg.info("found testfiles:\n%s", testfiles)
+        self.assertTrue(greps(testfiles, "/var/tmp/test.1"))
+        self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
         #
         logg.info("== 'restart' shall restart a service that is-active")        
         cmd = "docker exec {testname} {systemctl} restart zzz.service other.service -vv {quick}"
@@ -14302,8 +14311,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         act, end = output2(is_active.format(**locals()))
         self.assertEqual(act.strip(), "active\nunknown")
         self.assertEqual(end, 3)
-        self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
-        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        testfiles = output("docker exec {testname} find /var/tmp -name test.*".format(**locals()))
+        logg.info("found testfiles:\n%s", testfiles)
+        self.assertTrue(greps(testfiles, "/var/tmp/test.1"))
+        self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
         #
         logg.info("== 'reload' will NOT restart a service that is-active")        
         cmd = "docker exec {testname} {systemctl} reload zzz.service other.service -vv {quick}"
@@ -14313,8 +14324,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         act, end = output2(is_active.format(**locals()))
         self.assertEqual(act.strip(), "active\nunknown")
         self.assertEqual(end, 3)
-        self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
-        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        testfiles = output("docker exec {testname} find /var/tmp -name test.*".format(**locals()))
+        logg.info("found testfiles:\n%s", testfiles)
+        self.assertTrue(greps(testfiles, "/var/tmp/test.1"))
+        self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
         #
         logg.info("== 'reload-or-restart' will restart a service that is-active")        
         cmd = "docker exec {testname} {systemctl} reload-or-restart zzz.service other.service -vv {quick}"
@@ -14333,8 +14346,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         act, end = output2(is_active.format(**locals()))
         self.assertEqual(act.strip(), "inactive\nunknown")
         self.assertEqual(end, 3)
-        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.1")))
-        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        testfiles = output("docker exec {testname} find /var/tmp -name test.*".format(**locals()))
+        logg.info("found testfiles:\n%s", testfiles)
+        self.assertFalse(greps(testfiles, "/var/tmp/test.1"))
+        self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
         #
         logg.info("== 'reload-or-try-restart' will not start a not-active service")        
         cmd = "docker exec {testname} {systemctl} reload-or-try-restart zzz.service other.service -vv {quick}"
@@ -14344,8 +14359,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         act, end = output2(is_active.format(**locals()))
         self.assertEqual(act.strip(), "inactive\nunknown")
         self.assertEqual(end, 3)
-        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.1")))
-        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        testfiles = output("docker exec {testname} find /var/tmp -name test.*".format(**locals()))
+        logg.info("found testfiles:\n%s", testfiles)
+        self.assertFalse(greps(testfiles, "/var/tmp/test.1"))
+        self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
         #
         logg.info("== 'try-restart' will not start a not-active service")        
         cmd = "docker exec {testname} {systemctl} try-restart zzz.service other.service -vv {quick}"
@@ -14355,8 +14372,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         act, end = output2(is_active.format(**locals()))
         self.assertEqual(act.strip(), "inactive\nunknown")
         self.assertEqual(end, 3)
-        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.1")))
-        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        testfiles = output("docker exec {testname} find /var/tmp -name test.*".format(**locals()))
+        logg.info("found testfiles:\n%s", testfiles)
+        self.assertFalse(greps(testfiles, "/var/tmp/test.1"))
+        self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
         #
         logg.info("== 'reload-or-restart' will start a not-active service")        
         cmd = "docker exec {testname} {systemctl} reload-or-restart zzz.service other.service -vv {quick}"
@@ -14366,8 +14385,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         act, end = output2(is_active.format(**locals()))
         self.assertEqual(act.strip(), "active\nunknown")
         self.assertEqual(end, 3)
-        self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
-        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        testfiles = output("docker exec {testname} find /var/tmp -name test.*".format(**locals()))
+        logg.info("found testfiles:\n%s", testfiles)
+        self.assertTrue(greps(testfiles, "/var/tmp/test.1"))
+        self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
         #
         logg.info("== 'reload-or-try-restart' will restart an is-active service")        
         cmd = "docker exec {testname} {systemctl} reload-or-try-restart zzz.service other.service -vv {quick}"
@@ -14377,8 +14398,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         act, end = output2(is_active.format(**locals()))
         self.assertEqual(act.strip(), "active\nunknown")
         self.assertEqual(end, 3)
-        self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
-        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        testfiles = output("docker exec {testname} find /var/tmp -name test.*".format(**locals()))
+        logg.info("found testfiles:\n%s", testfiles)
+        self.assertTrue(greps(testfiles, "/var/tmp/test.1"))
+        self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
         #
         logg.info("== 'try-restart' will restart an is-active service")        
         cmd = "docker exec {testname} {systemctl} try-restart zzz.service other.service -vv {quick}"
@@ -14388,8 +14411,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         act, end = output2(is_active.format(**locals()))
         self.assertEqual(act.strip(), "active\nunknown")
         self.assertEqual(end, 3)
-        self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
-        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        testfiles = output("docker exec {testname} find /var/tmp -name test.*".format(**locals()))
+        logg.info("found testfiles:\n%s", testfiles)
+        self.assertTrue(greps(testfiles, "/var/tmp/test.1"))
+        self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
         #
         logg.info("== 'stop' will brings it back to 'inactive'")        
         cmd = "docker exec {testname} {systemctl} stop zzz.service other.service -vv {quick}"
@@ -14399,8 +14424,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         act, end = output2(is_active.format(**locals()))
         self.assertEqual(act.strip(), "inactive\nunknown")
         self.assertEqual(end, 3)
-        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.1")))
-        self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
+        testfiles = output("docker exec {testname} find /var/tmp -name test.*".format(**locals()))
+        logg.info("found testfiles:\n%s", testfiles)
+        self.assertFalse(greps(testfiles, "/var/tmp/test.1"))
+        self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
         #
         logg.info("LOG\n%s", " "+output("docker exec {testname} cat {logfile}".format(**locals())).replace("\n","\n "))
         #
