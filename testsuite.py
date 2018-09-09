@@ -13959,6 +13959,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Testing Z
             [Service]
+            User=somebody
             Type=oneshot
             ExecStartPre={bindir}/backup {root}/var/tmp/test.1 {root}/var/tmp/test.2
             ExecStart=/usr/bin/touch {root}/var/tmp/test.1
@@ -13991,6 +13992,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker cp {testdir}/zzz.service {testname}:{zzz_service}"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} touch {logfile}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} chmod 666 {logfile}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} useradd somebody -g nobody -m"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/backup {testname}:/usr/bin/backup"
         sh____(cmd.format(**locals()))
@@ -14213,6 +14218,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Testing Z
             [Service]
+            User=somebody
             Type=oneshot
             ExecStartPre={bindir}/backup {root}/var/tmp/test.1 {root}/var/tmp/test.2
             ExecStart=/usr/bin/touch {root}/var/tmp/test.1
@@ -14248,6 +14254,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} touch /var/tmp/test.0"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} touch {logfile}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} chmod 666 {logfile}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} useradd somebody -g nobody -m"
         sh____(cmd.format(**locals()))
         testfiles = output("docker exec {testname} find /var/tmp -name test.*".format(**locals()))
         logg.info("found testfiles:\n%s", testfiles)
@@ -14477,7 +14487,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             sleeptime=111
             start() {begin} 
                [ -d /var/run ] || mkdir -p /var/run
-               ({bindir}/{testsleep} $sleeptime 0<&- &>/dev/null &
+               (runuser -u somebody {bindir}/{testsleep} $sleeptime 0<&- &>/dev/null &
                 echo $! > {root}/var/run/zzz.init.pid
                ) &
                wait %1
@@ -14526,6 +14536,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker cp {testdir}/zzz.init {testname}:/etc/init.d/zzz"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} touch {logfile}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} chmod 666 {logfile}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} useradd somebody -g nobody -m"
         sh____(cmd.format(**locals()))
         #
         cmd = "docker exec {testname} {systemctl} enable zzz.service -vv"
