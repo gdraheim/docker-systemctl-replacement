@@ -1895,6 +1895,7 @@ class Systemctl:
         for cmd in conf.data.getlist("Service", "ExecStart", []):
             newcmd = self.exec_cmd(cmd, env, conf)
             return self.execve_from(conf, newcmd, env)
+        return None
     def stop_modules(self, *modules):
         """ [UNIT]... -- stop these units """
         found_all = True
