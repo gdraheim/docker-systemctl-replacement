@@ -12387,35 +12387,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # self.assertGreater(len(lines(out2)), 2)
         #
         self.rm_testdir()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    #
+    #
+    #  compare the following with the test_4030 series
+    #
+    #
     def test_5030_simple_service_functions_system(self):
         """ check that we manage simple services in a root env
             with commands like start, restart, stop, etc"""
@@ -13212,7 +13188,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         sometime = SOMETIME or 188
-        quick = "" # "--coverage=quick"
+        quick = "--coverage=quick"
         #
         user = self.user()
         root = ""
@@ -14461,7 +14437,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         root = ""
         systemctl_py = realpath(_systemctl_py)
         systemctl = cover() + "/usr/bin/systemctl"
-        systemctl += " --{system}".format(**locals())
         testsleep = self.testname("sleep")
         logfile = os_path(root, "/var/log/"+testsleep+".log")
         bindir = os_path(root, "/usr/bin")
@@ -14755,21 +14730,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         self.rm_testdir()
         self.end()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    #
+    #
+    #
+    #
+    #
+    #
+    #
+    #
     def test_5080_systemctl_py_start_simple(self):
         """ check that we can start simple services in a container"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
