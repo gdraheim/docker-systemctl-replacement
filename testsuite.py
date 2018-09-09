@@ -12203,8 +12203,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out)
         #
-        self.save_coverage(testname)
-        #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
         self.assertTrue(greps(out, "systemctl.py"))
@@ -12400,7 +12398,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         self.runuser_simple_service_functions("system", testname, testdir)
         self.rm_testdir()
-        self.coverage()
         self.end()
     def test_5031_runuser_simple_service_functions_user(self):
         """ check that we manage simple services in a root env
@@ -12410,7 +12407,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         self.runuser_simple_service_functions("user", testname, testdir)
         self.rm_testdir()
-        self.coverage()
         self.end()
     def runuser_simple_service_functions(self, system, testname, testdir):
         """ check that we manage simple services in a root env
@@ -12810,7 +12806,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         self.runuser_forking_service_functions("system", testname, testdir)
         self.rm_testdir()
-        self.coverage()
         self.end()
     def test_5033_runuser_forking_service_functions_user(self):
         """ check that we manage forking services in a root env
@@ -12822,7 +12817,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         self.runuser_forking_service_functions("user", testname, testdir)
         self.rm_testdir()
-        self.coverage()
         self.end()
     def runuser_forking_service_functions(self, system, testname, testdir):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -13175,7 +13169,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         self.runuser_notify_service_functions("system", testname, testdir)
         self.rm_testdir()
-        self.coverage()
         self.end()
     def test_5035_runuser_notify_service_functions_user(self):
         """ check that we manage notify services in a root env
@@ -13187,7 +13180,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         self.runuser_notify_service_functions("user", testname, testdir)
         self.rm_testdir()
-        self.coverage()
         self.end(266) #TODO# too long?
     def runuser_notify_service_functions(self, system, testname, testdir):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -13551,7 +13543,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         self.runuser_notify_service_functions_with_reload("system", testname, testdir)
         self.rm_testdir()
-        self.coverage()
         logg.error("too long") #TODO
         self.end(200)
     def test_5037_runuser_notify_service_functions_with_reload_user(self):
@@ -13565,7 +13556,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         self.runuser_notify_service_functions_with_reload("user", testname, testdir)
         self.rm_testdir()
-        self.coverage()
         self.end(266) #TODO# too long?
     def runuser_notify_service_functions_with_reload(self, system, testname, testdir):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -13924,6 +13914,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         self.runuser_oneshot_service_functions("system", testname, testdir)
+        self.rm_testdir()
+        self.end()
     def test_5041_runuser_oneshot_service_functions_user(self):
         """ check that we manage oneshot services in a root env
             with basic run-service commands: start, stop, restart,
@@ -13933,6 +13925,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         self.runuser_oneshot_service_functions("user", testname, testdir)
+        self.rm_testdir()
+        self.end()
     def runuser_oneshot_service_functions(self, system, testname, testdir):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -14780,7 +14774,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         self.usermode_keeps_running("system", testname, testdir)
         self.rm_testdir()
-        self.coverage()
         self.end()
     def test_5101_usermode_keeps_running_user(self):
         """ check that we manage simple services in a root env
@@ -14790,7 +14783,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         self.usermode_keeps_running("user", testname, testdir)
         self.rm_testdir()
-        self.coverage()
         self.end()
     def usermode_keeps_running(self, system, testname, testdir):
         """ check that we manage simple services in a root env
@@ -14946,7 +14938,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         self.usermode_simple_service_functions("system", testname, testdir)
         self.rm_testdir()
-        self.coverage()
         self.end()
     def test_5131_simple_service_functions_user(self):
         """ check that we manage simple services in a root env
@@ -14956,7 +14947,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         self.usermode_simple_service_functions("user", testname, testdir)
         self.rm_testdir()
-        self.coverage()
         self.end()
     def usermode_simple_service_functions(self, system, testname, testdir):
         """ check that we manage simple services in a root env
@@ -15369,7 +15359,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         self.usermode_forking_service_functions("system", testname, testdir)
         self.rm_testdir()
-        self.coverage()
         self.end()
     def test_5133_usermode_forking_service_functions_user(self):
         """ check that we manage forking services in a root env
@@ -15381,7 +15370,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         self.forking_service_functions("user", testname, testdir)
         self.rm_testdir()
-        self.coverage()
         self.end()
     def usermode_forking_service_functions(self, system, testname, testdir):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -15758,7 +15746,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         self.notify_service_functions("user", testname, testdir)
         self.rm_testdir()
-        self.coverage()
         self.end(266) #TODO# too long?
     def usermode_notify_service_functions(self, system, testname, testdir):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -16134,7 +16121,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         self.usermode_notify_service_functions_with_reload("system", testname, testdir)
         self.rm_testdir()
-        self.coverage()
         logg.error("too long") #TODO
         self.end(200)
     def test_5137_usermode_notify_service_functions_with_reload_user(self):
@@ -16147,7 +16133,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         self.usermode_notify_service_functions_with_reload("user", testname, testdir)
-        self.rm_testdir()
         self.coverage()
         self.end(266) #TODO# too long?
     def usermode_notify_service_functions_with_reload(self, system, testname, testdir):
@@ -16519,6 +16504,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         self.usermode_oneshot_service_functions("system", testname, testdir)
+        self.rm_testdir()
+        self.end()
     def test_5141_usermode_oneshot_service_functions_user(self):
         """ check that we manage oneshot services in a root env
             with basic run-service commands: start, stop, restart,
@@ -16528,6 +16515,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         self.usermode_oneshot_service_functions("user", testname, testdir)
+        self.rm_testdir()
+        self.end()
     def usermode_oneshot_service_functions(self, system, testname, testdir):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
