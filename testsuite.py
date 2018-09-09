@@ -18346,7 +18346,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         #
         waits = 3
-        for attempt in xrange(10):
+        for attempt in xrange(5):
             logg.info("[%s] waits %ss for the zombie-reaper to have cleaned up", attempt, waits)
             time.sleep(waits)
             cmd = "docker inspect {testname}x"
@@ -18359,6 +18359,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             top_container = "docker exec {testname}x ps -eo pid,ppid,user,args"
             top = output(top_container.format(**locals()))
             logg.info("\n>>>\n%s", top)
+        cmd = "docker cp {testname}x:/var/log/systemctl.debug.log {testdir}/systemctl.debug.log"
+        sh____(cmd.format(**locals()))
+        log = lines(open(testdir+"/systemctl.debug.log"))
+        logg.info("systemctl.debug.log>\n\t%s", "\n\t".join(log))
+        #
         self.assertFalse(state["Running"])
         self.assertEqual(state["Status"], "exited")
         #
@@ -18388,7 +18393,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_6170_systemctl_py_init_default_stop_last_service_to_exit_container(self):
+    def test_6170_systemctl_py_init_all_stop_last_service_to_exit_container(self):
         """ check that we can 'stop <service>' in a docker container to stop the service
             being the last service and to exit the PID 1 as the last part of the service."""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -18456,7 +18461,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # sh____(cmd.format(**locals()))
         out2 = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out2)
-        cmd = "docker commit -c 'CMD [\"/usr/bin/systemctl\",\"init\",\"{cov_option}\"]'  {testname} {images}:{testname}"
+        cmd = "docker commit -c 'CMD [\"/usr/bin/systemctl\",\"init\",\"--all\",\"{cov_option}\"]'  {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}x"
         sx____(cmd.format(**locals()))
@@ -18482,7 +18487,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         #
         waits = 3
-        for attempt in xrange(10):
+        for attempt in xrange(5):
             logg.info("[%s] waits %ss for the zombie-reaper to have cleaned up", attempt, waits)
             time.sleep(waits)
             cmd = "docker inspect {testname}x"
@@ -18495,6 +18500,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             top_container = "docker exec {testname}x ps -eo pid,ppid,user,args"
             top = output(top_container.format(**locals()))
             logg.info("\n>>>\n%s", top)
+        cmd = "docker cp {testname}x:/var/log/systemctl.debug.log {testdir}/systemctl.debug.log"
+        sh____(cmd.format(**locals()))
+        log = lines(open(testdir+"/systemctl.debug.log"))
+        logg.info("systemctl.debug.log>\n\t%s", "\n\t".join(log))
+        #
         self.assertFalse(state["Running"])
         self.assertEqual(state["Status"], "exited")
         #
