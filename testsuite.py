@@ -13183,30 +13183,24 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             reload, try-restart, reload-or-restart, kill and
             reload-or-try-restart."""
         self.begin()
-        if not os.path.exists("/usr/bin/socat"):
-            self.skipTest("missing /usr/bin/socat")
         testname = self.testname()
         testdir = self.testdir()
         self.notify_service_functions("system", testname, testdir)
         self.rm_testdir()
         self.coverage()
-        logg.error("too long") # TODO
-        self.end(200)
+        self.end()
     def test_5035_notify_service_functions_user(self):
         """ check that we manage notify services in a root env
             with basic run-service commands: start, stop, restart,
             reload, try-restart, reload-or-restart, kill and
             reload-or-try-restart."""
         self.begin()
-        if not os.path.exists("/usr/bin/socat"):
-            self.skipTest("missing /usr/bin/socat")
         testname = self.testname()
         testdir = self.testdir()
         self.notify_service_functions("user", testname, testdir)
         self.rm_testdir()
         self.coverage()
-        logg.error("too long") # TODO
-        self.end(200)
+        self.end()
     def notify_service_functions(self, system, testname, testdir):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -13218,7 +13212,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         sometime = SOMETIME or 188
-        quick = "--coverage=quick"
+        quick = "" # "--coverage=quick"
         #
         user = self.user()
         root = ""
@@ -13283,6 +13277,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
         sx____(cmd.format(**locals()))
         cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
+        sx____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/socat || {package} install -y socat'"
         sx____(cmd.format(**locals()))
         if COVERAGE:
              cmd = "docker exec {testname} {package} install -y {python_coverage}"
@@ -13558,8 +13554,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             reload, try-restart, reload-or-restart, kill and
             reload-or-try-restart. (with ExecReload)"""
         self.begin()
-        if not os.path.exists("/usr/bin/socat"):
-            self.skipTest("missing /usr/bin/socat")
         testname = self.testname()
         testdir = self.testdir()
         self.notify_service_functions_with_reload("system", testname, testdir)
@@ -13574,14 +13568,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             reload-or-try-restart. (with ExecReload)"""
         # test_5037 is triggering len(socketfile) > 100 | "new notify socketfile"
         self.begin()
-        if not os.path.exists("/usr/bin/socat"):
-            self.skipTest("missing /usr/bin/socat")
         testname = self.testname()
         testdir = self.testdir()
         self.notify_service_functions_with_reload("user", testname, testdir)
         self.rm_testdir()
         self.coverage()
-        logg.error("too long") #TODO
         self.end()
     def notify_service_functions_with_reload(self, system, testname, testdir):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -13662,6 +13653,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
         sx____(cmd.format(**locals()))
         cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
+        sx____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/socat || {package} install -y socat'"
         sx____(cmd.format(**locals()))
         if COVERAGE:
              cmd = "docker exec {testname} {package} install -y {python_coverage}"
