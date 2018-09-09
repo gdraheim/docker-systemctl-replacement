@@ -13188,7 +13188,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.notify_service_functions("user", testname, testdir)
         self.rm_testdir()
         self.coverage()
-        self.end()
+        self.end(266) #TODO# too long?
     def notify_service_functions(self, system, testname, testdir):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -13199,7 +13199,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
            self.skipTest("no python3 on centos")
         package = package_tool(image)
         refresh = refresh_tool(image)
-        sometime = SOMETIME or 188
+        sometime = SOMETIME or 288
         quick = "--coverage=quick"
         #
         user = self.user()
@@ -13250,6 +13250,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Testing Z
             [Service]
+            User=somebody
             Type=notify
             # PIDFile={root}/var/run/zzz.init.pid
             ExecStart={root}/usr/bin/zzz.init start
@@ -13280,6 +13281,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker cp {testdir}/zzz.service {testname}:{zzz_service}"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} touch {logfile}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} chmod 666 {logfile}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} useradd somebody -g nobody -m"
         sh____(cmd.format(**locals()))
         #
         cmd = "docker exec {testname} {systemctl} enable zzz.service -vv"
@@ -13561,7 +13566,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.notify_service_functions_with_reload("user", testname, testdir)
         self.rm_testdir()
         self.coverage()
-        self.end()
+        self.end(266) #TODO# too long?
     def notify_service_functions_with_reload(self, system, testname, testdir):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -13572,7 +13577,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
            self.skipTest("no python3 on centos")
         package = package_tool(image)
         refresh = refresh_tool(image)
-        sometime = SOMETIME or 188
+        sometime = SOMETIME or 288
         quick = "--coverage=quick"
         #
         user = self.user()
@@ -13623,6 +13628,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Testing Z
             [Service]
+            User=somebody
             Type=notify
             # PIDFile={root}/var/run/zzz.init.pid
             ExecStart={root}/usr/bin/zzz.init start
@@ -13656,6 +13662,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker cp {testdir}/zzz.service {testname}:{zzz_service}"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} touch {logfile}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} chmod 666 {logfile}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} useradd somebody -g nobody -m"
         sh____(cmd.format(**locals()))
         #
         cmd = "docker exec {testname} {systemctl} enable zzz.service -vv"
