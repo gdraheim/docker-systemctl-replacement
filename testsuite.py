@@ -17616,7 +17616,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
-        self.assertEqual(end, 1)
+        self.assertEqual(end, 3)
         self.assertTrue(greps(err, "Unit zzz.service not for --user mode"))
         self.assertEqual(out.strip(), "inactive")
         #
@@ -17838,7 +17838,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
-        self.assertEqual(end, 1)
+        self.assertEqual(end, 3)
         self.assertTrue(greps(err, "Unit zzz.service not for --user mode"))
         self.assertEqual(out.strip(), "unknown")
         #
@@ -18063,7 +18063,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
-        self.assertEqual(end, 1)
+        self.assertEqual(end, 3)
         self.assertTrue(greps(err, "Unit zzz.service not for --user mode"))
         self.assertEqual(out.strip(), "unknown")
         #
@@ -18252,7 +18252,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         is_active = "docker exec {testname} {systemctl} is-active zzz.service -vv"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
-        self.assertEqual(end, 1)
+        self.assertEqual(end, 3)
         self.assertTrue(greps(err, "Unit zzz.service not for --user mode"))
         self.assertEqual(out.strip(), "unknown")
         #
