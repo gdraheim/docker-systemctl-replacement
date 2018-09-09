@@ -3732,13 +3732,17 @@ class Systemctl:
         if self._now:
             return self.init_loop_until_stop([])
         if not modules:
-            # almost like 'systemctl --init default'
-            # but the container is exted when no_more_procs
-            self.exit_when_no_more_procs = True
+            # like 'systemctl --init default'
+            if self._now or self._show_all:
+                logg.debug("init default --now --all => no_more_procs")
+                self.exit_when_no_more_procs = True
             return self.start_system_default(init = True)
         #
         # otherwise quit when all the init-services have died
         self.exit_when_no_more_services = True
+        if self._now or self._show_all:
+            logg.debug("init services --now --all => no_more_procs")
+            self.exit_when_no_more_procs = True
         found_all = True
         units = []
         for module in modules:
@@ -3803,12 +3807,14 @@ class Systemctl:
         signal.signal(signal.SIGINT, lambda signum, frame: ignore_signals_and_raise_keyboard_interrupt("SIGINT"))
         signal.signal(signal.SIGTERM, lambda signum, frame: ignore_signals_and_raise_keyboard_interrupt("SIGTERM"))
         self.start_log_files(units)
+        result = None
         while True:
             try:
                 time.sleep(InitLoopSleep)
                 self.read_log_files(units)
                 ##### the reaper goes round
                 running = self.system_reap_zombies()
+                # logg.debug("reap zombies - init-loop found %s running procs", running)
                 if self.exit_when_no_more_procs:
                     if not running:
                         logg.info("no more procs - exit init-loop")
@@ -3826,12 +3832,13 @@ class Systemctl:
             except KeyboardInterrupt as e:
                 signal.signal(signal.SIGTERM, signal.SIG_DFL)
                 signal.signal(signal.SIGINT, signal.SIG_DFL)
-                return e.message or "STOPPED"
-        logg.debug("done - init loop")
+                logg.info("interrupted - exit init-loop")
+                result = e.message or "STOPPED"
         self.read_log_files(units)
         self.read_log_files(units)
         self.stop_log_files(units)
-        return None
+        logg.debug("done - init loop")
+        return result
     def system_reap_zombies(self):
         """ check to reap children """
         selfpid = os.getpid()
