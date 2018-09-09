@@ -21200,6 +21200,26 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         #
         self.rm_testdir()
+    def test_9999_drop_local_mirrors(self):
+        """ a helper when using images from https://github.com/gdraheim/docker-mirror-packages-repo"
+            which create containers according to self.local_image(IMAGE) """
+        containers = output("docker ps -a")
+        for line in lines(containers):
+            found = re.search("\\b(opensuse-repo-\\d[.\\d]*)\\b", line)
+            if found:
+                container = found.group(1)
+                logg.info("     ---> drop %s", container)
+                sx____("docker rm -f {container}".format(**locals()))
+            found = re.search("\\b(centos-repo-\\d[.\\d]*)\\b", line)
+            if found:
+                container = found.group(1)
+                logg.info("     ---> drop %s", container)
+                sx____("docker rm -f {container}".format(**locals()))
+            found = re.search("\\b(ubuntu-repo-\\d[.\\d]*)\\b", line)
+            if found:
+                container = found.group(1)
+                logg.info("     ---> drop %s", container)
+                sx____("docker rm -f {container}".format(**locals()))
 
 if __name__ == "__main__":
     from optparse import OptionParser
