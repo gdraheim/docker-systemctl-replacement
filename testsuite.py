@@ -12442,7 +12442,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Testing Z
             [Service]
-            User=nobody
+            User=somebody
             Type=simple
             ExecStartPre=/bin/echo %n
             ExecStart={bindir}/{testscript} 111
@@ -12505,6 +12505,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} touch {logfile}"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} chmod 666 {logfile}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} useradd somebody -g nobody -m"
         sh____(cmd.format(**locals()))
         #
         cmd = "docker exec {testname} {systemctl} enable zzz.service -vv"
@@ -12833,6 +12835,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         sometime = SOMETIME or 188
+        quick = "--coverage=quick"
         #
         user = self.user()
         root = ""
@@ -12849,7 +12852,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             start() {begin} 
                [ -d /var/run ] || mkdir -p /var/run
                ({bindir}/{testsleep} 111 0<&- &>/dev/null &
-                echo $! > {root}/var/run/zzz.init.pid
+                echo $! > /tmp/zzz.init.pid
                ) &
                wait %1
                # ps -o pid,ppid,user,args
@@ -12882,10 +12885,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Testing Z
             [Service]
+            User=somebody
             Type=forking
-            PIDFile={root}/var/run/zzz.init.pid
-            ExecStart={root}/usr/bin/zzz.init start
-            ExecStop={root}/usr/bin/zzz.init stop
+            PIDFile=/tmp/zzz.init.pid
+            ExecStart=/usr/bin/zzz.init start
+            ExecStop=/usr/bin/zzz.init stop
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
@@ -12911,6 +12915,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} touch {logfile}"
         sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} chmod 666 {logfile}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} useradd somebody -g nobody -m"
+        sh____(cmd.format(**locals()))
         #
         cmd = "docker exec {testname} {systemctl} enable zzz.service -vv"
         sh____(cmd.format(**locals()))
@@ -12921,7 +12929,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(out.strip(), "inactive")
         #
         logg.info("== 'start' shall start a service that is NOT is-active ")
-        cmd = "docker exec {testname} {systemctl} start zzz.service -vv"
+        cmd = "docker exec {testname} {systemctl} start zzz.service -vvvv {quick}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
