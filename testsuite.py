@@ -12156,7 +12156,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker cp {systemctl_sh} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
     def save_coverage(self, *testnames):
-        """ Copying the image's /.coverage to our local ./.coverage.image file.
+        """ Copying the image's /tmp/.coverage to our local ./.coverage.image file.
             Since the path of systemctl.py inside the container is different
             than our develop systemctl.py we have to patch the .coverage file.
             .
@@ -20159,9 +20159,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         #
         if COVERAGE:
-            cmd = "docker exec {testname} touch /.coverage"
+            cmd = "docker exec {testname} touch /tmp/.coverage"
             sh____(cmd.format(**locals()))
-            cmd = "docker exec {testname} chmod 777 /.coverage"
+            cmd = "docker exec {testname} chmod 777 /tmp/.coverage"
             sh____(cmd.format(**locals()))
         #
         cmd = "docker exec {testname} groupadd group2"
@@ -20438,19 +20438,19 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             cmd = "docker exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
         self.prep_coverage(testname, cov_option) 
-        cmd = "docker exec {testname} systemctl --version"
-        sh____(cmd.format(**locals()))
-        #
-        if COVERAGE:
-            cmd = "docker exec {testname} touch /.coverage"
-            sh____(cmd.format(**locals()))
-            cmd = "docker exec {testname} chmod 777 /.coverage" ## << switched user may write
-            sh____(cmd.format(**locals()))
-        #
         cmd = "docker exec {testname} groupadd group2"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd user1 -g group2"
         sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl --version"
+        sh____(cmd.format(**locals()))
+        #
+        if COVERAGE:
+            cmd = "docker exec {testname} touch /tmp/.coverage"
+            sh____(cmd.format(**locals()))
+            cmd = "docker exec {testname} chmod 777 /tmp/.coverage" ## << switched user may write
+            sh____(cmd.format(**locals()))
+        #
         cmd = "docker exec {testname} mkdir -p /etc/systemd/system"
         sx____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zz4.service {testname}:/etc/systemd/system/zz4.service"
@@ -20459,11 +20459,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zz6.service {testname}:/etc/systemd/system/zz6.service"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} systemctl __test_start_unit zz4.service -vv"
+        cmd = "docker exec {testname} systemctl __test_start_unit zz4.service -vvvv {cov_option}"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} systemctl __test_start_unit zz5.service -vv"
+        cmd = "docker exec {testname} systemctl __test_start_unit zz5.service -vv {cov_option}"
         sh____(cmd.format(**locals())) 
-        cmd = "docker exec {testname} systemctl __test_start_unit zz6.service -vv"
+        cmd = "docker exec {testname} systemctl __test_start_unit zz6.service -vv {cov_option}"
         sh____(cmd.format(**locals()))
         #
         cmd = "docker cp {testname}:/tmp/testsleep-4.log {testdir}/"
