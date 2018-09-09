@@ -3677,6 +3677,10 @@ class Systemctl:
         """ stop units from default system level """
         logg.info("system halt requested - %s", arg)
         self.stop_system_default()
+        try: 
+            os.kill(1, signal.SIGQUIT) # exit init-loop on no_more_procs
+        except Exception, e:
+            logg.warning("SIGQUIT to init-loop on PID-1: %s", e)
     def system_get_default(self):
         """ get current default run-level"""
         current = self._default_target
@@ -3732,13 +3736,17 @@ class Systemctl:
         if self._now:
             return self.init_loop_until_stop([])
         if not modules:
-            # almost like 'systemctl --init default'
-            # but the container is exted when no_more_procs
-            self.exit_when_no_more_procs = True
+            # like 'systemctl --init default'
+            if self._now or self._show_all:
+                logg.debug("init default --now --all => no_more_procs")
+                self.exit_when_no_more_procs = True
             return self.start_system_default(init = True)
         #
         # otherwise quit when all the init-services have died
         self.exit_when_no_more_services = True
+        if self._now or self._show_all:
+            logg.debug("init services --now --all => no_more_procs")
+            self.exit_when_no_more_procs = True
         found_all = True
         units = []
         for module in modules:
@@ -3799,20 +3807,20 @@ class Systemctl:
         """ this is the init-loop - it checks for any zombies to be reaped and
             waits for an interrupt. When a SIGTERM /SIGINT /Control-C signal
             is received then the signal name is returned. Any other signal will 
-            just raise an Exception like one would normally expect. """
+            just raise an Exception like one would normally expect. As a special
+            the 'systemctl halt' emits SIGQUIT which puts it into no_more_procs mode."""
+        signal.signal(signal.SIGQUIT, lambda signum, frame: ignore_signals_and_raise_keyboard_interrupt("SIGQUIT"))
         signal.signal(signal.SIGINT, lambda signum, frame: ignore_signals_and_raise_keyboard_interrupt("SIGINT"))
         signal.signal(signal.SIGTERM, lambda signum, frame: ignore_signals_and_raise_keyboard_interrupt("SIGTERM"))
         self.start_log_files(units)
+        result = None
         while True:
             try:
                 time.sleep(InitLoopSleep)
                 self.read_log_files(units)
                 ##### the reaper goes round
                 running = self.system_reap_zombies()
-                if self.exit_when_no_more_procs:
-                    if not running:
-                        logg.info("no more procs - exit init-loop")
-                        break
+                # logg.debug("reap zombies - init-loop found %s running procs", running)
                 if self.exit_when_no_more_services:
                     active = False
                     for unit in units:
@@ -3823,15 +3831,25 @@ class Systemctl:
                     if not active:
                         logg.info("no more services - exit init-loop")
                         break
+                if self.exit_when_no_more_procs:
+                    if not running:
+                        logg.info("no more procs - exit init-loop")
+                        break
             except KeyboardInterrupt as e:
+                if e.message == "SIGQUIT":
+                    # the original systemd puts a coredump on that signal.
+                    logg.info("SIGQUIT - switch to no more procs check")
+                    self.exit_when_no_more_procs = True
+                    continue
                 signal.signal(signal.SIGTERM, signal.SIG_DFL)
                 signal.signal(signal.SIGINT, signal.SIG_DFL)
-                return e.message or "STOPPED"
-        logg.debug("done - init loop")
+                logg.info("interrupted - exit init-loop")
+                result = e.message or "STOPPED"
         self.read_log_files(units)
         self.read_log_files(units)
         self.stop_log_files(units)
-        return None
+        logg.debug("done - init loop")
+        return result
     def system_reap_zombies(self):
         """ check to reap children """
         selfpid = os.getpid()

@@ -44,6 +44,16 @@ todo/test_%:  ; ./testsuite.py $(notdir $@) -vv --todo
 7.5/test_%:   ; ./testsuite.py $(notdir $@) -vv --image=centos:7.5.1804
 7.4/test_%:   ; ./testsuite.py $(notdir $@) -vv --image=centos:7.4.1708
 7.3/test_%:   ; ./testsuite.py $(notdir $@) -vv --image=centos:7.3.1611
+nightrun checkall:
+	$(MAKE) 7.5/test_
+	$(MAKE) 7.4/test_
+	$(MAKE) 7.3/test_
+	$(MAKE) 18.04/test_
+	$(MAKE) 16.04/test_
+	$(MAKE) 15.0/test_
+	$(MAKE) 42.3/test_
+	$(MAKE) 42.2/test_
+	$(MAKE) est_
 
 check: check2018
 	@ echo please run 'make checks' now
