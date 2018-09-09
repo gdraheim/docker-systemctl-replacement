@@ -18433,21 +18433,21 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
         self.assertEqual(end, 3)
-        #TODO?# self.assertTrue(greps(err, "Unit zzz.service not for --user mode"))
+        self.assertFalse(greps(err, "Unit zzz.service not for --user mode")) #TODO
         self.assertEqual(out.strip(), "unknown")
         #
         cmd = "docker exec {testname} {systemctl} is-failed zzz.service -vv"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
         self.assertEqual(end, 1)
-        #TODO? self.assertTrue(greps(err, "Unit zzz.service not for --user mode"))
+        self.assertFalse(greps(err, "Unit zzz.service not for --user mode")) #TODO
         self.assertEqual(out.strip(), "unknown")
         #
         cmd = "docker exec {testname} {systemctl} is-enabled zzz.service -vv"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
         self.assertEqual(end, 1)
-        #TODO? self.assertTrue(greps(err, "Unit zzz.service not for --user mode"))
+        self.assertFalse(greps(err, "Unit zzz.service not for --user mode")) #TODO
         self.assertEqual(out.strip(), "disabled")
         #
         cmd = "docker exec {testname} {systemctl} status zzz.service -vv"
