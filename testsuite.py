@@ -18311,6 +18311,157 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
+    def test_5290_bad_usermode_other_commands(self):
+        """ check that we are disallowed to manage oneshot services in a root env
+            with other commands: enable, disable, mask, unmaks,..."""
+        self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        self.bad_usermode_other_commands("", testname, testdir)
+        self.rm_testdir()
+        self.end()
+    def test_5291_bad_usermode_other_commands(self):
+        """ check that we are disallowed to manage oneshot services in a root env
+            with other commands: enable, disable, mask, unmaks,..."""
+        self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        self.bad_usermode_other_commands("User=foo", testname, testdir)
+        self.rm_testdir()
+        self.end()
+    def bad_usermode_other_commands(self, extra, testname, testdir):
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        images = IMAGES
+        image = self.local_image(COVERAGE or IMAGE or CENTOS)
+        python = os.path.basename(_python)
+        python_coverage = coverage_package(image)
+        if _python.endswith("python3") and "centos" in image: 
+           self.skipTest("no python3 on centos")
+        package = package_tool(image)
+        refresh = refresh_tool(image)
+        sometime = SOMETIME or 188
+        quick = "--coverage=quick"
+        #
+        user = self.user()
+        root = ""
+        systemctl_py = realpath(_systemctl_py)
+        systemctl = "/usr/bin/systemctl" # path in container
+        systemctl += " --user"
+        # systemctl += " --{system}".format(**locals())
+        testsleep = self.testname("sleep")
+        logfile = os_path(root, "/var/log/"+testsleep+".log")
+        bindir = os_path(root, "/usr/bin")
+        begin = "{" ; end = "}"
+        text_file(os_path(testdir, "zzz.service"),"""
+            [Unit]
+            Description=Testing Z
+            [Service]
+            {extra}
+            Type=simple
+            ExecStart=/usr/bin/{testsleep} 11
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        shell_file(os_path(testdir, "backup"), """
+           #! /bin/sh
+           set -x
+           test ! -f "$1" || mv -v "$1" "$2"
+        """)
+
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
+        sx____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
+        sx____(cmd.format(**locals()))
+        if COVERAGE:
+             cmd = "docker exec {testname} {package} install -y {python_coverage}"
+             sx____(cmd.format(**locals()))
+        self.prep_coverage(testname)
+        cmd = "docker exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
+        sx____(cmd.format(**locals()))
+        zzz_service = "/etc/systemd/system/zzz.service".format(**locals())
+        cmd = "docker cp /usr/bin/sleep {testname}:{bindir}/{testsleep}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zzz.service {testname}:{zzz_service}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd nobody'"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} useradd somebody -g nobody -m"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl --version"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} chown somebody /tmp/.coverage"
+        sx____(cmd.format(**locals()))
+        #
+        cmd = "docker commit -c 'CMD [\"/usr/bin/systemctl\"]' -c 'USER somebody' {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm -f {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker run -d --name {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        #
+        cmd = "docker exec {testname} {systemctl} enable zzz.service -vv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 1)
+        self.assertTrue(greps(err, "Unit zzz.service not for --user mode"))
+        #
+        cmd = "docker exec {testname} {systemctl} disable zzz.service -vv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 1)
+        self.assertTrue(greps(err, "Unit zzz.service not for --user mode"))
+        #
+        cmd = "docker exec {testname} {systemctl} mask zzz.service -vv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 1)
+        self.assertTrue(greps(err, "Unit zzz.service not for --user mode"))
+        #
+        cmd = "docker exec {testname} {systemctl} unmask zzz.service -vv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 1)
+        self.assertTrue(greps(err, "Unit zzz.service not for --user mode"))
+        #
+        cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 3)
+        #TODO?# self.assertTrue(greps(err, "Unit zzz.service not for --user mode"))
+        self.assertEqual(out.strip(), "unknown")
+        #
+        cmd = "docker exec {testname} {systemctl} is-failed zzz.service -vv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 1)
+        #TODO? self.assertTrue(greps(err, "Unit zzz.service not for --user mode"))
+        self.assertEqual(out.strip(), "unknown")
+        #
+        cmd = "docker exec {testname} {systemctl} is-enabled zzz.service -vv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 1)
+        #TODO? self.assertTrue(greps(err, "Unit zzz.service not for --user mode"))
+        self.assertEqual(out.strip(), "disabled")
+        #
+        cmd = "docker exec {testname} {systemctl} status zzz.service -vv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 3)
+        #
+        #
+        self.save_coverage(testname)
+        #
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
     #
     #
     #
