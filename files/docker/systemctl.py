@@ -870,7 +870,7 @@ class Systemctl:
             logg.debug("%s is /user/ conf >> accept", conf.filename())
             return False
         # to allow for 'docker run -u user' with system services
-        user = conf.data.get("Service", "User", "")
+        user = self.expand_special(conf.data.get("Service", "User", ""), conf)
         if user and user == self.user():
             logg.debug("%s with User=%s >> accept", conf.filename(), user)
             return False
@@ -1090,7 +1090,8 @@ class Systemctl:
     def get_description_from(self, conf, default = None): # -> text
         """ Unit.Description could be empty sometimes """
         if not conf: return default or ""
-        return conf.data.get("Unit", "Description", default or "")
+        description = conf.data.get("Unit", "Description", default or "")
+        return self.expand_special(description, conf)
     def read_pid_file(self, pid_file, default = None):
         pid = default
         if not pid_file:
@@ -1132,7 +1133,8 @@ class Systemctl:
         return self.pid_file_from(conf) or self.status_file_from(conf)
     def pid_file_from(self, conf, default = ""):
         """ get the specified pid file path (not a computed default) """
-        return conf.data.get("Service", "PIDFile", default)
+        pid_file = conf.data.get("Service", "PIDFile", default)
+        return self.expand_special(pid_file, conf)
     def read_mainpid_from(self, conf, default):
         """ MAINPID is either the PIDFile content written from the application
             or it is the value in the status file written by this systemctl.py code """
@@ -1156,8 +1158,9 @@ class Systemctl:
         if default is None:
            default = self.default_status_file(conf)
         if conf is None: return default
-        return conf.data.get("Service", "StatusFile", default)
-        # this not a real setting.
+        status_file = conf.data.get("Service", "StatusFile", default)
+        # this not a real setting, but do the expand_special anyway
+        return self.expand_special(status_file, conf)
     def default_status_file(self, conf): # -> text
         """ default file pattern where to store a status mark """
         folder = _var(self._pid_file_folder)
@@ -1358,10 +1361,10 @@ class Systemctl:
     def get_env(self, conf):
         env = os.environ.copy()
         for env_part in conf.data.getlist("Service", "Environment", []):
-            for name, value in self.read_env_part(env_part):
+            for name, value in self.read_env_part(self.expand_special(env_part, conf)):
                 env[name] = value # a '$word' is not special here
         for env_file in conf.data.getlist("Service", "EnvironmentFile", []):
-            for name, value in self.read_env_file(env_file):
+            for name, value in self.read_env_file(self.expand_special(env_file, conf)):
                 env[name] = self.expand_env(value, env)
         logg.debug("extra-vars %s", self.extra_vars())
         for extra in self.extra_vars():
@@ -1508,7 +1511,7 @@ class Systemctl:
             if workingdir.startswith("-"):
                 workingdir = workingdir[1:]
                 ignore = True
-            into = os_path(self._root, workingdir)
+            into = os_path(self._root, self.expand_special(workingdir, conf))
             try: 
                return os.chdir(into)
             except Exception as e:
@@ -1880,8 +1883,8 @@ class Systemctl:
         os.dup2(inp.fileno(), sys.stdin.fileno())
         os.dup2(out.fileno(), sys.stdout.fileno())
         os.dup2(out.fileno(), sys.stderr.fileno())
-        runuser = conf.data.get("Service", "User", "")
-        rungroup = conf.data.get("Service", "Group", "")
+        runuser = self.expand_special(conf.data.get("Service", "User", ""), conf)
+        rungroup = self.expand_special(conf.data.get("Service", "Group", ""), conf)
         shutil_setuid(runuser, rungroup)
         self.chdir_workingdir(conf, check = False)
         try:
@@ -3538,12 +3541,12 @@ class Systemctl:
         yield "TimeoutStopUSec", seconds_to_time(self.get_TimeoutStopSec(conf))
         env_parts = []
         for env_part in conf.data.getlist("Service", "Environment", []):
-            env_parts.append(env_part)
+            env_parts.append(self.expand_special(env_part, conf))
         if env_parts: 
             yield "Environment", " ".join(env_parts)
         env_files = []
         for env_file in conf.data.getlist("Service", "EnvironmentFile", []):
-            env_files.append(env_file)
+            env_files.append(self.expand_special(env_file, conf))
         if env_files:
             yield "EnvironmentFile", " ".join(env_files)
     #
