@@ -160,10 +160,15 @@ def grep(pattern, lines):
 def greps(lines, pattern):
     return list(each_grep(pattern, lines))
 def running(lines):
-    return list(each_non_defunct(lines))
+    return list(each_non_runuser(each_non_defunct(lines)))
 def each_non_defunct(lines):
     for line in _lines(lines):
         if '<defunct>' in line:
+            continue
+        yield line
+def each_non_runuser(lines):
+    for line in _lines(lines):
+        if 'runuser -u' in line:
             continue
         yield line
 
@@ -14514,7 +14519,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                cat "RUNNING `cat {root}/var/run/zzz.init.pid`"
             {end}
             stop() {begin}
-               killall {testsleep}
+               kill `cat {root}/var/run/zzz.init.pid` >>$logfile 2>&1
+               killall {testsleep} >> $logfile 2>&1
             {end}
             case "$1" in start)
                date "+START.%T" >> $logfile
@@ -14595,7 +14601,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        time.sleep(2) # killall is async
+        time.sleep(1) # killall is async
+        sx____("docker exec {testname} bash -c 'sed s/^/.../ {logfile} | tail'".format(**locals()))
         top = _recent(output("docker exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(running(greps(top, testsleep)))
@@ -17188,7 +17195,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                cat "RUNNING `cat {root}/var/run/zzz.init.pid`"
             {end}
             stop() {begin}
-               killall {testsleep}
+               kill `cat {root}/var/run/zzz.init.pid` >>$logfile 2>&1
+               killall {testsleep} >>$logfile 2>&1
             {end}
             case "$1" in start)
                date "+START.%T" >> $logfile
