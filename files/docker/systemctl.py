@@ -3680,7 +3680,7 @@ class Systemctl:
         self.stop_system_default()
         try: 
             os.kill(1, signal.SIGQUIT) # exit init-loop on no_more_procs
-        except Exception, e:
+        except Exception as e:
             logg.warning("SIGQUIT to init-loop on PID-1: %s", e)
     def system_get_default(self):
         """ get current default run-level"""
