@@ -88,12 +88,16 @@ check3:
 	./testsuite.py -vv \
 	  '--with=tmp/systemctl.py' --python=/usr/bin/python3
 
-checks: 
+checks: _1checks _2checks _3checks _4checks
+_1checks:
 	- rm .coverage* 
+_2checks:
 	$(MAKE) checks2_coverage
 	for i in .coverage*; do mv $$i $$i.cov2; done
+_3checks:
 	$(MAKE) checks3_coverage
 	for i in .coverage*; do mv $$i $$i.cov3; done
+_4checks:
 	coverage combine && coverage report && coverage annotate
 	ls -l tmp/systemctl.py,cover
 checks2:  
