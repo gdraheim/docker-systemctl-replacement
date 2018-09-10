@@ -54,7 +54,6 @@ todo/test%:  ; ./testsuite.py "$(notdir $@)" -vv --todo
 nightrun: checkall
 	$(MAKE) checks
 checkall:
-	echo STARTED `date -R`
 	$(MAKE) "test_[1234]"
 	$(MAKE) "7.5/test_[567]"
 	$(MAKE) "7.4/test_[567]"
@@ -63,12 +62,10 @@ checkall:
 	$(MAKE) "16.04/test_[567]"
 	$(MAKE) "15.0/test_[567]"
 	$(MAKE) "42.3/test_[567]"
-	$(MAKE) "42.2/test_[567]"
 	$(MAKE) "18.04/st_[567]"
 	$(MAKE) "16.04/st_[567]"
 	$(MAKE) "15.0/st_[567]"
 	$(MAKE) "42.3/st_[567]"
-	$(MAKE) "42.2/st_[567]"
 
 check: check2018
 	@ echo please run 'make checks' now
