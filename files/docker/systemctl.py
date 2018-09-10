@@ -3562,7 +3562,7 @@ class Systemctl:
             yield "EnvironmentFile", " ".join(env_files)
     #
     igno_centos = [ "netconsole", "network" ]
-    igno_opensuse = [ "raw", "pppoe", "*.local", "boot.*", "rpmconf*", "purge-kernels*", "postfix*" ]
+    igno_opensuse = [ "raw", "pppoe", "*.local", "boot.*", "rpmconf*", "purge-kernels.service", "after-local.service", "postfix*" ]
     igno_ubuntu = [ "mount*", "umount*", "ondemand", "*.local" ]
     igno_always = [ "network*", "dbus", "systemd-*" ]
     def _ignored_unit(self, unit, ignore_list):
