@@ -1895,6 +1895,7 @@ class Systemctl:
         for cmd in conf.data.getlist("Service", "ExecStart", []):
             newcmd = self.exec_cmd(cmd, env, conf)
             return self.execve_from(conf, newcmd, env)
+        return None
     def stop_modules(self, *modules):
         """ [UNIT]... -- stop these units """
         found_all = True
@@ -3679,7 +3680,7 @@ class Systemctl:
         self.stop_system_default()
         try: 
             os.kill(1, signal.SIGQUIT) # exit init-loop on no_more_procs
-        except Exception, e:
+        except Exception as e:
             logg.warning("SIGQUIT to init-loop on PID-1: %s", e)
     def system_get_default(self):
         """ get current default run-level"""
