@@ -601,7 +601,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Testing A
             [Service]
-            ExecStart=/usr/bin/sleep 3
+            ExecStart=/bin/sleep 3
         """)
         #
         cmd = "{systemctl} daemon-reload"
@@ -1014,8 +1014,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing C
             [Service]
             Type=simple
-            ExecReload=/usr/bin/kill -SIGHUP $MAINPID
-            ExecStop=/usr/bin/kill $MAINPID
+            ExecReload=/bin/kill -SIGHUP $MAINPID
+            ExecStop=/bin/kill $MAINPID
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(root, "/etc/systemd/system/zzd.service"),"""
@@ -1076,8 +1076,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing C
             [Service]
             Type=simple
-            ExecReload=/usr/bin/kill -SIGHUP $MAINPID
-            ExecStop=/usr/bin/kill $MAINPID
+            ExecReload=/bin/kill -SIGHUP $MAINPID
+            ExecStop=/bin/kill $MAINPID
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(root, "/etc/systemd/system/zzd.service"),"""
@@ -2412,7 +2412,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Testing B
             [Service]
-            ExecStart=/usr/bin/sleep 2
+            ExecStart=/bin/sleep 2
             [Install]
             WantedBy=multi-user.target""")
         cmd = "{systemctl} daemon-reload"
@@ -2450,7 +2450,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Testing B
             [Service]
-            ExecStart=/usr/bin/sleep 2
+            ExecStart=/bin/sleep 2
             [Install]
             WantedBy=multi-user.target""")
         cmd = "{systemctl} daemon-reload"
@@ -2523,7 +2523,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Testing B
             [Service]
-            ExecStart=/usr/bin/sleep 2
+            ExecStart=/bin/sleep 2
             [Install]
             WantedBy=multi-user.target""")
         cmd = "{systemctl} daemon-reload"
@@ -2591,7 +2591,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Testing B
             [Service]
-            ExecStart=/usr/bin/sleep 2
+            ExecStart=/bin/sleep 2
             [Install]
             WantedBy=multi-user.target""")
         #
@@ -2653,14 +2653,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Testing B
             [Service]
-            ExecStart=/usr/bin/sleep 2
+            ExecStart=/bin/sleep 2
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(root, "/etc/systemd/system/zzc.service"),"""
             [Unit]
             Description=Testing C
             [Service]
-            ExecStart=/usr/bin/sleep 2
+            ExecStart=/bin/sleep 2
             [Install]
             WantedBy=multi-user.target""")
         #
@@ -2740,7 +2740,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Testing C
             [Service]
-            ExecStart=/usr/bin/sleep 2
+            ExecStart=/bin/sleep 2
             [Install]
             WantedBy=multi-user.target""")
         #
@@ -2928,14 +2928,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Testing B
             [Service]
-            ExecStart=/usr/bin/sleep 2
+            ExecStart=/bin/sleep 2
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(root, "/etc/systemd/system/zzc.service"),"""
             [Unit]
             Description=Testing C
             [Service]
-            ExecStart=/usr/bin/sleep 2
+            ExecStart=/bin/sleep 2
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(root, "/etc/systemd/system-preset/our.preset"),"""
@@ -3001,14 +3001,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Testing B
             [Service]
-            ExecStart=/usr/bin/sleep 2
+            ExecStart=/bin/sleep 2
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(root, "/etc/systemd/system/zzc.service"),"""
             [Unit]
             Description=Testing C
             [Service]
-            ExecStart=/usr/bin/sleep 2
+            ExecStart=/bin/sleep 2
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(root, "/etc/systemd/system-preset/our.preset"),"""
@@ -3082,14 +3082,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Testing B
             [Service]
-            ExecStart=/usr/bin/sleep 2
+            ExecStart=/bin/sleep 2
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(root, "/etc/systemd/system/zzc.service"),"""
             [Unit]
             Description=Testing C
             [Service]
-            ExecStart=/usr/bin/sleep 2
+            ExecStart=/bin/sleep 2
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(root, "/etc/systemd/system-preset/our.preset"),"""
@@ -3205,14 +3205,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Testing B
             [Service]
-            ExecStart=/usr/bin/sleep 2
+            ExecStart=/bin/sleep 2
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(root, "/etc/systemd/system/zzc.service"),"""
             [Unit]
             Description=Testing C
             [Service]
-            ExecStart=/usr/bin/sleep 2
+            ExecStart=/bin/sleep 2
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(root, "/etc/systemd/system-preset/our.preset"),"""
@@ -3324,14 +3324,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Testing B
             [Service]
-            ExecStart=/usr/bin/sleep 2
+            ExecStart=/bin/sleep 2
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(root, "/etc/systemd/system/zzc.service"),"""
             [Unit]
             Description=Testing C
             [Service]
-            ExecStart=/usr/bin/sleep 2
+            ExecStart=/bin/sleep 2
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(root, "/etc/systemd/system-preset/our.preset"),"""
@@ -3433,14 +3433,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Testing B
             [Service]
-            ExecStart=/usr/bin/sleep 2
+            ExecStart=/bin/sleep 2
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(root, "/etc/systemd/system/zzc.service"),"""
             [Unit]
             Description=Testing C
             [Service]
-            ExecStart=/usr/bin/sleep 2
+            ExecStart=/bin/sleep 2
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(root, "/etc/systemd/system-preset/our.preset"),"""
@@ -3542,14 +3542,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Testing B
             [Service]
-            ExecStart=/usr/bin/sleep 2
+            ExecStart=/bin/sleep 2
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(root, "/etc/systemd/system/zzc.service"),"""
             [Unit]
             Description=Testing C
             [Service]
-            ExecStart=/usr/bin/sleep 2
+            ExecStart=/bin/sleep 2
             [Install]
             WantedBy=multi-user.target""")
         #
@@ -3602,28 +3602,28 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Testing B
             [Service]
-            ExecStart=/usr/bin/sleep 2
+            ExecStart=/bin/sleep 2
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(root, "/etc/systemd/system/zzc.service"),"""
             [Unit]
             Description=Testing C
             [Service]
-            ExecStart=/usr/bin/sleep 2
+            ExecStart=/bin/sleep 2
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(root, "/etc/systemd/system/mount-disks.service"),"""
             [Unit]
             Description=Testing C
             [Service]
-            ExecStart=/usr/bin/sleep 2
+            ExecStart=/bin/sleep 2
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(root, "/etc/systemd/system/network.service"),"""
             [Unit]
             Description=Testing C
             [Service]
-            ExecStart=/usr/bin/sleep 2
+            ExecStart=/bin/sleep 2
             [Install]
             WantedBy=multi-user.target""")
         #
@@ -3689,14 +3689,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Testing B
             [Service]
-            ExecStart=/usr/bin/sleep 2
+            ExecStart=/bin/sleep 2
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(root, "/etc/systemd/system/zzc.service"),"""
             [Unit]
             Description=Testing C
             [Service]
-            ExecStart=/usr/bin/sleep 2
+            ExecStart=/bin/sleep 2
             User={user}
             [Install]
             WantedBy=multi-user.target""".format(**locals()))
@@ -3705,7 +3705,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Testing D
             [Service]
-            ExecStart=/usr/bin/sleep 2
+            ExecStart=/bin/sleep 2
             [Install]
             WantedBy=multi-user.target""".format(**locals()))
         #
@@ -5322,7 +5322,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Testing B
             [Service]
-            ExecStart=/usr/bin/sleep 2
+            ExecStart=/bin/sleep 2
             [Install]
             WantedBy=multi-user.target""")
         cmd = "{systemctl} daemon-reload"
@@ -5396,7 +5396,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Testing B
             [Service]
-            ExecStart=/usr/bin/sleep 2
+            ExecStart=/bin/sleep 2
             [Install]
             WantedBy=multi-user.target""")
         cmd = "{systemctl} daemon-reload"
@@ -5471,7 +5471,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Testing C
             [Service]
-            ExecStart=/usr/bin/sleep 2
+            ExecStart=/bin/sleep 2
             [Install]
             WantedBy=multi-user.target""")
         #
@@ -5634,7 +5634,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Service]
             Environment=DEF2=foo
             EnvironmentFile=/etc/sysconfig/b.conf
-            ExecStart=/usr/bin/sleep 3
+            ExecStart=/bin/sleep 3
             ExecStartPost=%s A $DEF1 $DEF2
             ExecStartPost=%s B ${DEF1} ${DEF2}
             ExecStartPost=%s C $DEF1$DEF2
@@ -5697,7 +5697,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Service]
             Environment=X=x1
             Environment="Y=y2 y3"
-            ExecStart=/usr/bin/sleep 3
+            ExecStart=/bin/sleep 3
             ExecStartPost=%s A %%N $X ${Y}
             ExecStartPost=%s B %%n $X ${Y}
             ExecStartPost=%s C %%f $X ${Y}
@@ -5771,7 +5771,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Service]
             Environment=X=x1
             Environment="Y=y2 y3"
-            ExecStart=/usr/bin/sleep 3
+            ExecStart=/bin/sleep 3
             ExecStartPost=%s A %%N $X ${Y}
             ExecStartPost=%s B %%n $X ${Y}
             ExecStartPost=%s C %%f $X ${Y}
@@ -5859,7 +5859,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Environment=X=x1
             Environment="Y=y2 y3"
             EnvironmentFile=%s
-            ExecStart=/usr/bin/sleep 3
+            ExecStart=/bin/sleep 3
             ExecStartPost=%s X: $X ${X}
             ExecStartPost=%s Y: $Y ${Y}
             ExecStartPost=%s M: $M ${M}
@@ -7452,10 +7452,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStartPre=/bin/echo %n
             ExecStart={bindir}/{testscript} 111
             ExecStartPost=/bin/echo started $MAINPID
-            ExecStop=/usr/bin/kill -3 $MAINPID
+            ExecStop=/bin/kill -3 $MAINPID
             ExecStopPost=/bin/echo stopped $MAINPID
-            ExecStopPost=/usr/bin/sleep 2
-            ExecReload=/usr/bin/kill -10 $MAINPID
+            ExecStopPost=/bin/sleep 2
+            ExecReload=/bin/kill -10 $MAINPID
             KillSignal=SIGQUIT
             [Install]
             WantedBy=multi-user.target
@@ -9973,9 +9973,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStartPre=/bin/echo %n
             ExecStart={bindir}/{testsleep} 20
             ExecStartPost=/bin/echo started $MAINPID
-            ExecStop=/usr/bin/kill $MAINPID
+            ExecStop=/bin/kill $MAINPID
             ExecStopPost=/bin/echo stopped $MAINPID
-            ExecStopPost=/usr/bin/sleep 2
+            ExecStopPost=/bin/sleep 2
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
@@ -9987,9 +9987,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStartPre=/bin/echo %n
             ExecStart={bindir}/{testsleep} 3
             ExecStartPost=/bin/echo started $MAINPID
-            ExecStop=/usr/bin/kill $MAINPID
+            ExecStop=/bin/kill $MAINPID
             ExecStopPost=/bin/echo stopped $MAINPID
-            ExecStopPost=/usr/bin/sleep 2
+            ExecStopPost=/bin/sleep 2
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
@@ -10001,9 +10001,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStartPre=/bin/echo %n
             ExecStart={bindir}/{testfail} 3
             ExecStartPost=/bin/echo started $MAINPID
-            ExecStop=/usr/bin/kill $MAINPID
+            ExecStop=/bin/kill $MAINPID
             ExecStopPost=/bin/echo stopped $MAINPID
-            ExecStopPost=/usr/bin/sleep 2
+            ExecStopPost=/bin/sleep 2
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
@@ -10016,9 +10016,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStartPre=/bin/echo %n
             ExecStart={bindir}/{testsleep} 3
             ExecStartPost=/bin/echo started $MAINPID
-            ExecStop=/usr/bin/kill $MAINPID
+            ExecStop=/bin/kill $MAINPID
             ExecStopPost=/bin/echo stopped $MAINPID
-            ExecStopPost=/usr/bin/sleep 2
+            ExecStopPost=/bin/sleep 2
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
@@ -10031,9 +10031,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStartPre=/bin/echo %n
             ExecStart={bindir}/{testfail} 3
             ExecStartPost=/bin/echo started $MAINPID
-            ExecStop=/usr/bin/kill $MAINPID
+            ExecStop=/bin/kill $MAINPID
             ExecStopPost=/bin/echo stopped $MAINPID
-            ExecStopPost=/usr/bin/sleep 2
+            ExecStopPost=/bin/sleep 2
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
@@ -10389,7 +10389,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Service]
             Type=simple
             ExecStart={bindir}/{testsleepC} 111
-            ExecStop=/usr/bin/kill ${begin}MAINPID{end}
+            ExecStop=/bin/kill ${begin}MAINPID{end}
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
@@ -10533,10 +10533,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStartPre=/bin/echo %n
             ExecStart={bindir}/{testscriptB} 111
             ExecStartPost=/bin/echo started $MAINPID
-            ExecStop=/usr/bin/kill -3 $MAINPID
+            ExecStop=/bin/kill -3 $MAINPID
             ExecStopPost=/bin/echo stopped $MAINPID
-            ExecStopPost=/usr/bin/sleep 2
-            ExecReload=/usr/bin/kill -10 $MAINPID
+            ExecStopPost=/bin/sleep 2
+            ExecReload=/bin/kill -10 $MAINPID
             # KillSignal=SIGQUIT
             [Install]
             WantedBy=multi-user.target
@@ -10650,10 +10650,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStartPre=/bin/echo %n
             ExecStart={bindir}/{testscriptB} 111
             ExecStartPost=/bin/echo started $MAINPID
-            ExecStop=/usr/bin/kill -3 $MAINPID
+            ExecStop=/bin/kill -3 $MAINPID
             ExecStopPost=/bin/echo stopped $MAINPID
-            ExecStopPost=/usr/bin/sleep 2
-            ExecReload=/usr/bin/kill -10 $MAINPID
+            ExecStopPost=/bin/sleep 2
+            ExecReload=/bin/kill -10 $MAINPID
             # KillSignal=SIGQUIT
             SendSIGKILL=no
             [Install]
@@ -10770,10 +10770,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStartPre=/bin/echo %n
             ExecStart={bindir}/{testscriptB} 111
             ExecStartPost=/bin/echo started $MAINPID
-            ExecStop=/usr/bin/kill -3 $MAINPID
+            ExecStop=/bin/kill -3 $MAINPID
             ExecStopPost=/bin/echo stopped $MAINPID
-            ExecStopPost=/usr/bin/sleep 2
-            ExecReload=/usr/bin/kill -10 $MAINPID
+            ExecStopPost=/bin/sleep 2
+            ExecReload=/bin/kill -10 $MAINPID
             # KillSignal=SIGQUIT
             SendSIGHUP=yes
             [Install]
@@ -10890,10 +10890,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStartPre=/bin/echo %n
             ExecStart={bindir}/{testscriptB} 111
             ExecStartPost=/bin/echo started $MAINPID
-            ExecStop=/usr/bin/kill -3 $MAINPID
+            ExecStop=/bin/kill -3 $MAINPID
             ExecStopPost=/bin/echo stopped $MAINPID
-            ExecStopPost=/usr/bin/sleep 2
-            ExecReload=/usr/bin/kill -10 $MAINPID
+            ExecStopPost=/bin/sleep 2
+            ExecReload=/bin/kill -10 $MAINPID
             KillMode=process
             KillSignal=SIGQUIT
             # SendSIGHUP=yes
@@ -11010,10 +11010,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStartPre=/bin/echo %n
             ExecStart={bindir}/{testscriptB} 111
             ExecStartPost=/bin/echo started $MAINPID
-            ExecStop=/usr/bin/kill -3 $MAINPID
+            ExecStop=/bin/kill -3 $MAINPID
             ExecStopPost=/bin/echo stopped $MAINPID
-            ExecStopPost=/usr/bin/sleep 2
-            ExecReload=/usr/bin/kill -10 $MAINPID
+            ExecStopPost=/bin/sleep 2
+            ExecReload=/bin/kill -10 $MAINPID
             KillMode=mixed
             KillSignal=SIGQUIT
             # SendSIGHUP=yes
@@ -11973,7 +11973,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Requires=zzb.service
             [Service]
             Type=simple
-            ExecStart=/usr/bin/sleep 10
+            ExecStart=/bin/sleep 10
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
@@ -12100,8 +12100,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Requires=zzb.service
             [Service]
             Type=foo
-            ExecStart=/usr/bin/sleep 10
-            ExecStop=/usr/bin/kill $MAINPID
+            ExecStart=/bin/sleep 10
+            ExecStop=/bin/kill $MAINPID
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
@@ -12457,10 +12457,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStartPre=/bin/echo %n
             ExecStart={bindir}/{testscript} 111
             ExecStartPost=/bin/echo started $MAINPID
-            ExecStop=/usr/bin/kill -3 $MAINPID
+            ExecStop=/bin/kill -3 $MAINPID
             ExecStopPost=/bin/echo stopped $MAINPID
-            ExecStopPost=/usr/bin/sleep 2
-            ExecReload=/usr/bin/kill -10 $MAINPID
+            ExecStopPost=/bin/sleep 2
+            ExecReload=/bin/kill -10 $MAINPID
             KillSignal=SIGQUIT
             [Install]
             WantedBy=multi-user.target
@@ -14876,10 +14876,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStartPre=/bin/echo %n
             ExecStart=/usr/bin/{testsleep} 8
             ExecStartPost=/bin/echo started $MAINPID
-            # ExecStop=/usr/bin/kill $MAINPID
+            # ExecStop=/bin/kill $MAINPID
             ExecStopPost=/bin/echo stopped $MAINPID
-            ExecStopPost=/usr/bin/sleep 2
-            ExecReload=/usr/bin/kill -10 $MAINPID
+            ExecStopPost=/bin/sleep 2
+            ExecReload=/bin/kill -10 $MAINPID
             KillSignal=SIGQUIT
             [Install]
             WantedBy=multi-user.target
@@ -15049,10 +15049,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStartPre=/bin/echo %n
             ExecStart={bindir}/{testscript} 111
             ExecStartPost=/bin/echo started $MAINPID
-            ExecStop=/usr/bin/kill -3 $MAINPID
+            ExecStop=/bin/kill -3 $MAINPID
             ExecStopPost=/bin/echo stopped $MAINPID
-            ExecStopPost=/usr/bin/sleep 2
-            ExecReload=/usr/bin/kill -10 $MAINPID
+            ExecStopPost=/bin/sleep 2
+            ExecReload=/bin/kill -10 $MAINPID
             KillSignal=SIGQUIT
             [Install]
             WantedBy=multi-user.target
@@ -17367,10 +17367,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStartPre=/bin/echo %n
             ExecStart={bindir}/{testscript} 111
             ExecStartPost=/bin/echo started $MAINPID
-            ExecStop=/usr/bin/kill -3 $MAINPID
+            ExecStop=/bin/kill -3 $MAINPID
             ExecStopPost=/bin/echo stopped $MAINPID
-            ExecStopPost=/usr/bin/sleep 2
-            ExecReload=/usr/bin/kill -10 $MAINPID
+            ExecStopPost=/bin/sleep 2
+            ExecReload=/bin/kill -10 $MAINPID
             KillSignal=SIGQUIT
             [Install]
             WantedBy=multi-user.target
