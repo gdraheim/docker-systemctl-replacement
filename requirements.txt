@@ -1,0 +1,3 @@
+docker-mirror-packages-repo
+-e git+https://github.com/gdraheim/docker-mirror-packages-repo.git
+
