@@ -3837,7 +3837,7 @@ class Systemctl:
                         logg.info("no more procs - exit init-loop")
                         break
             except KeyboardInterrupt as e:
-                if e.message == "SIGQUIT":
+                if e.args and e.args[0] == "SIGQUIT":
                     # the original systemd puts a coredump on that signal.
                     logg.info("SIGQUIT - switch to no more procs check")
                     self.exit_when_no_more_procs = True
