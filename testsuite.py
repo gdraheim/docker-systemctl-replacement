@@ -77,7 +77,7 @@ def refresh_tool(image):
     ## https://github.com/openSUSE/docker-containers/issues/64
     #  {package} rr oss-update"
     #  {package} ar -f http://download.opensuse.org/update/leap/42.3/oss/openSUSE:Leap:42.3:Update.repo"
-    if image in ["opensuse:42.3"]:
+    if "opensuse:42.3" in image:
         return "bash -c 'zypper mr --no-gpgcheck oss-update && zypper refresh'"
     if "opensuse" in image:
         return "zypper refresh"
