@@ -19800,6 +19800,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             cmd = "docker exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
         self.prep_coverage(testname, cov_option) 
+        cmd = "docker exec {testname} bash -c 'test -f /etc/init.d/ondemand && systemctl disable ondemand'" # ubuntu:16.04
+        sx____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} touch /var/log/systemctl.debug.log"
