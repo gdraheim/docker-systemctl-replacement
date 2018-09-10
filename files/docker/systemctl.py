@@ -1395,10 +1395,10 @@ class Systemctl:
             expanded = new_text
         logg.error("shell variable expansion exceeded maxdepth %s", maxdepth)
         return expanded
-    def exec_cmd(self, cmd, env, conf = None):
-        cmd1 = cmd.replace("\\\n","")
-        # according to documentation the %n / %% need to be expanded where in
-        # most cases they are shell-escaped values. So we do it before shlex.
+    def expand_special(self, cmd, conf = None):
+        """ expand %i %t and similar special vars. They are being expanded
+            before any other expand_env takes place which handles shell-style
+            $HOME references. """
         def sh_escape(value):
             return "'" + value.replace("'","\\'") + "'"
         def get_confs(conf):
@@ -1454,7 +1454,12 @@ class Systemctl:
                 return confs[m.group(1)]
             logg.warning("can not expand %%%s", m.group(1))
             return "''" # empty escaped string
-        cmd2 = re.sub("[%](.)", lambda m: get_conf1(m), cmd1)
+        return re.sub("[%](.)", lambda m: get_conf1(m), cmd)
+    def exec_cmd(self, cmd, env, conf = None):
+        cmd1 = cmd.replace("\\\n","")
+        # according to documentation the %n / %% need to be expanded where in
+        # most cases they are shell-escaped values. So we do it before shlex.
+        cmd2 = expand_special(cmd1, conf)
         # according to documentation, when bar="one two" then the expansion
         # of '$bar' is ["one","two"] and '${bar}' becomes ["one two"]. We
         # tackle that by expand $bar before shlex, and the rest thereafter.
