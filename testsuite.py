@@ -13288,7 +13288,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
         sx____(cmd.format(**locals()))
         cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/socat || {package} install -y socat'"
-        sx____(cmd.format(**locals()))
+        if sx____(cmd.format(**locals())): self.skipTest("unable to install socat in a container from "+image)
         if COVERAGE:
              cmd = "docker exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
@@ -13673,7 +13673,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
         sx____(cmd.format(**locals()))
         cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/socat || {package} install -y socat'"
-        sx____(cmd.format(**locals()))
+        if sx____(cmd.format(**locals())): self.skipTest("unable to install socat in a container from "+image)
         if COVERAGE:
              cmd = "docker exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
@@ -15916,7 +15916,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
         sx____(cmd.format(**locals()))
         cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/socat || {package} install -y socat'"
-        sx____(cmd.format(**locals()))
+        if sx____(cmd.format(**locals())): self.skipTest("unable to install socat in a container from "+image)
         if COVERAGE:
              cmd = "docker exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
@@ -16317,7 +16317,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
         sx____(cmd.format(**locals()))
         cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/socat || {package} install -y socat'"
-        sx____(cmd.format(**locals()))
+        if sx____(cmd.format(**locals())): self.skipTest("unable to install socat in a container from "+image)
         if COVERAGE:
              cmd = "docker exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
@@ -17848,7 +17848,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
         sx____(cmd.format(**locals()))
         cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/socat || {package} install -y socat'"
-        sx____(cmd.format(**locals()))
+        if sx____(cmd.format(**locals())): self.skipTest("unable to install socat in a container from "+image)
         if COVERAGE:
              cmd = "docker exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
@@ -18075,7 +18075,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
         sx____(cmd.format(**locals()))
         cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/socat || {package} install -y socat'"
-        sx____(cmd.format(**locals()))
+        if sx____(cmd.format(**locals())): self.skipTest("unable to install socat in a container from "+image)
         if COVERAGE:
              cmd = "docker exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
