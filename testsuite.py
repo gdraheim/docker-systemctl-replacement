@@ -8804,8 +8804,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Type=oneshot
             ExecStartPre={bindir}/backup {root}/var/tmp/test.1 {root}/var/tmp/test.2
             ExecStart=/usr/bin/touch {root}/var/tmp/test.1
-            ExecStop=/usr/bin/rm {root}/var/tmp/test.1
-            ExecStopPost=/usr/bin/rm -f {root}/var/tmp/test.2
+            ExecStop=/bin/rm {root}/var/tmp/test.1
+            ExecStopPost=/bin/rm -f {root}/var/tmp/test.2
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
@@ -8995,8 +8995,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Type=oneshot
             ExecStartPre={bindir}/backup {root}/var/tmp/test.1 {root}/var/tmp/test.2
             ExecStart=/usr/bin/touch {root}/var/tmp/test.1
-            ExecStop=/usr/bin/rm {root}/var/tmp/test.1
-            ExecStopPost=/usr/bin/rm -f {root}/var/tmp/test.2
+            ExecStop=/bin/rm {root}/var/tmp/test.1
+            ExecStopPost=/bin/rm -f {root}/var/tmp/test.2
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
@@ -9753,7 +9753,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Service]
             Type=oneshot
             ExecStart=/usr/bin/touch {root}/var/tmp/test.1
-            ExecStopPost=/usr/bin/rm {root}/var/tmp/test.1
+            ExecStopPost=/bin/rm {root}/var/tmp/test.1
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
@@ -13995,8 +13995,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Type=oneshot
             ExecStartPre={bindir}/backup {root}/var/tmp/test.1 {root}/var/tmp/test.2
             ExecStart=/usr/bin/touch {root}/var/tmp/test.1
-            ExecStop=/usr/bin/rm {root}/var/tmp/test.1
-            ExecStopPost=/usr/bin/rm -f {root}/var/tmp/test.2
+            ExecStop=/bin/rm {root}/var/tmp/test.1
+            ExecStopPost=/bin/rm -f {root}/var/tmp/test.2
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
@@ -14260,8 +14260,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Type=oneshot
             ExecStartPre={bindir}/backup {root}/var/tmp/test.1 {root}/var/tmp/test.2
             ExecStart=/usr/bin/touch {root}/var/tmp/test.1
-            ExecStop=/usr/bin/rm {root}/var/tmp/test.1
-            ExecStopPost=/usr/bin/rm -f {root}/var/tmp/test.2
+            ExecStop=/bin/rm {root}/var/tmp/test.1
+            ExecStopPost=/bin/rm -f {root}/var/tmp/test.2
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
@@ -16653,8 +16653,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Type=oneshot
             ExecStartPre={bindir}/backup {root}/var/tmp/test.1 {root}/var/tmp/test.2
             ExecStart=/usr/bin/touch {root}/var/tmp/test.1
-            ExecStop=/usr/bin/rm {root}/var/tmp/test.1
-            ExecStopPost=/usr/bin/rm -f {root}/var/tmp/test.2
+            ExecStop=/bin/rm {root}/var/tmp/test.1
+            ExecStopPost=/bin/rm -f {root}/var/tmp/test.2
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
@@ -16935,8 +16935,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Type=oneshot
             ExecStartPre={bindir}/backup {root}/var/tmp/test.1 {root}/var/tmp/test.2
             ExecStart=/usr/bin/touch {root}/var/tmp/test.1
-            ExecStop=/usr/bin/rm {root}/var/tmp/test.1
-            ExecStopPost=/usr/bin/rm -f {root}/var/tmp/test.2
+            ExecStop=/bin/rm {root}/var/tmp/test.1
+            ExecStopPost=/bin/rm -f {root}/var/tmp/test.2
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
@@ -18237,8 +18237,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Type=oneshot
             ExecStartPre={bindir}/backup {root}/var/tmp/test.1 {root}/var/tmp/test.2
             ExecStart=/usr/bin/touch {root}/var/tmp/test.1
-            ExecStop=/usr/bin/rm {root}/var/tmp/test.1
-            ExecStopPost=/usr/bin/rm -f {root}/var/tmp/test.2
+            ExecStop=/bin/rm {root}/var/tmp/test.1
+            ExecStopPost=/bin/rm -f {root}/var/tmp/test.2
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
