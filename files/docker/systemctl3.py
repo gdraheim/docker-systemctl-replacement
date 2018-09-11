@@ -539,6 +539,24 @@ class waitlock:
         except Exception as e:
             logg.warning("oops, %s", e)
 
+def must_have_failed(waitpid, cmd):
+    # found to be needed on ubuntu:16.04 to match test result from ubuntu:18.04 and other distros
+    # .... I have tracked it down that python's os.waitpid() returns an exitcode==0 even when the
+    # .... underlying process has actually failed with an exitcode<>0. It is unknown where that
+    # .... bug comes from but it seems a bit serious to trash some very basic unix functionality.
+    # .... Essentially a parent process does not get the correct exitcode from its own children.
+    if cmd and cmd[0] == "/bin/kill":
+        pid = None
+        for arg in cmd[1:]:
+            if not arg.startswith("-"):
+                pid = arg
+        if pid is None: # unknown $MAINPID
+            if not waitpid.returncode:
+                logg.error("waitpid %s did return %s => correcting as 11", cmd, waitpid.returncode)
+            waitpidNEW = collections.namedtuple("waitpidNEW", ["pid", "returncode", "signal" ])
+            waitpid = waitpidNEW(waitpid.pid, 11, waitpid.signal)
+    return waitpid
+
 def subprocess_waitpid(pid):
     waitpid = collections.namedtuple("waitpid", ["pid", "returncode", "signal" ])
     run_pid, run_stat = os.waitpid(pid, 0)
@@ -2004,6 +2022,7 @@ class Systemctl:
                 if not forkpid:
                     self.execve_from(conf, newcmd, env) # pragma: nocover
                 run = subprocess_waitpid(forkpid)
+                run = must_have_failed(run, newcmd) # TODO: a workaround
                 # self.write_status_from(conf, MainPID=run.pid) # no ExecStop
                 if run.returncode and check:
                     returncode = run.returncode
@@ -3543,7 +3562,7 @@ class Systemctl:
             yield "EnvironmentFile", " ".join(env_files)
     #
     igno_centos = [ "netconsole", "network" ]
-    igno_opensuse = [ "raw", "pppoe", "*.local", "boot.*", "rpmconf*", "purge-kernels*", "postfix*" ]
+    igno_opensuse = [ "raw", "pppoe", "*.local", "boot.*", "rpmconf*", "purge-kernels.service", "after-local.service", "postfix*" ]
     igno_ubuntu = [ "mount*", "umount*", "ondemand", "*.local" ]
     igno_always = [ "network*", "dbus", "systemd-*" ]
     def _ignored_unit(self, unit, ignore_list):
