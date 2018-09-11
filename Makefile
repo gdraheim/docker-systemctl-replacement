@@ -36,20 +36,21 @@ test_%: ; ./testsuite.py "$@" -vv
 real_%: ; ./testsuite.py "$@" -vv
 test: ; $(MAKE) "test_[1234]"
 
-todo/test%:  ; ./testsuite.py "$(notdir $@)" -vv --todo
-15.0/test%:  ; ./testsuite.py "$(notdir $@)" -vv --image=opensuse/leap:15.0
-42.3/test%:  ; ./testsuite.py "$(notdir $@)" -vv --image=opensuse:42.3
-42.2/test%:  ; ./testsuite.py "$(notdir $@)" -vv --image=opensuse:42.2
-18.04/test%: ; ./testsuite.py "$(notdir $@)" -vv --image=ubuntu:18.04
-16.04/test%: ; ./testsuite.py "$(notdir $@)" -vv --image=ubuntu:16.04
-7.5/test%:   ; ./testsuite.py "$(notdir $@)" -vv --image=centos:7.5.1804
-7.4/test%:   ; ./testsuite.py "$(notdir $@)" -vv --image=centos:7.4.1708
-7.3/test%:   ; ./testsuite.py "$(notdir $@)" -vv --image=centos:7.3.1611
-15.0/st%:  ; ./testsuite.py "te$(notdir $@)" -vv --image=opensuse/leap:15.0 --python=/usr/bin/python3
-42.3/st%:  ; ./testsuite.py "te$(notdir $@)" -vv --image=opensuse:42.3      --python=/usr/bin/python3
-42.2/st%:  ; ./testsuite.py "te$(notdir $@)" -vv --image=opensuse:42.2      --python=/usr/bin/python3
-18.04/st%: ; ./testsuite.py "te$(notdir $@)" -vv --image=ubuntu:18.04       --python=/usr/bin/python3
-16.04/st%: ; ./testsuite.py "te$(notdir $@)" -vv --image=ubuntu:16.04       --python=/usr/bin/python3
+WITH3 = --python=/usr/bin/python3 --with=files/docker/systemctl3.py
+todo/test%:             ; ./testsuite.py   "$(notdir $@)" -vv --todo
+15.0/test%:             ; ./testsuite.py   "$(notdir $@)" -vv --image=opensuse/leap:15.0
+42.3/test%:             ; ./testsuite.py   "$(notdir $@)" -vv --image=opensuse:42.3
+42.2/test%:             ; ./testsuite.py   "$(notdir $@)" -vv --image=opensuse:42.2
+18.04/test%:            ; ./testsuite.py   "$(notdir $@)" -vv --image=ubuntu:18.04
+16.04/test%:            ; ./testsuite.py   "$(notdir $@)" -vv --image=ubuntu:16.04
+7.5/test%:              ; ./testsuite.py   "$(notdir $@)" -vv --image=centos:7.5.1804
+7.4/test%:              ; ./testsuite.py   "$(notdir $@)" -vv --image=centos:7.4.1708
+7.3/test%:              ; ./testsuite.py   "$(notdir $@)" -vv --image=centos:7.3.1611
+15.0/st%:  ; $(MAKE) 3 && ./testsuite.py "te$(notdir $@)" -vv --image=opensuse/leap:15.0 $(WITH3)
+42.3/st%:  ; $(MAKE) 3 && ./testsuite.py "te$(notdir $@)" -vv --image=opensuse:42.3      $(WITH3)
+42.2/st%:  ; $(MAKE) 3 && ./testsuite.py "te$(notdir $@)" -vv --image=opensuse:42.2      $(WITH3)
+18.04/st%: ; $(MAKE) 3 && ./testsuite.py "te$(notdir $@)" -vv --image=ubuntu:18.04       $(WITH3)
+16.04/st%: ; $(MAKE) 3 && ./testsuite.py "te$(notdir $@)" -vv --image=ubuntu:16.04       $(WITH3)
 
 nightrun: checkall
 	$(MAKE) checks
