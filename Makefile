@@ -35,26 +35,27 @@ est_%: ; rm .coverage* ; ./testsuite.py "t$@" -vv --coverage
 test_%: ; ./testsuite.py "$@" -vv
 real_%: ; ./testsuite.py "$@" -vv
 test: ; $(MAKE) "test_[1234]"
+st_%: ; $(MAKE) 3 && ./testsuite.py "te$@" -vv $(WITH3)
 
-todo/test%:  ; ./testsuite.py "$(notdir $@)" -vv --todo
-15.0/test%:  ; ./testsuite.py "$(notdir $@)" -vv --image=opensuse/leap:15.0
-42.3/test%:  ; ./testsuite.py "$(notdir $@)" -vv --image=opensuse:42.3
-42.2/test%:  ; ./testsuite.py "$(notdir $@)" -vv --image=opensuse:42.2
-18.04/test%: ; ./testsuite.py "$(notdir $@)" -vv --image=ubuntu:18.04
-16.04/test%: ; ./testsuite.py "$(notdir $@)" -vv --image=ubuntu:16.04
-7.5/test%:   ; ./testsuite.py "$(notdir $@)" -vv --image=centos:7.5.1804
-7.4/test%:   ; ./testsuite.py "$(notdir $@)" -vv --image=centos:7.4.1708
-7.3/test%:   ; ./testsuite.py "$(notdir $@)" -vv --image=centos:7.3.1611
-15.0/st%:  ; ./testsuite.py "te$(notdir $@)" -vv --image=opensuse/leap:15.0 --python=/usr/bin/python3
-42.3/st%:  ; ./testsuite.py "te$(notdir $@)" -vv --image=opensuse:42.3      --python=/usr/bin/python3
-42.2/st%:  ; ./testsuite.py "te$(notdir $@)" -vv --image=opensuse:42.2      --python=/usr/bin/python3
-18.04/st%: ; ./testsuite.py "te$(notdir $@)" -vv --image=ubuntu:18.04       --python=/usr/bin/python3
-16.04/st%: ; ./testsuite.py "te$(notdir $@)" -vv --image=ubuntu:16.04       --python=/usr/bin/python3
+WITH3 = --python=/usr/bin/python3 --with=files/docker/systemctl3.py
+todo/test%:             ; ./testsuite.py   "$(notdir $@)" -vv --todo
+15.0/test%:             ; ./testsuite.py   "$(notdir $@)" -vv --image=opensuse/leap:15.0
+42.3/test%:             ; ./testsuite.py   "$(notdir $@)" -vv --image=opensuse:42.3
+42.2/test%:             ; ./testsuite.py   "$(notdir $@)" -vv --image=opensuse:42.2
+18.04/test%:            ; ./testsuite.py   "$(notdir $@)" -vv --image=ubuntu:18.04
+16.04/test%:            ; ./testsuite.py   "$(notdir $@)" -vv --image=ubuntu:16.04
+7.5/test%:              ; ./testsuite.py   "$(notdir $@)" -vv --image=centos:7.5.1804
+7.4/test%:              ; ./testsuite.py   "$(notdir $@)" -vv --image=centos:7.4.1708
+7.3/test%:              ; ./testsuite.py   "$(notdir $@)" -vv --image=centos:7.3.1611
+15.0/st%:  ; $(MAKE) 3 && ./testsuite.py "te$(notdir $@)" -vv --image=opensuse/leap:15.0 $(WITH3)
+42.3/st%:  ; $(MAKE) 3 && ./testsuite.py "te$(notdir $@)" -vv --image=opensuse:42.3      $(WITH3)
+42.2/st%:  ; $(MAKE) 3 && ./testsuite.py "te$(notdir $@)" -vv --image=opensuse:42.2      $(WITH3)
+18.04/st%: ; $(MAKE) 3 && ./testsuite.py "te$(notdir $@)" -vv --image=ubuntu:18.04       $(WITH3)
+16.04/st%: ; $(MAKE) 3 && ./testsuite.py "te$(notdir $@)" -vv --image=ubuntu:16.04       $(WITH3)
 
 nightrun: checkall
 	$(MAKE) checks
 checkall:
-	echo STARTED `date -R`
 	$(MAKE) "test_[1234]"
 	$(MAKE) "7.5/test_[567]"
 	$(MAKE) "7.4/test_[567]"
@@ -63,12 +64,10 @@ checkall:
 	$(MAKE) "16.04/test_[567]"
 	$(MAKE) "15.0/test_[567]"
 	$(MAKE) "42.3/test_[567]"
-	$(MAKE) "42.2/test_[567]"
 	$(MAKE) "18.04/st_[567]"
 	$(MAKE) "16.04/st_[567]"
 	$(MAKE) "15.0/st_[567]"
 	$(MAKE) "42.3/st_[567]"
-	$(MAKE) "42.2/st_[567]"
 
 check: check2018
 	@ echo please run 'make checks' now
@@ -103,18 +102,20 @@ check3:
 	./testsuite.py -vv \
 	  '--with=tmp/systemctl.py' --python=/usr/bin/python3
 
-checks: _1checks _2checks _3checks _4checks
-_1checks:
+checks: checks.1 checks.2 checks.3 checks.4
+checks.1:
 	- rm .coverage* 
-_2checks:
+checks.2:
 	$(MAKE) checks2_coverage
 	for i in .coverage*; do mv $$i $$i.cov2; done
-_3checks:
+checks.3:
 	$(MAKE) checks3_coverage
 	for i in .coverage*; do mv $$i $$i.cov3; done
-_4checks:
+checks.4:
 	coverage combine && coverage report && coverage annotate
 	ls -l tmp/systemctl.py,cover
+	@ echo ".... are you ready for 'make checkall' ?"
+
 checks2:  
 	rm .coverage* ; $(MAKE) checks2_coverage
 checks2_coverage:
@@ -127,6 +128,7 @@ checks3_coverage:
 	$(MAKE) tmp_systemctl_py_3
 	./testsuite.py -vv --coverage \
 	  '--with=tmp/systemctl.py' --python=/usr/bin/python3
+
 coverage: coverage2
 coverage2: 
 	$(MAKE) tmp_systemctl_py_2
@@ -144,14 +146,6 @@ tmp_systemctl_py_3:
 	@ test -d tmp || mkdir tmp
 	@ cp files/docker/systemctl.py tmp/systemctl.py
 	@ sed -i -e "s|/usr/bin/python|/usr/bin/python3|" tmp/systemctl.py
-st_%:
-	$(MAKE) tmp_systemctl_py_3
-	rm .coverage* ; ./testsuite.py -vv --coverage te$@ \
-	   '--with=tmp/systemctl.py' --python=/usr/bin/python3
-
-op opensuse: ; ./testsuite.py make_opensuse
-ub ubuntu:   ; ./testsuite.py make_ubuntu
-ce centos:   ; ./testsuite.py make_centos
 
 clean:
 	- rm .coverage*

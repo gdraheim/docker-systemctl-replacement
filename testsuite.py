@@ -4,7 +4,7 @@
 from __future__ import print_function
 
 __copyright__ = "(C) Guido Draheim, licensed under the EUPL"""
-__version__ = "1.4.2371"
+__version__ = "1.4.2372"
 
 ## NOTE:
 ## The testcases 1000...4999 are using a --root=subdir environment
@@ -77,7 +77,7 @@ def refresh_tool(image):
     ## https://github.com/openSUSE/docker-containers/issues/64
     #  {package} rr oss-update"
     #  {package} ar -f http://download.opensuse.org/update/leap/42.3/oss/openSUSE:Leap:42.3:Update.repo"
-    if image in ["opensuse:42.3"]:
+    if "opensuse:42.3" in image:
         return "bash -c 'zypper mr --no-gpgcheck oss-update && zypper refresh'"
     if "opensuse" in image:
         return "zypper refresh"
@@ -13288,7 +13288,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
         sx____(cmd.format(**locals()))
         cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/socat || {package} install -y socat'"
-        sx____(cmd.format(**locals()))
+        if sx____(cmd.format(**locals())): self.skipTest("unable to install socat in a container from "+image)
         if COVERAGE:
              cmd = "docker exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
@@ -13673,7 +13673,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
         sx____(cmd.format(**locals()))
         cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/socat || {package} install -y socat'"
-        sx____(cmd.format(**locals()))
+        if sx____(cmd.format(**locals())): self.skipTest("unable to install socat in a container from "+image)
         if COVERAGE:
              cmd = "docker exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
@@ -15916,7 +15916,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
         sx____(cmd.format(**locals()))
         cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/socat || {package} install -y socat'"
-        sx____(cmd.format(**locals()))
+        if sx____(cmd.format(**locals())): self.skipTest("unable to install socat in a container from "+image)
         if COVERAGE:
              cmd = "docker exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
@@ -16317,7 +16317,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
         sx____(cmd.format(**locals()))
         cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/socat || {package} install -y socat'"
-        sx____(cmd.format(**locals()))
+        if sx____(cmd.format(**locals())): self.skipTest("unable to install socat in a container from "+image)
         if COVERAGE:
              cmd = "docker exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
@@ -17848,7 +17848,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
         sx____(cmd.format(**locals()))
         cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/socat || {package} install -y socat'"
-        sx____(cmd.format(**locals()))
+        if sx____(cmd.format(**locals())): self.skipTest("unable to install socat in a container from "+image)
         if COVERAGE:
              cmd = "docker exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
@@ -18075,7 +18075,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
         sx____(cmd.format(**locals()))
         cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/socat || {package} install -y socat'"
-        sx____(cmd.format(**locals()))
+        if sx____(cmd.format(**locals())): self.skipTest("unable to install socat in a container from "+image)
         if COVERAGE:
              cmd = "docker exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
