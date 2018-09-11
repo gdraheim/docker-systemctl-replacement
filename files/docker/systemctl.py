@@ -1462,7 +1462,7 @@ class Systemctl:
         cmd1 = cmd.replace("\\\n","")
         # according to documentation the %n / %% need to be expanded where in
         # most cases they are shell-escaped values. So we do it before shlex.
-        cmd2 = expand_special(cmd1, conf)
+        cmd2 = self.expand_special(cmd1, conf)
         # according to documentation, when bar="one two" then the expansion
         # of '$bar' is ["one","two"] and '${bar}' becomes ["one two"]. We
         # tackle that by expand $bar before shlex, and the rest thereafter.
