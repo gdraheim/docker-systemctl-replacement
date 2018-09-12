@@ -2371,11 +2371,11 @@ class Systemctl:
             return self.do_reload_or_try_restart_unit_from(conf)
     def do_reload_or_try_restart_unit_from(self, conf):
         if conf.data.getlist("Service", "ExecReload", []):
-            return self.reload_unit_from(conf)
+            return self.do_reload_unit_from(conf)
         elif not self.is_active_from(conf):
             return True
         else:
-            return self.restart_unit_from(conf)
+            return self.do_restart_unit_from(conf)
     def kill_modules(self, *modules):
         """ [UNIT]... -- kill these units """
         found_all = True
