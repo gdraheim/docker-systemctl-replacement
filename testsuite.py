@@ -206,7 +206,7 @@ def text_file(filename, content):
     logg.info("::: made %s", filename)
 def shell_file(filename, content):
     text_file(filename, content)
-    os.chmod(filename, 0775)
+    os.chmod(filename, 0o775)
 def copy_file(filename, target):
     targetdir = os.path.dirname(target)
     if not os.path.isdir(targetdir):
@@ -214,7 +214,7 @@ def copy_file(filename, target):
     shutil.copyfile(filename, target)
 def copy_tool(filename, target):
     copy_file(filename, target)
-    os.chmod(target, 0755)
+    os.chmod(target, 0o755)
 
 def get_caller_name():
     frame = inspect.currentframe().f_back.f_back
