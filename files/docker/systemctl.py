@@ -494,9 +494,14 @@ class waitlock:
                 os.makedirs(folder)
         except Exception as e:
             logg.warning("oops, %s", e)
+    def lockfile(self):
+        unit = ""
+        if self.conf:
+            unit = self.conf.name()
+        return os.path.join(self.lockfolder, str(unit or "global") + ".lock")
     def __enter__(self):
         try:
-            lockfile = os.path.join(self.lockfolder, str(self.unit or "global") + ".lock")
+            lockfile = self.lockfile()
             lockname = os.path.basename(lockfile)
             self.opened = os.open(lockfile, os.O_RDWR | os.O_CREAT, 0o600)
             for attempt in xrange(int(MaxLockWait or DefaultMaximumTimeout)):
@@ -509,7 +514,7 @@ class waitlock:
                         os.close(self.opened)
                         self.opened = os.open(lockfile, os.O_RDWR | os.O_CREAT, 0o600)
                         continue
-                    content = "{ 'systemctl': %s, 'unit': '%s' }\n" % (os.getpid(), self.unit)
+                    content = "{ 'systemctl': %s, 'lock': '%s' }\n" % (os.getpid(), lockname)
                     os.write(self.opened, content.encode("utf-8"))
                     logg.debug("[%s] %s. holding lock on %s", os.getpid(), attempt, lockname)
                     return True
@@ -529,7 +534,7 @@ class waitlock:
             os.lseek(self.opened, 0, os.SEEK_SET)
             os.ftruncate(self.opened, 0)
             if "removelockfile" in COVERAGE: # actually an optional implementation
-                lockfile = os.path.join(self.lockfolder, str(self.unit or "global") + ".lock")
+                lockfile = self.lockfile()
                 lockname = os.path.basename(lockfile)
                 os.unlink(lockfile) # ino is kept allocated because opened by this process
                 logg.debug("[%s] lockfile removed for %s", os.getpid(), lockname)
