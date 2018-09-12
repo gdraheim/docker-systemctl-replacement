@@ -135,7 +135,7 @@ be almost like virtual machines.
 
 https://github.com/gdraheim/docker-systemctl-replacement/commit/3515f94bb6d1fdbede68b560ea47b403bc081dbd
 
-## Published
+## First Release
 
 As there are three stages above, the first real version number
 for the published code was set at `0.3`. As the systemctl.py
@@ -156,13 +156,51 @@ official release is basically the same as the one two years later.
 
 https://github.com/gdraheim/docker-systemctl-replacement/releases/tag/v0.4.1125
 
+## Testsuite
 
+In the first release only a "Maketests" file did exist, covering
+as much as three Dockerfiles. As it was inconvenient to switch
+back and forth to the other project, some Ansible code was copied
+over for testing in release 0.5. With more and more dockerfiles,
+that became the testsuite for quite a while.
 
+It took to release 0.7 that a testsuite.py file exists but that was
+only a wrapper to run the old dockerfile builds and the old ansible 
+scripts. Basically, the old test cases did get a number! Using
+experiences from another project, the unittest.main loop is not 
+used but a different cli where one can run a test case by the prefix
+of its method name - for example `testsuite.py test_6001`. The old
+file "Maketests" was replaced by that.
 
+For release 0.8 the systemctl.py script was enhanced with an extra
+option "--root=path" to be able to test functionality without 
+starting a docker container (something that was required before).
+For release 0.9 the testsuite.py was enhanced to use "coverage2"
+when running sytemctl.py so that one could know how many testcases
+were still needed. This was done with the intention that an upcoming 
+release 1.0 should only be published with good coverage. In fact,
+the dot-zero release had over 90% line coverage already.
 
+## Bugs and Features
 
+With release 1.0 to also know about reordering of services, the
+systemctl.py replacement script was about feature complete. After
+that time the changes are tracked using the GitHub issue list
+as well as mentioning the changes in the release notes attached
+to the git tags / github releases.
 
+Be aware that systemctl.py does not want to mimic the systemd
+behaviour in all detail. There had been always the expectation
+that at some point the docker cluster managers will be able to
+run containers with some systemd emulation themselves (atleast
+rkt does). So essentially, systemctl.py would become obsolete
+soon - however, years later the situation has not changed much
+and the script is even used for other purposes by now.
 
-
-
-
+So let's close this history wrapup with a final remark: most
+Linux distributions are run by systemd at the time of writing
+this text. But systemd is a flawed solution - not only because
+it breaks the Unix Philosophy of "Do One Thing and Do It Well".
+There are many quirks in the service descriptors and the whole
+functionality is badly documented - we're all just lucky that 
+it works at all. SystemD is a bug itself.
