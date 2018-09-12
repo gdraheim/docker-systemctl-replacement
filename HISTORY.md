@@ -145,10 +145,13 @@ real github version number.
 https://github.com/gdraheim/docker-systemctl-replacement/commit/d7bbdd13b86620a9e1eee70522862a868b9053fb
 
 However that one was not officially tagged as a release. The
-first release happend on the next day the next day at version 
-0.4.1125. Note how the versioning scheme works - the four digits
-at the end represent a date value, while the two numbers in
-front are incremented manually.
+first release happend on the next day at version 0.4.1125. Note 
+how the versioning scheme works - the four digits at the end 
+represent a date value, while the two numbers in front are 
+incremented manually. The date value is (Years from BASEYEAR,
+week number of the year, day number of the week) and it is
+updated by `make version`. The README.md created for this first
+official release is basically the same as the one two years later.
 
 https://github.com/gdraheim/docker-systemctl-replacement/releases/tag/v0.4.1125
 
