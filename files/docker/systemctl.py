@@ -1659,7 +1659,7 @@ class Systemctl:
         if self.not_user_conf(conf):
             logg.error("Unit %s not for --user mode", unit)
             return False
-            return self.start_unit_from(conf)
+        return self.start_unit_from(conf)
     def get_TimeoutStartSec(self, conf):
         timeout = conf.data.get("Service", "TimeoutSec", DefaultTimeoutStartSec)
         timeout = conf.data.get("Service", "TimeoutStartSec", timeout)
@@ -1965,7 +1965,7 @@ class Systemctl:
         if self.syntax_check(conf) > 100: return False
         with waitlock(conf):
             logg.info(" stop unit %s => %s", conf.name(), conf.filename())
-            return do_stop_unit_from(conf)
+            return self.do_stop_unit_from(conf)
     def do_stop_unit_from(self, conf):
         timeout = self.get_TimeoutStopSec(conf)
         runs = conf.data.get("Service", "Type", "simple").lower()
@@ -2417,7 +2417,7 @@ class Systemctl:
         status_file = self.status_file_from(conf)
         size = os.path.exists(status_file) and os.path.getsize(status_file)
         logg.info("STATUS %s %s", status_file, size)
-        mainpid = to_int(self.read_mainpid_from(conf, mainpid or ""))
+        mainpid = to_int(self.read_mainpid_from(conf, ""))
         self.clean_status_from(conf) # clear RemainAfterExit and TimeoutStartSec
         if not mainpid:
             if useKillMode in ["control-group"]:
