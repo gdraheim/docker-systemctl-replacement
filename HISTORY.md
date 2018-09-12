@@ -49,15 +49,16 @@ an ExecReload.
 
 Also the changes from upstream vendors were not so simple as expected,
 so a Python script was born to analyze the structure of the systemd
-service descriptor. In the beginning that was just using Python's
-ConfigParser to read the ini-style descriptor files. However a lot of
-service descriptor files failed to load - as they are not really
-like `*.ini` files at all.
+service descriptor. In the beginning that was just wrapping Python's
+ConfigParser to read the ini-style descriptor files. However be aware
+that a lot of service descriptor files may fail to load with that.
 
 After all, a "UnitConfig" parser was started to get the format
-correctly and it is still at the heart of the systemctl.py
-replacement script. If you ever want to analyze systemd files
-then you better take that as an example how to do it.
+correctly. It is still at the heart of the systemctl.py
+replacement script - completely rewritten of course because the
+service descriptors are not really `*.ini` files. If you ever want 
+to analyze systemd files then you better take that as an example how 
+to do it.
 
 The rest is simple - at some point in May 2016 a systemctl.py
 script was born that did understand start/stop/reload commands.
