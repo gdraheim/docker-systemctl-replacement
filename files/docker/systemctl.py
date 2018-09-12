@@ -482,10 +482,10 @@ class PresetFile:
                     return status
         return None
 
-## with waitlock(unit): self.start()
+## with waitlock(conf): self.start()
 class waitlock:
-    def __init__(self, unit):
-        self.unit = unit # currently unused
+    def __init__(self, conf):
+        self.conf = conf # currently unused
         self.opened = None
         self.lockfolder = os_path(_root, _var(_notify_socket_folder))
         try:
@@ -1477,6 +1477,7 @@ class Systemctl:
             return "''" # empty escaped string
         return re.sub("[%](.)", lambda m: get_conf1(m), cmd)
     def exec_cmd(self, cmd, env, conf = None):
+        """ expand ExecCmd statements including %i and $MAINPID """
         cmd1 = cmd.replace("\\\n","")
         # according to documentation the %n / %% need to be expanded where in
         # most cases they are shell-escaped values. So we do it before shlex.
@@ -1658,16 +1659,18 @@ class Systemctl:
         if self.not_user_conf(conf):
             logg.error("Unit %s not for --user mode", unit)
             return False
-        with waitlock(unit):
-            logg.debug(" start unit %s => %s", unit, conf.filename())
             return self.start_unit_from(conf)
     def get_TimeoutStartSec(self, conf):
         timeout = conf.data.get("Service", "TimeoutSec", DefaultTimeoutStartSec)
         timeout = conf.data.get("Service", "TimeoutStartSec", timeout)
         return time_to_seconds(timeout, DefaultMaximumTimeout)
     def start_unit_from(self, conf):
-        if not conf: return
+        if not conf: return False
         if self.syntax_check(conf) > 100: return False
+        with waitlock(conf):
+            logg.debug(" start unit %s => %s", conf.name(), conf.filename())
+            return self.do_start_unit_from(conf)
+    def do_start_unit_from(self, conf):
         timeout = self.get_TimeoutStartSec(conf)
         doRemainAfterExit = to_bool(conf.data.get("Service", "RemainAfterExit", "no"))
         runs = conf.data.get("Service", "Type", "simple").lower()
@@ -1951,16 +1954,19 @@ class Systemctl:
         if self.not_user_conf(conf):
             logg.error("Unit %s not for --user mode", unit)
             return False
-        with waitlock(unit):
-            logg.info(" stop unit %s => %s", unit, conf.filename())
-            return self.stop_unit_from(conf)
+        return self.stop_unit_from(conf)
+
     def get_TimeoutStopSec(self, conf):
         timeout = conf.data.get("Service", "TimeoutSec", DefaultTimeoutStartSec)
         timeout = conf.data.get("Service", "TimeoutStopSec", timeout)
         return time_to_seconds(timeout, DefaultMaximumTimeout)
     def stop_unit_from(self, conf):
-        if not conf: return
+        if not conf: return False
         if self.syntax_check(conf) > 100: return False
+        with waitlock(conf):
+            logg.info(" stop unit %s => %s", conf.name(), conf.filename())
+            return do_stop_unit_from(conf)
+    def do_stop_unit_from(self, conf):
         timeout = self.get_TimeoutStopSec(conf)
         runs = conf.data.get("Service", "Type", "simple").lower()
         env = self.get_env(conf)
@@ -2013,7 +2019,7 @@ class Systemctl:
         elif not conf.data.getlist("Service", "ExecStop", []):
             logg.info("no ExecStop => systemctl kill")
             if True:
-                self.kill_unit_from(conf)
+                self.do_kill_unit_from(conf)
                 self.clean_pid_file_from(conf)
                 self.clean_status_from(conf) # "inactive"
         elif runs in [ "simple", "notify" ]:
@@ -2143,12 +2149,14 @@ class Systemctl:
         if self.not_user_conf(conf):
             logg.error("Unit %s not for --user mode", unit)
             return False
-        with waitlock(unit):
-            logg.info(" reload unit %s => %s", unit, conf.filename())
-            return self.reload_unit_from(conf)
+        return self.reload_unit_from(conf)
     def reload_unit_from(self, conf):
-        if not conf: return
+        if not conf: return False
         if self.syntax_check(conf) > 100: return False
+        with waitlock(conf):
+            logg.info(" reload unit %s => %s", conf.name(), conf.filename())
+            return self.do_reload_unit_from(conf)
+    def do_reload_unit_from(self, conf):
         runs = conf.data.get("Service", "Type", "simple").lower()
         env = self.get_env(conf)
         self.exec_check_service(conf, env, "ExecReload")
@@ -2225,18 +2233,20 @@ class Systemctl:
         if self.not_user_conf(conf):
             logg.error("Unit %s not for --user mode", unit)
             return False
-        with waitlock(unit):
-            logg.info(" restart unit %s => %s", unit, conf.filename())
-            if not self.is_active_from(conf):
-                return self.start_unit_from(conf)
-            else:
-                return self.restart_unit_from(conf)
+        return self.restart_unit_from(conf)
     def restart_unit_from(self, conf):
-        if not conf: return
+        if not conf: return False
         if self.syntax_check(conf) > 100: return False
+        with waitlock(conf):
+            logg.info(" restart unit %s => %s", conf.name(), conf.filename())
+            if not self.is_active_from(conf):
+                return self.do_start_unit_from(conf)
+            else:
+                return self.do_restart_unit_from(conf)
+    def do_restart_unit_from(self, conf):
         logg.info("(restart) => stop/start")
-        self.stop_unit_from(conf)
-        return self.start_unit_from(conf)
+        self.do_stop_unit_from(conf)
+        return self.do_start_unit_from(conf)
     def try_restart_modules(self, *modules):
         """ [UNIT]... -- try-restart these units """
         found_all = True
@@ -2259,6 +2269,7 @@ class Systemctl:
                 done = False
         return done
     def try_restart_unit(self, unit):
+        """ only do 'restart' if 'active' """
         conf = self.load_unit_conf(unit)
         if conf is None:
             logg.error("Unit %s could not be found.", unit)
@@ -2266,10 +2277,10 @@ class Systemctl:
         if self.not_user_conf(conf):
             logg.error("Unit %s not for --user mode", unit)
             return False
-        with waitlock(unit):
-            logg.info(" try-restart unit %s => %s", unit, conf.filename())
+        with waitlock(conf):
+            logg.info(" try-restart unit %s => %s", conf.name(), conf.filename())
             if self.is_active_from(conf):
-                return self.restart_unit_from(conf)
+                return self.do_restart_unit_from(conf)
         return True
     def reload_or_restart_modules(self, *modules):
         """ [UNIT]... -- reload-or-restart these units """
@@ -2293,6 +2304,7 @@ class Systemctl:
                 done = False
         return done
     def reload_or_restart_unit(self, unit):
+        """ do 'reload' if specified, otherwise do 'restart' """
         conf = self.load_unit_conf(unit)
         if conf is None:
             logg.error("Unit %s could not be found.", unit)
@@ -2300,20 +2312,24 @@ class Systemctl:
         if self.not_user_conf(conf):
             logg.error("Unit %s not for --user mode", unit)
             return False
-        with waitlock(unit):
-            logg.info(" reload-or-restart unit %s => %s", unit, conf.filename())
-            return self.reload_or_restart_unit_from(conf)
+        return self.reload_or_restart_unit_from(conf)
     def reload_or_restart_unit_from(self, conf):
+        """ do 'reload' if specified, otherwise do 'restart' """
+        if not conf: return False
+        with waitlock(conf):
+            logg.info(" reload-or-restart unit %s => %s", conf.name(), conf.filename())
+            return self.do_reload_or_restart_unit_from(conf)
+    def do_reload_or_restart_unit_from(self, conf):
         if not self.is_active_from(conf):
             # try: self.stop_unit_from(conf)
             # except Exception as e: pass
-            return self.start_unit_from(conf)
+            return self.do_start_unit_from(conf)
         elif conf.data.getlist("Service", "ExecReload", []):
             logg.info("found service to have ExecReload -> 'reload'")
-            return self.reload_unit_from(conf)
+            return self.do_reload_unit_from(conf)
         else:
             logg.info("found service without ExecReload -> 'restart'")
-            return self.restart_unit_from(conf)
+            return self.do_restart_unit_from(conf)
     def reload_or_try_restart_modules(self, *modules):
         """ [UNIT]... -- reload-or-try-restart these units """
         found_all = True
@@ -2343,10 +2359,12 @@ class Systemctl:
         if self.not_user_conf(conf):
             logg.error("Unit %s not for --user mode", unit)
             return False
-        with waitlock(unit):
-            logg.info(" reload-or-try-restart unit %s => %s", unit, conf.filename())
-            return self.reload_or_try_restart_unit_from(conf)
+        return self.reload_or_try_restart_unit_from(conf)
     def reload_or_try_restart_unit_from(self, conf):
+        with waitlock(conf):
+            logg.info(" reload-or-try-restart unit %s => %s", conf.name(), conf.filename())
+            return self.do_reload_or_try_restart_unit_from(conf)
+    def do_reload_or_try_restart_unit_from(self, conf):
         if conf.data.getlist("Service", "ExecReload", []):
             return self.reload_unit_from(conf)
         elif not self.is_active_from(conf):
@@ -2382,11 +2400,13 @@ class Systemctl:
         if self.not_user_conf(conf):
             logg.error("Unit %s not for --user mode", unit)
             return False
-        with waitlock(unit):
-            logg.info(" kill unit %s => %s", unit, conf.filename())
-            return self.kill_unit_from(conf)
-    def kill_unit_from(self, conf, mainpid = None):
-        if not conf: return None
+        return self.kill_unit_from(conf)
+    def kill_unit_from(self, conf):
+        if not conf: return False
+        with waitlock(conf):
+            logg.info(" kill unit %s => %s", conf.name(), conf.filename())
+            return self.do_kill_unit_from(conf)
+    def do_kill_unit_from(self, conf):
         started = time.time()
         doSendSIGKILL = to_bool(conf.data.get("Service", "SendSIGKILL", "yes"))
         doSendSIGHUP = to_bool(conf.data.get("Service", "SendSIGHUP", "no"))
