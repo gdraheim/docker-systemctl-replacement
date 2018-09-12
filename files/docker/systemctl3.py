@@ -2,7 +2,7 @@
 from __future__ import print_function
 
 __copyright__ = "(C) 2016-2018 Guido U. Draheim, licensed under the EUPL"
-__version__ = "1.4.2372"
+__version__ = "1.4.2373"
 
 import logging
 logg = logging.getLogger("systemctl")
@@ -482,10 +482,10 @@ class PresetFile:
                     return status
         return None
 
-## with waitlock(unit): self.start()
+## with waitlock(conf): self.start()
 class waitlock:
-    def __init__(self, unit):
-        self.unit = unit # currently unused
+    def __init__(self, conf):
+        self.conf = conf # currently unused
         self.opened = None
         self.lockfolder = os_path(_root, _var(_notify_socket_folder))
         try:
@@ -494,9 +494,14 @@ class waitlock:
                 os.makedirs(folder)
         except Exception as e:
             logg.warning("oops, %s", e)
+    def lockfile(self):
+        unit = ""
+        if self.conf:
+            unit = self.conf.name()
+        return os.path.join(self.lockfolder, str(unit or "global") + ".lock")
     def __enter__(self):
         try:
-            lockfile = os.path.join(self.lockfolder, str(self.unit or "global") + ".lock")
+            lockfile = self.lockfile()
             lockname = os.path.basename(lockfile)
             self.opened = os.open(lockfile, os.O_RDWR | os.O_CREAT, 0o600)
             for attempt in xrange(int(MaxLockWait or DefaultMaximumTimeout)):
@@ -509,7 +514,7 @@ class waitlock:
                         os.close(self.opened)
                         self.opened = os.open(lockfile, os.O_RDWR | os.O_CREAT, 0o600)
                         continue
-                    content = "{ 'systemctl': %s, 'unit': '%s' }\n" % (os.getpid(), self.unit)
+                    content = "{ 'systemctl': %s, 'lock': '%s' }\n" % (os.getpid(), lockname)
                     os.write(self.opened, content.encode("utf-8"))
                     logg.debug("[%s] %s. holding lock on %s", os.getpid(), attempt, lockname)
                     return True
@@ -529,7 +534,7 @@ class waitlock:
             os.lseek(self.opened, 0, os.SEEK_SET)
             os.ftruncate(self.opened, 0)
             if "removelockfile" in COVERAGE: # actually an optional implementation
-                lockfile = os.path.join(self.lockfolder, str(self.unit or "global") + ".lock")
+                lockfile = self.lockfile()
                 lockname = os.path.basename(lockfile)
                 os.unlink(lockfile) # ino is kept allocated because opened by this process
                 logg.debug("[%s] lockfile removed for %s", os.getpid(), lockname)
@@ -888,7 +893,7 @@ class Systemctl:
             logg.debug("%s is /user/ conf >> accept", conf.filename())
             return False
         # to allow for 'docker run -u user' with system services
-        user = conf.data.get("Service", "User", "")
+        user = self.expand_special(conf.data.get("Service", "User", ""), conf)
         if user and user == self.user():
             logg.debug("%s with User=%s >> accept", conf.filename(), user)
             return False
@@ -1108,7 +1113,8 @@ class Systemctl:
     def get_description_from(self, conf, default = None): # -> text
         """ Unit.Description could be empty sometimes """
         if not conf: return default or ""
-        return conf.data.get("Unit", "Description", default or "")
+        description = conf.data.get("Unit", "Description", default or "")
+        return self.expand_special(description, conf)
     def read_pid_file(self, pid_file, default = None):
         pid = default
         if not pid_file:
@@ -1150,7 +1156,8 @@ class Systemctl:
         return self.pid_file_from(conf) or self.status_file_from(conf)
     def pid_file_from(self, conf, default = ""):
         """ get the specified pid file path (not a computed default) """
-        return conf.data.get("Service", "PIDFile", default)
+        pid_file = conf.data.get("Service", "PIDFile", default)
+        return self.expand_special(pid_file, conf)
     def read_mainpid_from(self, conf, default):
         """ MAINPID is either the PIDFile content written from the application
             or it is the value in the status file written by this systemctl.py code """
@@ -1174,8 +1181,9 @@ class Systemctl:
         if default is None:
            default = self.default_status_file(conf)
         if conf is None: return default
-        return conf.data.get("Service", "StatusFile", default)
-        # this not a real setting.
+        status_file = conf.data.get("Service", "StatusFile", default)
+        # this not a real setting, but do the expand_special anyway
+        return self.expand_special(status_file, conf)
     def default_status_file(self, conf): # -> text
         """ default file pattern where to store a status mark """
         folder = _var(self._pid_file_folder)
@@ -1376,10 +1384,10 @@ class Systemctl:
     def get_env(self, conf):
         env = os.environ.copy()
         for env_part in conf.data.getlist("Service", "Environment", []):
-            for name, value in self.read_env_part(env_part):
+            for name, value in self.read_env_part(self.expand_special(env_part, conf)):
                 env[name] = value # a '$word' is not special here
         for env_file in conf.data.getlist("Service", "EnvironmentFile", []):
-            for name, value in self.read_env_file(env_file):
+            for name, value in self.read_env_file(self.expand_special(env_file, conf)):
                 env[name] = self.expand_env(value, env)
         logg.debug("extra-vars %s", self.extra_vars())
         for extra in self.extra_vars():
@@ -1413,10 +1421,10 @@ class Systemctl:
             expanded = new_text
         logg.error("shell variable expansion exceeded maxdepth %s", maxdepth)
         return expanded
-    def exec_cmd(self, cmd, env, conf = None):
-        cmd1 = cmd.replace("\\\n","")
-        # according to documentation the %n / %% need to be expanded where in
-        # most cases they are shell-escaped values. So we do it before shlex.
+    def expand_special(self, cmd, conf = None):
+        """ expand %i %t and similar special vars. They are being expanded
+            before any other expand_env takes place which handles shell-style
+            $HOME references. """
         def sh_escape(value):
             return "'" + value.replace("'","\\'") + "'"
         def get_confs(conf):
@@ -1472,7 +1480,13 @@ class Systemctl:
                 return confs[m.group(1)]
             logg.warning("can not expand %%%s", m.group(1))
             return "''" # empty escaped string
-        cmd2 = re.sub("[%](.)", lambda m: get_conf1(m), cmd1)
+        return re.sub("[%](.)", lambda m: get_conf1(m), cmd)
+    def exec_cmd(self, cmd, env, conf = None):
+        """ expand ExecCmd statements including %i and $MAINPID """
+        cmd1 = cmd.replace("\\\n","")
+        # according to documentation the %n / %% need to be expanded where in
+        # most cases they are shell-escaped values. So we do it before shlex.
+        cmd2 = self.expand_special(cmd1, conf)
         # according to documentation, when bar="one two" then the expansion
         # of '$bar' is ["one","two"] and '${bar}' becomes ["one two"]. We
         # tackle that by expand $bar before shlex, and the rest thereafter.
@@ -1521,7 +1535,7 @@ class Systemctl:
             if workingdir.startswith("-"):
                 workingdir = workingdir[1:]
                 ignore = True
-            into = os_path(self._root, workingdir)
+            into = os_path(self._root, self.expand_special(workingdir, conf))
             try: 
                return os.chdir(into)
             except Exception as e:
@@ -1650,16 +1664,18 @@ class Systemctl:
         if self.not_user_conf(conf):
             logg.error("Unit %s not for --user mode", unit)
             return False
-        with waitlock(unit):
-            logg.debug(" start unit %s => %s", unit, conf.filename())
-            return self.start_unit_from(conf)
+        return self.start_unit_from(conf)
     def get_TimeoutStartSec(self, conf):
         timeout = conf.data.get("Service", "TimeoutSec", DefaultTimeoutStartSec)
         timeout = conf.data.get("Service", "TimeoutStartSec", timeout)
         return time_to_seconds(timeout, DefaultMaximumTimeout)
     def start_unit_from(self, conf):
-        if not conf: return
+        if not conf: return False
         if self.syntax_check(conf) > 100: return False
+        with waitlock(conf):
+            logg.debug(" start unit %s => %s", conf.name(), conf.filename())
+            return self.do_start_unit_from(conf)
+    def do_start_unit_from(self, conf):
         timeout = self.get_TimeoutStartSec(conf)
         doRemainAfterExit = to_bool(conf.data.get("Service", "RemainAfterExit", "no"))
         runs = conf.data.get("Service", "Type", "simple").lower()
@@ -1893,8 +1909,8 @@ class Systemctl:
         os.dup2(inp.fileno(), sys.stdin.fileno())
         os.dup2(out.fileno(), sys.stdout.fileno())
         os.dup2(out.fileno(), sys.stderr.fileno())
-        runuser = conf.data.get("Service", "User", "")
-        rungroup = conf.data.get("Service", "Group", "")
+        runuser = self.expand_special(conf.data.get("Service", "User", ""), conf)
+        rungroup = self.expand_special(conf.data.get("Service", "Group", ""), conf)
         shutil_setuid(runuser, rungroup)
         self.chdir_workingdir(conf, check = False)
         try:
@@ -1943,16 +1959,19 @@ class Systemctl:
         if self.not_user_conf(conf):
             logg.error("Unit %s not for --user mode", unit)
             return False
-        with waitlock(unit):
-            logg.info(" stop unit %s => %s", unit, conf.filename())
-            return self.stop_unit_from(conf)
+        return self.stop_unit_from(conf)
+
     def get_TimeoutStopSec(self, conf):
         timeout = conf.data.get("Service", "TimeoutSec", DefaultTimeoutStartSec)
         timeout = conf.data.get("Service", "TimeoutStopSec", timeout)
         return time_to_seconds(timeout, DefaultMaximumTimeout)
     def stop_unit_from(self, conf):
-        if not conf: return
+        if not conf: return False
         if self.syntax_check(conf) > 100: return False
+        with waitlock(conf):
+            logg.info(" stop unit %s => %s", conf.name(), conf.filename())
+            return self.do_stop_unit_from(conf)
+    def do_stop_unit_from(self, conf):
         timeout = self.get_TimeoutStopSec(conf)
         runs = conf.data.get("Service", "Type", "simple").lower()
         env = self.get_env(conf)
@@ -2005,7 +2024,7 @@ class Systemctl:
         elif not conf.data.getlist("Service", "ExecStop", []):
             logg.info("no ExecStop => systemctl kill")
             if True:
-                self.kill_unit_from(conf)
+                self.do_kill_unit_from(conf)
                 self.clean_pid_file_from(conf)
                 self.clean_status_from(conf) # "inactive"
         elif runs in [ "simple", "notify" ]:
@@ -2135,12 +2154,14 @@ class Systemctl:
         if self.not_user_conf(conf):
             logg.error("Unit %s not for --user mode", unit)
             return False
-        with waitlock(unit):
-            logg.info(" reload unit %s => %s", unit, conf.filename())
-            return self.reload_unit_from(conf)
+        return self.reload_unit_from(conf)
     def reload_unit_from(self, conf):
-        if not conf: return
+        if not conf: return False
         if self.syntax_check(conf) > 100: return False
+        with waitlock(conf):
+            logg.info(" reload unit %s => %s", conf.name(), conf.filename())
+            return self.do_reload_unit_from(conf)
+    def do_reload_unit_from(self, conf):
         runs = conf.data.get("Service", "Type", "simple").lower()
         env = self.get_env(conf)
         self.exec_check_service(conf, env, "ExecReload")
@@ -2217,18 +2238,20 @@ class Systemctl:
         if self.not_user_conf(conf):
             logg.error("Unit %s not for --user mode", unit)
             return False
-        with waitlock(unit):
-            logg.info(" restart unit %s => %s", unit, conf.filename())
-            if not self.is_active_from(conf):
-                return self.start_unit_from(conf)
-            else:
-                return self.restart_unit_from(conf)
+        return self.restart_unit_from(conf)
     def restart_unit_from(self, conf):
-        if not conf: return
+        if not conf: return False
         if self.syntax_check(conf) > 100: return False
+        with waitlock(conf):
+            logg.info(" restart unit %s => %s", conf.name(), conf.filename())
+            if not self.is_active_from(conf):
+                return self.do_start_unit_from(conf)
+            else:
+                return self.do_restart_unit_from(conf)
+    def do_restart_unit_from(self, conf):
         logg.info("(restart) => stop/start")
-        self.stop_unit_from(conf)
-        return self.start_unit_from(conf)
+        self.do_stop_unit_from(conf)
+        return self.do_start_unit_from(conf)
     def try_restart_modules(self, *modules):
         """ [UNIT]... -- try-restart these units """
         found_all = True
@@ -2251,6 +2274,7 @@ class Systemctl:
                 done = False
         return done
     def try_restart_unit(self, unit):
+        """ only do 'restart' if 'active' """
         conf = self.load_unit_conf(unit)
         if conf is None:
             logg.error("Unit %s could not be found.", unit)
@@ -2258,10 +2282,10 @@ class Systemctl:
         if self.not_user_conf(conf):
             logg.error("Unit %s not for --user mode", unit)
             return False
-        with waitlock(unit):
-            logg.info(" try-restart unit %s => %s", unit, conf.filename())
+        with waitlock(conf):
+            logg.info(" try-restart unit %s => %s", conf.name(), conf.filename())
             if self.is_active_from(conf):
-                return self.restart_unit_from(conf)
+                return self.do_restart_unit_from(conf)
         return True
     def reload_or_restart_modules(self, *modules):
         """ [UNIT]... -- reload-or-restart these units """
@@ -2285,6 +2309,7 @@ class Systemctl:
                 done = False
         return done
     def reload_or_restart_unit(self, unit):
+        """ do 'reload' if specified, otherwise do 'restart' """
         conf = self.load_unit_conf(unit)
         if conf is None:
             logg.error("Unit %s could not be found.", unit)
@@ -2292,20 +2317,24 @@ class Systemctl:
         if self.not_user_conf(conf):
             logg.error("Unit %s not for --user mode", unit)
             return False
-        with waitlock(unit):
-            logg.info(" reload-or-restart unit %s => %s", unit, conf.filename())
-            return self.reload_or_restart_unit_from(conf)
+        return self.reload_or_restart_unit_from(conf)
     def reload_or_restart_unit_from(self, conf):
+        """ do 'reload' if specified, otherwise do 'restart' """
+        if not conf: return False
+        with waitlock(conf):
+            logg.info(" reload-or-restart unit %s => %s", conf.name(), conf.filename())
+            return self.do_reload_or_restart_unit_from(conf)
+    def do_reload_or_restart_unit_from(self, conf):
         if not self.is_active_from(conf):
             # try: self.stop_unit_from(conf)
             # except Exception as e: pass
-            return self.start_unit_from(conf)
+            return self.do_start_unit_from(conf)
         elif conf.data.getlist("Service", "ExecReload", []):
             logg.info("found service to have ExecReload -> 'reload'")
-            return self.reload_unit_from(conf)
+            return self.do_reload_unit_from(conf)
         else:
             logg.info("found service without ExecReload -> 'restart'")
-            return self.restart_unit_from(conf)
+            return self.do_restart_unit_from(conf)
     def reload_or_try_restart_modules(self, *modules):
         """ [UNIT]... -- reload-or-try-restart these units """
         found_all = True
@@ -2335,16 +2364,18 @@ class Systemctl:
         if self.not_user_conf(conf):
             logg.error("Unit %s not for --user mode", unit)
             return False
-        with waitlock(unit):
-            logg.info(" reload-or-try-restart unit %s => %s", unit, conf.filename())
-            return self.reload_or_try_restart_unit_from(conf)
+        return self.reload_or_try_restart_unit_from(conf)
     def reload_or_try_restart_unit_from(self, conf):
+        with waitlock(conf):
+            logg.info(" reload-or-try-restart unit %s => %s", conf.name(), conf.filename())
+            return self.do_reload_or_try_restart_unit_from(conf)
+    def do_reload_or_try_restart_unit_from(self, conf):
         if conf.data.getlist("Service", "ExecReload", []):
-            return self.reload_unit_from(conf)
+            return self.do_reload_unit_from(conf)
         elif not self.is_active_from(conf):
             return True
         else:
-            return self.restart_unit_from(conf)
+            return self.do_restart_unit_from(conf)
     def kill_modules(self, *modules):
         """ [UNIT]... -- kill these units """
         found_all = True
@@ -2374,11 +2405,13 @@ class Systemctl:
         if self.not_user_conf(conf):
             logg.error("Unit %s not for --user mode", unit)
             return False
-        with waitlock(unit):
-            logg.info(" kill unit %s => %s", unit, conf.filename())
-            return self.kill_unit_from(conf)
-    def kill_unit_from(self, conf, mainpid = None):
-        if not conf: return None
+        return self.kill_unit_from(conf)
+    def kill_unit_from(self, conf):
+        if not conf: return False
+        with waitlock(conf):
+            logg.info(" kill unit %s => %s", conf.name(), conf.filename())
+            return self.do_kill_unit_from(conf)
+    def do_kill_unit_from(self, conf):
         started = time.time()
         doSendSIGKILL = to_bool(conf.data.get("Service", "SendSIGKILL", "yes"))
         doSendSIGHUP = to_bool(conf.data.get("Service", "SendSIGHUP", "no"))
@@ -2389,7 +2422,7 @@ class Systemctl:
         status_file = self.status_file_from(conf)
         size = os.path.exists(status_file) and os.path.getsize(status_file)
         logg.info("STATUS %s %s", status_file, size)
-        mainpid = to_int(self.read_mainpid_from(conf, mainpid or ""))
+        mainpid = to_int(self.read_mainpid_from(conf, ""))
         self.clean_status_from(conf) # clear RemainAfterExit and TimeoutStartSec
         if not mainpid:
             if useKillMode in ["control-group"]:
@@ -3552,12 +3585,12 @@ class Systemctl:
         yield "TimeoutStopUSec", seconds_to_time(self.get_TimeoutStopSec(conf))
         env_parts = []
         for env_part in conf.data.getlist("Service", "Environment", []):
-            env_parts.append(env_part)
+            env_parts.append(self.expand_special(env_part, conf))
         if env_parts: 
             yield "Environment", " ".join(env_parts)
         env_files = []
         for env_file in conf.data.getlist("Service", "EnvironmentFile", []):
-            env_files.append(env_file)
+            env_files.append(self.expand_special(env_file, conf))
         if env_files:
             yield "EnvironmentFile", " ".join(env_files)
     #
