@@ -2,7 +2,7 @@
 from __future__ import print_function
 
 __copyright__ = "(C) 2016-2018 Guido U. Draheim, licensed under the EUPL"
-__version__ = "1.4.2373"
+__version__ = "1.4.2416"
 
 import logging
 logg = logging.getLogger("systemctl")
@@ -79,6 +79,10 @@ DefaultMaximumTimeout = int(os.environ.get("SYSTEMCTL_MAXIMUM_TIMEOUT", 200))   
 InitLoopSleep = int(os.environ.get("SYSTEMCTL_INITLOOP", 5))
 ProcMaxDepth = 100
 MaxLockWait = None # equals DefaultMaximumTimeout
+DefaultPath = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+ResetLocale = ["LANG", "LANGUAGE", "LC_CTYPE", "LC_NUMERIC", "LC_TIME", "LC_COLLATE", "LC_MONETARY",
+               "LC_MESSAGES", "LC_PAPER", "LC_NAME", "LC_ADDRESS", "LC_TELEPHONE", "LC_MEASUREMENT",
+               "LC_IDENTIFICATION", "LC_ALL"]
 
 # The systemd default is NOTIFY_SOCKET="/var/run/systemd/notify"
 _notify_socket_folder = "/var/run/systemd" # alias /run/systemd
@@ -175,7 +179,7 @@ def _var(path):
 
 
 def shutil_setuid(user = None, group = None):
-    """ set fork-child uid/gid """
+    """ set fork-child uid/gid (returns pw-info env-settings)"""
     if group:
         import grp
         gid = grp.getgrnam(group).gr_gid
@@ -183,13 +187,19 @@ def shutil_setuid(user = None, group = None):
         logg.debug("setgid %s '%s'", gid, group)
     if user:
         import pwd
+        pw = pwd.getpwnam(user)
         if not group:
-            gid = pwd.getpwnam(user).pw_gid
+            gid = pw.pw_gid
             os.setgid(gid)
             logg.debug("setgid %s", gid)
-        uid = pwd.getpwnam(user).pw_uid
+        uid = pw.pw_uid
         os.setuid(uid)
         logg.debug("setuid %s '%s'", uid, user)
+        home = pw.pw_dir
+        shell = pw.pw_shell
+        logname = pw.pw_name
+        return { "USER": user, "LOGNAME": logname, "HOME": home, "SHELL": shell }
+    return {}
 
 def shutil_truncate(filename):
     """ truncates the file (or creates a new empty file)"""
@@ -1900,6 +1910,26 @@ class Systemctl:
                 logg.debug("post-start done (%s) <-%s>", 
                     run.returncode or "OK", run.signal or "")
             return True
+    def extend_exec_env(self, env):
+        env = env.copy()
+        # implant DefaultPath into $PATH
+        path = env.get("PATH", DefaultPath)
+        parts = path.split(os.pathsep)
+        for part in DefaultPath.split(os.pathsep):
+            if part and part not in parts:
+                parts.append(part)
+        env["PATH"] = str(os.pathsep).join(parts)
+        # reset locale to system default
+        for name in ResetLocale:
+            if name in env:
+                del env[name]
+        locale = {}
+        for var, val in self.read_env_file("/etc/locale.conf"):
+            locale[var] = val
+            env[var] = val
+        if "LANG" not in locale:
+            env["LANG"] = locale.get("LANGUAGE", locale.get("LC_CTYPE", "C"))
+        return env
     def execve_from(self, conf, cmd, env):
         """ this code is commonly run in a child process // returns exit-code"""
         runs = conf.data.get("Service", "Type", "simple").lower()
@@ -1911,8 +1941,10 @@ class Systemctl:
         os.dup2(out.fileno(), sys.stderr.fileno())
         runuser = self.expand_special(conf.data.get("Service", "User", ""), conf)
         rungroup = self.expand_special(conf.data.get("Service", "Group", ""), conf)
-        shutil_setuid(runuser, rungroup)
-        self.chdir_workingdir(conf, check = False)
+        envs = shutil_setuid(runuser, rungroup)
+        self.chdir_workingdir(conf, check = False) # some dirs need setuid before
+        env = self.extend_exec_env(env)
+        env.update(envs) # set $HOME to ~$USER
         try:
             if "spawn" in COVERAGE:
                 os.spawnvpe(os.P_WAIT, cmd[0], cmd, env)
