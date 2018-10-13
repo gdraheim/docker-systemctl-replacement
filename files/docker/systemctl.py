@@ -79,6 +79,7 @@ DefaultMaximumTimeout = int(os.environ.get("SYSTEMCTL_MAXIMUM_TIMEOUT", 200))   
 InitLoopSleep = int(os.environ.get("SYSTEMCTL_INITLOOP", 5))
 ProcMaxDepth = 100
 MaxLockWait = None # equals DefaultMaximumTimeout
+DefaultPath = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
 # The systemd default is NOTIFY_SOCKET="/var/run/systemd/notify"
 _notify_socket_folder = "/var/run/systemd" # alias /run/systemd
@@ -1906,6 +1907,23 @@ class Systemctl:
                 logg.debug("post-start done (%s) <-%s>", 
                     run.returncode or "OK", run.signal or "")
             return True
+    def extend_exec_env(self, env):
+        env = env.copy()
+        # implant DefaultPath into $PATH
+        path = env.get("PATH", DefaultPath)
+        parts = path.split(os.pathsep)
+        for part in DefaultPath.split(os.pathsep):
+            if part and part not in parts:
+                parts.append(part)
+        env["PATH"] = str(os.pathsep).join(parts)
+        # reset locale to system default
+        locale = {}
+        for var, val in self.read_env_file("/etc/locale.conf"):
+            locale[var] = val
+            env[var] = val
+        if "LANG" not in locale:
+            env["LANG"] = locale.get("LANGUAGE", locale.get("LC_CTYPE", "C"))
+        return env
     def execve_from(self, conf, cmd, env):
         """ this code is commonly run in a child process // returns exit-code"""
         runs = conf.data.get("Service", "Type", "simple").lower()
@@ -1919,9 +1937,8 @@ class Systemctl:
         rungroup = self.expand_special(conf.data.get("Service", "Group", ""), conf)
         envs = shutil_setuid(runuser, rungroup)
         self.chdir_workingdir(conf, check = False) # some dirs need setuid before
-        if envs:
-           env = env.copy()
-           env.update(envs) # set $HOME to ~$USER
+        env = self.extend_exec_env(env)
+        env.update(envs) # set $HOME to ~$USER
         try:
             if "spawn" in COVERAGE:
                 os.spawnvpe(os.P_WAIT, cmd[0], cmd, env)
