@@ -175,7 +175,7 @@ def _var(path):
 
 
 def shutil_setuid(user = None, group = None):
-    """ set fork-child uid/gid """
+    """ set fork-child uid/gid (returns pw-info env-settings)"""
     if group:
         import grp
         gid = grp.getgrnam(group).gr_gid
@@ -183,13 +183,19 @@ def shutil_setuid(user = None, group = None):
         logg.debug("setgid %s '%s'", gid, group)
     if user:
         import pwd
+        pw = pwd.getpwnam(user)
         if not group:
-            gid = pwd.getpwnam(user).pw_gid
+            gid = pw.pw_gid
             os.setgid(gid)
             logg.debug("setgid %s", gid)
-        uid = pwd.getpwnam(user).pw_uid
+        uid = pw.pw_uid
         os.setuid(uid)
         logg.debug("setuid %s '%s'", uid, user)
+        home = pw.pw_dir
+        shell = pw.pw_shell
+        logname = pw.pw_name
+        return { "USER": user, "LOGNAME": logname, "HOME": home, "SHELL": shell }
+    return {}
 
 def shutil_truncate(filename):
     """ truncates the file (or creates a new empty file)"""
@@ -1911,8 +1917,11 @@ class Systemctl:
         os.dup2(out.fileno(), sys.stderr.fileno())
         runuser = self.expand_special(conf.data.get("Service", "User", ""), conf)
         rungroup = self.expand_special(conf.data.get("Service", "Group", ""), conf)
-        shutil_setuid(runuser, rungroup)
-        self.chdir_workingdir(conf, check = False)
+        envs = shutil_setuid(runuser, rungroup)
+        self.chdir_workingdir(conf, check = False) # some dirs need setuid before
+        if envs:
+           env = env.copy()
+           env.update(envs) # set $HOME to ~$USER
         try:
             if "spawn" in COVERAGE:
                 os.spawnvpe(os.P_WAIT, cmd[0], cmd, env)
