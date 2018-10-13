@@ -80,6 +80,9 @@ InitLoopSleep = int(os.environ.get("SYSTEMCTL_INITLOOP", 5))
 ProcMaxDepth = 100
 MaxLockWait = None # equals DefaultMaximumTimeout
 DefaultPath = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+ResetLocale = ["LANG", "LANGUAGE", "LC_CTYPE", "LC_NUMERIC", "LC_TIME", "LC_COLLATE", "LC_MONETARY",
+               "LC_MESSAGES", "LC_PAPER", "LC_NAME", "LC_ADDRESS", "LC_TELEPHONE", "LC_MEASUREMENT",
+               "LC_IDENTIFICATION", "LC_ALL"]
 
 # The systemd default is NOTIFY_SOCKET="/var/run/systemd/notify"
 _notify_socket_folder = "/var/run/systemd" # alias /run/systemd
@@ -1917,6 +1920,9 @@ class Systemctl:
                 parts.append(part)
         env["PATH"] = str(os.pathsep).join(parts)
         # reset locale to system default
+        for name in ResetLocale:
+            if name in env:
+                del env[name]
         locale = {}
         for var, val in self.read_env_file("/etc/locale.conf"):
             locale[var] = val
