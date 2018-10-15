@@ -28,11 +28,9 @@ bring down all configured services correctly before exit.
 The background for this script is the inability to run a
 SystemD daemon easily inside a docker container. There have
 been multiple workarounds with varying complexity and actual
-functionality.
-
-Since systemd-nsspawn There are no isssus with systemd running 
-inside a systemd managed Container rkt from CoreOs is using
-systemd-nsspawn in the background to create containers.
+functionality. (The systemd-nsspawn tool is supposed to help 
+with  running systemd in a container but only rkt with CoreOs 
+is using it so far).
 
 Most people have come to take the easy path and to create a
 startup shell script for the docker container that will
