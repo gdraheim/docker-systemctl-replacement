@@ -3168,11 +3168,15 @@ class Systemctl:
         target = os.path.join(folder, os.path.basename(unit_file))
         if True:
             _f = self._force and "-f" or ""
-            logg.info("ln -s {_f} /dev/null '{target}'".format(**locals()))
+            logg.debug("ln -s {_f} /dev/null '{target}'".format(**locals()))
         if self._force and os.path.islink(target):
             os.remove(target)
         if not os.path.exists(target):
             os.symlink("/dev/null", target)
+            logg.info("Created symlink {target} -> /dev/null".format(**locals()))
+            return True
+        elif os.path.islink(target):
+            logg.debug("mask symlink does already exist: %s", target)
             return True
         else:
             logg.error("mask target does already exist: %s", target)
@@ -3229,6 +3233,9 @@ class Systemctl:
             logg.info("rm {_f} '{target}'".format(**locals()))
         if os.path.islink(target):
             os.remove(target)
+            return True
+        elif not os.path.exists(target):
+            logg.debug("Symlink did exist anymore: %s", target)
             return True
         else:
             logg.error("target is not a symlink: %s", target)
