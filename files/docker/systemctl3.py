@@ -2,7 +2,7 @@
 from __future__ import print_function
 
 __copyright__ = "(C) 2016-2018 Guido U. Draheim, licensed under the EUPL"
-__version__ = "1.4.2416"
+__version__ = "1.4.2441"
 
 import logging
 logg = logging.getLogger("systemctl")
@@ -3473,12 +3473,11 @@ class Systemctl:
                 errors += 101
         if len(usedExecStart) > 1 and haveType != "oneshot":
             logg.error(" %s: there may be only one ExecStart statement (unless for 'oneshot' services)."
-              + "\n\t\t\tUse ' ; ' for multiple commands or better use ExecStartPre / ExecStartPost", unit)
+              + "\n\t\t\tYou can use ExecStartPre / ExecStartPost to add additional commands.", unit)
             errors += 1
         if len(usedExecStop) > 1 and haveType != "oneshot":
-            logg.error(" %s: there may be only one ExecStop statement (unless for 'oneshot' services)."
-              + "\n\t\t\tUse ' ; ' for multiple commands or better use ExecStopPost", unit)
-            errors += 1
+            logg.info(" %s: there should be only one ExecStop statement (unless for 'oneshot' services)."
+              + "\n\t\t\tYou can use ExecStopPost to add additional commands (also executed on failed Start)", unit)
         if len(usedExecReload) > 1:
             logg.info(" %s: there should be only one ExecReload statement."
               + "\n\t\t\tUse ' ; ' for multiple commands (ExecReloadPost or ExedReloadPre do not exist)", unit)
