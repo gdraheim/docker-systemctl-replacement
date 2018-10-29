@@ -21568,3 +21568,4 @@ if __name__ == "__main__":
         print(" " + coverage_tool() + " annotate " + _systemctl_py)
     if not result.wasSuccessful():
         sys.exit(1)
+
