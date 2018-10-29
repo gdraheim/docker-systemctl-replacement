@@ -1049,7 +1049,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, r"c.service: Service has no ExecStart"))
         self.assertTrue(greps(out, r"d.service: Service lacks both ExecStart and ExecStop"))
         self.assertTrue(greps(out, r"g.service: there may be only one ExecStart statement"))
-        self.assertTrue(greps(out, r"g.service: there may be only one ExecStop statement"))
         self.assertTrue(greps(out, r"c.service: the use of /bin/kill is not recommended"))
         self.end()
     def real_1090_syntax_errors_are_shown_in_journal_after_try_start(self):
