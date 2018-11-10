@@ -2,7 +2,7 @@
 from __future__ import print_function
 
 __copyright__ = "(C) 2016-2018 Guido U. Draheim, licensed under the EUPL"
-__version__ = "1.4.2441"
+__version__ = "1.4.2456"
 
 import logging
 logg = logging.getLogger("systemctl")
@@ -3238,8 +3238,8 @@ class Systemctl:
             logg.debug("Symlink did exist anymore: %s", target)
             return True
         else:
-            logg.error("target is not a symlink: %s", target)
-            return False
+            logg.warning("target is not a symlink: %s", target)
+            return True
     def list_dependencies_modules(self, *modules):
         """ [UNIT]... show the dependency tree"
         """
