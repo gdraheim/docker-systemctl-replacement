@@ -3238,8 +3238,8 @@ class Systemctl:
             logg.debug("Symlink did exist anymore: %s", target)
             return True
         else:
-            logg.error("target is not a symlink: %s", target)
-            return False
+            logg.warning("target is not a symlink: %s", target)
+            return True
     def list_dependencies_modules(self, *modules):
         """ [UNIT]... show the dependency tree"
         """
