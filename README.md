@@ -9,13 +9,6 @@ can use "systemctl start" and "systemctl enable" and other
 commands to bring up services for further configuration and 
 testing.
 
-This is achieved by reading and interpreting "*.service"
-files that have been deployed in the docker container. In
-many cases those will be in /etc/systemd/system/. Not only
-the "simple" but also "forking" service types are handled
-correctly, with the referenced PIDfile used to tell whether 
-the service is running fine.
-
 This script can also be run as PID 1 of a docker container
 (i.e. the main "CMD") where it will automatically bring up
 all enabled services in the "multi-user.target" and where it 
@@ -39,66 +32,37 @@ read the documentation or the SystemD *.service scripts of the
 application to see how that would be done. By using this
 replacement script a programmer can skip that step.
 
-As a historic background this script was born when the
-deployment targets shifted from RHEL6 (with initscripts)
-to RHEL7 (with SystemD) and suddenly even a simple call
-to "service app start" would result in errors from a missing
-SystemD-daemon. By using this docker systemctl replacment
-script one could continue with the original installers.
+## Service Manager
 
-Please note that this systemctl replacement will also
-read and interpret initscripts in /etc/init.d/. As such
-you can also deploy older applications with a classic 
-SysV-style start/stop script and they are handled similar 
-to how SystemD would care for them.
+The systemctl-replacement script does cover the functionality
+of a service manager where commands like `systemctl start xx`
+are executed. This is achieved by parsing the `*.service`
+files that are installed by the standard application packages 
+(rpm, deb) in the container. These service unit descriptors
+define the actual commands to start/stop a service in their
+ExecStart/ExecStop settings.
 
-## Usage along with Ansible
+When installing systemctl.py as /usr/bin/systemctl in a
+container then it provides enough functionality that
+deployment scripts for virtual machines continue to
+work unchanged when trying to start/stop, enable/disable
+or mask/unmask a service in a container.
 
-This script has been tested often along with deployments
-using Ansible. As of version 2.0 and later Ansible is
-able to connect to docker containers directly without the
-help of a ssh-daemon in the container and a known-ip of 
+This is also true for deployment tools like Ansible. As of 
+version 2.0 and later Ansible is able to connect to docker 
+containers directly without the help of a ssh-daemon in 
 the container. Just make your inventory look like
 
     [frontend]
     my_frontend_1 ansible_connection=docker
 
-With a local docker container the turnaround times of
-testing a deployment script are a lot shorter. If there
-is an error it is much faster to get a fresh target host 
-and to have the basic deployment parts run on it.
+Based on that "ansible_connection" one can enable the
+systemctl-replacement to intercept subsequent calls
+to "service:" steps. Effectivly Ansible scripts that 
+shall be run on real virtual machines can be tested 
+with docker containers.
 
-With the help of docker-compose one can bring up a
-number of hosts as docker containers and to use Ansible
-to orchestrate the deployment. Some of the containers
-will actually be interconnected with each other and the
-deployed services will only work with some other service
-of another container to be running.
-
-This is the main difference over Dockerfiles which can
-only build one container. And a Dockerfile is extremely
-limited if the deployment includes the configuration of
-services using their http-based API. Not so with a
-deployment tool like Ansible.
-
-## Installation as a systemctl-replacement
-
-Simply overwrite /usr/bin/systemctl - but remember that
-any package installation may update the real 'systemd'
-so that you have to do the overwrite after every major
-package installation. Or just do it firsthand.
-
-    - name: update systemd
-      package: name="systemd" state="latest"
-      when: ansible_connection == 'docker'
-    - name: install systemctl.py
-      copy: src="files/docker/systemctl.py" dest="/usr/bin/systemctl"
-      when: ansible_connection == 'docker'
-
-Note that such a setup will also work when using Ansible's 
-service module to start/stop/enable services on a target host.
-On a systemd-controlled operating system the old "service" 
-script will delegate commands to systemctl anyway.
+See also [SERVICE-MANAGER.md] for the details.
 
 ---
 
