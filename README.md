@@ -170,6 +170,8 @@ now with over a [thousand commits on github](https://github.com/gdraheim/docker-
 functionality like the [USERMODE](USERMODE.md) which is 
 specifically targeted at running docker containers. See the 
 [RELEASENOTES](RELEASENOTES.md) for the latest achievements.
+The choice of the [EUPL-LICENSE](EUPL-LICENSE.md) is intentionally
+permissive to allow you to copy the script to your project.
 
 Sadly the functionality of SystemD's systemctl is badly 
 documented so that much of the current implementation is 
