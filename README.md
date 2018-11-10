@@ -91,7 +91,7 @@ continue to live forever (as long as the container is
 running) filling also the process table of the docker host
 as the init daemon of the host does not reap them.
 
-## Target Runlevel
+## Init Daemon
 
 Another function of the init daemon is to startup the
 default system services. What has been known as runlevel
@@ -130,7 +130,7 @@ See [INIT-DAEMON](INIT-DAEMON.md) for more details.
 
 ---
 
-## Testsuite and example images
+## Testsuite and Examples
 
 There is an extensive testsuite in the project that allows
 for a high line coverage of the tool. All the major functionality
@@ -168,11 +168,11 @@ The systemctl.py script has a long [HISTORY](HISTORY.md)
 now with over a [thousand commits on github](https://github.com/gdraheim/docker-systemctl-replacement/tree/master)
 (mostly for the testsuite). It has also garnered some additional 
 functionality like the [USERMODE](USERMODE.md) which is 
-specifically targeted for docker containers. See the 
+specifically targeted at running docker containers. See the 
 [RELEASENOTES](RELEASENOTES.md) for the latest achievements.
 
 Sadly the functionality of SystemD's systemctl is badly 
-documented so that much of the current  implementation is 
+documented so that much of the current implementation is 
 done by trial and fixing the errors. Some [BUGS](BUGS.md)
 are actually in other tools and need to be circumvented. As 
 most programmers tend to write very simple `*.service` files 
@@ -191,4 +191,3 @@ the current surge of DevOps topics which often use docker
 as a lightweight replacement for cloud containers or even 
 virtual machines. It makes it easier to test deployments
 in the standard build pipelines of development teams.
-
