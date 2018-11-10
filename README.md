@@ -102,16 +102,16 @@ Let's assume that a system has been configured with some
 "systemctl enable xx" services. When a virtual machine
 starts then these services are started as well. The
 systemctl-replacement script does provide this functionality
-for a docker container as well, thereby implementing
+for a docker container, thereby implementing
 "systemctl default" for usage in inside a container.
 
-The "systemctl halt" command is implemented as well
+The "systemctl halt" command is also implemented
 allowing to stop all services that are found as
 "is-enabled" services that have been run upon container
 start. It does execute all the "systemctl stop xx"
 commands to bring down the enabled services correctly.
 
-This works also when systemctl.py has been run as the
+This is most useful when systemctl.py has been run as the
 entrypoint of a container - so when a "docker stop"
 sends a SIGTERM to the container's PID-1 then all the
 services are shut down before exiting the container.
@@ -173,7 +173,7 @@ specifically targeted for docker containers. See the
 
 Sadly the functionality of SystemD's systemctl is badly 
 documented so that much of the current  implementation is 
-done by trial and fixing the errors. Some of [BUGS](BUGS.md)
+done by trial and fixing the errors. Some [BUGS](BUGS.md)
 are actually in other tools and need to be circumvented. As 
 most programmers tend to write very simple `*.service` files 
 it works in a surprising number of cases however. But definitly 
