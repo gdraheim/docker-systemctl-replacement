@@ -28,7 +28,7 @@ is using it so far).
 Most people have come to take the easy path and to create a
 startup shell script for the docker container that will
 bring up the service processes one by one. Essentially one would
-read the documentation or the SystemD *.service scripts of the
+read the documentation or the SystemD `*.service` scripts of the
 application to see how that would be done. By using this
 replacement script a programmer can skip that step.
 
@@ -56,13 +56,13 @@ the container. Just make your inventory look like
     [frontend]
     my_frontend_1 ansible_connection=docker
 
-Based on that "ansible_connection" one can enable the
+Based on that `ansible_connection` one can enable the
 systemctl-replacement to intercept subsequent calls
-to "service:" steps. Effectivly Ansible scripts that 
+to `"service:"` steps. Effectivly Ansible scripts that 
 shall be run on real virtual machines can be tested 
 with docker containers.
 
-See also [SERVICE-MANAGER.md] for the details.
+See [SERVICE-MANAGER](SERVICE-MANAGER.md) for more details.
 
 ---
 
