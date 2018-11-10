@@ -154,22 +154,34 @@ at https://github.com/gdraheim/docker-systemctl-images
 
 See [TESTSUITE](TESTUITE.md) for more details.
 
-## Something is not implemented
+## Development
 
 Although this script has been developed for quite a while,
-it does only implement a limited number of commands. And
-it should still be considered in a Beta state. In all the
-existing implementations the replacement should produce 
-a similar output compared to SystemD's systemctl as a number 
-of tools are interpreting the output.
+it does only implement a limited number of commands. It
+does not cover all commands of "systemctl" and it will not
+cover all the functionality of SystemD. The implementation
+tries to align with SystemD's systemctl commands as close
+as possible as quite some third party tools are interpreting
+the output of it.
 
-Sadly the functionality of SystemD's systemctl is badly
-documented so that much of the current implementation is
-done by trial and fixing the errors. As most programmers
-tend to write very simple `*.service` files it works in a
-surprising number of cases however. But definitly not all.
+The systemctl.py script has a long [HISTORY](HISTORY.md)
+now with over a [thousand commits on github](https://github.com/gdraheim/docker-systemctl-replacement/tree/master)
+(mostly for the testsuite). It has also garnered some additional 
+functionality like the [USERMODE](USERMODE.md) which is 
+specifically targeted for docker containers. See the 
+[RELEASENOTES](RELEASENOTES.md) for the latest achievements.
 
-I take patches. ;)
+Sadly the functionality of SystemD's systemctl is badly 
+documented so that much of the current  implementation is 
+done by trial and fixing the errors. Some of [BUGS](BUGS.md)
+are actually in other tools and need to be circumvented. As 
+most programmers tend to write very simple `*.service` files 
+it works in a surprising number of cases however. But definitly 
+not all. So if there is a problem, use the
+[github issue tracker](https://github.com/gdraheim/docker-systemctl-replacement/issues)
+to make me aware of it.
+
+And I take patches. ;)
 
 ## The author
 
