@@ -48,3 +48,18 @@ expanded special vars like "%t" runtime. And it was interesting to see how
 get a list of settings in one line. Also when using "User=" then the started
 services should also get the default group of that system user.
 
+RELEASE 1.4.2456
+
+There a couple of bugfixes and little enhancements asking for an intermediate
+patch release. Be sure to update any 1.4 script to this version soon.
+
+Some of the `%x` special vars were not expanded, and some of the environment
+variables like `$HOME` were not present or incorrect. Functionality of the
+`mask` command has been improved as well.
+
+The release does also include the extension of the testsuite that was otherwise
+intended for RELEASE 1.5 where different versions of common distro images are
+included in the nighrun tests. It did uncover a bug in ubuntu `kill` by the
+way that may got unnoticed by some application packages so far.
+
+
