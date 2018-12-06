@@ -21429,6 +21429,65 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         #
         self.rm_testdir()
+    text_8051_serv = """# systemctl.py cat kubelet
+[Unit]
+Description=kubelet: The Kubernetes Node Agent
+Documentation=https://kubernetes.io/docs/home/
+
+[Service]
+ExecStart=/usr/bin/kubelet
+Restart=always
+StartLimitInterval=0
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+"""
+    text_8051_conf = """# cat /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+# Note: This dropin only works with kubeadm and kubelet v1.11+
+[Service]
+Environment="KUBELET_KUBECONFIG_ARGS=--bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --kubeconfig=/etc/kubernetes/kubelet.conf"
+Environment="KUBELET_CONFIG_ARGS=--config=/var/lib/kubelet/config.yaml"
+# This is a file that "kubeadm init" and "kubeadm join" generates at runtime, populating the KUBELET_KUBEADM_ARGS variable dynamically
+EnvironmentFile=-/var/lib/kubelet/kubeadm-flags.env
+# This is a file that the user can use for overrides of the kubelet args as a last resort. Preferably, the user should use
+# the .NodeRegistration.KubeletExtraArgs object in the configuration files instead. KUBELET_EXTRA_ARGS should be sourced from this file.
+EnvironmentFile=-/etc/default/kubelet
+ExecStart=
+ExecStart=/usr/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_CONFIG_ARGS $KUBELET_KUBEADM_ARGS $KUBELET_EXTRA_ARGS
+    """
+    def test_8051_systemctl_extra_conf_dirs(self):
+        """ checking issue #51 on extra conf dirs """
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/lib/systemd/system/kubelet.service"), self.text_8051_serv)
+        text_file(os_path(root, "/lib/systemd/system/kubelet.service.d/10-kubeadm.conf"), self.text_8051_serv)
+        #
+        cmd = "{systemctl} environment kubelet -vvv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        # self.assertEqual(lines(out), [])
+        # self.assertEqual(end, 0)
+        self.rm_testdir()
+        self.coverage()
+    def test_8052_systemctl_extra_conf_dirs(self):
+        """ checking issue #52 on extra conf dirs """
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/lib/systemd/system/kubelet.service"), self.text_8051_serv)
+        text_file(os_path(root, "/etc/systemd/system/kubelet.service.d/10-kubeadm.conf"), self.text_8051_serv)
+        #
+        cmd = "{systemctl} environment kubelet -vvv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        # self.assertEqual(lines(out), [])
+        # self.assertEqual(end, 0)
+        self.rm_testdir()
+        self.coverage()
+
+
     def test_9999_drop_local_mirrors(self):
         """ a helper when using images from https://github.com/gdraheim/docker-mirror-packages-repo"
             which create containers according to self.local_image(IMAGE) """
