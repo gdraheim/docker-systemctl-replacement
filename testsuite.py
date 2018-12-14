@@ -21488,9 +21488,16 @@ ExecStart=/usr/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_CONFIG_ARGS $KUBELE
         #
         cmd = "{systemctl} environment kubelet -vvv"
         out, end = output2(cmd.format(**locals()))
+        logg.debug(" %s =>%s\n%s", cmd, end, out)
+        logg.info(" HAVE %s", greps(out, "HOME"))
+        logg.info(" HAVE %s", greps(out, "KUBE"))
+        self.assertTrue(greps(out, "KUBELET_CONFIG_ARGS=--config"))
+        self.assertEqual(len(greps(out, "KUBE")), 2)
+        cmd = "{systemctl} environment kubelet -vvv -p ExecStart"
+        out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        # self.assertEqual(lines(out), [])
-        # self.assertEqual(end, 0)
+        self.assertEqual(len(lines(out)), 1)
+        self.assertTrue(greps(out, "KUBELET_KUBECONFIG_ARGS"))
         self.rm_testdir()
         self.coverage()
 
