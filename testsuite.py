@@ -21462,13 +21462,22 @@ ExecStart=/usr/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_CONFIG_ARGS $KUBELE
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/lib/systemd/system/kubelet.service"), self.text_8051_serv)
-        text_file(os_path(root, "/lib/systemd/system/kubelet.service.d/10-kubeadm.conf"), self.text_8051_serv)
+        text_file(os_path(root, "/lib/systemd/system/kubelet.service.d/10-kubeadm.conf"), self.text_8051_conf)
         #
         cmd = "{systemctl} environment kubelet -vvv"
         out, end = output2(cmd.format(**locals()))
+        logg.debug(" %s =>%s\n%s", cmd, end, out)
+        logg.info(" HAVE %s", greps(out, "HOME"))
+        logg.info(" HAVE %s", greps(out, "KUBE"))
+        self.assertTrue(greps(out, "KUBELET_CONFIG_ARGS=--config"))
+        self.assertEqual(len(greps(out, "KUBE")), 2)
+        cmd = "{systemctl} environment kubelet -vvv -p ExecStart"
+        out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        # self.assertEqual(lines(out), [])
-        # self.assertEqual(end, 0)
+        #logg.info(" HAVE %s", greps(out, "HOME"))
+        #logg.info(" HAVE %s", greps(out, "KUBE"))
+        #self.assertTrue(greps(out, "KUBELET_CONFIG_ARGS=--config"))
+        #self.assertEqual(len(greps(out, "KUBE")), 2)
         self.rm_testdir()
         self.coverage()
     def test_8052_systemctl_extra_conf_dirs(self):
@@ -21477,7 +21486,7 @@ ExecStart=/usr/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_CONFIG_ARGS $KUBELE
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/lib/systemd/system/kubelet.service"), self.text_8051_serv)
-        text_file(os_path(root, "/etc/systemd/system/kubelet.service.d/10-kubeadm.conf"), self.text_8051_serv)
+        text_file(os_path(root, "/etc/systemd/system/kubelet.service.d/10-kubeadm.conf"), self.text_8051_conf)
         #
         cmd = "{systemctl} environment kubelet -vvv"
         out, end = output2(cmd.format(**locals()))

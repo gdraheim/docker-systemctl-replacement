@@ -1388,6 +1388,8 @@ class Systemctl:
         if conf is None:
             logg.error("Unit %s could not be found.", unit)
             return False
+        if _unit_property:
+            return conf.data.getlist("Service", _unit_property)
         return self.get_env(conf)
     def extra_vars(self):
         return self._extra_vars # from command line
