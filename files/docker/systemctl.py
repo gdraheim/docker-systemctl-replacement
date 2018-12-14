@@ -397,7 +397,8 @@ class UnitConfigParser:
                 nextline = True
                 text = text + "\n"
             else:
-                self.set(section, name, text)
+                # hint: an empty line shall reset the value-list
+                self.set(section, name, text and text or None)
     def read_sysv(self, filename):
         """ an LSB header is scanned and converted to (almost)
             equivalent settings of a SystemD ini-style input """
