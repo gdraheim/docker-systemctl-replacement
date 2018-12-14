@@ -2,7 +2,7 @@
 from __future__ import print_function
 
 __copyright__ = "(C) 2016-2018 Guido U. Draheim, licensed under the EUPL"
-__version__ = "1.4.2456"
+__version__ = "1.4.2505"
 
 import logging
 logg = logging.getLogger("systemctl")
@@ -397,7 +397,8 @@ class UnitConfigParser:
                 nextline = True
                 text = text + "\n"
             else:
-                self.set(section, name, text)
+                # hint: an empty line shall reset the value-list
+                self.set(section, name, text and text or None)
     def read_sysv(self, filename):
         """ an LSB header is scanned and converted to (almost)
             equivalent settings of a SystemD ini-style input """
@@ -934,12 +935,23 @@ class Systemctl:
             unit.read_sysd(path)
             override_d = path + ".d"
             if os.path.isdir(override_d):
-                for name in os.listdir(override_d):
-                    path = os.path.join(override_d, name)
-                    if os.path.isdir(path):
-                        continue
-                    if name.endswith(".conf"):
-                        unit.read_sysd(path)
+                if True:
+                    for name in os.listdir(override_d):
+                        path = os.path.join(override_d, name)
+                        if os.path.isdir(path):
+                            continue
+                        if name.endswith(".conf"):
+                            unit.read_sysd(path)
+            # allow subdir.d conf files in /etc/systemd to override other settings/overrides
+            override_e = os_path(self._root, os_path(self.mask_folder(), os.path.basename(override_d)))
+            if os.path.isdir(override_e):
+                if not os.path.isdir(override_d) or not os.path.samefile(override_e, override_d):
+                    for name in os.listdir(override_e):
+                        path = os.path.join(override_e, name)
+                        if os.path.isdir(path):
+                            continue
+                        if name.endswith(".conf"):
+                            unit.read_sysd(path)
         conf = UnitConf(unit, module)
         conf.masked = masked
         self._loaded_file_sysd[path] = conf
@@ -1388,6 +1400,8 @@ class Systemctl:
         if conf is None:
             logg.error("Unit %s could not be found.", unit)
             return False
+        if _unit_property:
+            return conf.data.getlist("Service", _unit_property)
         return self.get_env(conf)
     def extra_vars(self):
         return self._extra_vars # from command line
