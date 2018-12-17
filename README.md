@@ -17,7 +17,10 @@ will reap all zombies from background processes in the container.
 When running a "docker stop" on such a container it will also 
 bring down all configured services correctly before exit.
 
-    # docker exec lamp-stack pstree -ap
+    ## docker exec lamp systemctl list-units | grep running
+    httpd.service     loaded active running   The Apache HTTP Server
+    mariadb.service   loaded active running   MariaDB database server
+    ## docker exec lamp-stack pstree -ap
     systemctl,1 /usr/bin/systemctl
       |-httpd,7 -DFOREGROUND
       |   |-httpd,9 -DFOREGROUND
