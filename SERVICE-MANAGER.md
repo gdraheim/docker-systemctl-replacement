@@ -123,3 +123,5 @@ work, you need to overwrite /usr/bin/systemctl and to install Python.
     - name: install python for systemctl.py
       package: name=python
       when: ansible_connection == 'docker'
+
+You can also use `systemctl3.py` along with `python3` for the same effect.
