@@ -9,9 +9,9 @@ can use "systemctl start" and "systemctl enable" and other
 commands to bring up services for further configuration and 
 testing.
 
-This script can also be run as PID 1 of a docker container
-(i.e. the main "CMD") where it will automatically bring up
-all enabled services in the "multi-user.target" and where it 
+This script can also be run as docker-init of a docker container
+(i.e. the main "CMD" on PID 1) where it will automatically bring 
+up all enabled services in the "multi-user.target" and where it 
 will reap all zombies from background processes in the container.
 When running a "docker stop" on such a container it will also 
 bring down all configured services correctly before exit.
