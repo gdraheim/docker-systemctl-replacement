@@ -7,7 +7,8 @@ This is used to test deployment of services with a docker
 container as the target host. Just as on a real machine you 
 can use "systemctl start" and "systemctl enable" and other 
 commands to bring up services for further configuration and 
-testing.
+testing. Information from "systemctl show" allows deployment
+automation tools to work seemlessly.
 
 This script can also be run as docker-init of a docker container
 (i.e. the main "CMD" on PID 1) where it will automatically bring 
@@ -15,6 +16,16 @@ up all enabled services in the "multi-user.target" and where it
 will reap all zombies from background processes in the container.
 When running a "docker stop" on such a container it will also 
 bring down all configured services correctly before exit.
+
+    # docker exec lamp-stack pstree -ap
+    systemctl,1 /usr/bin/systemctl
+      |-httpd,7 -DFOREGROUND
+      |   |-httpd,9 -DFOREGROUND
+      |   |-httpd,10 -DFOREGROUND
+      `-mysqld_safe,44 /usr/bin/mysqld_safe --basedir=/usr
+          `-mysqld,187 --basedir=/usr --datadir=/var/lib/mysql
+              |-{mysqld},191
+              |-{mysqld},192
 
 ## Problems with SystemD in Docker
 
