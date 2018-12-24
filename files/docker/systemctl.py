@@ -45,6 +45,7 @@ _preset_mode = "all"
 _quiet = False
 _root = ""
 _unit_type = None
+_unit_state = None
 _unit_property = None
 _show_all = False
 _user_mode = False
@@ -757,6 +758,7 @@ class Systemctl:
         self._root = _root
         self._show_all = _show_all
         self._unit_property = _unit_property
+        self._unit_state = _unit_state
         self._unit_type = _unit_type
         # some common constants that may be changed
         self._pid_file_folder = _pid_file_folder 
@@ -1050,6 +1052,10 @@ class Systemctl:
                 substate[unit] = self.get_substate_from(conf)
             except Exception as e:
                 logg.warning("list-units: %s", e)
+            if self._unit_state:
+                if self._unit_state not in [ result[unit], active[unit], substate[unit] ]:
+                    del result[unit]
+                    continue
         return [ (unit, result[unit] + " " + active[unit] + " " + substate[unit], description[unit]) for unit in sorted(result) ]
     def show_list_units(self, *modules): # -> [ (unit,loaded,description) ]
         """ [PATTERN]... -- List loaded units.
@@ -3599,12 +3605,16 @@ class Systemctl:
         return self.show_units(units) + notfound # and found_all
     def show_units(self, units):
         logg.debug("show --property=%s", self._unit_property)
+        logg.debug("show --state=%s", self._unit_state)
         result = []
         for unit in units:
             if result: result += [ "" ]
             for var, value in self.show_unit_items(unit):
                 if self._unit_property:
                     if self._unit_property != var:
+                        continue
+                if self._unit_state:
+                    if self._unit_state != value:
                         continue
                 else:
                     if not value and not self._show_all:
@@ -4200,7 +4210,7 @@ if __name__ == "__main__":
     #     help="Operate on local container*")
     _o.add_option("-t","--type", metavar="TYPE", dest="unit_type", default=_unit_type,
         help="List units of a particual type")
-    _o.add_option("--state", metavar="STATE",
+    _o.add_option("--state", metavar="STATE", default=_unit_state,
         help="List units with particular LOAD or SUB or ACTIVE state")
     _o.add_option("-p", "--property", metavar="NAME", dest="unit_property", default=_unit_property,
         help="Show only properties by this name")
@@ -4288,6 +4298,7 @@ if __name__ == "__main__":
     _quiet = opt.quiet
     _root = opt.root
     _show_all = opt.show_all
+    _unit_state = opt.state
     _unit_type = opt.unit_type
     _unit_property = opt.unit_property
     # being PID 1 (or 0) in a container will imply --init

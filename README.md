@@ -17,7 +17,7 @@ will reap all zombies from background processes in the container.
 When running a "docker stop" on such a container it will also 
 bring down all configured services correctly before exit.
 
-    ## docker exec lamp-stack-container systemctl list-units | grep running
+    ## docker exec lamp-stack-container systemctl list-units --state=running
     httpd.service     loaded active running   The Apache HTTP Server
     mariadb.service   loaded active running   MariaDB database server
     
