@@ -12377,13 +12377,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
-        list_units_systemctl = "docker exec {testname} systemctl default-services -vv"
-        # sh____(list_units_systemctl.format(**locals()))
-        out2 = output(list_units_systemctl.format(**locals()))
+        cmd = "docker exec {testname} systemctl default-services -vv"
+        out2 = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out2)
-        list_units_systemctl = "docker exec {testname} systemctl --all default-services -vv"
-        # sh____(list_units_systemctl.format(**locals()))
-        out3 = output(list_units_systemctl.format(**locals()))
+        cmd = "docker exec {testname} systemctl --all default-services -vv"
+        out3 = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out3)
         #
         self.save_coverage(testname)
