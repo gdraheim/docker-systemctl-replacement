@@ -449,6 +449,7 @@ class UnitConf:
         self.status = None
         self.masked = None
         self.module = module
+        self.drop_in_files = {}
     def loaded(self):
         files = self.data.filenames()
         if self.masked:
@@ -462,6 +463,9 @@ class UnitConf:
         if files:
             return files[0]
         return None
+    def overrides(self):
+        """ drop-in files are loaded alphabetically by name, not by full path """
+        return [ self.drop_in_files[name] for name in sorted(self.drop_in_files) ]
     def name(self):
         """ the unit id or defaults to the file name """
         name = self.module or ""
@@ -932,30 +936,35 @@ class Systemctl:
         masked = None
         if os.path.islink(path) and os.readlink(path).startswith("/dev"):
             masked = os.readlink(path)
+        drop_in_files = {}
         unit = UnitParser()
         if not masked:
             unit.read_sysd(path)
-            override_d = path + ".d"
-            if os.path.isdir(override_d):
-                if True:
-                    for name in os.listdir(override_d):
-                        path = os.path.join(override_d, name)
-                        if os.path.isdir(path):
-                            continue
-                        if name.endswith(".conf"):
-                            unit.read_sysd(path)
-            # allow subdir.d conf files in /etc/systemd to override other settings/overrides
-            override_e = os_path(self._root, os_path(self.mask_folder(), os.path.basename(override_d)))
-            if os.path.isdir(override_e):
-                if not os.path.isdir(override_d) or not os.path.samefile(override_e, override_d):
-                    for name in os.listdir(override_e):
-                        path = os.path.join(override_e, name)
-                        if os.path.isdir(path):
-                            continue
-                        if name.endswith(".conf"):
-                            unit.read_sysd(path)
+            # find override drop-in files
+            basename_d = os.path.basename(path) + ".d"
+            for folder in self.sysd_folders():
+                if not folder: 
+                    continue
+                if self._root:
+                    folder = os_path(self._root, folder)
+                override_d = os_path(folder, basename_d)
+                if not os.path.isdir(override_d):
+                    continue
+                for name in os.listdir(override_d):
+                    path = os.path.join(override_d, name)
+                    if os.path.isdir(path):
+                        continue
+                    if not path.endswith(".conf"):
+                        continue
+                    if name not in drop_in_files:
+                        drop_in_files[name] = path
+            # load in alphabetic order, irrespective of location
+            for name in sorted(drop_in_files):
+                path = drop_in_files[name]
+                unit.read_sysd(path)
         conf = UnitConf(unit, module)
         conf.masked = masked
+        conf.drop_in_files = drop_in_files
         self._loaded_file_sysd[path] = conf
         return conf
     def load_sysv_unit_conf(self, module): # -> conf?
@@ -2753,6 +2762,8 @@ class Systemctl:
             filename = conf.filename()
             enabled = self.enabled_from(conf)
             result += "\n    Loaded: {loaded} ({filename}, {enabled})".format(**locals())
+            for path in conf.overrides():
+                result += "\n    Drop-In: {path}".format(**locals())
         else:
             result += "\n    Loaded: failed"
             return 3, result
