@@ -3605,16 +3605,12 @@ class Systemctl:
         return self.show_units(units) + notfound # and found_all
     def show_units(self, units):
         logg.debug("show --property=%s", self._unit_property)
-        logg.debug("show --state=%s", self._unit_state)
         result = []
         for unit in units:
             if result: result += [ "" ]
             for var, value in self.show_unit_items(unit):
                 if self._unit_property:
                     if self._unit_property != var:
-                        continue
-                if self._unit_state:
-                    if self._unit_state != value:
                         continue
                 else:
                     if not value and not self._show_all:
