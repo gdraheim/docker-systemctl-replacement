@@ -2239,7 +2239,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.rm_zzfiles(root)
         self.coverage()
-    def test_2290_show_unit_not_found(self):
+    def test_2610_show_unit_not_found(self):
         """ check when 'show UNIT' not found  """
         testname = self.testname()
         testdir = self.testdir()
@@ -2262,7 +2262,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertIn("SubState=dead", rep)
         self.assertIn("Id=zz-not-existing.service", rep)
         ##
-    def test_2292_show_unit_property_not_found(self):
+    def test_2612_show_unit_property_not_found(self):
         """ check when 'show UNIT' not found  """
         testname = self.testname()
         testdir = self.testdir()
