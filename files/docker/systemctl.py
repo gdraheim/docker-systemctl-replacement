@@ -766,6 +766,7 @@ class Systemctl:
         self._unit_state = _unit_state
         self._unit_type = _unit_type
         # some common constants that may be changed
+        self._systemd_version = SystemCompatibilityVersion
         self._pid_file_folder = _pid_file_folder 
         self._journal_log_folder = _journal_log_folder
         # and the actual internal runtime state
@@ -4133,10 +4134,10 @@ class Systemctl:
             return False
         return lines
     def systemd_version(self):
-        """ the the version line for systemd compatibility """
-        return "systemd %s\n  - via systemctl.py %s" % (SystemCompatibilityVersion, __version__)
+        """ the version line for systemd compatibility """
+        return "systemd %s\n  - via systemctl.py %s" % (self._systemd_version, __version__)
     def systemd_features(self):
-        """ the the info line for systemd features """
+        """ the info line for systemd features """
         features1 = "-PAM -AUDIT -SELINUX -IMA -APPARMOR -SMACK"
         features2 = " +SYSVINIT -UTMP -LIBCRYPTSETUP -GCRYPT -GNUTLS"
         features3 = " -ACL -XZ -LZ4 -SECCOMP -BLKID -ELFUTILS -KMOD -IDN"
