@@ -4,7 +4,7 @@
 from __future__ import print_function
 
 __copyright__ = "(C) Guido Draheim, licensed under the EUPL"""
-__version__ = "1.4.2521"
+__version__ = "1.4.2522"
 
 ## NOTE:
 ## The testcases 1000...4999 are using a --root=subdir environment
@@ -19999,6 +19999,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # sh____(cmd.format(**locals()))
         out2 = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out2)
+        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd nobody'"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} useradd somebody -g nobody -m"
+        sh____(cmd.format(**locals()))
         # .........................................vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
         cmd = "docker commit -c 'CMD [\"/usr/bin/systemctl\"]'  {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
@@ -20009,7 +20013,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(3)
         #
         #
-        top_container2 = "docker exec -u nobody {testname}x ps -eo pid,ppid,user,args"
+        top_container2 = "docker exec -u somebody {testname}x ps -eo pid,ppid,user,args"
         top = output(top_container2.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "testsleep 99"))
@@ -20017,7 +20021,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(greps(top, "testsleep")), 2)
         self.assertEqual(len(greps(top, " 1 *.*systemctl")), 1)
         self.assertEqual(len(greps(top, " root ")), 3)
-        self.assertEqual(len(greps(top, " nobody ")), 1)
+        self.assertEqual(len(greps(top, " somebody ")), 1)
         #
         check = "docker exec {testname}x systemctl list-units"
         top = output(check.format(**locals()))
