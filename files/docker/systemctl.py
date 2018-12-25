@@ -71,6 +71,7 @@ _preset_folder3 = "/usr/lib/systemd/system-preset"
 _preset_folder4 = "/lib/systemd/system-preset"
 _preset_folder9 = None
 
+SystemCompatibilityVersion = 219
 MinimumYield = 0.5
 MinimumTimeoutStartSec = 4
 MinimumTimeoutStopSec = 4
@@ -4129,7 +4130,7 @@ class Systemctl:
         return lines
     def systemd_version(self):
         """ the the version line for systemd compatibility """
-        return "systemd 219\n  - via systemctl.py %s" % __version__
+        return "systemd %s\n  - via systemctl.py %s" % (SystemCompatibilityVersion, __version__)
     def systemd_features(self):
         """ the the info line for systemd features """
         features1 = "-PAM -AUDIT -SELINUX -IMA -APPARMOR -SMACK"
