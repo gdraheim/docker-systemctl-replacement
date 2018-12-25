@@ -2,7 +2,7 @@
 from __future__ import print_function
 
 __copyright__ = "(C) 2016-2018 Guido U. Draheim, licensed under the EUPL"
-__version__ = "1.4.2521"
+__version__ = "1.4.2522"
 
 import logging
 logg = logging.getLogger("systemctl")
@@ -71,6 +71,7 @@ _preset_folder3 = "/usr/lib/systemd/system-preset"
 _preset_folder4 = "/lib/systemd/system-preset"
 _preset_folder9 = None
 
+SystemCompatibilityVersion = 219
 MinimumYield = 0.5
 MinimumTimeoutStartSec = 4
 MinimumTimeoutStopSec = 4
@@ -765,6 +766,7 @@ class Systemctl:
         self._unit_state = _unit_state
         self._unit_type = _unit_type
         # some common constants that may be changed
+        self._systemd_version = SystemCompatibilityVersion
         self._pid_file_folder = _pid_file_folder 
         self._journal_log_folder = _journal_log_folder
         # and the actual internal runtime state
@@ -927,6 +929,27 @@ class Systemctl:
         except Exception as e:
             logg.warning("%s not loaded: %s", module, e)
         return None
+    def find_drop_in_files(self, unit):
+        """ search for some.service.d/extra.conf files """
+        result = {}
+        basename_d = unit + ".d"
+        for folder in self.sysd_folders():
+            if not folder: 
+                continue
+            if self._root:
+                folder = os_path(self._root, folder)
+            override_d = os_path(folder, basename_d)
+            if not os.path.isdir(override_d):
+                continue
+            for name in os.listdir(override_d):
+                path = os.path.join(override_d, name)
+                if os.path.isdir(path):
+                    continue
+                if not path.endswith(".conf"):
+                    continue
+                if name not in result:
+                    result[name] = path
+        return result
     def load_sysd_unit_conf(self, module): # -> conf?
         """ read the unit file with a UnitParser (systemd) """
         path = self.unit_sysd_file(module)
@@ -940,24 +963,7 @@ class Systemctl:
         unit = UnitParser()
         if not masked:
             unit.read_sysd(path)
-            # find override drop-in files
-            basename_d = os.path.basename(path) + ".d"
-            for folder in self.sysd_folders():
-                if not folder: 
-                    continue
-                if self._root:
-                    folder = os_path(self._root, folder)
-                override_d = os_path(folder, basename_d)
-                if not os.path.isdir(override_d):
-                    continue
-                for name in os.listdir(override_d):
-                    path = os.path.join(override_d, name)
-                    if os.path.isdir(path):
-                        continue
-                    if not path.endswith(".conf"):
-                        continue
-                    if name not in drop_in_files:
-                        drop_in_files[name] = path
+            drop_in_files = self.find_drop_in_files(os.path.basename(path))
             # load in alphabetic order, irrespective of location
             for name in sorted(drop_in_files):
                 path = drop_in_files[name]
@@ -4128,10 +4134,10 @@ class Systemctl:
             return False
         return lines
     def systemd_version(self):
-        """ the the version line for systemd compatibility """
-        return "systemd 219\n  - via systemctl.py %s" % __version__
+        """ the version line for systemd compatibility """
+        return "systemd %s\n  - via systemctl.py %s" % (self._systemd_version, __version__)
     def systemd_features(self):
-        """ the the info line for systemd features """
+        """ the info line for systemd features """
         features1 = "-PAM -AUDIT -SELINUX -IMA -APPARMOR -SMACK"
         features2 = " +SYSVINIT -UTMP -LIBCRYPTSETUP -GCRYPT -GNUTLS"
         features3 = " -ACL -XZ -LZ4 -SECCOMP -BLKID -ELFUTILS -KMOD -IDN"
