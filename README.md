@@ -196,7 +196,8 @@ most programmers tend to write very simple `*.service` files
 it works in a surprising number of cases however. But definitly 
 not all. So if there is a problem, use the
 [github issue tracker](https://github.com/gdraheim/docker-systemctl-replacement/issues)
-to make me aware of it.
+to make me aware of it. In general it is not needed to emulate
+every feature as [EXTRA-CONFIGS](EXTRA-CONFIGS.md) can help.
 
 And I take patches. ;)
 
