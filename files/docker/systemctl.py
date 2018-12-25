@@ -928,6 +928,27 @@ class Systemctl:
         except Exception as e:
             logg.warning("%s not loaded: %s", module, e)
         return None
+    def find_drop_in_files(self, unit):
+        """ search for some.service.d/extra.conf files """
+        result = {}
+        basename_d = unit + ".d"
+        for folder in self.sysd_folders():
+            if not folder: 
+                continue
+            if self._root:
+                folder = os_path(self._root, folder)
+            override_d = os_path(folder, basename_d)
+            if not os.path.isdir(override_d):
+                continue
+            for name in os.listdir(override_d):
+                path = os.path.join(override_d, name)
+                if os.path.isdir(path):
+                    continue
+                if not path.endswith(".conf"):
+                    continue
+                if name not in result:
+                    result[name] = path
+        return result
     def load_sysd_unit_conf(self, module): # -> conf?
         """ read the unit file with a UnitParser (systemd) """
         path = self.unit_sysd_file(module)
@@ -941,24 +962,7 @@ class Systemctl:
         unit = UnitParser()
         if not masked:
             unit.read_sysd(path)
-            # find override drop-in files
-            basename_d = os.path.basename(path) + ".d"
-            for folder in self.sysd_folders():
-                if not folder: 
-                    continue
-                if self._root:
-                    folder = os_path(self._root, folder)
-                override_d = os_path(folder, basename_d)
-                if not os.path.isdir(override_d):
-                    continue
-                for name in os.listdir(override_d):
-                    path = os.path.join(override_d, name)
-                    if os.path.isdir(path):
-                        continue
-                    if not path.endswith(".conf"):
-                        continue
-                    if name not in drop_in_files:
-                        drop_in_files[name] = path
+            drop_in_files = self.find_drop_in_files(os.path.basename(path))
             # load in alphabetic order, irrespective of location
             for name in sorted(drop_in_files):
                 path = drop_in_files[name]
