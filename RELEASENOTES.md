@@ -62,4 +62,18 @@ intended for RELEASE 1.5 where different versions of common distro images are
 included in the nighrun tests. It did uncover a bug in ubuntu `kill` by the
 way that may got unnoticed by some application packages so far.
 
+RELEASE 1.4.3000
+
+There are a couple of bugfixes. The most prominent one is the proper support
+of drop-in overide configs. This can be very useful in scenarios where one
+wants to install a `*.rpm` from an upstream distributor adding some additional
+parts only in the case of a docker container image. That has been described
+more prominently in [EXTRA-CONFIGS.md].
+
+The general README itself contains an easier introduction with a hint on how
+a multi-service container looks like from the inside. That should make some
+visual impression on everyone who has already worked with containers so far.
+
+
+
 
