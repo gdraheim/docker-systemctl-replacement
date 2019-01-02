@@ -55,7 +55,7 @@ file. However the way to append/replace a setting is completely
 generic - it is part of the parser and not of the interpreter for 
 the service definitions. Thus it works also for the Exec-parts.
 
-# STANDARD DEFINITION
+## STANDARD DEFINITION
 
 https://www.freedesktop.org/software/systemd/man/systemd.unit.html
 
@@ -104,3 +104,19 @@ As for systemctl.py the feature of a shortened `foo-.service.d` is
 not implemented. (The systemctl.py script does also ignore many of 
 the standard definitions about template service files). Therefore
 overrides must be specific for each service and not a group of them.
+
+## EXAMPLE
+
+    /etc/systemd/system/some.service
+    /etc/systemd/system/some.service.d/extra.conf
+    /etc/systemd/system/some.service.d/zen.conf
+    /usr/lib/system/some.service.d/addon.conf
+    /usr/lib/system/some.service.d/override.conf
+
+The parsing order is this
+
+- some.service
+- addon.conf
+- extra.conf
+- override.conf
+- zen.conf
