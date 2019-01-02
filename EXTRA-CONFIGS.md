@@ -115,8 +115,8 @@ overrides must be specific for each service and not a group of them.
 
 The parsing order is this
 
-- some.service
-- addon.conf
-- extra.conf
-- override.conf
-- zen.conf
+    some.service
+    addon.conf
+    extra.conf
+    override.conf
+    zen.conf
