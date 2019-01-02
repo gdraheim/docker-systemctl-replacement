@@ -11,7 +11,7 @@ with these files:
     /etc/systemd/system/some.service.d/override.conf
 
 then ALL these files will be parsed. Therefore some `*.rpm`
-program may instalk the `some.service` file but you can always
+program may install the `some.service` file but you can always
 override the settings with your `override.conf`.
 
 In general the new lines will be added to the existing config
