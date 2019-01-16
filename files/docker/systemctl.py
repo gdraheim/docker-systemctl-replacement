@@ -384,6 +384,12 @@ class UnitConfigParser:
                 continue
             if line.startswith(";"):
                 continue
+            if line.startswith(".include"):
+                includefile = re.sub(r'^\.include[ ]*', '', line).rstrip()
+                if not os.path.isfile(includefile):
+                    raise Exception("tried to include file that doesn't exist: %s" % includefile)
+                self.read_sysd(includefile)
+                continue
             if line.startswith("["):
                 x = line.find("]")
                 if x > 0:
