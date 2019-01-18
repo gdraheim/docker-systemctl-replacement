@@ -1150,8 +1150,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
         text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
-            [Unit]
-            Description=Testing A
             .include /etc/systemd/system/zzb.service
             [Unit]
             Description=Testing A""")
