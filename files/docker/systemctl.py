@@ -385,6 +385,7 @@ class UnitConfigParser:
             if line.startswith(";"):
                 continue
             if line.startswith(".include"):
+                logg.error("the '.include' syntax is deprecated. Use x.service.d/ drop-in files!")
                 includefile = re.sub(r'^\.include[ ]*', '', line).rstrip()
                 if not os.path.isfile(includefile):
                     raise Exception("tried to include file that doesn't exist: %s" % includefile)
