@@ -75,7 +75,13 @@ Based on that `ansible_connection` one can enable the
 systemctl-replacement to intercept subsequent calls
 to `"service:"` steps. Effectivly Ansible scripts that 
 shall be run on real virtual machines can be tested 
-with docker containers.
+with docker containers. However in newer centos/ubuntu
+images you need to check for python first.
+
+    - copy: src="files/docker/systemctl.py" dest="/usr/bin/systemctl"
+    - package: name=python
+    - file: name="/run/systemd/system/" state="directory"
+    - service: name="dbus.service" state="stopped"
 
 See [SERVICE-MANAGER](SERVICE-MANAGER.md) for more details.
 
