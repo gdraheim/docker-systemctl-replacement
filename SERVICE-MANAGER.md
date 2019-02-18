@@ -162,7 +162,7 @@ you would not need it.
 
     - hosts: a
       gather_facts: no
-      tasks:
+      pre_tasks:
       - name: install systemctl.py
         copy: src="files/docker/systemctl.py" dest="/usr/bin/systemctl"
         when: ansible_connection == 'docker'
@@ -171,5 +171,7 @@ you would not need it.
         when: ansible_connection == 'docker'
       - name: ensure run directory for ansible
         file: name="/run/systemd/system/" state="directory"
+        when: ansible_connection == 'docker'
+      tasks:
       - name: check some service
         service: name="dbus.service" state="stopped"
