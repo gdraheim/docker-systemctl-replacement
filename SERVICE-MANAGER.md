@@ -169,7 +169,7 @@ you would not need it.
       - name: install python for systemctl.py
         package: name=python
         when: ansible_connection == 'docker'
-      - name: ensure run directory for ansible
+      - name: ensure run directory for ansible check_systemd
         file: name="/run/systemd/system/" state="directory"
         when: ansible_connection == 'docker'
       tasks:
