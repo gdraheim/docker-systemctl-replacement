@@ -175,3 +175,9 @@ you would not need it.
       tasks:
       - name: check some service
         service: name="dbus.service" state="stopped"
+
+If you do not create the run-directory then Ansible will fall back into
+thinking it is a SystemV like operating system with all services living in 
+the `/etc/init.d` world. As a result all the calls to "service:" will
+result in "Could not find the requested service dbus.service: host".
+
