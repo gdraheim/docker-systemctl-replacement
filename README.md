@@ -97,10 +97,11 @@ a special functionality in unix'ish operating systems.
 
 The docker-stop command will send a SIGTERM to PID-1 in
 the container - but NOT to any other process. If the CMD
-is the actual application (java -jar whatever) then this
-works fine as it will also clean up its subprocesses. In
-many other cases it is not sufficient leaving zombie
-processes around. 
+is the actual application (exec java -jar whatever) then 
+this works fine as it will also clean up its subprocesses. 
+In many other cases it is not sufficient leaving 
+[zombie processes](https://www.howtogeek.com/119815/) 
+around.
 
 Zombie processes may also occur when a master process does 
 not do a `wait` for its children or the children were
