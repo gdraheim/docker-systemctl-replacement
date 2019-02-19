@@ -164,9 +164,9 @@ an update of the major version.
 
 Please run the `testsuite.py` or `make check` upon providing
 a patch. It takes a couple of minutes because it may download
-a number of packages during provisioning - with the help of the
-scripting of the gdraheim/docker-centos-repo-mirror project this 
-can be reduced a lot (it even runs without internet connection).
+a number of packages during provisioning - but with the help of the
+[docker-mirror-packages-repo](https://github.com/gdraheim/docker-mirror-packages-repo)
+scripting this can be reduced a lot (it even runs without internet connection).
 
 Some real world examples have been cut out into a seperate
 project. This includes dockerfile and ansible based tests
