@@ -172,7 +172,9 @@ Some real world examples have been cut out into a seperate
 project. This includes dockerfile and ansible based tests
 to provide common applications like webservers, databases
 and even a Jenkins application. You may want to have a look
-at https://github.com/gdraheim/docker-systemctl-images
+at [gdraheim/docker-systemctl-images](https://github.com/gdraheim/docker-systemctl-images)
+list.
+
 
 See [TESTSUITE](TESTUITE.md) for more details.
 
