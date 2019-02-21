@@ -79,7 +79,7 @@ with docker containers. However in newer centos/ubuntu
 images you need to check for python first.
 
     - copy: src="files/docker/systemctl.py" dest="/usr/bin/systemctl"
-    - package: name=python
+    - package: name="python"
     - file: name="/run/systemd/system/" state="directory"
     - service: name="dbus.service" state="stopped"
 

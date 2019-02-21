@@ -77,10 +77,10 @@ package installation. Or just do it firsthand.
 
     - name: update systemd
       package: name="systemd" state="latest"
-      when: ansible_connection == 'docker'
+      when: "ansible_connection == 'docker'"
     - name: install systemctl.py
       copy: src="files/docker/systemctl.py" dest="/usr/bin/systemctl"
-      when: ansible_connection == 'docker'
+      when: "ansible_connection == 'docker'"
 
 Note that such a setup will also work when using Ansible's 
 service module to start/stop/enable services on a target host.
@@ -119,10 +119,10 @@ work, you need to overwrite /usr/bin/systemctl and to install Python.
 
     - name: install systemctl.py
       copy: src="files/docker/systemctl.py" dest="/usr/bin/systemctl"
-      when: ansible_connection == 'docker'
+      when: "ansible_connection == 'docker'"
     - name: install python for systemctl.py
-      package: name=python
-      when: ansible_connection == 'docker'
+      package: name="python"
+      when: "ansible_connection == 'docker'"
 
 You can also use `systemctl3.py` along with `python3` for the same effect.
 
@@ -165,13 +165,13 @@ you would not need it.
       pre_tasks:
       - name: install systemctl.py
         copy: src="files/docker/systemctl.py" dest="/usr/bin/systemctl"
-        when: ansible_connection == 'docker'
+        when: "ansible_connection == 'docker'"
       - name: install python for systemctl.py
         package: name=python
-        when: ansible_connection == 'docker'
+        when: "ansible_connection == 'docker'"
       - name: ensure run directory for ansible check_systemd
         file: name="/run/systemd/system/" state="directory"
-        when: ansible_connection == 'docker'
+        when: "ansible_connection == 'docker'"
       tasks:
       - name: check some service
         service: name="dbus.service" state="stopped"
