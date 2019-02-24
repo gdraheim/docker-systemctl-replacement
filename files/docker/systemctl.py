@@ -3021,10 +3021,10 @@ class Systemctl:
            os.makedirs(rc_folder)
         # do not double existing entries
         for found in os.listdir(rc_folder):
-            m = re.match("S\d\d(.*)", found)
+            m = re.match(r"S\d\d(.*)", found)
             if m and m.group(1) == name:
                 nameS = found
-            m = re.match("K\d\d(.*)", found)
+            m = re.match(r"K\d\d(.*)", found)
             if m and m.group(1) == name:
                 nameK = found
         target = os.path.join(rc_folder, nameS)
@@ -3096,10 +3096,10 @@ class Systemctl:
         nameK = "K50"+name
         # do not forget the existing entries
         for found in os.listdir(rc_folder):
-            m = re.match("S\d\d(.*)", found)
+            m = re.match(r"S\d\d(.*)", found)
             if m and m.group(1) == name:
                 nameS = found
-            m = re.match("K\d\d(.*)", found)
+            m = re.match(r"K\d\d(.*)", found)
             if m and m.group(1) == name:
                 nameK = found
         target = os.path.join(rc_folder, nameS)
