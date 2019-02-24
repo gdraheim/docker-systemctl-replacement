@@ -9,4 +9,4 @@ tmp.*
 .coverage.*
 *,cover
 *.pyc
-
+*.e
