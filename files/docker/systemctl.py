@@ -128,12 +128,6 @@ def to_list(value):
     if isinstance(value, string_types):
          return [ value ]
     return value
-def to_bool(value):
-    if isinstance(value, string_types):
-        if value.strip().lower() in [ "true", "yes", "y"]:
-             return True
-        return False
-    return value
 def unit_of(module):
     if "." not in module:
         return module + ".service"
@@ -480,7 +474,19 @@ class UnitConf:
         filename = self.filename()
         if filename:
             name = os.path.basename(filename)
-        return self.data.get("Unit", "Id", name)
+        return self.get("Unit", "Id", name)
+    def set(self, section, name, value):
+        return self.data.set(section, name, value)
+    def get(self, section, name, default):
+        return self.data.get(section, name, default)
+    def getlist(self, section, name, default = None);
+        return self.data.getlist(section, name, default or [])
+    def getbool(self, section, name, default = None)
+        value = self.data.get(section, name, default or "no")
+        if value:
+            if value[0] in "TtYy123456789":
+                return True
+        return False
 
 class PresetFile:
     def __init__(self):
@@ -664,7 +670,7 @@ def seconds_to_time(seconds):
 
 def getBefore(conf):
     result = []
-    beforelist = conf.data.getlist("Unit", "Before", [])
+    beforelist = conf.getlist("Unit", "Before", [])
     for befores in beforelist:
         for before in befores.split(" "):
             name = before.strip()
@@ -674,7 +680,7 @@ def getBefore(conf):
 
 def getAfter(conf):
     result = []
-    afterlist = conf.data.getlist("Unit", "After", [])
+    afterlist = conf.getlist("Unit", "After", [])
     for afters in afterlist:
         for after in afters.split(" "):
             name = after.strip()
@@ -919,7 +925,7 @@ class Systemctl:
             logg.debug("%s is /user/ conf >> accept", conf.filename())
             return False
         # to allow for 'docker run -u user' with system services
-        user = self.expand_special(conf.data.get("Service", "User", ""), conf)
+        user = self.expand_special(conf.get("Service", "User", ""), conf)
         if user and user == self.user():
             logg.debug("%s with User=%s >> accept", conf.filename(), user)
             return False
@@ -1163,7 +1169,7 @@ class Systemctl:
     def get_description_from(self, conf, default = None): # -> text
         """ Unit.Description could be empty sometimes """
         if not conf: return default or ""
-        description = conf.data.get("Unit", "Description", default or "")
+        description = conf.get("Unit", "Description", default or "")
         return self.expand_special(description, conf)
     def read_pid_file(self, pid_file, default = None):
         pid = default
@@ -1206,7 +1212,7 @@ class Systemctl:
         return self.pid_file_from(conf) or self.status_file_from(conf)
     def pid_file_from(self, conf, default = ""):
         """ get the specified pid file path (not a computed default) """
-        pid_file = conf.data.get("Service", "PIDFile", default)
+        pid_file = conf.get("Service", "PIDFile", default)
         return self.expand_special(pid_file, conf)
     def read_mainpid_from(self, conf, default):
         """ MAINPID is either the PIDFile content written from the application
@@ -1231,7 +1237,7 @@ class Systemctl:
         if default is None:
            default = self.default_status_file(conf)
         if conf is None: return default
-        status_file = conf.data.get("Service", "StatusFile", default)
+        status_file = conf.get("Service", "StatusFile", default)
         # this not a real setting, but do the expand_special anyway
         return self.expand_special(status_file, conf)
     def default_status_file(self, conf): # -> text
@@ -1429,16 +1435,16 @@ class Systemctl:
             logg.error("Unit %s could not be found.", unit)
             return False
         if _unit_property:
-            return conf.data.getlist("Service", _unit_property)
+            return conf.getlist("Service", _unit_property)
         return self.get_env(conf)
     def extra_vars(self):
         return self._extra_vars # from command line
     def get_env(self, conf):
         env = os.environ.copy()
-        for env_part in conf.data.getlist("Service", "Environment", []):
+        for env_part in conf.getlist("Service", "Environment", []):
             for name, value in self.read_env_part(self.expand_special(env_part, conf)):
                 env[name] = value # a '$word' is not special here
-        for env_file in conf.data.getlist("Service", "EnvironmentFile", []):
+        for env_file in conf.getlist("Service", "EnvironmentFile", []):
             for name, value in self.read_env_file(self.expand_special(env_file, conf)):
                 env[name] = self.expand_env(value, env)
         logg.debug("extra-vars %s", self.extra_vars())
@@ -1581,7 +1587,7 @@ class Systemctl:
         # the original systemd will start in '/' even if User= is given
         if self._root:
             os.chdir(self._root)
-        workingdir = conf.data.get("Service", "WorkingDirectory", "")
+        workingdir = conf.get("Service", "WorkingDirectory", "")
         if workingdir:
             ignore = False
             if workingdir.startswith("-"):
@@ -1718,8 +1724,8 @@ class Systemctl:
             return False
         return self.start_unit_from(conf)
     def get_TimeoutStartSec(self, conf):
-        timeout = conf.data.get("Service", "TimeoutSec", DefaultTimeoutStartSec)
-        timeout = conf.data.get("Service", "TimeoutStartSec", timeout)
+        timeout = conf.get("Service", "TimeoutSec", DefaultTimeoutStartSec)
+        timeout = conf.get("Service", "TimeoutStartSec", timeout)
         return time_to_seconds(timeout, DefaultMaximumTimeout)
     def start_unit_from(self, conf):
         if not conf: return False
@@ -1729,8 +1735,8 @@ class Systemctl:
             return self.do_start_unit_from(conf)
     def do_start_unit_from(self, conf):
         timeout = self.get_TimeoutStartSec(conf)
-        doRemainAfterExit = to_bool(conf.data.get("Service", "RemainAfterExit", "no"))
-        runs = conf.data.get("Service", "Type", "simple").lower()
+        doRemainAfterExit = conf.getbool("Service", "RemainAfterExit", "no")
+        runs = conf.get("Service", "Type", "simple").lower()
         env = self.get_env(conf)
         self.exec_check_service(conf, env, "Exec") # all...
         # for StopPost on failure:
@@ -1739,7 +1745,7 @@ class Systemctl:
         if True:
             if runs in [ "simple", "forking", "notify" ]:
                 env["MAINPID"] = str(self.read_mainpid_from(conf, ""))
-            for cmd in conf.data.getlist("Service", "ExecStartPre", []):
+            for cmd in conf.getlist("Service", "ExecStartPre", []):
                 check, cmd = checkstatus(cmd)
                 newcmd = self.exec_cmd(cmd, env, conf)
                 logg.info(" pre-start %s", shell_cmd(newcmd))
@@ -1773,7 +1779,7 @@ class Systemctl:
             if self.get_status_from(conf, "ActiveState", "unknown") == "active":
                 logg.warning("the service was already up once")
                 return True
-            for cmd in conf.data.getlist("Service", "ExecStart", []):
+            for cmd in conf.getlist("Service", "ExecStart", []):
                 check, cmd = checkstatus(cmd)
                 newcmd = self.exec_cmd(cmd, env, conf)
                 logg.info("%s start %s", runs, shell_cmd(newcmd))
@@ -1803,7 +1809,7 @@ class Systemctl:
             if doRemainAfterExit:
                 logg.debug("%s RemainAfterExit -> AS=active", runs)
                 self.write_status_from(conf, AS="active")
-            cmdlist = conf.data.getlist("Service", "ExecStart", [])
+            cmdlist = conf.getlist("Service", "ExecStart", [])
             for idx, cmd in enumerate(cmdlist):
                 logg.debug("ExecStart[%s]: %s", idx, cmd)
             for cmd in cmdlist:
@@ -1844,7 +1850,7 @@ class Systemctl:
             if doRemainAfterExit:
                 logg.debug("%s RemainAfterExit -> AS=active", runs)
                 self.write_status_from(conf, AS="active")
-            cmdlist = conf.data.getlist("Service", "ExecStart", [])
+            cmdlist = conf.getlist("Service", "ExecStart", [])
             for idx, cmd in enumerate(cmdlist):
                 logg.debug("ExecStart[%s]: %s", idx, cmd)
             mainpid = None
@@ -1891,7 +1897,7 @@ class Systemctl:
                     service_result = "timeout" # "could not start service"
         elif runs in [ "forking" ]:
             pid_file = self.pid_file_from(conf)
-            for cmd in conf.data.getlist("Service", "ExecStart", []):
+            for cmd in conf.getlist("Service", "ExecStart", []):
                 check, cmd = checkstatus(cmd)
                 newcmd = self.exec_cmd(cmd, env, conf)
                 if not newcmd: continue
@@ -1929,7 +1935,7 @@ class Systemctl:
             # according to the systemd documentation, a failed start-sequence
             # should execute the ExecStopPost sequence allowing some cleanup.
             env["SERVICE_RESULT"] = service_result
-            for cmd in conf.data.getlist("Service", "ExecStopPost", []):
+            for cmd in conf.getlist("Service", "ExecStopPost", []):
                 check, cmd = checkstatus(cmd)
                 newcmd = self.exec_cmd(cmd, env, conf)
                 logg.info("post-fail %s", shell_cmd(newcmd))
@@ -1941,7 +1947,7 @@ class Systemctl:
                     run.returncode or "OK", run.signal or "")
             return False
         else:
-            for cmd in conf.data.getlist("Service", "ExecStartPost", []):
+            for cmd in conf.getlist("Service", "ExecStartPost", []):
                 check, cmd = checkstatus(cmd)
                 newcmd = self.exec_cmd(cmd, env, conf)
                 logg.info("post-start %s", shell_cmd(newcmd))
@@ -1974,15 +1980,15 @@ class Systemctl:
         return env
     def execve_from(self, conf, cmd, env):
         """ this code is commonly run in a child process // returns exit-code"""
-        runs = conf.data.get("Service", "Type", "simple").lower()
+        runs = conf.get("Service", "Type", "simple").lower()
         logg.debug("%s process for %s", runs, conf.filename())
         inp = open("/dev/zero")
         out = self.open_journal_log(conf)
         os.dup2(inp.fileno(), sys.stdin.fileno())
         os.dup2(out.fileno(), sys.stdout.fileno())
         os.dup2(out.fileno(), sys.stderr.fileno())
-        runuser = self.expand_special(conf.data.get("Service", "User", ""), conf)
-        rungroup = self.expand_special(conf.data.get("Service", "Group", ""), conf)
+        runuser = self.expand_special(conf.get("Service", "User", ""), conf)
+        rungroup = self.expand_special(conf.get("Service", "Group", ""), conf)
         envs = shutil_setuid(runuser, rungroup)
         self.chdir_workingdir(conf, check = False) # some dirs need setuid before
         env = self.extend_exec_env(env)
@@ -2000,7 +2006,7 @@ class Systemctl:
         """ helper function to test the code that is normally forked off """
         conf = self.load_unit_conf(unit)
         env = self.get_env(conf)
-        for cmd in conf.data.getlist("Service", "ExecStart", []):
+        for cmd in conf.getlist("Service", "ExecStart", []):
             newcmd = self.exec_cmd(cmd, env, conf)
             return self.execve_from(conf, newcmd, env)
         return None
@@ -2036,8 +2042,8 @@ class Systemctl:
         return self.stop_unit_from(conf)
 
     def get_TimeoutStopSec(self, conf):
-        timeout = conf.data.get("Service", "TimeoutSec", DefaultTimeoutStartSec)
-        timeout = conf.data.get("Service", "TimeoutStopSec", timeout)
+        timeout = conf.get("Service", "TimeoutSec", DefaultTimeoutStartSec)
+        timeout = conf.get("Service", "TimeoutStopSec", timeout)
         return time_to_seconds(timeout, DefaultMaximumTimeout)
     def stop_unit_from(self, conf):
         if not conf: return False
@@ -2047,7 +2053,7 @@ class Systemctl:
             return self.do_stop_unit_from(conf)
     def do_stop_unit_from(self, conf):
         timeout = self.get_TimeoutStopSec(conf)
-        runs = conf.data.get("Service", "Type", "simple").lower()
+        runs = conf.get("Service", "Type", "simple").lower()
         env = self.get_env(conf)
         self.exec_check_service(conf, env, "ExecStop")
         returncode = 0
@@ -2075,7 +2081,7 @@ class Systemctl:
             if self.get_status_from(conf, "ActiveState", "unknown") == "inactive":
                 logg.warning("the service is already down once")
                 return True
-            for cmd in conf.data.getlist("Service", "ExecStop", []):
+            for cmd in conf.getlist("Service", "ExecStop", []):
                 check, cmd = checkstatus(cmd)
                 logg.debug("{env} %s", env)
                 newcmd = self.exec_cmd(cmd, env, conf)
@@ -2095,7 +2101,7 @@ class Systemctl:
                 else:
                     self.clean_status_from(conf) # "inactive"
         ### fallback Stop => Kill for ["simple","notify","forking"]
-        elif not conf.data.getlist("Service", "ExecStop", []):
+        elif not conf.getlist("Service", "ExecStop", []):
             logg.info("no ExecStop => systemctl kill")
             if True:
                 self.do_kill_unit_from(conf)
@@ -2106,7 +2112,7 @@ class Systemctl:
             size = os.path.exists(status_file) and os.path.getsize(status_file)
             logg.info("STATUS %s %s", status_file, size)
             pid = 0
-            for cmd in conf.data.getlist("Service", "ExecStop", []):
+            for cmd in conf.getlist("Service", "ExecStop", []):
                 check, cmd = checkstatus(cmd)
                 env["MAINPID"] = str(self.read_mainpid_from(conf, ""))
                 newcmd = self.exec_cmd(cmd, env, conf)
@@ -2136,7 +2142,7 @@ class Systemctl:
         elif runs in [ "forking" ]:
             status_file = self.status_file_from(conf)
             pid_file = self.pid_file_from(conf)
-            for cmd in conf.data.getlist("Service", "ExecStop", []):
+            for cmd in conf.getlist("Service", "ExecStop", []):
                 active = self.is_active_from(conf)
                 if pid_file:
                     new_pid = self.read_mainpid_from(conf, "")
@@ -2177,7 +2183,7 @@ class Systemctl:
         active = self.is_active_from(conf)
         if not active:
             env["SERVICE_RESULT"] = service_result
-            for cmd in conf.data.getlist("Service", "ExecStopPost", []):
+            for cmd in conf.getlist("Service", "ExecStopPost", []):
                 check, cmd = checkstatus(cmd)
                 newcmd = self.exec_cmd(cmd, env, conf)
                 logg.info("post-stop %s", shell_cmd(newcmd))
@@ -2236,7 +2242,7 @@ class Systemctl:
             logg.info(" reload unit %s => %s", conf.name(), conf.filename())
             return self.do_reload_unit_from(conf)
     def do_reload_unit_from(self, conf):
-        runs = conf.data.get("Service", "Type", "simple").lower()
+        runs = conf.get("Service", "Type", "simple").lower()
         env = self.get_env(conf)
         self.exec_check_service(conf, env, "ExecReload")
         if runs in [ "sysv" ]:
@@ -2262,7 +2268,7 @@ class Systemctl:
             if not self.is_active_from(conf):
                 logg.info("no reload on inactive service %s", conf.name())
                 return True
-            for cmd in conf.data.getlist("Service", "ExecReload", []):
+            for cmd in conf.getlist("Service", "ExecReload", []):
                 env["MAINPID"] = str(self.read_mainpid_from(conf, ""))
                 check, cmd = checkstatus(cmd)
                 newcmd = self.exec_cmd(cmd, env, conf)
@@ -2403,7 +2409,7 @@ class Systemctl:
             # try: self.stop_unit_from(conf)
             # except Exception as e: pass
             return self.do_start_unit_from(conf)
-        elif conf.data.getlist("Service", "ExecReload", []):
+        elif conf.getlist("Service", "ExecReload", []):
             logg.info("found service to have ExecReload -> 'reload'")
             return self.do_reload_unit_from(conf)
         else:
@@ -2444,7 +2450,7 @@ class Systemctl:
             logg.info(" reload-or-try-restart unit %s => %s", conf.name(), conf.filename())
             return self.do_reload_or_try_restart_unit_from(conf)
     def do_reload_or_try_restart_unit_from(self, conf):
-        if conf.data.getlist("Service", "ExecReload", []):
+        if conf.getlist("Service", "ExecReload", []):
             return self.do_reload_unit_from(conf)
         elif not self.is_active_from(conf):
             return True
@@ -2487,10 +2493,10 @@ class Systemctl:
             return self.do_kill_unit_from(conf)
     def do_kill_unit_from(self, conf):
         started = time.time()
-        doSendSIGKILL = to_bool(conf.data.get("Service", "SendSIGKILL", "yes"))
-        doSendSIGHUP = to_bool(conf.data.get("Service", "SendSIGHUP", "no"))
-        useKillMode = conf.data.get("Service", "KillMode", "control-group")
-        useKillSignal = conf.data.get("Service", "KillSignal", "SIGTERM")
+        doSendSIGKILL = conf.getbool("Service", "SendSIGKILL", "yes")
+        doSendSIGHUP = conf.getbool("Service", "SendSIGHUP", "no")
+        useKillMode = conf.get("Service", "KillMode", "control-group")
+        useKillSignal = conf.get("Service", "KillSignal", "SIGTERM")
         kill_signal = getattr(signal, useKillSignal)
         timeout = self.get_TimeoutStopSec(conf)
         status_file = self.status_file_from(conf)
@@ -2909,7 +2915,7 @@ class Systemctl:
         return self.preset_units(units) and found_all
     def wanted_from(self, conf, default = None):
         if not conf: return default
-        return conf.data.get("Install", "WantedBy", default, True)
+        return conf.get("Install", "WantedBy", default, True)
     def enablefolders(self, wanted):
         if self.user_mode():
             for folder in self.user_folders():
@@ -3372,7 +3378,7 @@ class Systemctl:
                             if required not in deps:
                                 deps[required] = style
             else:
-                for requirelist in conf.data.getlist("Unit", style, []):
+                for requirelist in conf.getlist("Unit", style, []):
                     for required in requirelist.strip().split(" "):
                         deps[required.strip()] = style
         return deps
@@ -3483,10 +3489,10 @@ class Systemctl:
            logg.error(" %s: a .service file without [Service] section", unit)
            return 101
         errors = 0
-        haveType = conf.data.get("Service", "Type", "simple")
-        haveExecStart = conf.data.getlist("Service", "ExecStart", [])
-        haveExecStop = conf.data.getlist("Service", "ExecStop", [])
-        haveExecReload = conf.data.getlist("Service", "ExecReload", [])
+        haveType = conf.get("Service", "Type", "simple")
+        haveExecStart = conf.getlist("Service", "ExecStart", [])
+        haveExecStop = conf.getlist("Service", "ExecStop", [])
+        haveExecReload = conf.getlist("Service", "ExecReload", [])
         usedExecStart = []
         usedExecStop = []
         usedExecReload = []
@@ -3528,19 +3534,19 @@ class Systemctl:
         if len(usedExecReload) > 0 and "/bin/kill " in usedExecReload[0]:
             logg.warning(" %s: the use of /bin/kill is not recommended for ExecReload as it is asychronous."
               + "\n\t\t\tThat means all the dependencies will perform the reload simultanously / out of order.", unit)
-        if conf.data.getlist("Service", "ExecRestart", []): #pragma: no cover
+        if conf.getlist("Service", "ExecRestart", []): #pragma: no cover
             logg.error(" %s: there no such thing as an ExecRestart (ignored)", unit)
-        if conf.data.getlist("Service", "ExecRestartPre", []): #pragma: no cover
+        if conf.getlist("Service", "ExecRestartPre", []): #pragma: no cover
             logg.error(" %s: there no such thing as an ExecRestartPre (ignored)", unit)
-        if conf.data.getlist("Service", "ExecRestartPost", []): #pragma: no cover 
+        if conf.getlist("Service", "ExecRestartPost", []): #pragma: no cover 
             logg.error(" %s: there no such thing as an ExecRestartPost (ignored)", unit)
-        if conf.data.getlist("Service", "ExecReloadPre", []): #pragma: no cover
+        if conf.getlist("Service", "ExecReloadPre", []): #pragma: no cover
             logg.error(" %s: there no such thing as an ExecReloadPre (ignored)", unit)
-        if conf.data.getlist("Service", "ExecReloadPost", []): #pragma: no cover
+        if conf.getlist("Service", "ExecReloadPost", []): #pragma: no cover
             logg.error(" %s: there no such thing as an ExecReloadPost (ignored)", unit)
-        if conf.data.getlist("Service", "ExecStopPre", []): #pragma: no cover
+        if conf.getlist("Service", "ExecStopPre", []): #pragma: no cover
             logg.error(" %s: there no such thing as an ExecStopPre (ignored)", unit)
-        for env_file in conf.data.getlist("Service", "EnvironmentFile", []):
+        for env_file in conf.getlist("Service", "EnvironmentFile", []):
             if env_file.startswith("-"): continue
             if not os.path.isfile(os_path(self._root, env_file)):
                 logg.error(" %s: Failed to load environment files: %s", unit, env_file)
@@ -3551,7 +3557,7 @@ class Systemctl:
             return True
         if not conf.data.has_section("Service"):
             return True #pragma: no cover
-        haveType = conf.data.get("Service", "Type", "simple")
+        haveType = conf.get("Service", "Type", "simple")
         if haveType in [ "sysv" ]:
             return True # we don't care about that
         abspath = 0
@@ -3559,7 +3565,7 @@ class Systemctl:
         for execs in [ "ExecStartPre", "ExecStart", "ExecStartPost", "ExecStop", "ExecStopPost", "ExecReload" ]:
             if not execs.startswith(exectype):
                 continue
-            for cmd in conf.data.getlist("Service", execs, []):
+            for cmd in conf.getlist("Service", execs, []):
                 check, cmd = checkstatus(cmd)
                 newcmd = self.exec_cmd(cmd, env, conf)
                 if not newcmd:
@@ -3656,7 +3662,7 @@ class Systemctl:
                 loaded = "not-found"
         yield "Id", unit
         yield "Names", unit
-        yield "Description", self.get_description_from(conf) # conf.data.get("Unit", "Description")
+        yield "Description", self.get_description_from(conf) # conf.get("Unit", "Description")
         yield "PIDFile", self.pid_file_from(conf) # not self.pid_file_from w/o default location
         yield "MainPID", self.active_pid_from(conf) or "0"  # status["MainPID"] or PIDFile-read
         yield "SubState", self.get_substate_from(conf)      # status["SubState"] or notify-result
@@ -3666,12 +3672,12 @@ class Systemctl:
         yield "TimeoutStartUSec", seconds_to_time(self.get_TimeoutStartSec(conf))
         yield "TimeoutStopUSec", seconds_to_time(self.get_TimeoutStopSec(conf))
         env_parts = []
-        for env_part in conf.data.getlist("Service", "Environment", []):
+        for env_part in conf.getlist("Service", "Environment", []):
             env_parts.append(self.expand_special(env_part, conf))
         if env_parts: 
             yield "Environment", " ".join(env_parts)
         env_files = []
-        for env_file in conf.data.getlist("Service", "EnvironmentFile", []):
+        for env_file in conf.getlist("Service", "EnvironmentFile", []):
             env_files.append(self.expand_special(env_file, conf))
         if env_files:
             yield "EnvironmentFile", " ".join(env_files)
