@@ -288,33 +288,33 @@ class UnitConfigParser:
         self._defaults = defaults or {}
         self._dict_type = dict_type or collections.OrderedDict
         self._allow_no_value = allow_no_value
-        self._dict = self._dict_type()
+        self._conf = self._dict_type()
         self._files = []
     def defaults(self):
         return self._defaults
     def sections(self):
-        return list(self._dict.keys())
+        return list(self._conf.keys())
     def add_section(self, section):
-        if section not in self._dict:
-            self._dict[section] = self._dict_type()
+        if section not in self._conf:
+            self._conf[section] = self._dict_type()
     def has_section(self, section):
-        return section in self._dict
+        return section in self._conf
     def has_option(self, section, option):
-        if section not in self._dict:
+        if section not in self._conf:
             return False
-        return option in self._dict[section]
+        return option in self._conf[section]
     def set(self, section, option, value):
-        if section not in self._dict:
-            self._dict[section] = self._dict_type()
-        if option not in self._dict[section]:
-            self._dict[section][option] = [ value ]
+        if section not in self._conf:
+            self._conf[section] = self._dict_type()
+        if option not in self._conf[section]:
+            self._conf[section][option] = [ value ]
         else:
-            self._dict[section][option].append(value)
+            self._conf[section][option].append(value)
         if value is None:
-            self._dict[section][option] = []
+            self._conf[section][option] = []
     def get(self, section, option, default = None, allow_no_value = False):
         allow_no_value = allow_no_value or self._allow_no_value
-        if section not in self._dict:
+        if section not in self._conf:
             if default is not None:
                 return default
             if allow_no_value:
@@ -322,22 +322,22 @@ class UnitConfigParser:
             logg.warning("section {} does not exist".format(section))
             logg.warning("  have {}".format(self.sections()))
             raise AttributeError("section {} does not exist".format(section))
-        if option not in self._dict[section]:
+        if option not in self._conf[section]:
             if default is not None:
                 return default
             if allow_no_value:
                 return None
             raise AttributeError("option {} in {} does not exist".format(option, section))
-        if not self._dict[section][option]: # i.e. an empty list
+        if not self._conf[section][option]: # i.e. an empty list
             if default is not None:
                 return default
             if allow_no_value:
                 return None
             raise AttributeError("option {} in {} is None".format(option, section))
-        return self._dict[section][option][0] # the first line in the list of configs
+        return self._conf[section][option][0] # the first line in the list of configs
     def getlist(self, section, option, default = None, allow_no_value = False):
         allow_no_value = allow_no_value or self._allow_no_value
-        if section not in self._dict:
+        if section not in self._conf:
             if default is not None:
                 return default
             if allow_no_value:
@@ -345,13 +345,13 @@ class UnitConfigParser:
             logg.warning("section {} does not exist".format(section))
             logg.warning("  have {}".format(self.sections()))
             raise AttributeError("section {} does not exist".format(section))
-        if option not in self._dict[section]:
+        if option not in self._conf[section]:
             if default is not None:
                 return default
             if allow_no_value:
                 return []
             raise AttributeError("option {} in {} does not exist".format(option, section))
-        return self._dict[section][option] # returns a list, possibly empty
+        return self._conf[section][option] # returns a list, possibly empty
     def read(self, filename):
         return self.read_sysd(filename)
     def read_sysd(self, filename):
