@@ -419,7 +419,7 @@ class UnitConfigParser:
                 if " END INIT INFO" in line: 
                      initinfo = False
                 if initinfo:
-                    m = re.match(r"^\S+\s*(\w[\w_-]*):(.*)", line)
+                    m = re.match(r"\S+\s*(\w[\w_-]*):(.*)", line)
                     if m:
                         self.set(section, m.group(1), m.group(2).strip())
                 continue
@@ -1308,7 +1308,7 @@ class Systemctl:
             logg.debug("reading %s", status_file)
             for line in open(status_file):
                 if line.strip(): 
-                    m = re.match(r"^(\w+)[:=](.*)", line)
+                    m = re.match(r"(\w+)[:=](.*)", line)
                     if m:
                         key, value = m.group(1), m.group(2)
                         if key.strip():
