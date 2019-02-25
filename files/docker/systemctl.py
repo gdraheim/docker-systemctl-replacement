@@ -795,6 +795,10 @@ class Systemctl:
         self._user_getlogin = os_getlogin()
         self._log_file = {} # init-loop
         self._log_hold = {} # init-loop
+    def user(self):
+        return self._user_getlogin
+    def user_mode(self):
+        return self._user_mode
     def user_folder(self):
         for folder in self.user_folders():
             if folder: return folder
@@ -803,14 +807,16 @@ class Systemctl:
         for folder in self.system_folders():
             if folder: return folder
         raise Exception("did not find any systemd/system folder")
-    def sysd_folders(self):
-        """ if --user then these folders are preferred """
-        if self.user_mode():
-            for folder in self.user_folders():
-                yield folder
-        if True:
-            for folder in self.system_folders():
-                yield folder
+    def init_folders(self):
+        if _init_folder1: yield _init_folder1
+        if _init_folder2: yield _init_folder2
+        if _init_folder9: yield _init_folder9
+    def preset_folders(self):
+        if _preset_folder1: yield _preset_folder1
+        if _preset_folder2: yield _preset_folder2
+        if _preset_folder3: yield _preset_folder3
+        if _preset_folder4: yield _preset_folder4
+        if _preset_folder9: yield _preset_folder9
     def user_folders(self):
         if _user_folder1: yield os.path.expanduser(_user_folder1)
         if _user_folder2: yield os.path.expanduser(_user_folder2)
@@ -823,23 +829,14 @@ class Systemctl:
         if _system_folder3: yield _system_folder3
         if _system_folder4: yield _system_folder4
         if _system_folder9: yield _system_folder9
-    def init_folders(self):
-        if _init_folder1: yield _init_folder1
-        if _init_folder2: yield _init_folder2
-        if _init_folder9: yield _init_folder9
-    def preset_folders(self):
-        if _preset_folder1: yield _preset_folder1
-        if _preset_folder2: yield _preset_folder2
-        if _preset_folder3: yield _preset_folder3
-        if _preset_folder4: yield _preset_folder4
-        if _preset_folder9: yield _preset_folder9
-    def unit_file(self, module = None): # -> filename?
-        """ file path for the given module (sysv or systemd) """
-        path = self.unit_sysd_file(module)
-        if path is not None: return path
-        path = self.unit_sysv_file(module)
-        if path is not None: return path
-        return None
+    def sysd_folders(self):
+        """ if --user then these folders are preferred """
+        if self.user_mode():
+            for folder in self.user_folders():
+                yield folder
+        if True:
+            for folder in self.system_folders():
+                yield folder
     def scan_unit_sysd_files(self, module = None): # -> [ unit-names,... ]
         """ reads all unit files, returns the first filename for the unit given """
         if self._file_for_unit_sysd is None:
@@ -896,6 +893,13 @@ class Systemctl:
         if module and unit_of(module) in self._file_for_unit_sysv:
             return self._file_for_unit_sysv[unit_of(module)]
         return None
+    def unit_file(self, module = None): # -> filename?
+        """ file path for the given module (sysv or systemd) """
+        path = self.unit_sysd_file(module)
+        if path is not None: return path
+        path = self.unit_sysv_file(module)
+        if path is not None: return path
+        return None
     def is_sysv_file(self, filename):
         """ for routines that have a special treatment for init.d services """
         self.unit_file() # scan all
@@ -903,10 +907,6 @@ class Systemctl:
         if filename in self._file_for_unit_sysd.values(): return False
         if filename in self._file_for_unit_sysv.values(): return True
         return None # not True
-    def user(self):
-        return self._user_getlogin
-    def user_mode(self):
-        return self._user_mode
     def is_user_conf(self, conf):
         if not conf:
             return False # no such conf >> ignored
@@ -930,18 +930,6 @@ class Systemctl:
             logg.debug("%s with User=%s >> accept", conf.filename(), user)
             return False
         return True
-    def load_unit_conf(self, module): # -> conf | None(not-found)
-        """ read the unit file with a UnitParser (sysv or systemd) """
-        try:
-            data = self.load_sysd_unit_conf(module)
-            if data is not None: 
-                return data
-            data = self.load_sysv_unit_conf(module)
-            if data is not None: 
-                return data
-        except Exception as e:
-            logg.warning("%s not loaded: %s", module, e)
-        return None
     def find_drop_in_files(self, unit):
         """ search for some.service.d/extra.conf files """
         result = {}
@@ -997,6 +985,18 @@ class Systemctl:
         conf = UnitConf(unit, module)
         self._loaded_file_sysv[path] = conf
         return conf
+    def load_unit_conf(self, module): # -> conf | None(not-found)
+        """ read the unit file with a UnitParser (sysv or systemd) """
+        try:
+            data = self.load_sysd_unit_conf(module)
+            if data is not None: 
+                return data
+            data = self.load_sysv_unit_conf(module)
+            if data is not None: 
+                return data
+        except Exception as e:
+            logg.warning("%s not loaded: %s", module, e)
+        return None
     def default_unit_conf(self, module): # -> conf
         """ a unit conf that can be printed to the user where
             attributes are empty and loaded() is False """
@@ -1013,19 +1013,6 @@ class Systemctl:
         if conf is not None:
             return conf
         return self.default_unit_conf(module)
-    def match_units(self, modules = None, suffix=".service"): # -> [ units,.. ]
-        """ Helper for about any command with multiple units which can
-            actually be glob patterns on their respective unit name. 
-            It returns all modules if no modules pattern were given.
-            Also a single string as one module pattern may be given. """
-        found = []
-        for unit in self.match_sysd_units(modules, suffix):
-            if unit not in found:
-                found.append(unit)
-        for unit in self.match_sysv_units(modules, suffix):
-            if unit not in found:
-                found.append(unit)
-        return found
     def match_sysd_units(self, modules = None, suffix=".service"): # -> generate[ unit ]
         """ make a file glob on all known units (systemd areas).
             It returns all modules if no modules pattern were given.
@@ -1052,6 +1039,19 @@ class Systemctl:
                 yield item
             elif [ module for module in modules if module+suffix == item ]:
                 yield item
+    def match_units(self, modules = None, suffix=".service"): # -> [ units,.. ]
+        """ Helper for about any command with multiple units which can
+            actually be glob patterns on their respective unit name. 
+            It returns all modules if no modules pattern were given.
+            Also a single string as one module pattern may be given. """
+        found = []
+        for unit in self.match_sysd_units(modules, suffix):
+            if unit not in found:
+                found.append(unit)
+        for unit in self.match_sysv_units(modules, suffix):
+            if unit not in found:
+                found.append(unit)
+        return found
     def list_service_unit_basics(self):
         """ show all the basic loading state of services """
         filename = self.unit_file() # scan all
