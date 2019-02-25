@@ -112,9 +112,9 @@ _runlevel_mappings["5"] = "graphical.target"
 _runlevel_mappings["6"] = "reboot.target"
 
 _sysv_mappings = {} # by rule of thumb
+_sysv_mappings["$local_fs"] = "local-fs.target"
 _sysv_mappings["$network"] = "network.target"
 _sysv_mappings["$remote_fs"] = "remote-fs.target"
-_sysv_mappings["$local_fs"] = "local-fs.target"
 _sysv_mappings["$timer"] = "timers.target"
 
 def shell_cmd(cmd):
@@ -277,7 +277,7 @@ def ignore_signals_and_raise_keyboard_interrupt(signame):
     signal.signal(signal.SIGINT, signal.SIG_IGN)
     raise KeyboardInterrupt(signame)
 
-class UnitConfigParser:
+class SystemctlConfigParser:
     """ A *.service files has a structure similar to an *.ini file but it is
         actually not like it. Settings may occur multiple times in each section
         and they create an implicit list. In reality all the settings are
@@ -442,7 +442,7 @@ class UnitConfigParser:
         return self._files
 
 # UnitParser = ConfigParser.RawConfigParser
-UnitParser = UnitConfigParser
+UnitParser = SystemctlConfigParser
 
 class SystemctlConf:
     def __init__(self, data, module = None):
