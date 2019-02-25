@@ -961,15 +961,15 @@ class Systemctl:
         if os.path.islink(path) and os.readlink(path).startswith("/dev"):
             masked = os.readlink(path)
         drop_in_files = {}
-        unit = UnitConfParser()
+        data = UnitConfParser()
         if not masked:
-            unit.read_sysd(path)
+            data.read_sysd(path)
             drop_in_files = self.find_drop_in_files(os.path.basename(path))
             # load in alphabetic order, irrespective of location
             for name in sorted(drop_in_files):
                 path = drop_in_files[name]
-                unit.read_sysd(path)
-        conf = SystemctlConf(unit, module)
+                data.read_sysd(path)
+        conf = SystemctlConf(data, module)
         conf.masked = masked
         conf.drop_in_files = drop_in_files
         self._loaded_file_sysd[path] = conf
