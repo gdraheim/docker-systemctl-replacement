@@ -981,9 +981,9 @@ class Systemctl:
         if not path: return None
         if path in self._loaded_file_sysv:
             return self._loaded_file_sysv[path]
-        unit = UnitConfParser()
-        unit.read_sysv(path)
-        conf = SystemctlConf(unit, module)
+        data = UnitConfParser()
+        data.read_sysv(path)
+        conf = SystemctlConf(data, module)
         self._loaded_file_sysv[path] = conf
         return conf
     def load_unit_conf(self, module): # -> conf | None(not-found)
