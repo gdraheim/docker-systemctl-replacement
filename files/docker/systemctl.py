@@ -444,7 +444,7 @@ class UnitConfigParser:
 # UnitParser = ConfigParser.RawConfigParser
 UnitParser = UnitConfigParser
 
-class UnitConf:
+class SystemctlConf:
     def __init__(self, data, module = None):
         self.data = data # UnitParser
         self.env = {}
@@ -857,14 +857,6 @@ class Systemctl:
                         self._file_for_unit_sysd[service_name] = path
             logg.debug("found %s sysd files", len(self._file_for_unit_sysd))
         return list(self._file_for_unit_sysd.keys())
-    def unit_sysd_file(self, module = None): # -> filename?
-        """ file path for the given module (systemd) """
-        self.scan_unit_sysd_files()
-        if module and module in self._file_for_unit_sysd:
-            return self._file_for_unit_sysd[module]
-        if module and unit_of(module) in self._file_for_unit_sysd:
-            return self._file_for_unit_sysd[unit_of(module)]
-        return None
     def scan_unit_sysv_files(self, module = None): # -> [ unit-names,... ]
         """ reads all init.d files, returns the first filename when unit is a '.service' """
         if self._file_for_unit_sysv is None:
@@ -885,6 +877,14 @@ class Systemctl:
                         self._file_for_unit_sysv[service_name] = path
             logg.debug("found %s sysv files", len(self._file_for_unit_sysv))
         return list(self._file_for_unit_sysv.keys())
+    def unit_sysd_file(self, module = None): # -> filename?
+        """ file path for the given module (systemd) """
+        self.scan_unit_sysd_files()
+        if module and module in self._file_for_unit_sysd:
+            return self._file_for_unit_sysd[module]
+        if module and unit_of(module) in self._file_for_unit_sysd:
+            return self._file_for_unit_sysd[unit_of(module)]
+        return None
     def unit_sysv_file(self, module = None): # -> filename?
         """ file path for the given module (sysv) """
         self.scan_unit_sysv_files()
@@ -969,7 +969,7 @@ class Systemctl:
             for name in sorted(drop_in_files):
                 path = drop_in_files[name]
                 unit.read_sysd(path)
-        conf = UnitConf(unit, module)
+        conf = SystemctlConf(unit, module)
         conf.masked = masked
         conf.drop_in_files = drop_in_files
         self._loaded_file_sysd[path] = conf
@@ -982,7 +982,7 @@ class Systemctl:
             return self._loaded_file_sysv[path]
         unit = UnitParser()
         unit.read_sysv(path)
-        conf = UnitConf(unit, module)
+        conf = SystemctlConf(unit, module)
         self._loaded_file_sysv[path] = conf
         return conf
     def load_unit_conf(self, module): # -> conf | None(not-found)
@@ -1005,7 +1005,7 @@ class Systemctl:
         data.set("Unit", "Names", module)
         data.set("Unit", "Description", "NOT-FOUND "+module)
         # assert(not data.loaded())
-        return UnitConf(data, module)
+        return SystemctlConf(data, module)
     def get_unit_conf(self, module): # -> conf (conf | default-conf)
         """ accept that a unit does not exist 
             and return a unit conf that says 'not-loaded' """
