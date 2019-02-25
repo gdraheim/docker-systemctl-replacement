@@ -152,3 +152,15 @@ clean:
 	- rm -rf tmp/tmp.test_*
 	- rm -rf tmp/systemctl.py
 
+branch=master
+up:
+	test -f files/docker/systemctl.py.bak || \
+	  mv -v files/docker/systemctl.py \
+	        files/docker/systemctl.py.bak
+	git checkout HEAD files/docker/systemctl.py
+	git pull
+	git fetch origin $(branch):$(branch)
+	git merge $(branch) -m "`git log -1 --pretty=%B -b $(branch)`"
+	test -f files/docker/systemctl.py.bak &&
+	  mv -v files/docker/systemctl.py.bak \
+	        files/docker/systemctl.py
