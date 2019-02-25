@@ -441,12 +441,12 @@ class SystemctlConfigParser:
     def filenames(self):
         return self._files
 
-# UnitParser = ConfigParser.RawConfigParser
-UnitParser = SystemctlConfigParser
+# UnitConfParser = ConfigParser.RawConfigParser
+UnitConfParser = SystemctlConfigParser
 
 class SystemctlConf:
     def __init__(self, data, module = None):
-        self.data = data # UnitParser
+        self.data = data # UnitConfParser
         self.env = {}
         self.status = None
         self.masked = None
@@ -952,7 +952,7 @@ class Systemctl:
                     result[name] = path
         return result
     def load_sysd_unit_conf(self, module): # -> conf?
-        """ read the unit file with a UnitParser (systemd) """
+        """ read the unit file with a UnitConfParser (systemd) """
         path = self.unit_sysd_file(module)
         if not path: return None
         if path in self._loaded_file_sysd:
@@ -961,7 +961,7 @@ class Systemctl:
         if os.path.islink(path) and os.readlink(path).startswith("/dev"):
             masked = os.readlink(path)
         drop_in_files = {}
-        unit = UnitParser()
+        unit = UnitConfParser()
         if not masked:
             unit.read_sysd(path)
             drop_in_files = self.find_drop_in_files(os.path.basename(path))
@@ -975,18 +975,18 @@ class Systemctl:
         self._loaded_file_sysd[path] = conf
         return conf
     def load_sysv_unit_conf(self, module): # -> conf?
-        """ read the unit file with a UnitParser (sysv) """
+        """ read the unit file with a UnitConfParser (sysv) """
         path = self.unit_sysv_file(module)
         if not path: return None
         if path in self._loaded_file_sysv:
             return self._loaded_file_sysv[path]
-        unit = UnitParser()
+        unit = UnitConfParser()
         unit.read_sysv(path)
         conf = SystemctlConf(unit, module)
         self._loaded_file_sysv[path] = conf
         return conf
     def load_unit_conf(self, module): # -> conf | None(not-found)
-        """ read the unit file with a UnitParser (sysv or systemd) """
+        """ read the unit file with a UnitConfParser (sysv or systemd) """
         try:
             data = self.load_sysd_unit_conf(module)
             if data is not None: 
@@ -1000,7 +1000,7 @@ class Systemctl:
     def default_unit_conf(self, module): # -> conf
         """ a unit conf that can be printed to the user where
             attributes are empty and loaded() is False """
-        data = UnitParser()
+        data = UnitConfParser()
         data.set("Unit","Id", module)
         data.set("Unit", "Names", module)
         data.set("Unit", "Description", "NOT-FOUND "+module)
