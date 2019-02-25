@@ -421,7 +421,8 @@ class SystemctlConfigParser:
                 if initinfo:
                     m = re.match(r"\S+\s*(\w[\w_-]*):(.*)", line)
                     if m:
-                        self.set(section, m.group(1), m.group(2).strip())
+                        key, val = m.group(1), m.group(2).strip()
+                        self.set(section, key, val)
                 continue
         description = self.get("init.d", "Description", "")
         self.set("Unit", "Description", description)
