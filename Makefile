@@ -161,6 +161,6 @@ up:
 	git pull
 	git fetch origin $(branch):$(branch)
 	git merge $(branch) -m "`git log -1 --pretty=%B -b $(branch)`"
-	test -f files/docker/systemctl.py.bak &&
+	test -f files/docker/systemctl.py.bak && \
 	  mv -v files/docker/systemctl.py.bak \
 	        files/docker/systemctl.py
