@@ -992,10 +992,10 @@ class Systemctl:
         """ read the unit file with a UnitConfParser (sysv or systemd) """
         try:
             conf = self.load_sysd_unit_conf(module)
-            if conf is not None: 
+            if conf is not None:
                 return conf
             conf = self.load_sysv_unit_conf(module)
-            if conf is not None: 
+            if conf is not None:
                 return conf
         except Exception as e:
             logg.warning("%s not loaded: %s", module, e)
