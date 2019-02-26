@@ -11,6 +11,7 @@ test:
 check: init test
 	./systemctl-init-data-test.e
 	./systemctl-init.e list-units
+	./systemctl-init.e list-unit-files
 
 clean:
 	- rm *.e

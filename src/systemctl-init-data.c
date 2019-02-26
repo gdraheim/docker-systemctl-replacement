@@ -63,8 +63,15 @@ str_cpy(str_t into, const str_t str1)
 static inline int
 str_cmp(const str_t str1, const str_t str2)
 {
-  if (str1 == NULL || str2 == NULL) 
-      return str1 == str2;
+  if (str1 == NULL || str2 == NULL) {
+      if (str1 && ! str2) {
+          return -1;
+      }
+      if (! str1 && str2) {
+          return 1;
+      }
+      return 0;
+  }
   return strcmp(str1, str2);
 }
 
@@ -1469,4 +1476,14 @@ str_list_t* restrict
 os_listdir(str_t path)
 {
     return os_path_listdir(path);
+}
+
+str_t restrict
+os_path_basename(str_t path)
+{
+    char* found = strrchr(path, '/');
+    if (found) {
+        return str_dup(found);
+    }
+    return str_dup(path);
 }

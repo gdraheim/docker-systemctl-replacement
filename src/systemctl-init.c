@@ -227,6 +227,12 @@ systemctl_conf_data_free(systemctl_conf_data_t* self)
     }
 }
 
+str_list_t*
+systemctl_conf_data_filenames(systemctl_conf_data_t* self)
+{
+    return &self->files;
+}
+
 str_list_t* restrict
 systemctl_conf_data_sections(systemctl_conf_data_t* self)
 {
@@ -533,6 +539,20 @@ systemctl_conf_free(systemctl_conf_t* self)
     free(self);
 }
 
+str_t
+systemctl_conf_loaded(systemctl_conf_t* self)
+{
+    str_list_t* files = systemctl_conf_data_filenames(&self->data);
+    if (! str_empty(self->masked)) {
+        return "masked";
+    }
+    if (str_list_len(files)) {
+        return "loaded";
+    }
+    return "";
+}
+
+
 void
 systemctl_conf_set(systemctl_conf_t* self, str_t section, str_t name, str_t value)
 {
@@ -571,6 +591,32 @@ systemctl_conf_getbool(systemctl_conf_t* self, str_t section, str_t name, str_t 
         }
     }
     return false;
+}
+
+str_t
+systemctl_conf_filename(systemctl_conf_t* self)
+{
+    str_list_t* files = systemctl_conf_data_filenames(&self->data);
+    if (str_list_len(files)) {
+        return files->data[0];
+    }
+    return NULL;
+}
+
+str_t
+systemctl_conf_name(systemctl_conf_t* self)
+{
+    str_t name;
+    str_init(&name);
+    if (! str_empty(self->module)) {
+        str_set(&name, self->module);
+    }
+    str_t filename = systemctl_conf_filename(self);
+    if (! str_empty(filename)) {
+        str_set(&name, os_path_basename(filename));
+    }
+    str_set(&name, systemctl_conf_get(self, "Unit", "Id", name));
+    return name;
 }
 
 /* ============================================================ */
@@ -958,6 +1004,24 @@ systemctl_get_description_from(systemctl_t* self, systemctl_conf_t* conf)
 }
 
 str_list_list_t* restrict
+systemctl_list_service_unit_basics(systemctl_t* self) 
+{
+    str_list_list_t* result = str_list_list_new();
+    str_t filename = systemctl_unit_file(self, "");
+    for (int i=0; i < self->file_for_unit_sysd.size; ++i) {
+        str_t name = self->file_for_unit_sysd.data[i].key;
+        str_t value = self->file_for_unit_sysd.data[i].value;
+        str_list_list_add3(result, name, "SysD", value);
+    }
+    for (int i=0; i < self->file_for_unit_sysv.size; ++i) {
+        str_t name = self->file_for_unit_sysv.data[i].key;
+        str_t value = self->file_for_unit_sysv.data[i].value;
+        str_list_list_add3(result, name, "SysV", value);
+    }
+    return result;
+}
+
+str_list_list_t* restrict
 systemctl_list_service_units(systemctl_t* self, str_list_t* modules) 
 {
      str_list_list_t* res = str_list_list_new();
@@ -1019,6 +1083,99 @@ systemctl_list_units(systemctl_t* self, str_list_t* modules)
     return result;
 }
 
+str_t systemctl_enabled_from(systemctl_t* self, systemctl_conf_t* conf);
+
+str_list_list_t* restrict
+systemctl_list_service_unit_files(systemctl_t* self, str_list_t* modules)
+{
+     str_list_list_t* res = str_list_list_new();
+     str_dict_t result = str_dict_NULL;
+     str_dict_t enabled = str_dict_NULL;
+     str_list_t* units = systemctl_match_units(self, modules);
+     for (int i = 0; i < units->size; ++i) {
+         str_t unit = units->data[i];
+         systemctl_conf_t* conf = systemctl_get_unit_conf(self, unit);
+         if (conf) {
+             str_dict_add(&result, unit, "loaded");
+             str_dict_add(&enabled, unit, systemctl_enabled_from(self, conf));
+         }
+     }
+     for (int i=0; i < result.size; ++i) {
+          str_t unit = result.data[i].key;
+          str_list_t* line = str_list_new();
+          str_list_adds(line, str_dup(unit));
+          str_list_adds(line, str_dup(str_dict_get(&enabled, unit)));
+          str_list_list_adds(res, line);
+     }
+     str_list_free(units);
+     str_dict_null(&result);
+     str_dict_null(&enabled);
+     return res;
+}
+
+str_list_list_t*
+systemctl_list_target_unit_files(systemctl_t* self, str_list_t* modules) 
+{
+   str_list_list_t* result = str_list_list_new();
+   return result;
+}
+
+str_list_list_t*
+systemctl_show_list_unit_files(systemctl_t* self, str_list_t* modules) 
+{
+    str_list_list_t* result;
+    str_list_t no_modules;
+    str_list_init(&no_modules);
+
+    if (self->use.now) {
+        /* FIXME: no modules filter? */
+        result = systemctl_list_service_unit_basics(self);
+    }
+    else if (!str_cmp(self->use.unit_type, "target")) {
+        /* FIXME: no modules filter? */
+        result = systemctl_list_target_unit_files(self, &no_modules);
+    }
+    else if (!str_cmp(self->use.unit_type, "service")) {
+        /* FIXME: no modules filter? */
+        result = systemctl_list_service_unit_files(self, &no_modules);
+    }
+    else if (!str_empty(self->use.unit_type)) {
+        systemctl_error("unsupported unit --type=%s", self->use.unit_type);
+        result = str_list_list_new();
+    }
+    else {
+        result = systemctl_list_target_unit_files(self, modules);
+        str_list_list_t* result2 = systemctl_list_service_unit_files(self, modules);
+        for (int j=0; j < result2->size; ++j) {
+           str_list_list_add(result, &result2->data[j]);
+        }
+        str_list_list_free(result2);
+    }
+    if (self->use.no_legend) {
+        return result;
+    }
+    str_t found = str_format("%i loaded units listed", str_list_list_len(result));
+    str_list_list_add3(result, "", found, "");
+    str_free(found);
+    return result;
+}
+
+str_t 
+systemctl_enabled(systemctl_t* self, str_t unit)
+{
+    systemctl_conf_t* conf = systemctl_get_unit_conf(self, unit);
+    return systemctl_enabled_from(self, conf);
+}
+
+str_t 
+systemctl_enabled_from(systemctl_t* self, systemctl_conf_t* conf)
+{
+    str_t unit_file = systemctl_conf_filename(conf);
+    return "unknown";
+}
+
+/* ........................................................ */
+
 int
 str_list_print(str_list_t* result)
 {
@@ -1057,6 +1214,14 @@ main(int argc, char** argv)
         str_list_t modules = str_list_NULL;
         str_list_init_from(&modules, argc - 2, argv + 2);
         str_list_list_t* result = systemctl_list_units(&systemctl, &modules);
+        returncode = str_list_list_print(result);
+        fprintf(stderr, "returncode %i", returncode);
+        str_list_list_free(result);
+        str_list_null(&modules);
+    } else if (argc > 1 && !str_cmp(argv[1], "list-unit-files")) {
+        str_list_t modules = str_list_NULL;
+        str_list_init_from(&modules, argc - 2, argv + 2);
+        str_list_list_t* result = systemctl_show_list_unit_files(&systemctl, &modules);
         returncode = str_list_list_print(result);
         fprintf(stderr, "returncode %i", returncode);
         str_list_list_free(result);
