@@ -437,9 +437,10 @@ class SystemctlConfigParser:
             self.set("Install", "Alias", provides)
         # if already in multi-user.target then start it there.
         runlevels = self.get("init.d", "Default-Start","")
-        for item in runlevels.split(" "):
-            if item.strip() in _runlevel_mappings:
-                self.set("Install", "WantedBy", _runlevel_mappings[item.strip()])
+        if runlevels:
+            for item in runlevels.split(" "):
+                if item.strip() in _runlevel_mappings:
+                    self.set("Install", "WantedBy", _runlevel_mappings[item.strip()])
         self.set("Service", "Type", "sysv")
     def filenames(self):
         return self._files
