@@ -27,66 +27,128 @@ char* SYSTEMCTL_DEBUG_AFTER = "";
 char* SYSTEMCTL_EXIT_WHEN_NO_MORE_PROCS = "";
 char* SYSTEMCTL_EXIT_WHEN_NO_MORE_SERVICES = "";
 
-/* defaults for options */
-char** systemctl_extra_vars = { NULL };
-bool systemctl_force = false;
-bool systemctl_full = false;
-bool systemctl_now = false;
-bool systemctl_no_legend = false;
-bool systemctl_no_ask_password = false;
-char* systemctl_preset_mode = "all";
-bool systemctl_quiet = false;
-char* systemctl_root = "";
-char* systemctl_unit_type = NULL;
-char* systemctl_unit_state = NULL;
-char* systemctl_unit_property = NULL;
-// FIXME: bool systemctl_show_all = false;
-// FIXME: bool systemctl_user_mode = false;
+typedef struct systemctl_options 
+{
+    /* defaults for options */
+    char** extra_vars;
+    bool   force;
+    bool   full;
+    bool   now;
+    bool   no_legend;
+    bool   no_ask_password;
+    char*  preset_mode;
+    bool   quiet;
+    char*  root;
+    char*  unit_type;
+    char*  unit_state;
+    char*  unit_property;
+    bool   show_all;
+    bool   user_mode;
+    /* common default paths */
+    char*  default_target;
+    char*  system_folder1;
+    char*  system_folder2;
+    char*  system_folder3;
+    char*  system_folder4;
+    char*  system_folder9;
+    char*  user_folder1;
+    char*  user_folder2;
+    char*  user_folder3;
+    char*  user_folder4;
+    char*  user_folder9;
+    char*  init_folder1;
+    char*  init_folder2;
+    char*  init_folder9;
+    char*  preset_folder1;
+    char*  preset_folder2;
+    char*  preset_folder3;
+    char*  preset_folder4;
+    char*  preset_folder9;
+    /* definitions */
+    int SystemCompatabilityVersion;
+    float MinimumYield;
+    int MinimumTimeoutStartSec;
+    int MinimumTimeoutStopSec;
+    int DefaultTimeoutStartSec;
+    int DefaultTimeoutStopSec;
+    int DefaultMaximumTimeout;
+    int InitLoopSleep;
+    int ProcMaxDepth;
+    int MaxLockWait;
+    char* DefaultPath;
+    str_list_t* ResetLocale;
+    /* system defaults */
+    char* notify_socket_folder;
+    char* pid_file_folder;
+    char* journal_log_folder;
+    char* debug_log;
+    char* extra_log;
+} systemctl_options_t;
 
-/* common default paths */
-char* systemctl_default_target = "multi-user.target";
-char* systemctl_system_folder1 = "/etc/systemd/system";
-char* systemctl_system_folder2 = "/var/run/systemd/system";
-char* systemctl_system_folder3 = "/usr/lib/systemd/system";
-char* systemctl_system_folder4 = "/lib/systemd/system";
-char* systemctl_system_folder9 = NULL;
-char* systemctl_user_folder1 = "~/.config/systemd/user";
-char* systemctl_user_folder2 = "/etc/systemd/user";
-char* systemctl_user_folder3 = "~.local/share/systemd/user";
-char* systemctl_user_folder4 = "/usr/lib/systemd/user";
-char* systemctl_user_folder9 = NULL;
-char* systemctl_init_folder1 = "/etc/init.d";
-char* systemctl_init_folder2 = "/var/run/init.d";
-char* systemctl_init_folder9 = NULL;
-char* systemctl_preset_folder1 = "/etc/systemd/system-preset";
-char* systemctl_preset_folder2 = "/var/run/systemd/system-preset";
-char* systemctl_preset_folder3 = "/usr/lib/systemd/system-preset";
-char* systemctl_preset_folder4 = "/lib/systemd/system-preset";
-char* systemctl_preset_folder9 = NULL;
+void
+systemctl_options_init(systemctl_options_t* self)
+{
+    char** extra_vars = { NULL };
+    self->extra_vars = extra_vars;
+    self->force = false;
+    self->full = false;
+    self->now = false;
+    self->no_legend = false;
+    self->no_ask_password = false;
+    self->preset_mode = "all";
+    self->quiet = false;
+    self->root = "";
+    self->unit_type = NULL;
+    self->unit_state = NULL;
+    self->unit_property = NULL;
+    self->show_all = false;
+    self->user_mode = false;
 
-static int SystemCompatabilityVersion = 219;
-static float MinimumYield = 0.5;
-static int MinimumTimeoutStartSec = 4;
-static int MinimumTimeoutStopSec = 4;
-static int DefaultTimeoutStartSec = 90;
-static int DefaultTimeoutStopSec = 90;
-static int DefaultMaximumTimeout = 200;
-static int InitLoopSleep = 5;
-static int ProcMaxDepth = 100;
-static int MaxLockWait = -1;
-static char DefaultPath[] = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/sbin:/bin";
-static str_t ResetLocale_data[] = {
-  "LANG", "LANGUAGE", "LC_CTYPE", "LC_NUMERIC", "LC_TIME", 
-  "LC_COLLATE", "LC_MONETARY", "LC_MESSAGES", "LC_PAPER", 
-  "LC_NAME", "LC_ADDRESS", "LC_TELEPHONE", "LC_MEASUREMENT", 
-  "LC_IDENTIFICATION", "LC_ALL" };
-static str_list_t ResetLocale = { 15, ResetLocale_data };
-
-char* systemctl_notify_socket_folder = "/var/run/systemd";
-char* systemctl_pid_file_folder = "/var/run";
-char* systemctl_journal_log_folder = "/var/log/journal";
-char* systemctl_debug_log = "/var/log/systemctl.debug.log";
-char* systemctl_extra_log = "/var/log/systemctl.log";
+    self->default_target = "multi-user.target";
+    self->system_folder1 = "/etc/systemd/system";
+    self->system_folder2 = "/var/run/systemd/system";
+    self->system_folder3 = "/usr/lib/systemd/system";
+    self->system_folder4 = "/lib/systemd/system";
+    self->system_folder9 = NULL;
+    self->user_folder1 = "~/.config/systemd/user";
+    self->user_folder2 = "/etc/systemd/user";
+    self->user_folder3 = "~.local/share/systemd/user";
+    self->user_folder4 = "/usr/lib/systemd/user";
+    self->user_folder9 = NULL;
+    self->init_folder1 = "/etc/init.d";
+    self->init_folder2 = "/var/run/init.d";
+    self->init_folder9 = NULL;
+    self->preset_folder1 = "/etc/systemd/system-preset";
+    self->preset_folder2 = "/var/run/systemd/system-preset";
+    self->preset_folder3 = "/usr/lib/systemd/system-preset";
+    self->preset_folder4 = "/lib/systemd/system-preset";
+    self->preset_folder9 = NULL;
+    /* definitions */
+    self->SystemCompatabilityVersion = 219;
+    self->MinimumYield = 0.5;
+    self->MinimumTimeoutStartSec = 4;
+    self->MinimumTimeoutStopSec = 4;
+    self->DefaultTimeoutStartSec = 90;
+    self->DefaultTimeoutStopSec = 90;
+    self->DefaultMaximumTimeout = 200;
+    self->InitLoopSleep = 5;
+    self->ProcMaxDepth = 100;
+    self->MaxLockWait = -1;
+    self->DefaultPath = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/sbin:/bin";
+    char* ResetLocale_data[] = {
+        "LANG", "LANGUAGE", "LC_CTYPE", "LC_NUMERIC", "LC_TIME", 
+        "LC_COLLATE", "LC_MONETARY", "LC_MESSAGES", "LC_PAPER", 
+        "LC_NAME", "LC_ADDRESS", "LC_TELEPHONE", "LC_MEASUREMENT", 
+        "LC_IDENTIFICATION", "LC_ALL" };
+    str_list_t ResetLocale_list = { 15, ResetLocale_data };
+    self->ResetLocale = &ResetLocale_list;
+    /* the systemd default is NOTIFY_SOCKET="/var/run/systemd/notify" */
+    self->notify_socket_folder = "/var/run/systemd";
+    self->pid_file_folder = "/var/run";
+    self->journal_log_folder = "/var/log/journal";
+    self->debug_log = "/var/log/systemctl.debug.log";
+    self->extra_log = "/var/log/systemctl.log";
+}
 
 str_dict_entry_t systemctl_runlevel_data[] = 
 {
@@ -515,7 +577,7 @@ systemctl_conf_getbool(systemctl_conf_t* self, str_t section, str_t name, str_t 
 
 typedef struct systemctl
 {
-    bool _no_legend;
+    systemctl_options_t use;
     str_t _unit_state;
     ptr_dict_t loaded_file_sysv; /* /etc/init.d/name => conf */
     ptr_dict_t loaded_file_sysd; /* /etc/systemd/system/name.service => conf */
@@ -527,10 +589,9 @@ typedef struct systemctl
 } systemctl_t;
 
 void
-systemctl_init(systemctl_t* self)
+systemctl_init(systemctl_t* self, systemctl_options_t* options)
 {
-    self->_no_legend = false;
-    self->_unit_state = NULL;
+    self->use = *options;
     ptr_dict_init(&self->loaded_file_sysv, (free_func_t) systemctl_conf_free);
     ptr_dict_init(&self->loaded_file_sysd, (free_func_t) systemctl_conf_free);
     ptr_dict_init(&self->not_loaded_confs, (free_func_t) systemctl_conf_free);
@@ -547,7 +608,6 @@ systemctl_null(systemctl_t* self)
     ptr_dict_null(&self->not_loaded_confs);
     ptr_dict_null(&self->loaded_file_sysv);
     ptr_dict_null(&self->loaded_file_sysd);
-    str_null(&self->_unit_state);
 }
 
 bool
@@ -560,16 +620,16 @@ str_list_t* restrict
 systemctl_preset_folders(systemctl_t* self)
 {
    str_list_t* result = str_list_new();
-   if (! str_empty(systemctl_preset_folder1)) 
-       str_list_add(result, systemctl_preset_folder1);
-   if (! str_empty(systemctl_preset_folder2)) 
-       str_list_add(result, systemctl_preset_folder2);
-   if (! str_empty(systemctl_preset_folder3)) 
-       str_list_add(result, systemctl_preset_folder3);
-   if (! str_empty(systemctl_preset_folder4)) 
-       str_list_add(result, systemctl_preset_folder4);
-   if (! str_empty(systemctl_preset_folder9)) 
-       str_list_add(result, systemctl_preset_folder9);
+   if (! str_empty(self->use.preset_folder1)) 
+       str_list_add(result, self->use.preset_folder1);
+   if (! str_empty(self->use.preset_folder2)) 
+       str_list_add(result, self->use.preset_folder2);
+   if (! str_empty(self->use.preset_folder3)) 
+       str_list_add(result, self->use.preset_folder3);
+   if (! str_empty(self->use.preset_folder4)) 
+       str_list_add(result, self->use.preset_folder4);
+   if (! str_empty(self->use.preset_folder9)) 
+       str_list_add(result, self->use.preset_folder9);
    return result;
 }
 
@@ -577,12 +637,12 @@ str_list_t* restrict
 systemctl_init_folders(systemctl_t* self)
 {
    str_list_t* result = str_list_new();
-   if (! str_empty(systemctl_init_folder1)) 
-       str_list_add(result, systemctl_init_folder1);
-   if (! str_empty(systemctl_init_folder2)) 
-       str_list_add(result, systemctl_init_folder2);
-   if (! str_empty(systemctl_init_folder9)) 
-       str_list_add(result, systemctl_init_folder9);
+   if (! str_empty(self->use.init_folder1)) 
+       str_list_add(result, self->use.init_folder1);
+   if (! str_empty(self->use.init_folder2)) 
+       str_list_add(result, self->use.init_folder2);
+   if (! str_empty(self->use.init_folder9)) 
+       str_list_add(result, self->use.init_folder9);
    return result;
 }
 
@@ -590,16 +650,16 @@ str_list_t* restrict
 systemctl_user_folders(systemctl_t* self)
 {
    str_list_t* result = str_list_new();
-   if (! str_empty(systemctl_user_folder1)) 
-       str_list_add(result, systemctl_user_folder1);
-   if (! str_empty(systemctl_user_folder2)) 
-       str_list_add(result, systemctl_user_folder2);
-   if (! str_empty(systemctl_user_folder3)) 
-       str_list_add(result, systemctl_user_folder3);
-   if (! str_empty(systemctl_user_folder4)) 
-       str_list_add(result, systemctl_user_folder4);
-   if (! str_empty(systemctl_user_folder9)) 
-       str_list_add(result, systemctl_user_folder9);
+   if (! str_empty(self->use.user_folder1)) 
+       str_list_add(result, self->use.user_folder1);
+   if (! str_empty(self->use.user_folder2)) 
+       str_list_add(result, self->use.user_folder2);
+   if (! str_empty(self->use.user_folder3)) 
+       str_list_add(result, self->use.user_folder3);
+   if (! str_empty(self->use.user_folder4)) 
+       str_list_add(result, self->use.user_folder4);
+   if (! str_empty(self->use.user_folder9)) 
+       str_list_add(result, self->use.user_folder9);
    return result;
 }
 
@@ -607,16 +667,16 @@ str_list_t* restrict
 systemctl_system_folders(systemctl_t* self)
 {
    str_list_t* result = str_list_new();
-   if (! str_empty(systemctl_system_folder1)) 
-       str_list_add(result, systemctl_system_folder1);
-   if (! str_empty(systemctl_system_folder2)) 
-       str_list_add(result, systemctl_system_folder2);
-   if (! str_empty(systemctl_system_folder3)) 
-       str_list_add(result, systemctl_system_folder3);
-   if (! str_empty(systemctl_system_folder4)) 
-       str_list_add(result, systemctl_system_folder4);
-   if (! str_empty(systemctl_system_folder9)) 
-       str_list_add(result, systemctl_system_folder9);
+   if (! str_empty(self->use.system_folder1)) 
+       str_list_add(result, self->use.system_folder1);
+   if (! str_empty(self->use.system_folder2)) 
+       str_list_add(result, self->use.system_folder2);
+   if (! str_empty(self->use.system_folder3)) 
+       str_list_add(result, self->use.system_folder3);
+   if (! str_empty(self->use.system_folder4)) 
+       str_list_add(result, self->use.system_folder4);
+   if (! str_empty(self->use.system_folder9)) 
+       str_list_add(result, self->use.system_folder9);
    return result;
 }
 
@@ -914,12 +974,12 @@ systemctl_list_service_units(systemctl_t* self, str_list_t* modules)
              str_dict_add(&description, unit, systemctl_get_description_from(self, conf));
              str_dict_add(&active, unit, systemctl_get_active_from(self, conf));
              str_dict_add(&substate, unit, systemctl_get_substate_from(self, conf));
-             if (self->_unit_state) {
+             if (self->use.unit_state) {
                  if (! str_list3_contains(
                     str_dict_get(&result, unit),
                     str_dict_get(&active, unit),
                     str_dict_get(&substate, unit),
-                    self->_unit_state)) {
+                    self->use.unit_state)) {
                     str_dict_del(&result, unit);
                  }
              }
@@ -950,7 +1010,7 @@ systemctl_list_units(systemctl_t* self, str_list_t* modules)
 {
     str_t hint = "To show all installed unit files use 'systemctl list-unit-files'.";
     str_list_list_t* result = systemctl_list_service_units(self, modules);
-    if (self->_no_legend) {
+    if (self->use.no_legend) {
         return result;
     }
     str_t found = str_format("%i loaded units listed", str_list_list_len(result));
@@ -985,8 +1045,13 @@ int
 main(int argc, char** argv)
 {
     int returncode = 1;
+    systemctl_options_t options;
+    systemctl_options_init(&options);
+    /* scan options */
+    
+    /* ............................................ */
     systemctl_t systemctl;
-    systemctl_init(&systemctl);
+    systemctl_init(&systemctl, &options);
     
     if (argc > 1 && !str_cmp(argv[1], "list-units")) {
         str_list_t modules = str_list_NULL;
