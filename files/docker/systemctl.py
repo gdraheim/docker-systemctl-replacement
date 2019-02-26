@@ -1086,7 +1086,6 @@ class Systemctl:
             if self._unit_state:
                 if self._unit_state not in [ result[unit], active[unit], substate[unit] ]:
                     del result[unit]
-                    continue
         return [ (unit, result[unit] + " " + active[unit] + " " + substate[unit], description[unit]) for unit in sorted(result) ]
     def show_list_units(self, *modules): # -> [ (unit,loaded,description) ]
         """ [PATTERN]... -- List loaded units.
