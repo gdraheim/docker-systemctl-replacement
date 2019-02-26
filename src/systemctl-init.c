@@ -985,22 +985,37 @@ systemctl_match_units(systemctl_t* self, str_list_t* modules)
     return found;
 }
 
+str_t
+systemctl_expand_special(systemctl_t* self, str_t value, systemctl_conf_t* conf)
+{
+    return str_dup(value);
+}
+
 str_t restrict
 systemctl_get_active_from(systemctl_t* self, systemctl_conf_t* conf)
 {
-    return NULL;
+    return str_dup("");
 }
 
 str_t restrict
 systemctl_get_substate_from(systemctl_t* self, systemctl_conf_t* conf)
 {
-    return NULL;
+    return str_dup("");
 }
 
 str_t restrict
 systemctl_get_description_from(systemctl_t* self, systemctl_conf_t* conf)
 {
-    return NULL;
+    if (! conf) return str_dup("");
+    str_t description = systemctl_conf_get(conf, "Unit", "Description", "");
+    return systemctl_expand_special(self, description, conf);
+}
+
+str_t restrict
+systemctl_get_description(systemctl_t* self, str_t unit)
+{
+   systemctl_conf_t* conf = systemctl_load_unit_conf(self, unit);
+   return systemctl_get_description_from(self, conf);
 }
 
 str_list_list_t* restrict
@@ -1035,9 +1050,9 @@ systemctl_list_service_units(systemctl_t* self, str_list_t* modules)
          systemctl_conf_t* conf = systemctl_get_unit_conf(self, unit);
          if (conf) {
              str_dict_add(&result, unit, "loaded");
-             str_dict_add(&description, unit, systemctl_get_description_from(self, conf));
-             str_dict_add(&active, unit, systemctl_get_active_from(self, conf));
-             str_dict_add(&substate, unit, systemctl_get_substate_from(self, conf));
+             str_dict_adds(&description, unit, systemctl_get_description_from(self, conf));
+             str_dict_adds(&active, unit, systemctl_get_active_from(self, conf));
+             str_dict_adds(&substate, unit, systemctl_get_substate_from(self, conf));
              if (self->use.unit_state) {
                  if (! str_list3_contains(
                     str_dict_get(&result, unit),
