@@ -425,11 +425,13 @@ class SystemctlConfigParser:
                         self.set(section, key, val)
                 continue
         description = self.get("init.d", "Description", "")
-        self.set("Unit", "Description", description)
+        if description:
+            self.set("Unit", "Description", description)
         check = self.get("init.d", "Required-Start","")
-        for item in check.split(" "):
-            if item.strip() in _sysv_mappings:
-                self.set("Unit", "Requires", _sysv_mappings[item.strip()])
+        if check:
+            for item in check.split(" "):
+                if item.strip() in _sysv_mappings:
+                    self.set("Unit", "Requires", _sysv_mappings[item.strip()])
         provides = self.get("init.d", "Provides", "")
         if provides:
             self.set("Install", "Alias", provides)
