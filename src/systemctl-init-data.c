@@ -23,6 +23,7 @@
 #include <stdarg.h>
 #include <dirent.h>
 #include <sys/stat.h>
+#include <limits.h>
 #include "systemctl-logging.h"
 
 static int
@@ -471,6 +472,14 @@ str_list_new()
 {
   str_list_t* self = malloc(sizeof(str_list_t));
   str_list_init(self);
+  return self;
+}
+
+static str_list_t* restrict
+str_list_new0(ssize_t size)
+{
+  str_list_t* self = malloc(sizeof(str_list_t));
+  str_list_init0(self, size);
   return self;
 }
 
@@ -1112,6 +1121,22 @@ str_list_dict_add(str_list_dict_t* self, const str_t key, const str_list_t* valu
 }
 
 static void
+str_list_dict_add1(str_list_dict_t* self, const str_t key, str_t value)
+{
+    str_t data[] = { value };
+    str_list_t list = { 1, data };
+    str_list_dict_add(self, key, &list);
+}
+
+static void
+str_list_dict_adds1(str_list_dict_t* self, const str_t key, str_t value)
+{
+    str_list_t* list = str_list_new0(1);
+    list->data[0] = value;
+    str_list_dict_adds(self, key, list);
+}
+
+static void
 str_list_dict_dict_adds(str_list_dict_dict_t* self, const str_t key, str_list_dict_t* value)
 {
   if (! key) {
@@ -1261,6 +1286,14 @@ str_cut(const str_t self, ssize_t a, ssize_t b) {
   return res;
 }
 
+#define STR_END SSIZE_MAX
+#define STR_LIST_END SSIZE_MAX
+
+static str_t restrict
+str_cut_end(const str_t self, ssize_t a) {
+  return str_cut(self, a, STR_END);
+}
+
 static str_list_t* restrict
 str_list_cut(const str_list_t* self, ssize_t a, ssize_t b)
 {
@@ -1279,6 +1312,11 @@ str_list_cut(const str_list_t* self, ssize_t a, ssize_t b)
     res->data[i] = str_dup(self->data[a+i]);
   }
   return res;
+}
+
+static str_list_t* restrict
+str_list_cut_end(const str_list_t* self, ssize_t a) {
+  return str_list_cut(self, a, STR_LIST_END);
 }
 
 static char str_delim[] = " \r\n\f";

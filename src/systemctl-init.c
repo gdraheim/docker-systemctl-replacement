@@ -12,6 +12,7 @@
 #include <regex.h>
 #include <fnmatch.h>
 #include "systemctl-init-data.c"
+#include "systemctl-options.c"
 
 typedef char systemctl_copyright_t[64];
 typedef char systemctl_version_t[16];
@@ -27,7 +28,7 @@ char* SYSTEMCTL_DEBUG_AFTER = "";
 char* SYSTEMCTL_EXIT_WHEN_NO_MORE_PROCS = "";
 char* SYSTEMCTL_EXIT_WHEN_NO_MORE_SERVICES = "";
 
-typedef struct systemctl_options 
+typedef struct systemctl_settings
 {
     /* defaults for options */
     char** extra_vars;
@@ -83,10 +84,10 @@ typedef struct systemctl_options
     char* journal_log_folder;
     char* debug_log;
     char* extra_log;
-} systemctl_options_t;
+} systemctl_settings_t;
 
 void
-systemctl_options_init(systemctl_options_t* self)
+systemctl_settings_init(systemctl_settings_t* self)
 {
     char** extra_vars = { NULL };
     self->extra_vars = extra_vars;
@@ -623,7 +624,7 @@ systemctl_conf_name(systemctl_conf_t* self)
 
 typedef struct systemctl
 {
-    systemctl_options_t use;
+    systemctl_settings_t use;
     str_t _unit_state;
     ptr_dict_t loaded_file_sysv; /* /etc/init.d/name => conf */
     ptr_dict_t loaded_file_sysd; /* /etc/systemd/system/name.service => conf */
@@ -635,9 +636,9 @@ typedef struct systemctl
 } systemctl_t;
 
 void
-systemctl_init(systemctl_t* self, systemctl_options_t* options)
+systemctl_init(systemctl_t* self, systemctl_settings_t* settings)
 {
-    self->use = *options;
+    self->use = *settings;
     ptr_dict_init(&self->loaded_file_sysv, (free_func_t) systemctl_conf_free);
     ptr_dict_init(&self->loaded_file_sysd, (free_func_t) systemctl_conf_free);
     ptr_dict_init(&self->not_loaded_confs, (free_func_t) systemctl_conf_free);
@@ -1217,13 +1218,16 @@ int
 main(int argc, char** argv)
 {
     int returncode = 1;
+    systemctl_settings_t settings;
+    systemctl_settings_init(&settings);
+    /* scan options */
     systemctl_options_t options;
     systemctl_options_init(&options);
-    /* scan options */
-    
+    systemctl_options_add3(&options, "-v", "--verbose", "increase logging level");
+    systemctl_options_scan(&options, argc, argv);
     /* ............................................ */
     systemctl_t systemctl;
-    systemctl_init(&systemctl, &options);
+    systemctl_init(&systemctl, &settings);
     
     if (argc > 1 && !str_cmp(argv[1], "list-units")) {
         str_list_t modules = str_list_NULL;
@@ -1246,5 +1250,6 @@ main(int argc, char** argv)
     }
 
     systemctl_null(&systemctl);
+    systemctl_options_null(&options);
     return returncode;
 }
