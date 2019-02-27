@@ -10,8 +10,8 @@ test:
 
 check: init test
 	./systemctl-init-data-test.e
-	./systemctl-init.e list-units
 	./systemctl-init.e list-unit-files
+	./systemctl-init.e list-units
 
 clean:
 	- rm *.e

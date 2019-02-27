@@ -28,9 +28,10 @@
 static int
 regmatch(const char* regex, const char* text, size_t nmatch, regmatch_t pmatch[], int cflags) 
 {
-  int res;
+  int res; /* 0 = success */
   regex_t preg;
-  regcomp(&preg, regex, cflags);
+  res = regcomp(&preg, regex, cflags);
+  if (res) systemctl_info("bad regex '%s'", regex);
   res = regexec(&preg, text, nmatch, pmatch, 0);
   regfree(&preg);
   return res;

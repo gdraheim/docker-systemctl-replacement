@@ -377,8 +377,9 @@ systemctl_conf_data_read_sysd(systemctl_conf_data_t* self, str_t filename)
             }
             continue;
         }
-        if (regmatch("(\\w+) *=(.*)", line, m3, m, 0)) {
-            /* logg "bad ini line" */
+        // if (regmatch("(\\w+) *=(.*)", line, m3, m, 0)) {
+        if (regmatch("\\(\\w\\+\\)=\\(.*\\)", line, m3, m, 0)) {
+            systemctl_error("bad ini line: '%s'", line);
             goto done;
         }
         str_sets(&name, str_cut(line, m[1].rm_so, m[1].rm_eo));
