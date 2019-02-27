@@ -2922,7 +2922,7 @@ class Systemctl:
         return self.preset_units(units) and found_all
     def wanted_from(self, conf, default = None):
         if not conf: return default
-        return conf.get("Install", "WantedBy", default, True)
+        return conf.get("Install", "WantedBy", defaul)
     def enablefolders(self, wanted):
         if self.user_mode():
             for folder in self.user_folders():
