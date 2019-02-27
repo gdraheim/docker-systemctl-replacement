@@ -1,15 +1,15 @@
 L = systemctl-logging.c
 
-build: init test
+build: init types
 init:
 	$(CC) systemctl-init.c $L -fsanitize=address -fno-omit-frame-pointer \
 	   -o systemctl-init.e
-test:
-	$(CC) systemctl-init-data-test.c $L -fsanitize=address -fno-omit-frame-pointer \
-	   -o systemctl-init-data-test.e
+types:
+	$(CC) systemctl-types-test.c $L -fsanitize=address -fno-omit-frame-pointer \
+	   -o systemctl-types-test.e
 
-check: init test
-	./systemctl-init-data-test.e
+check: init types
+	./systemctl-types-test.e
 	./systemctl-init.e list-unit-files
 	./systemctl-init.e list-units
 

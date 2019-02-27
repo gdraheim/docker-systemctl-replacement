@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include <regex.h>
 #include <fnmatch.h>
-#include "systemctl-init-data.c"
+#include "systemctl-types.c"
 #include "systemctl-options.c"
 
 typedef char systemctl_copyright_t[64];

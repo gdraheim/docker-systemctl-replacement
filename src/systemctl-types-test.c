@@ -4,7 +4,7 @@
 #include <regex.h>
 #include <stdio.h>
 #include "systemctl-logging.h"
-#include "systemctl-init-data.c"
+#include "systemctl-types.c"
 #include <assert.h>
 
 
