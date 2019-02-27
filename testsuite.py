@@ -2866,8 +2866,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             import sys
             sys.path += [ "{systemctl_py_dir}" ]
             import systemctl
-            data = systemctl.UnitConfigParser({defaults})
-            conf = systemctl.UnitConf(data)
+            data = systemctl.UnitConfParser({defaults})
+            conf = systemctl.SystemctlConf(data)
             print("DEFAULTS", conf.data.defaults())
             print("FILENAME", conf.filename())
             data.read(sys.argv[1])
