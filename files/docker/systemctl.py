@@ -485,7 +485,7 @@ class SystemctlConf:
         return self.data.get(section, name, default)
     def getlist(self, section, name, default = None):
         return self.data.getlist(section, name, default or [])
-    def getbool(self, section, name, default = None)
+    def getbool(self, section, name, default = None):
         value = self.data.get(section, name, default or "no")
         if value:
             if value[0] in "TtYy123456789":
