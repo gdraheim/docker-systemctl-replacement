@@ -377,8 +377,7 @@ systemctl_conf_data_read_sysd(systemctl_conf_data_t* self, str_t filename)
             }
             continue;
         }
-        // if (regmatch("(\\w+) *=(.*)", line, m3, m, 0)) {
-        if (regmatch("\\(\\w\\+\\)=\\(.*\\)", line, m3, m, 0)) {
+        if (regmatch("(\\w+) *=(.*)", line, m3, m, 0)) {
             systemctl_error("bad ini line: '%s'", line);
             goto done;
         }
@@ -434,7 +433,7 @@ systemctl_conf_data_read_sysv(systemctl_conf_data_t* self, str_t filename)
                 initinfo = false;
             }
             if (initinfo) {
-                if (! regmatch("\\S+\\s*\\(\\w[\\w_-]*\\):\\(.*\\)", line, m3, m, 0)) {
+                if (! regmatch("\\S+\\s*(\\w[\\w_-]*):(.*)", line, m3, m, 0)) {
                     str_t key = str_cut(line, m[1].rm_so, m[1].rm_eo);
                     str_t val = str_cut(line, m[1].rm_so, m[1].rm_eo);
                     str_sets(&val, str_strip(val));

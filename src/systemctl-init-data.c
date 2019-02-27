@@ -30,7 +30,7 @@ regmatch(const char* regex, const char* text, size_t nmatch, regmatch_t pmatch[]
 {
   int res; /* 0 = success */
   regex_t preg;
-  res = regcomp(&preg, regex, cflags);
+  res = regcomp(&preg, regex, cflags | REG_EXTENDED);
   if (res) systemctl_info("bad regex '%s'", regex);
   res = regexec(&preg, text, nmatch, pmatch, 0);
   regfree(&preg);
