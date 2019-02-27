@@ -1365,7 +1365,11 @@ class Systemctl:
     def truncate_old(self, filename):
         filetime = self.get_filetime(filename)
         boottime = self.get_boottime()
+        if isinstance(filetime, float):
+            filetime -= 0.1
         if filetime >= boottime :
+            logg.debug("  file time: %s", datetime.datetime.fromtimestamp(filetime))
+            logg.debug("  boot time: %s", datetime.datetime.fromtimestamp(boottime))
             return False # OK
         logg.info("truncate old %s", filename)
         logg.info("  file time: %s", datetime.datetime.fromtimestamp(filetime))
