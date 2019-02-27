@@ -112,9 +112,9 @@ _runlevel_mappings["5"] = "graphical.target"
 _runlevel_mappings["6"] = "reboot.target"
 
 _sysv_mappings = {} # by rule of thumb
+_sysv_mappings["$local_fs"] = "local-fs.target"
 _sysv_mappings["$network"] = "network.target"
 _sysv_mappings["$remote_fs"] = "remote-fs.target"
-_sysv_mappings["$local_fs"] = "local-fs.target"
 _sysv_mappings["$timer"] = "timers.target"
 
 def shell_cmd(cmd):
@@ -277,7 +277,7 @@ def ignore_signals_and_raise_keyboard_interrupt(signame):
     signal.signal(signal.SIGINT, signal.SIG_IGN)
     raise KeyboardInterrupt(signame)
 
-class UnitConfigParser:
+class SystemctlConfigParser:
     """ A *.service files has a structure similar to an *.ini file but it is
         actually not like it. Settings may occur multiple times in each section
         and they create an implicit list. In reality all the settings are
@@ -288,33 +288,33 @@ class UnitConfigParser:
         self._defaults = defaults or {}
         self._dict_type = dict_type or collections.OrderedDict
         self._allow_no_value = allow_no_value
-        self._dict = self._dict_type()
+        self._conf = self._dict_type()
         self._files = []
     def defaults(self):
         return self._defaults
     def sections(self):
-        return list(self._dict.keys())
+        return list(self._conf.keys())
     def add_section(self, section):
-        if section not in self._dict:
-            self._dict[section] = self._dict_type()
+        if section not in self._conf:
+            self._conf[section] = self._dict_type()
     def has_section(self, section):
-        return section in self._dict
+        return section in self._conf
     def has_option(self, section, option):
-        if section not in self._dict:
+        if section not in self._conf:
             return False
-        return option in self._dict[section]
+        return option in self._conf[section]
     def set(self, section, option, value):
-        if section not in self._dict:
-            self._dict[section] = self._dict_type()
-        if option not in self._dict[section]:
-            self._dict[section][option] = [ value ]
+        if section not in self._conf:
+            self._conf[section] = self._dict_type()
+        if option not in self._conf[section]:
+            self._conf[section][option] = [ value ]
         else:
-            self._dict[section][option].append(value)
+            self._conf[section][option].append(value)
         if value is None:
-            self._dict[section][option] = []
+            self._conf[section][option] = []
     def get(self, section, option, default = None, allow_no_value = False):
         allow_no_value = allow_no_value or self._allow_no_value
-        if section not in self._dict:
+        if section not in self._conf:
             if default is not None:
                 return default
             if allow_no_value:
@@ -322,22 +322,22 @@ class UnitConfigParser:
             logg.warning("section {} does not exist".format(section))
             logg.warning("  have {}".format(self.sections()))
             raise AttributeError("section {} does not exist".format(section))
-        if option not in self._dict[section]:
+        if option not in self._conf[section]:
             if default is not None:
                 return default
             if allow_no_value:
                 return None
             raise AttributeError("option {} in {} does not exist".format(option, section))
-        if not self._dict[section][option]: # i.e. an empty list
+        if not self._conf[section][option]: # i.e. an empty list
             if default is not None:
                 return default
             if allow_no_value:
                 return None
             raise AttributeError("option {} in {} is None".format(option, section))
-        return self._dict[section][option][0] # the first line in the list of configs
+        return self._conf[section][option][0] # the first line in the list of configs
     def getlist(self, section, option, default = None, allow_no_value = False):
         allow_no_value = allow_no_value or self._allow_no_value
-        if section not in self._dict:
+        if section not in self._conf:
             if default is not None:
                 return default
             if allow_no_value:
@@ -345,13 +345,13 @@ class UnitConfigParser:
             logg.warning("section {} does not exist".format(section))
             logg.warning("  have {}".format(self.sections()))
             raise AttributeError("section {} does not exist".format(section))
-        if option not in self._dict[section]:
+        if option not in self._conf[section]:
             if default is not None:
                 return default
             if allow_no_value:
                 return []
             raise AttributeError("option {} in {} does not exist".format(option, section))
-        return self._dict[section][option] # returns a list, possibly empty
+        return self._conf[section][option] # returns a list, possibly empty
     def read(self, filename):
         return self.read_sysd(filename)
     def read_sysd(self, filename):
@@ -419,34 +419,38 @@ class UnitConfigParser:
                 if " END INIT INFO" in line: 
                      initinfo = False
                 if initinfo:
-                    m = re.match(r"^\S+\s*(\w[\w_-]*):(.*)", line)
+                    m = re.match(r"\S+\s*(\w[\w_-]*):(.*)", line)
                     if m:
-                        self.set(section, m.group(1), m.group(2).strip())
+                        key, val = m.group(1), m.group(2).strip()
+                        self.set(section, key, val)
                 continue
         description = self.get("init.d", "Description", "")
-        self.set("Unit", "Description", description)
+        if description:
+            self.set("Unit", "Description", description)
         check = self.get("init.d", "Required-Start","")
-        for item in check.split(" "):
-            if item.strip() in _sysv_mappings:
-                self.set("Unit", "Requires", _sysv_mappings[item.strip()])
+        if check:
+            for item in check.split(" "):
+                if item.strip() in _sysv_mappings:
+                    self.set("Unit", "Requires", _sysv_mappings[item.strip()])
         provides = self.get("init.d", "Provides", "")
         if provides:
             self.set("Install", "Alias", provides)
         # if already in multi-user.target then start it there.
         runlevels = self.get("init.d", "Default-Start","")
-        for item in runlevels.split(" "):
-            if item.strip() in _runlevel_mappings:
-                self.set("Install", "WantedBy", _runlevel_mappings[item.strip()])
+        if runlevels:
+            for item in runlevels.split(" "):
+                if item.strip() in _runlevel_mappings:
+                    self.set("Install", "WantedBy", _runlevel_mappings[item.strip()])
         self.set("Service", "Type", "sysv")
     def filenames(self):
         return self._files
 
-# UnitParser = ConfigParser.RawConfigParser
-UnitParser = UnitConfigParser
+# UnitConfParser = ConfigParser.RawConfigParser
+UnitConfParser = SystemctlConfigParser
 
-class UnitConf:
+class SystemctlConf:
     def __init__(self, data, module = None):
-        self.data = data # UnitParser
+        self.data = data # UnitConfParser
         self.env = {}
         self.status = None
         self.masked = None
@@ -477,11 +481,11 @@ class UnitConf:
         return self.get("Unit", "Id", name)
     def set(self, section, name, value):
         return self.data.set(section, name, value)
-    def get(self, section, name, default):
-        return self.data.get(section, name, default)
-    def getlist(self, section, name, default = None);
-        return self.data.getlist(section, name, default or [])
-    def getbool(self, section, name, default = None)
+    def get(self, section, name, default, allow_no_value = False):
+        return self.data.get(section, name, default, allow_no_value)
+    def getlist(self, section, name, default = None, allow_no_value = False):
+        return self.data.getlist(section, name, default or [], allow_no_value)
+    def getbool(self, section, name, default = None):
         value = self.data.get(section, name, default or "no")
         if value:
             if value[0] in "TtYy123456789":
@@ -795,6 +799,10 @@ class Systemctl:
         self._user_getlogin = os_getlogin()
         self._log_file = {} # init-loop
         self._log_hold = {} # init-loop
+    def user(self):
+        return self._user_getlogin
+    def user_mode(self):
+        return self._user_mode
     def user_folder(self):
         for folder in self.user_folders():
             if folder: return folder
@@ -803,14 +811,16 @@ class Systemctl:
         for folder in self.system_folders():
             if folder: return folder
         raise Exception("did not find any systemd/system folder")
-    def sysd_folders(self):
-        """ if --user then these folders are preferred """
-        if self.user_mode():
-            for folder in self.user_folders():
-                yield folder
-        if True:
-            for folder in self.system_folders():
-                yield folder
+    def init_folders(self):
+        if _init_folder1: yield _init_folder1
+        if _init_folder2: yield _init_folder2
+        if _init_folder9: yield _init_folder9
+    def preset_folders(self):
+        if _preset_folder1: yield _preset_folder1
+        if _preset_folder2: yield _preset_folder2
+        if _preset_folder3: yield _preset_folder3
+        if _preset_folder4: yield _preset_folder4
+        if _preset_folder9: yield _preset_folder9
     def user_folders(self):
         if _user_folder1: yield os.path.expanduser(_user_folder1)
         if _user_folder2: yield os.path.expanduser(_user_folder2)
@@ -823,23 +833,14 @@ class Systemctl:
         if _system_folder3: yield _system_folder3
         if _system_folder4: yield _system_folder4
         if _system_folder9: yield _system_folder9
-    def init_folders(self):
-        if _init_folder1: yield _init_folder1
-        if _init_folder2: yield _init_folder2
-        if _init_folder9: yield _init_folder9
-    def preset_folders(self):
-        if _preset_folder1: yield _preset_folder1
-        if _preset_folder2: yield _preset_folder2
-        if _preset_folder3: yield _preset_folder3
-        if _preset_folder4: yield _preset_folder4
-        if _preset_folder9: yield _preset_folder9
-    def unit_file(self, module = None): # -> filename?
-        """ file path for the given module (sysv or systemd) """
-        path = self.unit_sysd_file(module)
-        if path is not None: return path
-        path = self.unit_sysv_file(module)
-        if path is not None: return path
-        return None
+    def sysd_folders(self):
+        """ if --user then these folders are preferred """
+        if self.user_mode():
+            for folder in self.user_folders():
+                yield folder
+        if True:
+            for folder in self.system_folders():
+                yield folder
     def scan_unit_sysd_files(self, module = None): # -> [ unit-names,... ]
         """ reads all unit files, returns the first filename for the unit given """
         if self._file_for_unit_sysd is None:
@@ -860,14 +861,6 @@ class Systemctl:
                         self._file_for_unit_sysd[service_name] = path
             logg.debug("found %s sysd files", len(self._file_for_unit_sysd))
         return list(self._file_for_unit_sysd.keys())
-    def unit_sysd_file(self, module = None): # -> filename?
-        """ file path for the given module (systemd) """
-        self.scan_unit_sysd_files()
-        if module and module in self._file_for_unit_sysd:
-            return self._file_for_unit_sysd[module]
-        if module and unit_of(module) in self._file_for_unit_sysd:
-            return self._file_for_unit_sysd[unit_of(module)]
-        return None
     def scan_unit_sysv_files(self, module = None): # -> [ unit-names,... ]
         """ reads all init.d files, returns the first filename when unit is a '.service' """
         if self._file_for_unit_sysv is None:
@@ -888,6 +881,14 @@ class Systemctl:
                         self._file_for_unit_sysv[service_name] = path
             logg.debug("found %s sysv files", len(self._file_for_unit_sysv))
         return list(self._file_for_unit_sysv.keys())
+    def unit_sysd_file(self, module = None): # -> filename?
+        """ file path for the given module (systemd) """
+        self.scan_unit_sysd_files()
+        if module and module in self._file_for_unit_sysd:
+            return self._file_for_unit_sysd[module]
+        if module and unit_of(module) in self._file_for_unit_sysd:
+            return self._file_for_unit_sysd[unit_of(module)]
+        return None
     def unit_sysv_file(self, module = None): # -> filename?
         """ file path for the given module (sysv) """
         self.scan_unit_sysv_files()
@@ -896,6 +897,13 @@ class Systemctl:
         if module and unit_of(module) in self._file_for_unit_sysv:
             return self._file_for_unit_sysv[unit_of(module)]
         return None
+    def unit_file(self, module = None): # -> filename?
+        """ file path for the given module (sysv or systemd) """
+        path = self.unit_sysd_file(module)
+        if path is not None: return path
+        path = self.unit_sysv_file(module)
+        if path is not None: return path
+        return None
     def is_sysv_file(self, filename):
         """ for routines that have a special treatment for init.d services """
         self.unit_file() # scan all
@@ -903,10 +911,6 @@ class Systemctl:
         if filename in self._file_for_unit_sysd.values(): return False
         if filename in self._file_for_unit_sysv.values(): return True
         return None # not True
-    def user(self):
-        return self._user_getlogin
-    def user_mode(self):
-        return self._user_mode
     def is_user_conf(self, conf):
         if not conf:
             return False # no such conf >> ignored
@@ -930,18 +934,6 @@ class Systemctl:
             logg.debug("%s with User=%s >> accept", conf.filename(), user)
             return False
         return True
-    def load_unit_conf(self, module): # -> conf | None(not-found)
-        """ read the unit file with a UnitParser (sysv or systemd) """
-        try:
-            data = self.load_sysd_unit_conf(module)
-            if data is not None: 
-                return data
-            data = self.load_sysv_unit_conf(module)
-            if data is not None: 
-                return data
-        except Exception as e:
-            logg.warning("%s not loaded: %s", module, e)
-        return None
     def find_drop_in_files(self, unit):
         """ search for some.service.d/extra.conf files """
         result = {}
@@ -964,7 +956,7 @@ class Systemctl:
                     result[name] = path
         return result
     def load_sysd_unit_conf(self, module): # -> conf?
-        """ read the unit file with a UnitParser (systemd) """
+        """ read the unit file with a UnitConfParser (systemd) """
         path = self.unit_sysd_file(module)
         if not path: return None
         if path in self._loaded_file_sysd:
@@ -973,39 +965,51 @@ class Systemctl:
         if os.path.islink(path) and os.readlink(path).startswith("/dev"):
             masked = os.readlink(path)
         drop_in_files = {}
-        unit = UnitParser()
+        data = UnitConfParser()
         if not masked:
-            unit.read_sysd(path)
+            data.read_sysd(path)
             drop_in_files = self.find_drop_in_files(os.path.basename(path))
             # load in alphabetic order, irrespective of location
             for name in sorted(drop_in_files):
                 path = drop_in_files[name]
-                unit.read_sysd(path)
-        conf = UnitConf(unit, module)
+                data.read_sysd(path)
+        conf = SystemctlConf(data, module)
         conf.masked = masked
         conf.drop_in_files = drop_in_files
         self._loaded_file_sysd[path] = conf
         return conf
     def load_sysv_unit_conf(self, module): # -> conf?
-        """ read the unit file with a UnitParser (sysv) """
+        """ read the unit file with a UnitConfParser (sysv) """
         path = self.unit_sysv_file(module)
         if not path: return None
         if path in self._loaded_file_sysv:
             return self._loaded_file_sysv[path]
-        unit = UnitParser()
-        unit.read_sysv(path)
-        conf = UnitConf(unit, module)
+        data = UnitConfParser()
+        data.read_sysv(path)
+        conf = SystemctlConf(data, module)
         self._loaded_file_sysv[path] = conf
         return conf
+    def load_unit_conf(self, module): # -> conf | None(not-found)
+        """ read the unit file with a UnitConfParser (sysv or systemd) """
+        try:
+            conf = self.load_sysd_unit_conf(module)
+            if conf is not None:
+                return conf
+            conf = self.load_sysv_unit_conf(module)
+            if conf is not None:
+                return conf
+        except Exception as e:
+            logg.warning("%s not loaded: %s", module, e)
+        return None
     def default_unit_conf(self, module): # -> conf
         """ a unit conf that can be printed to the user where
             attributes are empty and loaded() is False """
-        data = UnitParser()
+        data = UnitConfParser()
         data.set("Unit","Id", module)
         data.set("Unit", "Names", module)
         data.set("Unit", "Description", "NOT-FOUND "+module)
         # assert(not data.loaded())
-        return UnitConf(data, module)
+        return SystemctlConf(data, module)
     def get_unit_conf(self, module): # -> conf (conf | default-conf)
         """ accept that a unit does not exist 
             and return a unit conf that says 'not-loaded' """
@@ -1013,19 +1017,6 @@ class Systemctl:
         if conf is not None:
             return conf
         return self.default_unit_conf(module)
-    def match_units(self, modules = None, suffix=".service"): # -> [ units,.. ]
-        """ Helper for about any command with multiple units which can
-            actually be glob patterns on their respective unit name. 
-            It returns all modules if no modules pattern were given.
-            Also a single string as one module pattern may be given. """
-        found = []
-        for unit in self.match_sysd_units(modules, suffix):
-            if unit not in found:
-                found.append(unit)
-        for unit in self.match_sysv_units(modules, suffix):
-            if unit not in found:
-                found.append(unit)
-        return found
     def match_sysd_units(self, modules = None, suffix=".service"): # -> generate[ unit ]
         """ make a file glob on all known units (systemd areas).
             It returns all modules if no modules pattern were given.
@@ -1052,6 +1043,19 @@ class Systemctl:
                 yield item
             elif [ module for module in modules if module+suffix == item ]:
                 yield item
+    def match_units(self, modules = None, suffix=".service"): # -> [ units,.. ]
+        """ Helper for about any command with multiple units which can
+            actually be glob patterns on their respective unit name. 
+            It returns all modules if no modules pattern were given.
+            Also a single string as one module pattern may be given. """
+        found = []
+        for unit in self.match_sysd_units(modules, suffix):
+            if unit not in found:
+                found.append(unit)
+        for unit in self.match_sysv_units(modules, suffix):
+            if unit not in found:
+                found.append(unit)
+        return found
     def list_service_unit_basics(self):
         """ show all the basic loading state of services """
         filename = self.unit_file() # scan all
@@ -1083,7 +1087,6 @@ class Systemctl:
             if self._unit_state:
                 if self._unit_state not in [ result[unit], active[unit], substate[unit] ]:
                     del result[unit]
-                    continue
         return [ (unit, result[unit] + " " + active[unit] + " " + substate[unit], description[unit]) for unit in sorted(result) ]
     def show_list_units(self, *modules): # -> [ (unit,loaded,description) ]
         """ [PATTERN]... -- List loaded units.
@@ -1308,7 +1311,7 @@ class Systemctl:
             logg.debug("reading %s", status_file)
             for line in open(status_file):
                 if line.strip(): 
-                    m = re.match(r"^(\w+)[:=](.*)", line)
+                    m = re.match(r"(\w+)[:=](.*)", line)
                     if m:
                         key, value = m.group(1), m.group(2)
                         if key.strip():
@@ -1362,7 +1365,11 @@ class Systemctl:
     def truncate_old(self, filename):
         filetime = self.get_filetime(filename)
         boottime = self.get_boottime()
+        if isinstance(filetime, float):
+            filetime -= 0.1
         if filetime >= boottime :
+            logg.debug("  file time: %s", datetime.datetime.fromtimestamp(filetime))
+            logg.debug("  boot time: %s", datetime.datetime.fromtimestamp(boottime))
             return False # OK
         logg.info("truncate old %s", filename)
         logg.info("  file time: %s", datetime.datetime.fromtimestamp(filetime))
