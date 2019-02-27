@@ -82,6 +82,7 @@ str_cmp(const str_t str1, const str_t str2)
   return strcmp(str1, str2);
 }
 
+
 /* types */
 
 typedef str_t str_list_entry_t;
@@ -710,6 +711,41 @@ static bool
 ptr_dict_contains(const ptr_dict_t* self, const str_t key)
 {
   return ptr_dict_find(self, key) >= 0;
+}
+
+/* equal */
+static inline bool
+str_equal(const str_t str1, const str_t str2)
+{
+    return ! str_cmp(str1, str2);
+}
+
+static bool
+str_list_equal(const str_list_t* list1, const str_list_t* list2)
+{
+    if (list1->size != list2->size) {
+        return false;
+    }
+    for (int i=0; i < list1->size; ++i) {
+        if (str_cmp(list1->data[i], list2->data[i])) {
+            return false;
+        }
+    }
+    return true;
+}
+
+static bool
+str_list_list_equal(const str_list_list_t* list1, const str_list_list_t* list2)
+{
+    if (list1->size != list2->size) {
+        return false;
+    }
+    for (int i=0; i < list1->size; ++i) {
+        if (! str_list_equal(&list1->data[i], &list2->data[i])) {
+            return false;
+        }
+    }
+    return true;
 }
 
 /* keys */

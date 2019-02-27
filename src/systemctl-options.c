@@ -103,7 +103,7 @@ systemctl_options_scan(systemctl_options_t* self, int argc, char** argv)
         }
         if (str_empty(argv[i]))
             continue;
-        if (! str_cmp(argv[i], "--")) {
+        if (str_equal(argv[i], "--")) {
             stopargs = true;
             continue;
         } else if (str_startswith(argv[i], "--")) {

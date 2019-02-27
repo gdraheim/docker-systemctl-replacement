@@ -945,7 +945,7 @@ systemctl_match_sysd_units(systemctl_t* self, str_list_t* modules)
                    str_list_add(result, item);
                 } else {
                     str_t module_suffix = str_dup2(module, ".service");
-                    if (! str_cmp(module_suffix, item)) {
+                    if (str_equal(module_suffix, item)) {
                         str_list_add(result, item);
                     }
                 }
@@ -1147,11 +1147,11 @@ systemctl_show_list_unit_files(systemctl_t* self, str_list_t* modules)
         /* FIXME: no modules filter? */
         result = systemctl_list_service_unit_basics(self);
     }
-    else if (!str_cmp(self->use.unit_type, "target")) {
+    else if (str_equal(self->use.unit_type, "target")) {
         /* FIXME: no modules filter? */
         result = systemctl_list_target_unit_files(self, &no_modules);
     }
-    else if (!str_cmp(self->use.unit_type, "service")) {
+    else if (str_equal(self->use.unit_type, "service")) {
         /* FIXME: no modules filter? */
         result = systemctl_list_service_unit_files(self, &no_modules);
     }
@@ -1229,7 +1229,7 @@ main(int argc, char** argv)
     systemctl_t systemctl;
     systemctl_init(&systemctl, &settings);
     
-    if (argc > 1 && !str_cmp(argv[1], "list-units")) {
+    if (argc > 1 && str_equal(argv[1], "list-units")) {
         str_list_t modules = str_list_NULL;
         str_list_init_from(&modules, argc - 2, argv + 2);
         str_list_list_t* result = systemctl_list_units(&systemctl, &modules);
@@ -1237,7 +1237,7 @@ main(int argc, char** argv)
         fprintf(stderr, "returncode %i", returncode);
         str_list_list_free(result);
         str_list_null(&modules);
-    } else if (argc > 1 && !str_cmp(argv[1], "list-unit-files")) {
+    } else if (argc > 1 && str_equal(argv[1], "list-unit-files")) {
         str_list_t modules = str_list_NULL;
         str_list_init_from(&modules, argc - 2, argv + 2);
         str_list_list_t* result = systemctl_show_list_unit_files(&systemctl, &modules);
