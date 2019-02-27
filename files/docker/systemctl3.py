@@ -481,11 +481,11 @@ class SystemctlConf:
         return self.get("Unit", "Id", name)
     def set(self, section, name, value):
         return self.data.set(section, name, value)
-    def get(self, section, name, default, allow_no_value = False):
-        return self.data.get(section, name, default, allow_no_value)
-    def getlist(self, section, name, default = None, allow_no_value = False):
-        return self.data.getlist(section, name, default or [], allow_no_value)
-    def getbool(self, section, name, default = None):
+    def get(self, section, name, default):
+        return self.data.get(section, name, default)
+    def getlist(self, section, name, default = None):
+        return self.data.getlist(section, name, default or [])
+    def getbool(self, section, name, default = None)
         value = self.data.get(section, name, default or "no")
         if value:
             if value[0] in "TtYy123456789":
