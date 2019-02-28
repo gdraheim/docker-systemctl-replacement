@@ -736,7 +736,7 @@ ptr_dict_find(const ptr_dict_t* self, const str_t key)
        return c;
     } else if (comp < 0) {
        ///systemctl_info("'%s' lower than '%s' at [%i]", key, self->data[c].key, c);
-       ssize_t b = c/2;
+       ssize_t b = a+(c-a)/2;
        if (b == c) b -= 1;
        if (b < a) { 
            ///systemctl_info("'%s' lower than '%s' at [%i] -> return -1", key, self->data[c].key, c);
@@ -778,7 +778,7 @@ ptr_list_dict_find(const ptr_list_dict_t* self, const str_t key)
        return c;
     } else if (comp < 0) {
        ///systemctl_info("'%s' lower than '%s' at [%i]", key, self->data[c].key, c);
-       ssize_t b = c/2;
+       ssize_t b = a+(c-a)/2;
        if (b == c) b -= 1;
        if (b < a) { 
            ///systemctl_info("'%s' lower than '%s' at [%i] -> return -1", key, self->data[c].key, c);
@@ -826,7 +826,7 @@ ptr_dict_find_pos(const ptr_dict_t* self, const str_t key)
        return c;
     } else if (comp < 0) {
        ///systemctl_info("'%s' lower than '%s' at [%i]", key, self->data[c].key, c);
-       ssize_t b = c/2;
+       ssize_t b = a+(c-a)/2;
        if (b == c) b -= 1;
        if (b < a) { 
            ///systemctl_info("'%s' lower than '%s' at [%i] -> return %i", key, self->data[c].key, c, c);
@@ -871,7 +871,7 @@ ptr_list_dict_find_pos(const ptr_list_dict_t* self, const str_t key)
        return c;
     } else if (comp < 0) {
        ///systemctl_info("'%s' lower than '%s' at [%i]", key, self->data[c].key, c);
-       ssize_t b = c/2;
+       ssize_t b = a+(c-a)/2;
        if (b == c) b -= 1;
        if (b < a) { 
            ///systemctl_info("'%s' lower than '%s' at [%i] -> return %i", key, self->data[c].key, c, c);
@@ -1432,7 +1432,17 @@ str_list_dict_adds(str_list_dict_t* self, const str_t key, str_list_t* value)
   str_list_free(value);
   // str_list_init(&self->data[pos].value);
   // str_list_sets(&self->data[pos].value, value);
-  ///systemctl_info_str_list_dict("str_list_dict_adds", self);
+  if (pos > 0 && 0 > str_cmp(self->data[pos].key, self->data[pos-1].key)) {
+      systemctl_error("new pos[%i] '%s' is smaller than pos[%i-1] '%s'", 
+         pos, self->data[pos].key, pos, self->data[pos-1].key);
+      systemctl_info_str_list_dict("str_list_dict_adds", self);
+  } 
+  if (pos < self->size-1 && 0 < str_cmp(self->data[pos].key, self->data[pos+1].key)) {
+      systemctl_error("new pos[%i] '%s' is bigger than pos[%i+1] '%s'", 
+         pos, self->data[pos].key, pos, self->data[pos+1].key);
+      systemctl_info_str_list_dict("str_list_dict_adds", self);
+  } 
+
 }
 
 static void
@@ -1482,7 +1492,16 @@ str_list_dict_dict_adds(str_list_dict_dict_t* self, const str_t key, str_list_di
   value->size = 0;
   value->data = NULL;
   str_list_dict_free(value);
-  ///systemctl_info_str_list_dict_dict("str_list_dict_dict_adds", self);
+  if (pos > 0 && 0 > str_cmp(self->data[pos].key, self->data[pos-1].key)) {
+      systemctl_error("new pos[%i] '%s' is smaller than pos[%i-1] '%s'", 
+         pos, self->data[pos].key, pos, self->data[pos-1].key);
+      systemctl_info_str_list_dict_dict("str_list_dict_dict_adds", self);
+  } 
+  if (pos < self->size-1 && 0 < str_cmp(self->data[pos].key, self->data[pos+1].key)) {
+      systemctl_error("new pos[%i] '%s' is bigger than pos[%i+1] '%s'", 
+         pos, self->data[pos].key, pos, self->data[pos+1].key);
+      systemctl_info_str_list_dict_dict("str_list_dict_dict_adds", self);
+  } 
 }
 
 static void

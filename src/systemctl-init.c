@@ -352,7 +352,6 @@ systemctl_conf_data_read_sysd(systemctl_conf_data_t* self, str_t filename)
                 str_sets(&text, str_dup2(text, "\n"));
                 continue;
             } else {
-                systemctl_info("set from nextline");
                 systemctl_conf_data_set(self, section, name, text);
                 nextline = false;
                 continue;
