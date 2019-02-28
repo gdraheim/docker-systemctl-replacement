@@ -12,6 +12,7 @@ check: init types
 	./systemctl-types-test.e
 	./systemctl-init.e list-unit-files
 	./systemctl-init.e list-units
+	./systemctl-init.e status cron
 
 clean:
 	- rm *.e

@@ -1195,6 +1195,50 @@ systemctl_enabled_from(systemctl_t* self, systemctl_conf_t* conf)
     return "unknown";
 }
 
+str_list_t* restrict
+systemctl_status_units(systemctl_t* self, str_list_t* units);
+
+str_list_t* restrict
+systemctl_status_modules(systemctl_t* self, str_list_t* modules)
+{
+    bool found_all = true;
+    str_list_t units;
+    str_list_init(&units);
+    for (int m=0; m < modules->size; ++m) {
+        str_t module = modules->data[m];
+        str_t match_data[] = { module };
+        str_list_t match_list = { 1, match_data }; /* FIXME */
+        str_list_t* matched = systemctl_match_units(self, &match_list);
+        if (str_list_empty(matched)) {
+            systemctl_error("Unit %s could not be found.", module);
+            found_all = false;
+            str_list_free(matched);
+            continue;
+        }
+        for (int u=0; u < matched->size; ++u) {
+            str_t unit = matched->data[u];
+            if (!str_list_contains(&units, unit)) {
+                str_list_add(&units, unit);
+            }
+        }
+        str_list_free(matched);
+    }
+    str_list_t* result = systemctl_status_units(self, &units);
+    str_list_null(&units);
+    return result;
+}
+
+str_list_t* restrict
+systemctl_status_units(systemctl_t* self, str_list_t* units)
+{
+    str_list_t* result = str_list_new();
+    for (int u=0; u < units->size; ++u) {
+        str_t unit = units->data[u];
+        str_list_add(result, unit);
+    }
+    return result;
+}
+
 /* ........................................................ */
 
 int
@@ -1249,6 +1293,14 @@ main(int argc, char** argv)
         returncode = str_list_list_print(result);
         fprintf(stderr, "returncode %i", returncode);
         str_list_list_free(result);
+        str_list_null(&modules);
+    } else if (argc > 1 && str_equal(argv[1], "status")) {
+        str_list_t modules = str_list_NULL;
+        str_list_init_from(&modules, argc - 2, argv + 2);
+        str_list_t* result = systemctl_status_modules(&systemctl, &modules);
+        returncode = str_list_print(result);
+        fprintf(stderr, "returncode %i", returncode);
+        str_list_free(result);
         str_list_null(&modules);
     } else {
         fprintf(stderr, "unknown command '%s'", argv[1]);
