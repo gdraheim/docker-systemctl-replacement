@@ -270,6 +270,15 @@ systemctl_conf_data_sets(systemctl_conf_data_t* self, str_t section, str_t optio
     if (! options1) systemctl_conf_data_add_section(self, section);
     str_list_dict_t* options2 = str_list_dict_dict_get(&self->conf, section);
     str_list_t* values1 = str_list_dict_get(options2, option);
+    if (value == NULL)
+    {
+        if (values1) {
+           str_list_null(values1);
+           str_list_init(values1);
+        }
+        return true;
+    }
+
     if (values1) {
         str_list_adds(values1, value);
     } else {
@@ -277,12 +286,7 @@ systemctl_conf_data_sets(systemctl_conf_data_t* self, str_t section, str_t optio
         str_list_adds(values, value);
         str_list_dict_adds(options2, option, values);
     }
-    if (value == NULL)
-    {
-        str_list_t* values2 = str_list_dict_get(options2, option);
-        str_list_null(values2);
-        str_list_init(values2);
-    }
+    return true;
 }
 
 bool
@@ -348,6 +352,7 @@ systemctl_conf_data_read_sysd(systemctl_conf_data_t* self, str_t filename)
                 str_sets(&text, str_dup2(text, "\n"));
                 continue;
             } else {
+                systemctl_info("set from nextline");
                 systemctl_conf_data_set(self, section, name, text);
                 nextline = false;
                 continue;
@@ -389,8 +394,9 @@ systemctl_conf_data_read_sysd(systemctl_conf_data_t* self, str_t filename)
             str_sets(&text, str_dup2(text, "\n"));
         } else {
             /* hint: an empty line shall reset the value-list */
-            if (! str_len(text)) 
+            if (! str_len(text)) {
                 str_sets(&text, NULL);
+            }
             systemctl_conf_data_set(self, section, name, text);
         }
     }

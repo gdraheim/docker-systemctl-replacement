@@ -85,7 +85,14 @@ str_cmp(const str_t str1, const str_t str2)
 
 /* types */
 
+typedef void* ptr_list_entry_t;
 typedef str_t str_list_entry_t;
+
+typedef struct ptr_list 
+{
+  ssize_t size;
+  ptr_list_entry_t* data;
+} ptr_list_t;
 
 typedef struct str_list 
 {
@@ -141,6 +148,12 @@ typedef struct ptr_dict_entry
   void* value;
 } ptr_dict_entry_t;
 
+typedef struct ptr_list_dict_entry 
+{
+  str_t key;
+  ptr_list_t value;
+} ptr_list_dict_entry_t;
+
 typedef void (*free_func_t)(void*);
 
 typedef struct ptr_dict
@@ -149,6 +162,13 @@ typedef struct ptr_dict
   ptr_dict_entry_t* data;
   free_func_t free;
 } ptr_dict_t;
+
+typedef struct ptr_list_dict
+{
+  ssize_t size;
+  ptr_list_dict_entry_t* data;
+  free_func_t free;
+} ptr_list_dict_t;
 
 /* init */
 
@@ -516,6 +536,79 @@ str_list_dict_dict_new()
   return self;
 }
 
+/* info */
+
+void
+systemctl_info_ptr_dict(str_t msg, const ptr_dict_t* self)
+{
+  systemctl_info("ptr_dict=%p (%s)", self->data, msg);
+  for (ssize_t i=0; i < self->size; ++i) {
+      systemctl_info("ptr_dict[%i]=%p", i, self->data[i].key);
+      systemctl_info("ptr_dict[%i]='%s'", i, self->data[i].key);
+      if (i == 8) {
+         systemctl_info("ptr_dict[.]...");
+         break;
+      }
+  }
+}
+
+void
+systemctl_info_ptr_list_dict(str_t msg, const ptr_list_dict_t* self)
+{
+  systemctl_info("ptr_list_dict=%p (%s)", self->data, msg);
+  for (ssize_t i=0; i < self->size; ++i) {
+      systemctl_info("ptr_list_dict[%i]=%p", i, self->data[i].key);
+      systemctl_info("ptr_list_dict[%i]='%s'", i, self->data[i].key);
+      if (i == 8) {
+         systemctl_info("ptr_list_dict[.]...");
+         break;
+      }
+  }
+}
+
+void
+systemctl_info_str_dict(str_t msg, const str_dict_t* self)
+{
+  systemctl_info("str_dict=%p (%s)", self->data, msg);
+  for (ssize_t i=0; i < self->size; ++i) {
+      systemctl_info("str_dict[%i]=%p", i, self->data[i].key);
+      systemctl_info("str_dict[%i]='%s'", i, self->data[i].key);
+      if (i == 8) {
+         systemctl_info("str_dict[.]...");
+         break;
+      }
+  }
+}
+
+void
+systemctl_info_str_list_dict(str_t msg, const str_list_dict_t* self)
+{
+  systemctl_info("str_list_dict=%p (%s)", self->data, msg);
+  for (ssize_t i=0; i < self->size; ++i) {
+      systemctl_info("str_list_dict[%i]=%p", i, self->data[i].key);
+      systemctl_info("str_list_dict[%i]='%s'", i, self->data[i].key);
+      if (i == 8) {
+         systemctl_info("str_list_dict[.]...");
+         break;
+      }
+  }
+}
+
+void
+systemctl_info_str_list_dict_dict(str_t msg, const str_list_dict_dict_t* self)
+{
+  systemctl_info("str_list_dict_dict=%p (%s)", self->data, msg);
+  for (ssize_t i=0; i < self->size; ++i) {
+      systemctl_info("str_list_dict_dict[%i]=%p", i, self->data[i].key);
+      systemctl_info("str_list_dict_dict[%i]='%s'", i, self->data[i].key);
+      if (i == 8) {
+         systemctl_info("str_list_dict_dict[.]...");
+         break;
+      }
+  }
+}
+
+
 /* len */
 
 static inline ssize_t
@@ -622,48 +715,230 @@ str_list_find(const str_list_t* self, const str_t key)
   return -1;
 }
 
+/* return the index with an equal or -1 if the key was not found. */
+static ssize_t
+ptr_dict_find(const ptr_dict_t* self, const str_t key)
+{
+  if (self->data == NULL)
+     return -1;
+  if (self->size == 0)
+     return -1;
+  ///systemctl_info("'%s' dict_find size=%i", key, self->size);
+  ///systemctl_info_ptr_dict("ptr_dict_find", self);
+  /* binary search */
+  ssize_t a=0;
+  ssize_t e=self->size;
+  ssize_t c=e/2;
+  while(true) {
+    int comp = str_cmp(key, self->data[c].key);
+    if (comp == 0) {
+       ///systemctl_info("'%s' equal to '%s' at [%i] -> return %i", key, self->data[c].key, c, c);
+       return c;
+    } else if (comp < 0) {
+       ///systemctl_info("'%s' lower than '%s' at [%i]", key, self->data[c].key, c);
+       ssize_t b = c/2;
+       if (b == c) b -= 1;
+       if (b < a) { 
+           ///systemctl_info("'%s' lower than '%s' at [%i] -> return -1", key, self->data[c].key, c);
+           return -1;
+       }
+       e = c;
+       c = b;
+    } else if (comp > 0) {
+       ///systemctl_info("'%s' bigger than '%s' at [%i]", key, self->data[c].key, c);
+       ssize_t d = c+(e-c)/2;
+       if (d == c) d += 1;
+       if (d >= e) {
+           ///systemctl_info("'%s' bigger than '%s' at [%i] -> return -1", key, self->data[c].key, c);
+           return -1;
+       }
+       a = c;
+       c = d;
+    }
+  }
+}
+
+static ssize_t
+ptr_list_dict_find(const ptr_list_dict_t* self, const str_t key)
+{
+  if (self->data == NULL)
+     return -1;
+  if (self->size == 0)
+     return -1;
+  ///systemctl_info("'%s' dict_find size=%i", key, self->size);
+  ///systemctl_info_ptr_list_dict("ptr_list_dict_find", self);
+  /* binary search */
+  ssize_t a=0;
+  ssize_t e=self->size;
+  ssize_t c=e/2;
+  while(true) {
+    int comp = str_cmp(key, self->data[c].key);
+    if (comp == 0) {
+       ///systemctl_info("'%s' equal to '%s' at [%i] -> return %i", key, self->data[c].key, c, c);
+       return c;
+    } else if (comp < 0) {
+       ///systemctl_info("'%s' lower than '%s' at [%i]", key, self->data[c].key, c);
+       ssize_t b = c/2;
+       if (b == c) b -= 1;
+       if (b < a) { 
+           ///systemctl_info("'%s' lower than '%s' at [%i] -> return -1", key, self->data[c].key, c);
+           return -1;
+       }
+       e = c;
+       c = b;
+    } else if (comp > 0) {
+       ///systemctl_info("'%s' bigger than '%s' at [%i]", key, self->data[c].key, c);
+       ssize_t d = c+(e-c)/2;
+       if (d == c) d += 1;
+       if (d >= e) {
+           ///systemctl_info("'%s' bigger than '%s' at [%i] -> return -1", key, self->data[c].key, c);
+           return -1;
+       }
+       a = c;
+       c = d;
+    }
+  }
+}
+
+/* find position where the key is equal or the just bigger one.
+   If there is no bigger entry then return the end (size). 
+   This is used internally to find the insert position. */ 
+static ssize_t
+ptr_dict_find_pos(const ptr_dict_t* self, const str_t key)
+{
+  if (self->data == NULL)
+     return 0;
+  if (self->size == 0)
+     return 0;
+  ///systemctl_info("'%s' dict_find_pos size=%i", key, self->size);
+  ///systemctl_info_ptr_dict("ptr_dict_find_pos", self);
+  /* binary search */
+  ssize_t a=0;
+  ssize_t e=self->size;
+  ssize_t c=e/2;
+  while(true) {
+    ///systemctl_info("a=%i c=%i e=%i", a, c, e);
+    ///systemctl_info("key[c]=%p", self->data[c].key);
+    ///systemctl_info("key[c]='%s'", self->data[c].key);
+    int comp = str_cmp(key, self->data[c].key);
+    if (comp == 0) {
+       ///systemctl_info("'%s' equal to '%s' at [%i] -> return %i", key, self->data[c].key, c, c);
+       return c;
+    } else if (comp < 0) {
+       ///systemctl_info("'%s' lower than '%s' at [%i]", key, self->data[c].key, c);
+       ssize_t b = c/2;
+       if (b == c) b -= 1;
+       if (b < a) { 
+           ///systemctl_info("'%s' lower than '%s' at [%i] -> return %i", key, self->data[c].key, c, c);
+           return c;
+       }
+       e = c;
+       c = b;
+    } else if (comp > 0) {
+       ///systemctl_info("'%s' bigger than '%s' at [%i]", key, self->data[c].key, c);
+       ssize_t d = c+(e-c)/2;
+       if (d == c) d += 1;
+       if (d >= e) {
+           ///systemctl_info("'%s' lower than '%s' at [%i] -> return %i", key, self->data[c].key, c, c+1);
+           return c+1;
+       }
+       a = c;
+       c = d;
+    }
+  }
+}
+
+static ssize_t
+ptr_list_dict_find_pos(const ptr_list_dict_t* self, const str_t key)
+{
+  if (self->data == NULL)
+     return 0;
+  if (self->size == 0)
+     return 0;
+  ///systemctl_info("'%s' dict_find_pos size=%i", key, self->size);
+  ///systemctl_info_ptr_list_dict("ptr_list_dict_find_pos", self);
+  /* binary search */
+  ssize_t a=0;
+  ssize_t e=self->size;
+  ssize_t c=e/2;
+  while(true) {
+    ///systemctl_info("a=%i c=%i e=%i", a, c, e);
+    ///systemctl_info("key[c]=%p", self->data[c].key);
+    ///systemctl_info("key[c]='%s'", self->data[c].key);
+    int comp = str_cmp(key, self->data[c].key);
+    if (comp == 0) {
+       ///systemctl_info("'%s' equal to '%s' at [%i] -> return %i", key, self->data[c].key, c, c);
+       return c;
+    } else if (comp < 0) {
+       ///systemctl_info("'%s' lower than '%s' at [%i]", key, self->data[c].key, c);
+       ssize_t b = c/2;
+       if (b == c) b -= 1;
+       if (b < a) { 
+           ///systemctl_info("'%s' lower than '%s' at [%i] -> return %i", key, self->data[c].key, c, c);
+           return c;
+       }
+       e = c;
+       c = b;
+    } else if (comp > 0) {
+       ///systemctl_info("'%s' bigger than '%s' at [%i]", key, self->data[c].key, c);
+       ssize_t d = c+(e-c)/2;
+       if (d == c) d += 1;
+       if (d >= e) {
+           ///systemctl_info("'%s' lower than '%s' at [%i] -> return %i", key, self->data[c].key, c, c+1);
+           return c+1;
+       }
+       a = c;
+       c = d;
+    }
+  }
+}
+
+
+
 static ssize_t
 str_dict_find(const str_dict_t* self, const str_t key)
 {
-  for (ssize_t i=0; i < self->size; ++i) {
-    if (! str_cmp(self->data[i].key, key)) {
-       return i;
-    }
-  }
-  return -1;
+    const ptr_dict_t* dict = (const ptr_dict_t*)(self);
+    return ptr_dict_find(dict, key);
+}
+
+static ssize_t
+str_dict_find_pos(const str_dict_t* self, const str_t key)
+{
+    ///systemctl_info_str_dict("str_dict_find_pos", self);
+    const ptr_dict_t* dict = (const ptr_dict_t*)(self);
+    return ptr_dict_find_pos(dict, key);
 }
 
 static ssize_t
 str_list_dict_find(const str_list_dict_t* self, const str_t key)
 {
-  for (ssize_t i=0; i < self->size; ++i) {
-    if (! str_cmp(self->data[i].key, key)) {
-       return i;
-    }
-  }
-  return -1;
+    const ptr_list_dict_t* dict = (const ptr_list_dict_t*)(self);
+    return ptr_list_dict_find(dict, key);
 }
 
 static ssize_t
 str_list_dict_dict_find(const str_list_dict_dict_t* self, const str_t key)
 {
-  for (ssize_t i=0; i < self->size; ++i) {
-    if (! str_cmp(self->data[i].key, key)) {
-       return i;
-    }
-  }
-  return -1;
+    const ptr_list_dict_t* dict = (const ptr_list_dict_t*)(self);
+    return ptr_list_dict_find(dict, key);
+}
+
+
+static ssize_t
+str_list_dict_find_pos(const str_list_dict_t* self, const str_t key)
+{
+    ///systemctl_info_str_list_dict("str_list_dict_find_pos", self);
+    const ptr_list_dict_t* dict = (const ptr_list_dict_t*)(self);
+    return ptr_list_dict_find_pos(dict, key);
 }
 
 static ssize_t
-ptr_dict_find(const ptr_dict_t* self, const str_t key)
+str_list_dict_dict_find_pos(const str_list_dict_dict_t* self, const str_t key)
 {
-  for (ssize_t i=0; i < self->size; ++i) {
-    if (! str_cmp(self->data[i].key, key)) {
-       return i;
-    }
-  }
-  return -1;
+    ///systemctl_info_str_list_dict_dict("str_list_dict_dict_find_pos", self);
+    const ptr_list_dict_t* dict = (const ptr_list_dict_t*)(self);
+    return ptr_list_dict_find_pos(dict, key);
 }
 
 /* contains */
@@ -1098,6 +1373,7 @@ str_list_list_add1(str_list_list_t* self, str_t str1)
     str_list_list_add(self, &value);
 }
 
+
 static void
 str_dict_adds(str_dict_t* self, const str_t key, str_t value)
 {
@@ -1106,16 +1382,20 @@ str_dict_adds(str_dict_t* self, const str_t key, str_t value)
          str_free (value);
       return;
   }
-  str_dict_t old = { self->size, self->data };
-  self->size = old.size +1;
-  self->data = malloc(self->size * sizeof(str_dict_entry_t));
-  for (ssize_t i=0; i < old.size; ++i) {
-    self->data[i].key = old.data[i].key;
-    self->data[i].value = old.data[i].value;
+  ssize_t pos = str_dict_find_pos(self, key);
+  if (pos < self->size && str_equal(self->data[pos].key, key)) {
+      str_sets(&self->data[pos].value, value);
+      return;
   }
-  self->data[old.size].key = str_dup(key);
-  self->data[old.size].value = value;
-  free(old.data);
+  self->size += 1;
+  self->data = realloc(self->data, self->size * sizeof(str_dict_entry_t));
+  for (ssize_t i=self->size-1; i > pos; --i) {
+    self->data[i].key = self->data[i-1].key;
+    self->data[i].value = self->data[i-1].value;
+  }
+  self->data[pos].key = str_dup(key);
+  self->data[pos].value = value;
+  ///systemctl_info_str_dict("str_dict_adds", self);
 }
 
 static void
@@ -1123,6 +1403,7 @@ str_dict_add(str_dict_t* self, const str_t key, const str_t value)
 {
     str_dict_adds(self, key, str_dup(value));
 }
+
 
 static void
 str_list_dict_adds(str_list_dict_t* self, const str_t key, str_list_t* value)
@@ -1132,28 +1413,32 @@ str_list_dict_adds(str_list_dict_t* self, const str_t key, str_list_t* value)
          str_list_free (value);
       return;
   }
-  str_list_dict_t old = { self->size, self->data };
-  self->size = old.size +1;
-  self->data = malloc(self->size * sizeof(str_list_dict_entry_t));
-  for (ssize_t i=0; i < old.size; ++i) {
-    self->data[i].key = old.data[i].key;
-    self->data[i].value = old.data[i].value;
+  ssize_t pos = str_list_dict_find_pos(self, key);
+  if (pos < self->size && str_equal(self->data[pos].key, key)) {
+      str_list_sets(&self->data[pos].value, value);
+      return;
   }
-  self->data[old.size].key = str_dup(key);
-  self->data[old.size].value.size = value->size;
-  self->data[old.size].value.data = value->data;
-  // str_list_init(&self->data[old.size].value);
-  // str_list_sets(&self->data[old.size].value, value);
-  free(value);
-  free(old.data);
+  self->size += 1;
+  self->data = realloc(self->data, self->size * sizeof(str_list_dict_entry_t));
+  for (ssize_t i=self->size-1; i > pos; --i) {
+    self->data[i].key = self->data[i-1].key;
+    self->data[i].value = self->data[i-1].value;
+  }
+  self->data[pos].key = str_dup(key);
+  self->data[pos].value.size = value->size;
+  self->data[pos].value.data = value->data;
+  value->size = 0;
+  value->data = NULL;
+  str_list_free(value);
+  // str_list_init(&self->data[pos].value);
+  // str_list_sets(&self->data[pos].value, value);
+  ///systemctl_info_str_list_dict("str_list_dict_adds", self);
 }
 
 static void
 str_list_dict_add(str_list_dict_t* self, const str_t key, const str_list_t* value)
 {
-    str_list_t* val = str_list_new();
-    // str_list_copy(val, value);
-    str_list_dict_adds(self, key, val);
+    str_list_dict_adds(self, key, str_list_dup(value));
 }
 
 static void
@@ -1180,19 +1465,24 @@ str_list_dict_dict_adds(str_list_dict_dict_t* self, const str_t key, str_list_di
           str_list_dict_free (value);
       return;
   }
-  str_list_dict_dict_t old = { self->size, self->data };
-  self->size = old.size +1;
-  self->data = malloc(self->size * sizeof(str_list_dict_dict_entry_t));
-  for (ssize_t i=0; i < old.size; ++i) {
-    self->data[i].key = old.data[i].key;
-    self->data[i].value.size = old.data[i].value.size;
-    self->data[i].value.data = old.data[i].value.data;
+  ssize_t pos = str_list_dict_dict_find_pos(self, key);
+  if (pos < self->size && str_equal(self->data[pos].key, key)) {
+      str_list_dict_sets(&self->data[pos].value, value);
+      return;
   }
-  self->data[old.size].key = str_dup(key);
-  self->data[old.size].value.size = value->size;
-  self->data[old.size].value.data = value->data;
-  free(old.data);
-  free(value);
+  self->size += 1;
+  self->data = realloc(self->data, self->size * sizeof(str_list_dict_dict_entry_t));
+  for (ssize_t i=self->size-1; i > pos; --i) {
+    self->data[i].key = self->data[i-1].key;
+    self->data[i].value = self->data[i-1].value;
+  }
+  self->data[pos].key = str_dup(key);
+  self->data[pos].value.size = value->size;
+  self->data[pos].value.data = value->data;
+  value->size = 0;
+  value->data = NULL;
+  str_list_dict_free(value);
+  ///systemctl_info_str_list_dict_dict("str_list_dict_dict_adds", self);
 }
 
 static void
@@ -1209,15 +1499,20 @@ ptr_dict_adds(ptr_dict_t* self, const str_t key, void* value)
          str_free (value);
       return;
   }
+  ssize_t pos = ptr_dict_find_pos(self, key);
   ptr_dict_t old = { self->size, self->data };
   self->size = old.size +1;
   self->data = malloc(self->size * sizeof(ptr_dict_entry_t));
-  for (ssize_t i=0; i < old.size; ++i) {
+  for (ssize_t i=0; i < pos; ++i) {
     self->data[i].key = old.data[i].key;
     self->data[i].value = old.data[i].value;
   }
-  self->data[old.size].key = str_dup(key);
-  self->data[old.size].value = value;
+  self->data[pos].key = str_dup(key);
+  self->data[pos].value = value;
+  for (ssize_t i=pos; i < old.size; ++i) {
+    self->data[i+1].key = old.data[i].key;
+    self->data[i+1].value = old.data[i].value;
+  }
   free(old.data);
 }
 

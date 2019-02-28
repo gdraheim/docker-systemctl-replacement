@@ -77,14 +77,30 @@ void test_012()
 
 void test_021()
 {
-    systemctl_error("test_021");
     str_dict_t g = str_dict_NULL;
     str_dict_add(&g, "foo", "zen");
     str_dict_add(&g, "bar", "coo");
     str_list_t* keys = str_dict_keys(&g);
     str_t s = str_list_join(keys, ".");
-    printf("dict add/keys: '%s'\n", s);
-    assert(! strcmp(s, "foo.bar"));
+    systemctl_info("dict add/keys: '%s'", s);
+    assert(! strcmp(s, "bar.foo"));
+    str_list_free(keys);
+    str_dict_null(&g);
+    str_free(s);
+}
+
+void test_022()
+{
+    str_dict_t g = str_dict_NULL;
+    str_dict_add(&g, "foo", "zen");
+    str_dict_add(&g, "bar", "coo");
+    str_dict_add(&g, "coo", "foo");
+    str_dict_add(&g, "zen", "bar");
+    str_dict_add(&g, "all", "oki");
+    str_list_t* keys = str_dict_keys(&g);
+    str_t s = str_list_join(keys, ".");
+    systemctl_info("dict add/keys: '%s'", s);
+    assert(! strcmp(s, "all.bar.coo.foo.zen"));
     str_list_free(keys);
     str_dict_null(&g);
     str_free(s);
@@ -134,6 +150,7 @@ main(int argc, char** argv)
     test_011();
     test_012();
     test_021();
+    test_022();
     test_101();
     test_102();
     return 0;
