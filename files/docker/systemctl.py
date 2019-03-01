@@ -2,7 +2,7 @@
 from __future__ import print_function
 
 __copyright__ = "(C) 2016-2019 Guido U. Draheim, licensed under the EUPL"
-__version__ = "1.4.3080"
+__version__ = "1.4.3084"
 
 import logging
 logg = logging.getLogger("systemctl")
@@ -481,10 +481,10 @@ class SystemctlConf:
         return self.get("Unit", "Id", name)
     def set(self, section, name, value):
         return self.data.set(section, name, value)
-    def get(self, section, name, default):
-        return self.data.get(section, name, default)
-    def getlist(self, section, name, default = None):
-        return self.data.getlist(section, name, default or [])
+    def get(self, section, name, default, allow_no_value = False):
+        return self.data.get(section, name, default, allow_no_value)
+    def getlist(self, section, name, default = None, allow_no_value = False):
+        return self.data.getlist(section, name, default or [], allow_no_value)
     def getbool(self, section, name, default = None):
         value = self.data.get(section, name, default or "no")
         if value:
@@ -1365,7 +1365,11 @@ class Systemctl:
     def truncate_old(self, filename):
         filetime = self.get_filetime(filename)
         boottime = self.get_boottime()
+        if isinstance(filetime, float):
+            filetime -= 0.1
         if filetime >= boottime :
+            logg.debug("  file time: %s", datetime.datetime.fromtimestamp(filetime))
+            logg.debug("  boot time: %s", datetime.datetime.fromtimestamp(boottime))
             return False # OK
         logg.info("truncate old %s", filename)
         logg.info("  file time: %s", datetime.datetime.fromtimestamp(filetime))

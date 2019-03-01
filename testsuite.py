@@ -4,7 +4,7 @@
 from __future__ import print_function
 
 __copyright__ = "(C) Guido Draheim, licensed under the EUPL"""
-__version__ = "1.4.3080"
+__version__ = "1.4.3084"
 
 ## NOTE:
 ## The testcases 1000...4999 are using a --root=subdir environment
@@ -504,7 +504,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def begin(self):
         self._started = time.time()
         logg.info("[[%s]]", datetime.datetime.fromtimestamp(self._started).strftime("%H:%M:%S"))
-    def end(self, maximum = 66):
+    def end(self, maximum = 77):
         runtime = time.time() - self._started
         self.assertLess(runtime, maximum)
     #
@@ -2866,8 +2866,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             import sys
             sys.path += [ "{systemctl_py_dir}" ]
             import systemctl
-            data = systemctl.UnitConfigParser({defaults})
-            conf = systemctl.UnitConf(data)
+            data = systemctl.UnitConfParser({defaults})
+            conf = systemctl.SystemctlConf(data)
             print("DEFAULTS", conf.data.defaults())
             print("FILENAME", conf.filename())
             data.read(sys.argv[1])
