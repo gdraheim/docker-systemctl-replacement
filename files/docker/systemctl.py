@@ -331,7 +331,6 @@ class SystemctlConfigParser:
             return None
         return self._conf[section][option][0] # the first line in the list of configs
     def getlist(self, section, option, default = None):
-        allow_no_value = allow_no_value or self._allow_no_value
         if section not in self._conf:
             if default is not None:
                 return default
@@ -757,6 +756,10 @@ def sortedAfter(conflist, cmp = compareAfter):
             logg.info("[%s] %s", item.rank, item.conf.name())
     return [ item.conf for item in sortedlist ]
 
+## the process exitcode (can be changed later for more granular internal error bits)
+ERROR1 = 1
+ERROR3 = 3
+
 class Systemctl:
     def __init__(self):
         # from command line options or the defaults
@@ -791,6 +794,7 @@ class Systemctl:
         self._user_getlogin = os_getlogin()
         self._log_file = {} # init-loop
         self._log_hold = {} # init-loop
+        self._error = 0 # as the process exitcode
     def user(self):
         return self._user_getlogin
     def user_mode(self):
@@ -1076,6 +1080,7 @@ class Systemctl:
                 substate[unit] = self.get_substate_from(conf)
             except Exception as e:
                 logg.warning("list-units: %s", e)
+                # self._error = ERROR1
             if self._unit_state:
                 if self._unit_state not in [ result[unit], active[unit], substate[unit] ]:
                     del result[unit]
@@ -1150,6 +1155,7 @@ class Systemctl:
         elif self._unit_type:
             logg.warning("unsupported unit --type=%s", self._unit_type)
             result = []
+            self._error = ERROR1
         else:
             result = self.list_target_unit_files()
             result += self.list_service_unit_files(*modules)
@@ -2758,17 +2764,16 @@ class Systemctl:
             for unit in matched:
                 if unit not in units:
                     units += [ unit ]
-        status, result = self.status_units(units)
+        result = self.status_units(units)
         if not found_all:
-            status = 3 # same as (dead) # original behaviour
-        return (status, result)
+            self._error = self._error or ERROR3 # same as (dead) # original behaviour
+        return result
     def status_units(self, units):
         """ concatenates the status output of all units
             and the last non-successful statuscode """
         status, result = 0, ""
         for unit in units:
-            status1, result1 = self.status_unit(unit)
-            if status1: status = status1
+            result1 = self.status_unit(unit)
             if result: result += "\n\n"
             result += result1
         return status, result
@@ -2784,14 +2789,14 @@ class Systemctl:
                 result += "\n    Drop-In: {path}".format(**locals())
         else:
             result += "\n    Loaded: failed"
-            return 3, result
+            self._error = self._error or ERROR3
+            return result
         active = self.get_active_from(conf)
         substate = self.get_substate_from(conf)
         result += "\n    Active: {} ({})".format(active, substate)
-        if active == "active":
-            return 0, result
-        else:
-            return 3, result
+        if active != "active":
+            self._error = self._error or ERROR3
+        return result
     def cat_modules(self, *modules):
         """ [UNIT]... show the *.system file for these"
         """
@@ -2914,7 +2919,7 @@ class Systemctl:
         return self.preset_units(units) and found_all
     def wanted_from(self, conf, default = None):
         if not conf: return default
-        return conf.get("Install", "WantedBy", default, True)
+        return conf.get("Install", "WantedBy", default)
     def enablefolders(self, wanted):
         if self.user_mode():
             for folder in self.user_folders():
@@ -4400,6 +4405,7 @@ if __name__ == "__main__":
         result = command_func()
     if not found:
         logg.error("Unknown operation %s.", command)
-        sys.exit(1)
+        sys.exit(ERROR1)
     #
-    sys.exit(print_result(result))
+    print_problem = print_result(result)
+    sys.exit(systemctl._error or print_problem)

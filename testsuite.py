@@ -172,6 +172,9 @@ def each_non_runuser(lines):
             continue
         yield line
 
+
+def print_err(*args, **kwargs):
+    print(*args, file=sys.stderr, **kwargs)
 def beep():
     if os.name == "nt":
         import winsound
@@ -1402,10 +1405,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing B
             [Install]
             WantedBy=multi-user.target""")
-        cmd = "{systemctl} --type=foo list-unit-files"
+        cmd = "{systemctl} --type=foo list-unit-files -v"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(end, 0)
+        self.assertEqual(end, 1)
         self.assertIn("0 unit files listed.", out)
         self.assertEqual(len(lines(out)), 3)
         self.rm_testdir()
@@ -2865,6 +2868,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             from __future__ import print_function
             import sys
             sys.path += [ "{systemctl_py_dir}" ]
+            def print_err(*args, **kwargs):
+               print(*args, file=sys.stderr, **kwargs)
+            import logging
+            logging.basicConfig(level = logging.DEBUG)
             import systemctl
             data = systemctl.UnitConfParser({defaults})
             conf = systemctl.SystemctlConf(data)
@@ -2875,26 +2882,18 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             print("sections=", conf.data.sections())
             print("has.Foo.Bar=", conf.data.has_option("Foo", "Bar"))
             print("has.Unit.Foo=", conf.data.has_option("Unit", "Foo"))
-            try:
-               conf.data.get("Foo", "Bar")
-            except Exception as e:
-               print("get.Foo.Bar:", str(e))
-            try:
-               conf.data.get("Unit", "Foo")
-            except Exception as e:
-               print("get.Unit.Foo:", str(e))
-            try:
-               conf.data.getlist("Foo", "Bar")
-            except Exception as e:
-               print("getlist.Foo.Bar:", str(e))
-            try:
-               conf.data.getlist("Unit", "Foo")
-            except Exception as e:
-               print("getlist.Unit.Foo:", str(e))
-            print("get.none.Foo.Bar=", conf.data.get("Foo", "Bar", allow_no_value = True))
-            print("get.none.Unit.Foo=", conf.data.get("Unit", "Foo", allow_no_value = True))
-            print("getlist.none.Foo.Bar=", conf.data.getlist("Foo", "Bar", allow_no_value = True))
-            print("getlist.none.Unit.Foo=", conf.data.getlist("Unit", "Foo", allow_no_value = True))
+            print_err("get.Foo.Bar:", end="")
+            conf.data.get("Foo", "Bar")
+            print_err("get.Unit.Foo:", end="")
+            conf.data.get("Unit", "Foo")
+            print_err("getlist.Foo.Bar:", end="")
+            conf.data.getlist("Foo", "Bar")
+            print_err("getlist.Unit.Foo:", end="")
+            conf.data.getlist("Unit", "Foo")
+            print("get.none.Foo.Bar=", conf.data.get("Foo", "Bar"))
+            print("get.none.Unit.Foo=", conf.data.get("Unit", "Foo"))
+            print("getlist.none.Foo.Bar=", conf.data.getlist("Foo", "Bar"))
+            print("getlist.none.Unit.Foo=", conf.data.getlist("Unit", "Foo"))
             print("get.defs.Foo.Bar=", conf.data.get("Foo", "Bar", "def1"))
             print("get.defs.Unit.Foo=", conf.data.get("Unit", "Foo", "def2"))
             print("getlist.defs.Foo.Bar=", conf.data.getlist("Foo", "Bar", ["def3"]))
@@ -2907,7 +2906,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             print("getitem.unit.after2=", conf.data.get("Unit", "After"))
             data.set("Unit", "After", None)
             print("getlist.unit.after0=", conf.data.getlist("Unit", "After"))
-            print("getitem.unit.after0=", conf.data.get("Unit", "After", allow_no_value = True))
+            print("getitem.unit.after0=", conf.data.get("Unit", "After"))
             print("getlist.environment=", conf.data.getlist("Service", "Environment"))
             print("get.environment=", conf.data.get("Service", "Environment"))
             print("get.execstart=", conf.data.get("Service", "ExecStart"))
@@ -2926,18 +2925,18 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             WantedBy=multi-user.target""")
         testrun = cover() + unitconfparser_py
         cmd = "{testrun} {service_file}"
-        out, end = output2(cmd.format(**locals()))
-        logg.info(" %s =>%s\n%s", cmd, end, out)
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
         self.assertTrue(greps(out, "DEFAULTS {'a1': 'default1'}"))
         self.assertTrue(greps(out, "FILENAME None"))
         self.assertTrue(greps(out, "filename= .*"+service_file))
         self.assertTrue(greps(out, "sections= \\['Unit', 'Service', 'Install'\\]"))
         self.assertTrue(greps(out, "has.Foo.Bar= False"))
         self.assertTrue(greps(out, "has.Unit.Foo= False"))
-        self.assertTrue(greps(out, "get.Foo.Bar: section Foo does not exist"))
-        self.assertTrue(greps(out, "get.Unit.Foo: option Foo in Unit does not exist"))
-        self.assertTrue(greps(out, "getlist.Foo.Bar: section Foo does not exist"))
-        self.assertTrue(greps(out, "getlist.Unit.Foo: option Foo in Unit does not exist"))
+        self.assertTrue(greps(err, "get.Foo.Bar:.*section Foo does not exist"))
+        self.assertTrue(greps(err, "get.Unit.Foo:.*option Foo in Unit does not exist"))
+        self.assertTrue(greps(err, "getlist.Foo.Bar:.*section Foo does not exist"))
+        self.assertTrue(greps(err, "getlist.Unit.Foo:.*option Foo in Unit does not exist"))
         self.assertTrue(greps(out, "get.none.Foo.Bar= None"))
         self.assertTrue(greps(out, "get.none.Unit.Foo= None"))
         self.assertTrue(greps(out, "getlist.none.Foo.Bar= \\[\\]"))
