@@ -626,6 +626,8 @@ systemctl_conf_name(systemctl_conf_t* self)
 }
 
 /* ============================================================ */
+#define ERROR_FAILED 3
+#define ERROR_FALSE 1
 
 typedef struct systemctl
 {
@@ -638,6 +640,7 @@ typedef struct systemctl
     str_dict_t file_for_unit_sysd; /* name.service => /etc/systemd/system/name.service */
     /* FIXME: the loaded-conf is a mixture of parts from multiple files */
     bool user_mode;
+    int error; /* program exitcode or process returncode */
 } systemctl_t;
 
 void
@@ -650,6 +653,7 @@ systemctl_init(systemctl_t* self, systemctl_settings_t* settings)
     str_dict_init(&self->file_for_unit_sysv);
     str_dict_init(&self->file_for_unit_sysd);
     self->user_mode = false;
+    self->error = 0;
 }
 
 void
@@ -1266,7 +1270,6 @@ str_list_list_print(str_list_list_t* result)
 int 
 main(int argc, char** argv)
 {
-    int returncode = 1;
     systemctl_settings_t settings;
     systemctl_settings_init(&settings);
     /* scan options */
@@ -1282,31 +1285,34 @@ main(int argc, char** argv)
         str_list_t modules = str_list_NULL;
         str_list_init_from(&modules, argc - 2, argv + 2);
         str_list_list_t* result = systemctl_list_units(&systemctl, &modules);
-        returncode = str_list_list_print(result);
-        fprintf(stderr, "returncode %i", returncode);
+        str_list_list_print(result);
         str_list_list_free(result);
         str_list_null(&modules);
     } else if (argc > 1 && str_equal(argv[1], "list-unit-files")) {
         str_list_t modules = str_list_NULL;
         str_list_init_from(&modules, argc - 2, argv + 2);
         str_list_list_t* result = systemctl_show_list_unit_files(&systemctl, &modules);
-        returncode = str_list_list_print(result);
-        fprintf(stderr, "returncode %i", returncode);
+        str_list_list_print(result);
         str_list_list_free(result);
         str_list_null(&modules);
     } else if (argc > 1 && str_equal(argv[1], "status")) {
         str_list_t modules = str_list_NULL;
         str_list_init_from(&modules, argc - 2, argv + 2);
         str_list_t* result = systemctl_status_modules(&systemctl, &modules);
-        returncode = str_list_print(result);
-        fprintf(stderr, "returncode %i", returncode);
+        str_list_print(result);
         str_list_free(result);
         str_list_null(&modules);
     } else {
         fprintf(stderr, "unknown command '%s'", argv[1]);
     }
 
+    int exitcode = systemctl.error;
     systemctl_null(&systemctl);
     systemctl_options_null(&options);
-    return returncode;
+    if (exitcode) {
+        systemctl_error(" exitcode %i", exitcode);
+    } else {
+        systemctl_info(" exitcode %i", exitcode);
+    }
+    return exitcode;
 }
