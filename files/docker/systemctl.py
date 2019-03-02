@@ -71,6 +71,7 @@ _preset_folder3 = "/usr/lib/systemd/system-preset"
 _preset_folder4 = "/lib/systemd/system-preset"
 _preset_folder9 = None
 
+# definitions 
 SystemCompatibilityVersion = 219
 MinimumYield = 0.5
 MinimumTimeoutStartSec = 4
@@ -284,10 +285,9 @@ class SystemctlConfigParser:
         globally uniqute, so that an 'environment' can be printed without
         adding prefixes. Settings are continued with a backslash at the end
         of the line.  """
-    def __init__(self, defaults=None, dict_type=None, allow_no_value=False):
+    def __init__(self, defaults=None, dict_type=None):
         self._defaults = defaults or {}
         self._dict_type = dict_type or collections.OrderedDict
-        self._allow_no_value = allow_no_value
         self._conf = self._dict_type()
         self._files = []
     def defaults(self):
@@ -312,45 +312,37 @@ class SystemctlConfigParser:
             self._conf[section][option].append(value)
         if value is None:
             self._conf[section][option] = []
-    def get(self, section, option, default = None, allow_no_value = False):
-        allow_no_value = allow_no_value or self._allow_no_value
+    def get(self, section, option, default = None):
         if section not in self._conf:
             if default is not None:
                 return default
-            if allow_no_value:
-                return None
-            logg.warning("section {} does not exist".format(section))
-            logg.warning("  have {}".format(self.sections()))
-            raise AttributeError("section {} does not exist".format(section))
+            logg.debug("section {} does not exist".format(section))
+            logg.debug("  have {}".format(self.sections()))
+            return None
         if option not in self._conf[section]:
             if default is not None:
                 return default
-            if allow_no_value:
-                return None
-            raise AttributeError("option {} in {} does not exist".format(option, section))
+            logg.debug("option {} in {} does not exist".format(option, section))
+            return None
         if not self._conf[section][option]: # i.e. an empty list
             if default is not None:
                 return default
-            if allow_no_value:
-                return None
-            raise AttributeError("option {} in {} is None".format(option, section))
+            logg.debug("option {} in {} is None".format(option, section))
+            return None
         return self._conf[section][option][0] # the first line in the list of configs
-    def getlist(self, section, option, default = None, allow_no_value = False):
+    def getlist(self, section, option, default = None):
         allow_no_value = allow_no_value or self._allow_no_value
         if section not in self._conf:
             if default is not None:
                 return default
-            if allow_no_value:
-                return []
-            logg.warning("section {} does not exist".format(section))
-            logg.warning("  have {}".format(self.sections()))
-            raise AttributeError("section {} does not exist".format(section))
+            logg.debug("section {} does not exist".format(section))
+            logg.debug("  have {}".format(self.sections()))
+            return []
         if option not in self._conf[section]:
             if default is not None:
                 return default
-            if allow_no_value:
-                return []
-            raise AttributeError("option {} in {} does not exist".format(option, section))
+            logg.debug("option {} in {} does not exist".format(option, section))
+            return []
         return self._conf[section][option] # returns a list, possibly empty
     def read(self, filename):
         return self.read_sysd(filename)
@@ -481,10 +473,10 @@ class SystemctlConf:
         return self.get("Unit", "Id", name)
     def set(self, section, name, value):
         return self.data.set(section, name, value)
-    def get(self, section, name, default, allow_no_value = False):
-        return self.data.get(section, name, default, allow_no_value)
-    def getlist(self, section, name, default = None, allow_no_value = False):
-        return self.data.getlist(section, name, default or [], allow_no_value)
+    def get(self, section, name, default):
+        return self.data.get(section, name, default)
+    def getlist(self, section, name, default = None):
+        return self.data.getlist(section, name, default or [])
     def getbool(self, section, name, default = None):
         value = self.data.get(section, name, default or "no")
         if value:
