@@ -1277,7 +1277,14 @@ systemctl_status_unit(systemctl_t* self, str_t unit)
        self->error = self->error | ERROR3;
        return result;
     }
-    // TODO: finish this
+    str_t active = systemctl_get_active_from(self, conf);
+    str_t substate = systemctl_get_substate_from(self, conf);
+    str_adds(&result, str_format("\n    Active: %s (%s)", active, substate));
+    if (str_equal(active, "active")) {
+       self->error = self->error | ERROR3;
+    }
+    str_free(active);
+    str_free(substate);
     return result;
 }
 
