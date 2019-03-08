@@ -677,6 +677,44 @@ systemctl_user_mode(systemctl_t* self)
 }
 
 str_list_t* restrict
+systemctl_user_folders(systemctl_t* self);
+str_t restrict
+systemctl_user_folder(systemctl_t* self)
+{
+    str_t result = str_NULL;
+    str_list_t* folders = systemctl_user_folders(self);
+    for (int i=0; i < folders->size; ++i) {
+         if (folders->data[i]) {
+             result = str_dup(folders->data[i]);
+             str_list_free(folders);
+             return result;
+         }
+    }
+    str_list_free(folders);
+    logg_error("did not find any systemd/user folder");
+    return result;
+}
+
+str_list_t* restrict
+systemctl_system_folders(systemctl_t* self);
+str_t restrict
+systemctl_system_folder(systemctl_t* self)
+{
+    str_t result = str_NULL;
+    str_list_t* folders = systemctl_system_folders(self);
+    for (int i=0; i < folders->size; ++i) {
+         if (folders->data[i]) {
+             result = str_dup(folders->data[i]);
+             str_list_free(folders);
+             return result;
+         }
+    }
+    str_list_free(folders);
+    logg_error("did not find any systemd/user folder");
+    return result;
+}
+
+str_list_t* restrict
 systemctl_preset_folders(systemctl_t* self)
 {
    str_list_t* result = str_list_new();
@@ -781,6 +819,7 @@ systemctl_scan_unit_sysd_files(systemctl_t* self)
        }
        str_list_free(folders);
    }
+   logg_debug("found %i sysd files", str_dict_len(&self->file_for_unit_sysd));
 }
 
 void
@@ -882,6 +921,34 @@ systemctl_load_sysd_unit_conf(systemctl_t* self, str_t module)
     ptr_dict_adds(&self->loaded_file_sysd, path, conf);
     return conf;
 
+}
+
+bool
+systemctl_is_sysv_file(systemctl_t* self, str_t filename)
+{
+    if (filename == NULL) return false;
+    systemctl_unit_file(self, NULL);
+    for (int d=0; d < self->file_for_unit_sysd.size; ++d) {
+       str_t value = self->file_for_unit_sysd.data[d].value;
+       if (str_equal(value, filename)) return false;
+    }
+    for (int d=0; d < self->file_for_unit_sysv.size; ++d) {
+       str_t value = self->file_for_unit_sysv.data[d].value;
+       if (str_equal(value, filename)) return true;
+    }
+    return false;
+}
+
+bool
+systemctl_is_user_conf(systemctl_t* self, systemctl_conf_t* conf)
+{
+    if (conf == NULL)
+        return false;
+    str_t filename = systemctl_conf_filename(conf);
+    if (! str_empty(filename) && str_contains(filename, "/user")) {
+        return true;
+    } 
+    return false;
 }
 
 systemctl_conf_t* 

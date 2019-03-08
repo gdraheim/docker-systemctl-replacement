@@ -902,8 +902,8 @@ class Systemctl:
         return None
     def is_sysv_file(self, filename):
         """ for routines that have a special treatment for init.d services """
-        self.unit_file() # scan all
         if not filename: return None
+        self.unit_file() # scan all
         if filename in self._file_for_unit_sysd.values(): return False
         if filename in self._file_for_unit_sysv.values(): return True
         return None # not True

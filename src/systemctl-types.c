@@ -635,6 +635,12 @@ str_list_dict_dict_len(const str_list_dict_dict_t* self)
    return self->size;
 }
 
+static inline ssize_t
+str_dict_len(const str_dict_t* self)
+{
+   return self->size;
+}
+
 /* get ref */
 
 static str_t
