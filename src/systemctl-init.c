@@ -953,17 +953,21 @@ systemctl_match_sysd_units(systemctl_t* self, str_list_t* modules)
             /* FIXME: different implementation */
             for (int j=0; j < modules->size; ++j) {
                 str_t module = modules->data[j];
-                if (fnmatch(module, item, 0)) {
+                if (! fnmatch(module, item, 0)) {
                    str_list_add(result, item);
                 } else {
                     str_t module_suffix = str_dup2(module, ".service");
                     if (str_equal(module_suffix, item)) {
                         str_list_add(result, item);
                     }
+                    str_free(module_suffix);
                 }
             }
         }
     }
+    if (false) 
+      systemctl_info("matched %i units (limited by %i args, e.g. '%s')", 
+        str_list_len(result), str_list_len(modules), modules->size ? modules->data[0]: "");
     return result;
 }
 
@@ -989,7 +993,7 @@ systemctl_match_units(systemctl_t* self, str_list_t* modules)
     str_list_free(sysd);
     str_list_t* sysv = systemctl_match_sysv_units(self, modules);
     for (int i=0; i < sysv->size; ++i) {
-        if (! str_list_contains(found, sysv->data[i])) {
+        if (str_list_contains(found, sysv->data[i])) {
             str_list_adds(found, sysv->data[i]);
             sysd->data[i] = NULL;
         }
