@@ -9,16 +9,13 @@ logg = logging.getLogger("systemctl")
 
 import re
 import fnmatch
-import shlex
 import collections
 import errno
 import os
 import sys
-import subprocess
 import signal
 import time
 import socket
-import tempfile
 import datetime
 import fcntl
 
