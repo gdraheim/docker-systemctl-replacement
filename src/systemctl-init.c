@@ -340,6 +340,7 @@ systemctl_conf_data_read_sysd(systemctl_conf_data_t* self, str_t filename)
     str_t text = NULL;
     FILE* fd = fopen(filename, "r");
     if (fd == NULL) return false;
+    str_list_add(&self->files, filename);
     str_t orig_line = NULL;
     str_t line = NULL;
     while(true) {
