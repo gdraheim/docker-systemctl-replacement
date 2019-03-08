@@ -9,6 +9,7 @@ logg = logging.getLogger("systemctl")
 
 import re
 import fnmatch
+import shlex
 import collections
 import errno
 import os
@@ -1563,7 +1564,6 @@ class Systemctl:
             logg.debug("can not expand ${%s}", m.group(1))
             return "" # empty string
         cmd3 = re.sub("[$](\w+)", lambda m: get_env1(m), cmd2)
-        import shlex
         newcmd = []
         for part in shlex.split(cmd3):
             newcmd += [ re.sub("[$][{](\w+)[}]", lambda m: get_env2(m), part) ]
