@@ -9,7 +9,6 @@ logg = logging.getLogger("systemctl")
 
 import re
 import fnmatch
-import shlex
 import collections
 import errno
 import os
