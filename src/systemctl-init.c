@@ -1325,42 +1325,48 @@ main(int argc, char** argv)
     systemctl_settings_t settings;
     systemctl_settings_init(&settings);
     /* scan options */
-    systemctl_options_t options;
-    systemctl_options_init(&options);
-    systemctl_options_add3(&options, "-v", "--verbose", "increase logging level");
-    systemctl_options_scan(&options, argc, argv);
+    systemctl_options_t cmd;
+    systemctl_options_init(&cmd);
+    systemctl_options_add3(&cmd, "-v", "--verbose", "increase logging level");
+    systemctl_options_scan(&cmd, argc, argv);
+    if (str_list_dict_contains(&cmd.opts, "verbose")) {
+       int level = str_list_len(str_list_dict_get(&cmd.opts, "verbose"));
+       logg_setlevel(LOG_ERROR - 10 * level); /* similar style to python */
+    }
+    
     /* ............................................ */
     systemctl_t systemctl;
     systemctl_init(&systemctl, &settings);
+    str_t command = str_NULL;
+    str_list_t args = str_list_NULL;
+    if (cmd.args.size == 0) {
+        command = "help";
+        str_list_init(&args);
+    } else {
+        command = cmd.args.data[0];
+        str_list_init_from(&args, cmd.args.size - 1, cmd.args.data + 1);
+    }
     
-    if (argc > 1 && str_equal(argv[1], "list-units")) {
-        str_list_t modules = str_list_NULL;
-        str_list_init_from(&modules, argc - 2, argv + 2);
-        str_list_list_t* result = systemctl_list_units(&systemctl, &modules);
+    if (str_equal(command, "list-units")) {
+        str_list_list_t* result = systemctl_list_units(&systemctl, &args);
         str_list_list_print(result);
         str_list_list_free(result);
-        str_list_null(&modules);
-    } else if (argc > 1 && str_equal(argv[1], "list-unit-files")) {
-        str_list_t modules = str_list_NULL;
-        str_list_init_from(&modules, argc - 2, argv + 2);
-        str_list_list_t* result = systemctl_show_list_unit_files(&systemctl, &modules);
+    } else if (str_equal(command, "list-unit-files")) {
+        str_list_list_t* result = systemctl_show_list_unit_files(&systemctl, &args);
         str_list_list_print(result);
         str_list_list_free(result);
-        str_list_null(&modules);
-    } else if (argc > 1 && str_equal(argv[1], "status")) {
-        str_list_t modules = str_list_NULL;
-        str_list_init_from(&modules, argc - 2, argv + 2);
-        str_t result = systemctl_status_modules(&systemctl, &modules);
+    } else if (str_equal(command, "status")) {
+        str_t result = systemctl_status_modules(&systemctl, &args);
         str_print(result);
         str_free(result);
-        str_list_null(&modules);
     } else {
         fprintf(stderr, "unknown command '%s'", argv[1]);
     }
+    str_list_null(&args);
 
     int exitcode = systemctl.error;
     systemctl_null(&systemctl);
-    systemctl_options_null(&options);
+    systemctl_options_null(&cmd);
     if (exitcode) {
         logg_error(" exitcode %i", exitcode);
     } else {

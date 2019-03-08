@@ -1357,6 +1357,26 @@ str_list_add(str_list_t* self, const str_t value)
 }
 
 static void
+str_list_adds_all(str_list_t* self, str_list_t* value)
+{
+  if (value == NULL || value->size == 0) return;
+  ssize_t oldsize = self->size;
+  self->size += value->size;
+  self->data = realloc(self->data, self->size * sizeof(str_t));
+  for (int i=0; i < value->size; ++i) {
+     self->data[oldsize+i] = value->data[i];
+     value->data[i] = NULL;
+  }
+  str_list_free(value);
+}
+
+static void
+str_list_add_all(str_list_t* self, const str_list_t* value)
+{
+    str_list_adds_all(self, str_list_dup(value));
+}
+
+static void
 str_list_list_adds(str_list_list_t* self, str_list_t* value)
 {
   self->size += 1;
@@ -1448,7 +1468,7 @@ str_list_dict_adds(str_list_dict_t* self, const str_t key, str_list_t* value)
   }
   ssize_t pos = str_list_dict_find_pos(self, key);
   if (pos < self->size && str_equal(self->data[pos].key, key)) {
-      str_list_sets(&self->data[pos].value, value);
+      str_list_adds_all(&self->data[pos].value, value);
       return;
   }
   self->size += 1;

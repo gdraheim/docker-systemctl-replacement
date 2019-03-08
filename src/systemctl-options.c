@@ -55,13 +55,13 @@ systemctl_options_add9(systemctl_options_t* self,
     for (int i=0; i < optslen; ++i) {
         if (! str_empty(opts[i])) {
             if (str_startswith(opts[i], "-")) {
-                str_dict_add(&self->optmapping, opt, opts[i]);
+                str_dict_add(&self->optmapping, opts[i], opt);
             }
             else if (str_startswith(opts[i], "=")) {
-                str_dict_add(&self->optargument, opt, opts[i]);
+                str_dict_add(&self->optargument, opts[i], opt);
             }
             else {
-                str_dict_add(&self->optcomment, opt, opts[i]);
+                str_dict_add(&self->optcomment, opts[i], opt);
             }
         }
     }
@@ -91,6 +91,10 @@ systemctl_options_scan(systemctl_options_t* self, int argc, char** argv)
 {
     bool stopargs = false;
     str_t nextarg = NULL;
+    for (int o=0; o < self->optmapping.size; ++o) {
+        logg_debug("WITH OPTION %s", self->optmapping.data[o]);
+    }
+    
     for (int i=1; i < argc; ++i) {
         if (stopargs) {
             str_list_add(&self->args, argv[i]);
@@ -101,8 +105,9 @@ systemctl_options_scan(systemctl_options_t* self, int argc, char** argv)
             nextarg = NULL;
             continue;
         }
-        if (str_empty(argv[i]))
+        if (str_empty(argv[i])) {
             continue;
+        }
         if (str_equal(argv[i], "--")) {
             stopargs = true;
             continue;
