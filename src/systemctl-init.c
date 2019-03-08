@@ -28,6 +28,9 @@ char* SYSTEMCTL_DEBUG_AFTER = "";
 char* SYSTEMCTL_EXIT_WHEN_NO_MORE_PROCS = "";
 char* SYSTEMCTL_EXIT_WHEN_NO_MORE_SERVICES = "";
 
+#define ERROR1 1
+#define ERROR3 3
+
 typedef struct systemctl_settings
 {
     /* defaults for options */
@@ -1199,10 +1202,10 @@ systemctl_enabled_from(systemctl_t* self, systemctl_conf_t* conf)
     return "unknown";
 }
 
-str_list_t* restrict
+str_t restrict
 systemctl_status_units(systemctl_t* self, str_list_t* units);
 
-str_list_t* restrict
+str_t restrict
 systemctl_status_modules(systemctl_t* self, str_list_t* modules)
 {
     bool found_all = true;
@@ -1227,23 +1230,60 @@ systemctl_status_modules(systemctl_t* self, str_list_t* modules)
         }
         str_list_free(matched);
     }
-    str_list_t* result = systemctl_status_units(self, &units);
+    str_t result = systemctl_status_units(self, &units);
     str_list_null(&units);
     return result;
 }
 
-str_list_t* restrict
+str_t restrict
+systemctl_status_unit(systemctl_t* self, str_t unit);
+
+str_t restrict
 systemctl_status_units(systemctl_t* self, str_list_t* units)
 {
-    str_list_t* result = str_list_new();
+    str_t result = str_new();
     for (int u=0; u < units->size; ++u) {
         str_t unit = units->data[u];
-        str_list_add(result, unit);
+        str_t result1 = systemctl_status_unit(self, unit);
+        if (! str_empty(result)) {
+           str_add(&result, "\n\n");
+        }
+        str_add(&result, result1);
+        str_free(result1);
     }
     return result;
 }
 
+str_t restrict
+systemctl_status_unit(systemctl_t* self, str_t unit)
+{
+    systemctl_conf_t* conf = systemctl_get_unit_conf(self, unit);
+    str_t result = str_new();
+    str_add(&result, unit);
+    str_add(&result, " - ");
+    str_adds(&result, systemctl_get_description_from(self, conf));
+    str_t loaded = systemctl_conf_loaded(conf);
+    if (!str_empty(loaded)) {
+       str_t filename = systemctl_conf_filename(conf);
+       str_t enabled = systemctl_enabled_from(self, conf);
+       str_adds(&result, str_format("\n    Loaded: %s (%s, %s)", loaded, filename, enabled));
+    } else {
+       str_add(&result, "\n    Loaded: failed");
+       self->error = self->error | ERROR3;
+       return result;
+    }
+    // TODO: finish this
+    return result;
+}
+
 /* ........................................................ */
+
+int
+str_print(str_t result)
+{
+    fprintf(stdout, "%s\n", result);
+    return result && result[0] ? 0 : 1;
+}
 
 int
 str_list_print(str_list_t* result)
@@ -1298,9 +1338,9 @@ main(int argc, char** argv)
     } else if (argc > 1 && str_equal(argv[1], "status")) {
         str_list_t modules = str_list_NULL;
         str_list_init_from(&modules, argc - 2, argv + 2);
-        str_list_t* result = systemctl_status_modules(&systemctl, &modules);
-        str_list_print(result);
-        str_list_free(result);
+        str_t result = systemctl_status_modules(&systemctl, &modules);
+        str_print(result);
+        str_free(result);
         str_list_null(&modules);
     } else {
         fprintf(stderr, "unknown command '%s'", argv[1]);

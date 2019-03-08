@@ -1310,6 +1310,39 @@ str_list_dict_dict_set(str_list_dict_dict_t* self, const str_list_dict_dict_t* f
 /* add */
 
 static void
+str_adds(str_t* self, str_t value)
+{
+  if (! self) return;
+  if (!value) return;
+  if (! *self) {
+      *self = value;
+      return;
+  }
+  ssize_t len1 = str_len(*self);
+  ssize_t len2 = str_len(value);
+  *self = realloc(*self, len1 + len2 + 1);
+  memcpy(*self + len1, value, len2+1);
+  str_free(value);
+  return;
+}
+
+static void
+str_add(str_t* self, str_t value)
+{
+  if (! self) return;
+  if (!value) return;
+  if (! *self) {
+      *self = str_dup(value);
+      return;
+  }
+  ssize_t len1 = str_len(*self);
+  ssize_t len2 = str_len(value);
+  *self = realloc(*self, len1 + len2 + 1);
+  memcpy(*self + len1, value, len2 + 1);
+  return;
+}
+
+static void
 str_list_adds(str_list_t* self, str_t value)
 {
   self->size += 1;
