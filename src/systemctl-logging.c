@@ -2,9 +2,18 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
+#include "systemctl-logging.h"
 
-void systemctl_error(const char* format, ...)
+static int loglevel = LOG_ERROR;
+
+void logg_setlevel(int level) 
 {
+   loglevel = level;
+}
+
+void logg_error(const char* format, ...)
+{
+  if (loglevel > LOG_ERROR) return;
   char msg[] = "ERROR: ";
   va_list args;
   va_start(args, format);
@@ -24,8 +33,9 @@ void systemctl_error(const char* format, ...)
   free(buf);
 }
 
-void systemctl_warning(const char* format, ...)
+void logg_warning(const char* format, ...)
 {
+  if (loglevel > LOG_WARNING) return;
   char msg[] = "WARNING: ";
   va_list args;
   va_start(args, format);
@@ -45,8 +55,9 @@ void systemctl_warning(const char* format, ...)
   free(buf);
 }
 
-void systemctl_info(const char* format, ...)
+void logg_info(const char* format, ...)
 {
+  if (loglevel > LOG_INFO) return;
   char msg[] = "INFO: ";
   va_list args;
   va_start(args, format);
@@ -66,8 +77,9 @@ void systemctl_info(const char* format, ...)
   free(buf);
 }
 
-void systemctl_debug(const char* format, ...)
+void logg_debug(const char* format, ...)
 {
+  if (loglevel > LOG_DEBUG) return;
   char msg[] = "DEBUG: ";
   va_list args;
   va_start(args, format);

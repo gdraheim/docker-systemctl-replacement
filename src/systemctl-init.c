@@ -387,7 +387,7 @@ systemctl_conf_data_read_sysd(systemctl_conf_data_t* self, str_t filename)
             continue;
         }
         if (regmatch("(\\w+) *=(.*)", line, m3, m, 0)) {
-            systemctl_error("bad ini line: '%s'", line);
+            logg_error("bad ini line: '%s'", line);
             goto done;
         }
         str_sets(&name, str_cut(line, m[1].rm_so, m[1].rm_eo));
@@ -771,7 +771,7 @@ systemctl_scan_unit_sysd_files(systemctl_t* self)
                  continue;
               }
               if (! str_dict_contains(&self->file_for_unit_sysd, name)) {
-                 // systemctl_info("found %s => %s", name, path);
+                 // logg_info("found %s => %s", name, path);
                  str_dict_adds(&self->file_for_unit_sysd, name, path);
               } else {
                  str_free(path);
@@ -805,7 +805,7 @@ systemctl_scan_unit_sysv_files(systemctl_t* self)
               }
               str_t service_name = str_dup2(name, ".service");
               if (! str_dict_contains(&self->file_for_unit_sysv, service_name)) {
-                 // systemctl_info("found %s => %s", name2, path);
+                 // logg_info("found %s => %s", name2, path);
                  str_dict_adds(&self->file_for_unit_sysv, service_name, path);
               } else {
                  str_free(path);
@@ -967,7 +967,7 @@ systemctl_match_sysd_units(systemctl_t* self, str_list_t* modules)
         }
     }
     if (false) 
-      systemctl_info("matched %i units (limited by %i args, e.g. '%s')", 
+      logg_info("matched %i units (limited by %i args, e.g. '%s')", 
         str_list_len(result), str_list_len(modules), modules->size ? modules->data[0]: "");
     return result;
 }
@@ -1173,7 +1173,7 @@ systemctl_show_list_unit_files(systemctl_t* self, str_list_t* modules)
         result = systemctl_list_service_unit_files(self, &no_modules);
     }
     else if (!str_empty(self->use.unit_type)) {
-        systemctl_error("unsupported unit --type=%s", self->use.unit_type);
+        logg_error("unsupported unit --type=%s", self->use.unit_type);
         result = str_list_list_new();
     }
     else {
@@ -1222,7 +1222,7 @@ systemctl_status_modules(systemctl_t* self, str_list_t* modules)
         str_list_t match_list = { 1, match_data }; /* FIXME */
         str_list_t* matched = systemctl_match_units(self, &match_list);
         if (str_list_empty(matched)) {
-            systemctl_error("Unit %s could not be found.", module);
+            logg_error("Unit %s could not be found.", module);
             found_all = false;
             str_list_free(matched);
             continue;
@@ -1362,9 +1362,9 @@ main(int argc, char** argv)
     systemctl_null(&systemctl);
     systemctl_options_null(&options);
     if (exitcode) {
-        systemctl_error(" exitcode %i", exitcode);
+        logg_error(" exitcode %i", exitcode);
     } else {
-        systemctl_info(" exitcode %i", exitcode);
+        logg_info(" exitcode %i", exitcode);
     }
     return exitcode;
 }

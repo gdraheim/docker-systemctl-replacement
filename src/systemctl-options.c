@@ -49,7 +49,7 @@ systemctl_options_add9(systemctl_options_t* self,
         }
     }
     if (! opt) {
-       systemctl_error("missing option name");
+       logg_error("missing option name");
        return;
     }
     for (int i=0; i < optslen; ++i) {
@@ -112,7 +112,7 @@ systemctl_options_scan(systemctl_options_t* self, int argc, char** argv)
                 str_t opt = str_cut(argv[i], 0, x);
                 str_t key = str_dict_get(&self->optmapping, opt);
                 if (! key) {
-                    systemctl_error("no such option %s", opt);
+                    logg_error("no such option %s", opt);
                     continue;
                 }
                 str_t val = str_cut_end(argv[i], x+1);
@@ -121,7 +121,7 @@ systemctl_options_scan(systemctl_options_t* self, int argc, char** argv)
                 str_t opt = argv[i];
                 str_t key = str_dict_get(&self->optmapping, opt);
                 if (! key) {
-                    systemctl_error("no such option %s", opt);
+                    logg_error("no such option %s", opt);
                     continue;
                 }
                 str_t arg = str_dict_get(&self->optargument, opt);
@@ -138,7 +138,7 @@ systemctl_options_scan(systemctl_options_t* self, int argc, char** argv)
                 char opt[] = { '-', chars[k], '\0' };
                 str_t key = str_dict_get(&self->optmapping, opt);
                 if (! key) {
-                    systemctl_error("no such option %s", opt);
+                    logg_error("no such option %s", opt);
                     continue;
                 }
                 nextarg = str_dict_get(&self->optargument, opt);
@@ -149,7 +149,7 @@ systemctl_options_scan(systemctl_options_t* self, int argc, char** argv)
                 }
                 str_t arg = str_dict_get(&self->optargument, opt);
                 if (nextarg) {
-                   systemctl_error("multiple short options require an arg: %s (%s) (%s)", opt, key, nextarg);
+                   logg_error("multiple short options require an arg: %s (%s) (%s)", opt, key, nextarg);
                    str_list_dict_add1(&self->opts, nextarg, opt);
                 }
                 if (arg) {

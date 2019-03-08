@@ -37,7 +37,7 @@ regmatch(const char* regex, const char* text, size_t nmatch, regmatch_t pmatch[]
       cflags |= REG_NEWLINE;
   regex_t preg;
   res = regcomp(&preg, regex, cflags);
-  if (res) systemctl_info("bad regex '%s'", regex);
+  if (res) logg_info("bad regex '%s'", regex);
   res = regexec(&preg, text, nmatch, pmatch, 0);
   regfree(&preg);
   return res;
@@ -539,70 +539,70 @@ str_list_dict_dict_new()
 /* info */
 
 void
-systemctl_info_ptr_dict(str_t msg, const ptr_dict_t* self)
+logg_info_ptr_dict(str_t msg, const ptr_dict_t* self)
 {
-  systemctl_info("ptr_dict=%p (%s)", self->data, msg);
+  logg_info("ptr_dict=%p (%s)", self->data, msg);
   for (ssize_t i=0; i < self->size; ++i) {
-      systemctl_info("ptr_dict[%i]=%p", i, self->data[i].key);
-      systemctl_info("ptr_dict[%i]='%s'", i, self->data[i].key);
+      logg_info("ptr_dict[%i]=%p", i, self->data[i].key);
+      logg_info("ptr_dict[%i]='%s'", i, self->data[i].key);
       if (i == 8) {
-         systemctl_info("ptr_dict[.]...");
+         logg_info("ptr_dict[.]...");
          break;
       }
   }
 }
 
 void
-systemctl_info_ptr_list_dict(str_t msg, const ptr_list_dict_t* self)
+logg_info_ptr_list_dict(str_t msg, const ptr_list_dict_t* self)
 {
-  systemctl_info("ptr_list_dict=%p (%s)", self->data, msg);
+  logg_info("ptr_list_dict=%p (%s)", self->data, msg);
   for (ssize_t i=0; i < self->size; ++i) {
-      systemctl_info("ptr_list_dict[%i]=%p", i, self->data[i].key);
-      systemctl_info("ptr_list_dict[%i]='%s'", i, self->data[i].key);
+      logg_info("ptr_list_dict[%i]=%p", i, self->data[i].key);
+      logg_info("ptr_list_dict[%i]='%s'", i, self->data[i].key);
       if (i == 8) {
-         systemctl_info("ptr_list_dict[.]...");
+         logg_info("ptr_list_dict[.]...");
          break;
       }
   }
 }
 
 void
-systemctl_info_str_dict(str_t msg, const str_dict_t* self)
+logg_info_str_dict(str_t msg, const str_dict_t* self)
 {
-  systemctl_info("str_dict=%p (%s)", self->data, msg);
+  logg_info("str_dict=%p (%s)", self->data, msg);
   for (ssize_t i=0; i < self->size; ++i) {
-      systemctl_info("str_dict[%i]=%p", i, self->data[i].key);
-      systemctl_info("str_dict[%i]='%s'", i, self->data[i].key);
+      logg_info("str_dict[%i]=%p", i, self->data[i].key);
+      logg_info("str_dict[%i]='%s'", i, self->data[i].key);
       if (i == 8) {
-         systemctl_info("str_dict[.]...");
+         logg_info("str_dict[.]...");
          break;
       }
   }
 }
 
 void
-systemctl_info_str_list_dict(str_t msg, const str_list_dict_t* self)
+logg_info_str_list_dict(str_t msg, const str_list_dict_t* self)
 {
-  systemctl_info("str_list_dict=%p (%s)", self->data, msg);
+  logg_info("str_list_dict=%p (%s)", self->data, msg);
   for (ssize_t i=0; i < self->size; ++i) {
-      systemctl_info("str_list_dict[%i]=%p", i, self->data[i].key);
-      systemctl_info("str_list_dict[%i]='%s'", i, self->data[i].key);
+      logg_info("str_list_dict[%i]=%p", i, self->data[i].key);
+      logg_info("str_list_dict[%i]='%s'", i, self->data[i].key);
       if (i == 8) {
-         systemctl_info("str_list_dict[.]...");
+         logg_info("str_list_dict[.]...");
          break;
       }
   }
 }
 
 void
-systemctl_info_str_list_dict_dict(str_t msg, const str_list_dict_dict_t* self)
+logg_info_str_list_dict_dict(str_t msg, const str_list_dict_dict_t* self)
 {
-  systemctl_info("str_list_dict_dict=%p (%s)", self->data, msg);
+  logg_info("str_list_dict_dict=%p (%s)", self->data, msg);
   for (ssize_t i=0; i < self->size; ++i) {
-      systemctl_info("str_list_dict_dict[%i]=%p", i, self->data[i].key);
-      systemctl_info("str_list_dict_dict[%i]='%s'", i, self->data[i].key);
+      logg_info("str_list_dict_dict[%i]=%p", i, self->data[i].key);
+      logg_info("str_list_dict_dict[%i]='%s'", i, self->data[i].key);
       if (i == 8) {
-         systemctl_info("str_list_dict_dict[.]...");
+         logg_info("str_list_dict_dict[.]...");
          break;
       }
   }
@@ -723,8 +723,8 @@ ptr_dict_find(const ptr_dict_t* self, const str_t key)
      return -1;
   if (self->size == 0)
      return -1;
-  ///systemctl_info("'%s' dict_find size=%i", key, self->size);
-  ///systemctl_info_ptr_dict("ptr_dict_find", self);
+  ///logg_info("'%s' dict_find size=%i", key, self->size);
+  ///logg_info_ptr_dict("ptr_dict_find", self);
   /* binary search */
   ssize_t a=0;
   ssize_t e=self->size;
@@ -732,24 +732,24 @@ ptr_dict_find(const ptr_dict_t* self, const str_t key)
   while(true) {
     int comp = str_cmp(key, self->data[c].key);
     if (comp == 0) {
-       ///systemctl_info("'%s' equal to '%s' at [%i] -> return %i", key, self->data[c].key, c, c);
+       ///logg_info("'%s' equal to '%s' at [%i] -> return %i", key, self->data[c].key, c, c);
        return c;
     } else if (comp < 0) {
-       ///systemctl_info("'%s' lower than '%s' at [%i]", key, self->data[c].key, c);
+       ///logg_info("'%s' lower than '%s' at [%i]", key, self->data[c].key, c);
        ssize_t b = a+(c-a)/2;
        if (b == c) b -= 1;
        if (b < a) { 
-           ///systemctl_info("'%s' lower than '%s' at [%i] -> return -1", key, self->data[c].key, c);
+           ///logg_info("'%s' lower than '%s' at [%i] -> return -1", key, self->data[c].key, c);
            return -1;
        }
        e = c;
        c = b;
     } else if (comp > 0) {
-       ///systemctl_info("'%s' bigger than '%s' at [%i]", key, self->data[c].key, c);
+       ///logg_info("'%s' bigger than '%s' at [%i]", key, self->data[c].key, c);
        ssize_t d = c+(e-c)/2;
        if (d == c) d += 1;
        if (d >= e) {
-           ///systemctl_info("'%s' bigger than '%s' at [%i] -> return -1", key, self->data[c].key, c);
+           ///logg_info("'%s' bigger than '%s' at [%i] -> return -1", key, self->data[c].key, c);
            return -1;
        }
        a = c;
@@ -765,8 +765,8 @@ ptr_list_dict_find(const ptr_list_dict_t* self, const str_t key)
      return -1;
   if (self->size == 0)
      return -1;
-  ///systemctl_info("'%s' dict_find size=%i", key, self->size);
-  ///systemctl_info_ptr_list_dict("ptr_list_dict_find", self);
+  ///logg_info("'%s' dict_find size=%i", key, self->size);
+  ///logg_info_ptr_list_dict("ptr_list_dict_find", self);
   /* binary search */
   ssize_t a=0;
   ssize_t e=self->size;
@@ -774,24 +774,24 @@ ptr_list_dict_find(const ptr_list_dict_t* self, const str_t key)
   while(true) {
     int comp = str_cmp(key, self->data[c].key);
     if (comp == 0) {
-       ///systemctl_info("'%s' equal to '%s' at [%i] -> return %i", key, self->data[c].key, c, c);
+       ///logg_info("'%s' equal to '%s' at [%i] -> return %i", key, self->data[c].key, c, c);
        return c;
     } else if (comp < 0) {
-       ///systemctl_info("'%s' lower than '%s' at [%i]", key, self->data[c].key, c);
+       ///logg_info("'%s' lower than '%s' at [%i]", key, self->data[c].key, c);
        ssize_t b = a+(c-a)/2;
        if (b == c) b -= 1;
        if (b < a) { 
-           ///systemctl_info("'%s' lower than '%s' at [%i] -> return -1", key, self->data[c].key, c);
+           ///logg_info("'%s' lower than '%s' at [%i] -> return -1", key, self->data[c].key, c);
            return -1;
        }
        e = c;
        c = b;
     } else if (comp > 0) {
-       ///systemctl_info("'%s' bigger than '%s' at [%i]", key, self->data[c].key, c);
+       ///logg_info("'%s' bigger than '%s' at [%i]", key, self->data[c].key, c);
        ssize_t d = c+(e-c)/2;
        if (d == c) d += 1;
        if (d >= e) {
-           ///systemctl_info("'%s' bigger than '%s' at [%i] -> return -1", key, self->data[c].key, c);
+           ///logg_info("'%s' bigger than '%s' at [%i] -> return -1", key, self->data[c].key, c);
            return -1;
        }
        a = c;
@@ -810,36 +810,36 @@ ptr_dict_find_pos(const ptr_dict_t* self, const str_t key)
      return 0;
   if (self->size == 0)
      return 0;
-  ///systemctl_info("'%s' dict_find_pos size=%i", key, self->size);
-  ///systemctl_info_ptr_dict("ptr_dict_find_pos", self);
+  ///logg_info("'%s' dict_find_pos size=%i", key, self->size);
+  ///logg_info_ptr_dict("ptr_dict_find_pos", self);
   /* binary search */
   ssize_t a=0;
   ssize_t e=self->size;
   ssize_t c=e/2;
   while(true) {
-    ///systemctl_info("a=%i c=%i e=%i", a, c, e);
-    ///systemctl_info("key[c]=%p", self->data[c].key);
-    ///systemctl_info("key[c]='%s'", self->data[c].key);
+    ///logg_info("a=%i c=%i e=%i", a, c, e);
+    ///logg_info("key[c]=%p", self->data[c].key);
+    ///logg_info("key[c]='%s'", self->data[c].key);
     int comp = str_cmp(key, self->data[c].key);
     if (comp == 0) {
-       ///systemctl_info("'%s' equal to '%s' at [%i] -> return %i", key, self->data[c].key, c, c);
+       ///logg_info("'%s' equal to '%s' at [%i] -> return %i", key, self->data[c].key, c, c);
        return c;
     } else if (comp < 0) {
-       ///systemctl_info("'%s' lower than '%s' at [%i]", key, self->data[c].key, c);
+       ///logg_info("'%s' lower than '%s' at [%i]", key, self->data[c].key, c);
        ssize_t b = a+(c-a)/2;
        if (b == c) b -= 1;
        if (b < a) { 
-           ///systemctl_info("'%s' lower than '%s' at [%i] -> return %i", key, self->data[c].key, c, c);
+           ///logg_info("'%s' lower than '%s' at [%i] -> return %i", key, self->data[c].key, c, c);
            return c;
        }
        e = c;
        c = b;
     } else if (comp > 0) {
-       ///systemctl_info("'%s' bigger than '%s' at [%i]", key, self->data[c].key, c);
+       ///logg_info("'%s' bigger than '%s' at [%i]", key, self->data[c].key, c);
        ssize_t d = c+(e-c)/2;
        if (d == c) d += 1;
        if (d >= e) {
-           ///systemctl_info("'%s' lower than '%s' at [%i] -> return %i", key, self->data[c].key, c, c+1);
+           ///logg_info("'%s' lower than '%s' at [%i] -> return %i", key, self->data[c].key, c, c+1);
            return c+1;
        }
        a = c;
@@ -855,36 +855,36 @@ ptr_list_dict_find_pos(const ptr_list_dict_t* self, const str_t key)
      return 0;
   if (self->size == 0)
      return 0;
-  ///systemctl_info("'%s' dict_find_pos size=%i", key, self->size);
-  ///systemctl_info_ptr_list_dict("ptr_list_dict_find_pos", self);
+  ///logg_info("'%s' dict_find_pos size=%i", key, self->size);
+  ///logg_info_ptr_list_dict("ptr_list_dict_find_pos", self);
   /* binary search */
   ssize_t a=0;
   ssize_t e=self->size;
   ssize_t c=e/2;
   while(true) {
-    ///systemctl_info("a=%i c=%i e=%i", a, c, e);
-    ///systemctl_info("key[c]=%p", self->data[c].key);
-    ///systemctl_info("key[c]='%s'", self->data[c].key);
+    ///logg_info("a=%i c=%i e=%i", a, c, e);
+    ///logg_info("key[c]=%p", self->data[c].key);
+    ///logg_info("key[c]='%s'", self->data[c].key);
     int comp = str_cmp(key, self->data[c].key);
     if (comp == 0) {
-       ///systemctl_info("'%s' equal to '%s' at [%i] -> return %i", key, self->data[c].key, c, c);
+       ///logg_info("'%s' equal to '%s' at [%i] -> return %i", key, self->data[c].key, c, c);
        return c;
     } else if (comp < 0) {
-       ///systemctl_info("'%s' lower than '%s' at [%i]", key, self->data[c].key, c);
+       ///logg_info("'%s' lower than '%s' at [%i]", key, self->data[c].key, c);
        ssize_t b = a+(c-a)/2;
        if (b == c) b -= 1;
        if (b < a) { 
-           ///systemctl_info("'%s' lower than '%s' at [%i] -> return %i", key, self->data[c].key, c, c);
+           ///logg_info("'%s' lower than '%s' at [%i] -> return %i", key, self->data[c].key, c, c);
            return c;
        }
        e = c;
        c = b;
     } else if (comp > 0) {
-       ///systemctl_info("'%s' bigger than '%s' at [%i]", key, self->data[c].key, c);
+       ///logg_info("'%s' bigger than '%s' at [%i]", key, self->data[c].key, c);
        ssize_t d = c+(e-c)/2;
        if (d == c) d += 1;
        if (d >= e) {
-           ///systemctl_info("'%s' lower than '%s' at [%i] -> return %i", key, self->data[c].key, c, c+1);
+           ///logg_info("'%s' lower than '%s' at [%i] -> return %i", key, self->data[c].key, c, c+1);
            return c+1;
        }
        a = c;
@@ -905,7 +905,7 @@ str_dict_find(const str_dict_t* self, const str_t key)
 static ssize_t
 str_dict_find_pos(const str_dict_t* self, const str_t key)
 {
-    ///systemctl_info_str_dict("str_dict_find_pos", self);
+    ///logg_info_str_dict("str_dict_find_pos", self);
     const ptr_dict_t* dict = (const ptr_dict_t*)(self);
     return ptr_dict_find_pos(dict, key);
 }
@@ -928,7 +928,7 @@ str_list_dict_dict_find(const str_list_dict_dict_t* self, const str_t key)
 static ssize_t
 str_list_dict_find_pos(const str_list_dict_t* self, const str_t key)
 {
-    ///systemctl_info_str_list_dict("str_list_dict_find_pos", self);
+    ///logg_info_str_list_dict("str_list_dict_find_pos", self);
     const ptr_list_dict_t* dict = (const ptr_list_dict_t*)(self);
     return ptr_list_dict_find_pos(dict, key);
 }
@@ -936,7 +936,7 @@ str_list_dict_find_pos(const str_list_dict_t* self, const str_t key)
 static ssize_t
 str_list_dict_dict_find_pos(const str_list_dict_dict_t* self, const str_t key)
 {
-    ///systemctl_info_str_list_dict_dict("str_list_dict_dict_find_pos", self);
+    ///logg_info_str_list_dict_dict("str_list_dict_dict_find_pos", self);
     const ptr_list_dict_t* dict = (const ptr_list_dict_t*)(self);
     return ptr_list_dict_find_pos(dict, key);
 }
@@ -1428,7 +1428,7 @@ str_dict_adds(str_dict_t* self, const str_t key, str_t value)
   }
   self->data[pos].key = str_dup(key);
   self->data[pos].value = value;
-  ///systemctl_info_str_dict("str_dict_adds", self);
+  ///logg_info_str_dict("str_dict_adds", self);
 }
 
 static void
@@ -1466,14 +1466,14 @@ str_list_dict_adds(str_list_dict_t* self, const str_t key, str_list_t* value)
   // str_list_init(&self->data[pos].value);
   // str_list_sets(&self->data[pos].value, value);
   if (pos > 0 && 0 > str_cmp(self->data[pos].key, self->data[pos-1].key)) {
-      systemctl_error("new pos[%i] '%s' is smaller than pos[%i-1] '%s'", 
+      logg_info("new pos[%i] '%s' is smaller than pos[%i-1] '%s'", 
          pos, self->data[pos].key, pos, self->data[pos-1].key);
-      systemctl_info_str_list_dict("str_list_dict_adds", self);
+      logg_info_str_list_dict("str_list_dict_adds", self);
   } 
   if (pos < self->size-1 && 0 < str_cmp(self->data[pos].key, self->data[pos+1].key)) {
-      systemctl_error("new pos[%i] '%s' is bigger than pos[%i+1] '%s'", 
+      logg_info("new pos[%i] '%s' is bigger than pos[%i+1] '%s'", 
          pos, self->data[pos].key, pos, self->data[pos+1].key);
-      systemctl_info_str_list_dict("str_list_dict_adds", self);
+      logg_info_str_list_dict("str_list_dict_adds", self);
   } 
 
 }
@@ -1526,14 +1526,14 @@ str_list_dict_dict_adds(str_list_dict_dict_t* self, const str_t key, str_list_di
   value->data = NULL;
   str_list_dict_free(value);
   if (pos > 0 && 0 > str_cmp(self->data[pos].key, self->data[pos-1].key)) {
-      systemctl_error("new pos[%i] '%s' is smaller than pos[%i-1] '%s'", 
+      logg_info("new pos[%i] '%s' is smaller than pos[%i-1] '%s'", 
          pos, self->data[pos].key, pos, self->data[pos-1].key);
-      systemctl_info_str_list_dict_dict("str_list_dict_dict_adds", self);
+      logg_info_str_list_dict_dict("str_list_dict_dict_adds", self);
   } 
   if (pos < self->size-1 && 0 < str_cmp(self->data[pos].key, self->data[pos+1].key)) {
-      systemctl_error("new pos[%i] '%s' is bigger than pos[%i+1] '%s'", 
+      logg_info("new pos[%i] '%s' is bigger than pos[%i+1] '%s'", 
          pos, self->data[pos].key, pos, self->data[pos+1].key);
-      systemctl_info_str_list_dict_dict("str_list_dict_dict_adds", self);
+      logg_info_str_list_dict_dict("str_list_dict_dict_adds", self);
   } 
 }
 

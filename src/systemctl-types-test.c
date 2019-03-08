@@ -82,7 +82,7 @@ void test_021()
     str_dict_add(&g, "bar", "coo");
     str_list_t* keys = str_dict_keys(&g);
     str_t s = str_list_join(keys, ".");
-    systemctl_info("dict add/keys: '%s'", s);
+    logg_info("dict add/keys: '%s'", s);
     assert(! strcmp(s, "bar.foo"));
     str_list_free(keys);
     str_dict_null(&g);
@@ -99,7 +99,7 @@ void test_022()
     str_dict_add(&g, "all", "oki");
     str_list_t* keys = str_dict_keys(&g);
     str_t s = str_list_join(keys, ".");
-    systemctl_info("dict add/keys: '%s'", s);
+    logg_info("dict add/keys: '%s'", s);
     assert(! strcmp(s, "all.bar.coo.foo.zen"));
     str_list_free(keys);
     str_dict_null(&g);
