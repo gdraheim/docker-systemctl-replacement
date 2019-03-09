@@ -51,7 +51,7 @@ will be always the same path in a systemd controlled
 environment it is a different one when a program is
 started through systemctl.py. It works.
 
-# lock files
+## lock files
 
 The optimization of per-service notify-sockets has
 brought about the optimization that the mutex locking
