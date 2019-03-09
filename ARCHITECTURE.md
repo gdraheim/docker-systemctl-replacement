@@ -237,9 +237,10 @@ There are however subtle differences - mostly that's
 just room for improvement to align the way how a "failed"
 service is called out. The "active" state should be
 always reported correctly. Because deployment tools
-like Ansible/Puppet will stop execution - but these tools
-do not care much if a service in an unexpected stopped
-status through a mark as "failed" or "inactive". Whatever.
+like Ansible/Puppet will stop execution when not - but 
+these tools do not care much if a service in an unexpected 
+stopped status through a mark as "failed" or "inactive". 
+Whatever.
 
 ## boot time check
 
