@@ -60,9 +60,9 @@ on all those services.
 
 Of course it would be possible to write a second script to
 implement the docker-init-replacement functionality but it
-is integrated here. Just run the systemctl.py as the PID-1
-process and it will implicitly call its functionality of
-"systemctl -1 default", and upon receiving a SIGTERM from
+is integrated here. Just run the systemctl replacemnt as 
+the PID-1 process and it will implicitly call its functionality 
+of "systemctl -1 default", and upon receiving a SIGTERM from
 docker-stop it will run its "systemctl halt" implementation.
 
 Here "default" is the standard command to start all services 
@@ -77,14 +77,14 @@ symlink - for the common "multi-user.target" this will
 be in /etc/systemd/system/multi-user.target.wants/.
 
 The docker-systemctl-replacement knows about that and
-it is used. And as another hint: if you run the script
-as "systemctl.py init" then pressing Control-C will result
-in an interpretation of "systemctl halt" as well, so
+it is used. And as another hint: if you run the non-installed
+script as "systemctl.py init" then pressing Control-C will 
+result in an interpretation of "systemctl halt" as well, so
 one can test the correct interpretion of the "wants".
 
 ## Installation as an init-replacement
 
-For the systemctl-replacement it is best to overwrite
+As for the systemctl replacement it is best to overwrite
 the original /usr/bin/systemctl because a number of
 tools call that indirectly to start/stop services. This
 is very true for Ansible's 'service' module.
@@ -92,24 +92,27 @@ is very true for Ansible's 'service' module.
 For an init-replacement it may be placed anywhere in
 the docker image, let's say it is /usr/bin/systemctl.py.
 It will be activated by listing that path in the CMD
-element of a Dockerfile.
+element of a Dockerfile. However this is rarely used
+on mostly just to have bin-alternative setup.
 
 If you do not use a Dockerfile (for example using an
-Ansible script for deployment to a docker container) 
-then you can add the attribute upon the next 
-"docker commit" like this:
+Ansible script for deployment to a docker container)
+then you can add the CMD  or ENTRYPOINT attribute upon 
+the next "docker commit" like this:
 
-    docker commit -c "CMD ['/usr/bin/systemctl.py']" \
+    docker commit -c "CMD ['/usr/bin/systemctl']" \
         -m "<comment>" <container> <new-image>
 
-If the script is being installed as /usr/bin/systemctl
-anyway then you may just want to reference that. (Left
-for an excercise here). If only a specific set of
-services shall be run then one can exchange the "default"
-command with an explicit start list (and be sure to 
-activate the continued execution as an init process):
+So if the systemctl replacement script is being installed 
+as /usr/bin/systemctl anyway then you just reference it
+like that. If only a specific set of services shall be 
+run then one can exchange the "default" command with an 
+explicit start list (and be sure to activate the continued 
+execution as an init process):
 
-    /usr/bin/systemctl.py init mongodb myapp
+    /usr/bin/systemctl init mongodb myapp
+
+(equivalent with `systemctl start --init mongodb myapp`)
 
 ## Remember the stop grace timeout
 
