@@ -100,8 +100,8 @@ then it is also executed when then following commands are run
     chkconfig xx on    =>  systemctl enable xx
     chkconfig xx off   =>  systemctl disable xx
 
-You can see that when enabling the implicit logging for systemctl.py by
-doing a `touch /var/log/systemctl.log`
+You can see that when enabling the implicit logging for the systemctl
+replacement script by doing a `touch /var/log/systemctl.log`
 
 ## Python Installation
 
@@ -154,10 +154,10 @@ be systemd-controlled for real. This is done like this in
         return False
 
 In order to defeat these extra checks it is a good idea to simply create
-the run-directory that is used by systemctl.py anyway. However this must
-be done before starting any Ansible "service:" call. If you do run some
-direct shell "systemctl" (or "systemctl.py") command before that time then
-you would not need it.
+the run-directory that is used by systemctl replacement script anyway. However 
+this must be done before starting any Ansible "service:" call. If you do run some
+direct shell "systemctl" (or non-installed "systemctl.py") command before 
+that time then you would not need it.
 
 
     - hosts: a

@@ -100,10 +100,11 @@ location, so that administrators will often choose to prefix the
 conf-files by number to ensure proper inclusion order, i.e. using
 some `"01-extra.conf"` to `"99-override.conf"` file names.
 
-As for systemctl.py the feature of a shortened `foo-.service.d` is
-not implemented. (The systemctl.py script does also ignore many of 
-the standard definitions about template service files). Therefore
-overrides must be specific for each service and not a group of them.
+As for the systemctl replacement script the feature of a shortened
+`foo-.service.d` is not implemented. (The systemctl script does
+also ignore many of the standard definitions about template service
+files). Therefore overrides must be specific for each service and
+not a group of them.
 
 ## EXAMPLE
 

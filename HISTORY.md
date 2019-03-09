@@ -54,7 +54,7 @@ ConfigParser to read the ini-style descriptor files. However be aware
 that a lot of service descriptor files may fail to load with that.
 
 After all, a "UnitConfig" parser was started to get the format
-correctly. It is still at the heart of the systemctl.py
+correctly. It is still at the heart of the current systemctl
 replacement script - completely rewritten of course because the
 service descriptors are not really `*.ini` files. If you ever want 
 to analyze systemd files then you better take that as an example how 
@@ -138,10 +138,10 @@ https://github.com/gdraheim/docker-systemctl-replacement/commit/3515f94bb6d1fdbe
 ## First Release
 
 As there are three stages above, the first real version number
-for the published code was set at `0.3`. As the systemctl.py
-project became an independent project from the Ansible code
-some finer versioning was needed with 0.3.1124 being the first
-real github version number.
+for the published code was set at `0.3`. As the systemctl
+replacement project became an independent project from the 
+Ansible code some finer versioning was needed with 0.3.1124 
+being the first real github version number.
 
 https://github.com/gdraheim/docker-systemctl-replacement/commit/d7bbdd13b86620a9e1eee70522862a868b9053fb
 
@@ -172,7 +172,7 @@ used but a different cli where one can run a test case by the prefix
 of its method name - for example `testsuite.py test_6001`. The old
 file "Maketests" was replaced by that.
 
-For release 0.8 the systemctl.py script was enhanced with an extra
+For release 0.8 the systemctl script was enhanced with an extra
 option "--root=path" to be able to test functionality without 
 starting a docker container (something that was required before).
 For release 0.9 the testsuite.py was enhanced to use "coverage2"
@@ -189,13 +189,13 @@ that time the changes are tracked using the GitHub issue list
 as well as mentioning the changes in the release notes attached
 to the git tags / github releases.
 
-Be aware that systemctl.py does not want to mimic the systemd
-behaviour in all detail. There had been always the expectation
+Be aware that the systemctl replacement does not want to mimic the 
+systemd behaviour in all detail. There had been always the expectation
 that at some point the docker cluster managers will be able to
 run containers with some systemd emulation themselves (atleast
-rkt does). So essentially, systemctl.py would become obsolete
-soon - however, years later the situation has not changed much
-and the script is even used for other purposes by now.
+rkt does). So essentially, the systemctl.py script would become 
+obsolete soon - however, years later the situation has not changed 
+much and the script is even used for other purposes by now.
 
 So let's close this history wrapup with a final remark: most
 Linux distributions are run by systemd at the time of writing
