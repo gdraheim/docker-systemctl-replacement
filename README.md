@@ -106,8 +106,8 @@ around.
 Zombie processes may also occur when a master process does 
 not do a `wait` for its children or the children were
 explicitly "disown"ed to run as a daemon themselves. The
-systemctl.py script can help here as it implements the
-"zombie reaper" functionality that the standard unix
+systemctl replacment script can help here as it implements 
+the "zombie reaper" functionality that the standard unix
 init daemon would provide. Otherwise the zombie PIDs would
 continue to live forever (as long as the container is
 running) filling also the process table of the docker host
@@ -133,15 +133,15 @@ allowing to stop all services that are found as
 start. It does execute all the "systemctl stop xx"
 commands to bring down the enabled services correctly.
 
-This is most useful when systemctl.py has been run as the
-entrypoint of a container - so when a "docker stop"
-sends a SIGTERM to the container's PID-1 then all the
-services are shut down before exiting the container.
-This can be permanently achieved by registering
-systemctl.py  as the CMD attribute of an image,
-perhaps by a "docker commit" like this:
+This is most useful when the systemctl replacement script 
+has been run as the entrypoint of a container - so when a 
+"docker stop" sends a SIGTERM to the container's PID-1 then 
+all the services are shut down before exiting the container.
+This can be permanently achieved by registering the
+systemctl replacement script  as the CMD attribute of an 
+image, perhaps by a "docker commit" like this:
 
-    docker commit -c "CMD ['/usr/bin/systemctl.py']" \
+    docker commit -c "CMD ['/usr/bin/systemctl']" \
         -m "<comment>" <container> <new-image>
 
 After all it allows to use a docker container to be
@@ -156,11 +156,11 @@ See [INIT-DAEMON](INIT-DAEMON.md) for more details.
 
 There is an extensive testsuite in the project that allows
 for a high line coverage of the tool. All the major functionality
-of the systemctl.py is being tested so that its usage in 
-continuous development pipeline will no break on updates of
-the script. If the systemctl.py script has some important
+of the systemctl replacement script is being tested so that its 
+usage in continuous development pipeline will no break on updates 
+of the script. If the systemctl.py script has some important
 changes in the implementation details it will be marked with
-an update of the major version. 
+an update of the major version.
 
 Please run the `testsuite.py` or `make check` upon providing
 a patch. It takes a couple of minutes because it may download
@@ -188,7 +188,7 @@ tries to align with SystemD's systemctl commands as close
 as possible as quite some third party tools are interpreting
 the output of it.
 
-The systemctl.py script has a long [HISTORY](HISTORY.md)
+The systemctl replacement script has a long [HISTORY](HISTORY.md)
 now with over a [thousand commits on github](https://github.com/gdraheim/docker-systemctl-replacement/tree/master)
 (mostly for the testsuite). It has also garnered some additional 
 functionality like the [USERMODE](USERMODE.md) which is 
