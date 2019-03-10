@@ -1453,8 +1453,7 @@ str_list_list_print(str_list_list_t* result)
 }
 
 int 
-main(int argc, char** argv)
-{
+main(int argc, char** argv) {
     systemctl_settings_t settings;
     systemctl_settings_init(&settings);
     /* scan options */
