@@ -18,6 +18,7 @@
 #include "systemctl-regex.h"
 #include "systemctl-options.h"
 #include "systemctl-logging.h"
+#include "systemctl-init.h"
 
 typedef char systemctl_copyright_t[64];
 typedef char systemctl_version_t[16];
@@ -35,64 +36,6 @@ char* SYSTEMCTL_EXIT_WHEN_NO_MORE_SERVICES = "";
 
 #define ERROR1 1
 #define ERROR3 3
-
-typedef struct systemctl_settings
-{
-    /* defaults for options */
-    char** extra_vars;
-    bool   force;
-    bool   full;
-    bool   now;
-    bool   no_legend;
-    bool   no_ask_password;
-    char*  preset_mode;
-    bool   quiet;
-    char*  root;
-    char*  unit_type;
-    char*  unit_state;
-    char*  unit_property;
-    bool   show_all;
-    bool   user_mode;
-    /* common default paths */
-    char*  default_target;
-    char*  system_folder1;
-    char*  system_folder2;
-    char*  system_folder3;
-    char*  system_folder4;
-    char*  system_folder9;
-    char*  user_folder1;
-    char*  user_folder2;
-    char*  user_folder3;
-    char*  user_folder4;
-    char*  user_folder9;
-    char*  init_folder1;
-    char*  init_folder2;
-    char*  init_folder9;
-    char*  preset_folder1;
-    char*  preset_folder2;
-    char*  preset_folder3;
-    char*  preset_folder4;
-    char*  preset_folder9;
-    /* definitions */
-    int SystemCompatabilityVersion;
-    float MinimumYield;
-    int MinimumTimeoutStartSec;
-    int MinimumTimeoutStopSec;
-    int DefaultTimeoutStartSec;
-    int DefaultTimeoutStopSec;
-    int DefaultMaximumTimeout;
-    int InitLoopSleep;
-    int ProcMaxDepth;
-    int MaxLockWait;
-    char* DefaultPath;
-    str_list_t* ResetLocale;
-    /* system defaults */
-    char* notify_socket_folder;
-    char* pid_file_folder;
-    char* journal_log_folder;
-    char* debug_log;
-    char* extra_log;
-} systemctl_settings_t;
 
 void
 systemctl_settings_init(systemctl_settings_t* self)
@@ -203,12 +146,12 @@ os_getlogin()
 
 /* .............................. */
 
-typedef struct systemctl_conf_data
+struct systemctl_conf_data
 {
     str_list_dict_dict_t defaults;
     str_list_dict_dict_t conf;
     str_list_t files;
-} systemctl_conf_data_t;
+};
 
 
 void 
@@ -515,7 +458,7 @@ systemctl_conf_data_read_sysv(systemctl_conf_data_t* self, str_t filename)
     return res;
 }
 
-typedef struct systemctl_conf
+struct systemctl_conf
 {
     systemctl_conf_data_t data;
     str_dict_t env;
@@ -524,7 +467,7 @@ typedef struct systemctl_conf
     str_t module;
     str_dict_t drop_in_files;
     str_t name;
-} systemctl_conf_t;
+};
 
 void 
 systemctl_conf_init(systemctl_conf_t* self)
@@ -658,7 +601,7 @@ systemctl_name(systemctl_conf_t* self)
 #define ERROR_FAILED 3
 #define ERROR_FALSE 1
 
-typedef struct systemctl
+struct systemctl
 {
     systemctl_settings_t use;
     str_t _unit_state;
@@ -673,7 +616,7 @@ typedef struct systemctl
     str_t current_user;
     int error; /* program exitcode or process returncode */
     str_t root;
-} systemctl_t;
+};
 
 void
 systemctl_init(systemctl_t* self, systemctl_settings_t* settings)
