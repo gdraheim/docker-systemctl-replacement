@@ -669,6 +669,7 @@ typedef struct systemctl
     bool user_mode;
     str_t current_user;
     int error; /* program exitcode or process returncode */
+    str_t root;
 } systemctl_t;
 
 void
@@ -683,6 +684,7 @@ systemctl_init(systemctl_t* self, systemctl_settings_t* settings)
     self->user_mode = false;
     str_init(&self->current_user);
     self->error = 0;
+    self->root = str_NULL;
 }
 
 void
@@ -694,6 +696,7 @@ systemctl_null(systemctl_t* self)
     ptr_dict_null(&self->loaded_file_sysv);
     ptr_dict_null(&self->loaded_file_sysd);
     str_null(&self->current_user);
+    str_null(&self->root);
 }
 
 str_t
@@ -978,6 +981,40 @@ systemctl_not_user_conf(systemctl_t* self, systemctl_conf_t* conf)
     }
     str_free(user);
     return true;
+}
+
+str_dict_t* restrict
+systemctl_find_drop_in_files(systemctl_t* self, str_t unit)
+{
+    str_dict_t* result = str_dict_new();
+    str_list_t* folders = systemctl_sysd_folders(self);
+    str_t folder = str_NULL;
+    for (int i=0; i < folders->size; ++i) {
+        str_set(&folder, folders->data[i]);
+        if (str_empty(folder))
+            continue;
+        if (self->root) 
+            os_path_prepend(&folder, self->root);
+        os_path_append(&folder, unit); str_append(&folder, ".d");
+        if (! os_path_isdir(folder))
+            continue;
+        str_list_t* names = os_path_listdir(folder);
+        for (int j=0; j < names->size; ++j) {
+            str_t name = names->data[j];
+            str_t path = os_path_join(folder, name);
+            if (os_path_isdir(path)) {
+                /* continue */
+            } else if (! str_endswith(path, ".conf")) {
+                /* continue */
+            } else if (! str_dict_contains(result, path)) {
+                str_dict_adds(result, name, path);
+                path = str_NULL;
+            }
+            str_null(&path);
+        }
+    }
+    str_null(&folder);
+    return result;
 }
 
 systemctl_conf_t* 

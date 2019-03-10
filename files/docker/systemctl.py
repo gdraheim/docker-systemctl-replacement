@@ -789,12 +789,14 @@ class Systemctl:
         self.exit_when_no_more_procs = EXIT_WHEN_NO_MORE_PROCS or False
         self.exit_when_no_more_services = EXIT_WHEN_NO_MORE_SERVICES or False
         self._user_mode = _user_mode
-        self._user_getlogin = os_getlogin()
+        self._current_user = None
         self._log_file = {} # init-loop
         self._log_hold = {} # init-loop
         self._error = 0 # as the process exitcode
-    def user(self):
-        return self._user_getlogin
+    def current_user(self):
+        if not self._current_user:
+            self._current_user = os_getlogin()
+        return self._current_user
     def user_mode(self):
         return self._user_mode
     def user_folder(self):
@@ -917,27 +919,26 @@ class Systemctl:
         if not conf:
             return True # no such conf >> ignored
         if not self.user_mode():
-            logg.debug("%s no --user mode >> accept", conf.filename())
+            logg.debug("%s no --user mode >> accept", conf.name())
             return False
         if self.is_user_conf(conf):
-            logg.debug("%s is /user/ conf >> accept", conf.filename())
+            logg.debug("%s is /user/ conf >> accept", conf.name())
             return False
         # to allow for 'docker run -u user' with system services
         user = self.expand_special(conf.get("Service", "User", ""), conf)
-        if user and user == self.user():
-            logg.debug("%s with User=%s >> accept", conf.filename(), user)
+        if user and user == self.current_user():
+            logg.debug("%s with User=%s >> accept", conf.name(), user)
             return False
         return True
     def find_drop_in_files(self, unit):
         """ search for some.service.d/extra.conf files """
         result = {}
-        basename_d = unit + ".d"
         for folder in self.sysd_folders():
             if not folder: 
                 continue
             if self._root:
                 folder = os_path(self._root, folder)
-            override_d = os_path(folder, basename_d)
+            override_d = os_path(folder, unit + ".d")
             if not os.path.isdir(override_d):
                 continue
             for name in os.listdir(override_d):

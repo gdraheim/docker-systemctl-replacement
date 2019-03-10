@@ -1312,7 +1312,6 @@ str_list_dict_dict_set(str_list_dict_dict_t* self, const str_list_dict_dict_t* f
   str_list_dict_dict_sets(self, str_list_dict_dict_dup(from));
 }
 
-
 /* add */
 
 static void
@@ -1599,6 +1598,25 @@ ptr_dict_add(ptr_dict_t* self, const str_t key, void* value)
 {
     ptr_dict_adds(self, key, str_dup(value));
 }
+
+/* prepend / append */
+
+void
+str_prepend(str_t* str1, const str_t prefix)
+{
+   if (str1 && prefix) {
+      str_sets(str1, str_dup2(prefix, *str1));
+   }
+}
+
+void
+str_append(str_t* str1, const str_t suffix)
+{
+   if (str1 && suffix) {
+      str_sets(str1, str_dup2(*str1, suffix));
+   }
+}
+
 
 /* startswith */
 
@@ -1889,6 +1907,22 @@ str_t restrict
 os_path_join(str_t path, str_t filename)
 {
     return str_dup3(path, "/", filename);
+}
+
+void
+os_path_prepend(str_t* path, const str_t prepath)
+{
+    if (path && prepath) {
+       str_sets(path, os_path_join(prepath, *path));
+    }
+}
+
+void
+os_path_append(str_t* path, const str_t subpath)
+{
+    if (path && subpath) {
+       str_sets(path, os_path_join(*path, subpath));
+    }
 }
 
 bool
