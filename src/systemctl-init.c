@@ -957,21 +957,6 @@ systemctl_load_sysd_unit_conf(systemctl_t* self, str_t module)
 
 }
 
-bool
-systemctl_is_sysv_file(systemctl_t* self, str_t filename)
-{
-    if (filename == NULL) return false;
-    systemctl_unit_file(self, NULL);
-    for (int d=0; d < self->file_for_unit_sysd.size; ++d) {
-       str_t value = self->file_for_unit_sysd.data[d].value;
-       if (str_equal(value, filename)) return false;
-    }
-    for (int d=0; d < self->file_for_unit_sysv.size; ++d) {
-       str_t value = self->file_for_unit_sysv.data[d].value;
-       if (str_equal(value, filename)) return true;
-    }
-    return false;
-}
 
 bool
 systemctl_is_user_conf(systemctl_t* self, systemctl_conf_t* conf)
@@ -1009,6 +994,22 @@ systemctl_not_user_conf(systemctl_t* self, systemctl_conf_t* conf)
     }
     str_free(user);
     return true;
+}
+
+bool
+systemctl_is_sysv_file(systemctl_t* self, str_t filename)
+{
+    if (filename == NULL) return false;
+    systemctl_unit_file(self, NULL);
+    for (int d=0; d < self->file_for_unit_sysd.size; ++d) {
+       str_t value = self->file_for_unit_sysd.data[d].value;
+       if (str_equal(value, filename)) return false;
+    }
+    for (int d=0; d < self->file_for_unit_sysv.size; ++d) {
+       str_t value = self->file_for_unit_sysv.data[d].value;
+       if (str_equal(value, filename)) return true;
+    }
+    return false;
 }
 
 systemctl_conf_t* 
