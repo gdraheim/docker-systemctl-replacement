@@ -11,6 +11,9 @@
 #include <stdio.h>
 #include <regex.h>
 #include <fnmatch.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <pwd.h>
 #include "systemctl-types.c"
 #include "systemctl-options.c"
 
@@ -187,6 +190,14 @@ unit_of(str_t module)
     }
     return str_dup(module);
 }
+
+str_t /* not free */
+os_getlogin()
+{
+    struct passwd* pwd = getpwuid(geteuid());
+    return pwd->pw_name;
+}
+
 
 /* .............................. */
 
@@ -510,6 +521,7 @@ typedef struct systemctl_conf
     str_t masked;
     str_t module;
     str_dict_t drop_in_files;
+    str_t name;
 } systemctl_conf_t;
 
 void 
@@ -521,6 +533,7 @@ systemctl_conf_init(systemctl_conf_t* self)
     str_init(&self->masked);
     str_init(&self->module);
     str_dict_init(&self->drop_in_files);
+    str_init(&self->name); /* TODO: helper only in C/C++ */
 }
 
 systemctl_conf_t* restrict
@@ -540,6 +553,7 @@ systemctl_conf_null(systemctl_conf_t* self)
     str_null(&self->masked);
     str_null(&self->module);
     str_dict_null(&self->drop_in_files);
+    str_null(&self->name);
 }
 
 void
@@ -613,7 +627,7 @@ systemctl_conf_filename(systemctl_conf_t* self)
     return NULL;
 }
 
-str_t
+str_t restrict
 systemctl_conf_name(systemctl_conf_t* self)
 {
     str_t name;
@@ -627,6 +641,15 @@ systemctl_conf_name(systemctl_conf_t* self)
     }
     str_set(&name, systemctl_conf_get(self, "Unit", "Id", name));
     return name;
+}
+
+str_t /* do not str_free this */
+systemctl_name(systemctl_conf_t* self) 
+{
+    if (str_empty(self->name)) {
+       str_set(&self->name, systemctl_conf_name(self));
+    }
+    return self->name;
 }
 
 /* ============================================================ */
@@ -644,6 +667,7 @@ typedef struct systemctl
     str_dict_t file_for_unit_sysd; /* name.service => /etc/systemd/system/name.service */
     /* FIXME: the loaded-conf is a mixture of parts from multiple files */
     bool user_mode;
+    str_t current_user;
     int error; /* program exitcode or process returncode */
 } systemctl_t;
 
@@ -657,6 +681,7 @@ systemctl_init(systemctl_t* self, systemctl_settings_t* settings)
     str_dict_init(&self->file_for_unit_sysv);
     str_dict_init(&self->file_for_unit_sysd);
     self->user_mode = false;
+    str_init(&self->current_user);
     self->error = 0;
 }
 
@@ -668,6 +693,15 @@ systemctl_null(systemctl_t* self)
     ptr_dict_null(&self->not_loaded_confs);
     ptr_dict_null(&self->loaded_file_sysv);
     ptr_dict_null(&self->loaded_file_sysd);
+    str_null(&self->current_user);
+}
+
+str_t
+systemctl_current_user(systemctl_t* self)
+{
+    if (str_empty(self->current_user)) 
+        str_set(&self->current_user, os_getlogin());
+    return self->current_user;
 }
 
 bool
@@ -945,10 +979,36 @@ systemctl_is_user_conf(systemctl_t* self, systemctl_conf_t* conf)
     if (conf == NULL)
         return false;
     str_t filename = systemctl_conf_filename(conf);
-    if (! str_empty(filename) && str_contains(filename, "/user")) {
+    if (! str_empty(filename) && str_contains(filename, "/user/")) {
         return true;
     } 
     return false;
+}
+
+str_t restrict
+systemctl_expand_special(systemctl_t* self, str_t value, systemctl_conf_t* conf);
+bool
+systemctl_not_user_conf(systemctl_t* self, systemctl_conf_t* conf)
+{
+    if (! conf) 
+        return true;
+    if (! systemctl_user_mode(self)) {
+        logg_debug("%s no --user mode >> accept", systemctl_name(conf));
+        return false;
+    }
+    if (systemctl_is_user_conf(self, conf)) {
+        logg_debug("%s is /user/ conf >> accept", systemctl_name(conf));
+        return false;
+    }
+    /* to allow for 'docker run -u user' with system services */
+    str_t user = systemctl_expand_special(self, systemctl_conf_get(conf, "Service", "User", ""), conf);
+    if (! str_empty(user) && str_equal(user, systemctl_current_user(self))) {
+        logg_debug("%s with User=%s >> accept", systemctl_name(conf), user);
+        str_free(user);
+        return false;
+    }
+    str_free(user);
+    return true;
 }
 
 systemctl_conf_t* 
