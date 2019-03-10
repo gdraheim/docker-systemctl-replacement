@@ -33,7 +33,7 @@ that startup is complete. Apache is one prominent example
 of a notify-service.
 
 The systemctl replacement's notify-socket will only be
-created as soon as the systemctl replacmenent scripts runs
+created as soon as the systemctl replacment script runs
 a "start xy.service" and it is closed as soon as the
 startup-wait has completed. Now what if there are multiple
 `systemctl.py start` calls that run in parallel? Well, that
@@ -51,7 +51,7 @@ programs of Type=notify are supposed to watch for the
 environment variable `$NOTIFY_SOCKET` and while this
 will be always the same path in a systemd controlled
 environment it is a different one when a program is
-started through the systemctl replacment. It works.
+started through the systemctl replacement. It works.
 
 ## lock files
 
@@ -73,7 +73,7 @@ daemon as all actions are run by the single process
 on PID-1 which can do the serialisation through its
 own internal event loop.
 
-When the systemctl replacment script runs as the
+When the systemctl replacement script runs as the
 init-daemon on PID-1 it does not change its behaviour.
 It will look for the enabled services and for each of
 the services a lock-file is created on startup. As soon 
@@ -130,7 +130,7 @@ writing so that one could optimize to scan only one
 descriptor file. But the saved time is not worth it.
 The scanning of the service files is quick enough
 that you won't even notice that it took a few
-milliseconds more that systemd systemctl would need
+milliseconds more than systemd systemctl would need
 for an action. The only thing is that a syntax error
 in any service descriptor on the disk will result
 in a warning message flashing by on every call to
@@ -141,15 +141,16 @@ however.
 ## overwriting /usr/bin/systemctl
 
 The systemctl replacement script is generally shipped
-as the python implemention of it named "systemctl.py".
-You can the non-installed script right away which is
-no different when using the installed bin/systemctl
-replacment. So `systemctl.py start xy.service` and
-a replacment `systemctl start xy.service` do work
-exactly the same. While a /usr/bin/systemctl.py would
-work as the it is not a good choice in conjunction
-with other programs who only know about running the
-`systemctl` tool as it is named in the systemd world.
+as the python implemention of it, named "systemctl.py".
+You can use the non-installed script right away which is
+no different than the usage of the installed bin/systemctl
+replacement. So `systemctl.py start xy.service` and
+a bin-path replacement `systemctl start xy.service` do
+work exactly the same. While an installation as
+/usr/bin/systemctl.py would work fine that is not a
+good choice however. The reason for that is that other
+programs will only know about running the `systemctl`
+tool as the tool is named in the systemd world.
 That's strictly the case for tools like Ansible/Puppet
 which will check the target system running "systemctl"
 commands. You can not tell them to do it different
@@ -199,22 +200,22 @@ but the underlying binary is actually the application).
 Detecting the 'is-active' status of a service works somewhat
 different for systemd and the systemctl script. It is only
 the same  when a `PIDFile=` has been declared because both
-systemd daemon and the systemctl replacment will read the
+the systemd daemon and the systemctl replacement will read the
 PID from that file and they will check if the PID is active.
 A dead process may result in either an "inactive" or "failed"
 service status depending on whether the service was started
 or stopped.
 
-In the very first versions of the systemctl replamcent the 
-script was inventing pid-files when the service descriptor 
-was not declaring one. Especially a `Type=simple` service 
+In the very first versions of the systemctl replacement the
+script was inventing pid-files when the service descriptor
+was not declaring one. Especially a `Type=simple` service
 does not need a PIDFile declaration as it is supposed to run
 attached  as child process of the systemd daemon. With the
-systemctl replamcent however a pid-file was written on 
+systemctl replacement however a pid-file was written on
 `systemctl start xy` and the next call to `systemctl status xy`
-will look for the invented pid-file, read the PID and check 
-on the status. So here are much more pid-files around in a 
-systemctl script controlled environment than in systemd 
+will look for the invented pid-file, read the PID and check
+on the status. So here are much more pid-files around in a
+systemctl script controlled environment than in systemd
 daemon controlled one.
 
 In later versions of the systemctl replacement script 
@@ -277,7 +278,7 @@ in a new container.
 
 Surely, if there are subtle problems with the system
 clock then you will bump into mysterious problems
-on service starts through the systemctl replacment
+on service starts through the systemctl replacement
 script. And some docker versions did really weird 
 things to /proc/1 for unknown reasons - it came back 
 to normal on the next version of docker. It is just 
