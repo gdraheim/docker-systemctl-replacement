@@ -14,8 +14,10 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <pwd.h>
-#include "systemctl-types.c"
-#include "systemctl-options.c"
+#include "systemctl-types.h"
+#include "systemctl-regex.h"
+#include "systemctl-options.h"
+#include "systemctl-logging.h"
 
 typedef char systemctl_copyright_t[64];
 typedef char systemctl_version_t[16];

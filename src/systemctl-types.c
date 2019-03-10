@@ -19,207 +19,56 @@
  * the init'ed str_EMPTY so it is almost the reverse here.
  */
 
-#include <regex.h>
 #include <stdarg.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <stddef.h>
 #include <unistd.h>
 #include <dirent.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <limits.h>
+#include "systemctl-types.h"
 #include "systemctl-logging.h"
-
-static int
-regmatch(const char* regex, const char* text, size_t nmatch, regmatch_t pmatch[], char* flags) 
-{
-  int res; /* 0 = success */
-  int cflags = REG_EXTENDED;
-  if (flags && strchr(flags, 'i'))
-      cflags |= REG_ICASE;
-  if (flags && strchr(flags, 'm'))
-      cflags |= REG_NEWLINE;
-  regex_t preg;
-  res = regcomp(&preg, regex, cflags);
-  if (res) logg_info("bad regex '%s'", regex);
-  res = regexec(&preg, text, nmatch, pmatch, 0);
-  regfree(&preg);
-  return res;
-}
-
-typedef char* str_t;
-
-static inline ssize_t 
-str_len(str_t str1)
-{
-  if (str1 == NULL) return 0;
-  return strlen(str1);
-}
-
-static inline str_t restrict
-str_dup(const str_t str1)
-{
-  if (str1 == NULL) return NULL;
-  return strdup(str1);
-}
-
-static inline void
-str_cpy(str_t into, const str_t str1)
-{
-  if (into == NULL) return;
-  if (str1 == NULL) return;
-  strcpy(into, str1);
-}
-
-static inline int
-str_cmp(const str_t str1, const str_t str2)
-{
-  if (str1 == NULL || str2 == NULL) {
-      if (str1 && ! str2) {
-          return -1;
-      }
-      if (! str1 && str2) {
-          return 1;
-      }
-      return 0;
-  }
-  return strcmp(str1, str2);
-}
-
-
-/* types */
-
-typedef void* ptr_list_entry_t;
-typedef str_t str_list_entry_t;
-
-typedef struct ptr_list 
-{
-  ssize_t size;
-  ptr_list_entry_t* data;
-} ptr_list_t;
-
-typedef struct str_list 
-{
-  ssize_t size;
-  str_list_entry_t* data;
-} str_list_t;
-
-typedef struct str_list_list
-{
-  ssize_t size;
-  str_list_t* data;
-} str_list_list_t;
-
-typedef struct str_dict_entry 
-{
-  str_t key;
-  str_t value;
-} str_dict_entry_t;
-
-typedef struct str_dict 
-{
-  ssize_t size;
-  str_dict_entry_t* data;
-} str_dict_t;
-
-typedef struct str_list_dict_entry 
-{
-  str_t key;
-  str_list_t value;
-} str_list_dict_entry_t;
-
-typedef struct str_list_dict
-{
-  ssize_t size;
-  str_list_dict_entry_t* data;
-} str_list_dict_t;
-
-typedef struct str_list_dict_dict_entry 
-{
-  str_t key;
-  str_list_dict_t value;
-} str_list_dict_dict_entry_t;
-
-typedef struct str_list_dict_dict
-{
-  ssize_t size;
-  str_list_dict_dict_entry_t* data;
-} str_list_dict_dict_t;
-
-typedef struct ptr_dict_entry 
-{
-  str_t key;
-  void* value;
-} ptr_dict_entry_t;
-
-typedef struct ptr_list_dict_entry 
-{
-  str_t key;
-  ptr_list_t value;
-} ptr_list_dict_entry_t;
-
-typedef void (*free_func_t)(void*);
-
-typedef struct ptr_dict
-{
-  ssize_t size;
-  ptr_dict_entry_t* data;
-  free_func_t free;
-} ptr_dict_t;
-
-typedef struct ptr_list_dict
-{
-  ssize_t size;
-  ptr_list_dict_entry_t* data;
-  free_func_t free;
-} ptr_list_dict_t;
 
 /* init */
 
-#define str_NULL NULL
-#define str_EMPTY { '\0' }
-
-static void
+void
 str_init(str_t* self)
 {
    *self = malloc(1);
    **self = '\0';
 }
 
-static void
+void
 str_init0(str_t* self, ssize_t size)
 {
    *self = malloc(size+1);
    **self = '\0';
 }
 
-static void 
+void 
 str_init_from(str_t* self, char* str)
 {
   *self = malloc(str_len(str));
   str_cpy(*self, str);
 }
 
-#define str_list_NULL { 0, NULL }
-#define str_list_list_NULL { 0, NULL }
-#define str_dict_NULL { 0, NULL }
-#define str_dict_NULL { 0, NULL }
-#define str_list_dict_NULL { 0, NULL }
-#define str_list_dict_dict_NULL { 0, NULL }
-
-static void 
+void 
 str_list_init0(str_list_t* self, ssize_t size)
 {
   self->size = size;
   self->data = calloc(size, sizeof(str_list_entry_t));
 }
 
-static void
+void
 str_list_init(str_list_t* self)
 {
   self->size = 0;
   self->data = NULL;
 }
 
-static void
+void
 str_list_init_from(str_list_t* self, int size, char** data) 
 {
   str_list_init0(self, size);
@@ -228,21 +77,21 @@ str_list_init_from(str_list_t* self, int size, char** data)
   }
 }
 
-static void 
+void 
 str_list_list_init0(str_list_list_t* self, ssize_t size)
 {
   self->size = size;
   self->data = calloc(size, sizeof(str_list_t));
 }
 
-static void
+void
 str_list_list_init(str_list_list_t* self)
 {
   self->size = 0;
   self->data = NULL;
 }
 
-static void
+void
 str_list_list_init_from(str_list_list_t* self, int size, char** data) 
 {
   str_list_list_init0(self, size);
@@ -252,49 +101,49 @@ str_list_list_init_from(str_list_list_t* self, int size, char** data)
   }
 }
 
-static void 
+void 
 str_dict_init0(str_dict_t* self, ssize_t size)
 {
   self->size = size;
   self->data = calloc(size, sizeof(str_dict_entry_t));
 }
 
-static void
+void
 str_dict_init(str_dict_t* self)
 {
   self->size = 0;
   self->data = NULL;
 }
 
-static void 
+void 
 str_list_dict_init0(str_list_dict_t* self, ssize_t size)
 {
   self->size = size;
   self->data = calloc(size, sizeof(str_list_dict_entry_t));
 }
 
-static void
+void
 str_list_dict_init(str_list_dict_t* self)
 {
   self->size = 0;
   self->data = NULL;
 }
 
-static void 
+void 
 str_list_dict_dict_init0(str_list_dict_dict_t* self, ssize_t size)
 {
   self->size = size;
   self->data = calloc(size, sizeof(str_list_dict_dict_entry_t));
 }
 
-static void
+void
 str_list_dict_dict_init(str_list_dict_dict_t* self)
 {
   self->size = 0;
   self->data = NULL;
 }
 
-static void 
+void 
 ptr_dict_init0(ptr_dict_t* self, ssize_t size, free_func_t free)
 {
   self->size = size;
@@ -302,7 +151,7 @@ ptr_dict_init0(ptr_dict_t* self, ssize_t size, free_func_t free)
   self->free = free;
 }
 
-static void
+void
 ptr_dict_init(ptr_dict_t* self, free_func_t free)
 {
   self->size = 0;
@@ -312,7 +161,7 @@ ptr_dict_init(ptr_dict_t* self, free_func_t free)
 
 /* del */
 
-static void 
+void 
 str_null(str_t* self)
 {
     if (self) {
@@ -323,7 +172,7 @@ str_null(str_t* self)
     }
 }
 
-static void 
+void 
 str_list_null(str_list_t* self)
 {
   if (self->data) {
@@ -339,7 +188,7 @@ str_list_null(str_list_t* self)
   self->data = NULL;
 }
 
-static void 
+void 
 str_list_list_null(str_list_list_t* self)
 {
   if (self->data) {
@@ -353,7 +202,7 @@ str_list_list_null(str_list_list_t* self)
   self->data = NULL;
 }
 
-static void 
+void 
 str_dict_null(str_dict_t* self)
 {
   if (self->data) {
@@ -368,7 +217,7 @@ str_dict_null(str_dict_t* self)
   self->data = NULL;
 }
 
-static void 
+void 
 str_list_dict_null(str_list_dict_t* self)
 {
   if (self->data) {
@@ -383,7 +232,7 @@ str_list_dict_null(str_list_dict_t* self)
   self->data = NULL;
 }
 
-static void 
+void 
 str_list_dict_dict_null(str_list_dict_dict_t* self)
 {
   if (self->data) {
@@ -398,7 +247,7 @@ str_list_dict_dict_null(str_list_dict_dict_t* self)
   self->data = NULL;
 }
 
-static void
+void
 ptr_dict_null(ptr_dict_t* self) 
 {
   if (self->data) {
@@ -417,7 +266,7 @@ ptr_dict_null(ptr_dict_t* self)
 
 /* free */
 
-static inline void
+void
 str_free(str_t self)
 {
     if (self)
@@ -426,7 +275,7 @@ str_free(str_t self)
     }
 }
 
-static inline void
+void
 str_list_free(str_list_t* self)
 {
   if (self) {
@@ -435,7 +284,7 @@ str_list_free(str_list_t* self)
   }
 }
 
-static inline void
+void
 str_list_list_free(str_list_list_t* self)
 {
   if (self) {
@@ -444,7 +293,7 @@ str_list_list_free(str_list_list_t* self)
   }
 }
 
-static inline void
+void
 str_dict_free(str_dict_t* self)
 {
   if (self) {
@@ -453,7 +302,7 @@ str_dict_free(str_dict_t* self)
   }
 }
 
-static inline void
+void
 str_list_dict_free(str_list_dict_t* self)
 {
   if (self) {
@@ -462,7 +311,7 @@ str_list_dict_free(str_list_dict_t* self)
   }
 }
 
-static inline void
+void
 str_list_dict_dict_free(str_list_dict_dict_t* self)
 {
   if (self) {
@@ -471,7 +320,7 @@ str_list_dict_dict_free(str_list_dict_dict_t* self)
   }
 }
 
-static inline void
+void
 ptr_dict_free(ptr_dict_t* self)
 {
   if (self) {
@@ -482,7 +331,7 @@ ptr_dict_free(ptr_dict_t* self)
 
 /* new */
 
-static str_t restrict
+str_t restrict
 str_new()
 {
   str_t self;
@@ -490,7 +339,7 @@ str_new()
   return self;
 }
 
-static str_list_t* restrict
+str_list_t* restrict
 str_list_new()
 {
   str_list_t* self = malloc(sizeof(str_list_t));
@@ -498,7 +347,7 @@ str_list_new()
   return self;
 }
 
-static str_list_t* restrict
+str_list_t* restrict
 str_list_new0(ssize_t size)
 {
   str_list_t* self = malloc(sizeof(str_list_t));
@@ -506,7 +355,7 @@ str_list_new0(ssize_t size)
   return self;
 }
 
-static str_list_list_t* restrict
+str_list_list_t* restrict
 str_list_list_new()
 {
   str_list_list_t* self = malloc(sizeof(str_list_list_t));
@@ -514,7 +363,7 @@ str_list_list_new()
   return self;
 }
 
-static str_dict_t* restrict
+str_dict_t* restrict
 str_dict_new()
 {
   str_dict_t* self = malloc(sizeof(str_dict_t));
@@ -522,7 +371,7 @@ str_dict_new()
   return self;
 }
 
-static str_list_dict_t* restrict
+str_list_dict_t* restrict
 str_list_dict_new()
 {
   str_list_dict_t* self = malloc(sizeof(str_list_dict_t));
@@ -530,7 +379,7 @@ str_list_dict_new()
   return self;
 }
 
-static str_list_dict_dict_t* restrict
+str_list_dict_dict_t* restrict
 str_list_dict_dict_new()
 {
   str_list_dict_dict_t* self = malloc(sizeof(str_list_dict_dict_t));
@@ -611,41 +460,9 @@ logg_info_str_list_dict_dict(str_t msg, const str_list_dict_dict_t* self)
 }
 
 
-/* len */
-
-static inline ssize_t
-str_list_len(const str_list_t* self)
-{
-   return self->size;
-}
-
-static inline ssize_t
-str_list_list_len(const str_list_list_t* self)
-{
-   return self->size;
-}
-
-static inline ssize_t
-str_list_dict_len(const str_list_dict_t* self)
-{
-   return self->size;
-}
-
-static inline ssize_t
-str_list_dict_dict_len(const str_list_dict_dict_t* self)
-{
-   return self->size;
-}
-
-static inline ssize_t
-str_dict_len(const str_dict_t* self)
-{
-   return self->size;
-}
-
 /* get ref */
 
-static str_t
+str_t
 str_list_get(const str_list_t* self, const str_t key)
 {
   for (ssize_t i=0; i < self->size; ++i) {
@@ -656,7 +473,7 @@ str_list_get(const str_list_t* self, const str_t key)
   return NULL;
 }
 
-static str_t
+str_t
 str_dict_get(const str_dict_t* self, const str_t key)
 {
   for (ssize_t i=0; i < self->size; ++i) {
@@ -667,7 +484,7 @@ str_dict_get(const str_dict_t* self, const str_t key)
   return NULL;
 }
 
-static str_list_t*
+str_list_t*
 str_list_dict_get(const str_list_dict_t* self, const str_t key)
 {
   for (ssize_t i=0; i < self->size; ++i) {
@@ -678,7 +495,7 @@ str_list_dict_get(const str_list_dict_t* self, const str_t key)
   return NULL;
 }
 
-static str_list_dict_t*
+str_list_dict_t*
 str_list_dict_dict_get(const str_list_dict_dict_t* self, const str_t key)
 {
   for (ssize_t i=0; i < self->size; ++i) {
@@ -689,7 +506,7 @@ str_list_dict_dict_get(const str_list_dict_dict_t* self, const str_t key)
   return NULL;
 }
 
-static void*
+void*
 ptr_dict_get(const ptr_dict_t* self, const str_t key)
 {
   for (ssize_t i=0; i < self->size; ++i) {
@@ -702,7 +519,7 @@ ptr_dict_get(const ptr_dict_t* self, const str_t key)
 
 /* find */
 
-static ssize_t
+ssize_t
 str_find(const str_t self, const str_t key)
 {
   if (self == NULL) return -1;
@@ -712,7 +529,7 @@ str_find(const str_t self, const str_t key)
   return found - self;
 }
 
-static ssize_t
+ssize_t
 str_list_find(const str_list_t* self, const str_t key)
 {
   for (ssize_t i=0; i < self->size; ++i) {
@@ -724,7 +541,7 @@ str_list_find(const str_list_t* self, const str_t key)
 }
 
 /* return the index with an equal or -1 if the key was not found. */
-static ssize_t
+ssize_t
 ptr_dict_find(const ptr_dict_t* self, const str_t key)
 {
   if (self->data == NULL)
@@ -766,7 +583,7 @@ ptr_dict_find(const ptr_dict_t* self, const str_t key)
   }
 }
 
-static ssize_t
+ssize_t
 ptr_list_dict_find(const ptr_list_dict_t* self, const str_t key)
 {
   if (self->data == NULL)
@@ -811,7 +628,7 @@ ptr_list_dict_find(const ptr_list_dict_t* self, const str_t key)
 /* find position where the key is equal or the just bigger one.
    If there is no bigger entry then return the end (size). 
    This is used internally to find the insert position. */ 
-static ssize_t
+ssize_t
 ptr_dict_find_pos(const ptr_dict_t* self, const str_t key)
 {
   if (self->data == NULL)
@@ -856,7 +673,7 @@ ptr_dict_find_pos(const ptr_dict_t* self, const str_t key)
   }
 }
 
-static ssize_t
+ssize_t
 ptr_list_dict_find_pos(const ptr_list_dict_t* self, const str_t key)
 {
   if (self->data == NULL)
@@ -903,14 +720,14 @@ ptr_list_dict_find_pos(const ptr_list_dict_t* self, const str_t key)
 
 
 
-static ssize_t
+ssize_t
 str_dict_find(const str_dict_t* self, const str_t key)
 {
     const ptr_dict_t* dict = (const ptr_dict_t*)(self);
     return ptr_dict_find(dict, key);
 }
 
-static ssize_t
+ssize_t
 str_dict_find_pos(const str_dict_t* self, const str_t key)
 {
     ///logg_info_str_dict("str_dict_find_pos", self);
@@ -918,14 +735,14 @@ str_dict_find_pos(const str_dict_t* self, const str_t key)
     return ptr_dict_find_pos(dict, key);
 }
 
-static ssize_t
+ssize_t
 str_list_dict_find(const str_list_dict_t* self, const str_t key)
 {
     const ptr_list_dict_t* dict = (const ptr_list_dict_t*)(self);
     return ptr_list_dict_find(dict, key);
 }
 
-static ssize_t
+ssize_t
 str_list_dict_dict_find(const str_list_dict_dict_t* self, const str_t key)
 {
     const ptr_list_dict_t* dict = (const ptr_list_dict_t*)(self);
@@ -933,7 +750,7 @@ str_list_dict_dict_find(const str_list_dict_dict_t* self, const str_t key)
 }
 
 
-static ssize_t
+ssize_t
 str_list_dict_find_pos(const str_list_dict_t* self, const str_t key)
 {
     ///logg_info_str_list_dict("str_list_dict_find_pos", self);
@@ -941,7 +758,7 @@ str_list_dict_find_pos(const str_list_dict_t* self, const str_t key)
     return ptr_list_dict_find_pos(dict, key);
 }
 
-static ssize_t
+ssize_t
 str_list_dict_dict_find_pos(const str_list_dict_dict_t* self, const str_t key)
 {
     ///logg_info_str_list_dict_dict("str_list_dict_dict_find_pos", self);
@@ -951,37 +768,37 @@ str_list_dict_dict_find_pos(const str_list_dict_dict_t* self, const str_t key)
 
 /* contains */
 
-static inline bool
+bool
 str_contains(const str_t self, const str_t key)
 {
    return strstr(self, key) != NULL;
 }
 
-static bool 
+bool 
 str_list_contains(const str_list_t* self, const str_t key)
 {
   return str_list_find(self, key) >= 0;
 }
 
-static bool 
+bool 
 str_dict_contains(const str_dict_t* self, const str_t key)
 {
   return str_dict_find(self, key) >= 0;
 }
 
-static bool 
+bool 
 str_list_dict_contains(const str_list_dict_t* self, const str_t key)
 {
   return str_list_dict_find(self, key) >= 0;
 }
 
-static bool 
+bool 
 str_list_dict_dict_contains(const str_list_dict_dict_t* self, const str_t key)
 {
   return str_list_dict_dict_find(self, key) >= 0;
 }
 
-static bool 
+bool 
 str_list3_contains(const str_t str1, const str_t str2, const str_t str3, const str_t key)
 {
   if (str_cmp(str1, key)) return true;
@@ -990,20 +807,20 @@ str_list3_contains(const str_t str1, const str_t str2, const str_t str3, const s
   return false;
 }
 
-static bool 
+bool 
 ptr_dict_contains(const ptr_dict_t* self, const str_t key)
 {
   return ptr_dict_find(self, key) >= 0;
 }
 
 /* equal */
-static inline bool
+bool
 str_equal(const str_t str1, const str_t str2)
 {
     return ! str_cmp(str1, str2);
 }
 
-static bool
+bool
 str_list_equal(const str_list_t* list1, const str_list_t* list2)
 {
     if (list1->size != list2->size) {
@@ -1017,7 +834,7 @@ str_list_equal(const str_list_t* list1, const str_list_t* list2)
     return true;
 }
 
-static bool
+bool
 str_list_list_equal(const str_list_list_t* list1, const str_list_list_t* list2)
 {
     if (list1->size != list2->size) {
@@ -1033,7 +850,7 @@ str_list_list_equal(const str_list_list_t* list1, const str_list_list_t* list2)
 
 /* keys */
 
-static str_list_t* restrict
+str_list_t* restrict
 str_dict_keys(const str_dict_t* self)
 {
   str_list_t* res = malloc(sizeof(str_list_t));
@@ -1045,7 +862,7 @@ str_dict_keys(const str_dict_t* self)
   return res;
 }
 
-static str_list_t* restrict
+str_list_t* restrict
 str_list_dict_keys(const str_list_dict_t* self)
 {
   str_list_t* res = malloc(sizeof(str_list_t));
@@ -1057,7 +874,7 @@ str_list_dict_keys(const str_list_dict_t* self)
   return res;
 }
 
-static str_list_t* restrict
+str_list_t* restrict
 str_list_dict_dict_keys(const str_list_dict_dict_t* self)
 {
   str_list_t* res = malloc(sizeof(str_list_t));
@@ -1072,7 +889,7 @@ str_list_dict_dict_keys(const str_list_dict_dict_t* self)
 
 /* copy */
 
-static bool
+bool
 str_copy(str_t* self, const str_t* from)
 {
   if (from == NULL) return false;
@@ -1083,7 +900,7 @@ str_copy(str_t* self, const str_t* from)
   return true;
 }
 
-static bool
+bool
 str_copy_str_list(str_t* self, const str_list_t* from) 
 {
     if (self == NULL) return false;
@@ -1100,7 +917,7 @@ str_copy_str_list(str_t* self, const str_list_t* from)
     return true;
 }
 
-static bool
+bool
 str_list_copy(str_list_t* self, const str_list_t* from) 
 {
    if (self == NULL) return false;
@@ -1113,7 +930,7 @@ str_list_copy(str_list_t* self, const str_list_t* from)
   return false;
 }
 
-static bool
+bool
 str_dict_copy(str_dict_t* self, const str_dict_t* from) 
 {
   if (self == NULL) return false;
@@ -1127,7 +944,7 @@ str_dict_copy(str_dict_t* self, const str_dict_t* from)
   return true;
 }
 
-static bool
+bool
 str_list_dict_copy(str_list_dict_t* self, const str_list_dict_t* from) 
 {
   if (self == NULL) return false;
@@ -1142,7 +959,7 @@ str_list_dict_copy(str_list_dict_t* self, const str_list_dict_t* from)
   return true;
 }
 
-static bool
+bool
 str_list_dict_dict_copy(str_list_dict_dict_t* self, const str_list_dict_dict_t* from) 
 {
   if (self == NULL) return false;
@@ -1159,7 +976,7 @@ str_list_dict_dict_copy(str_list_dict_dict_t* self, const str_list_dict_dict_t* 
 
 /* dup */
 
-static str_t restrict
+str_t restrict
 str_dup4(const str_t str1, const str_t str2, const str_t str3, const str_t str4)
 {
   str_t res = NULL;
@@ -1169,19 +986,19 @@ str_dup4(const str_t str1, const str_t str2, const str_t str3, const str_t str4)
   return res;
 }
 
-static str_t restrict
+str_t restrict
 str_dup3(const str_t str1, const str_t str2, const str_t str3)
 {
    return str_dup4(str1, str2, str3, NULL);
 }
 
-static str_t restrict
+str_t restrict
 str_dup2(const str_t str1, const str_t str2)
 {
    return str_dup4(str1, str2, NULL, NULL);
 }
 
-static str_list_t*
+str_list_t*
 str_list_dup(const str_list_t* self)
 {
   str_list_t* into = NULL;
@@ -1191,7 +1008,7 @@ str_list_dup(const str_list_t* self)
   return into;
 }
 
-static str_dict_t*
+str_dict_t*
 str_dict_dup(const str_dict_t* self)
 {
   str_dict_t* into = NULL;
@@ -1201,7 +1018,7 @@ str_dict_dup(const str_dict_t* self)
   return into;
 }
 
-static str_list_dict_t*
+str_list_dict_t*
 str_list_dict_dup(const str_list_dict_t* self)
 {
   str_list_dict_t* into = NULL;
@@ -1211,7 +1028,7 @@ str_list_dict_dup(const str_list_dict_t* self)
   return into;
 }
 
-static str_list_dict_dict_t*
+str_list_dict_dict_t*
 str_list_dict_dict_dup(const str_list_dict_dict_t* self)
 {
   str_list_dict_dict_t* into = NULL;
@@ -1223,7 +1040,7 @@ str_list_dict_dict_dup(const str_list_dict_dict_t* self)
 
 /* sets */
 
-static void
+void
 str_sets(str_t* self, str_t from) 
 {
   if (from == NULL) return;
@@ -1232,13 +1049,13 @@ str_sets(str_t* self, str_t from)
   *self = from;
 }
 
-static void
+void
 str_set(str_t* self, const str_t from) 
 {
   str_sets(self, str_dup(from));
 }
 
-static void
+void
 str_list_sets(str_list_t* self, str_list_t* from)
 {
   str_list_null(self);
@@ -1251,13 +1068,13 @@ str_list_sets(str_list_t* self, str_list_t* from)
   }
 }
 
-static void
+void
 str_list_set(str_list_t* self, const str_list_t* from) 
 {
   str_list_sets(self, str_list_dup(from));
 }
 
-static void
+void
 str_dict_sets(str_dict_t* self, str_dict_t* from)
 {
   str_dict_null(self);
@@ -1270,13 +1087,13 @@ str_dict_sets(str_dict_t* self, str_dict_t* from)
   }
 }
 
-static void
+void
 str_dict_set(str_dict_t* self, const str_dict_t* from) 
 {
   str_dict_sets(self, str_dict_dup(from));
 }
 
-static void
+void
 str_list_dict_sets(str_list_dict_t* self, str_list_dict_t* from)
 {
   str_list_dict_null(self);
@@ -1289,13 +1106,13 @@ str_list_dict_sets(str_list_dict_t* self, str_list_dict_t* from)
   }
 }
 
-static void
+void
 str_list_dict_set(str_list_dict_t* self, const str_list_dict_t* from) 
 {
   str_list_dict_sets(self, str_list_dict_dup(from));
 }
 
-static void
+void
 str_list_dict_dict_sets(str_list_dict_dict_t* self, str_list_dict_dict_t* from)
 {
   str_list_dict_dict_null(self);
@@ -1308,7 +1125,7 @@ str_list_dict_dict_sets(str_list_dict_dict_t* self, str_list_dict_dict_t* from)
   }
 }
 
-static void
+void
 str_list_dict_dict_set(str_list_dict_dict_t* self, const str_list_dict_dict_t* from) 
 {
   str_list_dict_dict_sets(self, str_list_dict_dict_dup(from));
@@ -1316,7 +1133,7 @@ str_list_dict_dict_set(str_list_dict_dict_t* self, const str_list_dict_dict_t* f
 
 /* add */
 
-static void
+void
 str_adds(str_t* self, str_t value)
 {
   if (! self) return;
@@ -1333,7 +1150,7 @@ str_adds(str_t* self, str_t value)
   return;
 }
 
-static void
+void
 str_add(str_t* self, str_t value)
 {
   if (! self) return;
@@ -1349,7 +1166,7 @@ str_add(str_t* self, str_t value)
   return;
 }
 
-static void
+void
 str_list_adds(str_list_t* self, str_t value)
 {
   self->size += 1;
@@ -1357,13 +1174,13 @@ str_list_adds(str_list_t* self, str_t value)
   self->data[self->size-1] = value;
 }
 
-static void
+void
 str_list_add(str_list_t* self, const str_t value)
 {
     str_list_adds(self, str_dup(value));
 }
 
-static void
+void
 str_list_adds_all(str_list_t* self, str_list_t* value)
 {
   if (value == NULL || value->size == 0) return;
@@ -1377,13 +1194,13 @@ str_list_adds_all(str_list_t* self, str_list_t* value)
   str_list_free(value);
 }
 
-static void
+void
 str_list_add_all(str_list_t* self, const str_list_t* value)
 {
     str_list_adds_all(self, str_list_dup(value));
 }
 
-static void
+void
 str_list_list_adds(str_list_list_t* self, str_list_t* value)
 {
   self->size += 1;
@@ -1395,13 +1212,13 @@ str_list_list_adds(str_list_list_t* self, str_list_t* value)
   str_list_free(value);
 }
 
-static void
+void
 str_list_list_add(str_list_list_t* self, const str_list_t* value)
 {
     str_list_list_adds(self, str_list_dup(value));
 }
 
-static void
+void
 str_list_list_add4(str_list_list_t* self, str_t str1, str_t str2, str_t str3, str_t str4)
 {
     str_list_entry_t data[] = { str1, str2, str3, str4 };
@@ -1409,7 +1226,7 @@ str_list_list_add4(str_list_list_t* self, str_t str1, str_t str2, str_t str3, st
     str_list_list_add(self, &value);
 }
 
-static void
+void
 str_list_list_add3(str_list_list_t* self, str_t str1, str_t str2, str_t str3)
 {
     str_list_entry_t data[] = { str1, str2, str3 };
@@ -1417,7 +1234,7 @@ str_list_list_add3(str_list_list_t* self, str_t str1, str_t str2, str_t str3)
     str_list_list_add(self, &value);
 }
 
-static void
+void
 str_list_list_add2(str_list_list_t* self, str_t str1, str_t str2)
 {
     str_list_entry_t data[] = { str1, str2 };
@@ -1425,7 +1242,7 @@ str_list_list_add2(str_list_list_t* self, str_t str1, str_t str2)
     str_list_list_add(self, &value);
 }
 
-static void
+void
 str_list_list_add1(str_list_list_t* self, str_t str1)
 {
     str_list_entry_t data[] = { str1 };
@@ -1434,7 +1251,7 @@ str_list_list_add1(str_list_list_t* self, str_t str1)
 }
 
 
-static void
+void
 str_dict_adds(str_dict_t* self, const str_t key, str_t value)
 {
   if (! key) {
@@ -1458,14 +1275,14 @@ str_dict_adds(str_dict_t* self, const str_t key, str_t value)
   ///logg_info_str_dict("str_dict_adds", self);
 }
 
-static void
+void
 str_dict_add(str_dict_t* self, const str_t key, const str_t value)
 {
     str_dict_adds(self, key, str_dup(value));
 }
 
 
-static void
+void
 str_list_dict_adds(str_list_dict_t* self, const str_t key, str_list_t* value)
 {
   if (! key) {
@@ -1505,13 +1322,13 @@ str_list_dict_adds(str_list_dict_t* self, const str_t key, str_list_t* value)
 
 }
 
-static void
+void
 str_list_dict_add(str_list_dict_t* self, const str_t key, const str_list_t* value)
 {
     str_list_dict_adds(self, key, str_list_dup(value));
 }
 
-static void
+void
 str_list_dict_add1(str_list_dict_t* self, const str_t key, str_t value)
 {
     str_t data[] = { value };
@@ -1519,7 +1336,7 @@ str_list_dict_add1(str_list_dict_t* self, const str_t key, str_t value)
     str_list_dict_add(self, key, &list);
 }
 
-static void
+void
 str_list_dict_adds1(str_list_dict_t* self, const str_t key, str_t value)
 {
     str_list_t* list = str_list_new0(1);
@@ -1527,7 +1344,7 @@ str_list_dict_adds1(str_list_dict_t* self, const str_t key, str_t value)
     str_list_dict_adds(self, key, list);
 }
 
-static void
+void
 str_list_dict_dict_adds(str_list_dict_dict_t* self, const str_t key, str_list_dict_t* value)
 {
   if (! key) {
@@ -1564,13 +1381,13 @@ str_list_dict_dict_adds(str_list_dict_dict_t* self, const str_t key, str_list_di
   } 
 }
 
-static void
+void
 str_list_dict_dict_add(str_list_dict_dict_t* self, const str_t key, const str_list_dict_t* value)
 {
     str_list_dict_dict_adds(self, key, str_list_dict_dup(value));
 }
 
-static void
+void
 ptr_dict_adds(ptr_dict_t* self, const str_t key, void* value)
 {
   if (! key) {
@@ -1595,7 +1412,7 @@ ptr_dict_adds(ptr_dict_t* self, const str_t key, void* value)
   free(old.data);
 }
 
-static void
+void
 ptr_dict_add(ptr_dict_t* self, const str_t key, void* value)
 {
     ptr_dict_adds(self, key, str_dup(value));
@@ -1622,7 +1439,7 @@ str_append(str_t* str1, const str_t suffix)
 
 /* startswith */
 
-static bool
+bool
 str_startswith(const str_t self, const str_t key) 
 {
   if (self == NULL) return key == NULL;
@@ -1631,7 +1448,7 @@ str_startswith(const str_t self, const str_t key)
   return found == self;
 }
 
-static bool
+bool
 str_endswith(const str_t self, const str_t key)
 {
   if (self == NULL) return key == NULL;
@@ -1644,7 +1461,7 @@ str_endswith(const str_t self, const str_t key)
 
 /* del */
 
-static void
+void
 str_list_del(str_dict_t* self, const ssize_t pos)
 {
     if (pos >=0) {
@@ -1670,7 +1487,7 @@ str_list_del(str_dict_t* self, const ssize_t pos)
     }
 }
 
-static void
+void
 str_dict_del(str_dict_t* self, const str_t key)
 {
     ssize_t pos = str_dict_find(self, key);
@@ -1699,8 +1516,9 @@ str_dict_del(str_dict_t* self, const str_t key)
 
 /* cut */
 
-static str_t restrict
-str_cut(const str_t self, ssize_t a, ssize_t b) {
+str_t restrict
+str_cut(const str_t self, ssize_t a, ssize_t b) 
+{
   if (self == NULL) return NULL;
   ssize_t size = str_len(self);
   if (a < 0) a = size + a;
@@ -1718,12 +1536,13 @@ str_cut(const str_t self, ssize_t a, ssize_t b) {
 #define STR_END SSIZE_MAX
 #define STR_LIST_END SSIZE_MAX
 
-static str_t restrict
-str_cut_end(const str_t self, ssize_t a) {
+str_t restrict
+str_cut_end(const str_t self, ssize_t a)
+{
   return str_cut(self, a, STR_END);
 }
 
-static str_list_t* restrict
+str_list_t* restrict
 str_list_cut(const str_list_t* self, ssize_t a, ssize_t b)
 {
   if (self == NULL) return NULL;
@@ -1743,46 +1562,17 @@ str_list_cut(const str_list_t* self, ssize_t a, ssize_t b)
   return res;
 }
 
-static str_list_t* restrict
-str_list_cut_end(const str_list_t* self, ssize_t a) {
+str_list_t* restrict
+str_list_cut_end(const str_list_t* self, ssize_t a) 
+{
   return str_list_cut(self, a, STR_LIST_END);
 }
 
-static char str_delim[] = " \r\n\f";
-
-/* empty */
-
-static bool
-str_empty(const str_t self) 
-{
-  if (self == NULL) return true;
-  return 0 == str_len(self);
-}
-
-static bool
-str_list_empty(const str_list_t* self) 
-{
-  if (self == NULL) return true;
-  return 0 == self->size;
-}
-
-static bool
-str_dict_empty(const str_dict_t* self) 
-{
-  if (self == NULL) return true;
-  return 0 == self->size;
-}
-
-static bool
-str_list_dict_empty(const str_list_dict_t* self) 
-{
-  if (self == NULL) return true;
-  return 0 == self->size;
-}
+char str_delim[] = " \r\n\f";
 
 /* strip */
 
-static str_t restrict
+str_t restrict
 str_lstrip(const str_t self) 
 {
   ssize_t size = str_len(self);
@@ -1794,7 +1584,7 @@ str_lstrip(const str_t self)
   return str_dup("");
 }
 
-static str_t restrict
+str_t restrict
 str_strip(const str_t self) 
 {
   ssize_t size = str_len(self);
@@ -1810,7 +1600,7 @@ str_strip(const str_t self)
   return str_dup("");
 }
 
-static str_t restrict
+str_t restrict
 str_rstrip(const str_t self) 
 {
   ssize_t size = str_len(self);
@@ -1823,7 +1613,7 @@ str_rstrip(const str_t self)
 }
 
 /* split */
-static str_list_t* restrict
+str_list_t* restrict
 str_split(const str_t text, const char delim) 
 {
   str_list_t* res = str_list_new();
@@ -1844,14 +1634,14 @@ str_split(const str_t text, const char delim)
 
 /* str */
 
-static str_t
+str_t
 str_join2(const str_t self, const str_t from, const str_t delim)
 {
   if (!from) return str_dup(self);
   return str_dup3(self, delim, from);
 }
 
-static str_t restrict
+str_t restrict
 str_list_join(const str_list_t* self, const str_t delim)
 {
   str_t res = NULL;
@@ -1874,7 +1664,7 @@ str_list_join(const str_list_t* self, const str_t delim)
   return res;
 }
 
-static str_t restrict
+str_t restrict
 str_list3_join(str_t str1, str_t str2, str_t str3, const str_t delim)
 {
    str_list_entry_t data[] = { str1, str2, str3 };
@@ -1883,8 +1673,9 @@ str_list3_join(str_t str1, str_t str2, str_t str3, const str_t delim)
 }
 
 /* format */
-static str_t
-str_format(const char* format, ...) {
+str_t
+str_format(const char* format, ...) 
+{
   str_t result;
   va_list ap;
   int size;

@@ -1,11 +1,14 @@
 L = systemctl-logging.c
+T = systemctl-types.c
+R = systemctl-regex.c
+O = systemctl-options.c
 
 build: init types
-init:
-	$(CC) systemctl-init.c $L -fsanitize=address -fno-omit-frame-pointer \
+init: systemctl-types.h systemctl-options.h
+	$(CC) systemctl-init.c $L $T $R $O -fsanitize=address -fno-omit-frame-pointer \
 	   -o systemctl-init.e
-types:
-	$(CC) systemctl-types-test.c $L -fsanitize=address -fno-omit-frame-pointer \
+types: systemctl-types.h
+	$(CC) systemctl-types-test.c $L $T -fsanitize=address -fno-omit-frame-pointer \
 	   -o systemctl-types-test.e
 
 check: init types
@@ -13,6 +16,11 @@ check: init types
 	./systemctl-init.e list-unit-files
 	./systemctl-init.e list-units
 	./systemctl-init.e status cron
+
+systemctl-types.h: systemctl-types.c
+	./makeheader.py systemctl-types.c
+systemctl-options.h: systemctl-options.c
+	./makeheader.py systemctl-options.c
 
 clean:
 	- rm *.e

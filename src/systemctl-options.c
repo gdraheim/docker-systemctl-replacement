@@ -1,14 +1,7 @@
-#ifndef SYSTEMCTL_OPTIONS_H
-#define SYSTEMCTL_OPTIONS_H 1
-
-typedef struct systemctl_options
-{
-    str_dict_t optmapping;
-    str_dict_t optargument;
-    str_dict_t optcomment;
-    str_list_dict_t opts;
-    str_list_t args;
-} systemctl_options_t;
+#include "systemctl-options.h"
+#include "systemctl-types.h"
+#include "systemctl-logging.h"
+#include <stdlib.h>
 
 void
 systemctl_options_init(systemctl_options_t* self)
@@ -201,4 +194,3 @@ str_options_getbool(systemctl_options_t* self, str_t name, bool defaults)
     return defaults;
 }
 
-#endif
