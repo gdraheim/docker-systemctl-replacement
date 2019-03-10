@@ -941,22 +941,6 @@ systemctl_unit_file(systemctl_t* self, str_t module)
     return NULL;
 }
 
-systemctl_conf_t* 
-systemctl_load_sysd_unit_conf(systemctl_t* self, str_t module)
-{
-    str_t path = systemctl_unit_sysd_file(self, module);
-    if (str_empty(path)) return NULL;
-    if (ptr_dict_contains(&self->loaded_file_sysd, path)) {
-        return ptr_dict_get(&self->loaded_file_sysd, path);
-    }
-    systemctl_conf_t* conf = systemctl_conf_new();
-    systemctl_conf_data_read_sysd(&conf->data, path);
-    str_set(&conf->module, module);
-    ptr_dict_adds(&self->loaded_file_sysd, path, conf);
-    return conf;
-
-}
-
 
 bool
 systemctl_is_user_conf(systemctl_t* self, systemctl_conf_t* conf)
@@ -994,6 +978,22 @@ systemctl_not_user_conf(systemctl_t* self, systemctl_conf_t* conf)
     }
     str_free(user);
     return true;
+}
+
+systemctl_conf_t* 
+systemctl_load_sysd_unit_conf(systemctl_t* self, str_t module)
+{
+    str_t path = systemctl_unit_sysd_file(self, module);
+    if (str_empty(path)) return NULL;
+    if (ptr_dict_contains(&self->loaded_file_sysd, path)) {
+        return ptr_dict_get(&self->loaded_file_sysd, path);
+    }
+    systemctl_conf_t* conf = systemctl_conf_new();
+    systemctl_conf_data_read_sysd(&conf->data, path);
+    str_set(&conf->module, module);
+    ptr_dict_adds(&self->loaded_file_sysd, path, conf);
+    return conf;
+
 }
 
 bool
