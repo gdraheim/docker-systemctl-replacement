@@ -21,7 +21,9 @@
 
 #include <regex.h>
 #include <stdarg.h>
+#include <unistd.h>
 #include <dirent.h>
+#include <sys/types.h>
 #include <sys/stat.h>
 #include <limits.h>
 #include "systemctl-logging.h"
@@ -1941,6 +1943,17 @@ os_path_islink(str_t path)
     return (st.st_mode & S_IFMT) == S_IFLNK;
 }
 
+str_t restrict
+os_path_readlink(str_t path)
+{
+    str_t result = str_NULL;
+    char buf[PATH_MAX];
+    ssize_t len = readlink(path, buf, PATH_MAX);
+    if (len >= 0)
+        result = str_cut(buf, 0, len);
+    return result;
+}
+
 str_list_t* restrict
 os_path_listdir(str_t path)
 {
@@ -1974,3 +1987,14 @@ os_path_basename(str_t path)
     }
     return str_dup(path);
 }
+
+str_t
+os_path_basename_p(str_t path)
+{
+    char* found = strrchr(path, '/');
+    if (found) 
+        return found;
+    return path;
+}
+
+

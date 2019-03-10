@@ -966,8 +966,8 @@ class Systemctl:
             drop_in_files = self.find_drop_in_files(os.path.basename(path))
             # load in alphabetic order, irrespective of location
             for name in sorted(drop_in_files):
-                path = drop_in_files[name]
-                data.read_sysd(path)
+                drop_in_file = drop_in_files[name]
+                data.read_sysd(drop_in_file)
         conf = SystemctlConf(data, module)
         conf.masked = masked
         conf.drop_in_files = drop_in_files

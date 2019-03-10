@@ -665,6 +665,7 @@ typedef struct systemctl
     ptr_dict_t not_loaded_confs; /* name.service => conf */
     str_dict_t file_for_unit_sysv; /* name.service => /etc/init.d/name */
     str_dict_t file_for_unit_sysd; /* name.service => /etc/systemd/system/name.service */
+    str_dict_t drop_in_files;
     /* FIXME: the loaded-conf is a mixture of parts from multiple files */
     bool user_mode;
     str_t current_user;
@@ -681,6 +682,7 @@ systemctl_init(systemctl_t* self, systemctl_settings_t* settings)
     ptr_dict_init(&self->not_loaded_confs, (free_func_t) systemctl_conf_free);
     str_dict_init(&self->file_for_unit_sysv);
     str_dict_init(&self->file_for_unit_sysd);
+    str_dict_init(&self->drop_in_files);
     self->user_mode = false;
     str_init(&self->current_user);
     self->error = 0;
@@ -695,6 +697,7 @@ systemctl_null(systemctl_t* self)
     ptr_dict_null(&self->not_loaded_confs);
     ptr_dict_null(&self->loaded_file_sysv);
     ptr_dict_null(&self->loaded_file_sysd);
+    str_dict_null(&self->drop_in_files);
     str_null(&self->current_user);
     str_null(&self->root);
 }
@@ -1007,13 +1010,14 @@ systemctl_find_drop_in_files(systemctl_t* self, str_t unit)
             } else if (! str_endswith(path, ".conf")) {
                 /* continue */
             } else if (! str_dict_contains(result, path)) {
-                str_dict_adds(result, name, path);
-                path = str_NULL;
+                str_dict_adds(result, name, path); path = str_NULL;
             }
             str_null(&path);
         }
+        str_list_free(names);
     }
     str_null(&folder);
+    str_list_free(folders);
     return result;
 }
 
@@ -1025,8 +1029,27 @@ systemctl_load_sysd_unit_conf(systemctl_t* self, str_t module)
     if (ptr_dict_contains(&self->loaded_file_sysd, path)) {
         return ptr_dict_get(&self->loaded_file_sysd, path);
     }
+    str_t masked = str_NULL;
+    if (os_path_islink(path)) {
+       str_t link = os_path_readlink(path);
+       if (str_startswith(link, "/dev")) {
+          str_sets(&masked, link); link = str_NULL;
+       }
+       str_null(&link);
+    }
+    /* TODO: python has a different allocation order */
     systemctl_conf_t* conf = systemctl_conf_new();
-    systemctl_conf_data_read_sysd(&conf->data, path);
+    if (str_empty(masked)) {
+        systemctl_conf_data_read_sysd(&conf->data, path);
+        str_dict_sets(&conf->drop_in_files, 
+            systemctl_find_drop_in_files(self, os_path_basename_p(path)));
+        /* load in alphabetic order, irrespective of location */
+        for (int k=0; k < self->drop_in_files.size; ++k) {
+            str_t drop_in_file = self->drop_in_files.data[k].value;
+            systemctl_conf_data_read_sysd(&conf->data, drop_in_file);
+        }
+    }
+    str_sets(&conf->masked, masked); masked = str_NULL;
     str_set(&conf->module, module);
     ptr_dict_adds(&self->loaded_file_sysd, path, conf);
     return conf;
