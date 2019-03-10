@@ -255,21 +255,6 @@ systemctl_match_sysv_units(systemctl_t* self, str_list_t* modules);
 str_list_t* restrict
 systemctl_match_units(systemctl_t* self, str_list_t* modules);
 
-str_t
-systemctl_expand_special(systemctl_t* self, str_t value, systemctl_conf_t* conf);
-
-str_t restrict
-systemctl_get_active_from(systemctl_t* self, systemctl_conf_t* conf);
-
-str_t restrict
-systemctl_get_substate_from(systemctl_t* self, systemctl_conf_t* conf);
-
-str_t restrict
-systemctl_get_description_from(systemctl_t* self, systemctl_conf_t* conf);
-
-str_t restrict
-systemctl_get_description(systemctl_t* self, str_t unit);
-
 str_list_list_t* restrict
 systemctl_list_service_unit_basics(systemctl_t* self);
 
@@ -287,6 +272,21 @@ systemctl_list_target_unit_files(systemctl_t* self, str_list_t* modules);
 
 str_list_list_t*
 systemctl_show_list_unit_files(systemctl_t* self, str_list_t* modules);
+
+str_t
+systemctl_expand_special(systemctl_t* self, str_t value, systemctl_conf_t* conf);
+
+str_t restrict
+systemctl_get_active_from(systemctl_t* self, systemctl_conf_t* conf);
+
+str_t restrict
+systemctl_get_substate_from(systemctl_t* self, systemctl_conf_t* conf);
+
+str_t restrict
+systemctl_get_description_from(systemctl_t* self, systemctl_conf_t* conf);
+
+str_t restrict
+systemctl_get_description(systemctl_t* self, str_t unit);
 
 str_t
 systemctl_enabled(systemctl_t* self, str_t unit);

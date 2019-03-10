@@ -274,9 +274,6 @@ systemctl_conf_data_getlist(systemctl_conf_data_t* self, str_t section, str_t op
 }
 
 bool
-systemctl_conf_data_read_sysd(systemctl_conf_data_t* self, str_t filename);
-
-bool
 systemctl_conf_data_read(systemctl_conf_data_t* self, str_t filename)
 {
     return systemctl_conf_data_read_sysd(self, filename);
@@ -661,8 +658,6 @@ systemctl_user_mode(systemctl_t* self)
     return self->user_mode;
 }
 
-str_list_t* restrict
-systemctl_user_folders(systemctl_t* self);
 str_t restrict
 systemctl_user_folder(systemctl_t* self)
 {
@@ -905,8 +900,6 @@ systemctl_is_user_conf(systemctl_t* self, systemctl_conf_t* conf)
     return false;
 }
 
-str_t restrict
-systemctl_expand_special(systemctl_t* self, str_t value, systemctl_conf_t* conf);
 bool
 systemctl_not_user_conf(systemctl_t* self, systemctl_conf_t* conf)
 {
@@ -1136,38 +1129,6 @@ systemctl_match_units(systemctl_t* self, str_list_t* modules)
     return found;
 }
 
-str_t
-systemctl_expand_special(systemctl_t* self, str_t value, systemctl_conf_t* conf)
-{
-    return str_dup(value);
-}
-
-str_t restrict
-systemctl_get_active_from(systemctl_t* self, systemctl_conf_t* conf)
-{
-    return str_dup("");
-}
-
-str_t restrict
-systemctl_get_substate_from(systemctl_t* self, systemctl_conf_t* conf)
-{
-    return str_dup("");
-}
-
-str_t restrict
-systemctl_get_description_from(systemctl_t* self, systemctl_conf_t* conf)
-{
-    if (! conf) return str_dup("");
-    str_t description = systemctl_conf_get(conf, "Unit", "Description", "");
-    return systemctl_expand_special(self, description, conf);
-}
-
-str_t restrict
-systemctl_get_description(systemctl_t* self, str_t unit)
-{
-   systemctl_conf_t* conf = systemctl_load_unit_conf(self, unit);
-   return systemctl_get_description_from(self, conf);
-}
 
 str_list_list_t* restrict
 systemctl_list_service_unit_basics(systemctl_t* self) 
@@ -1326,6 +1287,39 @@ systemctl_show_list_unit_files(systemctl_t* self, str_list_t* modules)
     return result;
 }
 
+str_t
+systemctl_expand_special(systemctl_t* self, str_t value, systemctl_conf_t* conf)
+{
+    return str_dup(value);
+}
+
+str_t restrict
+systemctl_get_active_from(systemctl_t* self, systemctl_conf_t* conf)
+{
+    return str_dup("");
+}
+
+str_t restrict
+systemctl_get_substate_from(systemctl_t* self, systemctl_conf_t* conf)
+{
+    return str_dup("");
+}
+
+str_t restrict
+systemctl_get_description_from(systemctl_t* self, systemctl_conf_t* conf)
+{
+    if (! conf) return str_dup("");
+    str_t description = systemctl_conf_get(conf, "Unit", "Description", "");
+    return systemctl_expand_special(self, description, conf);
+}
+
+str_t restrict
+systemctl_get_description(systemctl_t* self, str_t unit)
+{
+   systemctl_conf_t* conf = systemctl_load_unit_conf(self, unit);
+   return systemctl_get_description_from(self, conf);
+}
+
 str_t 
 systemctl_enabled(systemctl_t* self, str_t unit)
 {
@@ -1339,9 +1333,6 @@ systemctl_enabled_from(systemctl_t* self, systemctl_conf_t* conf)
     str_t unit_file = systemctl_conf_filename(conf);
     return "unknown";
 }
-
-str_t restrict
-systemctl_status_units(systemctl_t* self, str_list_t* units);
 
 str_t restrict
 systemctl_status_modules(systemctl_t* self, str_list_t* modules)
@@ -1372,9 +1363,6 @@ systemctl_status_modules(systemctl_t* self, str_list_t* modules)
     str_list_null(&units);
     return result;
 }
-
-str_t restrict
-systemctl_status_unit(systemctl_t* self, str_t unit);
 
 str_t restrict
 systemctl_status_units(systemctl_t* self, str_list_t* units)
