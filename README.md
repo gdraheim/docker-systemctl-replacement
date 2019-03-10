@@ -186,7 +186,8 @@ does not cover all commands of "systemctl" and it will not
 cover all the functionality of SystemD. The implementation
 tries to align with SystemD's systemctl commands as close
 as possible as quite some third party tools are interpreting
-the output of it.
+the output of it. However the implemented software 
+[ARCHITECTURE](ARCHITECTURE.md) is very different.
 
 The systemctl replacement script has a long [HISTORY](HISTORY.md)
 now with over a [thousand commits on github](https://github.com/gdraheim/docker-systemctl-replacement/tree/master)
