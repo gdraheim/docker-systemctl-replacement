@@ -1210,8 +1210,6 @@ systemctl_list_units(systemctl_t* self, str_list_t* modules)
     return result;
 }
 
-str_t systemctl_enabled_from(systemctl_t* self, systemctl_conf_t* conf);
-
 str_list_list_t* restrict
 systemctl_list_service_unit_files(systemctl_t* self, str_list_t* modules)
 {
@@ -1240,11 +1238,58 @@ systemctl_list_service_unit_files(systemctl_t* self, str_list_t* modules)
      return res;
 }
 
+str_dict_t* restrict
+systemctl_each_target_file(systemctl_t* self)
+{
+    str_dict_t* result = str_dict_new();
+    str_list_t* folders = NULL; 
+    if (systemctl_user_mode(self)) {
+        folders = systemctl_user_folders(self);
+    } else {
+        folders = systemctl_system_folders(self);
+    }
+    for (int i=0; i < folders->size; ++i) {
+        str_t folder = folders->data[i];
+        if (! os_path_isdir(folder))
+            continue;
+        str_list_t* filenames = os_path_listdir(folder);
+        for (int k=0; k < filenames->size; ++k) {
+            str_t filename = filenames->data[k];
+            if (str_endswith(filename, ".target"))
+                str_dict_adds(result, filename, os_path_join(folder, filename));
+        }
+        str_list_free(filenames);
+    }
+    str_list_free(folders);
+    return result;
+}
+
 str_list_list_t*
 systemctl_list_target_unit_files(systemctl_t* self, str_list_t* modules) 
 {
-   str_list_list_t* result = str_list_list_new();
-   return result;
+    str_list_list_t* result = str_list_list_new();
+    str_dict_t enabled = str_dict_NULL;
+    str_dict_t targets = str_dict_NULL;
+    str_dict_t* target_files = systemctl_each_target_file(self);
+    for (int i=0; i < target_files->size; ++i) {
+        str_t target = target_files->data[i].key;
+        str_t filepath = target_files->data[i].value;
+        logg_info("target %s", filepath);
+        str_dict_add(&targets, target, filepath);
+        str_dict_add(&enabled, target, "static");
+    }
+    // TODO: add all_common_targets
+    str_dict_free(target_files);
+    for (int i=0; i < targets.size; ++i) {
+        str_t unit = targets.data[i].key;
+        str_list_t* line = str_list_new();
+        str_list_adds(line, str_dup(unit));
+        str_list_adds(line, str_dup(str_dict_get(&enabled, unit)));
+        str_list_list_adds(result, line);
+    }
+    str_dict_null(&targets);
+    str_dict_null(&enabled);
+    return result;
 }
 
 str_list_list_t*

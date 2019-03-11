@@ -1113,9 +1113,10 @@ class Systemctl:
                 logg.warning("list-units: %s", e)
         return [ (unit, enabled[unit]) for unit in sorted(result) if result[unit] ]
     def each_target_file(self):
-        folders = self.system_folders()
         if self.user_mode():
             folders = self.user_folders()
+        else:
+            folders = self.system_folders()
         for folder in folders:
             if not os.path.isdir(folder):
                 continue

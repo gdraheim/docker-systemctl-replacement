@@ -267,6 +267,9 @@ systemctl_list_units(systemctl_t* self, str_list_t* modules);
 str_list_list_t* restrict
 systemctl_list_service_unit_files(systemctl_t* self, str_list_t* modules);
 
+str_dict_t* restrict
+systemctl_each_target_file(systemctl_t* self);
+
 str_list_list_t*
 systemctl_list_target_unit_files(systemctl_t* self, str_list_t* modules);
 
