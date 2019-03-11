@@ -627,10 +627,19 @@ void
 os_path_append(str_t* path, const str_t subpath);
 
 bool
+os_path_isfile(str_t path);
+
+bool
 os_path_isdir(str_t path);
 
 bool
 os_path_islink(str_t path);
+
+bool
+os_path_issocket(str_t path);
+
+bool
+os_path_ispipe(str_t path);
 
 str_t restrict
 os_path_readlink(str_t path);

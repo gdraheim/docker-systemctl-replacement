@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include <errno.h>
 #include <limits.h>
 #include <stdio.h>
 #include <regex.h>
@@ -1332,6 +1333,64 @@ systemctl_show_list_unit_files(systemctl_t* self, str_list_t* modules)
     return result;
 }
 
+str_t restrict
+systemctl_get_description_from(systemctl_t* self, systemctl_conf_t* conf)
+{
+    if (! conf) return str_dup("");
+    str_t description = systemctl_conf_get(conf, "Unit", "Description", "");
+    return systemctl_expand_special(self, description, conf);
+}
+
+str_t restrict
+systemctl_get_description(systemctl_t* self, str_t unit)
+{
+   systemctl_conf_t* conf = systemctl_load_unit_conf(self, unit);
+   return systemctl_get_description_from(self, conf);
+}
+
+int
+systemctl_read_pid_file(systemctl_t* self, str_t pid_file)
+{
+    // TODO: FIXME: python version should always return an integer
+    int pid = -1;
+    if (! pid_file)
+        return pid;
+    if (! os_path_isfile(pid_file))
+        return pid;
+    if (systemctl_truncate_old(pid_file))
+        return pid;
+    FILE* fd = fopen(pid_file, "r");
+    str_t orig_line = NULL;
+    str_t line = NULL;
+    while(true) {
+        if (orig_line) free(orig_line);
+        orig_line = NULL; /* allocate as needed */
+        size_t maxlen = 0; /* when both are null */
+        ssize_t len = getline(&orig_line, &maxlen, fd);
+        if (len <= 0) break;
+        str_sets(&line, str_strip(orig_line));
+        if (! str_empty(line)) {
+            /* pid = to_int(line); */
+            /* TODO: what about the remainder */
+            errno = 0;
+            int found_pid = strtoul(line, NULL, 10);
+            if (! errno) {
+                pid = found_pid;
+                break;
+            }
+        }
+    }
+    fclose(fd);
+    if (orig_line) free (orig_line);
+    return pid;
+}
+
+bool
+systemctl_truncate_old(str_t filename)
+{
+   return false;
+}
+
 str_t
 systemctl_expand_special(systemctl_t* self, str_t value, systemctl_conf_t* conf)
 {
@@ -1350,20 +1409,6 @@ systemctl_get_substate_from(systemctl_t* self, systemctl_conf_t* conf)
     return str_dup("");
 }
 
-str_t restrict
-systemctl_get_description_from(systemctl_t* self, systemctl_conf_t* conf)
-{
-    if (! conf) return str_dup("");
-    str_t description = systemctl_conf_get(conf, "Unit", "Description", "");
-    return systemctl_expand_special(self, description, conf);
-}
-
-str_t restrict
-systemctl_get_description(systemctl_t* self, str_t unit)
-{
-   systemctl_conf_t* conf = systemctl_load_unit_conf(self, unit);
-   return systemctl_get_description_from(self, conf);
-}
 
 str_t 
 systemctl_enabled(systemctl_t* self, str_t unit)

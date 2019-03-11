@@ -1719,6 +1719,14 @@ os_path_append(str_t* path, const str_t subpath)
 }
 
 bool
+os_path_isfile(str_t path)
+{
+    struct stat st;
+    stat(path, &st);
+    return (st.st_mode & S_IFMT) == S_IFREG;
+}
+
+bool
 os_path_isdir(str_t path)
 {
     struct stat st;
@@ -1732,6 +1740,22 @@ os_path_islink(str_t path)
     struct stat st;
     stat(path, &st);
     return (st.st_mode & S_IFMT) == S_IFLNK;
+}
+
+bool
+os_path_issocket(str_t path)
+{
+    struct stat st;
+    stat(path, &st);
+    return (st.st_mode & S_IFMT) == S_IFSOCK;
+}
+
+bool
+os_path_ispipe(str_t path)
+{
+    struct stat st;
+    stat(path, &st);
+    return (st.st_mode & S_IFMT) == S_IFIFO;
 }
 
 str_t restrict
