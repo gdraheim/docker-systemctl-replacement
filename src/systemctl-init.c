@@ -1357,7 +1357,7 @@ systemctl_read_pid_file(systemctl_t* self, str_t pid_file)
         return pid;
     if (! os_path_isfile(pid_file))
         return pid;
-    if (systemctl_truncate_old(pid_file))
+    if (systemctl_truncate_old(self, pid_file))
         return pid;
     FILE* fd = fopen(pid_file, "r");
     str_t orig_line = NULL;
@@ -1385,10 +1385,72 @@ systemctl_read_pid_file(systemctl_t* self, str_t pid_file)
     return pid;
 }
 
-bool
-systemctl_truncate_old(str_t filename)
+double
+systemctl_get_boottime(systemctl_t* self)
 {
-   return false;
+    double ctime = 0.;
+    for (int pid=0; pid < 10; ++pid) {
+        str_t proc = str_format("/proc/%i/status", pid);
+        if (os_path_isfile(proc)) {
+            /* FIXME: may be we should take the getctime ? */
+            ctime = os_path_getmtime(proc);
+            if (! ctime) {
+                logg_warning("could not access %s: %s", proc, strerror(errno));
+            }
+        }
+        str_free(proc);
+        if (ctime) 
+            return ctime;
+    }
+    return systemctl_get_boottime_oldest(self);
+}
+
+double
+systemctl_get_boottime_oldest(systemctl_t* self)
+{
+    /* otherwise get the oldest entry in /proc */
+    double booted = os_clock_gettime();
+    str_list_t* filenames = os_path_listdir("/proc");
+    for (int i=0; i < filenames->size; ++i) {
+        str_t name = filenames->data[i];
+        str_t proc = str_format("/proc/%s/status", name);
+        if (os_path_isfile(proc)) {
+            /* FIXME: may be we should take the getctime ? */
+            double ctime = os_path_getmtime(proc);
+            if (! ctime) {
+                logg_warning("could not access %s: %s", proc, strerror(errno));
+            } else if (ctime < booted) {
+                booted = ctime;
+            }
+        }
+        str_free(proc);
+    }
+    str_list_free(filenames);
+    return 0.;
+}
+
+double
+systemctl_get_filetime(systemctl_t* self, str_t filename)
+{
+    return os_path_getmtime(filename);
+}
+
+bool
+systemctl_truncate_old(systemctl_t* self, str_t filename)
+{
+    double filetime = systemctl_get_filetime(self, filename);
+    double boottime = systemctl_get_boottime(self);
+    filetime -= 0.1;
+    if (filetime >= boottime) {
+        logg_debug("  file time: %f", os_clock_localtime10(filetime));
+        logg_debug("  boot time: %f", os_clock_localtime10(boottime));
+        return false; /* OK */
+    }
+    logg_info("truncate old %s", filename);
+    logg_info("  file time: %f", os_clock_localtime10(filetime));
+    logg_info("  boot time: %f", os_clock_localtime10(boottime));
+    os_path_truncate(filename);
+    return true;
 }
 
 str_t

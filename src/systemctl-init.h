@@ -285,8 +285,17 @@ systemctl_get_description(systemctl_t* self, str_t unit);
 int
 systemctl_read_pid_file(systemctl_t* self, str_t pid_file);
 
+double
+systemctl_get_boottime(systemctl_t* self);
+
+double
+systemctl_get_boottime_oldest(systemctl_t* self);
+
+double
+systemctl_get_filetime(systemctl_t* self, str_t filename);
+
 bool
-systemctl_truncate_old(str_t filename);
+systemctl_truncate_old(systemctl_t* self, str_t filename);
 
 str_t
 systemctl_expand_special(systemctl_t* self, str_t value, systemctl_conf_t* conf);

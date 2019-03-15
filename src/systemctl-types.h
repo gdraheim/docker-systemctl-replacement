@@ -641,8 +641,26 @@ os_path_issocket(str_t path);
 bool
 os_path_ispipe(str_t path);
 
+double
+os_path_getmtime(str_t path);
+
+double
+os_path_getctime(str_t path);
+
+double
+os_clock_gettime();
+
+double
+os_clock_localtime10(double timespec);
+
+double
+os_clock_localdate10(double timespec);
+
 str_t restrict
 os_path_readlink(str_t path);
+
+bool
+os_path_truncate(str_t path);
 
 str_list_t* restrict
 os_path_listdir(str_t path);

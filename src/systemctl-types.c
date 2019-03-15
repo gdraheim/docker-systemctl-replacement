@@ -28,6 +28,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <limits.h>
+#include <time.h>
 #include "systemctl-types.h"
 #include "systemctl-logging.h"
 
@@ -1722,7 +1723,8 @@ bool
 os_path_isfile(str_t path)
 {
     struct stat st;
-    stat(path, &st);
+    int err = stat(path, &st);
+    if (err == -1) return false;
     return (st.st_mode & S_IFMT) == S_IFREG;
 }
 
@@ -1730,7 +1732,8 @@ bool
 os_path_isdir(str_t path)
 {
     struct stat st;
-    stat(path, &st);
+    int err = stat(path, &st);
+    if (err == -1) return false;
     return (st.st_mode & S_IFMT) == S_IFDIR;
 }
 
@@ -1738,7 +1741,8 @@ bool
 os_path_islink(str_t path)
 {
     struct stat st;
-    stat(path, &st);
+    int err = stat(path, &st);
+    if (err == -1) return false;
     return (st.st_mode & S_IFMT) == S_IFLNK;
 }
 
@@ -1746,7 +1750,8 @@ bool
 os_path_issocket(str_t path)
 {
     struct stat st;
-    stat(path, &st);
+    int err = stat(path, &st);
+    if (err == -1) return false;
     return (st.st_mode & S_IFMT) == S_IFSOCK;
 }
 
@@ -1754,8 +1759,72 @@ bool
 os_path_ispipe(str_t path)
 {
     struct stat st;
-    stat(path, &st);
+    int err = stat(path, &st);
+    if (err == -1) return false;
     return (st.st_mode & S_IFMT) == S_IFIFO;
+}
+
+double
+os_path_getmtime(str_t path)
+{
+    struct stat st;
+    int err = stat(path, &st);
+    if (err == -1) return 0.;
+    return (((double)st.st_mtim.tv_sec) + ((double)st.st_mtim.tv_nsec)/1000000000.);
+}
+
+double
+os_path_getctime(str_t path)
+{
+    struct stat st;
+    int err = stat(path, &st);
+    if (err == -1) return 0.;
+    return (((double)st.st_ctim.tv_sec) + ((double)st.st_ctim.tv_nsec)/1000000000.);
+}
+
+double
+os_clock_gettime()
+{
+    struct timespec tp;
+    int err = clock_gettime(CLOCK_REALTIME, &tp);
+    if (err == -1) return 0.;
+    return (((double)tp.tv_sec) + ((double)tp.tv_nsec)/1000000000.);
+}
+
+double
+os_clock_localtime10(double timespec)
+{
+    // double timespec_sec = trunc(timespec);
+    long timespec_sec = (long)(timespec);
+    double timespec_usec = timespec - timespec_sec;
+    if (timespec_usec < 0) timespec_usec = 0.;
+    if (timespec_usec >= 1.) timespec_usec = 0.999999999;
+    time_t timespec_time = timespec_sec;
+    struct tm tm;
+    localtime_r(&timespec_time, &tm);
+    return ((double)(tm.tm_year + 1900) * 1000000000000. +
+            (double)(tm.tm_mon)         * 100000000. +
+            (double)(tm.tm_mday)        * 1000000. +
+            (double)(tm.tm_hour)        * 10000. +
+            (double)(tm.tm_min)         * 100. +
+            (double)(tm.tm_sec)         * 1. +
+            timespec_usec);
+
+}
+
+double
+os_clock_localdate10(double timespec)
+{
+    time_t timespec_time = (time_t)(timespec);
+    struct tm tm;
+    localtime_r(&timespec_time, &tm);
+    return ((double)(tm.tm_year + 1900) * 1000000. +
+            (double)(tm.tm_mon)         * 100. +
+            (double)(tm.tm_mday)        * 1. +
+            (double)(tm.tm_hour)        / 100. +
+            (double)(tm.tm_min)         / 10000. +
+            (double)(tm.tm_sec)         / 1000000.);
+
 }
 
 str_t restrict
@@ -1767,6 +1836,14 @@ os_path_readlink(str_t path)
     if (len >= 0)
         result = str_cut(buf, 0, len);
     return result;
+}
+
+bool
+os_path_truncate(str_t path)
+{
+    off_t empty = 0;
+    int err = truncate(path, empty);
+    return err != -1;
 }
 
 str_list_t* restrict
@@ -1811,5 +1888,4 @@ os_path_basename_p(str_t path)
         return found;
     return path;
 }
-
 
