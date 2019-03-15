@@ -297,6 +297,9 @@ systemctl_get_filetime(systemctl_t* self, str_t filename);
 bool
 systemctl_truncate_old(systemctl_t* self, str_t filename);
 
+off_t
+systemctl_getsize(systemctl_t* self, str_t filename);
+
 str_t
 systemctl_expand_special(systemctl_t* self, str_t value, systemctl_conf_t* conf);
 

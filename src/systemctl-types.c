@@ -1719,6 +1719,16 @@ os_path_append(str_t* path, const str_t subpath)
     }
 }
 
+
+off_t
+os_path_getsize(str_t path)
+{
+    struct stat st;
+    int err = stat(path, &st);
+    if (err == -1) return 0;
+    return (st.st_size);
+}
+
 bool
 os_path_isfile(str_t path)
 {

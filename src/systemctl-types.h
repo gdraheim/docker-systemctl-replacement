@@ -626,6 +626,9 @@ os_path_prepend(str_t* path, const str_t prepath);
 void
 os_path_append(str_t* path, const str_t subpath);
 
+off_t
+os_path_getsize(str_t path);
+
 bool
 os_path_isfile(str_t path);
 

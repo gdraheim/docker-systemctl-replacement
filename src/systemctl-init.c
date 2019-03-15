@@ -1453,6 +1453,18 @@ systemctl_truncate_old(systemctl_t* self, str_t filename)
     return true;
 }
 
+off_t
+systemctl_getsize(systemctl_t* self, str_t filename)
+{
+    if (! filename) 
+        return 0;
+    if (! os_path_isfile(filename))
+        return 0;
+    if (systemctl_truncate_old(self, filename))
+        return 0;
+    return os_path_getsize(filename);
+}
+
 str_t
 systemctl_expand_special(systemctl_t* self, str_t value, systemctl_conf_t* conf)
 {
