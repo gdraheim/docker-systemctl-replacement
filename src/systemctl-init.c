@@ -614,6 +614,7 @@ struct systemctl
     str_t current_user;
     int error; /* program exitcode or process returncode */
     str_t root;
+    str_dict_t root_paths; /* TODO: special optimization for StdC */
 };
 
 void
@@ -630,6 +631,7 @@ systemctl_init(systemctl_t* self, systemctl_settings_t* settings)
     str_init(&self->current_user);
     self->error = 0;
     self->root = str_NULL;
+    str_dict_init(&self->root_paths);
 }
 
 void
@@ -643,6 +645,20 @@ systemctl_null(systemctl_t* self)
     str_dict_null(&self->drop_in_files);
     str_null(&self->current_user);
     str_null(&self->root);
+    str_dict_null(&self->root_paths);
+}
+
+str_t /* no free here */
+systemctl_root(systemctl_t* self, str_t path)
+{
+    if (! self->root || ! self->root[0]) 
+        return path;
+    /* we assume that if root is set then it will not change later */
+    if (! str_dict_contains(&self->root_paths, path)) {
+        str_t root_path = str_dup2(self->root, path);
+        str_dict_adds(&self->root_paths, path, root_path);
+    }
+    return str_dict_get(&self->root_paths, path);
 }
 
 str_t
@@ -1473,10 +1489,10 @@ systemctl_read_env_file(systemctl_t* self, str_t env_file)
     str_dict_t* result = str_dict_new();
     if (str_startswith(env_file, "-")) {
         env_file ++;
-        if (! os_path_isfile(env_file)) /* FIXME: root */
+        if (! os_path_isfile(systemctl_root(self, env_file)))
             return result;
     }
-    FILE* fd = fopen(env_file, "r"); /* FIXME: root */
+    FILE* fd = fopen(systemctl_root(self, env_file), "r");
     if (fd == NULL) return false;
     str_t orig_line = NULL;
     str_t line = NULL;

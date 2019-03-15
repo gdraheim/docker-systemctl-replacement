@@ -174,6 +174,9 @@ systemctl_init(systemctl_t* self, systemctl_settings_t* settings);
 void
 systemctl_null(systemctl_t* self);
 
+str_t /* no free here */
+systemctl_root(systemctl_t* self, str_t path);
+
 str_t
 systemctl_current_user(systemctl_t* self);
 
