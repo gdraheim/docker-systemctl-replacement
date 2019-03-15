@@ -306,6 +306,9 @@ systemctl_read_env_file(systemctl_t* self, str_t env_file);
 str_dict_t* restrict
 systemctl_read_env_part(systemctl_t* self, str_t env_part);
 
+str_dict_t* restrict
+systemctl_get_env(systemctl_t* self, systemctl_conf_t* conf);
+
 str_t
 systemctl_expand_special(systemctl_t* self, str_t value, systemctl_conf_t* conf);
 

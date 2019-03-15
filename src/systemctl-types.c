@@ -1899,3 +1899,22 @@ os_path_basename_p(str_t path)
     return path;
 }
 
+extern char **environ;
+
+str_dict_t* restrict
+os_environ_copy()
+{
+    str_dict_t* result = str_dict_new();
+    int i = 1;
+    char *s = *environ;
+    for (; s; i++) {
+        ssize_t x = str_find(s, "=");
+        if (x > 0) {
+            str_t name = str_cut(s, 0, x);
+            str_t value = str_cut_end(s, x+1);
+            str_dict_adds(result, name, value);
+            str_free(name);
+        }
+        s = *(environ+i);
+    }
+}

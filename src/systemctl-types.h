@@ -677,4 +677,7 @@ os_path_basename(str_t path);
 str_t
 os_path_basename_p(str_t path);
 
+str_dict_t* restrict
+os_environ_copy();
+
 #endif

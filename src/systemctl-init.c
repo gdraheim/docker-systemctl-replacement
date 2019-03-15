@@ -1547,6 +1547,39 @@ systemctl_read_env_part(systemctl_t* self, str_t env_part)
     return result;
 }
 
+str_dict_t* restrict
+systemctl_get_env(systemctl_t* self, systemctl_conf_t* conf)
+{
+    str_dict_t* env = os_environ_copy();
+    str_list_t* env_parts = systemctl_conf_getlist(conf, "Service", "Environment", NULL);
+    if (! env_parts) env_parts = str_list_new();
+    for (int i=0; i < env_parts->size; ++i) {
+        str_t env_part = env_parts->data[i];
+        str_dict_t* values = systemctl_read_env_part(self, env_part); /* FIXME: expand_special */
+        for (int j=0; j < values->size; ++j) {
+             str_t name = values->data[j].key;
+             str_t value = values->data[j].value;
+             str_dict_add(env, name, value);
+        }
+        str_dict_free(values);
+    }
+    str_list_free(env_parts);
+    str_list_t* env_files = systemctl_conf_getlist(conf, "Service", "EnvironmentFile", NULL);
+    if (! env_files) env_files = str_list_new();
+    for (int i=0; i < env_files->size; ++i) {
+        str_t env_file = env_files->data[i];
+        str_dict_t* values = systemctl_read_env_file(self, env_file);
+        for (int j=0; j < values->size; ++j) {
+             str_t name = values->data[j].key;
+             str_t value = values->data[j].value;
+             str_dict_add(env, name, value);
+        }
+        str_dict_free(values);
+    }
+    str_list_free(env_files);
+    /* FIXME: extra_vars */
+    return env;
+}
 
 str_t
 systemctl_expand_special(systemctl_t* self, str_t value, systemctl_conf_t* conf)
