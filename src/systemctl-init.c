@@ -1,4 +1,4 @@
-/* 
+/*
  * This implementation follows the structure of systemctl.py very closely.
  * In that way it is possible to do debugging in python transposing the
  * the solutions into C code after that.
@@ -1467,7 +1467,7 @@ systemctl_getsize(systemctl_t* self, str_t filename)
 
 /* ........................................... */
 
-str_dict_t*
+str_dict_t* restrict
 systemctl_read_env_file(systemctl_t* self, str_t env_file)
 {
     str_dict_t* result = str_dict_new();
@@ -1499,14 +1499,14 @@ systemctl_read_env_file(systemctl_t* self, str_t env_file)
         }
         if (!regmatch("(?:export +)?([\\w_]+)[=]\"([^\"]*)\"", line, m3, m, 0)) {
             str_t key = str_cut(line, m[1].rm_so, m[1].rm_eo);
-            str_t val = str_cut(line, m[1].rm_so, m[1].rm_eo);
+            str_t val = str_cut(line, m[2].rm_so, m[2].rm_eo);
             str_dict_adds(result, key, val);
             str_free(key);
             continue;
         }
         if (!regmatch("(?:export +)?([\\w_]+)[=](.*)", line, m3, m, 0)) {
             str_t key = str_cut(line, m[1].rm_so, m[1].rm_eo);
-            str_t val = str_cut(line, m[1].rm_so, m[1].rm_eo);
+            str_t val = str_cut(line, m[2].rm_so, m[2].rm_eo);
             str_dict_adds(result, key, val);
             str_free(key);
             continue;
@@ -1515,6 +1515,35 @@ systemctl_read_env_file(systemctl_t* self, str_t env_file)
     fclose(fd);
     str_null(&orig_line);
     str_null(&line);
+    return result;
+}
+
+str_dict_t* restrict
+systemctl_read_env_part(systemctl_t* self, str_t env_part)
+{
+    str_dict_t* result = str_dict_new();
+    str_list_t* lines = str_split(env_part, '\n');
+    for (int i=0; i < lines->size; ++i) {
+        str_t real_line = str_strip(lines->data[i]);
+        str_t line = real_line;
+        regmatch_t m[4];
+        size_t m3 = 3;
+        while (! regmatch("\\s*(\"[\\w_]+=[^\"]*\"|[\\w_]+=\\S*)", line, m3, m, 0)) {
+            str_t part = str_cut(line, m[1].rm_so, m[1].rm_eo);
+            if (str_startswith(part, "\"")) {
+                 str_sets(&part, str_cut(part, 1, -1));
+            }
+            int x = str_find(part, "="); /* there is surely a '=' in there */
+            str_t name = str_cut(part, 0, x);
+            str_t value = str_cut_end(part, x+1);
+            str_dict_adds(result, name, value);
+            str_free(name);
+            str_free(part);
+            line = line + m[1].rm_eo; /* step */
+        }
+        str_free(real_line);
+    }
+    str_list_free(lines);
     return result;
 }
 
