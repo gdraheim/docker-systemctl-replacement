@@ -300,6 +300,9 @@ systemctl_truncate_old(systemctl_t* self, str_t filename);
 off_t
 systemctl_getsize(systemctl_t* self, str_t filename);
 
+str_dict_t*
+systemctl_read_env_file(systemctl_t* self, str_t env_file);
+
 str_t
 systemctl_expand_special(systemctl_t* self, str_t value, systemctl_conf_t* conf);
 

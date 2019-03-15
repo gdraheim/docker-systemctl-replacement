@@ -1465,6 +1465,60 @@ systemctl_getsize(systemctl_t* self, str_t filename)
     return os_path_getsize(filename);
 }
 
+/* ........................................... */
+
+str_dict_t*
+systemctl_read_env_file(systemctl_t* self, str_t env_file)
+{
+    str_dict_t* result = str_dict_new();
+    if (str_startswith(env_file, "-")) {
+        env_file ++;
+        if (! os_path_isfile(env_file)) /* FIXME: root */
+            return result;
+    }
+    FILE* fd = fopen(env_file, "r"); /* FIXME: root */
+    if (fd == NULL) return false;
+    str_t orig_line = NULL;
+    str_t line = NULL;
+    while(true) {
+        str_sets(&orig_line, NULL);
+        size_t maxlen = 0; /* when both are null */
+        ssize_t len = getline(&orig_line, &maxlen, fd);
+        if (len <= 0) break;
+        str_sets(&line, str_strip(orig_line));
+        if (str_empty(line) || str_startswith(line, "#"))
+            continue;
+        regmatch_t m[4];
+        size_t m3 = 3;
+        if (!regmatch("(?:export +)?([\\w_]+)[=]'([^']*)'", line, m3, m, 0)) {
+            str_t key = str_cut(line, m[1].rm_so, m[1].rm_eo);
+            str_t val = str_cut(line, m[1].rm_so, m[1].rm_eo);
+            str_dict_adds(result, key, val);
+            str_free(key);
+            continue;
+        }
+        if (!regmatch("(?:export +)?([\\w_]+)[=]\"([^\"]*)\"", line, m3, m, 0)) {
+            str_t key = str_cut(line, m[1].rm_so, m[1].rm_eo);
+            str_t val = str_cut(line, m[1].rm_so, m[1].rm_eo);
+            str_dict_adds(result, key, val);
+            str_free(key);
+            continue;
+        }
+        if (!regmatch("(?:export +)?([\\w_]+)[=](.*)", line, m3, m, 0)) {
+            str_t key = str_cut(line, m[1].rm_so, m[1].rm_eo);
+            str_t val = str_cut(line, m[1].rm_so, m[1].rm_eo);
+            str_dict_adds(result, key, val);
+            str_free(key);
+            continue;
+        }
+    }        
+    fclose(fd);
+    str_null(&orig_line);
+    str_null(&line);
+    return result;
+}
+
+
 str_t
 systemctl_expand_special(systemctl_t* self, str_t value, systemctl_conf_t* conf)
 {
