@@ -1443,15 +1443,14 @@ class Systemctl:
         for env_file in conf.getlist("Service", "EnvironmentFile", []):
             for name, value in self.read_env_file(self.expand_special(env_file, conf)):
                 env[name] = self.expand_env(value, env)
-        logg.debug("extra-vars %s", self.extra_vars())
         for extra in self.extra_vars():
             if extra.startswith("@"):
                 for name, value in self.read_env_file(extra[1:]):
-                    logg.info("override %s=%s", name, value)
+                    logg.debug("override %s=%s", name, value)
                     env[name] = self.expand_env(value, env)
             else:
                 for name, value in self.read_env_part(extra):
-                    logg.info("override %s=%s", name, value)
+                    logg.debug("override %s=%s", name, value)
                     env[name] = value # a '$word' is not special here
         return env
     def show_environment(self, unit):

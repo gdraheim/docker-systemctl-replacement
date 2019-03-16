@@ -615,6 +615,7 @@ struct systemctl
     int error; /* program exitcode or process returncode */
     str_t root;
     str_dict_t root_paths; /* TODO: special optimization for StdC */
+    str_list_t extra_vars;
 };
 
 void
@@ -632,6 +633,7 @@ systemctl_init(systemctl_t* self, systemctl_settings_t* settings)
     self->error = 0;
     self->root = str_NULL;
     str_dict_init(&self->root_paths);
+    str_list_init(&self->extra_vars);
 }
 
 void
@@ -646,6 +648,7 @@ systemctl_null(systemctl_t* self)
     str_null(&self->current_user);
     str_null(&self->root);
     str_dict_null(&self->root_paths);
+    str_list_null(&self->extra_vars);
 }
 
 str_t /* no free here */
@@ -1594,7 +1597,28 @@ systemctl_get_env(systemctl_t* self, systemctl_conf_t* conf)
         str_free(env_file);
         str_dict_free(values);
     }
-    /* FIXME: extra_vars */
+    for (int k=0; k < self->extra_vars.size; ++k) {
+        str_t extra = self->extra_vars.data[k];
+        if (str_startswith(extra, "@")) {
+            str_dict_t* values = systemctl_read_env_file(self, extra+1);
+            for (int j=0; j < values->size; ++j) {
+                str_t name = values->data[j].key;
+                str_t value = values->data[j].value;
+                logg_debug("override %s=%s", name, value);
+                str_dict_add(env, name, value);
+            }
+            str_dict_free(values);
+        } else {
+            str_dict_t* values = systemctl_read_env_part(self, extra);
+            for (int j=0; j < values->size; ++j) {
+                str_t name = values->data[j].key;
+                str_t value = values->data[j].value;
+                logg_debug("override %s=%s", name, value);
+                str_dict_add(env, name, value); /* a '$word' is not special here */
+            }
+            str_dict_free(values);
+       }
+    }
     return env;
 }
 
@@ -1770,16 +1794,20 @@ main(int argc, char** argv) {
     /* scan options */
     systemctl_options_t cmd;
     systemctl_options_init(&cmd);
+    systemctl_options_add5(&cmd, "-e", "--extra-vars", "--environment", "=NAME=VAL", 
+        "..override settings in the syntax of 'Environment='");
     systemctl_options_add3(&cmd, "-v", "--verbose", "increase logging level");
     systemctl_options_scan(&cmd, argc, argv);
     if (str_list_dict_contains(&cmd.opts, "verbose")) {
-       int level = str_list_len(str_list_dict_get(&cmd.opts, "verbose"));
-       logg_setlevel(LOG_ERROR - 10 * level); /* similar style to python */
+        int level = str_list_len(str_list_dict_get(&cmd.opts, "verbose"));
+        logg_setlevel(LOG_ERROR - 10 * level); /* similar style to python */
     }
     
     /* ............................................ */
     systemctl_t systemctl;
     systemctl_init(&systemctl, &settings);
+    str_list_set(&systemctl.extra_vars, str_list_dict_get(&cmd.opts, "environment"));
+
     str_t command = str_NULL;
     str_list_t args = str_list_NULL;
     if (cmd.args.size == 0) {

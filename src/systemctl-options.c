@@ -62,6 +62,36 @@ systemctl_options_add9(systemctl_options_t* self,
 }
 
 void
+systemctl_options_add8(systemctl_options_t* self, str_t opt1, str_t opt2, str_t opt3, str_t opt4, str_t opt5, str_t opt6, str_t opt7, str_t opt8)
+{
+    systemctl_options_add9(self, opt1, opt2, opt3, opt4, opt5, opt6, opt7, opt8, NULL);
+}
+
+void
+systemctl_options_add7(systemctl_options_t* self, str_t opt1, str_t opt2, str_t opt3, str_t opt4, str_t opt5, str_t opt6, str_t opt7)
+{
+    systemctl_options_add9(self, opt1, opt2, opt3, opt4, opt5, opt6, opt7, NULL, NULL);
+}
+
+void
+systemctl_options_add6(systemctl_options_t* self, str_t opt1, str_t opt2, str_t opt3, str_t opt4, str_t opt5, str_t opt6)
+{
+    systemctl_options_add9(self, opt1, opt2, opt3, opt4, opt5, opt6, NULL, NULL, NULL);
+}
+
+void
+systemctl_options_add5(systemctl_options_t* self, str_t opt1, str_t opt2, str_t opt3, str_t opt4, str_t opt5)
+{
+    systemctl_options_add9(self, opt1, opt2, opt3, opt4, opt5, NULL, NULL, NULL, NULL);
+}
+
+void
+systemctl_options_add4(systemctl_options_t* self, str_t opt1, str_t opt2, str_t opt3, str_t opt4)
+{
+    systemctl_options_add9(self, opt1, opt2, opt3, opt4, NULL, NULL, NULL, NULL, NULL);
+}
+
+void
 systemctl_options_add3(systemctl_options_t* self, str_t opt1, str_t opt2, str_t opt3)
 {
     systemctl_options_add9(self, opt1, opt2, opt3, NULL, NULL, NULL, NULL, NULL, NULL);

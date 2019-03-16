@@ -22,6 +22,21 @@ void
 systemctl_options_null(systemctl_options_t* self);
 
 void
+systemctl_options_add8(systemctl_options_t* self, str_t opt1, str_t opt2, str_t opt3, str_t opt4, str_t opt5, str_t opt6, str_t opt7, str_t opt8);
+
+void
+systemctl_options_add7(systemctl_options_t* self, str_t opt1, str_t opt2, str_t opt3, str_t opt4, str_t opt5, str_t opt6, str_t opt7);
+
+void
+systemctl_options_add6(systemctl_options_t* self, str_t opt1, str_t opt2, str_t opt3, str_t opt4, str_t opt5, str_t opt6);
+
+void
+systemctl_options_add5(systemctl_options_t* self, str_t opt1, str_t opt2, str_t opt3, str_t opt4, str_t opt5);
+
+void
+systemctl_options_add4(systemctl_options_t* self, str_t opt1, str_t opt2, str_t opt3, str_t opt4);
+
+void
 systemctl_options_add3(systemctl_options_t* self, str_t opt1, str_t opt2, str_t opt3);
 
 void
