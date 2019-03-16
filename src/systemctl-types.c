@@ -1047,7 +1047,6 @@ str_list_dict_dict_dup(const str_list_dict_dict_t* self)
 void
 str_sets(str_t* self, str_t from) 
 {
-  if (from == NULL) return;
   if (self == NULL) return;
   if (*self) free(*self);
   *self = from;

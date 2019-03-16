@@ -340,7 +340,7 @@ systemctl_conf_data_read_sysd(systemctl_conf_data_t* self, str_t filename)
             }
             continue;
         }
-        if (regmatch("(\\w+) *=(.*)", line, m3, m, 0)) {
+        if (regmatch("([[:alnum:]_]+) *=(.*)", line, m3, m, 0)) {
             logg_error("bad ini line: '%s'", line);
             goto done;
         }
@@ -397,7 +397,7 @@ systemctl_conf_data_read_sysv(systemctl_conf_data_t* self, str_t filename)
                 initinfo = false;
             }
             if (initinfo) {
-                if (! regmatch("\\S+\\s*(\\w[\\w_-]*):(.*)", line, m3, m, 0)) {
+                if (! regmatch("\\S+\\s*([[:alnum:]][[:alnum:]_-]*):(.*)", line, m3, m, 0)) {
                     str_t key = str_cut(line, m[1].rm_so, m[1].rm_eo);
                     str_t val = str_cut(line, m[1].rm_so, m[1].rm_eo);
                     str_sets(&val, str_strip(val));
@@ -1509,21 +1509,21 @@ systemctl_read_env_file(systemctl_t* self, str_t env_file)
             continue;
         regmatch_t m[4];
         size_t m3 = 3;
-        if (!regmatch("(?:export +)?([\\w_]+)[=]'([^']*)'", line, m3, m, 0)) {
+        if (!regmatch("(?:export +)?([[:alnum:]_]+)[=]'([^']*)'", line, m3, m, 0)) {
             str_t key = str_cut(line, m[1].rm_so, m[1].rm_eo);
             str_t val = str_cut(line, m[1].rm_so, m[1].rm_eo);
             str_dict_adds(result, key, val);
             str_free(key);
             continue;
         }
-        if (!regmatch("(?:export +)?([\\w_]+)[=]\"([^\"]*)\"", line, m3, m, 0)) {
+        if (!regmatch("(?:export +)?([[:alnum:]_]+)[=]\"([^\"]*)\"", line, m3, m, 0)) {
             str_t key = str_cut(line, m[1].rm_so, m[1].rm_eo);
             str_t val = str_cut(line, m[2].rm_so, m[2].rm_eo);
             str_dict_adds(result, key, val);
             str_free(key);
             continue;
         }
-        if (!regmatch("(?:export +)?([\\w_]+)[=](.*)", line, m3, m, 0)) {
+        if (!regmatch("(?:export +)?([[:alnum:]_]+)[=](.*)", line, m3, m, 0)) {
             str_t key = str_cut(line, m[1].rm_so, m[1].rm_eo);
             str_t val = str_cut(line, m[2].rm_so, m[2].rm_eo);
             str_dict_adds(result, key, val);
@@ -1547,7 +1547,7 @@ systemctl_read_env_part(systemctl_t* self, str_t env_part)
         str_t line = real_line;
         regmatch_t m[4];
         size_t m3 = 3;
-        while (! regmatch("\\s*(\"[\\w_]+=[^\"]*\"|[\\w_]+=\\S*)", line, m3, m, 0)) {
+        while (! regmatch("\\s*(\"[[:alnum:]_]+=[^\"]*\"|[[:alnum:]_]+=\\S*)", line, m3, m, 0)) {
             str_t part = str_cut(line, m[1].rm_so, m[1].rm_eo);
             if (str_startswith(part, "\"")) {
                  str_sets(&part, str_cut(part, 1, -1));

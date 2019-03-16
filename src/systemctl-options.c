@@ -126,7 +126,7 @@ systemctl_options_scan(systemctl_options_t* self, int argc, char** argv)
         }
         if (nextarg) {
             str_list_dict_add1(&self->opts, nextarg, argv[i]);
-            nextarg = NULL;
+            str_set(&nextarg, NULL);
             continue;
         }
         if (str_empty(argv[i])) {
@@ -161,36 +161,51 @@ systemctl_options_scan(systemctl_options_t* self, int argc, char** argv)
                 str_list_dict_add1(&self->opts, key, opt);
             }
         } else if (str_startswith(argv[i], "-")) {
-            str_t chars = argv[i];
+            str_t chars = str_NULL;
+            str_t optarg = str_NULL;
+            int x = str_find(argv[i], "=");
+            if (x > 0) {
+                chars = str_cut(argv[i], 1, x);
+                optarg = str_cut_end(argv[i], x+1);
+            } else {
+                chars = str_cut_end(argv[i], 1);
+            }
             ssize_t sized = str_len(chars);
-            for (int k=1; k < sized; ++k) {
+            for (int k=0; k < sized; ++k) {
                 char opt[] = { '-', chars[k], '\0' };
                 str_t key = str_dict_get(&self->optmapping, opt);
                 if (! key) {
                     logg_error("no such option %s", opt);
                     continue;
                 }
-                nextarg = str_dict_get(&self->optargument, opt);
                 if (k+1 < sized && chars[k+1] == '-') {
                     ++k;
-                    str_list_dict_add1(&self->opts, opt, "");
+                    str_list_dict_add1(&self->opts, key, "");
                     continue; /* next short arg */
                 }
-                str_t arg = str_dict_get(&self->optargument, opt);
-                if (nextarg) {
-                   logg_error("multiple short options require an arg: %s (%s) (%s)", opt, key, nextarg);
-                   str_list_dict_add1(&self->opts, nextarg, opt);
-                }
+                str_t arg = str_dict_get(&self->optargument, key);
                 if (arg) {
-                    nextarg = key;
+                    if (optarg) {
+                        str_list_dict_add1(&self->opts, key, optarg);
+                        str_null(&optarg);
+                    } 
+                    else if (nextarg) {
+                        logg_error("multiple short options require an arg: %s (%s) (%s)", opt, key, nextarg);
+                        str_list_dict_add1(&self->opts, nextarg, opt);
+                    } else {
+                        str_set(&nextarg, key);
+                    }
                 } else {
                     str_list_dict_add1(&self->opts, key, opt);
                 }
-            }
+            } /* for each short var in chars */
+            str_null(&optarg);
+            str_free(chars);
         } else {
            str_list_add(&self->args, argv[i]);
         }
     }
+    str_null(&nextarg);
 }
 
 bool

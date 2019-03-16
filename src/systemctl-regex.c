@@ -2,6 +2,7 @@
 #include "systemctl-regex.h"
 #include "systemctl-logging.h"
 
+/* returns zero on success and otherwise an error code */
 int
 regmatch(const char* regex, const char* text, size_t nmatch, regmatch_t pmatch[], char* flags) 
 {
