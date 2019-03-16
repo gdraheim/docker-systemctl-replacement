@@ -312,6 +312,9 @@ systemctl_read_env_part(systemctl_t* self, str_t env_part);
 str_dict_t* restrict
 systemctl_get_env(systemctl_t* self, systemctl_conf_t* conf);
 
+str_dict_t* restrict
+systemctl_show_environment(systemctl_t* self, str_t unit);
+
 str_t
 systemctl_expand_special(systemctl_t* self, str_t value, systemctl_conf_t* conf);
 
@@ -341,6 +344,9 @@ str_print(str_t result);
 
 int
 str_list_print(str_list_t* result);
+
+int
+str_dict_print(str_dict_t* result);
 
 int
 str_list_list_print(str_list_list_t* result);

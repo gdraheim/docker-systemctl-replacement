@@ -1570,31 +1570,43 @@ systemctl_get_env(systemctl_t* self, systemctl_conf_t* conf)
     str_list_t* env_parts = systemctl_conf_getlist(conf, "Service", "Environment", NULL);
     if (! env_parts) env_parts = str_list_new();
     for (int i=0; i < env_parts->size; ++i) {
-        str_t env_part = env_parts->data[i];
-        str_dict_t* values = systemctl_read_env_part(self, env_part); /* FIXME: expand_special */
+        str_t env_part = systemctl_expand_special(self, env_parts->data[i], conf);
+        str_dict_t* values = systemctl_read_env_part(self, env_part);
         for (int j=0; j < values->size; ++j) {
              str_t name = values->data[j].key;
              str_t value = values->data[j].value;
              str_dict_add(env, name, value);
         }
+        str_free(env_part);
         str_dict_free(values);
     }
     str_list_free(env_parts);
     str_list_t* env_files = systemctl_conf_getlist(conf, "Service", "EnvironmentFile", NULL);
     if (! env_files) env_files = str_list_new();
     for (int i=0; i < env_files->size; ++i) {
-        str_t env_file = env_files->data[i];
+        str_t env_file = systemctl_expand_special(self, env_files->data[i], conf);
         str_dict_t* values = systemctl_read_env_file(self, env_file);
         for (int j=0; j < values->size; ++j) {
              str_t name = values->data[j].key;
              str_t value = values->data[j].value;
              str_dict_add(env, name, value);
         }
+        str_free(env_file);
         str_dict_free(values);
     }
-    str_list_free(env_files);
     /* FIXME: extra_vars */
     return env;
+}
+
+str_dict_t* restrict
+systemctl_show_environment(systemctl_t* self, str_t unit)
+{
+    systemctl_conf_t* conf = systemctl_load_unit_conf(self, unit);
+    if (! conf) {
+        logg_error("Unit %s could not be found", unit);
+        return NULL;
+    }
+    return systemctl_get_env(self, conf);
 }
 
 str_t
@@ -1710,6 +1722,7 @@ systemctl_status_unit(systemctl_t* self, str_t unit)
 int
 str_print(str_t result)
 {
+    if (! result) return 0;
     fprintf(stdout, "%s\n", result);
     return result && result[0] ? 0 : 1;
 }
@@ -1717,6 +1730,7 @@ str_print(str_t result)
 int
 str_list_print(str_list_t* result)
 {
+    if (! result) return 0;
     for (int i = 0; i < result->size; ++i) {
         str_t element = result->data[i];
         fprintf(stdout, "%s\n", element);
@@ -1725,8 +1739,21 @@ str_list_print(str_list_t* result)
 }
 
 int
+str_dict_print(str_dict_t* result)
+{
+    if (! result) return 0;
+    for (int i = 0; i < result->size; ++i) {
+        str_t line = str_dup3(result->data[i].key, "\t", result->data[i].value);
+        fprintf(stdout, "%s\n", line);
+        str_free(line);
+    }
+    return result->size ? 0 : 1;
+}
+
+int
 str_list_list_print(str_list_list_t* result)
 {
+    if (! result) return 0;
     for (int i = 0; i < result->size; ++i) {
         str_list_t* element = &result->data[i];
         str_t line = str_list_join(element, "\t");
@@ -1775,6 +1802,12 @@ main(int argc, char** argv) {
         str_t result = systemctl_status_modules(&systemctl, &args);
         str_print(result);
         str_free(result);
+    } else if (str_equal(command, "show-environment")) {
+        for (int i=0; i < args.size; ++i) {
+            str_dict_t* result = systemctl_show_environment(&systemctl, args.data[i]);
+            str_dict_print(result);
+            str_dict_free(result);
+        }
     } else {
         fprintf(stderr, "unknown command '%s'", argv[1]);
     }

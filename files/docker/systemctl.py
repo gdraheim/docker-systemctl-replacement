@@ -1433,15 +1433,6 @@ class Systemctl:
                     yield name, value
         except Exception as e:
             logg.info("while reading %s: %s", env_part, e)
-    def show_environment(self, unit):
-        """ [UNIT]. -- show environment parts """
-        conf = self.load_unit_conf(unit)
-        if conf is None:
-            logg.error("Unit %s could not be found.", unit)
-            return False
-        if _unit_property:
-            return conf.getlist("Service", _unit_property)
-        return self.get_env(conf)
     def extra_vars(self):
         return self._extra_vars # from command line
     def get_env(self, conf):
@@ -1463,6 +1454,16 @@ class Systemctl:
                     logg.info("override %s=%s", name, value)
                     env[name] = value # a '$word' is not special here
         return env
+    def show_environment(self, unit):
+        """ [UNIT]. -- show environment parts """
+        conf = self.load_unit_conf(unit)
+        if conf is None:
+            logg.error("Unit %s could not be found.", unit)
+            return False
+        # FIXME: return value is (bool, list, dict) ??
+        if _unit_property:
+            return conf.getlist("Service", _unit_property)
+        return self.get_env(conf)
     def expand_env(self, cmd, env):
         def get_env1(m):
             if m.group(1) in env:

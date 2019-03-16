@@ -1917,4 +1917,5 @@ os_environ_copy()
         }
         s = *(environ+i);
     }
+    return result;
 }
