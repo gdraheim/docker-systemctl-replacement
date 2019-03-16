@@ -32,6 +32,15 @@
 #include "systemctl-types.h"
 #include "systemctl-logging.h"
 
+/* empty */
+
+str_t empty_str = str_EMPTY;
+str_list_t empty_str_list = str_list_NULL;
+str_list_list_t empty_str_list_list = str_list_list_NULL;
+str_dict_t empty_str_dict_t = str_dict_NULL;
+str_list_dict_t empty_str_list_dict_t = str_list_dict_NULL;
+str_list_dict_dict_t empty_str_list_dict_dict_t = str_list_dict_dict_NULL;
+
 /* init */
 
 void

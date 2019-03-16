@@ -145,6 +145,14 @@ typedef struct ptr_list_dict
 #define str_list_dict_NULL { 0, NULL }
 #define str_list_dict_dict_NULL { 0, NULL }
 
+/* initialized with the NULL macros */
+extern str_t empty_str;
+extern str_list_t empty_str_list;
+extern str_list_list_t empty_str_list_list;
+extern str_dict_t empty_str_dict_t;
+extern str_list_dict_t empty_str_list_dict_t;
+extern str_list_dict_dict_t empty_str_list_dict_dict_t;
+
 /* len */
 
 static inline ssize_t

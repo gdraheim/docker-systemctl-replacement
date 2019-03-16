@@ -1570,8 +1570,7 @@ str_dict_t* restrict
 systemctl_get_env(systemctl_t* self, systemctl_conf_t* conf)
 {
     str_dict_t* env = os_environ_copy();
-    str_list_t* env_parts = systemctl_conf_getlist(conf, "Service", "Environment", NULL);
-    if (! env_parts) env_parts = str_list_new();
+    str_list_t* env_parts = systemctl_conf_getlist(conf, "Service", "Environment", &empty_str_list);
     for (int i=0; i < env_parts->size; ++i) {
         str_t env_part = systemctl_expand_special(self, env_parts->data[i], conf);
         str_dict_t* values = systemctl_read_env_part(self, env_part);
@@ -1583,9 +1582,7 @@ systemctl_get_env(systemctl_t* self, systemctl_conf_t* conf)
         str_free(env_part);
         str_dict_free(values);
     }
-    str_list_free(env_parts);
-    str_list_t* env_files = systemctl_conf_getlist(conf, "Service", "EnvironmentFile", NULL);
-    if (! env_files) env_files = str_list_new();
+    str_list_t* env_files = systemctl_conf_getlist(conf, "Service", "EnvironmentFile", &empty_str_list);
     for (int i=0; i < env_files->size; ++i) {
         str_t env_file = systemctl_expand_special(self, env_files->data[i], conf);
         str_dict_t* values = systemctl_read_env_file(self, env_file);
