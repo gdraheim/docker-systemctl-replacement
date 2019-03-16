@@ -901,22 +901,6 @@ str_copy(str_t* self, const str_t* from)
   return true;
 }
 
-bool
-str_copy_str_list(str_t* self, const str_list_t* from) 
-{
-    if (self == NULL) return false;
-    ssize_t size = 0;
-    for (int i=0; i < from->size; ++i) {
-        size += str_len(from->data[i]);
-    }
-    *self = malloc(size+1);
-    ssize_t p = 0;
-    for (int i=0; i < from->size; ++i) {
-        str_cpy(*self + p, from->data[i]);
-        p += str_len(from->data[i]);
-    }
-    return true;
-}
 
 bool
 str_list_copy(str_list_t* self, const str_list_t* from) 
@@ -978,13 +962,32 @@ str_list_dict_dict_copy(str_list_dict_dict_t* self, const str_list_dict_dict_t* 
 /* dup */
 
 str_t restrict
+str_dup_all(const str_list_t* from) 
+{
+    str_t result = NULL;
+    if (! from) 
+       return result;
+    ssize_t size = 0;
+    for (int i=0; i < from->size; ++i) {
+        size += str_len(from->data[i]);
+    }
+    result = malloc(size+1);
+    ssize_t p = 0;
+    for (int i=0; i < from->size; ++i) {
+        ssize_t bytes = str_len(from->data[i]);
+        memcpy(result + p, from->data[i], bytes);
+        p += bytes;
+    }
+    result[p] = '\0';
+    return result;
+}
+
+str_t restrict
 str_dup4(const str_t str1, const str_t str2, const str_t str3, const str_t str4)
 {
-  str_t res = NULL;
   str_list_entry_t data[] = { str1, str2, str3, str4 };
   str_list_t list = { 4, data };
-  str_copy_str_list(&res, &list);
-  return res;
+  return str_dup_all(&list);
 }
 
 str_t restrict
@@ -1645,7 +1648,8 @@ str_join2(const str_t self, const str_t from, const str_t delim)
 str_t restrict
 str_list_join(const str_list_t* self, const str_t delim)
 {
-  str_t res = NULL;
+  str_t result = NULL;
+  if (! self) return result;
   str_list_t join;
   str_list_init0(&join, self->size * 2);
   int x = 0;
@@ -1660,9 +1664,9 @@ str_list_join(const str_list_t* self, const str_t delim)
      }
   }
   join.size = x;
-  str_copy_str_list(&res, &join);
+  result = str_dup_all(&join);
   str_list_null(&join);
-  return res;
+  return result;
 }
 
 str_t restrict

@@ -2,6 +2,7 @@
 #include "systemctl-types.h"
 #include "systemctl-logging.h"
 #include <stdlib.h>
+#include <stdio.h>
 
 void
 systemctl_options_init(systemctl_options_t* self)
@@ -30,35 +31,35 @@ systemctl_options_add9(systemctl_options_t* self,
 {
     str_t opts[] = { opt1, opt2, opt3, opt4, opt5, opt6, opt7, opt8, opt9 };
     ssize_t optslen = 9;
-    /* .. */
-    str_t opt = NULL;
+    /* the last -opt/--option will name the storage key (without '-'s) */
+    str_t key = NULL;
     for (int i=0; i < optslen; ++i) {
         if (! str_empty(opts[i])) {
              if (str_startswith(opts[i], "--")) {
-                 str_sets(&opt, str_cut_end(opts[i], 2));
+                 str_sets(&key, str_cut_end(opts[i], 2));
              } else if (str_startswith(opts[i], "-")) {
-                 str_sets(&opt, str_cut_end(opts[i], 1));
+                 str_sets(&key, str_cut_end(opts[i], 1));
              }
         }
     }
-    if (! opt) {
+    if (! key) {
        logg_error("missing option name");
        return;
     }
     for (int i=0; i < optslen; ++i) {
         if (! str_empty(opts[i])) {
             if (str_startswith(opts[i], "-")) {
-                str_dict_add(&self->optmapping, opts[i], opt);
+                str_dict_add(&self->optmapping, opts[i], key);
             }
             else if (str_startswith(opts[i], "=")) {
-                str_dict_add(&self->optargument, opts[i], opt);
+                str_dict_add(&self->optargument, key, opts[i]);
             }
             else {
-                str_dict_add(&self->optcomment, opts[i], opt);
+                str_dict_add(&self->optcomment, key, opts[i]);
             }
         }
     }
-    str_null(&opt);
+    str_null(&key);
 }
 
 void
@@ -117,7 +118,7 @@ systemctl_options_scan(systemctl_options_t* self, int argc, char** argv)
     for (int o=0; o < self->optmapping.size; ++o) {
         logg_debug("WITH OPTION %s", self->optmapping.data[o]);
     }
-    
+    /* let's go */
     for (int i=1; i < argc; ++i) {
         if (stopargs) {
             str_list_add(&self->args, argv[i]);
@@ -132,7 +133,7 @@ systemctl_options_scan(systemctl_options_t* self, int argc, char** argv)
             continue;
         }
         if (str_equal(argv[i], "--")) {
-            stopargs = true;
+            stopargs = true; /* later arguments are never options */
             continue;
         } else if (str_startswith(argv[i], "--")) {
             int x = str_find(argv[i], "=");
@@ -190,6 +191,64 @@ systemctl_options_scan(systemctl_options_t* self, int argc, char** argv)
            str_list_add(&self->args, argv[i]);
         }
     }
+}
+
+bool
+systemctl_options_help(systemctl_options_t* self)
+{
+    printf("HELP\n");
+    str_dict_t options;
+    str_dict_init(&options);
+    for (int i=0; i < self->optmapping.size; ++i) {
+        str_t key = self->optmapping.data[i].value;
+        if (! str_dict_contains(&options, key)) {
+            str_t arg = str_dict_get(&self->optargument, key);
+            str_dict_add(&options, key, arg);
+        }
+    }
+    for (int k=0; k < options.size; ++k) {
+        str_t key = options.data[k].key;
+        str_t arg = options.data[k].value;
+        str_list_t opts;
+        str_list_init(&opts);
+        for (int i=0; i < self->optmapping.size; ++i) {
+            str_t opt = self->optmapping.data[i].key;
+            str_t value = self->optmapping.data[i].value;
+            if (! str_equal(value, key)) continue;
+            str_list_add(&opts, opt);
+        }
+        ssize_t col = 0;
+        str_t showopts = str_list_join(&opts, " / ");
+        printf("  %s", showopts);
+        col += str_len(showopts) + 2;
+        if (arg) {
+           printf(" %s", arg);
+           col += str_len(arg) + 1;
+        }
+        str_t help = str_dict_get(&self->optcomment, key);
+        if (help) {
+            if (col < 30) {
+                for(; col < 24; ++col) 
+                    printf(" ");
+            } else {
+                printf("\n                        ");
+            }
+            printf(" %s", help);
+            col += str_len(help) + 2;
+        }
+        printf("\n");
+        str_free(showopts);
+        str_list_null(&opts);
+    }
+    if (false) {
+        for (int u=0; u < self->optcomment.size; ++u) {
+            str_t key = self->optcomment.data[u].key;
+            str_t value = self->optcomment.data[u].value;
+            logg_info("HELP %s: %s", key, value);
+        }
+    }
+
+    str_dict_null(&options);
 }
 
 str_list_t*

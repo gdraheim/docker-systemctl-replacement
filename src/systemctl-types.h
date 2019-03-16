@@ -432,9 +432,6 @@ bool
 str_copy(str_t* self, const str_t* from);
 
 bool
-str_copy_str_list(str_t* self, const str_list_t* from);
-
-bool
 str_list_copy(str_list_t* self, const str_list_t* from);
 
 bool
@@ -445,6 +442,9 @@ str_list_dict_copy(str_list_dict_t* self, const str_list_dict_t* from);
 
 bool
 str_list_dict_dict_copy(str_list_dict_dict_t* self, const str_list_dict_dict_t* from);
+
+str_t restrict
+str_dup_all(const str_list_t* from);
 
 str_t restrict
 str_dup4(const str_t str1, const str_t str2, const str_t str3, const str_t str4);

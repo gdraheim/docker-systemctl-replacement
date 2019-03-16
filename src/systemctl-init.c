@@ -1794,6 +1794,7 @@ main(int argc, char** argv) {
     /* scan options */
     systemctl_options_t cmd;
     systemctl_options_init(&cmd);
+    systemctl_options_add3(&cmd, "-h", "--help", "this help screen");
     systemctl_options_add5(&cmd, "-e", "--extra-vars", "--environment", "=NAME=VAL", 
         "..override settings in the syntax of 'Environment='");
     systemctl_options_add3(&cmd, "-v", "--verbose", "increase logging level");
@@ -1802,7 +1803,12 @@ main(int argc, char** argv) {
         int level = str_list_len(str_list_dict_get(&cmd.opts, "verbose"));
         logg_setlevel(LOG_ERROR - 10 * level); /* similar style to python */
     }
-    
+    if (str_list_dict_contains(&cmd.opts, "help")) {
+        systemctl_options_help(&cmd);
+        systemctl_options_null(&cmd);
+        /* systemctl_settings_null(&settings); */
+        return 0;
+    }
     /* ............................................ */
     systemctl_t systemctl;
     systemctl_init(&systemctl, &settings);

@@ -48,6 +48,9 @@ systemctl_options_add1(systemctl_options_t* self, str_t opt1);
 bool
 systemctl_options_scan(systemctl_options_t* self, int argc, char** argv);
 
+bool
+systemctl_options_help(systemctl_options_t* self);
+
 str_list_t*
 str_options_getlist(systemctl_options_t* self, str_t name, str_list_t* defaults);
 
