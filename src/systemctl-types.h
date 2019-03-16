@@ -622,6 +622,9 @@ str_list_join(const str_list_t* self, const str_t delim);
 str_t restrict
 str_list3_join(str_t str1, str_t str2, str_t str3, const str_t delim);
 
+str_t restrict
+str_replace(str_t self, str_t str1, str_t str2);
+
 str_t
 str_format(const char* format, ...);
 

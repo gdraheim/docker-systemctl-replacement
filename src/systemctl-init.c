@@ -1577,7 +1577,7 @@ systemctl_get_env(systemctl_t* self, systemctl_conf_t* conf)
         for (int j=0; j < values->size; ++j) {
              str_t name = values->data[j].key;
              str_t value = values->data[j].value;
-             str_dict_add(env, name, value);
+             str_dict_add(env, name, value); /* a '$word' is not special here */
         }
         str_free(env_part);
         str_dict_free(values);
@@ -1589,7 +1589,7 @@ systemctl_get_env(systemctl_t* self, systemctl_conf_t* conf)
         for (int j=0; j < values->size; ++j) {
              str_t name = values->data[j].key;
              str_t value = values->data[j].value;
-             str_dict_add(env, name, value);
+             str_dict_adds(env, name, systemctl_expand_env(self, value, env));
         }
         str_free(env_file);
         str_dict_free(values);
@@ -1602,7 +1602,7 @@ systemctl_get_env(systemctl_t* self, systemctl_conf_t* conf)
                 str_t name = values->data[j].key;
                 str_t value = values->data[j].value;
                 logg_debug("override %s=%s", name, value);
-                str_dict_add(env, name, value);
+                str_dict_add(env, name, systemctl_expand_env(self, value, env));
             }
             str_dict_free(values);
         } else {
@@ -1628,6 +1628,63 @@ systemctl_show_environment(systemctl_t* self, str_t unit)
         return NULL;
     }
     return systemctl_get_env(self, conf);
+}
+
+str_t
+systemctl_expand_env(systemctl_t* self, str_t value, str_dict_t* env)
+{
+    str_t expanded = str_replace(value, "\\\\n", "");
+    const int maxdepth = 20;
+    for(int depth = 0; depth < maxdepth; ++depth) {
+        regmatch_t m[4];
+        size_t m3 = 3;
+        ssize_t p = 0;
+        int done = 0;
+        while (! regmatch(".*[$]([[:alnum:]_]+)", expanded+p, m3, m, 0)) {
+            str_t key = str_cut(expanded+p, m[1].rm_so, m[1].rm_eo);
+            if (! str_dict_contains(env, key)) {
+                logg_debug("can not expand $%s", key);
+                p += m[1].rm_eo;
+            } else {
+                str_t value = str_dict_get(env, key);
+                ssize_t old_len = str_len(key);
+                ssize_t new_len = str_len(value);
+                str_t prefix = str_cut(expanded, 0, p + m[1].rm_so);
+                str_t suffix = str_cut_end(expanded, p + m[1].rm_eo);
+                str_sets(&expanded, str_dup3(prefix, value, suffix));
+                str_free(suffix);
+                str_free(prefix);
+                p += m[1].rm_eo - old_len + new_len;
+            }
+            str_free(key);
+            done += 1;
+        }
+        p = 0;
+        while (! regmatch(".*[$][{]([[:alnum:]_]+)[}]", expanded+p, m3, m, 0)) {
+            str_t key = str_cut(expanded+p, m[1].rm_so, m[1].rm_eo);
+            if (! str_dict_contains(env, key)) {
+                logg_debug("can not expand $%s", key);
+                p += m[1].rm_eo;
+            } else {
+                str_t value = str_dict_get(env, key);
+                ssize_t old_len = str_len(key);
+                ssize_t new_len = str_len(value);
+                str_t prefix = str_cut(expanded, 0, p + m[1].rm_so);
+                str_t suffix = str_cut_end(expanded, p + m[1].rm_eo);
+                str_sets(&expanded, str_dup3(prefix, value, suffix));
+                str_free(suffix);
+                str_free(prefix);
+                p += m[1].rm_eo - old_len + new_len;
+            }
+            str_free(key);
+            done += 1;
+        }
+        if (! done) {
+            return expanded;
+        }
+    }
+    logg_error("shell variable expansion exceeded maxdepth %i", maxdepth);
+    return expanded;
 }
 
 str_t

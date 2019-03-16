@@ -1476,12 +1476,13 @@ class Systemctl:
             return "" # empty string
         #
         maxdepth = 20
-        expanded = re.sub("[$](\w+)", lambda m: get_env1(m), cmd.replace("\\\n",""))
+        expanded = cmd.replace("\\\n","")
         for depth in xrange(maxdepth):
-            new_text = re.sub("[$][{](\w+)[}]", lambda m: get_env2(m), expanded)
-            if new_text == expanded:
+            text1 = re.sub("[$](\w+)", lambda m: get_env1(m), expanded)
+            text2 = re.sub("[$][{](\w+)[}]", lambda m: get_env2(m), text2)
+            if text2 == expanded:
                 return expanded
-            expanded = new_text
+            expanded = text2
         logg.error("shell variable expansion exceeded maxdepth %s", maxdepth)
         return expanded
     def expand_special(self, cmd, conf = None):

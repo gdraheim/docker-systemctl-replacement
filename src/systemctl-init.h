@@ -316,6 +316,9 @@ str_dict_t* restrict
 systemctl_show_environment(systemctl_t* self, str_t unit);
 
 str_t
+systemctl_expand_env(systemctl_t* self, str_t value, str_dict_t* env);
+
+str_t
 systemctl_expand_special(systemctl_t* self, str_t value, systemctl_conf_t* conf);
 
 str_t restrict

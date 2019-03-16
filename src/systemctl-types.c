@@ -1685,6 +1685,26 @@ str_list3_join(str_t str1, str_t str2, str_t str3, const str_t delim)
    return str_list_join(&list, delim);
 }
 
+/* replace */
+
+str_t restrict
+str_replace(str_t self, str_t str1, str_t str2)
+{
+    str_t result = str_dup(self);
+    ssize_t offset = 0;
+    while (true) {
+        ssize_t x = str_find(self+offset, str1);
+        if (x >= 0) {
+            str_t prefix = str_cut(self, 0, offset+x);
+            str_t suffix = str_cut_end(self, offset+x+str_len(str1));
+            str_sets(&result, str_dup3(prefix, str2, suffix));
+            offset += x + str_len(str2); 
+            continue;
+        }
+    }
+    return result;
+}
+
 /* format */
 str_t
 str_format(const char* format, ...) 
