@@ -71,6 +71,7 @@ _preset_folder9 = None
 
 # definitions 
 SystemCompatibilityVersion = 219
+EpsilonTime = 0.1
 MinimumYield = 0.5
 MinimumTimeoutStartSec = 4
 MinimumTimeoutStopSec = 4
@@ -1362,7 +1363,7 @@ class Systemctl:
         filetime = self.get_filetime(filename)
         boottime = self.get_boottime()
         if isinstance(filetime, float):
-            filetime -= 0.1
+            filetime -= EpsilonTime
         if filetime >= boottime :
             logg.debug("  file time: %s", datetime.datetime.fromtimestamp(filetime))
             logg.debug("  boot time: %s", datetime.datetime.fromtimestamp(boottime))
@@ -4372,6 +4373,8 @@ if __name__ == "__main__":
         systemctl.force_ipv4()
     elif opt.ipv6:
         systemctl.force_ipv6()
+    if _init:
+        time.sleep(EpsilonTime)
     found = False
     # command NAME
     if command.startswith("__"):
