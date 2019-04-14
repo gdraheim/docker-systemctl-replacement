@@ -4,7 +4,7 @@
 from __future__ import print_function
 
 __copyright__ = "(C) Guido Draheim, licensed under the EUPL"""
-__version__ = "1.4.3084"
+__version__ = "1.4.3147"
 
 ## NOTE:
 ## The testcases 1000...4999 are using a --root=subdir environment
@@ -20051,6 +20051,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(greps(top, " root ")), 3)
         self.assertEqual(len(greps(top, " somebody ")), 1)
         #
+        check = "docker exec {testname}x bash -c 'ls -ld /var/run/*.status; grep PID /var/run/*.status'"
+        top = output(check.format(**locals()))
+        logg.info("\n>>>\n%s", top)
         check = "docker exec {testname}x systemctl list-units"
         top = output(check.format(**locals()))
         logg.info("\n>>>\n%s", top)
