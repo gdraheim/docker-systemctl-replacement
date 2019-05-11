@@ -32,6 +32,10 @@ DEBUG_AFTER = os.environ.get("SYSTEMCTL_DEBUG_AFTER", "") or False
 EXIT_WHEN_NO_MORE_PROCS = os.environ.get("SYSTEMCTL_EXIT_WHEN_NO_MORE_PROCS", "") or False
 EXIT_WHEN_NO_MORE_SERVICES = os.environ.get("SYSTEMCTL_EXIT_WHEN_NO_MORE_SERVICES", "") or False
 
+FOUND_OK = 0
+FOUND_INACTIVE = 2
+FOUND_UNKNOWN = 4
+
 # defaults for options
 _extra_vars = []
 _force = False
@@ -954,6 +958,13 @@ class Systemctl:
                 if name not in result:
                     result[name] = path
         return result
+    def load_sysd_template_conf(self, module): # -> conf?
+        """ read the unit template with a UnitConfParser (systemd) """
+        if "@" in module:
+            unit = parse_unit(module)
+            service = "%s@.service" % unit.prefix
+            return self.load_sysd_unit_conf(service)
+        return None
     def load_sysd_unit_conf(self, module): # -> conf?
         """ read the unit file with a UnitConfParser (systemd) """
         path = self.unit_sysd_file(module)
@@ -994,6 +1005,9 @@ class Systemctl:
             conf = self.load_sysd_unit_conf(module)
             if conf is not None:
                 return conf
+            conf = self.load_sysd_template_conf(module)
+            if conf is not None:
+                return conf
             conf = self.load_sysv_unit_conf(module)
             if conf is not None:
                 return conf
@@ -1016,6 +1030,22 @@ class Systemctl:
         if conf is not None:
             return conf
         return self.default_unit_conf(module)
+    def match_sysd_templates(self, modules = None, suffix=".service"): # -> generate[ unit ]
+        """ make a file glob on all known template units (systemd areas).
+            It returns no modules (!!) if no modules pattern were given.
+            The module string should contain an instance name already. """
+        modules = to_list(modules)
+        self.scan_unit_sysd_files()
+        for item in sorted(self._file_for_unit_sysd.keys()):
+            if "@" not in item:
+                continue
+            service_unit = parse_unit(item)
+            for module in modules:
+                if "@" not in module:
+                    continue
+                module_unit = parse_unit(module)
+                if service_unit.prefix == module_unit.prefix:
+                    yield "%s@%s.%s" % (service_unit.prefix, module_unit.instance, service_unit.suffix)
     def match_sysd_units(self, modules = None, suffix=".service"): # -> generate[ unit ]
         """ make a file glob on all known units (systemd areas).
             It returns all modules if no modules pattern were given.
@@ -1049,6 +1079,9 @@ class Systemctl:
             Also a single string as one module pattern may be given. """
         found = []
         for unit in self.match_sysd_units(modules, suffix):
+            if unit not in found:
+                found.append(unit)
+        for unit in self.match_sysd_templates(modules, suffix):
             if unit not in found:
                 found.append(unit)
         for unit in self.match_sysv_units(modules, suffix):
