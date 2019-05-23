@@ -1035,6 +1035,8 @@ class Systemctl:
             It returns no modules (!!) if no modules pattern were given.
             The module string should contain an instance name already. """
         modules = to_list(modules)
+        if not modules:
+            return
         self.scan_unit_sysd_files()
         for item in sorted(self._file_for_unit_sysd.keys()):
             if "@" not in item:
