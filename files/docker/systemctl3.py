@@ -791,6 +791,7 @@ class Systemctl:
         self._file_for_unit_sysd = None # name.service => /etc/systemd/system/name.service
         self._preset_file_list = None # /etc/systemd/system-preset/* => file content
         self._default_target = _default_target
+        self._sysinit_target = None
         self.exit_when_no_more_procs = EXIT_WHEN_NO_MORE_PROCS or False
         self.exit_when_no_more_services = EXIT_WHEN_NO_MORE_SERVICES or False
         self._user_mode = _user_mode
@@ -1010,13 +1011,13 @@ class Systemctl:
         except Exception as e:
             logg.warning("%s not loaded: %s", module, e)
         return None
-    def default_unit_conf(self, module): # -> conf
+    def default_unit_conf(self, module, description = None): # -> conf
         """ a unit conf that can be printed to the user where
             attributes are empty and loaded() is False """
         data = UnitConfParser()
         data.set("Unit","Id", module)
         data.set("Unit", "Names", module)
-        data.set("Unit", "Description", "NOT-FOUND "+module)
+        data.set("Unit", "Description", description or ("NOT-FOUND "+module))
         # assert(not data.loaded())
         return SystemctlConf(data, module)
     def get_unit_conf(self, module): # -> conf (conf | default-conf)
@@ -3829,6 +3830,7 @@ class Systemctl:
                 a system_halt is performed with the enabled services to be stopped."""
         logg.info("system default requested - %s", arg)
         init = self._now or self._init
+        self.sysinit_status(SubState = "initializing")
         self.start_system_default(init = init)
     def start_system_default(self, init = False):
         """ detect the default.target services and start them.
@@ -3836,6 +3838,7 @@ class Systemctl:
             the services are stopped again by 'systemctl halt'."""
         default_target = self._default_target
         default_services = self.system_default_services("S", default_target)
+        self.sysinit_status(SubState = "starting")
         self.start_units(default_services)
         logg.info(" -- system is up")
         if init:
@@ -3849,6 +3852,7 @@ class Systemctl:
             at the end of a 'systemctl --init default' loop."""
         default_target = self._default_target
         default_services = self.system_default_services("K", default_target)
+        self.sysinit_status(SubState = "stopping")
         self.stop_units(default_services)
         logg.info(" -- system is down")
     def system_halt(self, arg = True):
@@ -3991,6 +3995,7 @@ class Systemctl:
         signal.signal(signal.SIGINT, lambda signum, frame: ignore_signals_and_raise_keyboard_interrupt("SIGINT"))
         signal.signal(signal.SIGTERM, lambda signum, frame: ignore_signals_and_raise_keyboard_interrupt("SIGTERM"))
         self.start_log_files(units)
+        self.sysinit_status(ActiveState = "active", SubState = "running")
         result = None
         while True:
             try:
@@ -4023,6 +4028,7 @@ class Systemctl:
                 signal.signal(signal.SIGINT, signal.SIG_DFL)
                 logg.info("interrupted - exit init-loop")
                 result = e.message or "STOPPED"
+        self.sysinit_status(ActiveState = None, SubState = "degraded")
         self.read_log_files(units)
         self.read_log_files(units)
         self.stop_log_files(units)
@@ -4059,6 +4065,29 @@ class Systemctl:
                 if pid > 1:
                     running += 1
         return running # except PID 0 and PID 1
+    def sysinit_status(self, **status):
+        conf = self.sysinit_target()
+        self.write_status_from(conf, **status)
+    def sysinit_target(self):
+        if not self._sysinit_target:
+            self._sysinit_target = self.default_unit_conf("sysinit.target", "System Initialization")
+        return self._sysinit_target
+    def is_system_running(self):
+        conf = self.sysinit_target()
+        status_file = self.status_file_from(conf)
+        if not os.path.isfile(status_file):
+            return "offline"
+        status = self.read_status_from(conf)
+        return status.get("SubState", "unknown")
+    def system_is_system_running(self):
+        state = self.is_system_running()
+        if self._quiet:
+            return state in [ "running" ]
+        else:
+            if state in [ "running" ]:
+                return True, state
+            else:
+                return False, state
     def pidlist_of(self, pid):
         try: pid = int(pid)
         except: return []
@@ -4398,7 +4427,7 @@ if __name__ == "__main__":
         args = [ "version" ]
     if not args:
         if _init:
-            args = [ "init" ] # alias "--init default"
+            args = [ "default" ]
         else:
             args = [ "list-units" ]
     logg.debug("======= systemctl.py " + " ".join(args))
