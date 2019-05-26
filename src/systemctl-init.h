@@ -73,6 +73,9 @@ typedef struct systemctl_conf systemctl_conf_t;
 struct systemctl;
 typedef struct systemctl systemctl_t;
 
+struct systemctl_unit_name;
+typedef struct systemctl_unit_name systemctl_unit_name_t;
+
 /* from systemctl-init.c */
 
 void
@@ -315,11 +318,41 @@ systemctl_get_env(systemctl_t* self, systemctl_conf_t* conf);
 str_dict_t* restrict
 systemctl_show_environment(systemctl_t* self, str_t unit);
 
-str_t
+str_t restrict
+str_expand(str_t regex, str_t value, str_dict_t* env);
+
+str_t restrict
+str_expand_env1(str_t value, str_dict_t* env);
+
+str_t restrict
+str_expand_env2(str_t value, str_dict_t* env);
+
+str_t restrict
 systemctl_expand_env(systemctl_t* self, str_t value, str_dict_t* env);
+
+systemctl_unit_name_t*
+systemctl_unit_name_new();
+
+void
+systemctl_unit_name_free(systemctl_unit_name_t* result);
+
+systemctl_unit_name_t* restrict
+systemctl_parse_unit(systemctl_t* self, systemctl_conf_t* conf);
+
+systemctl_unit_name_t* restrict
+systemctl_get_special(systemctl_t* self, systemctl_conf_t* conf);
+
+static str_t restrict
+sh_escape(str_t value);
+
+str_dict_t* restrict
+systemctl_get_special_confs(systemctl_t* self, systemctl_conf_t* conf);
 
 str_t
 systemctl_expand_special(systemctl_t* self, str_t value, systemctl_conf_t* conf);
+
+str_list_t* restrict
+systemctl_exec_cmd(systemctl_t* self, str_t value, str_dict_t* env, systemctl_conf_t* conf);
 
 str_t restrict
 systemctl_get_active_from(systemctl_t* self, systemctl_conf_t* conf);

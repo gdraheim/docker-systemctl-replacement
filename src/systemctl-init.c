@@ -35,6 +35,8 @@ char* SYSTEMCTL_DEBUG_AFTER = "";
 char* SYSTEMCTL_EXIT_WHEN_NO_MORE_PROCS = "";
 char* SYSTEMCTL_EXIT_WHEN_NO_MORE_SERVICES = "";
 
+double EpsilonTime = 0.1;
+
 #define ERROR1 1
 #define ERROR3 3
 
@@ -333,7 +335,7 @@ systemctl_conf_data_read_sysd(systemctl_conf_data_t* self, str_t filename)
             continue;
         }
         if (str_startswith(line, "[")) {
-            ssize_t x = str_find(line, "]");
+            ssize_t x = str_find(line, ']');
             if (x > 0) {
                 str_sets(&section, str_cut(line, 1, x));
                 systemctl_conf_data_add_section(self, section);
@@ -1227,7 +1229,6 @@ systemctl_list_units(systemctl_t* self, str_list_t* modules)
     str_t found = str_format("%i loaded units listed", str_list_list_len(result));
     str_list_list_add3(result, "", found, hint);
     str_free(found);
-    return result;
 }
 
 str_list_list_t* restrict
@@ -1459,7 +1460,7 @@ systemctl_truncate_old(systemctl_t* self, str_t filename)
 {
     double filetime = systemctl_get_filetime(self, filename);
     double boottime = systemctl_get_boottime(self);
-    filetime -= 0.1;
+    filetime -= EpsilonTime;
     if (filetime >= boottime) {
         logg_debug("  file time: %f", os_clock_localtime10(filetime));
         logg_debug("  boot time: %f", os_clock_localtime10(boottime));
@@ -1552,7 +1553,7 @@ systemctl_read_env_part(systemctl_t* self, str_t env_part)
             if (str_startswith(part, "\"")) {
                  str_sets(&part, str_cut(part, 1, -1));
             }
-            int x = str_find(part, "="); /* there is surely a '=' in there */
+            int x = str_find(part, '='); /* there is surely a '=' in there */
             str_t name = str_cut(part, 0, x);
             str_t value = str_cut_end(part, x+1);
             str_dict_adds(result, name, value);
@@ -1627,10 +1628,53 @@ systemctl_show_environment(systemctl_t* self, str_t unit)
         logg_error("Unit %s could not be found", unit);
         return NULL;
     }
+    /* TODO: _unit_property */
     return systemctl_get_env(self, conf);
 }
 
-str_t
+str_t restrict
+str_expand(str_t regex, str_t value, str_dict_t* env)
+{
+    regmatch_t m[4];
+    size_t m3 = 3;
+    ssize_t p = 0;
+    str_t expanded = str_NULL;
+    str_t matching = value;
+    while (! regmatch(regex, matching+p, m3, m, 0)) {
+        str_t key = str_cut(matching+p, m[1].rm_so, m[1].rm_eo);
+        if (! str_dict_contains(env, key)) {
+            logg_debug("can not expand $%s", key);
+            p += m[1].rm_eo;
+        } else {
+            str_t value = str_dict_get(env, key);
+            ssize_t old_len = str_len(key);
+            ssize_t new_len = str_len(value);
+            str_t prefix = str_cut(matching, 0, p + m[1].rm_so);
+            str_t suffix = str_cut_end(matching, p + m[1].rm_eo);
+            str_sets(&expanded, str_dup3(prefix, value, suffix));
+            str_free(suffix);
+            str_free(prefix);
+            p += m[1].rm_eo - old_len + new_len;
+            matching = expanded;
+        }
+        str_free(key);
+    }
+    return expanded; /* my be null */
+}
+
+str_t restrict
+str_expand_env1(str_t value, str_dict_t* env)
+{
+    return str_expand(".*[$]([[:alnum:]_]+)", value, env);
+}
+
+str_t restrict
+str_expand_env2(str_t value, str_dict_t* env)
+{
+    return str_expand(".*[$][{]([[:alnum:]_]+)[}]", value, env);
+}
+
+str_t restrict
 systemctl_expand_env(systemctl_t* self, str_t value, str_dict_t* env)
 {
     str_t expanded = str_replace(value, "\\\\n", "");
@@ -1640,46 +1684,11 @@ systemctl_expand_env(systemctl_t* self, str_t value, str_dict_t* env)
         size_t m3 = 3;
         ssize_t p = 0;
         int done = 0;
-        while (! regmatch(".*[$]([[:alnum:]_]+)", expanded+p, m3, m, 0)) {
-            str_t key = str_cut(expanded+p, m[1].rm_so, m[1].rm_eo);
-            if (! str_dict_contains(env, key)) {
-                logg_debug("can not expand $%s", key);
-                p += m[1].rm_eo;
-            } else {
-                str_t value = str_dict_get(env, key);
-                ssize_t old_len = str_len(key);
-                ssize_t new_len = str_len(value);
-                str_t prefix = str_cut(expanded, 0, p + m[1].rm_so);
-                str_t suffix = str_cut_end(expanded, p + m[1].rm_eo);
-                str_sets(&expanded, str_dup3(prefix, value, suffix));
-                str_free(suffix);
-                str_free(prefix);
-                p += m[1].rm_eo - old_len + new_len;
-            }
-            str_free(key);
-            done += 1;
-        }
-        p = 0;
-        while (! regmatch(".*[$][{]([[:alnum:]_]+)[}]", expanded+p, m3, m, 0)) {
-            str_t key = str_cut(expanded+p, m[1].rm_so, m[1].rm_eo);
-            if (! str_dict_contains(env, key)) {
-                logg_debug("can not expand $%s", key);
-                p += m[1].rm_eo;
-            } else {
-                str_t value = str_dict_get(env, key);
-                ssize_t old_len = str_len(key);
-                ssize_t new_len = str_len(value);
-                str_t prefix = str_cut(expanded, 0, p + m[1].rm_so);
-                str_t suffix = str_cut_end(expanded, p + m[1].rm_eo);
-                str_sets(&expanded, str_dup3(prefix, value, suffix));
-                str_free(suffix);
-                str_free(prefix);
-                p += m[1].rm_eo - old_len + new_len;
-            }
-            str_free(key);
-            done += 1;
-        }
-        if (! done) {
+        str_t expanded1 = str_expand_env1(expanded, env);
+        if (expanded1) { str_sets(&expanded, expanded1); }
+        str_t expanded2 = str_expand_env2(expanded, env);
+        if (expanded2) { str_sets(&expanded, expanded2); }
+        if (! expanded1 && ! expanded2) {
             return expanded;
         }
     }
@@ -1687,10 +1696,148 @@ systemctl_expand_env(systemctl_t* self, str_t value, str_dict_t* env)
     return expanded;
 }
 
+typedef struct systemctl_unit_name
+{
+    str_t name;
+    str_t prefix;
+    str_t instance;
+    str_t suffix;
+    str_t component;
+} systemctl_unit_name_t;
+
+systemctl_unit_name_t*
+systemctl_unit_name_new() 
+{
+    systemctl_unit_name_t* result = malloc(sizeof(systemctl_unit_name_t));
+    result->name = str_NULL;
+    result->prefix = str_NULL;
+    result->instance = str_NULL;
+    result->suffix = str_NULL;
+    result->component = str_NULL;
+}
+
+void
+systemctl_unit_name_free(systemctl_unit_name_t* result)
+{
+    if (! result) return;
+    str_null(&result->name);
+    str_null(&result->prefix);
+    str_null(&result->instance);
+    str_null(&result->suffix);
+    str_null(&result->component);
+}
+
+systemctl_unit_name_t* restrict
+systemctl_parse_unit(systemctl_t* self, systemctl_conf_t* conf)
+{
+   systemctl_unit_name_t* result = systemctl_unit_name_new();
+   // FIXME
+   return result;
+}
+
+systemctl_unit_name_t* restrict
+systemctl_get_special(systemctl_t* self, systemctl_conf_t* conf)
+{
+    /* parse unit */
+    systemctl_unit_name_t* unit = systemctl_unit_name_new();
+    unit->name = systemctl_conf_name(conf);
+    str_t unit_name = str_NULL;
+    ssize_t has_suffix = str_rfind(unit->name, '.');
+    if (has_suffix > 0) {
+        unit_name = str_cut(unit->name, 0, has_suffix);
+        unit->suffix = str_cut_end(unit->name, has_suffix+1);
+    } else {
+        unit_name = str_dup(unit->name);
+        unit->suffix = str_dup("");
+    }
+    ssize_t has_instance = str_find(unit_name, '@');
+    if (has_instance > 0) {
+        unit->prefix = str_cut(unit_name, 0, has_instance);
+        unit->instance = str_cut_end(unit_name, has_instance+1);
+    } else {
+        unit->prefix = str_dup(unit_name);
+        unit->instance = str_dup("");
+    }
+    ssize_t has_component = str_rfind(unit->prefix, '-');
+    if (has_component > 0) {
+        unit->component = str_cut_end(unit->prefix, has_component+1);
+    }
+    str_free(unit_name);
+    return unit;
+}
+
+static str_t restrict
+sh_escape(str_t value)
+{
+   str_t esc = str_replace(value, "\\", "\\\\");
+   str_t escaped = str_replace(esc, "'", "\\'");
+   str_t result = str_dup3("'", escaped, "'");
+   str_free(escaped);
+   str_free(esc);
+   return result;
+}
+
+str_dict_t* restrict
+systemctl_get_special_confs(systemctl_t* self, systemctl_conf_t* conf)
+{
+    str_dict_t* confs = str_dict_new();
+    str_dict_add(confs, "%", "%");
+    if (! conf)
+        return confs;
+    systemctl_unit_name_t* unit = systemctl_parse_unit(self, conf);
+    str_dict_add(confs, "N", unit->name);
+    str_dict_adds(confs, "n", sh_escape(unit->name));
+    str_dict_add(confs, "P", unit->prefix);
+    str_dict_adds(confs, "p", sh_escape(unit->prefix));
+    str_dict_add(confs, "I", unit->instance);
+    str_dict_adds(confs, "i", sh_escape(unit->instance));
+    str_dict_add(confs, "J", unit->component);
+    str_dict_adds(confs, "j", sh_escape(unit->component));
+    str_dict_add(confs, "f", systemctl_conf_filename(conf));
+    systemctl_unit_name_free(unit);
+    /* FIXME: TODO: more patterns here */
+    return confs;
+}
+
 str_t
 systemctl_expand_special(systemctl_t* self, str_t value, systemctl_conf_t* conf)
 {
-    return str_dup(value);
+    str_t result = str_dup(value);
+    str_dict_t* confs = systemctl_get_special_confs(self, conf);
+    ssize_t p = 0;
+    while(true) {
+       ssize_t x = str_find(result+p, '%');
+       if (x < 0) break;
+       char key[] = { result[p+x+1], '\0' };
+       str_t val = str_dict_get(confs, key);
+       if (! val) {
+           logg_warning("can not expand %%%c", result[p+x]);
+           val = "''"; /* empty escaped string */
+       }
+       str_t prefix = str_cut(result, 0, p+x);
+       str_t suffix = str_cut_end(result, p+x+2);
+       str_sets(&result, str_dup3(prefix, val, suffix));
+       str_free(prefix);
+       str_free(suffix);
+       p += str_len(val); /* step */
+    }
+    str_dict_free(confs);
+    return result;
+}
+
+
+/* ..................................................... */
+
+str_list_t* restrict
+systemctl_exec_cmd(systemctl_t* self, str_t value, str_dict_t* env, systemctl_conf_t* conf) 
+{
+    str_list_t* restrict result = str_list_new();
+    str_t cmd = str_replace(value, "\\\\n", "");
+    str_t cmd2 = systemctl_expand_special(self, cmd, conf);
+    if (cmd2) { str_sets(&cmd, cmd2); }
+    str_t cmd3 = str_expand_env1(cmd, env);
+    if (cmd3) { str_sets(&cmd, cmd3); }
+    return result;
 }
 
 str_t restrict

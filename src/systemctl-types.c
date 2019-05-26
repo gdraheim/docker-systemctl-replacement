@@ -530,12 +530,32 @@ ptr_dict_get(const ptr_dict_t* self, const str_t key)
 /* find */
 
 ssize_t
-str_find(const str_t self, const str_t key)
+str_find_str(const str_t self, const str_t key)
 {
   if (self == NULL) return -1;
   if (key == NULL) return -1;
   str_t found = strstr(self, key);
   if (found == NULL) return -1;
+  return found - self;
+}
+
+ssize_t
+str_find(const str_t self, char key)
+{
+  if (! self) return -1;
+  if (! key) return -1;
+  str_t found = strchr(self, key);
+  if (! found) return -1;
+  return found - self;
+}
+
+ssize_t
+str_rfind(const str_t self, char key)
+{
+  if (! self) return -1;
+  if (! key) return -1;
+  str_t found = strrchr(self, key);
+  if (! found) return -1;
   return found - self;
 }
 
@@ -1693,7 +1713,7 @@ str_replace(str_t self, str_t str1, str_t str2)
     str_t result = str_dup(self);
     ssize_t offset = 0;
     while (true) {
-        ssize_t x = str_find(self+offset, str1);
+        ssize_t x = str_find_str(self+offset, str1);
         if (x >= 0) {
             str_t prefix = str_cut(self, 0, offset+x);
             str_t suffix = str_cut_end(self, offset+x+str_len(str1));
@@ -1940,7 +1960,7 @@ os_environ_copy()
     int i = 1;
     char *s = *environ;
     for (; s; i++) {
-        ssize_t x = str_find(s, "=");
+        ssize_t x = str_find(s, '=');
         if (x > 0) {
             str_t name = str_cut(s, 0, x);
             str_t value = str_cut_end(s, x+1);

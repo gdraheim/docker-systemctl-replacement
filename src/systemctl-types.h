@@ -362,7 +362,13 @@ void*
 ptr_dict_get(const ptr_dict_t* self, const str_t key);
 
 ssize_t
-str_find(const str_t self, const str_t key);
+str_find_str(const str_t self, const str_t key);
+
+ssize_t
+str_find(const str_t self, char key);
+
+ssize_t
+str_rfind(const str_t self, char key);
 
 ssize_t
 str_list_find(const str_list_t* self, const str_t key);

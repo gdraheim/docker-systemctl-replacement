@@ -136,7 +136,7 @@ systemctl_options_scan(systemctl_options_t* self, int argc, char** argv)
             stopargs = true; /* later arguments are never options */
             continue;
         } else if (str_startswith(argv[i], "--")) {
-            int x = str_find(argv[i], "=");
+            int x = str_find(argv[i], '=');
             if (x > 0) {
                 str_t opt = str_cut(argv[i], 0, x);
                 str_t key = str_dict_get(&self->optmapping, opt);
@@ -163,7 +163,7 @@ systemctl_options_scan(systemctl_options_t* self, int argc, char** argv)
         } else if (str_startswith(argv[i], "-")) {
             str_t chars = str_NULL;
             str_t optarg = str_NULL;
-            int x = str_find(argv[i], "=");
+            int x = str_find(argv[i], '=');
             if (x > 0) {
                 chars = str_cut(argv[i], 1, x);
                 optarg = str_cut_end(argv[i], x+1);
