@@ -15506,6 +15506,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "docker exec {testname} {systemctl} enable zzz.service -vv"
         sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} {systemctl} is-system-running -vv"
+        sx____(cmd.format(**locals()))
         cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
