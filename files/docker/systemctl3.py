@@ -75,6 +75,8 @@ _preset_folder9 = None
 
 # definitions 
 SystemCompatibilityVersion = 219
+SysInitTarget = "sysinit.target"
+SysInitWait = 5 # max for target
 EpsilonTime = 0.1
 MinimumYield = 0.5
 MinimumTimeoutStartSec = 4
@@ -1747,6 +1749,7 @@ class Systemctl:
         """ fails if any unit does not start
         /// SPECIAL: may run the init-loop and 
             stop the named units afterwards """
+        self.wait_system()
         done = True
         started_units = []
         for unit in self.sortedAfter(units):
@@ -2073,6 +2076,7 @@ class Systemctl:
         return self.stop_units(units) and found_all
     def stop_units(self, units):
         """ fails if any unit fails to stop """
+        self.wait_system()
         done = True
         for unit in self.sortedBefore(units):
             if not self.stop_unit(unit):
@@ -2254,6 +2258,7 @@ class Systemctl:
         return False
     def reload_modules(self, *modules):
         """ [UNIT]... -- reload these units """
+        self.wait_system()
         found_all = True
         units = []
         for module in modules:
@@ -2268,6 +2273,7 @@ class Systemctl:
         return self.reload_units(units) and found_all
     def reload_units(self, units):
         """ fails if any unit fails to reload """
+        self.wait_system()
         done = True
         for unit in self.sortedAfter(units):
             if not self.reload_unit(unit):
@@ -2352,6 +2358,7 @@ class Systemctl:
         return self.restart_units(units) and found_all
     def restart_units(self, units):
         """ fails if any unit fails to restart """
+        self.wait_system()
         done = True
         for unit in self.sortedAfter(units):
             if not self.restart_unit(unit):
@@ -2395,6 +2402,7 @@ class Systemctl:
         return self.try_restart_units(units) and found_all
     def try_restart_units(self, units):
         """ fails if any module fails to try-restart """
+        self.wait_system()
         done = True
         for unit in self.sortedAfter(units):
             if not self.try_restart_unit(unit):
@@ -2430,6 +2438,7 @@ class Systemctl:
         return self.reload_or_restart_units(units) and found_all
     def reload_or_restart_units(self, units):
         """ fails if any unit does not reload-or-restart """
+        self.wait_system()
         done = True
         for unit in self.sortedAfter(units):
             if not self.reload_or_restart_unit(unit):
@@ -2478,6 +2487,7 @@ class Systemctl:
         return self.reload_or_try_restart_units(units) and found_all
     def reload_or_try_restart_units(self, units):
         """ fails if any unit fails to reload-or-try-restart """
+        self.wait_system()
         done = True
         for unit in self.sortedAfter(units):
             if not self.reload_or_try_restart_unit(unit):
@@ -2519,6 +2529,7 @@ class Systemctl:
         return self.kill_units(units) and found_all
     def kill_units(self, units):
         """ fails if any unit could not be killed """
+        self.wait_system()
         done = True
         for unit in self.sortedBefore(units):
             if not self.kill_unit(unit):
@@ -2930,6 +2941,7 @@ class Systemctl:
         return self.preset_units(units) and found_all
     def preset_units(self, units):
         """ fails if any unit could not be changed """
+        self.wait_system()
         fails = 0
         found = 0
         for unit in units:
@@ -2998,6 +3010,7 @@ class Systemctl:
                     units += [ unit ]
         return self.enable_units(units) and found_all
     def enable_units(self, units):
+        self.wait_system()
         done = True
         for unit in units:
             if not self.enable_unit(unit):
@@ -3095,6 +3108,7 @@ class Systemctl:
                     units += [ unit ]
         return self.disable_units(units) and found_all
     def disable_units(self, units):
+        self.wait_system()
         done = True
         for unit in units:
             if not self.disable_unit(unit):
@@ -3239,6 +3253,7 @@ class Systemctl:
                     units += [ unit ]
         return self.mask_units(units) and found_all
     def mask_units(self, units):
+        self.wait_system()
         done = True
         for unit in units:
             if not self.mask_unit(unit):
@@ -3303,6 +3318,7 @@ class Systemctl:
                     units += [ unit ]
         return self.unmask_units(units) and found_all
     def unmask_units(self, units):
+        self.wait_system()
         done = True
         for unit in units:
             if not self.unmask_unit(unit):
@@ -3836,9 +3852,9 @@ class Systemctl:
             and with '--all --force' even those services that are otherwise wrong. 
             /// SPECIAL: with --now or --init the init-loop is run and afterwards
                 a system_halt is performed with the enabled services to be stopped."""
+        self.sysinit_status(SubState = "initializing")
         logg.info("system default requested - %s", arg)
         init = self._now or self._init
-        self.sysinit_status(SubState = "initializing")
         self.start_system_default(init = init)
     def start_system_default(self, init = False):
         """ detect the default.target services and start them.
@@ -4084,6 +4100,8 @@ class Systemctl:
         conf = self.sysinit_target()
         status_file = self.status_file_from(conf)
         if not os.path.isfile(status_file):
+            time.sleep(EpsilonTime)
+        if not os.path.isfile(status_file):
             return "offline"
         status = self.read_status_from(conf)
         return status.get("SubState", "unknown")
@@ -4096,6 +4114,23 @@ class Systemctl:
                 return True, state
             else:
                 return False, state
+    def wait_system(self, target = None):
+        target = target or SysInitTarget
+        for attempt in xrange(int(SysInitWait)):
+            state = self.is_system_running()
+            if "init" in state:
+                if target in [ "sysinit.target", "basic.target" ]:
+                    logg.info("system not initialized - wait %s", target)
+                    time.sleep(1)
+                    continue
+            if "start" in state or "stop" in state:
+                if target in [ "basic.target" ]:
+                    logg.info("system not running - wait %s", target)
+                    time.sleep(1)
+                    continue
+            if "running" not in state:
+                logg.info("system is %s", state)
+            break
     def pidlist_of(self, pid):
         try: pid = int(pid)
         except: return []
