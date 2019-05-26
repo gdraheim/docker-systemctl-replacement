@@ -1369,6 +1369,14 @@ class Systemctl:
         else:
             conf.status[name] = value
     #
+    def wait_boot(self, hint = None):
+        booted = self.get_boottime()
+        while True:
+            now = time.time()
+            if booted + EpsilonTime <= now:
+                break
+            time.sleep(EpsilonTime)
+            logg.info(" %s ................. boot sleep %ss", hint or "", EpsilonTime)
     def get_boottime(self):
         if "oldest" in COVERAGE:
             return self.get_boottime_oldest()
@@ -4437,8 +4445,6 @@ if __name__ == "__main__":
         systemctl.force_ipv4()
     elif opt.ipv6:
         systemctl.force_ipv6()
-    if _init:
-        time.sleep(EpsilonTime)
     found = False
     # command NAME
     if command.startswith("__"):
@@ -4450,21 +4456,25 @@ if __name__ == "__main__":
     command_name = command.replace("-","_").replace(".","_")+"_modules"
     command_func = getattr(systemctl, command_name, None)
     if callable(command_func) and not found:
+        systemctl.wait_boot(command_name)
         found = True
         result = command_func(*modules)
     command_name = "show_"+command.replace("-","_").replace(".","_")
     command_func = getattr(systemctl, command_name, None)
     if callable(command_func) and not found:
+        systemctl.wait_boot(command_name)
         found = True
         result = command_func(*modules)
     command_name = "system_"+command.replace("-","_").replace(".","_")
     command_func = getattr(systemctl, command_name, None)
     if callable(command_func) and not found:
+        systemctl.wait_boot(command_name)
         found = True
         result = command_func()
     command_name = "systems_"+command.replace("-","_").replace(".","_")
     command_func = getattr(systemctl, command_name, None)
     if callable(command_func) and not found:
+        systemctl.wait_boot(command_name)
         found = True
         result = command_func()
     if not found:
