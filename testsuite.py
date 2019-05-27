@@ -8339,6 +8339,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # cleanup
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
+        time.sleep(1)
     def test_4032_forking_service_functions_system(self):
         """ check that we manage forking services in a root env
             with basic run-service commands: start, stop, restart,
