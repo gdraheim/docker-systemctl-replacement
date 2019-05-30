@@ -143,19 +143,21 @@ void test_102()
 void test_400()
 {
     str_list_t* res = shlex_split("a b 'c d' \"e f\"");
-    str_t show = str_list_to_json(res);
-    logg_info("shlex.split: %s", show);
+    str_t s = str_list_to_json(res);
+    logg_info("shlex.split: %s", s);
+    assert(! strcmp(s, "[\"a\", \"b\", \"c d\", \"e f\"]"));
     str_list_free(res);
-    str_free(show);
+    str_free(s);
 }
 
 void test_401()
 {
     str_list_t* res = shlex_parse("a b 'c d' \"e f\"");
-    str_t show = str_list_to_json(res);
-    logg_info("shlex.parse: %s", show);
+    str_t s = str_list_to_json(res);
+    logg_info("shlex.parse: %s", s);
+    assert(! strcmp(s, "[\"a\", \"b\", \"'c d'\", \"\\\"e f\\\"\"]"));
     str_list_free(res);
-    str_free(show);
+    str_free(s);
 }
   
 int
