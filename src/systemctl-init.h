@@ -84,8 +84,23 @@ systemctl_settings_init(systemctl_settings_t* self);
 str_t restrict
 unit_of(str_t module);
 
+str_t restrict
+os_path(str_t root, str_t path);
+
 str_t /* not free */
+os_getlogin_p();
+
+str_t restrict
 os_getlogin();
+
+str_t restrict
+get_runtime_dir();
+
+str_t restrict
+get_home();
+
+str_t restrict
+os_environ_get(const char* name, str_t restrict defaults);
 
 void
 systemctl_conf_data_init(systemctl_conf_data_t* self);

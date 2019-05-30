@@ -139,13 +139,56 @@ unit_of(str_t module)
     return str_dup(module);
 }
 
+str_t restrict
+os_path(str_t root, str_t path)
+{
+    if (! root)
+        return str_dup(path);
+    if (! path)
+        return path;
+    char* path2 = path;
+    while (*path2 && *path2 == '/') path++;
+    return str_dup2(root, path2);
+}
+
 str_t /* not free */
-os_getlogin()
+os_getlogin_p()
 {
     struct passwd* pwd = getpwuid(geteuid());
     return pwd->pw_name;
 }
 
+str_t restrict
+os_getlogin()
+{
+    return str_dup(os_getlogin_p());
+}
+
+str_t restrict
+get_runtime_dir()
+{
+    char* explicit = getenv("XDG_RUNTIME_DIR");
+    if (explicit) return str_dup(explicit);
+    str_t user = os_getlogin_p();
+    return str_dup2("/tmp/run-", user);
+}
+
+str_t restrict
+get_home()
+{
+    char* explicit = getenv("HOME");
+    if (explicit) return str_dup(explicit);
+    struct passwd* pwd = getpwuid(geteuid());
+    return str_dup(pwd->pw_dir);
+}
+
+str_t restrict
+os_environ_get(const char* name, str_t restrict defaults)
+{
+    char* explicit = getenv("HOME");
+    if (explicit) return str_dup(explicit);
+    return defaults;
+}
 
 /* .............................. */
 
@@ -670,7 +713,7 @@ str_t
 systemctl_current_user(systemctl_t* self)
 {
     if (str_empty(self->current_user)) 
-        str_set(&self->current_user, os_getlogin());
+        str_sets(&self->current_user, os_getlogin());
     return self->current_user;
 }
 
@@ -1790,6 +1833,49 @@ systemctl_get_special_confs(systemctl_t* self, systemctl_conf_t* conf)
     str_dict_adds(confs, "j", sh_escape(unit->component));
     str_dict_add(confs, "f", systemctl_conf_filename(conf));
     systemctl_unit_name_free(unit);
+    str_t VARTMP = str_dup("/var/tmp");
+    str_t TMP = str_dup("/tmp");
+    str_t RUN = str_dup("/run");
+    str_t DAT = str_dup("/var/lib");
+    str_t LOG = str_dup("/var/log");
+    str_t CACHE = str_dup("/var/cache");
+    str_t CONFIG = str_dup("/etc");
+    str_t HOME = str_dup("/root");
+    str_t USER = str_dup("root");
+    str_t SHELL = str_dup("/bin/sh");
+    if (systemctl_is_user_conf(self, conf)) {
+        str_sets(&USER, os_getlogin());
+        str_sets(&HOME, get_home());
+        str_sets(&RUN, os_environ_get("XDG_RUNTIME_DIR", get_runtime_dir()));
+        str_sets(&CONFIG, os_environ_get("XDG_CONFIG_HOME", str_dup2(HOME, "./config")));
+        str_sets(&CACHE, os_environ_get("XDG_CACHE_HOME", str_dup2(HOME, "/.cache")));
+        // FIXME: not in original
+        // str_sets(&SHARE, os_environ_get("XDG_DATA_HOME", str_dup2(HOME, "/.local/share")));
+        str_sets(&DAT, str_dup(CONFIG));
+        str_sets(&LOG, str_dup2(CONFIG, "log"));
+        str_sets(&SHELL, os_environ_get("SHELL", str_dup(SHELL)));
+        str_sets(&VARTMP, os_environ_get("TMPDIR", os_environ_get("TEMP", os_environ_get("TMP", str_dup(TMP)))));
+    }
+    str_dict_adds(confs, "V", os_path(self->root, VARTMP));
+    str_dict_adds(confs, "T", os_path(self->root, TMP));
+    str_dict_adds(confs, "t", os_path(self->root, RUN));
+    str_dict_adds(confs, "S", os_path(self->root, DAT));
+    str_dict_adds(confs, "s", str_dup(SHELL));
+    str_dict_adds(confs, "h", str_dup(HOME));
+    str_dict_adds(confs, "u", str_dup(USER));
+    str_dict_adds(confs, "C", os_path(self->root, CACHE));
+    str_dict_adds(confs, "E", os_path(self->root, CONFIG));
+
+    str_free(VARTMP);
+    str_free(TMP);
+    str_free(RUN);
+    str_free(DAT);
+    str_free(LOG);
+    str_free(CACHE);
+    str_free(CONFIG);
+    str_free(HOME);
+    str_free(USER);
+    str_free(SHELL);
     return confs;
 }
 
