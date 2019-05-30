@@ -16,9 +16,11 @@
 #include <sys/types.h>
 #include <pwd.h>
 #include "systemctl-types.h"
+#include "systemctl-shlex.h"
 #include "systemctl-regex.h"
 #include "systemctl-options.h"
 #include "systemctl-logging.h"
+#include "systemctl-shlex.h"
 #include "systemctl-init.h"
 
 typedef char systemctl_copyright_t[64];
@@ -1905,9 +1907,6 @@ systemctl_expand_special(systemctl_t* self, str_t value, systemctl_conf_t* conf)
     return result;
 }
 
-
-/* ..................................................... */
-
 str_list_t* restrict
 systemctl_exec_cmd(systemctl_t* self, str_t value, str_dict_t* env, systemctl_conf_t* conf) 
 {
@@ -1917,6 +1916,11 @@ systemctl_exec_cmd(systemctl_t* self, str_t value, str_dict_t* env, systemctl_co
     if (cmd2) { str_sets(&cmd, cmd2); }
     str_t cmd3 = str_expand_env1(cmd, env);
     if (cmd3) { str_sets(&cmd, cmd3); }
+    str_list_t* arg = shlex_split(cmd3);
+    for (int i=0; i < arg->size; ++i) {
+        str_list_adds(result, str_expand_env2(arg->data[i], env));
+    }
+    str_list_free(arg);
     return result;
 }
 
