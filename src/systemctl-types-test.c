@@ -113,13 +113,13 @@ void test_101()
     str_list_t* t = str_list_new();
     str_list_add(t, "foo");
     str_list_add(t, "bar");
-    str_list_dict_add(h, "bar", t);
-
-    // printf("add/join: '%s'\n", s);
-    // assert(! strcmp(s, "foo.bar.oo"));
+    str_list_dict_add(h, "zoo", t);
+    str_t s = str_list_dict_to_json(h);
+    logg_info("listdict add/join: %s", s);
+    assert(! strcmp(s, "{\"zoo\": [\"foo\", \"bar\"]}"));
     str_list_dict_free(h);
     str_list_free(t);
-    // str_free(s);
+    str_free(s);
 }
 
 void test_102()
@@ -129,22 +129,31 @@ void test_102()
     str_list_t* t = str_list_new();
     str_list_add(t, "foo");
     str_list_add(t, "bar");
-    str_list_dict_add(h, "bar", t);
+    str_list_dict_add(h, "zoo", t);
     str_list_dict_dict_add(g, "foo", h);
-
-    // printf("add/join: '%s'\n", s);
-    // assert(! strcmp(s, "foo.bar.oo"));
+    str_t s = str_list_dict_dict_to_json(g);
+    logg_info("listdictdict add/join: %s", s);
+    assert(! strcmp(s, "{\"foo\": {\"zoo\": [\"foo\", \"bar\"]}}"));
     str_list_dict_dict_free(g);
     str_list_dict_free(h);
     str_list_free(t);
-    // str_free(s);
+    str_free(s);
 }
 
 void test_400()
 {
     str_list_t* res = shlex_split("a b 'c d' \"e f\"");
     str_t show = str_list_to_json(res);
-    logg_info("shlex: %s", show);
+    logg_info("shlex.split: %s", show);
+    str_list_free(res);
+    str_free(show);
+}
+
+void test_401()
+{
+    str_list_t* res = shlex_parse("a b 'c d' \"e f\"");
+    str_t show = str_list_to_json(res);
+    logg_info("shlex.parse: %s", show);
     str_list_free(res);
     str_free(show);
 }
@@ -165,5 +174,6 @@ main(int argc, char** argv)
     test_101();
     test_102();
     test_400();
+    test_401();
     return 0;
 }

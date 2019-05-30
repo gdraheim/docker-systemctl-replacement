@@ -266,6 +266,10 @@ shlex_splits(str_t value, const_str_t options)
       str_t token = shlex_get_token(&shlex);
       if (! token)
           break;
+      if (! shlex.posix && str_empty(token)) {
+          str_free(token);
+          break;
+      }
       str_list_adds(result, token);
    }
    shlex_null(&shlex);
@@ -278,4 +282,11 @@ shlex_split(str_t value)
     /* Python shlex.split operates in POSIX mode by default, 
        but uses non-POSIX mode if the posix argument is false. */
     return shlex_splits(value, "pn");
+}
+
+str_list_t* restrict
+shlex_parse(str_t value) 
+{
+    /* and this one is non-posix with comments */
+    return shlex_splits(value, "x");
 }

@@ -33,4 +33,7 @@ shlex_splits(str_t value, const_str_t options);
 str_list_t* restrict
 shlex_split(str_t value);
 
+str_list_t* restrict
+shlex_parse(str_t value);
+
 #endif
