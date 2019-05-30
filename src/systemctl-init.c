@@ -1229,6 +1229,10 @@ systemctl_list_units(systemctl_t* self, str_list_t* modules)
     str_t found = str_format("%i loaded units listed", str_list_list_len(result));
     str_list_list_add3(result, "", found, hint);
     str_free(found);
+    str_t json = str_list_list_to_json(result);
+    logg_debug("systemctl_list_units: %s", json);
+    str_free(json);
+    return result;
 }
 
 str_list_list_t* restrict
@@ -1714,6 +1718,7 @@ systemctl_unit_name_new()
     result->instance = str_NULL;
     result->suffix = str_NULL;
     result->component = str_NULL;
+    return result;
 }
 
 void
@@ -1725,6 +1730,7 @@ systemctl_unit_name_free(systemctl_unit_name_t* result)
     str_null(&result->instance);
     str_null(&result->suffix);
     str_null(&result->component);
+    free(result);
 }
 
 systemctl_unit_name_t* restrict
@@ -1732,6 +1738,7 @@ systemctl_parse_unit(systemctl_t* self, systemctl_conf_t* conf)
 {
    systemctl_unit_name_t* result = systemctl_unit_name_new();
    // FIXME
+   result->name = str_dup(conf->name);
    return result;
 }
 
@@ -1979,6 +1986,8 @@ int
 str_list_list_print(str_list_list_t* result)
 {
     if (! result) return 0;
+    logg_info("result %p", result);
+    logg_info("result size %i", result->size);
     for (int i = 0; i < result->size; ++i) {
         str_list_t* element = &result->data[i];
         str_t line = str_list_join(element, "\t");
@@ -2027,6 +2036,7 @@ main(int argc, char** argv) {
     
     if (str_equal(command, "list-units")) {
         str_list_list_t* result = systemctl_list_units(&systemctl, &args);
+        logg_info("resulT %p", result);
         str_list_list_print(result);
         str_list_list_free(result);
     } else if (str_equal(command, "list-unit-files")) {
