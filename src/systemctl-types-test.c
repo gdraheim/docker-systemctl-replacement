@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include "systemctl-logging.h"
 #include "systemctl-types.h"
+#include "systemctl-shlex.h"
 #include <assert.h>
 
 
@@ -138,10 +139,20 @@ void test_102()
     str_list_free(t);
     // str_free(s);
 }
+
+void test_400()
+{
+    str_list_t* res = shlex_split("a b 'c d' \"e f\"");
+    str_t show = str_list_to_json(res);
+    logg_info("shlex: %s", show);
+    str_list_free(res);
+    str_free(show);
+}
   
 int
 main(int argc, char** argv)
 {
+    logg_setlevel(LOG_INFO);
     test_001();
     test_002();
     test_003();
@@ -153,5 +164,6 @@ main(int argc, char** argv)
     test_022();
     test_101();
     test_102();
+    test_400();
     return 0;
 }

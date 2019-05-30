@@ -1,14 +1,15 @@
 L = systemctl-logging.c
 T = systemctl-types.c
+S = systemctl-shlex.c
 R = systemctl-regex.c
 O = systemctl-options.c
 
 build: init types
-init: systemctl-types.h systemctl-options.h systemctl-init.h
-	$(CC) systemctl-init.c $L $T $R $O -fsanitize=address -fno-omit-frame-pointer \
+init: systemctl-types.h systemctl-options.h systemctl-init.h systemctl-shlex.h
+	$(CC) systemctl-init.c $L $T $S $R $O -fsanitize=address -fno-omit-frame-pointer \
 	   -o systemctl-init.e
 types: systemctl-types.h
-	$(CC) systemctl-types-test.c $L $T -fsanitize=address -fno-omit-frame-pointer \
+	$(CC) systemctl-types-test.c $L $T $S -fsanitize=address -fno-omit-frame-pointer \
 	   -o systemctl-types-test.e
 
 check: init types
@@ -23,6 +24,8 @@ systemctl-init.h: systemctl-init.c
 	./makeheader.py systemctl-init.c
 systemctl-options.h: systemctl-options.c
 	./makeheader.py systemctl-options.c
+systemctl-shlex.h: systemctl-shlex.c
+	./makeheader.py systemctl-shlex.c
 
 clean:
 	- rm *.e
