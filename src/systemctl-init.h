@@ -17,6 +17,7 @@ typedef struct systemctl_settings
     bool   no_ask_password;
     char*  preset_mode;
     bool   quiet;
+    bool   init;
     char*  root;
     char*  unit_type;
     char*  unit_state;
@@ -276,6 +277,9 @@ systemctl_match_sysv_units(systemctl_t* self, str_list_t* modules);
 str_list_t* restrict
 systemctl_match_units(systemctl_t* self, str_list_t* modules);
 
+str_list_t* restrict
+systemctl_match_unit(systemctl_t* self, str_t module);
+
 str_list_list_t* restrict
 systemctl_list_service_unit_basics(systemctl_t* self);
 
@@ -366,6 +370,24 @@ systemctl_expand_special(systemctl_t* self, str_t value, systemctl_conf_t* conf)
 str_list_t* restrict
 systemctl_exec_cmd(systemctl_t* self, str_t value, str_dict_t* env, systemctl_conf_t* conf);
 
+bool
+systemctl_start_modules(systemctl_t* self, str_list_t* modules);
+
+bool
+systemctl_start_units(systemctl_t* self, str_list_t* units, bool init);
+
+bool
+systemctl_start_unit(systemctl_t* self, str_t unit);
+
+bool
+systemctl_stop_unit(systemctl_t* self, str_t unit);
+
+static void
+ignore_signals_and_raise_interrupt(int sig);
+
+str_t restrict
+systemctl_init_loop_until_stop(systemctl_t* self, str_list_t* started_units);
+
 str_t restrict
 systemctl_get_active_from(systemctl_t* self, systemctl_conf_t* conf);
 
@@ -398,5 +420,8 @@ str_dict_print(str_dict_t* result);
 
 int
 str_list_list_print(str_list_list_t* result);
+
+int
+str_print_bool(bool value);
 
 #endif

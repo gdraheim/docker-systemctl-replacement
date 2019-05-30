@@ -17,6 +17,9 @@ check: init types
 	./systemctl-init.e list-unit-files -v
 	./systemctl-init.e list-units -vv
 	./systemctl-init.e status cron
+s: init
+	./systemctl-init.e start foo
+
 
 systemctl-types.h: systemctl-types.c
 	./makeheader.py systemctl-types.c

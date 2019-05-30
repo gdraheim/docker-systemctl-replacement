@@ -13,6 +13,7 @@
 #include <regex.h>
 #include <fnmatch.h>
 #include <unistd.h>
+#include <signal.h>
 #include <sys/types.h>
 #include <pwd.h>
 #include "systemctl-types.h"
@@ -54,6 +55,7 @@ systemctl_settings_init(systemctl_settings_t* self)
     self->no_ask_password = false;
     self->preset_mode = "all";
     self->quiet = false;
+    self->init = false;
     self->root = "";
     self->unit_type = NULL;
     self->unit_state = NULL;
@@ -1196,6 +1198,13 @@ systemctl_match_units(systemctl_t* self, str_list_t* modules)
     return found;
 }
 
+str_list_t* restrict
+systemctl_match_unit(systemctl_t* self, str_t module) 
+{
+   str_t data[] = { module };
+   str_list_t match = { 1, data };
+   return systemctl_match_units(self, &match);
+}
 
 str_list_list_t* restrict
 systemctl_list_service_unit_basics(systemctl_t* self) 
@@ -1924,6 +1933,111 @@ systemctl_exec_cmd(systemctl_t* self, str_t value, str_dict_t* env, systemctl_co
     return result;
 }
 
+/* ..... */
+
+bool
+systemctl_start_modules(systemctl_t* self, str_list_t* modules) 
+{
+     bool found_all = true;
+     str_list_t units;
+     str_list_init(&units);
+     for (int m = 0; m < modules->size; ++m) {
+         str_t module = modules->data[m];
+         str_list_t* matched = systemctl_match_unit(self, module);
+         if (str_list_empty(matched)) {
+            logg_error("Unit %s could not be found.", module);
+            found_all = false;
+            str_list_free(matched);
+            continue;
+        }
+        for (int u=0; u < matched->size; ++u) {
+            str_t unit = matched->data[u];
+            if (!str_list_contains(&units, unit)) {
+                str_list_add(&units, unit);
+            }
+        }
+        str_list_free(matched);
+    }
+    bool init = self->use.now || self->use.init;
+    bool done = systemctl_start_units(self, &units, init);
+    str_list_null(&units);
+    return done && found_all;
+}
+
+bool
+systemctl_start_units(systemctl_t* self, str_list_t* units, bool init)
+{
+    bool done = true;
+    str_list_t* started_units = str_list_new();
+    for (int u=0; u < units->size; ++u) {
+        str_t unit = units->data[u];
+        str_list_adds(started_units, unit);
+        bool started = systemctl_start_unit(self, unit);
+        if (! started)
+            done = false;
+    }
+    if (init) {
+        logg_info("init-loop start");
+        str_t sig = systemctl_init_loop_until_stop(self, started_units);
+        logg_info("init-loop stop %s", sig);
+        for (int k = started_units->size-1; k >= 0; --k) {
+            str_t unit = started_units->data[k];
+            bool stopped = systemctl_stop_unit(self, unit);
+        }
+        str_free(sig);
+    }
+    str_list_free(started_units);
+    return done;
+}
+
+bool
+systemctl_start_unit(systemctl_t* self, str_t unit)
+{
+   systemctl_conf_t* conf = systemctl_load_unit_conf(self, unit);
+   return false;
+}
+
+bool
+systemctl_stop_unit(systemctl_t* self, str_t unit)
+{
+   systemctl_conf_t* conf = systemctl_load_unit_conf(self, unit);
+   return false;
+}
+
+static int last_signal;
+
+static void 
+ignore_signals_and_raise_interrupt(int sig)
+{
+   last_signal = sig;
+}
+
+str_t restrict
+systemctl_init_loop_until_stop(systemctl_t* self, str_list_t* started_units)
+{
+    str_t result = str_NULL;
+    signal(SIGQUIT, ignore_signals_and_raise_interrupt);
+    signal(SIGINT, ignore_signals_and_raise_interrupt);
+    signal(SIGTERM, ignore_signals_and_raise_interrupt);
+    while (true) {
+       int err = sleep(self->use.InitLoopSleep);
+       /* FIXME: reap_zomies */
+       if (err) {
+           if (last_signal = SIGQUIT) { result = str_dup("SIGQUIT"); }
+           if (last_signal = SIGINT) { result = str_dup("SIGINT"); }
+           if (last_signal = SIGTERM) { result = str_dup("SIGTERM"); }
+           if (result) {
+               logg_info("interrupted - exist init-loop");
+               break;
+           }
+       }
+    }
+    logg_debug("done - init loop");
+    return result;
+}
+
+/* ..... */
+
 str_t restrict
 systemctl_get_active_from(systemctl_t* self, systemctl_conf_t* conf)
 {
@@ -1959,9 +2073,7 @@ systemctl_status_modules(systemctl_t* self, str_list_t* modules)
     str_list_init(&units);
     for (int m=0; m < modules->size; ++m) {
         str_t module = modules->data[m];
-        str_t match_data[] = { module };
-        str_list_t match_list = { 1, match_data }; /* FIXME */
-        str_list_t* matched = systemctl_match_units(self, &match_list);
+        str_list_t* matched = systemctl_match_unit(self, module);
         if (str_list_empty(matched)) {
             logg_error("Unit %s could not be found.", module);
             found_all = false;
@@ -2072,6 +2184,12 @@ str_list_list_print(str_list_list_t* result)
     return result->size ? 0 : 1;
 }
 
+int
+str_print_bool(bool value)
+{
+    return value ? 0 : 1;
+}
+
 int 
 main(int argc, char** argv) {
     systemctl_settings_t settings;
@@ -2121,6 +2239,9 @@ main(int argc, char** argv) {
         str_t result = systemctl_status_modules(&systemctl, &args);
         str_print(result);
         str_free(result);
+    } else if (str_equal(command, "start")) {
+        bool result = systemctl_start_modules(&systemctl, &args);
+        str_print_bool(result);
     } else if (str_equal(command, "show-environment")) {
         for (int i=0; i < args.size; ++i) {
             str_dict_t* result = systemctl_show_environment(&systemctl, args.data[i]);
