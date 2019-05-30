@@ -362,6 +362,9 @@ str_list_dict_dict_get(const str_list_dict_dict_t* self, const_str_t key);
 void*
 ptr_dict_get(const ptr_dict_t* self, const_str_t key);
 
+str_t
+str_list_dict_get_last(const str_list_dict_t* self, const_str_t key);
+
 ssize_t
 str_find_str(const_str_t self, const_str_t key);
 
@@ -740,10 +743,10 @@ str_escapes2(str_t value, char esc, str_t escapes);
 str_t restrict
 str_to_json(str_t self);
 
-str_t
+str_t restrict
 str_list_to_json(str_list_t* self);
 
-str_t
+str_t restrict
 str_list_list_to_json(str_list_list_t* self);
 
 str_t

@@ -83,6 +83,9 @@ void
 systemctl_settings_init(systemctl_settings_t* self);
 
 str_t restrict
+shell_cmd(str_list_t* cmd);
+
+str_t restrict
 unit_of(str_t module);
 
 str_t restrict
@@ -198,6 +201,12 @@ systemctl_init(systemctl_t* self, systemctl_settings_t* settings);
 
 void
 systemctl_null(systemctl_t* self);
+
+str_t
+tmp_shell_cmd(systemctl_t* self, str_list_t* cmd);
+
+str_t
+tmp_unit_of(systemctl_t* self, str_t cmd);
 
 str_t /* no free here */
 systemctl_root(systemctl_t* self, str_t path);

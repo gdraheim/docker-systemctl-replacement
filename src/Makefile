@@ -12,13 +12,22 @@ types: systemctl-types.h
 	$(CC) systemctl-types-test.c $L $T $S -g -fsanitize=address -fno-omit-frame-pointer \
 	   -o systemctl-types-test.e
 
+test: init types
+	./systemctl-types-test.e
+
 check: init types
 	./systemctl-types-test.e
 	./systemctl-init.e list-unit-files -v
 	./systemctl-init.e list-units -vv
 	./systemctl-init.e status cron
-s: init
-	./systemctl-init.e start z_a.service
+list: init
+	- mkdir -p tmp.d/$@/etc/systemd/system
+	- { echo "[Service]"; echo "ExecStartPre=sleep 2"; } > tmp.d/$@/etc/systemd/system/zzz.service
+	./systemctl-init.e list-units --root=tmp.d/$@ -vv
+start: init
+	- mkdir -p tmp.d/$@/etc/systemd/system
+	- { echo "[Service]"; echo "ExecStartPre=sleep 2"; } > tmp.d/$@/etc/systemd/system/zzz.service
+	./systemctl-init.e start zzz.service --root=tmp.d/$@ -vv
 
 
 systemctl-types.h: systemctl-types.c

@@ -225,8 +225,12 @@ shlex_read_token(shlex_t* self)
             } else if (self->posix && str_contains_chr(self->escape, nextchar)) {
                 escapedstate = 'a';
                 self->state = nextchar;
+            } else if (str_contains_chr(self->wordchars, nextchar)
+                || str_contains_chr(self->quotes, nextchar)
+                || self->whitespace_split) {
+                str_sets(&self->token, str_dup2(self->token, next_token));
             } else {
-                str_list_adds(self->pushback, next_token);
+                str_list_add(self->pushback, next_token);
                 self->state = ' ';
                 if (! str_empty(self->token) || (self->posix && quoted)) {
                     break; /* emit current token */
@@ -241,7 +245,7 @@ shlex_read_token(shlex_t* self)
     if (self->posix && ! quoted && str_empty(result)) {
         str_null(&result);
     }
-    str_free(next_token);
+    str_null(&next_token);
     if (READNEXT)
         logg_debug("TOKEN '%s'", result);
     return result;
@@ -261,6 +265,8 @@ shlex_splits(str_t value, const_str_t options)
        shlex.posix = false;
    if (str_contains_chr(options, 'n'))
        shlex.commenters = "";
+   if (str_contains_chr(options, 'w'))
+       shlex.whitespace_split = true;
    shlex_begin(&shlex, value);
    while (true) {
       str_t token = shlex_get_token(&shlex);
@@ -281,12 +287,12 @@ shlex_split(str_t value)
 {
     /* Python shlex.split operates in POSIX mode by default, 
        but uses non-POSIX mode if the posix argument is false. */
-    return shlex_splits(value, "pn");
+    return shlex_splits(value, "pnw");
 }
 
 str_list_t* restrict
 shlex_parse(str_t value) 
 {
     /* and this one is non-posix with comments */
-    return shlex_splits(value, "x");
+    return shlex_splits(value, "xw");
 }

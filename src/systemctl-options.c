@@ -146,6 +146,7 @@ systemctl_options_scan(systemctl_options_t* self, int argc, char** argv)
                 }
                 str_t val = str_cut_end(argv[i], x+1);
                 str_list_dict_adds1(&self->opts, key, val);
+                str_free(opt);
             } else {
                 str_t opt = argv[i];
                 str_t key = str_dict_get(&self->optmapping, opt);

@@ -527,6 +527,18 @@ ptr_dict_get(const ptr_dict_t* self, const_str_t key)
   return NULL;
 }
 
+/* get last */
+
+str_t
+str_list_dict_get_last(const str_list_dict_t* self, const_str_t key)
+{
+  str_list_t* values = str_list_dict_get(self, key);
+  if (! str_list_empty(values)) {
+      return values->data[values->size-1];
+  }
+  return NULL;
+}
+
 /* find */
 
 ssize_t
@@ -2145,7 +2157,7 @@ str_to_json(str_t self)
    return result;
 }
 
-str_t
+str_t restrict
 str_list_to_json(str_list_t* self)
 {
    str_t res = str_dup("[");
@@ -2159,7 +2171,7 @@ str_list_to_json(str_list_t* self)
    return res;
 }
 
-str_t
+str_t restrict
 str_list_list_to_json(str_list_list_t* self)
 {
    str_t res = str_dup("[");

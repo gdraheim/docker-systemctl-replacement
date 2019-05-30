@@ -135,6 +135,20 @@ str_dict_t systemctl_sysv_mappings = { 4, systemctl_sysv_data };
 /* .............................. */
 
 str_t restrict
+shell_cmd(str_list_t* cmd)
+{
+   str_t res = str_dup("");
+   for (int i=0; i < cmd->size; ++i) {
+       if (res[0]) 
+           str_append(&res, " ");
+       str_appends(&res, str_to_json(cmd->data[i]));
+   }
+   ssize_t len = str_len(res);
+   return res;
+}
+
+
+str_t restrict
 unit_of(str_t module)
 {
     if (! strchr(module, '.')) {
@@ -151,8 +165,8 @@ os_path(str_t root, str_t path)
     if (! path)
         return path;
     char* path2 = path;
-    while (*path2 && *path2 == '/') path++;
-    return str_dup2(root, path2);
+    while (*path2 && *path2 == '/') path2++;
+    return str_dup3(root, "/", path2);
 }
 
 str_t /* not free */
@@ -681,6 +695,7 @@ struct systemctl
     str_t root;
     str_dict_t root_paths; /* TODO: special optimization for StdC */
     str_list_t extra_vars;
+    str_t tmp;
 };
 
 void
@@ -696,9 +711,10 @@ systemctl_init(systemctl_t* self, systemctl_settings_t* settings)
     self->user_mode = false;
     str_init(&self->current_user);
     self->error = 0;
-    self->root = str_NULL;
+    self->root = str_dup(settings->root);
     str_dict_init(&self->root_paths);
     str_list_init(&self->extra_vars);
+    str_init(&self->tmp);
 }
 
 void
@@ -714,6 +730,21 @@ systemctl_null(systemctl_t* self)
     str_null(&self->root);
     str_dict_null(&self->root_paths);
     str_list_null(&self->extra_vars);
+    str_null(&self->tmp);
+}
+
+str_t
+tmp_shell_cmd(systemctl_t* self, str_list_t* cmd)
+{
+    str_sets(&self->tmp, shell_cmd(cmd));
+    return self->tmp;
+}
+
+str_t
+tmp_unit_of(systemctl_t* self, str_t cmd)
+{
+    str_sets(&self->tmp, unit_of(cmd));
+    return self->tmp;
 }
 
 str_t /* no free here */
@@ -859,8 +890,9 @@ systemctl_scan_unit_sysd_files(systemctl_t* self)
    /* FIXME: only scan once even when not files present */
    if (str_dict_empty(&self->file_for_unit_sysd)) {
        str_list_t* folders = systemctl_sysd_folders(self);
+       str_t folder = str_NULL;
        for (int i=0; i < folders->size; ++i) {
-           str_t folder = folders->data[i];
+           str_sets(&folder, os_path(self->root, folders->data[i]));
            if (str_empty(folder))
                continue;
            if (! os_path_isdir(folder))
@@ -882,6 +914,7 @@ systemctl_scan_unit_sysd_files(systemctl_t* self)
            }
            str_list_free(names);
        }
+       str_null(&folder);
        str_list_free(folders);
    }
    logg_debug("found %i sysd files", str_dict_len(&self->file_for_unit_sysd));
@@ -1941,11 +1974,18 @@ systemctl_exec_cmd(systemctl_t* self, str_t value, str_dict_t* env, systemctl_co
     if (cmd2) { str_sets(&cmd, cmd2); }
     str_t cmd3 = str_expand_env1(cmd, env);
     if (cmd3) { str_sets(&cmd, cmd3); }
-    str_list_t* arg = shlex_split(cmd3);
+    str_list_t* arg = shlex_split(cmd);
+    logg_debug("split '%s' -> [%i] %s", cmd, arg->size, tmp_shell_cmd(self, arg));
     for (int i=0; i < arg->size; ++i) {
-        str_list_adds(result, str_expand_env2(arg->data[i], env));
+        str_t expanded = str_expand_env2(arg->data[i], env);
+        if (expanded) {
+            str_list_adds(result, expanded);
+        } else {
+            str_list_add(result, arg->data[i]);
+        }
     }
     str_list_free(arg);
+    str_null(&cmd);
     return result;
 }
 
@@ -2035,7 +2075,8 @@ systemctl_start_unit_from(systemctl_t* self, systemctl_conf_t* conf)
           bool check = checkstatus_do(cmd_list->data[c]);
           str_t cmd = checkstatus_cmd(cmd_list->data[c]);
           str_list_t* newcmd = systemctl_exec_cmd(self, cmd, env, conf);
-          logg_info(" pre-start %s", str_list_to_json(newcmd));
+          logg_info(" pre-start %s", tmp_shell_cmd(self, newcmd));
+          str_list_free(newcmd);
       }
    }
    str_free(service_result);
@@ -2075,9 +2116,9 @@ systemctl_init_loop_until_stop(systemctl_t* self, str_list_t* started_units)
        int err = sleep(self->use.InitLoopSleep);
        /* FIXME: reap_zomies */
        if (err) {
-           if (last_signal = SIGQUIT) { result = str_dup("SIGQUIT"); }
-           if (last_signal = SIGINT) { result = str_dup("SIGINT"); }
-           if (last_signal = SIGTERM) { result = str_dup("SIGTERM"); }
+           if (last_signal == SIGQUIT) { result = str_dup("SIGQUIT"); }
+           if (last_signal == SIGINT) { result = str_dup("SIGINT"); }
+           if (last_signal == SIGTERM) { result = str_dup("SIGTERM"); }
            if (result) {
                logg_info("interrupted - exist init-loop");
                break;
@@ -2252,6 +2293,7 @@ main(int argc, char** argv) {
     systemctl_options_add3(&cmd, "-h", "--help", "this help screen");
     systemctl_options_add5(&cmd, "-e", "--extra-vars", "--environment", "=NAME=VAL", 
         "..override settings in the syntax of 'Environment='");
+    systemctl_options_add3(&cmd, "--root", "=DIR", "increase logging level");
     systemctl_options_add3(&cmd, "-v", "--verbose", "increase logging level");
     systemctl_options_scan(&cmd, argc, argv);
     if (str_list_dict_contains(&cmd.opts, "verbose")) {
@@ -2268,6 +2310,7 @@ main(int argc, char** argv) {
     systemctl_t systemctl;
     systemctl_init(&systemctl, &settings);
     str_list_set(&systemctl.extra_vars, str_list_dict_get(&cmd.opts, "environment"));
+    str_set(&systemctl.root, str_list_dict_get_last(&cmd.opts, "root"));
 
     str_t command = str_NULL;
     str_list_t args = str_list_NULL;
