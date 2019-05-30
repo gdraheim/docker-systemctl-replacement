@@ -555,6 +555,9 @@ void
 str_list_list_add1(str_list_list_t* self, str_t str1);
 
 void
+str_dict_add_all(str_dict_t* self, const str_dict_t* value);
+
+void
 str_dict_adds(str_dict_t* self, const_str_t key, str_t value);
 
 void

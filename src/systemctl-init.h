@@ -77,6 +77,9 @@ typedef struct systemctl systemctl_t;
 struct systemctl_unit_name;
 typedef struct systemctl_unit_name systemctl_unit_name_t;
 
+struct systemctl_subprocess;
+typedef struct systemctl_subprocess systemctl_subprocess_t;
+
 /* from systemctl-init.c */
 
 void
@@ -106,11 +109,35 @@ get_home();
 str_t restrict
 os_environ_get(const char* name, str_t restrict defaults);
 
+str_dict_t* restrict
+shutil_setuid(str_t user, str_t group);
+
 str_t
 checkstatus_cmd(str_t value);
 
 bool
 checkstatus_do(str_t value);
+
+int
+subprocess_waitpid(int pid, systemctl_subprocess_t* res);
+
+int
+subprocess_testpid(int pid, systemctl_subprocess_t* res);
+
+str_t
+tmp_shell_cmd(str_list_t* cmd);
+
+str_t
+tmp_unit_of(str_t cmd);
+
+str_t
+tmp_int_or(int val, str_t defaults);
+
+str_t
+tmp_int_or_no(int val);
+
+void
+tmp_null();
 
 void
 systemctl_conf_data_init(systemctl_conf_data_t* self);
@@ -203,10 +230,7 @@ void
 systemctl_null(systemctl_t* self);
 
 str_t
-tmp_shell_cmd(systemctl_t* self, str_list_t* cmd);
-
-str_t
-tmp_unit_of(systemctl_t* self, str_t cmd);
+str_or(int value, str_t defaults);
 
 str_t /* no free here */
 systemctl_root(systemctl_t* self, str_t path);
@@ -399,6 +423,12 @@ systemctl_getTimeoutStartSec(systemctl_conf_t* conf);
 
 bool
 systemctl_start_unit_from(systemctl_t* self, systemctl_conf_t* conf);
+
+str_dict_t* restrict
+systemctl_extend_exec_env(systemctl_t* self, str_dict_t* env);
+
+void
+systemctl_execve_from(systemctl_t* self, systemctl_conf_t* conf, str_list_t* cmd, str_dict_t* env);
 
 bool
 systemctl_stop_unit(systemctl_t* self, str_t unit);

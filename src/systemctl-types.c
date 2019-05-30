@@ -1300,6 +1300,15 @@ str_list_list_add1(str_list_list_t* self, str_t str1)
     str_list_list_add(self, &value);
 }
 
+void
+str_dict_add_all(str_dict_t* self, const str_dict_t* value)
+{
+    if (! self || ! value) return;
+    for (int i=0; i < value->size; ++i)
+    {
+        str_dict_adds(self, value->data[i].key, str_dup(value->data[i].value));
+    }
+}
 
 void
 str_dict_adds(str_dict_t* self, const_str_t key, str_t value)

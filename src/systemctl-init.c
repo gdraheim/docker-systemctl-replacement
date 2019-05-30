@@ -13,9 +13,13 @@
 #include <regex.h>
 #include <fnmatch.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <signal.h>
 #include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/wait.h>
 #include <pwd.h>
+#include <grp.h>
 #include "systemctl-types.h"
 #include "systemctl-shlex.h"
 #include "systemctl-regex.h"
@@ -208,6 +212,39 @@ os_environ_get(const char* name, str_t restrict defaults)
     return defaults;
 }
 
+/* _var */
+
+str_dict_t* restrict
+shutil_setuid(str_t user, str_t group)
+{
+    str_dict_t* res = str_dict_new();
+    if (group) {
+        struct group* gr = getgrnam(group);
+        gid_t gid = gr->gr_gid;
+        setgid(gid);
+        logg_debug("setgid %lu '%s'", (unsigned long) gid, group);
+    }
+    if (group) {
+        struct passwd* pw = getpwnam(user);
+        if (! group) {
+            gid_t gid = pw->pw_gid;
+            setgid(gid);
+            logg_debug("setgid %lu", (unsigned long) gid);
+        }
+        uid_t uid = pw->pw_uid;
+        setuid(uid);
+        logg_debug("setuid %lu '%s'", (unsigned long) uid, user);
+        str_t home = pw->pw_dir;
+        str_t shell = pw->pw_shell;
+        str_t logname = pw->pw_name;
+        str_dict_add(res, "USER", user);
+        str_dict_add(res, "LOGNAME", logname);
+        str_dict_add(res, "HOME", home);
+        str_dict_add(res, "SHELL", shell);
+    }
+    return res;
+}
+
 str_t
 checkstatus_cmd(str_t value) 
 {
@@ -222,6 +259,99 @@ checkstatus_do(str_t value)
    if (!value) return value;
    if (*value == '-') return false;
    return true;
+}
+
+typedef struct systemctl_subprocess
+{
+    int pid;
+    int returncode;
+    int signal;
+} systemctl_subprocess_t;
+
+typedef systemctl_subprocess_t run_t;
+
+int
+subprocess_waitpid(int pid, systemctl_subprocess_t* res)
+{
+    int run_stat = 0;
+    int run_pid = waitpid(pid, &run_stat, 0);
+    if (res) {
+        res->pid = run_pid;
+        res->returncode =  WEXITSTATUS(run_stat);
+        res->signal = WTERMSIG(run_stat);
+    }
+    return run_stat;
+}
+
+int
+subprocess_testpid(int pid, systemctl_subprocess_t* res)
+{
+    int run_stat = 0;
+    int run_pid = waitpid(pid, &run_stat, WNOHANG);
+    if (res && run_pid) {
+        res->pid = run_pid;
+        res->returncode =  WEXITSTATUS(run_stat);
+        res->signal = WTERMSIG(run_stat);
+    } else if (res) {
+        res->pid = pid;
+        res->returncode = EOF;
+        res->signal = 0;
+    }
+    return run_stat;
+}
+
+/* .............................. */
+static str_t _tmp_shell_cmd = str_NULL;
+
+str_t
+tmp_shell_cmd(str_list_t* cmd)
+{
+    str_sets(&_tmp_shell_cmd, shell_cmd(cmd));
+    return _tmp_shell_cmd;
+}
+
+static str_t _tmp_unit_of = str_NULL;
+
+str_t
+tmp_unit_of(str_t cmd)
+{
+    str_sets(&_tmp_unit_of, unit_of(cmd));
+    return _tmp_unit_of;
+}
+
+static str_t _tmp_int_or = str_NULL;
+
+str_t
+tmp_int_or(int val, str_t defaults)
+{
+    if (val) {
+       str_sets(&_tmp_int_or, str_format("%i", val));
+    } else {
+       str_sets(&_tmp_int_or, str_dup(defaults));
+    }
+    return _tmp_int_or;
+}
+
+static str_t _tmp_int_or_no = str_NULL;
+
+str_t
+tmp_int_or_no(int val)
+{
+    if (val) {
+       str_sets(&_tmp_int_or_no, str_format("%i", val));
+    } else {
+       str_sets(&_tmp_int_or_no, str_dup(""));
+    }
+    return _tmp_int_or_no;
+}
+
+void
+tmp_null()
+{
+   str_null(&_tmp_shell_cmd);
+   str_null(&_tmp_unit_of);
+   str_null(&_tmp_int_or);
+   str_null(&_tmp_int_or_no);
 }
 
 /* .............................. */
@@ -733,18 +863,10 @@ systemctl_null(systemctl_t* self)
     str_null(&self->tmp);
 }
 
-str_t
-tmp_shell_cmd(systemctl_t* self, str_list_t* cmd)
-{
-    str_sets(&self->tmp, shell_cmd(cmd));
-    return self->tmp;
-}
 
 str_t
-tmp_unit_of(systemctl_t* self, str_t cmd)
+str_or(int value, str_t defaults)
 {
-    str_sets(&self->tmp, unit_of(cmd));
-    return self->tmp;
 }
 
 str_t /* no free here */
@@ -1975,7 +2097,7 @@ systemctl_exec_cmd(systemctl_t* self, str_t value, str_dict_t* env, systemctl_co
     str_t cmd3 = str_expand_env1(cmd, env);
     if (cmd3) { str_sets(&cmd, cmd3); }
     str_list_t* arg = shlex_split(cmd);
-    logg_debug("split '%s' -> [%i] %s", cmd, arg->size, tmp_shell_cmd(self, arg));
+    logg_debug("split '%s' -> [%i] %s", cmd, arg->size, tmp_shell_cmd(arg));
     for (int i=0; i < arg->size; ++i) {
         str_t expanded = str_expand_env2(arg->data[i], env);
         if (expanded) {
@@ -2062,26 +2184,81 @@ systemctl_getTimeoutStartSec(systemctl_conf_t* conf)
 bool
 systemctl_start_unit_from(systemctl_t* self, systemctl_conf_t* conf)
 {
-   int timeout = systemctl_getTimeoutStartSec(conf);
-   bool doRemainAfterExit = systemctl_conf_getbool(conf, "Service", "RemainAfterExit", "no");
-   str_t runs = systemctl_conf_get(conf, "Service", "Type", "simple");
-   str_dict_t* env = systemctl_get_env(self, conf);
-   /* for StopPost on failure: */
-   int returncode = 0;
-   str_t service_result = str_dup("success");
-   if (true) {
-      str_list_t* cmd_list = systemctl_conf_getlist(conf, "Service", "ExecStartPre", &empty_str_list);
-      for (int c=0; c < cmd_list->size; ++c) {
-          bool check = checkstatus_do(cmd_list->data[c]);
-          str_t cmd = checkstatus_cmd(cmd_list->data[c]);
-          str_list_t* newcmd = systemctl_exec_cmd(self, cmd, env, conf);
-          logg_info(" pre-start %s", tmp_shell_cmd(self, newcmd));
-          str_list_free(newcmd);
-      }
-   }
-   str_free(service_result);
-   str_dict_free(env);
-   return false;
+    int timeout = systemctl_getTimeoutStartSec(conf);
+    bool doRemainAfterExit = systemctl_conf_getbool(conf, "Service", "RemainAfterExit", "no");
+    str_t runs = systemctl_conf_get(conf, "Service", "Type", "simple");
+    str_dict_t* env = systemctl_get_env(self, conf);
+    /* for StopPost on failure: */
+    int returncode = 0;
+    str_t service_result = str_dup("success");
+    if (true) {
+        str_list_t* cmd_list = systemctl_conf_getlist(conf, "Service", "ExecStartPre", &empty_str_list);
+        for (int c=0; c < cmd_list->size; ++c) {
+            bool check = checkstatus_do(cmd_list->data[c]);
+            str_t cmd = checkstatus_cmd(cmd_list->data[c]);
+            str_list_t* newcmd = systemctl_exec_cmd(self, cmd, env, conf);
+            logg_info(" pre-start %s", tmp_shell_cmd(newcmd));
+            str_list_free(newcmd);
+            int forkpid = fork();
+            if (! forkpid)
+                systemctl_execve_from(self, conf, newcmd, env);
+            run_t run;
+            subprocess_waitpid(forkpid, &run);
+            logg_debug(" pre-start done (%s) <-%s>",
+                tmp_int_or(run.returncode, "OK"), tmp_int_or_no(run.signal));
+        }
+    }
+    str_free(service_result);
+    str_dict_free(env);
+    return false;
+}
+
+str_dict_t* restrict
+systemctl_extend_exec_env(systemctl_t* self, str_dict_t* env)
+{
+    str_dict_t* res = str_dict_new();
+    str_dict_add_all(res, env);
+    /* FIXME: implant DefaultPath into $PATH */
+    /* FIXME: reset locale to system default */
+    /* FIXME: read /etc/local.conf */
+    return res;
+}
+
+void
+systemctl_execve_from(systemctl_t* self, systemctl_conf_t* conf, str_list_t* cmd, str_dict_t* env)
+{
+    str_t runs = systemctl_conf_get(conf, "Service", "Type", "simple");
+    logg_info("%s process for %s", runs, systemctl_conf_filename(conf));
+    int inp = open("/dev/zero", O_RDONLY);
+    int out = open("/dev/null", O_WRONLY);
+    dup2(inp, STDIN_FILENO);
+    dup2(out, STDOUT_FILENO);
+    dup2(out, STDERR_FILENO);
+    str_t runuser = systemctl_expand_special(self, systemctl_conf_get(conf, "Service", "User", ""), conf);
+    str_t rungroup = systemctl_expand_special(self, systemctl_conf_get(conf, "Service", "Group", ""), conf);
+    str_dict_t* envs = shutil_setuid(runuser, rungroup);
+    env = systemctl_extend_exec_env(self, env);
+    str_dict_add_all(env, envs);
+    str_free(runuser);
+    str_free(rungroup);
+    str_dict_free(envs);
+    char* argv[cmd->size + 1];
+    char* envp[env->size + 1];
+    for (int i = 0; i < cmd->size; ++i) {
+        argv[i] = alloca(str_len(cmd->data[i])+1);
+        str_cpy(argv[i], cmd->data[i]);
+        argv[i+1] = NULL;
+    }
+    for (int i = 0; i < env->size; ++i) {
+        envp[i] = alloca(str_len(env->data[i].key)+1+str_len(env->data[i].value)+1);
+        strcpy(envp[i], env->data[i].key);
+        strcat(envp[i], "=");
+        strcpy(envp[i], env->data[i].value);
+        envp[i+1] = NULL;
+    }
+    str_dict_free(env);
+    str_list_free(cmd);
+    execve(argv[0], argv, envp); 
 }
 
 bool
@@ -2356,5 +2533,6 @@ main(int argc, char** argv) {
     } else {
         logg_info(" exitcode %i", exitcode);
     }
+    tmp_null();
     return exitcode;
 }
