@@ -218,13 +218,13 @@ str_dict_t* restrict
 shutil_setuid(str_t user, str_t group)
 {
     str_dict_t* res = str_dict_new();
-    if (group) {
+    if (! str_empty(group)) {
         struct group* gr = getgrnam(group);
         gid_t gid = gr->gr_gid;
         setgid(gid);
         logg_debug("setgid %lu '%s'", (unsigned long) gid, group);
     }
-    if (group) {
+    if (! str_empty(user)) {
         struct passwd* pw = getpwnam(user);
         if (! group) {
             gid_t gid = pw->pw_gid;
@@ -2111,6 +2111,54 @@ systemctl_exec_cmd(systemctl_t* self, str_t value, str_dict_t* env, systemctl_co
     return result;
 }
 
+str_t restrict
+systemctl_path_journal_log(systemctl_t* self, systemctl_conf_t* conf)
+{
+   str_t filename = os_path_basename(systemctl_conf_filename(conf));
+   if (! filename) filename = str_dup("");
+   str_t unitname = systemctl_conf_name(conf);
+   if (! unitname) unitname = str_dup("default");
+   str_append(&unitname, ".unit");
+   str_t name = filename;
+   if (! name) name = unitname;
+   str_t log_folder = os_path(self->root, self->use.journal_log_folder); /* FIXME _var */
+   str_t log_file = str_replace(name, "/", ".");
+   str_append(&log_file, ".log");
+   if (str_startswith(log_file, "."))
+       str_prepend(&log_file, "dot.");
+   str_t res = os_path(log_folder, log_file);
+   str_null(&log_file);
+   str_null(&log_folder);
+   str_null(&unitname);
+   str_null(&filename);
+   return res;
+}
+
+int
+systemctl_open_journal_log(systemctl_t* self, systemctl_conf_t* conf)
+{
+   str_t log_file = systemctl_path_journal_log(self, conf);
+   str_t log_folder = os_path_dirname(log_file);
+   if (! os_path_isdir(log_folder))
+       os_makedirs(log_folder);
+   str_free(log_folder);
+   int res = open(log_file, O_WRONLY|O_CREAT|O_EXCL, S_IWUSR|S_IRUSR|S_IRGRP);
+   if (res > 0) {
+       logg_info("output %i %s", res, log_file);
+   } else {
+       res = open(log_file, O_WRONLY|O_APPEND);
+       if (res > 0) {
+           logg_info("append %i %s", res, log_file);
+       } else {
+           logg_info("problems %i %s (%s)", res, log_file, strerror(errno));
+           res = open("/dev/null", O_WRONLY);
+           logg_info("redirect %i %s (%s)", res, "/dev/null", strerror(errno));
+       }
+   }
+   str_free(log_file);
+   return res;
+}
+
 /* ..... */
 
 bool
@@ -2198,10 +2246,10 @@ systemctl_start_unit_from(systemctl_t* self, systemctl_conf_t* conf)
             str_t cmd = checkstatus_cmd(cmd_list->data[c]);
             str_list_t* newcmd = systemctl_exec_cmd(self, cmd, env, conf);
             logg_info(" pre-start %s", tmp_shell_cmd(newcmd));
-            str_list_free(newcmd);
             int forkpid = fork();
             if (! forkpid)
                 systemctl_execve_from(self, conf, newcmd, env);
+            str_list_free(newcmd);
             run_t run;
             subprocess_waitpid(forkpid, &run);
             logg_debug(" pre-start done (%s) <-%s>",
@@ -2230,7 +2278,7 @@ systemctl_execve_from(systemctl_t* self, systemctl_conf_t* conf, str_list_t* cmd
     str_t runs = systemctl_conf_get(conf, "Service", "Type", "simple");
     logg_info("%s process for %s", runs, systemctl_conf_filename(conf));
     int inp = open("/dev/zero", O_RDONLY);
-    int out = open("/dev/null", O_WRONLY);
+    int out = systemctl_open_journal_log(self, conf);
     dup2(inp, STDIN_FILENO);
     dup2(out, STDOUT_FILENO);
     dup2(out, STDERR_FILENO);
@@ -2242,8 +2290,8 @@ systemctl_execve_from(systemctl_t* self, systemctl_conf_t* conf, str_list_t* cmd
     str_free(runuser);
     str_free(rungroup);
     str_dict_free(envs);
-    char* argv[cmd->size + 1];
-    char* envp[env->size + 1];
+    char* argv[cmd->size + 1]; /* C99 ? */
+    char* envp[env->size + 1]; /* C99 ? */
     for (int i = 0; i < cmd->size; ++i) {
         argv[i] = alloca(str_len(cmd->data[i])+1);
         str_cpy(argv[i], cmd->data[i]);
@@ -2256,9 +2304,8 @@ systemctl_execve_from(systemctl_t* self, systemctl_conf_t* conf, str_list_t* cmd
         strcpy(envp[i], env->data[i].value);
         envp[i+1] = NULL;
     }
-    str_dict_free(env);
-    str_list_free(cmd);
-    execve(argv[0], argv, envp); 
+    str_dict_free(env); /* via extend_exec_env */
+    execve(argv[0], argv, envp);
 }
 
 bool

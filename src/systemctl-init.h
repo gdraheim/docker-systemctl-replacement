@@ -409,6 +409,12 @@ systemctl_expand_special(systemctl_t* self, str_t value, systemctl_conf_t* conf)
 str_list_t* restrict
 systemctl_exec_cmd(systemctl_t* self, str_t value, str_dict_t* env, systemctl_conf_t* conf);
 
+str_t restrict
+systemctl_path_journal_log(systemctl_t* self, systemctl_conf_t* conf);
+
+int
+systemctl_open_journal_log(systemctl_t* self, systemctl_conf_t* conf);
+
 bool
 systemctl_start_modules(systemctl_t* self, str_list_t* modules);
 

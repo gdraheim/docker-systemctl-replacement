@@ -2050,6 +2050,18 @@ os_listdir(str_t path)
     return os_path_listdir(path);
 }
 
+bool
+os_makedirs(str_t path)
+{
+   if (os_path_isdir(path))
+       return false;
+   str_t parent = os_path_dirname(path);
+   os_makedirs(parent);
+   int err = mkdir(path, 0777);
+   if (!err) return true;
+   return false;
+}
+
 str_t restrict
 os_path_dirname(str_t path)
 {
