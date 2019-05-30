@@ -18,7 +18,7 @@ check: init types
 	./systemctl-init.e list-units -vv
 	./systemctl-init.e status cron
 s: init
-	./systemctl-init.e start foo
+	./systemctl-init.e start z_a.service
 
 
 systemctl-types.h: systemctl-types.c

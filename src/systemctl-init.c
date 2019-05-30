@@ -194,6 +194,22 @@ os_environ_get(const char* name, str_t restrict defaults)
     return defaults;
 }
 
+str_t
+checkstatus_cmd(str_t value) 
+{
+   if (!value) return value;
+   if (*value == '-') return value+1;
+   return value;
+}
+
+bool
+checkstatus_do(str_t value)
+{
+   if (!value) return value;
+   if (*value == '-') return false;
+   return true;
+}
+
 /* .............................. */
 
 struct systemctl_conf_data
@@ -1971,7 +1987,7 @@ systemctl_start_units(systemctl_t* self, str_list_t* units, bool init)
     str_list_t* started_units = str_list_new();
     for (int u=0; u < units->size; ++u) {
         str_t unit = units->data[u];
-        str_list_adds(started_units, unit);
+        str_list_add(started_units, unit);
         bool started = systemctl_start_unit(self, unit);
         if (! started)
             done = false;
@@ -1994,6 +2010,36 @@ bool
 systemctl_start_unit(systemctl_t* self, str_t unit)
 {
    systemctl_conf_t* conf = systemctl_load_unit_conf(self, unit);
+   return systemctl_start_unit_from(self, conf);
+}
+
+int
+systemctl_getTimeoutStartSec(systemctl_conf_t* conf)
+{
+   return 5; /* FIXME */
+}
+
+bool
+systemctl_start_unit_from(systemctl_t* self, systemctl_conf_t* conf)
+{
+   int timeout = systemctl_getTimeoutStartSec(conf);
+   bool doRemainAfterExit = systemctl_conf_getbool(conf, "Service", "RemainAfterExit", "no");
+   str_t runs = systemctl_conf_get(conf, "Service", "Type", "simple");
+   str_dict_t* env = systemctl_get_env(self, conf);
+   /* for StopPost on failure: */
+   int returncode = 0;
+   str_t service_result = str_dup("success");
+   if (true) {
+      str_list_t* cmd_list = systemctl_conf_getlist(conf, "Service", "ExecStartPre", &empty_str_list);
+      for (int c=0; c < cmd_list->size; ++c) {
+          bool check = checkstatus_do(cmd_list->data[c]);
+          str_t cmd = checkstatus_cmd(cmd_list->data[c]);
+          str_list_t* newcmd = systemctl_exec_cmd(self, cmd, env, conf);
+          logg_info(" pre-start %s", str_list_to_json(newcmd));
+      }
+   }
+   str_free(service_result);
+   str_dict_free(env);
    return false;
 }
 
@@ -2001,6 +2047,12 @@ bool
 systemctl_stop_unit(systemctl_t* self, str_t unit)
 {
    systemctl_conf_t* conf = systemctl_load_unit_conf(self, unit);
+   return systemctl_stop_unit_from(self, conf);
+}
+
+bool
+systemctl_stop_unit_from(systemctl_t* self, systemctl_conf_t* conf)
+{
    return false;
 }
 

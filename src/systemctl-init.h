@@ -103,6 +103,12 @@ get_home();
 str_t restrict
 os_environ_get(const char* name, str_t restrict defaults);
 
+str_t
+checkstatus_cmd(str_t value);
+
+bool
+checkstatus_do(str_t value);
+
 void
 systemctl_conf_data_init(systemctl_conf_data_t* self);
 
@@ -379,8 +385,17 @@ systemctl_start_units(systemctl_t* self, str_list_t* units, bool init);
 bool
 systemctl_start_unit(systemctl_t* self, str_t unit);
 
+int
+systemctl_getTimeoutStartSec(systemctl_conf_t* conf);
+
+bool
+systemctl_start_unit_from(systemctl_t* self, systemctl_conf_t* conf);
+
 bool
 systemctl_stop_unit(systemctl_t* self, str_t unit);
+
+bool
+systemctl_stop_unit_from(systemctl_t* self, systemctl_conf_t* conf);
 
 static void
 ignore_signals_and_raise_interrupt(int sig);
