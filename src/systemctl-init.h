@@ -334,13 +334,10 @@ systemctl_unit_name_t*
 systemctl_unit_name_new();
 
 void
-systemctl_unit_name_free(systemctl_unit_name_t* result);
+systemctl_unit_name_free(systemctl_unit_name_t* unit);
 
 systemctl_unit_name_t* restrict
 systemctl_parse_unit(systemctl_t* self, systemctl_conf_t* conf);
-
-systemctl_unit_name_t* restrict
-systemctl_get_special(systemctl_t* self, systemctl_conf_t* conf);
 
 static str_t restrict
 sh_escape(str_t value);

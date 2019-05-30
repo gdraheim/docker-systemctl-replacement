@@ -582,7 +582,7 @@ systemctl_conf_name(systemctl_conf_t* self)
     }
     str_t filename = systemctl_conf_filename(self);
     if (! str_empty(filename)) {
-        str_set(&name, os_path_basename(filename));
+        str_sets(&name, os_path_basename(filename));
     }
     str_set(&name, systemctl_conf_get(self, "Unit", "Id", name));
     return name;
@@ -1722,30 +1722,20 @@ systemctl_unit_name_new()
 }
 
 void
-systemctl_unit_name_free(systemctl_unit_name_t* result)
+systemctl_unit_name_free(systemctl_unit_name_t* unit)
 {
-    if (! result) return;
-    str_null(&result->name);
-    str_null(&result->prefix);
-    str_null(&result->instance);
-    str_null(&result->suffix);
-    str_null(&result->component);
-    free(result);
+    if (! unit) return;
+    str_null(&unit->name);
+    str_null(&unit->prefix);
+    str_null(&unit->instance);
+    str_null(&unit->suffix);
+    str_null(&unit->component);
+    free(unit);
 }
 
 systemctl_unit_name_t* restrict
 systemctl_parse_unit(systemctl_t* self, systemctl_conf_t* conf)
 {
-   systemctl_unit_name_t* result = systemctl_unit_name_new();
-   // FIXME
-   result->name = str_dup(conf->name);
-   return result;
-}
-
-systemctl_unit_name_t* restrict
-systemctl_get_special(systemctl_t* self, systemctl_conf_t* conf)
-{
-    /* parse unit */
     systemctl_unit_name_t* unit = systemctl_unit_name_new();
     unit->name = systemctl_conf_name(conf);
     str_t unit_name = str_NULL;
@@ -1776,11 +1766,9 @@ systemctl_get_special(systemctl_t* self, systemctl_conf_t* conf)
 static str_t restrict
 sh_escape(str_t value)
 {
-   str_t esc = str_replace(value, "\\", "\\\\");
-   str_t escaped = str_replace(esc, "'", "\\'");
+   str_t escaped = str_escapes2(str_dup(value), '\\', "'");
    str_t result = str_dup3("'", escaped, "'");
    str_free(escaped);
-   str_free(esc);
    return result;
 }
 
@@ -1802,7 +1790,6 @@ systemctl_get_special_confs(systemctl_t* self, systemctl_conf_t* conf)
     str_dict_adds(confs, "j", sh_escape(unit->component));
     str_dict_add(confs, "f", systemctl_conf_filename(conf));
     systemctl_unit_name_free(unit);
-    /* FIXME: TODO: more patterns here */
     return confs;
 }
 
@@ -1818,7 +1805,7 @@ systemctl_expand_special(systemctl_t* self, str_t value, systemctl_conf_t* conf)
        char key[] = { result[p+x+1], '\0' };
        str_t val = str_dict_get(confs, key);
        if (! val) {
-           logg_warning("can not expand %%%c", result[p+x]);
+           logg_warning("can not expand %%%s", key);
            val = "''"; /* empty escaped string */
        }
        str_t prefix = str_cut(result, 0, p+x);
@@ -1986,8 +1973,6 @@ int
 str_list_list_print(str_list_list_t* result)
 {
     if (! result) return 0;
-    logg_info("result %p", result);
-    logg_info("result size %i", result->size);
     for (int i = 0; i < result->size; ++i) {
         str_list_t* element = &result->data[i];
         str_t line = str_list_join(element, "\t");
@@ -2036,7 +2021,6 @@ main(int argc, char** argv) {
     
     if (str_equal(command, "list-units")) {
         str_list_list_t* result = systemctl_list_units(&systemctl, &args);
-        logg_info("resulT %p", result);
         str_list_list_print(result);
         str_list_list_free(result);
     } else if (str_equal(command, "list-unit-files")) {

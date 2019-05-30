@@ -723,6 +723,9 @@ str_list_t* restrict
 os_listdir(str_t path);
 
 str_t restrict
+os_path_dirname(str_t path);
+
+str_t restrict
 os_path_basename(str_t path);
 
 str_t

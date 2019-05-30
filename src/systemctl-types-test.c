@@ -140,6 +140,38 @@ void test_102()
     str_free(s);
 }
 
+void test_200()
+{
+    str_t t = os_path_dirname("foo/bar.service");
+    logg_info("dirname %s", t);
+    assert(! strcmp(t, "foo"));
+    str_free(t);
+}
+
+void test_201()
+{
+    str_t t = os_path_dirname("bar.service");
+    logg_info("dirname %s", t);
+    assert(! strcmp(t, "."));
+    str_free(t);
+}
+
+void test_202()
+{
+    str_t t = os_path_basename("foo/bar.service");
+    logg_info("basename %s", t);
+    assert(! strcmp(t, "bar.service"));
+    str_free(t);
+}
+
+void test_203()
+{
+    str_t t = os_path_basename("bar.service");
+    logg_info("basename %s", t);
+    assert(! strcmp(t, "bar.service"));
+    str_free(t);
+}
+
 void test_400()
 {
     str_list_t* res = shlex_split("a b 'c d' \"e f\"");
@@ -175,6 +207,10 @@ main(int argc, char** argv)
     test_022();
     test_101();
     test_102();
+    test_200();
+    test_201();
+    test_202();
+    test_203();
     test_400();
     test_401();
     return 0;

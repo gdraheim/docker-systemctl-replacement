@@ -2030,11 +2030,21 @@ os_listdir(str_t path)
 }
 
 str_t restrict
+os_path_dirname(str_t path)
+{
+    char* found = strrchr(path, '/');
+    if (found) {
+        return str_cut(path, 0, found-path);
+    }
+    return str_dup(".");
+}
+
+str_t restrict
 os_path_basename(str_t path)
 {
     char* found = strrchr(path, '/');
     if (found) {
-        return str_dup(found);
+        return str_dup(found+1);
     }
     return str_dup(path);
 }
@@ -2044,7 +2054,7 @@ os_path_basename_p(str_t path)
 {
     char* found = strrchr(path, '/');
     if (found) 
-        return found;
+        return found+1;
     return path;
 }
 
