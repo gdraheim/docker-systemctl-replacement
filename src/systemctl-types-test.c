@@ -13,7 +13,7 @@ void test_001()
 {
     str_t s = NULL;
     s = str_dup("foo");
-    printf("dup: '%s'\n", s);
+    logg_info("dup: '%s'", s);
     assert(! strcmp(s, "foo"));
     str_free(s);
 }
@@ -21,7 +21,7 @@ void test_001()
 void test_002()
 {
     str_t s = str_dup2("foo", "bar");
-    printf("dup2: '%s'\n", s);
+    logg_info("dup2: '%s'", s);
     assert(! strcmp(s, "foobar"));
     str_free(s);
 }
@@ -29,7 +29,7 @@ void test_002()
 void test_003()
 {
     str_t s = str_lstrip(" foo ");
-    printf("lstrip: '%s'\n", s);
+    logg_info("lstrip: '%s'", s);
     assert(! strcmp(s, "foo "));
     str_free(s);
 }
@@ -37,7 +37,7 @@ void test_003()
 void test_004()
 {
     str_t s = str_rstrip(" foo ");
-    printf("rstrip: '%s'\n", s);
+    logg_info("rstrip: '%s'", s);
     assert(! strcmp(s, " foo"));
     str_free(s);
 }
@@ -57,7 +57,7 @@ void test_011()
     str_list_add(&g, "foo");
     str_list_add(&g, "bar");
     str_t s = str_list_join(&g, ".");
-    printf("add/join: '%s'\n", s);
+    logg_info("add/join: '%s'", s);
     assert(! strcmp(s, "foo.bar"));
     str_list_null(&g);
     str_free(s);
@@ -70,7 +70,7 @@ void test_012()
     str_list_add(g, "bar");
     str_list_adds(g, str_cut("foo", 1, 3));
     str_t s = str_list_join(g, ".");
-    printf("add/join: '%s'\n", s);
+    logg_info("add/join: '%s'", s);
     assert(! strcmp(s, "foo.bar.oo"));
     str_list_free(g);
     str_free(s);
