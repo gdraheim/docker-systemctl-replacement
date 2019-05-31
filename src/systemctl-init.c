@@ -553,8 +553,7 @@ systemctl_conf_data_read_sysd(systemctl_conf_data_t* self, str_t filename)
         if (str_startswith(line, ";"))
             continue;
         if (str_startswith(line, ".include")) {
-            str_t includefile = str_dup(line + sizeof(".include"));
-            str_sets(&includefile, str_strip(includefile));
+            str_t includefile = str_strips(str_dup(line + sizeof(".include")));
             FILE* fd2 = fopen(includefile, "r");
             if (fd2 == NULL) continue;
             fclose(fd2);
@@ -628,9 +627,8 @@ systemctl_conf_data_read_sysv(systemctl_conf_data_t* self, str_t filename)
             }
             if (initinfo) {
                 if (! regmatch("\\S+\\s*([[:alnum:]][[:alnum:]_-]*):(.*)", line, m3, m, 0)) {
-                    str_t key = str_cut(line, m[1].rm_so, m[1].rm_eo);
-                    str_t val = str_cut(line, m[1].rm_so, m[1].rm_eo);
-                    str_sets(&val, str_strip(val));
+                    str_t key = str_strips(str_cut(line, m[1].rm_so, m[1].rm_eo));
+                    str_t val = str_strips(str_cut(line, m[1].rm_so, m[1].rm_eo));
                     systemctl_conf_data_set(self, section, key, val);
                     str_null(&key);
                     str_null(&val);
