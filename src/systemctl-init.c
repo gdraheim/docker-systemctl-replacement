@@ -2723,11 +2723,20 @@ main(int argc, char** argv) {
     systemctl_options_add3(&cmd, "-h", "--help", "this help screen");
     systemctl_options_add5(&cmd, "-e", "--extra-vars", "--environment", "=NAME=VAL", 
         "..override settings in the syntax of 'Environment='");
-    systemctl_options_add3(&cmd, "--root", "=DIR", "increase logging level");
+    systemctl_options_add4(&cmd, "-t", "--type", "=TYPE", "List units of a particual type");
+    systemctl_options_add3(&cmd, "--root", "=PATH", "Enable unit files in the specified root directory (used for alternative root prefix)");
+    systemctl_options_add3(&cmd, "-4", "--ipv4", "..only keep ipv4 localhost in /etc/hosts");
+    systemctl_options_add3(&cmd, "-6", "--ipv6", "..only keep ipv6 localhost in /etc/hosts");
+    systemctl_options_add3(&cmd, "-1", "--init", "..keep running as init-process (default if PID 1)");
     systemctl_options_add3(&cmd, "-v", "--verbose", "increase logging level");
     systemctl_options_scan(&cmd, argc, argv);
     if (str_list_dict_contains(&cmd.opts, "help")) {
-        systemctl_options_help(&cmd);
+        str_t prog = os_path_basename(argv[0]);
+        str_t note = str_format("%s [options] command [name...]", prog);
+        systemctl_options_help2(&cmd, note, NULL);
+        systemctl_options_note("use 'help' command for more information");
+        str_free(prog);
+        str_free(note);
         systemctl_options_null(&cmd);
         /* systemctl_settings_null(&settings); */
         return 0;

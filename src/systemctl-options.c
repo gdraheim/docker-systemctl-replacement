@@ -210,9 +210,23 @@ systemctl_options_scan(systemctl_options_t* self, int argc, char** argv)
 }
 
 bool
+systemctl_options_note(str_t info)
+{
+    printf("%s\n", info);
+}
+
+bool
 systemctl_options_help(systemctl_options_t* self)
 {
-    printf("HELP\n");
+    return systemctl_options_help2(self, NULL, NULL);
+}
+
+bool
+systemctl_options_help2(systemctl_options_t* self, str_t prolog, str_t epilog)
+{
+    if (! prolog) prolog = "HELP";
+    if (! epilog) epilog = "";
+    systemctl_options_note(prolog);
     str_dict_t options;
     str_dict_init(&options);
     for (int i=0; i < self->optmapping.size; ++i) {
@@ -238,8 +252,8 @@ systemctl_options_help(systemctl_options_t* self)
         printf("  %s", showopts);
         col += str_len(showopts) + 2;
         if (arg) {
-           printf(" %s", arg);
-           col += str_len(arg) + 1;
+           printf("%s", arg);
+           col += str_len(arg);
         }
         str_t help = str_dict_get(&self->optcomment, key);
         if (help) {
@@ -265,6 +279,7 @@ systemctl_options_help(systemctl_options_t* self)
     }
 
     str_dict_null(&options);
+    systemctl_options_note(epilog);
 }
 
 str_list_t*

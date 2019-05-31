@@ -49,7 +49,13 @@ bool
 systemctl_options_scan(systemctl_options_t* self, int argc, char** argv);
 
 bool
+systemctl_options_note(str_t info);
+
+bool
 systemctl_options_help(systemctl_options_t* self);
+
+bool
+systemctl_options_help2(systemctl_options_t* self, str_t prolog, str_t epilog);
 
 str_list_t*
 str_options_getlist(systemctl_options_t* self, str_t name, str_list_t* defaults);
