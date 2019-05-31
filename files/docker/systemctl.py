@@ -452,6 +452,8 @@ class SystemctlConf:
         self.masked = None
         self.module = module
         self.drop_in_files = {}
+        self._root = _root
+        self._user_mode = _user_mode
     def loaded(self):
         files = self.data.filenames()
         if self.masked:
@@ -986,6 +988,7 @@ class Systemctl:
         conf = SystemctlConf(data, module)
         conf.masked = masked
         conf.drop_in_files = drop_in_files
+        conf._root = self._root
         self._loaded_file_sysd[path] = conf
         return conf
     def load_sysv_unit_conf(self, module): # -> conf?
@@ -997,6 +1000,7 @@ class Systemctl:
         data = UnitConfParser()
         data.read_sysv(path)
         conf = SystemctlConf(data, module)
+        conf._root = self._root
         self._loaded_file_sysv[path] = conf
         return conf
     def load_unit_conf(self, module): # -> conf | None(not-found)
@@ -1022,7 +1026,9 @@ class Systemctl:
         data.set("Unit", "Names", module)
         data.set("Unit", "Description", description or ("NOT-FOUND "+module))
         # assert(not data.loaded())
-        return SystemctlConf(data, module)
+        conf = SystemctlConf(data, module)
+        conf._root = self._root
+        return conf
     def get_unit_conf(self, module): # -> conf (conf | default-conf)
         """ accept that a unit does not exist 
             and return a unit conf that says 'not-loaded' """
