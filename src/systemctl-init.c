@@ -2725,6 +2725,7 @@ systemctl_show_help(systemctl_t* self, str_list_t* args)
         }
     } else {
         for (int i=0; i < args->size; ++i) {
+            bool found = false;
             str_t arg = args->data[i];
             for (const char** commands = systemctl_commands; *commands; ++commands) {
                 str_t command = str_strip(*commands);
@@ -2733,6 +2734,7 @@ systemctl_show_help(systemctl_t* self, str_list_t* args)
                     str_t cmd = str_strips(str_cut(command, 0, x));
                     if (str_equal(arg, cmd)) {
                         str_list_add(lines, command);
+                        found = true;
                     }
                     str_free(cmd);
                 } else {
@@ -2740,8 +2742,13 @@ systemctl_show_help(systemctl_t* self, str_list_t* args)
                 }
                 str_free(command);
             }
+            if (! found) {
+                str_list_adds(lines, str_format("no such command %s", arg));
+                okay = false;
+            }
         }
     }
+    if (!okay) self->error = 1;
     return lines;
 }
 
@@ -2964,6 +2971,9 @@ main(int argc, char** argv) {
     } else {
         command = cmd.args.data[0];
         str_list_init_from(&args, cmd.args.size - 1, cmd.args.data + 1);
+    }
+    if (str_list_dict_contains(&cmd.opts, "version")) {
+        command = "version";
     }
     
     if (str_equal(command, "help")) {
