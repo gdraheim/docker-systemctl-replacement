@@ -73,7 +73,6 @@ _preset_folder3 = "/usr/lib/systemd/system-preset"
 _preset_folder4 = "/lib/systemd/system-preset"
 _preset_folder9 = None
 
-# definitions 
 SystemCompatibilityVersion = 219
 SysInitTarget = "sysinit.target"
 SysInitWait = 5 # max for target
@@ -164,13 +163,11 @@ def get_home():
     if explicit: return explicit
     return os.path.expanduser("~")
 
-def _var(path):
-    """ assumes that the path starts with /var - and when
-        in --user mode it is moved to /run/user/1001/run/
+def _var_path(path):
+    """ assumes that the path starts with /var - when in 
+        user mode it shall be moved to /run/user/1001/run/
         or as a fallback path to /tmp/run-{user}/ so that
         you may find /var/log in /tmp/run-{user}/log .."""
-    if not _user_mode:
-        return path
     if path.startswith("/var"): 
         runtime = get_runtime_dir() # $XDG_RUNTIME_DIR
         if not os.path.isdir(runtime):
@@ -290,9 +287,10 @@ class SystemctlConfigParser:
         globally uniqute, so that an 'environment' can be printed without
         adding prefixes. Settings are continued with a backslash at the end
         of the line.  """
-    def __init__(self, defaults=None, dict_type=None):
+    def __init__(self, defaults=None, dict_type=None, allow_no_value=False):
         self._defaults = defaults or {}
         self._dict_type = dict_type or collections.OrderedDict
+        self._allow_no_value = allow_no_value
         self._conf = self._dict_type()
         self._files = []
     def defaults(self):
@@ -317,36 +315,45 @@ class SystemctlConfigParser:
             self._conf[section][option].append(value)
         if value is None:
             self._conf[section][option] = []
-    def get(self, section, option, default = None):
+    def get(self, section, option, default = None, allow_no_value = False):
+        allow_no_value = allow_no_value or self._allow_no_value
         if section not in self._conf:
             if default is not None:
                 return default
-            logg.debug("section {} does not exist".format(section))
-            logg.debug("  have {}".format(self.sections()))
-            return None
+            if allow_no_value:
+                return None
+            logg.warning("section {} does not exist".format(section))
+            logg.warning("  have {}".format(self.sections()))
+            raise AttributeError("section {} does not exist".format(section))
         if option not in self._conf[section]:
             if default is not None:
                 return default
-            logg.debug("option {} in {} does not exist".format(option, section))
-            return None
+            if allow_no_value:
+                return None
+            raise AttributeError("option {} in {} does not exist".format(option, section))
         if not self._conf[section][option]: # i.e. an empty list
             if default is not None:
                 return default
-            logg.debug("option {} in {} is None".format(option, section))
-            return None
+            if allow_no_value:
+                return None
+            raise AttributeError("option {} in {} is None".format(option, section))
         return self._conf[section][option][0] # the first line in the list of configs
-    def getlist(self, section, option, default = None):
+    def getlist(self, section, option, default = None, allow_no_value = False):
+        allow_no_value = allow_no_value or self._allow_no_value
         if section not in self._conf:
             if default is not None:
                 return default
-            logg.debug("section {} does not exist".format(section))
-            logg.debug("  have {}".format(self.sections()))
-            return []
+            if allow_no_value:
+                return []
+            logg.warning("section {} does not exist".format(section))
+            logg.warning("  have {}".format(self.sections()))
+            raise AttributeError("section {} does not exist".format(section))
         if option not in self._conf[section]:
             if default is not None:
                 return default
-            logg.debug("option {} in {} does not exist".format(option, section))
-            return []
+            if allow_no_value:
+                return []
+            raise AttributeError("option {} in {} does not exist".format(option, section))
         return self._conf[section][option] # returns a list, possibly empty
     def read(self, filename):
         return self.read_sysd(filename)
@@ -454,6 +461,12 @@ class SystemctlConf:
         self.drop_in_files = {}
         self._root = _root
         self._user_mode = _user_mode
+    def os_path(self, path):
+        return os_path(self._root, path)
+    def os_path_var(self, path):
+        if self._user_mode:
+            return os_path(self._root, _var_path(path))
+        return os_path(self._root, path)
     def loaded(self):
         files = self.data.filenames()
         if self.masked:
@@ -479,10 +492,10 @@ class SystemctlConf:
         return self.get("Unit", "Id", name)
     def set(self, section, name, value):
         return self.data.set(section, name, value)
-    def get(self, section, name, default):
-        return self.data.get(section, name, default)
-    def getlist(self, section, name, default = None):
-        return self.data.getlist(section, name, default or [])
+    def get(self, section, name, default, allow_no_value = False):
+        return self.data.get(section, name, default, allow_no_value)
+    def getlist(self, section, name, default = None, allow_no_value = False):
+        return self.data.getlist(section, name, default or [], allow_no_value)
     def getbool(self, section, name, default = None):
         value = self.data.get(section, name, default or "no")
         if value:
@@ -519,7 +532,7 @@ class waitlock:
     def __init__(self, conf):
         self.conf = conf # currently unused
         self.opened = None
-        self.lockfolder = os_path(_root, _var(_notify_socket_folder))
+        self.lockfolder = conf.os_path_var(_notify_socket_folder)
         try:
             folder = self.lockfolder
             if not os.path.isdir(folder):
@@ -763,10 +776,6 @@ def sortedAfter(conflist, cmp = compareAfter):
             logg.info("[%s] %s", item.rank, item.conf.name())
     return [ item.conf for item in sortedlist ]
 
-## the process exitcode (can be changed later for more granular internal error bits)
-ERROR1 = 1
-ERROR3 = 3
-
 class Systemctl:
     def __init__(self):
         # from command line options or the defaults
@@ -799,14 +808,11 @@ class Systemctl:
         self.exit_when_no_more_procs = EXIT_WHEN_NO_MORE_PROCS or False
         self.exit_when_no_more_services = EXIT_WHEN_NO_MORE_SERVICES or False
         self._user_mode = _user_mode
-        self._current_user = None
+        self._user_getlogin = os_getlogin()
         self._log_file = {} # init-loop
         self._log_hold = {} # init-loop
-        self._error = 0 # as the process exitcode
-    def current_user(self):
-        if not self._current_user:
-            self._current_user = os_getlogin()
-        return self._current_user
+    def user(self):
+        return self._user_getlogin
     def user_mode(self):
         return self._user_mode
     def user_folder(self):
@@ -854,8 +860,7 @@ class Systemctl:
             for folder in self.sysd_folders():
                 if not folder: 
                     continue
-                if self._root:
-                    folder = os_path(self._root, folder)
+                folder = os_path(self._root, folder)
                 if not os.path.isdir(folder):
                     continue
                 for name in os.listdir(folder):
@@ -874,8 +879,7 @@ class Systemctl:
             for folder in self.init_folders():
                 if not folder: 
                     continue
-                if self._root:
-                    folder = os_path(self._root, folder)
+                folder = os_path(self._root, folder)
                 if not os.path.isdir(folder):
                     continue
                 for name in os.listdir(folder):
@@ -912,8 +916,8 @@ class Systemctl:
         return None
     def is_sysv_file(self, filename):
         """ for routines that have a special treatment for init.d services """
-        if not filename: return None
         self.unit_file() # scan all
+        if not filename: return None
         if filename in self._file_for_unit_sysd.values(): return False
         if filename in self._file_for_unit_sysv.values(): return True
         return None # not True
@@ -929,26 +933,26 @@ class Systemctl:
         if not conf:
             return True # no such conf >> ignored
         if not self.user_mode():
-            logg.debug("%s no --user mode >> accept", conf.name())
+            logg.debug("%s no --user mode >> accept", conf.filename())
             return False
         if self.is_user_conf(conf):
-            logg.debug("%s is /user/ conf >> accept", conf.name())
+            logg.debug("%s is /user/ conf >> accept", conf.filename())
             return False
         # to allow for 'docker run -u user' with system services
         user = self.expand_special(conf.get("Service", "User", ""), conf)
-        if user and user == self.current_user():
-            logg.debug("%s with User=%s >> accept", conf.name(), user)
+        if user and user == self.user():
+            logg.debug("%s with User=%s >> accept", conf.filename(), user)
             return False
         return True
     def find_drop_in_files(self, unit):
         """ search for some.service.d/extra.conf files """
         result = {}
+        basename_d = unit + ".d"
         for folder in self.sysd_folders():
             if not folder: 
                 continue
-            if self._root:
-                folder = os_path(self._root, folder)
-            override_d = os_path(folder, unit + ".d")
+            folder = os_path(self._root, folder)
+            override_d = os_path(folder, basename_d)
             if not os.path.isdir(override_d):
                 continue
             for name in os.listdir(override_d):
@@ -983,8 +987,8 @@ class Systemctl:
             drop_in_files = self.find_drop_in_files(os.path.basename(path))
             # load in alphabetic order, irrespective of location
             for name in sorted(drop_in_files):
-                drop_in_file = drop_in_files[name]
-                data.read_sysd(drop_in_file)
+                path = drop_in_files[name]
+                data.read_sysd(path)
         conf = SystemctlConf(data, module)
         conf.masked = masked
         conf.drop_in_files = drop_in_files
@@ -1124,7 +1128,6 @@ class Systemctl:
                 substate[unit] = self.get_substate_from(conf)
             except Exception as e:
                 logg.warning("list-units: %s", e)
-                # self._error = ERROR1
             if self._unit_state:
                 if self._unit_state not in [ result[unit], active[unit], substate[unit] ]:
                     del result[unit]
@@ -1158,10 +1161,9 @@ class Systemctl:
                 logg.warning("list-units: %s", e)
         return [ (unit, enabled[unit]) for unit in sorted(result) if result[unit] ]
     def each_target_file(self):
+        folders = self.system_folders()
         if self.user_mode():
             folders = self.user_folders()
-        else:
-            folders = self.system_folders()
         for folder in folders:
             if not os.path.isdir(folder):
                 continue
@@ -1200,7 +1202,6 @@ class Systemctl:
         elif self._unit_type:
             logg.warning("unsupported unit --type=%s", self._unit_type)
             result = []
-            self._error = ERROR1
         else:
             result = self.list_target_unit_files()
             result += self.list_service_unit_files(*modules)
@@ -1288,9 +1289,7 @@ class Systemctl:
         return self.expand_special(status_file, conf)
     def default_status_file(self, conf): # -> text
         """ default file pattern where to store a status mark """
-        folder = _var(self._pid_file_folder)
-        if self._root:
-            folder = os_path(self._root, folder)
+        folder = conf.os_path_var(self._pid_file_folder)
         name = "%s.status" % conf.name()
         return os.path.join(folder, name)
     def clean_status_from(self, conf):
@@ -1486,6 +1485,15 @@ class Systemctl:
                     yield name, value
         except Exception as e:
             logg.info("while reading %s: %s", env_part, e)
+    def show_environment(self, unit):
+        """ [UNIT]. -- show environment parts """
+        conf = self.load_unit_conf(unit)
+        if conf is None:
+            logg.error("Unit %s could not be found.", unit)
+            return False
+        if _unit_property:
+            return conf.getlist("Service", _unit_property)
+        return self.get_env(conf)
     def extra_vars(self):
         return self._extra_vars # from command line
     def get_env(self, conf):
@@ -1496,26 +1504,17 @@ class Systemctl:
         for env_file in conf.getlist("Service", "EnvironmentFile", []):
             for name, value in self.read_env_file(self.expand_special(env_file, conf)):
                 env[name] = self.expand_env(value, env)
+        logg.debug("extra-vars %s", self.extra_vars())
         for extra in self.extra_vars():
             if extra.startswith("@"):
                 for name, value in self.read_env_file(extra[1:]):
-                    logg.debug("override %s=%s", name, value)
+                    logg.info("override %s=%s", name, value)
                     env[name] = self.expand_env(value, env)
             else:
                 for name, value in self.read_env_part(extra):
-                    logg.debug("override %s=%s", name, value)
+                    logg.info("override %s=%s", name, value)
                     env[name] = value # a '$word' is not special here
         return env
-    def show_environment(self, unit):
-        """ [UNIT]. -- show environment parts """
-        conf = self.load_unit_conf(unit)
-        if conf is None:
-            logg.error("Unit %s could not be found.", unit)
-            return False
-        # FIXME: return value is (bool, list, dict) ??
-        if _unit_property:
-            return conf.getlist("Service", _unit_property)
-        return self.get_env(conf)
     def expand_env(self, cmd, env):
         def get_env1(m):
             if m.group(1) in env:
@@ -1529,13 +1528,12 @@ class Systemctl:
             return "" # empty string
         #
         maxdepth = 20
-        expanded = cmd.replace("\\\n","")
+        expanded = re.sub("[$](\w+)", lambda m: get_env1(m), cmd.replace("\\\n",""))
         for depth in xrange(maxdepth):
-            text1 = re.sub("[$](\w+)", lambda m: get_env1(m), expanded)
-            text2 = re.sub("[$][{](\w+)[}]", lambda m: get_env2(m), text2)
-            if text2 == expanded:
+            new_text = re.sub("[$][{](\w+)[}]", lambda m: get_env2(m), expanded)
+            if new_text == expanded:
                 return expanded
-            expanded = text2
+            expanded = new_text
         logg.error("shell variable expansion exceeded maxdepth %s", maxdepth)
         return expanded
     def expand_special(self, cmd, conf = None):
@@ -1627,9 +1625,7 @@ class Systemctl:
         filename = os.path.basename(conf.filename() or "")
         unitname = (conf.name() or "default")+".unit"
         name = filename or unitname
-        log_folder = _var(self._journal_log_folder)
-        if self._root:
-            log_folder = os_path(self._root, log_folder)
+        log_folder = conf.os_path_var(self._journal_log_folder)
         log_file = name.replace(os.path.sep,".") + ".log"
         if log_file.startswith("."):
             log_file = "dot."+log_file
@@ -1662,9 +1658,7 @@ class Systemctl:
     def notify_socket_from(self, conf, socketfile = None):
         """ creates a notify-socket for the (non-privileged) user """
         NotifySocket = collections.namedtuple("NotifySocket", ["socket", "socketfile" ])
-        notify_socket_folder = _var(_notify_socket_folder)
-        if self._root:
-            notify_socket_folder = os_path(self._root, notify_socket_folder)
+        notify_socket_folder = conf.os_path_var(_notify_socket_folder)
         notify_name = "notify." + str(conf.name() or "systemctl")
         notify_socket = os.path.join(notify_socket_folder, notify_name)
         socketfile = socketfile or notify_socket
@@ -2826,16 +2820,17 @@ class Systemctl:
             for unit in matched:
                 if unit not in units:
                     units += [ unit ]
-        result = self.status_units(units)
+        status, result = self.status_units(units)
         if not found_all:
-            self._error = self._error or ERROR3 # same as (dead) # original behaviour
-        return result
+            status = 3 # same as (dead) # original behaviour
+        return (status, result)
     def status_units(self, units):
         """ concatenates the status output of all units
             and the last non-successful statuscode """
         status, result = 0, ""
         for unit in units:
-            result1 = self.status_unit(unit)
+            status1, result1 = self.status_unit(unit)
+            if status1: status = status1
             if result: result += "\n\n"
             result += result1
         return status, result
@@ -2851,14 +2846,14 @@ class Systemctl:
                 result += "\n    Drop-In: {path}".format(**locals())
         else:
             result += "\n    Loaded: failed"
-            self._error = self._error or ERROR3
-            return result
+            return 3, result
         active = self.get_active_from(conf)
         substate = self.get_substate_from(conf)
         result += "\n    Active: {} ({})".format(active, substate)
-        if active != "active":
-            self._error = self._error or ERROR3
-        return result
+        if active == "active":
+            return 0, result
+        else:
+            return 3, result
     def cat_modules(self, *modules):
         """ [UNIT]... show the *.system file for these"
         """
@@ -2982,7 +2977,7 @@ class Systemctl:
         return self.preset_units(units) and found_all
     def wanted_from(self, conf, default = None):
         if not conf: return default
-        return conf.get("Install", "WantedBy", default)
+        return conf.get("Install", "WantedBy", default, True)
     def enablefolders(self, wanted):
         if self.user_mode():
             for folder in self.user_folders():
@@ -4455,19 +4450,19 @@ if __name__ == "__main__":
     if opt.system:
         _user_mode = False # override --user
     #
-    if _root:
-        _systemctl_debug_log = os_path(_root, _var(_systemctl_debug_log))
-        _systemctl_extra_log = os_path(_root, _var(_systemctl_extra_log))
-    elif _user_mode:
-        _systemctl_debug_log = _var(_systemctl_debug_log)
-        _systemctl_extra_log = _var(_systemctl_extra_log)
-    if os.access(_systemctl_extra_log, os.W_OK):
-        loggfile = logging.FileHandler(_systemctl_extra_log)
+    if _user_mode:
+        systemctl_debug_log = os_path(_root, _var_path(_systemctl_debug_log))
+        systemctl_extra_log = os_path(_root, _var_path(_systemctl_extra_log))
+    else:
+        systemctl_debug_log = os_path(_root, _systemctl_debug_log)
+        systemctl_extra_log = os_path(_root, _systemctl_extra_log)
+    if os.access(systemctl_extra_log, os.W_OK):
+        loggfile = logging.FileHandler(systemctl_extra_log)
         loggfile.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
         logg.addHandler(loggfile)
         logg.setLevel(max(0, logging.INFO - 10 * opt.verbose))
-    if os.access(_systemctl_debug_log, os.W_OK):
-        loggfile = logging.FileHandler(_systemctl_debug_log)
+    if os.access(systemctl_debug_log, os.W_OK):
+        loggfile = logging.FileHandler(systemctl_debug_log)
         loggfile.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
         logg.addHandler(loggfile)
         logg.setLevel(logging.DEBUG)
@@ -4524,7 +4519,6 @@ if __name__ == "__main__":
         result = command_func()
     if not found:
         logg.error("Unknown operation %s.", command)
-        sys.exit(ERROR1)
+        sys.exit(1)
     #
-    print_problem = print_result(result)
-    sys.exit(systemctl._error or print_problem)
+    sys.exit(print_result(result))
