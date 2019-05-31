@@ -159,30 +159,35 @@ extern str_list_dict_dict_t empty_str_list_dict_dict_t;
 static inline ssize_t
 str_list_len(const str_list_t* self)
 {
+   if (! self) return 0;
    return self->size;
 }
 
 static inline ssize_t
 str_list_list_len(const str_list_list_t* self)
 {
+   if (! self) return 0;
    return self->size;
 }
 
 static inline ssize_t
 str_list_dict_len(const str_list_dict_t* self)
 {
+   if (! self) return 0;
    return self->size;
 }
 
 static inline ssize_t
 str_list_dict_dict_len(const str_list_dict_dict_t* self)
 {
+   if (! self) return 0;
    return self->size;
 }
 
 static inline ssize_t
 str_dict_len(const str_dict_t* self)
 {
+   if (! self) return 0;
    return self->size;
 }
 

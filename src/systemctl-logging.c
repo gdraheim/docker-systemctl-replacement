@@ -23,8 +23,9 @@ logg_setlevel(int level)
    /* loglevel = max(loglevel_logfile,... loglevel_stderr */
    int maxlevel = loglevel_stderr;
    for (int i=0; i < 8; ++i) {
-       maxlevel = (maxlevel < loglevel_logfile[i]) ? (loglevel_logfile[i]) : maxlevel;
+       maxlevel = (maxlevel > loglevel_logfile[i]) ? (loglevel_logfile[i]) : maxlevel;
    }
+   /* fprintf(stderr, "OOPS: level %i -> maxlevel %i\n", level, maxlevel); */
    loglevel = maxlevel;
 }
 
@@ -41,7 +42,7 @@ logg_setlevel_logfile(int logfile, int level)
    /* loglevel = max(loglevel_logfile,... loglevel_stderr */
    int maxlevel = loglevel_stderr;
    for (int i=0; i < 8; ++i) {
-       maxlevel = (maxlevel < loglevel_logfile[i]) ? (loglevel_logfile[i]) : maxlevel;
+       maxlevel = (maxlevel > loglevel_logfile[i]) ? (loglevel_logfile[i]) : maxlevel;
    }
    loglevel = maxlevel;
 }
@@ -67,12 +68,12 @@ logg_stop()
 }
 
 void
-logg_write(int loglevel, char* buf, size_t len)
+logg_write(int level, char* buf, size_t len)
 {
-    if (loglevel_stderr > LOG_ERROR)
+    if (loglevel_stderr <= level)
         fwrite(buf, 1, len, stderr);
     for (int i = 0; i < 8; ++i) {
-        if (loglevel_logfile[i] > LOG_ERROR && stream_logfile[i])
+        if (loglevel_logfile[i] <= level && stream_logfile[i])
             fwrite(buf, 1, len, stream_logfile[i]);
     }
 }

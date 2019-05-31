@@ -2710,11 +2710,15 @@ str_print_bool(bool value)
     return value ? 0 : 1;
 }
 
+static char _systemctl_debug_log[] = "/var/log/systemctl.debug.log";
+static char _systemctl_extra_log[] = "/var/log/systemctl.log";
+
 int 
 main(int argc, char** argv) {
     systemctl_settings_t settings;
     systemctl_settings_init(&settings);
     /* scan options */
+    logg_setlevel(LOG_DEBUG); /* for debug options */
     systemctl_options_t cmd;
     systemctl_options_init(&cmd);
     systemctl_options_add3(&cmd, "-h", "--help", "this help screen");
@@ -2723,16 +2727,32 @@ main(int argc, char** argv) {
     systemctl_options_add3(&cmd, "--root", "=DIR", "increase logging level");
     systemctl_options_add3(&cmd, "-v", "--verbose", "increase logging level");
     systemctl_options_scan(&cmd, argc, argv);
-    if (str_list_dict_contains(&cmd.opts, "verbose")) {
-        int level = str_list_len(str_list_dict_get(&cmd.opts, "verbose"));
-        logg_setlevel(LOG_ERROR - 10 * level); /* similar style to python */
-    }
     if (str_list_dict_contains(&cmd.opts, "help")) {
         systemctl_options_help(&cmd);
         systemctl_options_null(&cmd);
         /* systemctl_settings_null(&settings); */
         return 0;
     }
+    logg_setlevel(LOG_ERROR); /* done debug options */
+    /* .... */
+    if (str_list_dict_contains(&cmd.opts, "verbose")) {
+        int level = str_list_len(str_list_dict_get(&cmd.opts, "verbose"));
+        logg_setlevel(LOG_ERROR - 10 * level); /* similar style to python */
+    }
+    str_t root = str_list_dict_get_last(&cmd.opts, "root");
+    str_t systemctl_extra_log = os_path(root, _systemctl_extra_log);
+    if (os_path_exists(systemctl_extra_log)) {
+        int level = str_list_len(str_list_dict_get(&cmd.opts, "verbose"));
+        logg_open_logfile(1, systemctl_extra_log);
+        logg_setlevel_logfile(1, LOG_ERROR - 10 * level);
+    }
+    str_t systemctl_debug_log = os_path(root, _systemctl_debug_log);
+    if (os_path_exists(systemctl_debug_log)) {
+        logg_open_logfile(2, systemctl_debug_log);
+        logg_setlevel_logfile(2, LOG_DEBUG);
+    }
+    str_free(systemctl_extra_log);
+    str_free(systemctl_debug_log);
     /* ............................................ */
     systemctl_t systemctl;
     systemctl_init(&systemctl, &settings);

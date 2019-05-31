@@ -29,7 +29,7 @@ void
 logg_stop();
 
 void
-logg_write(int loglevel, char* buf, size_t len);
+logg_write(int level, char* buf, size_t len);
 
 void
 logg_error(const char* format, ...);
