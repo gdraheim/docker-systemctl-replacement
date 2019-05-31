@@ -3979,12 +3979,12 @@ class Systemctl:
             if not conf: continue
             log_path = self.path_journal_log(conf)
             try:
-                opened = open(log_path)
+                opened = open(log_path, "rb")
                 fd = opened.fileno()
                 fl = fcntl.fcntl(fd, fcntl.F_GETFL)
                 fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
                 self._log_file[unit] = opened
-                self._log_hold[unit] = ""
+                self._log_hold[unit] = b""
             except Exception as e:
                 logg.error("can not open %s log: %s\n\t%s", unit, log_path, e)
     def read_log_files(self, units):
@@ -3993,13 +3993,14 @@ class Systemctl:
                 new_text = self._log_file[unit].read()
                 text = self._log_hold[unit] + new_text
                 if not text: continue
-                lines = text.split("\n")
-                if not text.endswith("\n"):
+                lines = text.split(b"\n")
+                if not text.endswith(b"\n"):
                     self._log_hold[unit] = lines[-1]
                     lines = lines[:-1]
                 for line in lines:
-                    content = unit+": "+line+"\n"
-                    os.write(1, content.encode("utf-8"))
+                    prefix = unit.encode("utf-8")
+                    content = prefix+b": "+line+b"\n"
+                    os.write(1, content)
                     try: os.fsync(1)
                     except: pass
     def stop_log_files(self, units):
