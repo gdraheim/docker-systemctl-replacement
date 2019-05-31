@@ -229,7 +229,7 @@ systemctl_options_help2(systemctl_options_t* self, str_t prolog, str_t epilog)
     systemctl_options_note(prolog);
     str_dict_t options;
     str_dict_init(&options);
-    for (int i=0; i < self->optmapping.size; ++i) {
+    for (int i=self->optmapping.size-1; i >= 0; --i) {
         str_t key = self->optmapping.data[i].value;
         if (! str_dict_contains(&options, key)) {
             str_t arg = str_dict_get(&self->optargument, key);
@@ -241,14 +241,14 @@ systemctl_options_help2(systemctl_options_t* self, str_t prolog, str_t epilog)
         str_t arg = options.data[k].value;
         str_list_t opts;
         str_list_init(&opts);
-        for (int i=0; i < self->optmapping.size; ++i) {
+        for (int i=self->optmapping.size-1; i >= 0; --i) {
             str_t opt = self->optmapping.data[i].key;
             str_t value = self->optmapping.data[i].value;
             if (! str_equal(value, key)) continue;
             str_list_add(&opts, opt);
         }
         ssize_t col = 0;
-        str_t showopts = str_list_join(&opts, " / ");
+        str_t showopts = str_list_join(&opts, " ");
         printf("  %s", showopts);
         col += str_len(showopts) + 2;
         if (arg) {
