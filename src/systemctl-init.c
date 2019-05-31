@@ -42,7 +42,30 @@ char* SYSTEMCTL_DEBUG_AFTER = "";
 char* SYSTEMCTL_EXIT_WHEN_NO_MORE_PROCS = "";
 char* SYSTEMCTL_EXIT_WHEN_NO_MORE_SERVICES = "";
 
-double EpsilonTime = 0.1;
+int systemctl_SystemCompatibilityVersion = 219;
+double systemctl_EpsilonTime = 0.1;
+double systemctl_MinimumYield = 0.5;
+int systemctl_MinimumTimeoutStartSec = 4;
+int systemctl_MinimumTimeoutStopSec = 4;
+int systemctl_DefaultTimeoutStartSec = 90;
+int systemctl_DefaultTimeoutStopSec = 90;
+int systemctl_DefaultMaximumTimeout = 200;
+int systemctl_InitLoopSleep = 5;
+int systemctl_ProcMaxDepth = 100;
+int systemctl_MaxLockWait = -1; // equals DefaultMaximumTimeout
+const char* systemctl_DefaultPath = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin";
+const char* systemctl_ResetLocale = "\
+LANG,LANGUAGE,LC_CTYPE,LC_NUMERIC,LC_TIME,LC_COLLATE,LC_MONETARY,\
+LC_MESSAGES,LC_PAPER,LC_NAME,LC_ADDRESS,LC_TELEPHONE,LC_MEASUREMENT,\
+LC_IDENTIFICATION,LC_ALL";
+
+/* The systemd default is NOTIFY_SOCKET="/var/run/systemd/notify" */
+static const char* _notify_socket_folder = "/var/run/systemd"; /* alias /run/systemd */
+static const char* _pid_file_folder = "/var/run";
+static const char* _journal_log_folder = "/var/log/journal";
+
+const char* _systemctl_debug_log = "/var/log/systemctl.debug.log";
+const char* _systemctl_extra_log = "/var/log/systemctl.log";
 
 #define ERROR1 1
 #define ERROR3 3
@@ -87,30 +110,30 @@ systemctl_settings_init(systemctl_settings_t* self)
     self->preset_folder4 = "/lib/systemd/system-preset";
     self->preset_folder9 = NULL;
     /* definitions */
-    self->SystemCompatabilityVersion = 219;
-    self->MinimumYield = 0.5;
-    self->MinimumTimeoutStartSec = 4;
-    self->MinimumTimeoutStopSec = 4;
-    self->DefaultTimeoutStartSec = 90;
-    self->DefaultTimeoutStopSec = 90;
-    self->DefaultMaximumTimeout = 200;
-    self->InitLoopSleep = 5;
-    self->ProcMaxDepth = 100;
-    self->MaxLockWait = -1;
-    self->DefaultPath = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/sbin:/bin";
-    char* ResetLocale_data[] = {
-        "LANG", "LANGUAGE", "LC_CTYPE", "LC_NUMERIC", "LC_TIME", 
-        "LC_COLLATE", "LC_MONETARY", "LC_MESSAGES", "LC_PAPER", 
-        "LC_NAME", "LC_ADDRESS", "LC_TELEPHONE", "LC_MEASUREMENT", 
-        "LC_IDENTIFICATION", "LC_ALL" };
-    str_list_t ResetLocale_list = { 15, ResetLocale_data };
-    self->ResetLocale = &ResetLocale_list;
+    self->SystemCompatibilityVersion = systemctl_SystemCompatibilityVersion;
+    self->MinimumYield = systemctl_MinimumYield;
+    self->MinimumTimeoutStartSec = systemctl_MinimumTimeoutStartSec;
+    self->MinimumTimeoutStopSec = systemctl_MinimumTimeoutStopSec;
+    self->DefaultTimeoutStartSec = systemctl_DefaultTimeoutStartSec;
+    self->DefaultTimeoutStopSec = systemctl_DefaultTimeoutStopSec;
+    self->DefaultMaximumTimeout = systemctl_DefaultMaximumTimeout;
+    self->InitLoopSleep = systemctl_InitLoopSleep;
+    self->ProcMaxDepth = systemctl_ProcMaxDepth;
+    self->MaxLockWait = systemctl_MaxLockWait;
+    self->DefaultPath = systemctl_DefaultPath;
+    self->ResetLocale = str_split(systemctl_ResetLocale, ',');
     /* the systemd default is NOTIFY_SOCKET="/var/run/systemd/notify" */
     self->notify_socket_folder = "/var/run/systemd";
     self->pid_file_folder = "/var/run";
     self->journal_log_folder = "/var/log/journal";
     self->debug_log = "/var/log/systemctl.debug.log";
     self->extra_log = "/var/log/systemctl.log";
+}
+
+void
+systemctl_settings_null(systemctl_settings_t* self)
+{
+    str_list_null(self->ResetLocale);
 }
 
 str_dict_entry_t systemctl_runlevel_data[] = 
@@ -162,13 +185,13 @@ unit_of(str_t module)
 }
 
 str_t restrict
-os_path(str_t root, str_t path)
+os_path(str_t root, const_str_t path)
 {
     if (! root)
         return str_dup(path);
     if (! path)
-        return path;
-    char* path2 = path;
+        return NULL;
+    const char* path2 = path;
     while (*path2 && *path2 == '/') path2++;
     return str_dup3(root, "/", path2);
 }
@@ -1588,6 +1611,14 @@ systemctl_list_target_unit_files(systemctl_t* self, str_list_t* modules)
     return result;
 }
 
+static const char _show_list_unit_files[] = """ \
+list-unit-files [PATTERN]... -- List installed unit files \n\
+ List installed unit files and their enablement state (as reported \n\
+ by is-enabled). If one or more PATTERNs are specified, only units \n\
+ whose filename (just the last component of the path) matches one of \n\
+ them are shown. This command reacts to limitations of --type being \n\
+ --type=service or --type=target (and --now for some basics).""";
+
 str_list_list_t*
 systemctl_show_list_unit_files(systemctl_t* self, str_list_t* modules) 
 {
@@ -1865,7 +1896,7 @@ systemctl_truncate_old(systemctl_t* self, str_t filename)
 {
     double filetime = systemctl_get_filetime(self, filename);
     double boottime = systemctl_get_boottime(self);
-    filetime -= EpsilonTime;
+    filetime -= systemctl_EpsilonTime;
     if (filetime >= boottime) {
         logg_debug("  file time: %f", os_clock_localtime10(filetime));
         logg_debug("  boot time: %f", os_clock_localtime10(boottime));
@@ -2024,6 +2055,9 @@ systemctl_get_env(systemctl_t* self, systemctl_conf_t* conf)
     }
     return env;
 }
+
+static const char _show_environment[] = """ \
+environment [UNIT]. -- show environment parts """;
 
 str_dict_t* restrict
 systemctl_show_environment(systemctl_t* self, str_t unit)
@@ -2337,6 +2371,11 @@ systemctl_open_journal_log(systemctl_t* self, systemctl_conf_t* conf)
 
 /* ..... */
 
+static const char _start_modules[] = """ \
+start [UNIT]... -- start these units \n\
+ /// SPECIAL: with --now or --init it will \n\
+ run the init-loop and stop the units afterwards """;
+
 bool
 systemctl_start_modules(systemctl_t* self, str_list_t* modules) 
 {
@@ -2511,6 +2550,9 @@ systemctl_execve_from(systemctl_t* self, systemctl_conf_t* conf, str_list_t* cmd
     exit(111); /* unreachable */
 }
 
+static const char _stop_modules[] = """ \
+stop [UNIT]... -- stop these units """;
+
 bool
 systemctl_stop_unit(systemctl_t* self, str_t unit)
 {
@@ -2585,6 +2627,9 @@ systemctl_enabled_from(systemctl_t* self, systemctl_conf_t* conf)
     return "unknown";
 }
 
+static const char _status_modules[] = """ \
+status [UNIT]... check the status of these units.""";
+
 str_t restrict
 systemctl_status_modules(systemctl_t* self, str_list_t* modules)
 {
@@ -2658,6 +2703,87 @@ systemctl_status_unit(systemctl_t* self, str_t unit)
     return result;
 }
 
+
+static const char _show_help[] = """ \
+help [command] -- show this help""";
+
+str_list_t* restrict
+systemctl_show_help(systemctl_t* self, str_list_t* args)
+{
+    str_list_t* lines = str_list_new();
+    bool okay = true;
+    if (str_list_empty(args)) {
+        str_list_add(lines, "Commands:");
+        for (const char** commands = systemctl_commands; *commands; ++commands) {
+            const char* command = *commands;
+            int x = str_find(command, '\n');
+            if (x > 0) {
+                str_list_adds(lines, str_strips(str_cut(command, 0, x)));
+            } else {
+                str_list_adds(lines, str_strip(command));
+            }
+        }
+    } else {
+        for (int i=0; i < args->size; ++i) {
+            str_t arg = args->data[i];
+            for (const char** commands = systemctl_commands; *commands; ++commands) {
+                str_t command = str_strip(*commands);
+                int x = str_find(command, ' ');
+                if (x) {
+                    str_t cmd = str_strips(str_cut(command, 0, x));
+                    if (str_equal(arg, cmd)) {
+                        str_list_add(lines, command);
+                    }
+                    str_free(cmd);
+                } else {
+                    logg_warning("no command found in help for:\n%s", command);
+                }
+                str_free(command);
+            }
+        }
+    }
+    return lines;
+}
+
+/** the version line for systemd compatibility */
+str_t restrict
+systemctl_systemd_version(systemctl_t* self)
+{
+    return str_format("systemd %i\n  - via systemctl.py %s", self->use.SystemCompatibilityVersion, systemctl_version);
+}
+
+/** the info line for systemd features */
+str_t restrict
+systemctl_systemd_features(systemctl_t* self)
+{
+    const char* features1 = "-PAM -AUDIT -SELINUX -IMA -APPARMOR -SMACK";
+    const char* features2 = " +SYSVINIT -UTMP -LIBCRYPTSETUP -GCRYPT -GNUTLS";
+    const char* features3 = " -ACL -XZ -LZ4 -SECCOMP -BLKID -ELFUTILS -KMOD -IDN";
+    return str_dup3(features1, features2, features3);
+}
+
+static const char _show_version[] = """ \
+version -- show version and features \n\
+ simlar to the output of systemd's systemctl""";
+
+str_list_t* restrict
+systemctl_show_version(systemctl_t* self)
+{
+    str_list_t* res = str_list_new();
+    str_list_adds(res, systemctl_systemd_version(self));
+    str_list_adds(res, systemctl_systemd_features(self));
+    return res;
+}
+
+const char* systemctl_commands[] = {
+_show_list_unit_files,
+_start_modules,
+_stop_modules,
+_status_modules,
+_show_help,
+_show_version,
+0 };
+
 /* ........................................................ */
 
 int
@@ -2709,9 +2835,6 @@ str_print_bool(bool value)
 {
     return value ? 0 : 1;
 }
-
-static char _systemctl_debug_log[] = "/var/log/systemctl.debug.log";
-static char _systemctl_extra_log[] = "/var/log/systemctl.log";
 
 int 
 main(int argc, char** argv) {
@@ -2805,7 +2928,7 @@ main(int argc, char** argv) {
         str_free(prog);
         str_free(note);
         systemctl_options_null(&cmd);
-        /* systemctl_settings_null(&settings); */
+        systemctl_settings_null(&settings);
         return 0;
     }
     /* .... */
@@ -2843,7 +2966,11 @@ main(int argc, char** argv) {
         str_list_init_from(&args, cmd.args.size - 1, cmd.args.data + 1);
     }
     
-    if (str_equal(command, "daemon-reload")) {
+    if (str_equal(command, "help")) {
+        str_list_t* result = systemctl_show_help(&systemctl, &args);
+        str_list_print(result);
+        str_list_free(result);
+    } else if (str_equal(command, "daemon-reload")) {
         /* FIXME */
         logg_info("daemon-reload");
         logg_debug("needs to be implemented");
@@ -2876,6 +3003,7 @@ main(int argc, char** argv) {
 
     int exitcode = systemctl.error;
     systemctl_null(&systemctl);
+    systemctl_settings_null(&settings);
     systemctl_options_null(&cmd);
     if (exitcode) {
         logg_error(" exitcode %i", exitcode);

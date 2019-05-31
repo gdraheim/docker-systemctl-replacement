@@ -45,7 +45,7 @@ typedef struct systemctl_settings
     char*  preset_folder4;
     char*  preset_folder9;
     /* definitions */
-    int SystemCompatabilityVersion;
+    int SystemCompatibilityVersion;
     float MinimumYield;
     int MinimumTimeoutStartSec;
     int MinimumTimeoutStopSec;
@@ -55,7 +55,7 @@ typedef struct systemctl_settings
     int InitLoopSleep;
     int ProcMaxDepth;
     int MaxLockWait;
-    char* DefaultPath;
+    const char* DefaultPath;
     str_list_t* ResetLocale;
     /* system defaults */
     char* notify_socket_folder;
@@ -64,6 +64,8 @@ typedef struct systemctl_settings
     char* debug_log;
     char* extra_log;
 } systemctl_settings_t;
+
+extern const char* systemctl_commands[];
 
 struct systemctl_conf_data;
 typedef struct systemctl_conf_data systemctl_conf_data_t;
@@ -85,6 +87,9 @@ typedef struct systemctl_subprocess systemctl_subprocess_t;
 void
 systemctl_settings_init(systemctl_settings_t* self);
 
+void
+systemctl_settings_null(systemctl_settings_t* self);
+
 str_t restrict
 shell_cmd(str_list_t* cmd);
 
@@ -92,7 +97,7 @@ str_t restrict
 unit_of(str_t module);
 
 str_t restrict
-os_path(str_t root, str_t path);
+os_path(str_t root, const_str_t path);
 
 str_t /* not free */
 os_getlogin_p();
@@ -495,6 +500,18 @@ systemctl_status_units(systemctl_t* self, str_list_t* units);
 
 str_t restrict
 systemctl_status_unit(systemctl_t* self, str_t unit);
+
+str_list_t* restrict
+systemctl_show_help(systemctl_t* self, str_list_t* args);
+
+str_t restrict
+systemctl_systemd_version(systemctl_t* self);
+
+str_t restrict
+systemctl_systemd_features(systemctl_t* self);
+
+str_list_t* restrict
+systemctl_show_version(systemctl_t* self);
 
 int
 str_print(str_t result);
