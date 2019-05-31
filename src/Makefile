@@ -12,7 +12,10 @@ types: systemctl-types.h
 	$(CC) systemctl-types-test.c $L $T $S -g -fsanitize=address -fno-omit-frame-pointer \
 	   -o systemctl-types-test.e
 
-test: init types
+test_%: ; ../testsuite.py "$@" -vv --with=./systemctl-init.e
+test: ; $(MAKE) "test_[1234]"
+
+tests: init types
 	./systemctl-types-test.e
 
 check: init types
