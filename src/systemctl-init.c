@@ -1703,7 +1703,7 @@ systemctl_status_file_from(systemctl_t* self, systemctl_conf_t* conf)
 str_t
 systemctl_default_status_file(systemctl_t* self, systemctl_conf_t* conf)
 {
-    str_t folder = os_path(self->root, self->use.pid_file_folder);
+    str_t folder = systemctl_conf_os_path_var(conf, self->use.pid_file_folder);
     str_t name = systemctl_conf_name(conf);
     str_append(&name, ".status");
     str_t res = os_path(folder, name);
@@ -2297,7 +2297,7 @@ systemctl_path_journal_log(systemctl_t* self, systemctl_conf_t* conf)
    str_append(&unitname, ".unit");
    str_t name = filename;
    if (! name) name = unitname;
-   str_t log_folder = os_path(self->root, self->use.journal_log_folder); /* FIXME _var */
+   str_t log_folder = systemctl_conf_os_path_var(conf, self->use.journal_log_folder);
    str_t log_file = str_replace(name, "/", ".");
    str_append(&log_file, ".log");
    if (str_startswith(log_file, "."))
