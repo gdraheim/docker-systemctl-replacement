@@ -1336,7 +1336,7 @@ class Systemctl:
     #
     def get_boottime(self):
         if "oldest" in COVERAGE:
-            self.get_boottime_oldest()
+            return self.get_boottime_oldest()
         for pid in xrange(10):
             proc = "/proc/%s/status" % pid
             try:
