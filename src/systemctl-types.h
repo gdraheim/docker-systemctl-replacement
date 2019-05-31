@@ -651,6 +651,9 @@ str_t restrict
 str_lstrip(const_str_t self);
 
 str_t restrict
+str_strips(str_t self);
+
+str_t restrict
 str_strip(const_str_t self);
 
 str_t restrict

@@ -49,6 +49,22 @@ void test_005()
     assert(! strcmp(s, "foo"));
     str_free(s);
 }
+
+void test_006()
+{
+    str_t s = str_strips(str_dup(" foo "));
+    printf("strip: '%s'\n", s);
+    assert(! strcmp(s, "foo"));
+    str_free(s);
+}
+
+void test_007()
+{
+    str_t s = str_strips(str_dup("foo"));
+    printf("strip: '%s'\n", s);
+    assert(! strcmp(s, "foo"));
+    str_free(s);
+}
   
   /* ............ */
 void test_011()
@@ -201,6 +217,8 @@ main(int argc, char** argv)
     test_003();
     test_004();
     test_005();
+    test_006();
+    test_007();
     test_011();
     test_012();
     test_021();

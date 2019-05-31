@@ -1733,6 +1733,21 @@ str_lstrip(const_str_t self)
 }
 
 str_t restrict
+str_strips(str_t self) 
+{
+  if (! self) return self;
+  ssize_t size = str_len(self);
+  ssize_t a = 0;
+  while (strchr(str_delim, self[a]) && a < size) ++a;
+  ssize_t b = size;
+  while (strchr(str_delim, self[b-1]) && b > 0) --b;
+  if (a == 0 && b == size) return self;
+  str_t res = str_cut(self, a, b);
+  str_free(self);
+  return res;
+}
+
+str_t restrict
 str_strip(const_str_t self) 
 {
   ssize_t size = str_len(self);

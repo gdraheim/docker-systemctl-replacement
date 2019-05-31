@@ -1790,12 +1790,8 @@ systemctl_read_status_from(systemctl_t* self, systemctl_conf_t* conf)
             if (len < 0) break; /* EOF */
             int m = str_find(line, '=');
             if (m) {
-                str_t m_key = str_cut(line, 0, m);
-                str_t m_val = str_cut_end(line, m+1);
-                str_t key = str_strip(m_key);
-                str_t value = str_strip(m_val);
-                str_free(m_key);
-                str_free(m_val);
+                str_t key = str_strips(str_cut(line, 0, m));
+                str_t value = str_strips(str_cut_end(line, m+1));
                 str_dict_adds(conf->status, key, value);
                 str_free(key);
             } else {
