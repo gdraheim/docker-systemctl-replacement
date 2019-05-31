@@ -2970,6 +2970,10 @@ main(int argc, char** argv) {
         str_list_t* result = systemctl_show_help(&systemctl, &args);
         str_list_print(result);
         str_list_free(result);
+    } else if (str_equal(command, "version")) {
+        str_list_t* result = systemctl_show_version(&systemctl);
+        str_list_print(result);
+        str_list_free(result);
     } else if (str_equal(command, "daemon-reload")) {
         /* FIXME */
         logg_info("daemon-reload");
