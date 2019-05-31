@@ -204,6 +204,26 @@ get_home()
     return str_dup(pwd->pw_dir);
 }
 
+static str_t restrict
+_var_path(str_t path)
+{
+    /* assumes that the path starts with /var - when in 
+        user mode it shall be moved to /run/user/1001/run/
+        or as a fallback path to /tmp/run-{user}/ so that
+        you may find /var/log in /tmp/run-{user}/log .. */
+    if (str_startswith(path, "/var")) {
+        str_t runtime = get_runtime_dir(); /* $XDG_RUNTIME_DIR */
+        if (! os_path_isdir(runtime)) {
+            os_makedirs(runtime);
+            os_chmod(runtime, 0700);
+        }
+        str_t res = str_dup2(runtime, path+4);
+        str_free(runtime);
+        return res;
+    }
+    return str_dup(path);
+}
+
 str_t restrict
 os_environ_get(const char* name, str_t restrict defaults)
 {
@@ -396,6 +416,7 @@ systemctl_conf_data_free(systemctl_conf_data_t* self)
         free (self);
     }
 }
+
 
 str_list_t*
 systemctl_conf_data_filenames(systemctl_conf_data_t* self)
@@ -668,24 +689,28 @@ systemctl_conf_data_read_sysv(systemctl_conf_data_t* self, str_t filename)
 struct systemctl_conf
 {
     systemctl_conf_data_t data;
-    str_dict_t env;
-    str_t status;
+    str_dict_t* env;
+    str_dict_t* status;
     str_t masked;
     str_t module;
     str_dict_t drop_in_files;
     str_t name;
+    str_t root;
+    bool user_mode;
 };
 
 void 
 systemctl_conf_init(systemctl_conf_t* self)
 {
     systemctl_conf_data_init(&self->data);
-    str_dict_init(&self->env);
-    str_init(&self->status);
+    self->env = NULL;
+    self->status = NULL;
     str_init(&self->masked);
     str_init(&self->module);
     str_dict_init(&self->drop_in_files);
     str_init(&self->name); /* TODO: helper only in C/C++ */
+    str_init(&self->root);
+    self->user_mode = false;
 }
 
 systemctl_conf_t* restrict
@@ -700,12 +725,13 @@ void
 systemctl_conf_null(systemctl_conf_t* self)
 {
     systemctl_conf_data_null(&self->data);
-    str_dict_null(&self->env);
-    str_null(&self->status);
+    str_dict_free(self->env);
+    str_dict_free(self->status);
     str_null(&self->masked);
     str_null(&self->module);
     str_dict_null(&self->drop_in_files);
     str_null(&self->name);
+    str_null(&self->root);
 }
 
 void
@@ -713,6 +739,18 @@ systemctl_conf_free(systemctl_conf_t* self)
 {
     systemctl_conf_null(self);
     free(self);
+}
+
+str_t restrict
+systemctl_conf_os_path(systemctl_conf_t* self, str_t path)
+{
+    return os_path(self->root, path);
+}
+
+str_t restrict
+systemctl_conf_os_path_var(systemctl_conf_t* self, str_t path)
+{
+    return os_path(self->root, path);
 }
 
 str_t
@@ -1229,6 +1267,8 @@ systemctl_load_sysd_unit_conf(systemctl_t* self, str_t module)
     }
     str_sets(&conf->masked, masked); masked = str_NULL;
     str_set(&conf->module, module);
+    str_set(&conf->root, self->root);
+    conf->user_mode = self->user_mode;
     ptr_dict_adds(&self->loaded_file_sysd, path, conf);
     return conf;
 
@@ -1260,7 +1300,9 @@ systemctl_load_sysv_unit_conf(systemctl_t* self, str_t module)
     }
     systemctl_conf_t* conf = systemctl_conf_new();
     systemctl_conf_data_read_sysv(&conf->data, path);
-    conf->module = str_dup(module);
+    str_set(&conf->module, module);
+    str_set(&conf->root, self->root);
+    conf->user_mode = self->user_mode;
     ptr_dict_adds(&self->loaded_file_sysv, path, conf);
     return conf;
 }
@@ -1292,6 +1334,8 @@ systemctl_default_unit_conf(systemctl_t* self, str_t module)
 {
     systemctl_conf_t* conf = systemctl_conf_new();
     systemctl_conf_default(conf, module);
+    str_set(&conf->root, self->root);
+    conf->user_mode = self->user_mode;
     return conf;
 }
 
@@ -1632,6 +1676,140 @@ systemctl_read_pid_file(systemctl_t* self, str_t pid_file)
     fclose(fd);
     if (orig_line) free (orig_line);
     return pid;
+}
+
+str_t
+systemctl_get_status_file(systemctl_t* self, str_t unit)
+{
+    systemctl_conf_t* conf = systemctl_get_unit_conf(self, unit);
+    return systemctl_status_file_from(self, conf);
+}
+
+str_t
+systemctl_status_file_from(systemctl_t* self, systemctl_conf_t* conf)
+{
+    str_t defaults = systemctl_default_status_file(self, conf);
+    if (! conf) return defaults;
+    str_t status_file = systemctl_conf_get(conf, "Service", "StatusFile", defaults);
+    /* this is not a real setting, but do the expand_special anyway */
+    str_t res = systemctl_expand_special(self, status_file, conf);
+    str_free(status_file);
+    str_free(defaults);
+    return res;
+}
+
+str_t
+systemctl_default_status_file(systemctl_t* self, systemctl_conf_t* conf)
+{
+    str_t folder = os_path(self->root, self->use.pid_file_folder);
+    str_t name = systemctl_conf_name(conf);
+    str_append(&name, ".status");
+    str_t res = os_path(folder, name);
+    str_free(name);
+    str_free(folder);
+    return res;
+}
+
+void
+systemctl_clean_status_from(systemctl_t* self, systemctl_conf_t* conf)
+{
+    str_t status_file = systemctl_status_file_from(self, conf);
+    if (os_path_exists(status_file))
+        unlink(status_file);
+    str_dict_free(conf->status);
+    conf->status = NULL;
+    str_free(status_file);
+}
+
+bool
+systemctl_write_status_from(systemctl_t* self, systemctl_conf_t* conf, str_t key, str_t value)
+{
+    str_t status_file = systemctl_status_file_from(self, conf);
+    if (! status_file) {
+        logg_debug("status %s but no status_file", systemctl_conf_filename(conf));
+        return false;
+    }
+    str_t dirpath = os_path_abspath_dirname(status_file);
+    if (! os_path_isdir(dirpath))
+        os_makedirs(dirpath);
+    if (! conf->status) {
+        conf->status = systemctl_read_status_from(self, conf);
+    }
+    if (true) {
+        if (key) {
+            if (! value) {
+               str_dict_del(conf->status, key);
+            } else {
+               str_dict_add(conf->status, key, value);
+            }
+        }
+    }
+    if (true) {
+       int f = open(status_file, O_WRONLY|O_CREAT, 0644);
+       for (int k=0; k < conf->status->size; ++k) {
+          str_t key = conf->status->data[k].key;
+          str_t value = conf->status->data[k].value;
+          if (str_equal(key, "MainPID") && str_equal(value, "0")) {
+              logg_warning("ignore writing MainPID=0");
+              continue;
+          }
+          str_t content = str_format("%s=%s", key, value);
+          logg_debug("writing to %s\n\t%s", status_file, content);
+          write(f, content, strlen(content));
+          str_free(content);
+       }
+    }
+    return true;
+}
+
+str_dict_t* restrict
+systemctl_read_status_from(systemctl_t* self, systemctl_conf_t* conf)
+{
+    str_dict_t* status = str_dict_new();
+    str_t status_file = systemctl_status_file_from(self, conf);
+    if (! status_file) {
+        logg_debug("no status file. returning");
+        return status;
+    }
+    if (! os_path_isfile(status_file)) {
+        logg_debug("no status file: %s\n returning", status_file);
+        str_free(status_file);
+        return status;
+    }
+    if (systemctl_truncate_old(self, status_file)) {
+        logg_debug("old status file: %s\n returning", status_file);
+        str_free(status_file);
+        return status;
+    }
+    FILE* fd = fopen(status_file, "r");
+    if (fd) {
+        while (true) {
+            str_t line = NULL;
+            size_t size = 0;
+            ssize_t len = getline(&line, &size, fd);
+            if (len < 0) break; /* EOF */
+            int m = str_find(line, '=');
+            if (m) {
+                str_t m_key = str_cut(line, 0, m);
+                str_t m_val = str_cut_end(line, m+1);
+                str_t key = str_strip(m_key);
+                str_t value = str_strip(m_val);
+                str_free(m_key);
+                str_free(m_val);
+                str_dict_adds(conf->status, key, value);
+                str_free(key);
+            } else {
+                str_t value = str_strip(line);
+                str_dict_adds(conf->status, "ActiveState", value);
+            }
+            free(line);
+        } /* while not EOF */
+        fclose(fd);
+    } else {
+        logg_warning("bad read of status file '%s': %s", status_file, strerror(errno));
+    }
+    str_free(status_file);
+    return status;
 }
 
 double
@@ -2247,13 +2425,39 @@ systemctl_start_unit_from(systemctl_t* self, systemctl_conf_t* conf)
             str_list_t* newcmd = systemctl_exec_cmd(self, cmd, env, conf);
             logg_info(" pre-start %s", tmp_shell_cmd(newcmd));
             int forkpid = fork();
-            if (! forkpid)
+            if (! forkpid) {
                 systemctl_execve_from(self, conf, newcmd, env);
+                /* unreachable */
+            }
             str_list_free(newcmd);
             run_t run;
             subprocess_waitpid(forkpid, &run);
-            logg_debug(" pre-start done (%s) <-%s>",
+            logg_info(" pre-start done (%s) <-%s>",
                 tmp_int_or(run.returncode, "OK"), tmp_int_or_no(run.signal));
+        }
+    }
+    if (str_equal(runs, "sysv")) {
+        str_t status_file = systemctl_status_file_from(self, conf);
+        if (true) {
+            str_t exe = systemctl_conf_filename(conf);
+            str_t cmd = str_format("'%s' start", exe);
+            str_dict_add(env, "SYSTEMCTL_SKIP_REDIRECT", "yes");
+            str_list_t* newcmd = systemctl_exec_cmd(self, cmd, env, conf);
+            logg_info("%s start %s", runs, tmp_shell_cmd(newcmd));
+            int forkpid = fork();
+            if (! forkpid) {
+                setsid();
+                systemctl_execve_from(self, conf, newcmd, env);
+                /* unreachable */
+            }
+            str_list_free(newcmd);
+            run_t run;
+            subprocess_waitpid(forkpid, &run);
+            logg_info("%s start done (%s) <-%s>", runs,
+                tmp_int_or(run.returncode, "OK"), tmp_int_or_no(run.signal));
+            str_t active = run.returncode ? "failed" : "active";
+            systemctl_write_status_from(self, conf, "ActiveState", active);
+            return true;
         }
     }
     str_free(service_result);
@@ -2306,6 +2510,7 @@ systemctl_execve_from(systemctl_t* self, systemctl_conf_t* conf, str_list_t* cmd
     }
     str_dict_free(env); /* via extend_exec_env */
     execve(argv[0], argv, envp);
+    exit(111); /* unreachable */
 }
 
 bool

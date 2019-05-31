@@ -1900,6 +1900,15 @@ os_path_getsize(str_t path)
 }
 
 bool
+os_path_exists(str_t path)
+{
+    struct stat st;
+    int err = stat(path, &st);
+    if (err == -1) return false;
+    return true;
+}
+
+bool
 os_path_isfile(str_t path)
 {
     struct stat st;
@@ -2058,8 +2067,14 @@ os_makedirs(str_t path)
    str_t parent = os_path_dirname(path);
    os_makedirs(parent);
    int err = mkdir(path, 0777);
-   if (!err) return true;
-   return false;
+   return err ? false : true;
+}
+
+bool
+os_chmod(str_t path, int mode)
+{
+   int err = chmod(path, mode);
+   return err ? false : true;
 }
 
 str_t restrict
@@ -2089,6 +2104,47 @@ os_path_basename_p(str_t path)
     if (found) 
         return found+1;
     return path;
+}
+
+bool
+os_path_isabs(str_t path)
+{
+   return path && *path && *path == '/';
+}
+
+str_t restrict
+os_path_abspath(str_t path)
+{
+   if (! os_path_isabs(path)) {
+       str_t cwd = os_getcwd();
+       str_t res = os_path_join(cwd, path);
+       str_free(cwd);
+       return res;
+   }
+   return str_dup(path);
+}
+
+str_t restrict
+os_path_abspath_dirname(str_t path)
+{
+   if (! os_path_isabs(path)) {
+       str_t cwd = os_getcwd();
+       str_t dir = os_path_dirname(path);
+       str_t res = os_path_join(cwd, dir);
+       str_free(cwd);
+       str_free(dir);
+       return res;
+   }
+   return os_path_dirname(path);
+}
+
+str_t restrict
+os_getcwd()
+{
+    str_t cwd = getcwd(0, 0);
+    str_t res = str_dup(cwd);
+    free(cwd);
+    return res;
 }
 
 extern char **environ;

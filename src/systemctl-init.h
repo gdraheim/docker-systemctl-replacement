@@ -106,6 +106,9 @@ get_runtime_dir();
 str_t restrict
 get_home();
 
+static str_t restrict
+_var_path(str_t path);
+
 str_t restrict
 os_environ_get(const char* name, str_t restrict defaults);
 
@@ -198,6 +201,12 @@ systemctl_conf_null(systemctl_conf_t* self);
 
 void
 systemctl_conf_free(systemctl_conf_t* self);
+
+str_t restrict
+systemctl_conf_os_path(systemctl_conf_t* self, str_t path);
+
+str_t restrict
+systemctl_conf_os_path_var(systemctl_conf_t* self, str_t path);
 
 str_t
 systemctl_conf_loaded(systemctl_conf_t* self);
@@ -348,6 +357,24 @@ systemctl_get_description(systemctl_t* self, str_t unit);
 
 int
 systemctl_read_pid_file(systemctl_t* self, str_t pid_file);
+
+str_t
+systemctl_get_status_file(systemctl_t* self, str_t unit);
+
+str_t
+systemctl_status_file_from(systemctl_t* self, systemctl_conf_t* conf);
+
+str_t
+systemctl_default_status_file(systemctl_t* self, systemctl_conf_t* conf);
+
+void
+systemctl_clean_status_from(systemctl_t* self, systemctl_conf_t* conf);
+
+bool
+systemctl_write_status_from(systemctl_t* self, systemctl_conf_t* conf, str_t key, str_t value);
+
+str_dict_t* restrict
+systemctl_read_status_from(systemctl_t* self, systemctl_conf_t* conf);
 
 double
 systemctl_get_boottime(systemctl_t* self);

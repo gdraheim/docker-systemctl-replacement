@@ -687,6 +687,9 @@ off_t
 os_path_getsize(str_t path);
 
 bool
+os_path_exists(str_t path);
+
+bool
 os_path_isfile(str_t path);
 
 bool
@@ -731,6 +734,9 @@ os_listdir(str_t path);
 bool
 os_makedirs(str_t path);
 
+bool
+os_chmod(str_t path, int mode);
+
 str_t restrict
 os_path_dirname(str_t path);
 
@@ -739,6 +745,18 @@ os_path_basename(str_t path);
 
 str_t
 os_path_basename_p(str_t path);
+
+bool
+os_path_isabs(str_t path);
+
+str_t restrict
+os_path_abspath(str_t path);
+
+str_t restrict
+os_path_abspath_dirname(str_t path);
+
+str_t restrict
+os_getcwd();
 
 str_dict_t* restrict
 os_environ_copy();

@@ -26,7 +26,7 @@ list: init
 	./systemctl-init.e list-units --root=tmp.d/$@ -vv
 start: init
 	- mkdir -p tmp.d/$@/etc/systemd/system
-	- { echo "[Service]"; echo "ExecStartPre=/usr/bin/sleep 2"; } > tmp.d/$@/etc/systemd/system/zzz.service
+	- { echo "[Service]"; echo "ExecStartPre=/usr/bin/sleep 2"; echo "ExecStartPre=/bin/false" ; } > tmp.d/$@/etc/systemd/system/zzz.service
 	./systemctl-init.e start zzz.service --root=tmp.d/$@ -vv
 
 
