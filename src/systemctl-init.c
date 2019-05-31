@@ -35,7 +35,7 @@ typedef char systemctl_version_t[16];
 #define __version__ systemctl_version_t systemctl_version
 
 __copyright__ = "(C) 2016-2019 Guido U. Draheim, licensed under the EUPL";
-__version__ = "2.5.3050";
+__version__ = "2.5.3207";
 
 char* SYSTEMCTL_COVERAGE = ""; 
 char* SYSTEMCTL_DEBUG_AFTER = ""; 
@@ -2756,7 +2756,7 @@ systemctl_show_help(systemctl_t* self, str_list_t* args)
 str_t restrict
 systemctl_systemd_version(systemctl_t* self)
 {
-    return str_format("systemd %i\n  - via systemctl.py %s", self->use.SystemCompatibilityVersion, systemctl_version);
+    return str_format("systemd %i\n  - via systemctl.cc %s", self->use.SystemCompatibilityVersion, systemctl_version);
 }
 
 /** the info line for systemd features */
