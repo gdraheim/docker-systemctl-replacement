@@ -2784,5 +2784,6 @@ main(int argc, char** argv) {
         logg_info(" exitcode %i", exitcode);
     }
     tmp_null();
+    logg_stop();
     return exitcode;
 }

@@ -8,12 +8,39 @@
 #define LOG_SEVERE 40
 #define LOG_FATAL 50
 
-void logg_setlevel(int level);
-int logg_getlevel();
+/* from systemctl-logging.c */
 
-void logg_error(const char* format, ...);
-void logg_warning(const char* format, ...);
-void logg_info(const char* format, ...);
-void logg_debug(const char* format, ...);
+int
+logg_getlevel();
+
+void
+logg_setlevel(int level);
+
+int
+logg_getlevel_logfile(int logfile);
+
+void
+logg_setlevel_logfile(int logfile, int level);
+
+void
+logg_open_logfile(int logfile, char* filename);
+
+void
+logg_stop();
+
+void
+logg_write(int loglevel, char* buf, size_t len);
+
+void
+logg_error(const char* format, ...);
+
+void
+logg_warning(const char* format, ...);
+
+void
+logg_info(const char* format, ...);
+
+void
+logg_debug(const char* format, ...);
 
 #endif
