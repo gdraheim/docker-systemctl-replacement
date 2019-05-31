@@ -2780,14 +2780,22 @@ main(int argc, char** argv) {
         "Apply only enable, only disable, or all presets [%default]");
     systemctl_options_add3(&cmd, "--root", "=PATH", 
         "Enable unit files in the specified root directory (used for alternative root prefix)");
+    systemctl_options_add4(&cmd, "-n","--lines", "=NUM",
+        "Number of journal entries to show (ignored)");
+    systemctl_options_add4(&cmd, "-o","--output", "=CAT",
+        "change journal output mode [short, ..., cat] (ignored)");
+    systemctl_options_add2(&cmd, "--plain", 
+        "Print unit dependencies as a list instead of a tree (ignored)");
+    systemctl_options_add2(&cmd, "--no-pager",
+        "Do not pipe output into pager (ignored)");
+    systemctl_options_add3(&cmd, "-v", "--verbose", 
+        "increase debugging information level");
     systemctl_options_add3(&cmd, "-4", "--ipv4", 
         "..only keep ipv4 localhost in /etc/hosts");
     systemctl_options_add3(&cmd, "-6", "--ipv6", 
         "..only keep ipv6 localhost in /etc/hosts");
     systemctl_options_add3(&cmd, "-1", "--init", 
         "..keep running as init-process (default if PID 1)");
-    systemctl_options_add3(&cmd, "-v", "--verbose", 
-        "increase logging level");
     systemctl_options_scan(&cmd, argc, argv);
     if (str_list_dict_contains(&cmd.opts, "help")) {
         str_t prog = os_path_basename(argv[0]);
