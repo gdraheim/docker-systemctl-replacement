@@ -232,8 +232,6 @@ os_environ_get(const char* name, str_t restrict defaults)
     return defaults;
 }
 
-/* _var */
-
 str_dict_t* restrict
 shutil_setuid(str_t user, str_t group)
 {
@@ -748,6 +746,12 @@ systemctl_conf_os_path(systemctl_conf_t* self, str_t path)
 str_t restrict
 systemctl_conf_os_path_var(systemctl_conf_t* self, str_t path)
 {
+    if (self->user_mode) {
+       str_t var_path = _var_path(path);
+       str_t res = os_path(self->root, var_path);
+       str_free(var_path);
+       return res;
+    }
     return os_path(self->root, path);
 }
 
