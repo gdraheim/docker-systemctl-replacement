@@ -2723,12 +2723,71 @@ main(int argc, char** argv) {
     systemctl_options_add3(&cmd, "-h", "--help", "this help screen");
     systemctl_options_add5(&cmd, "-e", "--extra-vars", "--environment", "=NAME=VAL", 
         "..override settings in the syntax of 'Environment='");
-    systemctl_options_add4(&cmd, "-t", "--type", "=TYPE", "List units of a particual type");
-    systemctl_options_add3(&cmd, "--root", "=PATH", "Enable unit files in the specified root directory (used for alternative root prefix)");
-    systemctl_options_add3(&cmd, "-4", "--ipv4", "..only keep ipv4 localhost in /etc/hosts");
-    systemctl_options_add3(&cmd, "-6", "--ipv6", "..only keep ipv6 localhost in /etc/hosts");
-    systemctl_options_add3(&cmd, "-1", "--init", "..keep running as init-process (default if PID 1)");
-    systemctl_options_add3(&cmd, "-v", "--verbose", "increase logging level");
+    systemctl_options_add2(&cmd, "--version",
+        "Show package version");
+    systemctl_options_add2(&cmd, "--system",
+        "Connect to system manager (default)");
+    systemctl_options_add2(&cmd, "--user",
+        "Connect to user service manager");
+    // systemctl_options_add2(&cmd, "-H", "--host", "=[USER@]HOST",
+    //     "Operate on remote host*");
+    // systemctl_options_add2(&cmd, "-M", "--machine", "=CONTAINER",
+    //     "Operate on local container*");
+
+    systemctl_options_add4(&cmd, "-t", "--type", "=TYPE", 
+         "List units of a particual type");
+    systemctl_options_add3(&cmd, "--state", "=STATE",
+        "List units with particular LOAD or SUB or ACTIVE state");
+    systemctl_options_add4(&cmd, "-p", "--property", "=NAME",
+        "Show only properties by this name");
+    systemctl_options_add3(&cmd, "-a", "--all",
+        "Show all loaded units/properties, including dead empty ones. To list all units installed on the system, use the 'list-unit-files' command instead");
+    systemctl_options_add3(&cmd, "-l","--full", 
+        "Don't ellipsize unit names on output (never ellipsized)");
+    systemctl_options_add2(&cmd, "--reverse", 
+        "Show reverse dependencies with 'list-dependencies' (ignored)");
+    systemctl_options_add3(&cmd, "--job-mode", "=MODE",
+        "Specifiy how to deal with already queued jobs, when queuing a new job (ignored)");
+    systemctl_options_add2(&cmd, "--show-types",
+        "When showing sockets, explicitly show their type (ignored)");
+    systemctl_options_add3(&cmd, "-i","--ignore-inhibitors",
+        "When shutting down or sleeping, ignore inhibitors (ignored)");
+    systemctl_options_add3(&cmd, "--kill-who", "=WHO",
+        "Who to send signal to (ignored)");
+    systemctl_options_add4(&cmd, "-s", "--signal", "=SIG",
+        "Which signal to send (ignored)");
+    systemctl_options_add2(&cmd, "--now",
+        "Start or stop unit in addition to enabling or disabling it");
+    systemctl_options_add3(&cmd, "-q","--quiet",
+        "Suppress output");
+    systemctl_options_add2(&cmd, "--no-block",
+        "Do not wait until operation finished (ignored)");
+    systemctl_options_add2(&cmd, "--no-legend",
+        "Do not print a legend (column headers and hints)");
+    systemctl_options_add2(&cmd, "--no-wall",
+        "Don't send wall message before halt/power-off/reboot (ignored)");
+    systemctl_options_add2(&cmd, "--no-reload",
+        "Don't reload daemon after en-/dis-abling unit files (ignored)");
+    systemctl_options_add2(&cmd, "--no-ask-password",
+        "Do not ask for system passwords");
+    // systemctl_options_add2(&cmd, "--global",
+    //   "Enable/disable unit files globally"); // for all user logins
+    // systemctl_options_add2(&cmd, "--runtime",
+    //  "Enable unit files only temporarily until next reboot");
+    systemctl_options_add2(&cmd, "--force",
+        "When enabling unit files, override existing symblinks / When shutting down, execute action immediately");
+    systemctl_options_add3(&cmd, "--preset-mode", "=TYPE", 
+        "Apply only enable, only disable, or all presets [%default]");
+    systemctl_options_add3(&cmd, "--root", "=PATH", 
+        "Enable unit files in the specified root directory (used for alternative root prefix)");
+    systemctl_options_add3(&cmd, "-4", "--ipv4", 
+        "..only keep ipv4 localhost in /etc/hosts");
+    systemctl_options_add3(&cmd, "-6", "--ipv6", 
+        "..only keep ipv6 localhost in /etc/hosts");
+    systemctl_options_add3(&cmd, "-1", "--init", 
+        "..keep running as init-process (default if PID 1)");
+    systemctl_options_add3(&cmd, "-v", "--verbose", 
+        "increase logging level");
     systemctl_options_scan(&cmd, argc, argv);
     if (str_list_dict_contains(&cmd.opts, "help")) {
         str_t prog = os_path_basename(argv[0]);
