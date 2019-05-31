@@ -2718,7 +2718,6 @@ main(int argc, char** argv) {
     systemctl_settings_t settings;
     systemctl_settings_init(&settings);
     /* scan options */
-    logg_setlevel(LOG_DEBUG); /* for debug options */
     systemctl_options_t cmd;
     systemctl_options_init(&cmd);
     systemctl_options_add3(&cmd, "-h", "--help", "this help screen");
@@ -2733,7 +2732,6 @@ main(int argc, char** argv) {
         /* systemctl_settings_null(&settings); */
         return 0;
     }
-    logg_setlevel(LOG_ERROR); /* done debug options */
     /* .... */
     if (str_list_dict_contains(&cmd.opts, "verbose")) {
         int level = str_list_len(str_list_dict_get(&cmd.opts, "verbose"));
@@ -2744,7 +2742,7 @@ main(int argc, char** argv) {
     if (os_path_exists(systemctl_extra_log)) {
         int level = str_list_len(str_list_dict_get(&cmd.opts, "verbose"));
         logg_open_logfile(1, systemctl_extra_log);
-        logg_setlevel_logfile(1, LOG_ERROR - 10 * level);
+        logg_setlevel_logfile(1, LOG_INFO - 10 * level);
     }
     str_t systemctl_debug_log = os_path(root, _systemctl_debug_log);
     if (os_path_exists(systemctl_debug_log)) {
@@ -2769,7 +2767,12 @@ main(int argc, char** argv) {
         str_list_init_from(&args, cmd.args.size - 1, cmd.args.data + 1);
     }
     
-    if (str_equal(command, "list-units")) {
+    if (str_equal(command, "daemon-reload")) {
+        /* FIXME */
+        logg_info("daemon-reload");
+        logg_debug("needs to be implemented");
+        logg_debug(" ................. ");
+    } else if (str_equal(command, "list-units")) {
         str_list_list_t* result = systemctl_list_units(&systemctl, &args);
         str_list_list_print(result);
         str_list_list_free(result);
@@ -2791,7 +2794,7 @@ main(int argc, char** argv) {
             str_dict_free(result);
         }
     } else {
-        fprintf(stderr, "unknown command '%s'", argv[1]);
+        fprintf(stderr, "unknown command '%s'", command);
     }
     str_list_null(&args);
 
@@ -2801,7 +2804,7 @@ main(int argc, char** argv) {
     if (exitcode) {
         logg_error(" exitcode %i", exitcode);
     } else {
-        logg_info(" exitcode %i", exitcode);
+        logg_debug(" exitcode %i", exitcode);
     }
     tmp_null();
     logg_stop();

@@ -50,7 +50,8 @@ logg_setlevel_logfile(int logfile, int level)
 void 
 logg_open_logfile(int logfile, char* filename)
 {
-   stream_logfile[logfile] = fopen(filename, "a");
+    stream_logfile[logfile] = fopen(filename, "a");
+    /* fprintf(stderr, "logg_stream %i %s\n", logfile, filename); */
 }
 
 void 
@@ -70,11 +71,13 @@ logg_stop()
 void
 logg_write(int level, char* buf, size_t len)
 {
-    if (loglevel_stderr <= level)
+    if (loglevel_stderr <= level) {
         fwrite(buf, 1, len, stderr);
+    }
     for (int i = 0; i < 8; ++i) {
-        if (loglevel_logfile[i] <= level && stream_logfile[i])
+        if (loglevel_logfile[i] <= level && stream_logfile[i]) {
             fwrite(buf, 1, len, stream_logfile[i]);
+        }
     }
 }
 
@@ -82,7 +85,7 @@ void
 logg_error(const char* format, ...)
 {
   if (loglevel > LOG_ERROR) return;
-  char msg[] = "ERROR: ";
+  char msg[] = "^ ERROR ";
   va_list args;
   va_start(args, format);
   ssize_t size = vsnprintf(NULL, 0, format, args);
@@ -105,7 +108,7 @@ void
 logg_warning(const char* format, ...)
 {
   if (loglevel > LOG_WARNING) return;
-  char msg[] = "WARNING: ";
+  char msg[] = "^ WARNING ";
   va_list args;
   va_start(args, format);
   ssize_t size = vsnprintf(NULL, 0, format, args);
@@ -128,7 +131,7 @@ void
 logg_info(const char* format, ...)
 {
   if (loglevel > LOG_INFO) return;
-  char msg[] = "INFO: ";
+  char msg[] = "^ INFO ";
   va_list args;
   va_start(args, format);
   ssize_t size = vsnprintf(NULL, 0, format, args);
@@ -151,7 +154,7 @@ void
 logg_debug(const char* format, ...)
 {
   if (loglevel > LOG_DEBUG) return;
-  char msg[] = "DEBUG: ";
+  char msg[] = "^ DEBUG ";
   va_list args;
   va_start(args, format);
   ssize_t size = vsnprintf(NULL, 0, format, args);
