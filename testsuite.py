@@ -24,6 +24,7 @@ import sys
 from fnmatch import fnmatchcase as fnmatch
 from glob import glob
 import json
+from distutils.spawn import find_executable
 
 logg = logging.getLogger("TESTING")
 _python = "/usr/bin/python"
@@ -45,6 +46,7 @@ SOMETIME = ""
 
 DOCKER_SOCKET = "/var/run/docker.sock"
 PSQL_TOOL = "/usr/bin/psql"
+SLEEP_TOOL = find_executable("sleep")
 
 realpath = os.path.realpath
 
@@ -3413,7 +3415,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             echo "done$1" >&2
             exit 0
             """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "xxx.init"), os_path(root, "/etc/init.d/xxx"))
         copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/etc/init.d/zzz"))
         #
@@ -4338,7 +4340,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         #
         cmd = "{systemctl} enable zzz.service"
@@ -4395,7 +4397,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         #
         cmd = "{systemctl} enable zzz.service"
@@ -4470,7 +4472,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/usr/bin/zzz.init"))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         #
@@ -4544,7 +4546,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/usr/bin/zzz.init"))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         #
@@ -4604,7 +4606,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         #
         cmd = "{systemctl} enable zzz.service"
@@ -4661,7 +4663,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         #
         cmd = "{systemctl} enable zzz.service"
@@ -4737,7 +4739,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/usr/bin/zzz.init"))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         #
@@ -4811,7 +4813,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/usr/bin/zzz.init"))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         #
@@ -4881,7 +4883,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
         copy_file(os_path(testdir, "zzc.service"), os_path(root, "/etc/systemd/system/zzc.service"))
@@ -4962,7 +4964,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
         copy_file(os_path(testdir, "zzc.service"), os_path(root, "/etc/systemd/system/zzc.service"))
@@ -5100,7 +5102,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
         copy_file(os_path(testdir, "zzc.service"), os_path(root, "/etc/systemd/system/zzc.service"))
@@ -5259,7 +5261,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/usr/bin/zzz.init"))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         cmd = "{systemctl} daemon-reload"
@@ -5350,7 +5352,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/usr/bin/zzz.init"))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         sh____("{systemctl} daemon-reload".format(**locals()))
@@ -5443,7 +5445,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/usr/bin/zzz.init"))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         sh____("{systemctl} daemon-reload".format(**locals()))
@@ -5557,9 +5559,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep+"pre"))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep+"now"))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep+"pre"))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep+"now"))
         copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/usr/bin/zzz.init"))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
@@ -5696,9 +5698,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep+"pre"))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep+"now"))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep+"pre"))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep+"now"))
         copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/usr/bin/zzz.init"))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
@@ -5813,9 +5815,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep+"pre"))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep+"now"))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep+"pre"))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep+"now"))
         copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/usr/bin/zzz.init"))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
@@ -6092,7 +6094,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         #
         start_service = "{systemctl} start zzz.service -vv"
@@ -6150,7 +6152,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             CONF2="bb2"
             CONF3='cc3'
             """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "zzz.sh"), os_path(bindir, "zzz.sh"))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         copy_file(os_path(testdir, "zzz.conf"), os_path(root, "/etc/sysconfig/zzz.conf"))
@@ -6515,7 +6517,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzs.service"), os_path(root, "/etc/systemd/system/zzs.service"))
         #
         cmd = "{systemctl} show zzs.service -vv"
@@ -6598,7 +6600,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzs.service"), os_path(root, "/etc/systemd/system/zzs.service"))
         #
         cmd = "{systemctl} show zzs.service -vv -p ActiveState"
@@ -6658,7 +6660,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzs.service"), os_path(root, "/etc/systemd/system/zzs.service"))
         #
         cmd = "{systemctl} show zzs.service -vv -p ActiveState"
@@ -6718,7 +6720,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzs.service"), os_path(root, "/etc/systemd/system/zzs.service"))
         #
         cmd = "{systemctl} status zzs.service -vv"
@@ -6781,7 +6783,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzs.service"), os_path(root, "/etc/systemd/system/zzs.service"))
         #
         cmd = "{systemctl} status zzs.service other.service -vv"
@@ -6850,7 +6852,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             pwd >> "$log"
             exec {bindir}/{testsleep} 111
             """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         copy_tool(os_path(testdir, "zzz.sh"), os_path(root, "/usr/bin/zzz.sh"))
         #
@@ -6908,7 +6910,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             pwd >> "$log"
             exec {bindir}/{testsleep} 111
             """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         copy_tool(os_path(testdir, "zzz.sh"), os_path(root, "/usr/bin/zzz.sh"))
         os.makedirs(os_path(root, workingdir))
@@ -6967,7 +6969,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             pwd >> "$log"
             exec {bindir}/{testsleep} 111
             """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         copy_tool(os_path(testdir, "zzz.sh"), os_path(root, "/usr/bin/zzz.sh"))
         # os.makedirs(os_path(root, workingdir)) <<<
@@ -7027,7 +7029,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             pwd >> "$log"
             exec {bindir}/{testsleep} 111
             """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         copy_tool(os_path(testdir, "zzz.sh"), os_path(root, "/usr/bin/zzz.sh"))
         # os.makedirs(os_path(root, workingdir)) <<<
@@ -7078,7 +7080,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         #
         cmd = "{systemctl} start zzz.service -vv"
@@ -7117,7 +7119,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         #
         cmd = "{systemctl} start zzz.service -vv"
@@ -7155,7 +7157,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         #
         cmd = "{systemctl} start zzz.service -vv"
@@ -7197,7 +7199,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         #
         cmd = "{systemctl} start zzz.service -vv"
@@ -7235,7 +7237,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         #
         cmd = "{systemctl} start zzz.service -vv"
@@ -7273,7 +7275,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         #
         cmd = "{systemctl} start zzz.service -vv"
@@ -7315,7 +7317,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         cmd = "{systemctl} start zzz.service {vv}"
         sx____("{systemctl} daemon-reload".format(**locals()))
@@ -7382,7 +7384,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
         copy_file(os_path(testdir, "zzc.service"), os_path(root, "/etc/systemd/system/zzc.service"))
@@ -7509,7 +7511,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
         copy_file(os_path(testdir, "zzc.service"), os_path(root, "/etc/systemd/system/zzc.service"))
@@ -7927,7 +7929,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzs.service"), os_path(root, "/etc/systemd/system/zzs.service"))
         #
         cmd = "{systemctl} cat zzs.service -vv"
@@ -7963,7 +7965,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzs.service"), os_path(root, "/etc/systemd/system/zzs.service"))
         #
         cmd = "{systemctl} cat zzs.service unknown.service -vv"
@@ -8053,7 +8055,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             trap - 3 10 # SIGQUIT SIGUSR1
             date +%T,leave >> {logfile}
         """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         zzz_service = "/etc/systemd/{system}/zzz.service".format(**locals())
         copy_file(os_path(testdir, "zzz.service"), os_path(root, zzz_service))
         #
@@ -8423,7 +8425,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             WantedBy=multi-user.target
             """.format(**locals()))
         zzz_service = "/etc/systemd/{system}/zzz.service".format(**locals())
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/usr/bin/zzz.init"))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, zzz_service))
         #
@@ -8754,7 +8756,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             WantedBy=multi-user.target
             """.format(**locals()))
         zzz_service = "/etc/systemd/{system}/zzz.service".format(**locals())
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/usr/bin/zzz.init"))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, zzz_service))
         #
@@ -9090,7 +9092,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             WantedBy=multi-user.target
             """.format(**locals()))
         zzz_service = "/etc/systemd/{system}/zzz.service".format(**locals())
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/usr/bin/zzz.init"))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, zzz_service))
         #
@@ -9383,7 +9385,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
            test ! -f "$1" || mv -v "$1" "$2"
         """)
         zzz_service = "/etc/systemd/{system}/zzz.service".format(**locals())
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, zzz_service))
         copy_tool(os_path(testdir, "backup"), os_path(root, "/usr/bin/backup"))
         text_file(os_path(root, "/var/tmp/test.0"), """..""")
@@ -9573,7 +9575,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
            set -x
            test ! -f "$1" || mv -v "$1" "$2"
         """)
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         copy_tool(os_path(testdir, "backup"), os_path(root, "/usr/bin/backup"))
         text_file(os_path(root, "/var/tmp/test.0"), """..""")
@@ -9793,7 +9795,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             echo "done$1" >&2
             exit 0
             """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/etc/init.d/zzz"))
         #
         cmd = "{systemctl} enable zzz.service -vv"
@@ -10099,7 +10101,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/usr/bin/zzz.init"))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         #
@@ -10325,7 +10327,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         text_file(os_path(root, "/var/tmp/test.0"), """..""")
         #
@@ -10428,7 +10430,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         #
         cmd = "{systemctl} enable zzz.service -vv"
@@ -10610,7 +10612,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             {bindir}/{testsleep} $1
             exit 2
             """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "testfail.sh"), os_path(bindir, testfail))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         copy_file(os_path(testdir, "zze.service"), os_path(root, "/etc/systemd/system/zze.service"))
@@ -10852,8 +10854,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleepB))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleepC))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleepB))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleepC))
         copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
         copy_file(os_path(testdir, "zzc.service"), os_path(root, "/etc/systemd/system/zzc.service"))
         #
@@ -10961,8 +10963,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleepB))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleepC))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleepB))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleepC))
         copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
         copy_file(os_path(testdir, "zzc.service"), os_path(root, "/etc/systemd/system/zzc.service"))
         os.makedirs(rundir)
@@ -11143,8 +11145,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             trap - 3 10 15 # SIGQUIT SIGUSR1 SIGTERM
             date +%T,leave >> {logfile}
         """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleepB))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleepC))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleepB))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleepC))
         copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
         #
         cmd = "{systemctl} start zzb.service -vv"
@@ -11261,8 +11263,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             trap - 3 10 15 # SIGQUIT SIGUSR1 SIGTERM
             date +%T,leave >> {logfile}
         """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleepB))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleepC))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleepB))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleepC))
         copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
         #
         cmd = "{systemctl} start zzb.service -vv"
@@ -11381,8 +11383,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             trap - 3 10 15  # SIGQUIT SIGUSR1 SIGTERM
             date +%T,leave >> {logfile}
         """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleepB))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleepC))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleepB))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleepC))
         copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
         #
         cmd = "{systemctl} start zzb.service -vv"
@@ -11501,8 +11503,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             trap - 3 10 15  # SIGQUIT SIGUSR1 SIGTERM
             date +%T,leave >> {logfile}
         """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleepB))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleepC))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleepB))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleepC))
         copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
         #
         cmd = "{systemctl} start zzb.service -vv"
@@ -11621,8 +11623,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             trap - 3 10 15  # SIGQUIT SIGUSR1 SIGTERM
             date +%T,leave >> {logfile}
         """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleepB))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleepC))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleepB))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleepC))
         copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
         #
         cmd = "{systemctl} start zzb.service -vv"
@@ -11722,7 +11724,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             cat {logfile} | sed -e "s|^| : |"
             true
             """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "logger"), os_path(bindir, "logger"))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
@@ -11824,7 +11826,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             cat {logfile} | sed -e "s|^| : |"
             true
             """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "logger"), os_path(bindir, "logger"))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
@@ -11926,7 +11928,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             cat {logfile} | sed -e "s|^| : |"
             true
             """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "logger"), os_path(bindir, "logger"))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
@@ -12029,7 +12031,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             cat {logfile} | sed -e "s|^| : |"
             true
             """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "logger"), os_path(bindir, "logger"))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
@@ -12105,7 +12107,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             cat {logfile} | sed -e "s|^| : |"
             true
             """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "logger"), os_path(bindir, "logger"))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
@@ -12204,7 +12206,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             cat {logfile} | sed -e "s|^| : |"
             true
             """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "logger"), os_path(bindir, "logger"))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
@@ -12303,7 +12305,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             cat {logfile} | sed -e "s|^| : |"
             true
             """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "logger"), os_path(bindir, "logger"))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
@@ -12379,7 +12381,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             cat {logfile} | sed -e "s|^| : |"
             true
             """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "logger"), os_path(bindir, "logger"))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
@@ -12479,7 +12481,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             cat {logfile} | sed -e "s|^| : |"
             true
             """.format(**locals()))
-        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "logger"), os_path(bindir, "logger"))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
