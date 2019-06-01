@@ -185,6 +185,22 @@ def beep():
         # sx___("play -n synth 0.1 tri  1000.0")
         sx____("play -V1 -q -n -c1 synth 0.1 sine 500")
 
+def systemd_escape(text):
+    norm_text = re.sub("/+","/", text)
+    try:
+        base_text = norm_text.encode("utf-8")
+    except:
+        base_text = norm_text
+    hexx_text = re.sub("([^a-zA-Z_/.])", lambda m: "\\x%02x" % ord(m.group(1)), base_text)
+    return hexx_text.replace("/","-")
+def systemd_unescape(text):
+    try:
+        base_text = text.decode("utf-8")
+    except:
+        base_text = text
+    hexx_text = base_text.replace("-", "/")
+    return re.sub(r"\\x([\dA-Fa-f]{2})", lambda m: chr(int(m.group(1), 16)), hexx_text)
+
 def download(base_url, filename, into):
     if not os.path.isdir(into):
         os.makedirs(into)
@@ -6282,7 +6298,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_zzfiles(root)
         print_sh = os_path(root, "/usr/bin/zz_print.sh")
         logfile = os_path(root, "/var/log/zz_print_sh.log")
-        service_file = os_path(root, "/etc/systemd/system/zzb zzc.service")
+        service_name = systemd_escape("zzb zzc.service")
+        service_file = os_path(root, "/etc/systemd/system/" + service_name)
         text_file(service_file,"""
             [Unit]
             Description=Testing B
@@ -6363,7 +6380,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_zzfiles(root)
         print_sh = os_path(root, "/usr/bin/zz_print.sh")
         logfile = os_path(root, "/var/log/zz_print_sh.log")
-        service_file = os_path(root, "/etc/systemd/user/zzb zzc.service")
+        service_name = systemd_escape("zzb zzc.service")
+        service_file = os_path(root, "/etc/systemd/user/"+service_name)
         text_file(service_file,"""
             [Unit]
             Description=Testing B
@@ -6444,7 +6462,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_zzfiles(root)
         print_sh = os_path(root, "/usr/bin/zz_print.sh")
         logfile = os_path(root, "/var/log/zz_print_sh.log")
-        service_file = os_path(root, "/etc/systemd/system/zzb zzc.service")
+        service_name = systemd_escape("zzb zzc.service")
+        service_file = os_path(root, "/etc/systemd/system/"+service_name)
         env_file = "/etc/sysconfig/zz_my.conf"
         extra_vars_file = "/etc/sysconfig/zz_extra.conf"
         env_text_file = os_path(root, env_file)

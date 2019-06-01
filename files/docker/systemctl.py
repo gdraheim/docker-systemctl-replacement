@@ -138,6 +138,22 @@ def unit_of(module):
         return module + ".service"
     return module
 
+def systemd_escape(text):
+    norm_text = re.sub("/+","/", text)
+    try:
+        base_text = norm_text.encode("utf-8")
+    except:
+        base_text = norm_text
+    hexx_text = re.sub("([^a-zA-Z_/.])", lambda m: "\\x%02x" % ord(m.group(1)), base_text)
+    return hexx_text.replace("/","-")
+def systemd_unescape(text):
+    try:
+        base_text = text.decode("utf-8")
+    except:
+        base_text = text
+    hexx_text = base_text.replace("-", "/")
+    return re.sub(r"\\x([\dA-Fa-f]{2})", lambda m: chr(int(m.group(1), 16)), hexx_text)
+
 def os_path(root, path):
     if not root:
         return path
@@ -488,7 +504,7 @@ class SystemctlConf:
         name = self.module or ""
         filename = self.filename()
         if filename:
-            name = os.path.basename(filename)
+            name = systemd_unescape(os.path.basename(filename))
         return self.get("Unit", "Id", name)
     def set(self, section, name, value):
         return self.data.set(section, name, value)
@@ -867,7 +883,7 @@ class Systemctl:
                     path = os.path.join(folder, name)
                     if os.path.isdir(path):
                         continue
-                    service_name = name
+                    service_name = systemd_unescape(name)
                     if service_name not in self._file_for_unit_sysd:
                         self._file_for_unit_sysd[service_name] = path
             logg.debug("found %s sysd files", len(self._file_for_unit_sysd))
