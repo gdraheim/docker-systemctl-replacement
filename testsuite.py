@@ -206,6 +206,9 @@ def text_file(filename, content):
         f.write(content)
     f.close()
     logg.info("::: made %s", filename)
+def tool_file(filename, content):
+    text_file(filename, content)
+    os.chmod(filename, 0o775)
 def shell_file(filename, content):
     text_file(filename, content)
     os.chmod(filename, 0o775)
@@ -506,6 +509,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def begin(self):
         self._started = time.time()
         logg.info("[[%s]]", datetime.datetime.fromtimestamp(self._started).strftime("%H:%M:%S"))
+        return "-vv"
     def end(self, maximum = 77):
         runtime = time.time() - self._started
         self.assertLess(runtime, maximum)
@@ -6074,60 +6078,69 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
-    def test_3201_missing_environment_file_makes_service_ignored(self):
+    def real_3201_missing_environment_file_makes_service_ignored(self):
+        self.test_3201_missing_environment_file_makes_service_ignored(real = True)
+    def test_3201_missing_environment_file_makes_service_ignored(self, real = None):
         """ check that a missing EnvironmentFile spec makes the service to be ignored"""
-        self.begin()
+        vv = self.begin()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
-        root = self.root(testdir)
+        root = self.root(testdir, real)
         systemctl = cover() + _systemctl_py + " --root=" + root
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
+        self.rm_zzfiles(root)
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zzz.service"),"""
+        text_file(os_path(root, "/etc/systemd/system/zzz.service"),"""
             [Unit]
             Description=Testing Z
             [Service]
             Type=simple
-            EnvironmentFile=/foo.conf
+            EnvironmentFile=/zz_foo.conf
             ExecStart={bindir}/{testsleep} 111
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
         copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
-        copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         #
-        start_service = "{systemctl} start zzz.service -vv"
+        cmd = "{systemctl} daemon-reload"
+        sx____(cmd.format(**locals()))
+        start_service = "{systemctl} start zzz.service {vv}"
         end = sx____(start_service.format(**locals()))
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         self.assertGreater(end, 0)
         #
-        stop_service = "{systemctl} stop zzz.service -vv"
+        stop_service = "{systemctl} stop zzz.service {vv}"
         end = sx____(stop_service.format(**locals()))
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
-        self.assertGreater(end, 0)
+        #!! self.assertGreater(end, 0)
         #
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
         self.end()
-    def test_3211_environment_files_are_included(self):
+    def real_3211_environment_files_are_included(self):
+        self.test_3211_environment_files_are_included(real = True)
+    def test_3211_environment_files_are_included(self, real = None):
         """ check that environment specs are read correctly"""
-        self.begin()
+        vv = self.begin()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
-        root = self.root(testdir)
-        logfile = os_path(root, "/var/log/test.log")
+        root = self.root(testdir, real)
+        logfile = os_path(root, "/var/log/zz_test.log")
         systemctl = cover() + _systemctl_py + " --root=" + root
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
+        self.rm_zzfiles(root)
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zzz.service"),"""
+        text_file(os_path(root, "/etc/systemd/system/zzz.service"),"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -6139,7 +6152,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
-        text_file(os_path(testdir, "zzz.sh"),"""
+        tool_file(os_path(bindir, "zzz.sh"),"""
             #! /bin/sh
             echo "WITH CONF1=$CONF1" >> {logfile}
             echo "WITH CONF2=$CONF2" >> {logfile}
@@ -6147,17 +6160,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             echo "WITH CONF4=$CONF4" >> {logfile}
             {bindir}/{testsleep} 4
             """.format(**locals()))
-        text_file(os_path(testdir, "zzz.conf"),"""
+        text_file(os_path(root, "/etc/sysconfig/zzz.conf"),"""
             CONF1=aa1
             CONF2="bb2"
             CONF3='cc3'
             """.format(**locals()))
         copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
-        copy_tool(os_path(testdir, "zzz.sh"), os_path(bindir, "zzz.sh"))
-        copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
-        copy_file(os_path(testdir, "zzz.conf"), os_path(root, "/etc/sysconfig/zzz.conf"))
         #
-        start_service = "{systemctl} start zzz.service -vv"
+        cmd = "{systemctl} daemon-reload"
+        sx____(cmd.format(**locals()))
+        start_service = "{systemctl} start zzz.service {vv}"
         end = sx____(start_service.format(**locals()))
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
@@ -6172,7 +6184,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(log, "WITH CONF4=dd4"))
         os.remove(logfile)
         #
-        stop_service = "{systemctl} stop zzz.service -vv"
+        stop_service = "{systemctl} stop zzz.service {vv}"
         end = sx____(stop_service.format(**locals()))
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
@@ -6181,28 +6193,32 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
-    def test_3240_may_expand_environment_variables(self):
+    def real_3240_may_expand_environment_variables(self):
+        self.test_3240_may_expand_environment_variables(real = True)
+    def test_3240_may_expand_environment_variables(self, real = None):
         """ check that different styles of environment
             variables get expanded."""
-        self.begin()
+        vv = self.begin()
         testname = self.testname()
         testdir = self.testdir()
-        root = self.root(testdir)
+        root = self.root(testdir, real)
         systemctl = cover() + _systemctl_py + " --root=" + root
-        print_sh = os_path(root, "/usr/bin/print.sh")
-        logfile = os_path(root, "/var/log/print_sh.log")
-        text_file(os_path(root, "/etc/sysconfig/b.conf"),"""
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
+        self.rm_zzfiles(root)
+        print_sh = os_path(root, "/usr/bin/zz_print.sh")
+        logfile = os_path(root, "/var/log/zz_print_sh.log")
+        text_file(os_path(root, "/etc/sysconfig/zz_print.conf"),"""
             DEF1='def1'
             DEF2="def2 def3"
             DEF4="$DEF1 ${DEF2}"
             DEF5="$DEF1111 def5 ${DEF2222}"
             """)
-        text_file(os_path(root, "/etc/systemd/system/zzb.service"),"""
+        text_file(os_path(root, "/etc/systemd/system/zz_print.service"),"""
             [Unit]
-            Description=Testing B
+            Description=Testing Print
             [Service]
             Environment=DEF2=foo
-            EnvironmentFile=/etc/sysconfig/b.conf
+            EnvironmentFile=/etc/sysconfig/zz_print.conf
             ExecStart=/bin/sleep 3
             ExecStartPost=%s A $DEF1 $DEF2
             ExecStartPost=%s B ${DEF1} ${DEF2}
@@ -6220,14 +6236,17 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             logfile='{logfile}'
             echo "'$1' '$2' '$3' '$4' '$5'" >> "$logfile"
             """.format(**locals()))
-        cmd = "{systemctl} environment zzb.service -vv"
-        out, end = output2(cmd.format(**locals()))
-        logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(end, 0)
-        self.assertTrue(greps(out, r"^DEF1=def1"))
-        self.assertTrue(greps(out, r"^DEF2=def2 def3"))
+        if not real:
+            cmd = "{systemctl} environment zz_print.service -vv"
+            out, end = output2(cmd.format(**locals()))
+            logg.info(" %s =>%s\n%s", cmd, end, out)
+            self.assertEqual(end, 0)
+            self.assertTrue(greps(out, r"^DEF1=def1"))
+            self.assertTrue(greps(out, r"^DEF2=def2 def3"))
         #
-        cmd = "{systemctl} start zzb.service -vv"
+        cmd = "{systemctl} daemon-reload"
+        sx____(cmd.format(**locals()))
+        cmd = "{systemctl} start zz_print.service {vv}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
@@ -6249,16 +6268,20 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
-    def test_3250_env_may_expand_special_variables(self):
+    def real_3250_env_may_expand_special_variables(self):
+        self.test_3250_env_may_expand_special_variables(real = True)
+    def test_3250_env_may_expand_special_variables(self, real = None):
         """ check that different flavours for special
             variables get expanded."""
-        self.begin()
+        vv = self.begin()
         testname = self.testname()
         testdir = self.testdir()
-        root = self.root(testdir)
+        root = self.root(testdir, real)
         systemctl = cover() + _systemctl_py + " --root=" + root
-        print_sh = os_path(root, "/usr/bin/print.sh")
-        logfile = os_path(root, "/var/log/print_sh.log")
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
+        self.rm_zzfiles(root)
+        print_sh = os_path(root, "/usr/bin/zz_print.sh")
+        logfile = os_path(root, "/var/log/zz_print_sh.log")
         service_file = os_path(root, "/etc/systemd/system/zzb zzc.service")
         text_file(service_file,"""
             [Unit]
@@ -6291,7 +6314,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             """.format(**locals()))
         #
         RUN = "/run" # for system-mode
-        cmd = "{systemctl} start 'zzb zzc.service' -vv"
+        cmd = "{systemctl} daemon-reload"
+        sx____(cmd.format(**locals()))
+        cmd = "{systemctl} start 'zzb zzc.service' {vv}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
@@ -6323,16 +6348,21 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
-    def test_3260_user_mode_env_may_expand_special_variables(self):
+    def real_3260_user_mode_env_may_expand_special_variables(self):
+        return True
+        ## self.test_3260_user_mode_env_may_expand_special_variables(real = True)
+    def test_3260_user_mode_env_may_expand_special_variables(self, real = None):
         """ check that different flavours for special
             variables get expanded. Differently in --user mode."""
-        self.begin()
+        vv = self.begin()
         testname = self.testname()
         testdir = self.testdir()
-        root = self.root(testdir)
+        root = self.root(testdir, real)
         systemctl = cover() + _systemctl_py + " --root=" + root
-        print_sh = os_path(root, "/usr/bin/print.sh")
-        logfile = os_path(root, "/var/log/print_sh.log")
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
+        self.rm_zzfiles(root)
+        print_sh = os_path(root, "/usr/bin/zz_print.sh")
+        logfile = os_path(root, "/var/log/zz_print_sh.log")
         service_file = os_path(root, "/etc/systemd/user/zzb zzc.service")
         text_file(service_file,"""
             [Unit]
@@ -6366,7 +6396,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         RUN = "/run" # for system-mode
         RUN = os.environ.get("XDG_RUNTIME_DIR") or "/tmp/run-"+os_getlogin()
-        cmd = "{systemctl} --user start 'zzb zzc.service' -vv"
+        cmd = "{systemctl} daemon-reload"
+        sx____(cmd.format(**locals()))
+        cmd = "{systemctl} --user start 'zzb zzc.service' {vv}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
@@ -6398,19 +6430,23 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
-    def test_3270_may_override_environment_from_commandline(self):
+    def real_3270_may_override_environment_from_commandline(self):
+        self.test_3270_may_override_environment_from_commandline(real = True)
+    def test_3270_may_override_environment_from_commandline(self, real = None):
         """ check that --extra-vars can be given on the commandline
             to override settings in Environment= and EnvironmentFile=."""
-        self.begin()
+        vv = self.begin()
         testname = self.testname()
         testdir = self.testdir()
-        root = self.root(testdir)
+        root = self.root(testdir, real)
         systemctl = cover() + _systemctl_py + " --root=" + root
-        print_sh = os_path(root, "/usr/bin/print.sh")
-        logfile = os_path(root, "/var/log/print_sh.log")
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
+        self.rm_zzfiles(root)
+        print_sh = os_path(root, "/usr/bin/zz_print.sh")
+        logfile = os_path(root, "/var/log/zz_print_sh.log")
         service_file = os_path(root, "/etc/systemd/system/zzb zzc.service")
-        env_file = "/etc/sysconfig/my.conf"
-        extra_vars_file = "/etc/sysconfig/extra.conf"
+        env_file = "/etc/sysconfig/zz_my.conf"
+        extra_vars_file = "/etc/sysconfig/zz_extra.conf"
         env_text_file = os_path(root, env_file)
         extra_vars_text_file = os_path(root, extra_vars_file)
         text_file(env_text_file,"""
@@ -6447,7 +6483,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             echo "'$1' '$2' '$3' '$4' '$5'" >> "$logfile"
             """.format(**locals()))
         #
-        cmd = "{systemctl} start 'zzb zzc.service' -vv"
+        cmd = "{systemctl} daemon-reload"
+        sx____(cmd.format(**locals()))
+        cmd = "{systemctl} start 'zzb zzc.service' {vv}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
@@ -6471,7 +6509,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} stop 'zzb zzc.service'"
         out, end = output2(cmd.format(**locals()))
         time.sleep(1)
-        cmd = "{systemctl} start 'zzb zzc.service' -vv -e X=now --environment 'M=more N=from' --extra-vars @" + extra_vars_file
+        cmd = "{systemctl} start 'zzb zzc.service' {vv} -e X=now --environment 'M=more N=from' --extra-vars @" + extra_vars_file
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
@@ -6645,8 +6683,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
+        root = self.root(testdir, real)
         logfile = os_path(root, "/var/log/test.log")
         systemctl = cover() + _systemctl_py + " --root=" + root
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
+        self.rm_zzfiles(root)
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         text_file(os_path(testdir, "zzs.service"),"""
