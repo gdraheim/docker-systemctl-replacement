@@ -144,7 +144,8 @@ def systemd_escape(text):
         base_text = norm_text.encode("utf-8")
     except:
         base_text = norm_text
-    hexx_text = re.sub("([^a-zA-Z_/.])", lambda m: "\\x%02x" % ord(m.group(1)), base_text)
+    # original 'systemd-escape' encodes '@' and '.' when being the first character
+    hexx_text = re.sub("([^a-zA-Z_/@.])", lambda m: "\\x%02x" % ord(m.group(1)), base_text)
     return hexx_text.replace("/","-")
 def systemd_unescape(text):
     try:
