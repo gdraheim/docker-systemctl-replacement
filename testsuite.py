@@ -6254,7 +6254,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("LOG \n%s", log)
         A="'A' 'def1' 'def2' 'def3' ''"   # A $DEF1 $DEF2
         B="'B' 'def1' 'def2 def3' '' ''"  # B ${DEF1} ${DEF2}
-        C="'C' 'def1def2' 'def3' '' ''"   # C $DEF1$DEF2
+        C="'C' '' '' '' ''"               # C $DEF1$DEF2
+        # ^ Yes, that is what the real systemd does.
         D="'D' 'def1def2 def3' '' '' ''"  # D ${DEF1}${DEF2} ??TODO??
         E="'E' 'def1 def2 def3' '' '' ''" # E ${DEF4}
         F="'F' ' def5 ' '' '' ''"         # F ${DEF5}
@@ -6282,7 +6283,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_zzfiles(root)
         print_sh = os_path(root, "/usr/bin/zz_print.sh")
         logfile = os_path(root, "/var/log/zz_print_sh.log")
-        service_file = os_path(root, "/etc/systemd/system/zzb zzc.service")
+        service_file = os_path(root, "/etc/systemd/system/zzb\\x20zzc.service")
         text_file(service_file,"""
             [Unit]
             Description=Testing B
@@ -6316,19 +6317,19 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         RUN = "/run" # for system-mode
         cmd = "{systemctl} daemon-reload"
         sx____(cmd.format(**locals()))
-        cmd = "{systemctl} start 'zzb zzc.service' {vv}"
+        cmd = "{systemctl} start 'zzb\\x20zzc.service' {vv}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         log = lines(open(logfile))
         logg.info("LOG \n%s", log)
-        A="'A' 'zzb' 'zzc.service' 'x1' 'y2 y3'"  # A %%N
-        B="'B' 'zzb zzc.service' 'x1' 'y2 y3' ''" # B %%n
-        C="'C' '%s' 'x1' 'y2 y3' ''" % service_file        # C %%f
+        A="'A' 'zzb\\x20zzc' 'x1' 'y2 y3' ''"  # A %%N
+        B="'B' 'zzb\\x20zzc.service' 'x1' 'y2 y3' ''" # B %%n
+        C="'C' '/zzb zzc' 'x1' 'y2 y3' ''"  # C %%f
         D="'D' '%s' 'x1' 'y2 y3' ''" % os_path(root, RUN)  # D %%t
-        E="'E' 'zzb' 'zzc' 'x1' 'y2 y3'"  # E %%P
-        F="'F' 'zzb zzc' 'x1' 'y2 y3' ''" # F %%p
-        G="'G' 'x1' 'y2 y3' '' ''" # G %%I
+        E="'E' 'zzb zzc' 'x1' 'y2 y3' ''"  # E %%P
+        F="'F' 'zzb\\x20zzc' 'x1' 'y2 y3' ''" # F %%p
+        G="'G' '' 'x1' 'y2 y3' ''" # G %%I
         H="'H' '' 'x1' 'y2 y3' ''" # H %%i
         T="'T' '%s' 'x1' 'y2 y3' ''" % os_path(root, "/tmp")  # T %%T
         V="'V' '%s' 'x1' 'y2 y3' ''" % os_path(root, "/var/tmp")  # V %%V
@@ -6363,7 +6364,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_zzfiles(root)
         print_sh = os_path(root, "/usr/bin/zz_print.sh")
         logfile = os_path(root, "/var/log/zz_print_sh.log")
-        service_file = os_path(root, "/etc/systemd/user/zzb zzc.service")
+        service_file = os_path(root, "/etc/systemd/user/zzb\\x20zzc.service")
         text_file(service_file,"""
             [Unit]
             Description=Testing B
@@ -6398,19 +6399,19 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         RUN = os.environ.get("XDG_RUNTIME_DIR") or "/tmp/run-"+os_getlogin()
         cmd = "{systemctl} daemon-reload"
         sx____(cmd.format(**locals()))
-        cmd = "{systemctl} --user start 'zzb zzc.service' {vv}"
+        cmd = "{systemctl} --user start 'zzb\\x20zzc.service' {vv}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         log = lines(open(logfile))
         logg.info("LOG \n%s", log)
-        A="'A' 'zzb' 'zzc.service' 'x1' 'y2 y3'"  # A %%N
-        B="'B' 'zzb zzc.service' 'x1' 'y2 y3' ''" # B %%n
-        C="'C' '%s' 'x1' 'y2 y3' ''" % service_file        # C %%f
+        A="'A' 'zzb\\x20zzc' 'x1' 'y2 y3' ''"  # A %%N
+        B="'B' 'zzb\\x20zzc.service' 'x1' 'y2 y3' ''" # B %%n
+        C="'C' '/zzb zzc' 'x1' 'y2 y3' ''"  # C %%f
         D="'D' '%s' 'x1' 'y2 y3' ''" % os_path(root, RUN)  # D %%t
-        E="'E' 'zzb' 'zzc' 'x1' 'y2 y3'"  # E %%P
-        F="'F' 'zzb zzc' 'x1' 'y2 y3' ''" # F %%p
-        G="'G' 'x1' 'y2 y3' '' ''" # G %%I
+        E="'E' 'zzb zzc' 'x1' 'y2 y3' ''"  # E %%P
+        F="'F' 'zzb\\x20zzc' 'x1' 'y2 y3' ''" # F %%p
+        G="'G' '' 'x1' 'y2 y3' ''" # G %%I
         H="'H' '' 'x1' 'y2 y3' ''" # H %%i
         T="'T' '%s' 'x1' 'y2 y3' ''" % os_path(root, "/tmp")  # T %%T
         V="'V' '%s' 'x1' 'y2 y3' ''" % os_path(root, "/var/tmp")  # V %%V
@@ -6444,7 +6445,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_zzfiles(root)
         print_sh = os_path(root, "/usr/bin/zz_print.sh")
         logfile = os_path(root, "/var/log/zz_print_sh.log")
-        service_file = os_path(root, "/etc/systemd/system/zzb zzc.service")
+        service_file = os_path(root, "/etc/systemd/system/zzb\\x20zzc.service")
         env_file = "/etc/sysconfig/zz_my.conf"
         extra_vars_file = "/etc/sysconfig/zz_extra.conf"
         env_text_file = os_path(root, env_file)
@@ -6485,7 +6486,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "{systemctl} daemon-reload"
         sx____(cmd.format(**locals()))
-        cmd = "{systemctl} start 'zzb zzc.service' {vv}"
+        cmd = "{systemctl} start 'zzb\\x20zzc.service' {vv}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
@@ -6506,10 +6507,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertIn(S, log)
         self.assertIn(T, log)
         #
-        cmd = "{systemctl} stop 'zzb zzc.service'"
+        cmd = "{systemctl} stop 'zzb\\x20zzc.service'"
         out, end = output2(cmd.format(**locals()))
         time.sleep(1)
-        cmd = "{systemctl} start 'zzb zzc.service' {vv} -e X=now --environment 'M=more N=from' --extra-vars @" + extra_vars_file
+        cmd = "{systemctl} start 'zzb\\x20zzc.service' {vv} -e X=now --environment 'M=more N=from' --extra-vars @" + extra_vars_file
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)

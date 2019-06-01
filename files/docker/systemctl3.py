@@ -634,6 +634,8 @@ def parse_unit(name): # -> object(prefix, instance, suffix, ...., name, componen
     has_component = prefix.rfind("-")
     if has_component > 0: 
         component = prefix[has_component+1:]
+    else:
+        component = prefix
     UnitName = collections.namedtuple("UnitName", ["name", "prefix", "instance", "suffix", "component" ])
     return UnitName(name, prefix, instance, suffix, component)
 
@@ -1540,22 +1542,25 @@ class Systemctl:
         """ expand %i %t and similar special vars. They are being expanded
             before any other expand_env takes place which handles shell-style
             $HOME references. """
-        def sh_escape(value):
-            return "'" + value.replace("'","\\'") + "'"
+        def unescape(s):
+            s = s.replace("-", "/")
+            return re.sub(
+                r"\\x([\dA-Fa-f]{2})", lambda m: chr(int(m.group(1), 16)), s)
         def get_confs(conf):
             confs={ "%": "%" }
             if not conf:
                 return confs
             unit = parse_unit(conf.name())
-            confs["N"] = unit.name
-            confs["n"] = sh_escape(unit.name)
-            confs["P"] = unit.prefix
-            confs["p"] = sh_escape(unit.prefix)
-            confs["I"] = unit.instance
-            confs["i"] = sh_escape(unit.instance)
-            confs["J"] = unit.component
-            confs["j"] = sh_escape(unit.component)
-            confs["f"] = sh_escape(conf.filename())
+            confs["N"] = unit.prefix + \
+                ('@' + unit.instance if unit.instance else '')
+            confs["n"] = unit.name
+            confs["P"] = unescape(unit.prefix)
+            confs["p"] = unit.prefix
+            confs["I"] = unescape(unit.instance)
+            confs["i"] = unit.instance
+            confs["J"] = unescape(unit.component)
+            confs["j"] = unit.component
+            confs["f"] = "/" + unescape(unit.instance or unit.prefix)
             VARTMP = "/var/tmp"
             TMP = "/tmp"
             RUN = "/run"
@@ -1594,31 +1599,60 @@ class Systemctl:
             if m.group(1) in confs:
                 return confs[m.group(1)]
             logg.warning("can not expand %%%s", m.group(1))
-            return "''" # empty escaped string
+            return "" # empty string
         return re.sub("[%](.)", lambda m: get_conf1(m), cmd)
     def exec_cmd(self, cmd, env, conf = None):
         """ expand ExecCmd statements including %i and $MAINPID """
-        cmd1 = cmd.replace("\\\n","")
-        # according to documentation the %n / %% need to be expanded where in
-        # most cases they are shell-escaped values. So we do it before shlex.
-        cmd2 = self.expand_special(cmd1, conf)
-        # according to documentation, when bar="one two" then the expansion
-        # of '$bar' is ["one","two"] and '${bar}' becomes ["one two"]. We
-        # tackle that by expand $bar before shlex, and the rest thereafter.
-        def get_env1(m):
-            if m.group(1) in env:
-                return env[m.group(1)]
-            logg.debug("can not expand $%s", m.group(1))
-            return "" # empty string
+        C_ESCAPE_RE = r"""\\(?:([abfnrtv\\"'s])|x([\dA-Fa-f]{2})|([0-7]{3}))"""
+        C_ESCAPE_TABLE = {
+            "a": "\a", "b": "\b", "f": "\f", "n": "\n", "r": "\r", "t": "\t",
+            "v": "\v", "\\": "\\", '"': '"', "'": "'", "s": " ",
+        }
+        def get_c_escaped(m):
+            c, h, o = m.groups()
+            if c is not None:
+                return C_ESCAPE_TABLE[c]
+            elif h is not None:
+                return chr(int(h, 16))
+            else:
+                return chr(int(o, 8))
         def get_env2(m):
-            if m.group(1) in env:
-                return env[m.group(1)]
-            logg.debug("can not expand ${%s}", m.group(1))
-            return "" # empty string
-        cmd3 = re.sub("[$](\w+)", lambda m: get_env1(m), cmd2)
+            v, = m.groups()
+            if v is not None:
+                if v in env:
+                    return env[v]
+                logg.debug("can not expand ${%s}", v)
+                return "" # empty string
+            else:
+                return "$"
+        # 1. Replace line continuation with space.
+        cmd = cmd.replace("\\\n", " ")
+        # 2. Split into words.
+        lex = shlex.shlex(cmd, posix=True)
+        lex.whitespace_split = True
+        lex.commenters = ""
+        lex.escape = ""
         newcmd = []
-        for part in shlex.split(cmd3):
-            newcmd += [ re.sub("[$][{](\w+)[}]", lambda m: get_env2(m), part) ]
+        for word in lex:
+            # 3. Expand \ escapes.
+            word = re.sub(C_ESCAPE_RE, get_c_escaped, word)
+            # 4. Expand % specifiers.
+            word = self.expand_special(word, conf)
+            # 5a. Expand $var (if a single word), with word splitting.
+            if word.startswith("$") and not (
+                word.startswith("${") or word.startswith("$$")
+            ):
+                if word[1:] in env:
+                    env_lex = shlex.shlex(env[word[1:]], posix=True)
+                    env_lex.whitespace_split = True
+                    env_lex.commenters = ""
+                    env_lex.escape = ""
+                    newcmd.extend(env_lex)
+                else:
+                    logg.debug("can not expand %s", word)
+            else:
+                # 5b. Expand ${var} and $$, without word splitting.
+                newcmd.append(re.sub(r"\$(?:\$|\{([^}]*)\})", get_env2, word))
         return newcmd
     def path_journal_log(self, conf): # never None
         """ /var/log/zzz.service.log or /var/log/default.unit.log """
