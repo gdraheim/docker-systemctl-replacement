@@ -898,7 +898,6 @@ class Systemctl:
                     service_name = systemd_normpath(name)
                     if service_name not in self._file_for_unit_sysd:
                         self._file_for_unit_sysd[service_name] = path
-                        logg.error("storing %s", service_name) # @@
                         unit = parse_unit(service_name)
             logg.debug("found %s sysd files", len(self._file_for_unit_sysd))
         return list(self._file_for_unit_sysd.keys())
@@ -1100,7 +1099,6 @@ class Systemctl:
             else:
                 for module in modules:
                     module_unit = systemd_normpath(module)
-                    logg.error("match on %s", module_unit) #@@
                     if fnmatch.fnmatchcase(item, module_unit):
                         yield item
                     if fnmatch.fnmatchcase(item+suffix, module_unit):
