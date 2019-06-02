@@ -6380,10 +6380,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
-    def real_3260_user_mode_env_may_expand_special_variables(self):
+    def real_3255_user_mode_env_may_expand_special_variables(self):
         return True
         ## self.test_3260_user_mode_env_may_expand_special_variables(real = True)
-    def test_3260_user_mode_env_may_expand_special_variables(self, real = None):
+    def test_3255_user_mode_env_may_expand_special_variables(self, real = None):
         """ check that different flavours for special
             variables get expanded. Differently in --user mode."""
         vv = self.begin()
@@ -6445,6 +6445,88 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         F="'F' 'zzb zzc' 'x1' 'y2 y3' ''"  # E %%P
         G="'G' '' 'x1' 'y2 y3' ''" # G %%I
         H="'H' '' 'x1' 'y2 y3' ''" # H %%i
+        T="'T' '%s' 'x1' 'y2 y3' ''" % os_path(root, "/tmp")  # T %%T
+        V="'V' '%s' 'x1' 'y2 y3' ''" % os_path(root, "/var/tmp")  # V %%V
+        Z="'Z' '' 'x1' 'y2 y3' ''" # Z %%Z
+        self.assertIn(A, log)
+        self.assertIn(B, log)
+        self.assertIn(C, log)
+        self.assertIn(D, log)
+        self.assertIn(E, log)
+        self.assertIn(F, log)
+        self.assertIn(G, log)
+        self.assertIn(H, log)
+        if not real:
+            self.assertIn(T, log)
+            self.assertIn(V, log)
+            self.assertIn(Z, log)
+        #
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def real_3260_env_may_expand_special_template_variables(self):
+        self.test_3260_env_may_expand_special_template_variables(real = True)
+    def test_3260_env_may_expand_special_template_variables(self, real = None):
+        """ check that different flavours for special
+            variables get expanded. This one uses a template service."""
+        vv = self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir, real)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
+        self.rm_zzfiles(root)
+        print_sh = os_path(root, "/usr/bin/zz_print.sh")
+        logfile = os_path(root, "/var/log/zz_print_sh.log")
+        service_name = systemd_normpath("zzb zzc@dev-sda.service")
+        service_file = os_path(root, "/etc/systemd/system/" + service_name)
+        text_file(service_file,"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            Environment=X=x1
+            Environment="Y=y2 y3"
+            ExecStart=/bin/sleep 3
+            ExecStartPost=%s A %%N $X ${Y}
+            ExecStartPost=%s B %%n $X ${Y}
+            ExecStartPost=%s C %%f $X ${Y}
+            ExecStartPost=%s D %%t $X ${Y}
+            ExecStartPost=%s E %%p $X ${Y}
+            ExecStartPost=%s F %%P $X ${Y}
+            ExecStartPost=%s G %%I $X ${Y}
+            ExecStartPost=%s H %%i $X ${Y} $FOO
+            ExecStartPost=%s T %%T $X ${Y} 
+            ExecStartPost=%s V %%V $X ${Y} 
+            ExecStartPost=%s Z %%Z $X ${Y} ${FOO}
+            [Install]
+            WantedBy=multi-user.target""" 
+            % (print_sh, print_sh, print_sh, print_sh,
+               print_sh, print_sh, print_sh, print_sh,
+               print_sh, print_sh, print_sh))
+        text_file(logfile, "")
+        shell_file(print_sh, """
+            #! /bin/sh
+            logfile='{logfile}'
+            echo "'$1' '$2' '$3' '$4' '$5'" >> "$logfile"
+            """.format(**locals()))
+        #
+        RUN = "/run" # for system-mode
+        cmd = "{systemctl} daemon-reload"
+        sx____(cmd.format(**locals()))
+        cmd = "{systemctl} start 'zzb zzc@dev-sda.service' {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        log = lines(open(logfile))
+        logg.info("LOG \n%s", log)
+        A="'A' 'zzb\\x20zzc@dev-sda' 'x1' 'y2 y3' ''"  # A %%N
+        B="'B' 'zzb\\x20zzc@dev-sda.service' 'x1' 'y2 y3' ''" # B %%n
+        C="'C' '/dev/sda' 'x1' 'y2 y3' ''"        # C %%f
+        D="'D' '%s' 'x1' 'y2 y3' ''" % os_path(root, RUN)  # D %%t
+        E="'E' 'zzb\\x20zzc' 'x1' 'y2 y3' ''" # F %%p
+        F="'F' 'zzb zzc' 'x1' 'y2 y3' ''"  # E %%P
+        G="'G' 'dev/sda' 'x1' 'y2 y3' ''" # G %%I
+        H="'H' 'dev-sda' 'x1' 'y2 y3' ''" # H %%i
         T="'T' '%s' 'x1' 'y2 y3' ''" % os_path(root, "/tmp")  # T %%T
         V="'V' '%s' 'x1' 'y2 y3' ''" % os_path(root, "/var/tmp")  # V %%V
         Z="'Z' '' 'x1' 'y2 y3' ''" # Z %%Z
