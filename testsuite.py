@@ -193,22 +193,27 @@ def systemd_normpath(path):
     return re.sub("([^a-zA-Z0-9_/@.\\\\*?!\\[\\]-])", lambda m: "\\x%02x" % ord(m.group(1)), path)
 def systemd_escape(text):
     # original 'systemd-escape' encodes all '@', and also '.' when being the first character.
-    norm_text = re.sub("/+","/", text)
     try:
-        base_text = norm_text.encode("utf-8")
+        core_text = bytes(text, "utf-8") # python3
     except:
-        base_text = norm_text
-    hexx_text = re.sub("([^a-zA-Z0-9_/.])", lambda m: "\\x%02x" % ord(m.group(1)), base_text)
-    if hexx_text.startswith("."):
-        hexx_text = "\\x2e"+hexx_text[1:]
-    return hexx_text.replace("/","-")
+        core_text = text
+    norm_text = re.sub(b"/+",b"/", core_text)
+    hexx_text = re.sub(b"([^a-zA-Z0-9_/.])", lambda m: b"\\x%02x" % ord(m.group(1)), base_text)
+    if hexx_text.startswith(b"."):
+        hexx_text = b"\\x2e"+hexx_text[1:]
+    base_text = hexx_text.replace(b"/", b"-")
+    try:
+        return str(base_text, "utf-8") # python3
+    except:
+        return base_text
 def systemd_unescape(text):
     try:
-        base_text = text.decode("utf-8")
+        base_text = bytes(text, sys.getfilesystemencoding()) # python3
     except:
-        base_text = text
-    hexx_text = base_text.replace("-", "/")
-    return re.sub(r"\\x([\dA-Fa-f]{2})", lambda m: chr(int(m.group(1), 16)), hexx_text)
+        base_text = unicode(text, sys.getfilesystemencoding()).encode("utf-8")
+    hexx_text = base_text.replace(b"-", b"/")
+    core_text = re.sub(b"\\\\x([0-9A-Fa-f]{2})", lambda m: chr(int(m.group(1), 16)), hexx_text)
+    return core_text.decode("utf-8")
 
 def download(base_url, filename, into):
     if not os.path.isdir(into):
