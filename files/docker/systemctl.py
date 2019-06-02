@@ -138,14 +138,17 @@ def unit_of(module):
         return module + ".service"
     return module
 
+def systemd_normpath(path):
+    # original 'systemd-escape' encodes '@', and also '.' when being the first character.
+    # this one is idempotent when no backslash is ever used in the unescaped unit name.
+    return re.sub("([^a-zA-Z0-9_/@.\\\\])", lambda m: "\\x%02x" % ord(m.group(1)), path)
 def systemd_escape(text):
     norm_text = re.sub("/+","/", text)
     try:
         base_text = norm_text.encode("utf-8")
     except:
         base_text = norm_text
-    # original 'systemd-escape' encodes '@' and '.' when being the first character
-    hexx_text = re.sub("([^a-zA-Z_/@.])", lambda m: "\\x%02x" % ord(m.group(1)), base_text)
+    hexx_text = re.sub("([^a-zA-Z0-9_/.])", lambda m: "\\x%02x" % ord(m.group(1)), base_text)
     return hexx_text.replace("/","-")
 def systemd_unescape(text):
     try:
@@ -153,7 +156,7 @@ def systemd_unescape(text):
     except:
         base_text = text
     hexx_text = base_text.replace("-", "/")
-    return re.sub(r"\\x([\dA-Fa-f]{2})", lambda m: chr(int(m.group(1), 16)), hexx_text)
+    return re.sub(r"\\x([0-9A-Fa-f]{2})", lambda m: chr(int(m.group(1), 16)), hexx_text)
 
 def os_path(root, path):
     if not root:
@@ -502,11 +505,12 @@ class SystemctlConf:
         return [ self.drop_in_files[name] for name in sorted(self.drop_in_files) ]
     def name(self):
         """ the unit id or defaults to the file name """
-        name = self.module or ""
+        if self.module:
+            return self.module
         filename = self.filename()
         if filename:
-            name = systemd_unescape(os.path.basename(filename))
-        return self.get("Unit", "Id", name)
+            return systemd_normpath(os.path.basename(filename))
+        return self.get("Unit", "Id", "")
     def set(self, section, name, value):
         return self.data.set(section, name, value)
     def get(self, section, name, default, allow_no_value = False):
@@ -636,23 +640,30 @@ def subprocess_testpid(pid):
     else:
         return testpid(pid, None, 0)
 
-def parse_unit(name): # -> object(prefix, instance, suffix, ...., name, component)
-    unit_name, suffix = name, ""
-    has_suffix = name.rfind(".")
+def parse_unit(fullname): # -> object(prefix, instance, suffix, ...., name, component)
+    # "full unit name": %N is the same as "%n", but with the type suffix removed.
+    name, suffix = fullname, ""
+    has_suffix = fullname.rfind(".")
     if has_suffix > 0: 
-        unit_name = name[:has_suffix]
-        suffix = name[has_suffix+1:]
-    prefix, instance = unit_name, ""
-    has_instance = unit_name.find("@")
+        name = fullname[:has_suffix]
+        suffix = fullname[has_suffix+1:]
+    # "prefix name":   %p refers to the string before the first "@" character of the unit name. For non-instantiated units, same as "%N".
+    # "instance name": %i is the string between the first "@" character and the type suffix. Empty for non-instantiated units.
+    prefix, instance = name, ""
+    has_instance = name.find("@")
     if has_instance > 0:
-        prefix = unit_name[:has_instance]
-        instance = unit_name[has_instance+1:]
-    component = ""
+        prefix = name[:has_instance]
+        instance = name[has_instance+1:]
+    # "Final component of the prefix": 
+    # %j is the string between the last "-" and the end of the prefix name. If there is no "-", this is the same as "%p".
+    componentof, component = "", prefix
     has_component = prefix.rfind("-")
     if has_component > 0: 
         component = prefix[has_component+1:]
-    UnitName = collections.namedtuple("UnitName", ["name", "prefix", "instance", "suffix", "component" ])
-    return UnitName(name, prefix, instance, suffix, component)
+        componentof = prefix[:has_component+1] # including the dash as it refers to include ./name-.d/
+    UnitName = collections.namedtuple(
+        "UnitName", ["fullname", "name", "suffix", "componentof", "component", "prefix", "instance" ])
+    return UnitName(fullname, name, suffix, componentof, component, prefix, instance)
 
 def time_to_seconds(text, maximum = None):
     if maximum is None:
@@ -884,9 +895,11 @@ class Systemctl:
                     path = os.path.join(folder, name)
                     if os.path.isdir(path):
                         continue
-                    service_name = systemd_unescape(name)
+                    service_name = systemd_normpath(name)
                     if service_name not in self._file_for_unit_sysd:
                         self._file_for_unit_sysd[service_name] = path
+                        logg.error("storing %s", service_name) # @@
+                        unit = parse_unit(service_name)
             logg.debug("found %s sysd files", len(self._file_for_unit_sysd))
         return list(self._file_for_unit_sysd.keys())
     def scan_unit_sysv_files(self, module = None): # -> [ unit-names,... ]
@@ -903,7 +916,7 @@ class Systemctl:
                     path = os.path.join(folder, name)
                     if os.path.isdir(path):
                         continue
-                    service_name = name + ".service" # simulate systemd
+                    service_name = systemd_normpath(name) + ".service" # simulate systemd
                     if service_name not in self._file_for_unit_sysv:
                         self._file_for_unit_sysv[service_name] = path
             logg.debug("found %s sysv files", len(self._file_for_unit_sysv))
@@ -1072,7 +1085,7 @@ class Systemctl:
             for module in modules:
                 if "@" not in module:
                     continue
-                module_unit = parse_unit(module)
+                module_unit = parse_unit(systemd_normpath(module))
                 if service_unit.prefix == module_unit.prefix:
                     yield "%s@%s.%s" % (service_unit.prefix, module_unit.instance, service_unit.suffix)
     def match_sysd_units(self, modules = None, suffix=".service"): # -> generate[ unit ]
@@ -1084,10 +1097,14 @@ class Systemctl:
         for item in sorted(self._file_for_unit_sysd.keys()):
             if not modules:
                 yield item
-            elif [ module for module in modules if fnmatch.fnmatchcase(item, module) ]:
-                yield item
-            elif [ module for module in modules if module+suffix == item ]:
-                yield item
+            else:
+                for module in modules:
+                    module_unit = systemd_normpath(module)
+                    logg.error("match on %s", module_unit) #@@
+                    if fnmatch.fnmatchcase(item, module_unit):
+                        yield item
+                    if fnmatch.fnmatchcase(item+suffix, module_unit):
+                        yield item
     def match_sysv_units(self, modules = None, suffix=".service"): # -> generate[ unit ]
         """ make a file glob on all known units (sysv areas).
             It returns all modules if no modules pattern were given.
@@ -1097,10 +1114,13 @@ class Systemctl:
         for item in sorted(self._file_for_unit_sysv.keys()):
             if not modules:
                 yield item
-            elif [ module for module in modules if fnmatch.fnmatchcase(item, module) ]:
-                yield item
-            elif [ module for module in modules if module+suffix == item ]:
-                yield item
+            else:
+                for module in modules:
+                    module_unit = systemd_normpath(module)
+                    if fnmatch.fnmatchcase(item, module_unit):
+                        yield item
+                    if fnmatch.fnmatchcase(item+suffix, module_unit):
+                        yield item
     def match_units(self, modules = None, suffix=".service"): # -> [ units,.. ]
         """ Helper for about any command with multiple units which can
             actually be glob patterns on their respective unit name. 
@@ -1557,22 +1577,20 @@ class Systemctl:
         """ expand %i %t and similar special vars. They are being expanded
             before any other expand_env takes place which handles shell-style
             $HOME references. """
-        def sh_escape(value):
-            return "'" + value.replace("'","\\'") + "'"
         def get_confs(conf):
             confs={ "%": "%" }
             if not conf:
                 return confs
             unit = parse_unit(conf.name())
+            confs["n"] = unit.fullname
             confs["N"] = unit.name
-            confs["n"] = sh_escape(unit.name)
-            confs["P"] = unit.prefix
-            confs["p"] = sh_escape(unit.prefix)
-            confs["I"] = unit.instance
-            confs["i"] = sh_escape(unit.instance)
-            confs["J"] = unit.component
-            confs["j"] = sh_escape(unit.component)
-            confs["f"] = sh_escape(conf.filename())
+            confs["p"] = (unit.instance and unit.prefix or unit.name)
+            confs["P"] = systemd_unescape(confs["p"])
+            confs["i"] = unit.instance
+            confs["I"] = systemd_unescape(confs["i"])
+            confs["j"] = unit.component
+            confs["J"] = systemd_unescape(confs["j"])
+            confs["f"] = "/" + systemd_unescape(unit.instance if unit.instance else unit.prefix)
             VARTMP = "/var/tmp"
             TMP = "/tmp"
             RUN = "/run"
@@ -1596,8 +1614,8 @@ class Systemctl:
                 SHELL = os.environ.get("SHELL", SHELL)
                 VARTMP = os.environ.get("TMPDIR", os.environ.get("TEMP", os.environ.get("TMP", VARTMP)))
                 TMP = os.environ.get("TMPDIR", os.environ.get("TEMP", os.environ.get("TMP", TMP)))
-            confs["V"] = os_path(self._root, VARTMP)
-            confs["T"] = os_path(self._root, TMP)
+            confs["V"] = os_path(self._root, VARTMP)  # extra
+            confs["T"] = os_path(self._root, TMP)     # extra
             confs["t"] = os_path(self._root, RUN)
             confs["S"] = os_path(self._root, DAT)
             confs["s"] = SHELL
@@ -1611,20 +1629,18 @@ class Systemctl:
             if m.group(1) in confs:
                 return confs[m.group(1)]
             logg.warning("can not expand %%%s", m.group(1))
-            return "''" # empty escaped string
+            return ""
         return re.sub("[%](.)", lambda m: get_conf1(m), cmd)
     def exec_cmd(self, cmd, env, conf = None):
         """ expand ExecCmd statements including %i and $MAINPID """
         cmd1 = cmd.replace("\\\n","")
-        # according to documentation the %n / %% need to be expanded where in
-        # most cases they are shell-escaped values. So we do it before shlex.
-        cmd2 = self.expand_special(cmd1, conf)
         # according to documentation, when bar="one two" then the expansion
         # of '$bar' is ["one","two"] and '${bar}' becomes ["one two"]. We
         # tackle that by expand $bar before shlex, and the rest thereafter.
         def get_env1(m):
             if m.group(1) in env:
-                return env[m.group(1)]
+                return env[m.group(1)].replace("%", "%%")
+                # "%%" because of expand_special below after shell-parsing
             logg.debug("can not expand $%s", m.group(1))
             return "" # empty string
         def get_env2(m):
@@ -1632,10 +1648,11 @@ class Systemctl:
                 return env[m.group(1)]
             logg.debug("can not expand ${%s}", m.group(1))
             return "" # empty string
-        cmd3 = re.sub("[$](\w+)", lambda m: get_env1(m), cmd2)
+        cmd2 = re.sub("[$](\w+)", lambda m: get_env1(m), cmd1)
         newcmd = []
-        for part in shlex.split(cmd3):
-            newcmd += [ re.sub("[$][{](\w+)[}]", lambda m: get_env2(m), part) ]
+        for part in shlex.split(cmd2):
+            expanded = self.expand_special(part, conf)
+            newcmd += [ re.sub("[$][{](\w+)[}]", lambda m: get_env2(m), expanded) ]
         return newcmd
     def path_journal_log(self, conf): # never None
         """ /var/log/zzz.service.log or /var/log/default.unit.log """
