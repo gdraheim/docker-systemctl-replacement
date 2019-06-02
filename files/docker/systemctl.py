@@ -1076,7 +1076,7 @@ class Systemctl:
         return self.default_unit_conf(module)
     def match_sysd_templates(self, module = None, suffix=".service"): # -> generate[ unit ]
         """ make a file glob on all known template units (systemd areas).
-            It returns no modules (!!) if no modules pattern were given.
+            It returns no modules (!!) if no module pattern was given.
             The module string should contain an instance name already. """
         if not module:
             return
@@ -1090,8 +1090,7 @@ class Systemctl:
                 yield "%s@%s.%s" % (service_unit.prefix, module_unit.instance, service_unit.suffix)
     def match_sysd_units(self, module = None, suffix=".service"): # -> generate[ unit ]
         """ make a file glob on all known units (systemd areas).
-            It returns all modules if no modules pattern were given.
-            Also a single string as one module pattern may be given. """
+            It returns all modules if no module pattern was given. """
         self.scan_unit_sysd_files()
         module_unit = "*"
         if module:
@@ -1106,8 +1105,7 @@ class Systemctl:
                     yield item
     def match_sysv_units(self, module = None, suffix=".service"): # -> generate[ unit ]
         """ make a file glob on all known units (sysv areas).
-            It returns all modules if no modules pattern were given.
-            Also a single string as one module pattern may be given. """
+            It returns all modules if no modules pattern were given. """
         self.scan_unit_sysv_files()
         module_unit = "*"
         if module:
@@ -1120,22 +1118,28 @@ class Systemctl:
                     yield item
                 if fnmatch.fnmatchcase(item+suffix, module_unit):
                     yield item
-    def match_units(self, modules = None, suffix=".service"): # -> [ units,.. ]
+    def match_units(self, module = None, suffix=".service"): # -> [ units,.. ]
         """ Helper for about any command with multiple units which can
             actually be glob patterns on their respective unit name. 
             It returns all modules if no modules pattern were given.
             Also a single string as one module pattern may be given. """
         found = []
+        for unit in self.match_sysd_units(module, suffix):
+            if unit not in found:
+                found.append(unit)
+        for unit in self.match_sysd_templates(module, suffix):
+            if unit not in found:
+                found.append(unit)
+        for unit in self.match_sysv_units(module, suffix):
+            if unit not in found:
+                found.append(unit)
+        return found
+    def match_all_units(self, modules = None, suffix=".service"):
+        if not modules:
+            modules = [ "*" ]
+        found = []
         for module in modules:
-            for unit in self.match_sysd_units(module, suffix):
-                if unit not in found:
-                    found.append(unit)
-        for module in modules:
-            for unit in self.match_sysd_templates(module, suffix):
-                if unit not in found:
-                    found.append(unit)
-        for module in modules:
-            for unit in self.match_sysv_units(module, suffix):
+            for unit in self.match_units(module):
                 if unit not in found:
                     found.append(unit)
         return found
@@ -1154,7 +1158,7 @@ class Systemctl:
         active = {}
         substate = {}
         description = {}
-        for unit in self.match_units(modules):
+        for unit in self.match_all_units(modules):
             result[unit] = "not-found"
             active[unit] = "inactive"
             substate[unit] = "dead"
@@ -1186,7 +1190,7 @@ class Systemctl:
         logg.debug("list service unit files for %s", modules)
         result = {}
         enabled = {}
-        for unit in self.match_units(modules):
+        for unit in self.match_all_units(modules):
             result[unit] = None
             enabled[unit] = ""
             try: 
@@ -1774,7 +1778,7 @@ class Systemctl:
         found_all = True
         units = []
         for module in modules:
-            matched = self.match_units([ module ])
+            matched = self.match_units(module)
             if not matched:
                 logg.error("Unit %s could not be found.", unit_of(module))
                 found_all = False
@@ -2104,7 +2108,7 @@ class Systemctl:
         found_all = True
         units = []
         for module in modules:
-            matched = self.match_units([ module ])
+            matched = self.match_units(module)
             if not matched:
                 logg.error("Unit %s could not be found.", unit_of(module))
                 found_all = False
@@ -2301,7 +2305,7 @@ class Systemctl:
         found_all = True
         units = []
         for module in modules:
-            matched = self.match_units([ module ])
+            matched = self.match_units(module)
             if not matched:
                 logg.error("Unit %s could not be found.", unit_of(module))
                 found_all = False
@@ -2386,7 +2390,7 @@ class Systemctl:
         found_all = True
         units = []
         for module in modules:
-            matched = self.match_units([ module ])
+            matched = self.match_units(module)
             if not matched:
                 logg.error("Unit %s could not be found.", unit_of(module))
                 found_all = False
@@ -2430,7 +2434,7 @@ class Systemctl:
         found_all = True
         units = []
         for module in modules:
-            matched = self.match_units([ module ])
+            matched = self.match_units(module)
             if not matched:
                 logg.error("Unit %s could not be found.", unit_of(module))
                 found_all = False
@@ -2466,7 +2470,7 @@ class Systemctl:
         found_all = True
         units = []
         for module in modules:
-            matched = self.match_units([ module ])
+            matched = self.match_units(module)
             if not matched:
                 logg.error("Unit %s could not be found.", unit_of(module))
                 found_all = False
@@ -2515,7 +2519,7 @@ class Systemctl:
         found_all = True
         units = []
         for module in modules:
-            matched = self.match_units([ module ])
+            matched = self.match_units(module)
             if not matched:
                 logg.error("Unit %s could not be found.", unit_of(module))
                 found_all = False
@@ -2557,7 +2561,7 @@ class Systemctl:
         found_all = True
         units = []
         for module in modules:
-            matched = self.match_units([ module ])
+            matched = self.match_units(module)
             if not matched:
                 logg.error("Unit %s could not be found.", unit_of(module))
                 found_all = False
@@ -2685,7 +2689,7 @@ class Systemctl:
         units = []
         results = []
         for module in modules:
-            units = self.match_units([ module ])
+            units = self.match_units(module)
             if not units:
                 logg.error("Unit %s could not be found.", unit_of(module))
                 results += [ "unknown" ]
@@ -2778,7 +2782,7 @@ class Systemctl:
         units = []
         results = []
         for module in modules:
-            units = self.match_units([ module ])
+            units = self.match_units(module)
             if not units:
                 logg.error("Unit %s could not be found.", unit_of(module))
                 results += [ "unknown" ]
@@ -2802,7 +2806,7 @@ class Systemctl:
         units = []
         status = True
         for module in modules:
-            units = self.match_units([ module ])
+            units = self.match_units(module)
             if not units:
                 logg.error("Unit %s could not be found.", unit_of(module))
                 return 1
@@ -2848,7 +2852,7 @@ class Systemctl:
         found_all = True
         units = []
         for module in modules:
-            matched = self.match_units([ module ])
+            matched = self.match_units(module)
             if not matched:
                 logg.error("Unit %s could not be found.", unit_of(module))
                 found_all = False
@@ -2896,7 +2900,7 @@ class Systemctl:
         found_all = True
         units = []
         for module in modules:
-            matched = self.match_units([ module ])
+            matched = self.match_units(module)
             if not matched:
                 logg.error("Unit %s could not be found.", unit_of(module))
                 found_all = False
@@ -2970,7 +2974,7 @@ class Systemctl:
         found_all = True
         units = []
         for module in modules:
-            matched = self.match_units([ module ])
+            matched = self.match_units(module)
             if not matched:
                 logg.error("Unit %s could not be found.", unit_of(module))
                 found_all = False
@@ -3008,8 +3012,11 @@ class Systemctl:
         if self.user_mode():
             logg.warning("preset-all makes no sense in --user mode")
             return True
+        if modules:
+            logg.error("Too many arguments.")
+            return False
         found_all = True
-        units = self.match_units() # TODO: how to handle module arguments
+        units = self.match_all_units()
         return self.preset_units(units) and found_all
     def wanted_from(self, conf, default = None):
         if not conf: return default
@@ -3039,7 +3046,7 @@ class Systemctl:
         found_all = True
         units = []
         for module in modules:
-            matched = self.match_units([ module ])
+            matched = self.match_units(module)
             if not matched:
                 logg.error("Unit %s could not be found.", unit_of(module))
                 found_all = False
@@ -3138,7 +3145,7 @@ class Systemctl:
         found_all = True
         units = []
         for module in modules:
-            matched = self.match_units([ module ])
+            matched = self.match_units(module)
             if not matched:
                 logg.error("Unit %s could not be found.", unit_of(module))
                 found_all = False
@@ -3221,7 +3228,7 @@ class Systemctl:
         found_all = True
         units = []
         for module in modules:
-            matched = self.match_units([ module ])
+            matched = self.match_units(module)
             if not matched:
                 logg.error("Unit %s could not be found.", unit_of(module))
                 found_all = False
@@ -3283,7 +3290,7 @@ class Systemctl:
         found_all = True
         units = []
         for module in modules:
-            matched = self.match_units([ module ])
+            matched = self.match_units(module)
             if not matched:
                 logg.error("Unit %s could not be found.", unit_of(module))
                 found_all = False
@@ -3348,7 +3355,7 @@ class Systemctl:
         found_all = True
         units = []
         for module in modules:
-            matched = self.match_units([ module ])
+            matched = self.match_units(module)
             if not matched:
                 logg.error("Unit %s could not be found.", unit_of(module))
                 found_all = False
@@ -3398,7 +3405,7 @@ class Systemctl:
         found_all = True
         units = []
         for module in modules:
-            matched = self.match_units([ module ])
+            matched = self.match_units(module)
             if not matched:
                 logg.error("Unit %s could not be found.", unit_of(module))
                 found_all = False
@@ -3570,7 +3577,7 @@ class Systemctl:
             and it is over 100 if it can not continue even
             for the relaxed systemctl.py style of execution. """
         errors = 0
-        for unit in self.match_units():
+        for unit in self.match_all_units():
             try:
                 conf = self.get_unit_conf(unit)
             except Exception as e:
@@ -3725,7 +3732,7 @@ class Systemctl:
         found_all = True
         units = []
         for module in modules:
-            matched = self.match_units([ module ])
+            matched = self.match_units(module)
             if not matched:
                 logg.error("Unit %s could not be found.", unit_of(module))
                 units += [ module ]
@@ -3996,7 +4003,7 @@ class Systemctl:
         found_all = True
         units = []
         for module in modules:
-            matched = self.match_units([ module ])
+            matched = self.match_units(module)
             if not matched:
                 logg.error("Unit %s could not be found.", unit_of(module))
                 found_all = False
