@@ -141,7 +141,7 @@ def unit_of(module):
 def systemd_normpath(path):
     # original 'systemd-escape' encodes '@', and also '.' when being the first character.
     # this one is idempotent when no backslash is ever used in the unescaped unit name.
-    return re.sub("([^a-zA-Z0-9_/@.\\\\])", lambda m: "\\x%02x" % ord(m.group(1)), path)
+    return re.sub("([^a-zA-Z0-9_/@.\\\\-])", lambda m: "\\x%02x" % ord(m.group(1)), path)
 def systemd_escape(text):
     norm_text = re.sub("/+","/", text)
     try:
@@ -1099,9 +1099,10 @@ class Systemctl:
             else:
                 for module in modules:
                     module_unit = systemd_normpath(module)
+                    logg.info("match lookup %s (%s)", module, item)
                     if fnmatch.fnmatchcase(item, module_unit):
                         yield item
-                    if fnmatch.fnmatchcase(item+suffix, module_unit):
+                    if fnmatch.fnmatchcase(item, module_unit+suffix):
                         yield item
     def match_sysv_units(self, modules = None, suffix=".service"): # -> generate[ unit ]
         """ make a file glob on all known units (sysv areas).
