@@ -185,14 +185,17 @@ def beep():
         # sx___("play -n synth 0.1 tri  1000.0")
         sx____("play -V1 -q -n -c1 synth 0.1 sine 500")
 
+def systemd_normpath(path):
+    # original 'systemd-escape' encodes '@', and also '.' when being the first character.
+    # this one is idempotent when no backslash is ever used in the unescaped unit name.
+    return re.sub("([^a-zA-Z0-9_/@.\\\\])", lambda m: "\\x%02x" % ord(m.group(1)), path)
 def systemd_escape(text):
     norm_text = re.sub("/+","/", text)
     try:
         base_text = norm_text.encode("utf-8")
     except:
         base_text = norm_text
-    # original 'systemd-escape' encodes '@' and '.' when being the first character
-    hexx_text = re.sub("([^a-zA-Z_/@.])", lambda m: "\\x%02x" % ord(m.group(1)), base_text)
+    hexx_text = re.sub("([^a-zA-Z0-9_/.])", lambda m: "\\x%02x" % ord(m.group(1)), base_text)
     return hexx_text.replace("/","-")
 def systemd_unescape(text):
     try:
@@ -6299,7 +6302,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_zzfiles(root)
         print_sh = os_path(root, "/usr/bin/zz_print.sh")
         logfile = os_path(root, "/var/log/zz_print_sh.log")
-        service_name = systemd_escape("zzb zzc.service")
+        service_name = systemd_normpath("zzb zzc.service")
         service_file = os_path(root, "/etc/systemd/system/" + service_name)
         text_file(service_file,"""
             [Unit]
@@ -6312,8 +6315,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStartPost=%s B %%n $X ${Y}
             ExecStartPost=%s C %%f $X ${Y}
             ExecStartPost=%s D %%t $X ${Y}
-            ExecStartPost=%s E %%P $X ${Y}
-            ExecStartPost=%s F %%p $X ${Y}
+            ExecStartPost=%s E %%p $X ${Y}
+            ExecStartPost=%s F %%P $X ${Y}
             ExecStartPost=%s G %%I $X ${Y}
             ExecStartPost=%s H %%i $X ${Y} $FOO
             ExecStartPost=%s T %%T $X ${Y} 
@@ -6340,13 +6343,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 0)
         log = lines(open(logfile))
         logg.info("LOG \n%s", log)
-        A="'A' 'zzb' 'zzc.service' 'x1' 'y2 y3'"  # A %%N
-        B="'B' 'zzb zzc.service' 'x1' 'y2 y3' ''" # B %%n
-        C="'C' '%s' 'x1' 'y2 y3' ''" % service_file        # C %%f
+        A="'A' 'zzb\\x20zzc' 'x1' 'y2 y3' ''"  # A %%N
+        B="'B' 'zzb\\x20zzc.service' 'x1' 'y2 y3' ''" # B %%n
+        C="'C' '/zzb zzc' 'x1' 'y2 y3' ''"        # C %%f
         D="'D' '%s' 'x1' 'y2 y3' ''" % os_path(root, RUN)  # D %%t
-        E="'E' 'zzb' 'zzc' 'x1' 'y2 y3'"  # E %%P
-        F="'F' 'zzb zzc' 'x1' 'y2 y3' ''" # F %%p
-        G="'G' 'x1' 'y2 y3' '' ''" # G %%I
+        E="'E' 'zzb\\x20zzc' 'x1' 'y2 y3' ''" # F %%p
+        F="'F' 'zzb zzc' 'x1' 'y2 y3' ''"  # E %%P
+        G="'G' '' 'x1' 'y2 y3' ''" # G %%I
         H="'H' '' 'x1' 'y2 y3' ''" # H %%i
         T="'T' '%s' 'x1' 'y2 y3' ''" % os_path(root, "/tmp")  # T %%T
         V="'V' '%s' 'x1' 'y2 y3' ''" % os_path(root, "/var/tmp")  # V %%V
@@ -6359,9 +6362,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertIn(F, log)
         self.assertIn(G, log)
         self.assertIn(H, log)
-        self.assertIn(T, log)
-        self.assertIn(V, log)
-        self.assertIn(Z, log)
+        if not real:
+            self.assertIn(T, log)
+            self.assertIn(V, log)
+            self.assertIn(Z, log)
         #
         self.rm_testdir()
         self.coverage()
@@ -6381,7 +6385,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_zzfiles(root)
         print_sh = os_path(root, "/usr/bin/zz_print.sh")
         logfile = os_path(root, "/var/log/zz_print_sh.log")
-        service_name = systemd_escape("zzb zzc.service")
+        service_name = systemd_normpath("zzb zzc.service")
         service_file = os_path(root, "/etc/systemd/user/"+service_name)
         text_file(service_file,"""
             [Unit]
@@ -6463,7 +6467,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_zzfiles(root)
         print_sh = os_path(root, "/usr/bin/zz_print.sh")
         logfile = os_path(root, "/var/log/zz_print_sh.log")
-        service_name = systemd_escape("zzb zzc.service")
+        service_name = systemd_normpath("zzb zzc.service")
         service_file = os_path(root, "/etc/systemd/system/"+service_name)
         env_file = "/etc/sysconfig/zz_my.conf"
         extra_vars_file = "/etc/sysconfig/zz_extra.conf"
@@ -6696,13 +6700,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
-    def test_3303_service_config_show_single_properties_plus_unknown(self):
+    def test_3303_service_config_show_single_properties_plus_unknown(self, real = None):
         """ check that a named service config can show a single properties"""
         self.begin()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
-        root = self.root(testdir)
         root = self.root(testdir, real)
         logfile = os_path(root, "/var/log/test.log")
         systemctl = cover() + _systemctl_py + " --root=" + root
