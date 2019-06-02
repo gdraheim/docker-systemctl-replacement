@@ -139,16 +139,21 @@ def unit_of(module):
     return module
 
 def systemd_normpath(path):
-    # original 'systemd-escape' encodes '@', and also '.' when being the first character.
-    # this one is idempotent when no backslash is ever used in the unescaped unit name.
-    return re.sub("([^a-zA-Z0-9_/@.\\\\-])", lambda m: "\\x%02x" % ord(m.group(1)), path)
+    # we skip hexlify of the characters '@', '.', '/', '-' as they are special in parse_unit.
+    # we skip hexlify of the characters '*', '?', '!', '[', ']' being used during fnmatchcase.
+    # the fnmatch characters are assumed to not exist in instance objects just as the backslash.
+    # this function one is idempotent when no backslash is ever used in the unescaped unit name.
+    return re.sub("([^a-zA-Z0-9_/@.\\\\*?!\\[\\]-])", lambda m: "\\x%02x" % ord(m.group(1)), path)
 def systemd_escape(text):
+    # original 'systemd-escape' encodes all '@', and also '.' when being the first character.
     norm_text = re.sub("/+","/", text)
     try:
         base_text = norm_text.encode("utf-8")
     except:
         base_text = norm_text
     hexx_text = re.sub("([^a-zA-Z0-9_/.])", lambda m: "\\x%02x" % ord(m.group(1)), base_text)
+    if hexx_text.startswith("."):
+        hexx_text = "\\x2e"+hexx_text[1:]
     return hexx_text.replace("/","-")
 def systemd_unescape(text):
     try:
@@ -1088,7 +1093,9 @@ class Systemctl:
             It returns all modules if no modules pattern were given.
             Also a single string as one module pattern may be given. """
         self.scan_unit_sysd_files()
-        module_unit = systemd_normpath(module)
+        module_unit = "*"
+        if module:
+            module_unit = systemd_normpath(module)
         for item in sorted(self._file_for_unit_sysd.keys()):
             if not module:
                 yield item
@@ -1102,7 +1109,9 @@ class Systemctl:
             It returns all modules if no modules pattern were given.
             Also a single string as one module pattern may be given. """
         self.scan_unit_sysv_files()
-        module_unit = systemd_normpath(module)
+        module_unit = "*"
+        if module:
+            module_unit = systemd_normpath(module)
         for item in sorted(self._file_for_unit_sysv.keys()):
             if not module:
                 yield item
