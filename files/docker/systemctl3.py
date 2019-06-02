@@ -141,7 +141,7 @@ def unit_of(module):
 def systemd_normpath(path):
     # original 'systemd-escape' encodes '@', and also '.' when being the first character.
     # this one is idempotent when no backslash is ever used in the unescaped unit name.
-    return re.sub("([^a-zA-Z0-9_/@.\\\\])", lambda m: "\\x%02x" % ord(m.group(1)), path)
+    return re.sub("([^a-zA-Z0-9_/@.\\\\-])", lambda m: "\\x%02x" % ord(m.group(1)), path)
 def systemd_escape(text):
     norm_text = re.sub("/+","/", text)
     try:
@@ -1069,71 +1069,66 @@ class Systemctl:
         if conf is not None:
             return conf
         return self.default_unit_conf(module)
-    def match_sysd_templates(self, modules = None, suffix=".service"): # -> generate[ unit ]
+    def match_sysd_templates(self, module = None, suffix=".service"): # -> generate[ unit ]
         """ make a file glob on all known template units (systemd areas).
             It returns no modules (!!) if no modules pattern were given.
             The module string should contain an instance name already. """
-        modules = to_list(modules)
-        if not modules:
+        if not module:
             return
         self.scan_unit_sysd_files()
+        module_unit = parse_unit(systemd_normpath(module))
         for item in sorted(self._file_for_unit_sysd.keys()):
             if "@" not in item:
                 continue
             service_unit = parse_unit(item)
-            for module in modules:
-                if "@" not in module:
-                    continue
-                module_unit = parse_unit(systemd_normpath(module))
-                if service_unit.prefix == module_unit.prefix:
-                    yield "%s@%s.%s" % (service_unit.prefix, module_unit.instance, service_unit.suffix)
-    def match_sysd_units(self, modules = None, suffix=".service"): # -> generate[ unit ]
+            if service_unit.prefix == module_unit.prefix:
+                yield "%s@%s.%s" % (service_unit.prefix, module_unit.instance, service_unit.suffix)
+    def match_sysd_units(self, module = None, suffix=".service"): # -> generate[ unit ]
         """ make a file glob on all known units (systemd areas).
             It returns all modules if no modules pattern were given.
             Also a single string as one module pattern may be given. """
-        modules = to_list(modules)
         self.scan_unit_sysd_files()
+        module_unit = systemd_normpath(module)
         for item in sorted(self._file_for_unit_sysd.keys()):
-            if not modules:
+            if not module:
                 yield item
             else:
-                for module in modules:
-                    module_unit = systemd_normpath(module)
-                    if fnmatch.fnmatchcase(item, module_unit):
-                        yield item
-                    if fnmatch.fnmatchcase(item+suffix, module_unit):
-                        yield item
-    def match_sysv_units(self, modules = None, suffix=".service"): # -> generate[ unit ]
+                if fnmatch.fnmatchcase(item, module_unit):
+                    yield item
+                if fnmatch.fnmatchcase(item, module_unit+suffix):
+                    yield item
+    def match_sysv_units(self, module = None, suffix=".service"): # -> generate[ unit ]
         """ make a file glob on all known units (sysv areas).
             It returns all modules if no modules pattern were given.
             Also a single string as one module pattern may be given. """
-        modules = to_list(modules)
         self.scan_unit_sysv_files()
+        module_unit = systemd_normpath(module)
         for item in sorted(self._file_for_unit_sysv.keys()):
-            if not modules:
+            if not module:
                 yield item
             else:
-                for module in modules:
-                    module_unit = systemd_normpath(module)
-                    if fnmatch.fnmatchcase(item, module_unit):
-                        yield item
-                    if fnmatch.fnmatchcase(item+suffix, module_unit):
-                        yield item
+                if fnmatch.fnmatchcase(item, module_unit):
+                    yield item
+                if fnmatch.fnmatchcase(item+suffix, module_unit):
+                    yield item
     def match_units(self, modules = None, suffix=".service"): # -> [ units,.. ]
         """ Helper for about any command with multiple units which can
             actually be glob patterns on their respective unit name. 
             It returns all modules if no modules pattern were given.
             Also a single string as one module pattern may be given. """
         found = []
-        for unit in self.match_sysd_units(modules, suffix):
-            if unit not in found:
-                found.append(unit)
-        for unit in self.match_sysd_templates(modules, suffix):
-            if unit not in found:
-                found.append(unit)
-        for unit in self.match_sysv_units(modules, suffix):
-            if unit not in found:
-                found.append(unit)
+        for module in modules:
+            for unit in self.match_sysd_units(module, suffix):
+                if unit not in found:
+                    found.append(unit)
+        for module in modules:
+            for unit in self.match_sysd_templates(module, suffix):
+                if unit not in found:
+                    found.append(unit)
+        for module in modules:
+            for unit in self.match_sysv_units(module, suffix):
+                if unit not in found:
+                    found.append(unit)
         return found
     def list_service_unit_basics(self):
         """ show all the basic loading state of services """
