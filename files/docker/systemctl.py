@@ -925,24 +925,27 @@ class Systemctl:
                         self._file_for_unit_sysv[service_name] = path
             logg.debug("found %s sysv files", len(self._file_for_unit_sysv))
         return list(self._file_for_unit_sysv.keys())
-    def unit_sysd_file(self, module = None): # -> filename?
+    def unit_sysd_file(self, module): # -> filename?
         """ file path for the given module (systemd) """
+        if not module: return module
         self.scan_unit_sysd_files()
         if module and module in self._file_for_unit_sysd:
             return self._file_for_unit_sysd[module]
         if module and unit_of(module) in self._file_for_unit_sysd:
             return self._file_for_unit_sysd[unit_of(module)]
         return None
-    def unit_sysv_file(self, module = None): # -> filename?
+    def unit_sysv_file(self, module): # -> filename?
         """ file path for the given module (sysv) """
+        if not module: return None
         self.scan_unit_sysv_files()
         if module and module in self._file_for_unit_sysv:
             return self._file_for_unit_sysv[module]
         if module and unit_of(module) in self._file_for_unit_sysv:
             return self._file_for_unit_sysv[unit_of(module)]
         return None
-    def unit_file(self, module = None): # -> filename?
+    def unit_file(self, module): # -> filename?
         """ file path for the given module (sysv or systemd) """
+        if not module: return module
         path = self.unit_sysd_file(module)
         if path is not None: return path
         path = self.unit_sysv_file(module)
@@ -950,7 +953,7 @@ class Systemctl:
         return None
     def is_sysv_file(self, filename):
         """ for routines that have a special treatment for init.d services """
-        self.unit_file() # scan all
+        self.match_all_units() # scan all
         if not filename: return None
         if filename in self._file_for_unit_sysd.values(): return False
         if filename in self._file_for_unit_sysv.values(): return True
@@ -1003,10 +1006,13 @@ class Systemctl:
         if "@" in module:
             unit = parse_unit(module)
             service = "%s@.service" % unit.prefix
-            return self.load_sysd_unit_conf(service)
+            conf = self.load_sysd_unit_conf(service)
+            conf.module = module
+            return conf
         return None
     def load_sysd_unit_conf(self, module): # -> conf?
         """ read the unit file with a UnitConfParser (systemd) """
+        if not module: return None
         path = self.unit_sysd_file(module)
         if not path: return None
         if path in self._loaded_file_sysd:
@@ -1145,7 +1151,7 @@ class Systemctl:
         return found
     def list_service_unit_basics(self):
         """ show all the basic loading state of services """
-        filename = self.unit_file() # scan all
+        self.match_all_units() # scan all
         result = []
         for name, value in self._file_for_unit_sysd.items():
             result += [ (name, "SysD", value) ]
@@ -2890,6 +2896,11 @@ class Systemctl:
         active = self.get_active_from(conf)
         substate = self.get_substate_from(conf)
         result += "\n    Active: {} ({})".format(active, substate)
+        if self._now: # extra
+            result += "\n    Unit:   %s" % (unit,)
+            result += "\n    Name:   %s" % (conf.name(),)
+            result += "\n    Module: %s" % (conf.module,)
+            result += "\n    Masked: %s" % (conf.masked,)
         if active == "active":
             return 0, result
         else:
