@@ -22251,6 +22251,57 @@ ExecStart=/usr/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_CONFIG_ARGS $KUBELE
         self.assertTrue(greps(out, "KUBELET_KUBECONFIG_ARGS"))
         self.rm_testdir()
         self.coverage()
+    def test_8065_testing_postgres_template(self):
+        """ Checking the issue 65 on Ubuntu on templating support with postgres"""
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        images = IMAGES
+        image = self.local_image(IMAGE or UBUNTU)
+        package = package_tool(image)
+        refresh = refresh_tool(image)
+        testname = self.testname()
+        testdir = self.testdir(testname)
+        port=self.testport()
+        python = os.path.basename(_python)
+        systemctl_py = _systemctl_py
+        sometime = SOMETIME or 288
+        logg.info("%s:%s %s", testname, port, image)
+        #
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} {refresh}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} {package} install -y {python}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} {package} install -y postgresql-common"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} sed -e 's/^/| /' /lib/systemd/system/postgresql@.service"
+        sh____(cmd.format(**locals()))
+        ## container = ip_container(testname)
+        cmd = "docker exec {testname} touch /var/log/systemctl.debug.log"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl status postgresql@main-1.service -vv"
+        sx____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl start postgresql@main-1.service -vv"
+        sx____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl status postgresql@main-1.service -vv"
+        sx____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl stop postgresql@main-1.service -vv"
+        sx____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl status postgresql@main-1.service -vv"
+        sx____(cmd.format(**locals()))
+        #
+        cmd = "docker cp {testname}:/var/log/systemctl.debug.log {testdir}/systemctl.debug.log"
+        sh____(cmd.format(**locals()))
+        cmd = "docker stop {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sh____(cmd.format(**locals()))
+        #
+        self.rm_testdir()
 
 
     def test_9999_drop_local_mirrors(self):
