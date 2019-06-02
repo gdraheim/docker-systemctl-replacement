@@ -6398,8 +6398,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStartPost=%s B %%n $X ${Y}
             ExecStartPost=%s C %%f $X ${Y}
             ExecStartPost=%s D %%t $X ${Y}
-            ExecStartPost=%s E %%P $X ${Y}
-            ExecStartPost=%s F %%p $X ${Y}
+            ExecStartPost=%s E %%p $X ${Y}
+            ExecStartPost=%s F %%P $X ${Y}
             ExecStartPost=%s G %%I $X ${Y}
             ExecStartPost=%s H %%i $X ${Y} $FOO
             ExecStartPost=%s T %%T $X ${Y} 
@@ -6427,13 +6427,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 0)
         log = lines(open(logfile))
         logg.info("LOG \n%s", log)
-        A="'A' 'zzb' 'zzc.service' 'x1' 'y2 y3'"  # A %%N
-        B="'B' 'zzb zzc.service' 'x1' 'y2 y3' ''" # B %%n
-        C="'C' '%s' 'x1' 'y2 y3' ''" % service_file        # C %%f
+        A="'A' 'zzb\\x20zzc' 'x1' 'y2 y3' ''"  # A %%N
+        B="'B' 'zzb\\x20zzc.service' 'x1' 'y2 y3' ''" # B %%n
+        C="'C' '/zzb zzc' 'x1' 'y2 y3' ''"        # C %%f
         D="'D' '%s' 'x1' 'y2 y3' ''" % os_path(root, RUN)  # D %%t
-        E="'E' 'zzb' 'zzc' 'x1' 'y2 y3'"  # E %%P
-        F="'F' 'zzb zzc' 'x1' 'y2 y3' ''" # F %%p
-        G="'G' 'x1' 'y2 y3' '' ''" # G %%I
+        E="'E' 'zzb\\x20zzc' 'x1' 'y2 y3' ''" # F %%p
+        F="'F' 'zzb zzc' 'x1' 'y2 y3' ''"  # E %%P
+        G="'G' '' 'x1' 'y2 y3' ''" # G %%I
         H="'H' '' 'x1' 'y2 y3' ''" # H %%i
         T="'T' '%s' 'x1' 'y2 y3' ''" % os_path(root, "/tmp")  # T %%T
         V="'V' '%s' 'x1' 'y2 y3' ''" % os_path(root, "/var/tmp")  # V %%V
@@ -6446,9 +6446,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertIn(F, log)
         self.assertIn(G, log)
         self.assertIn(H, log)
-        self.assertIn(T, log)
-        self.assertIn(V, log)
-        self.assertIn(Z, log)
+        if not real:
+            self.assertIn(T, log)
+            self.assertIn(V, log)
+            self.assertIn(Z, log)
         #
         self.rm_testdir()
         self.coverage()
