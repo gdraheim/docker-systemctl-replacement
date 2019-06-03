@@ -8215,9 +8215,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_zzfiles(root)
         self.coverage()
         self.end()
+    def real_3901_service_config_cat(self):
+        self.test_3901_service_config_cat(real = True)
     def test_3901_service_config_cat(self, real = False):
         """ check that a name service config can be printed as-is"""
-        self.begin()
+        vv = self.begin()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -8241,21 +8243,25 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzs.service"), os_path(root, "/etc/systemd/system/zzs.service"))
         #
-        cmd = "{systemctl} cat zzs.service -vv"
+        cmd = "{systemctl} cat zzs.service {vv}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        orig = lines(open(os_path(root, "/etc/systemd/system/zzs.service")))
+        unit_file = os_path(root, "/etc/systemd/system/zzs.service")
+        orig = lines("# "+unit_file+"\n"+open(unit_file).read())
         data = lines(out)
-        self.assertEqual(orig + [""], data)
+        if not real: orig += [""]
+        self.assertEqual(orig, data)
         #
         self.rm_testdir()
         self.rm_zzfiles(root)
         self.coverage()
         self.end()
+    def real_3903_service_config_cat_plus_unknown(self):
+        self.test_3903_service_config_cat_plus_unknown(real = True)
     def test_3903_service_config_cat_plus_unknown(self, real = False):
         """ check that a name service config can be printed as-is"""
-        self.begin()
+        vv = self.begin()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -8279,13 +8285,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzs.service"), os_path(root, "/etc/systemd/system/zzs.service"))
         #
-        cmd = "{systemctl} cat zzs.service unknown.service -vv"
+        cmd = "{systemctl} cat zzs.service unknown.service {vv}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s", cmd, end, out)
         self.assertEqual(end, 1)
-        orig = lines(open(os_path(root, "/etc/systemd/system/zzs.service")))
+        unit_file = os_path(root, "/etc/systemd/system/zzs.service")
+        orig = lines("# "+unit_file+"\n"+open(unit_file).read())
         data = lines(out)
-        self.assertEqual(orig + [""], data)
+        if not real: orig += [""]
+        self.assertEqual(orig, data)
         #
         self.rm_testdir()
         self.rm_zzfiles(root)

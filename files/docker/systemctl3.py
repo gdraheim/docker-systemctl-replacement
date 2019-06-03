@@ -2931,7 +2931,9 @@ class Systemctl:
         try:
             unit_file = self.unit_file(unit)
             if unit_file:
-                return open(unit_file).read()
+                text = "# %s\n" % unit_file
+                text += open(unit_file).read()
+                return text
             logg.error("no file for unit '%s'", unit)
         except Exception as e:
             print("Unit {} is not-loaded: {}".format(unit, e))
