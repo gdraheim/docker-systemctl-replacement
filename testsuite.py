@@ -3196,8 +3196,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.test_3005_is_enabled_result_when_enabled(True)
     def test_3005_is_enabled_result_when_enabled(self, real = None):
         """ check that 'is-enabled' reports correctly for enabled/disabled """
-        self.begin()
-        vv = "-vv"
+        vv = self.begin()
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir, real)
@@ -5006,8 +5005,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.test_3050_systemctl_py_check_is_active(True)
     def test_3050_systemctl_py_check_is_active(self, real = None):
         """ check is_active behaviour"""
-        self.begin()
-        vv = "-vv"
+        vv = self.begin()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -5144,8 +5142,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.test_3051_systemctl_py_check_is_failed(True)
     def test_3051_systemctl_py_check_is_failed(self, real = None):
         """ check is_failed behaviour"""
-        self.begin()
-        vv = "-vv"
+        vv = self.begin()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -5297,8 +5294,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.test_3060_is_active_for_forking(True)
     def test_3060_is_active_for_forking(self, real = False):
         """ check that we can start forking services and have them is-active"""
-        self.begin()
-        vv = "-vv"
+        vv = self.begin()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -5388,8 +5384,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.test_3061_is_failed_for_forking(True)
     def test_3061_is_failed_for_forking(self, real = False):
         """ check that we can start forking services and have them is-failed"""
-        self.begin()
-        vv = "-vv"
+        vv = self.begin()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -5480,8 +5475,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ check that we can start forking services and have them is-active,
             even when the pid-file is created later because startup waits
             for its existance."""
-        self.begin()
-        vv = "-vv"
+        vv = self.begin()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -5576,8 +5570,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ consider a situation where a 'systemctl start <service>' is
             taking a bit longer to start. Especially some pre-start
             must be blocking while being in state 'activating'"""
-        self.begin()
-        vv = "-vv"
+        vv = self.begin()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -5715,8 +5708,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ consider a situation where a 'systemctl start <service>' is
             done from two programs at the same time. Ensure that there
             is a locking that disallow then to run in parallel."""
-        self.begin()
-        vv = "-vv"
+        vv = self.begin()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -5829,8 +5821,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             done from two programs at the same time. Ensure that there
             is a locking that disallows them to run in parallel. In this
             scenario we test what happens if the lockfile is deleted in between."""
-        self.begin()
-        vv = "-vv"
+        vv = self.begin()
         removelockfile="--coverage=removelockfile,sleep"
         testname = self.testname()
         testdir = self.testdir()
@@ -5948,11 +5939,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.test_3102_mask_service_creates_empty_file(True)
     def test_3102_mask_service_creates_empty_file(self, real = False):
         """ check that a service can be masked """
-        self.begin()
+        vv = self.begin()
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir, real)
-        vv = "-vv"
         systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         self.rm_zzfiles(root)
@@ -6022,11 +6012,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.test_3104_unmask_service_removes_empty_file(True)
     def test_3104_unmask_service_removes_empty_file(self, real = False):
         """ check that a service can be unmasked """
-        self.begin()
+        vv = self.begin()
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir, real)
-        vv = "-vv"
         systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         self.rm_zzfiles(root)
@@ -7508,12 +7497,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.test_3609_exitcode_from_ExecReload(True)
     def test_3609_exitcode_from_ExecReload(self, real = False):
         """ check that we get a warning when ExecReload has an error"""
-        self.begin()
+        vv = self.begin()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir, real)
-        vv = "-vv"
         systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         testsleep = self.testname("sleep")
@@ -10536,9 +10524,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ check that we manage a service that has some old .status
             file being around. That is a reboot has occurred and the
             information is not relevant to the current system state."""
-        self.begin()
+        vv = self.begin()
         self.rm_testdir()
-        vv = "-vv"
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -10642,8 +10629,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ check that we manage a service that has some old .pid
             file being around. That is a reboot has occurred and the
             information is not relevant to the current system state."""
-        self.begin()
-        vv = "-vv"
+        vv = self.begin()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -10755,12 +10741,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             with commands like start, restart, stop, etc where
             RemainAfterExit=yes says the service is okay even
             when ExecStart has finished."""
-        self.begin()
+        vv = self.begin()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir, real)
-        vv = "-vv"
         systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         testsleep = self.testname("testsleep")
