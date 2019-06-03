@@ -112,7 +112,7 @@ checks.3:
 	$(MAKE) checks3_coverage
 	for i in .coverage*; do mv $$i $$i.cov3; done
 checks.4:
-	coverage combine && coverage report && coverage annotate
+	python -m coverage combine && python -m coverage report && python -m coverage annotate
 	ls -l tmp/systemctl.py,cover
 	@ echo ".... are you ready for 'make checkall' ?"
 
