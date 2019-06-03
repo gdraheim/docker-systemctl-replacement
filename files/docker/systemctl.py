@@ -146,12 +146,15 @@ def systemd_normpath(path):
     return re.sub("([^a-zA-Z0-9_/@.\\\\*?!\\[\\]-])", lambda m: "\\x%02x" % ord(m.group(1)), path)
 def systemd_unescape(text):
     try:
-        base_text = bytes(text, sys.getfilesystemencoding()) # python3
+        base_text = bytearray(text, sys.getfilesystemencoding()) # python3
+        hexx_text = base_text.replace(b"-", b"/")
+        core_text = re.sub(b"\\\\x([0-9A-Fa-f]{2})", lambda m: bytes(chr(int(m.group(1), 16)), "utf-8"), hexx_text)
+        return core_text.decode("utf-8")
     except:
-        base_text = unicode(text, sys.getfilesystemencoding()).encode("utf-8")
-    hexx_text = base_text.replace(b"-", b"/")
-    core_text = re.sub(b"\\\\x([0-9A-Fa-f]{2})", lambda m: chr(int(m.group(1), 16)), hexx_text)
-    return core_text.decode("utf-8")
+        base_text = bytearray(text.decode(sys.getfilesystemencoding()), "utf-8")
+        hexx_text = base_text.replace(b"-", b"/")
+        core_text = re.sub(b"\\\\x([0-9A-Fa-f]{2})", lambda m: chr(int(str(m.group(1)), 16)), hexx_text)
+        return core_text.decode("utf-8")
 
 def os_path(root, path):
     if not root:
