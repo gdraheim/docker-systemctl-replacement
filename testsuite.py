@@ -1223,8 +1223,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(err, "Unknown operation incorrect."))
         self.assertFalse(greps(out, "units listed."))
         self.assertEqual(end, 1)
-        self.rm_zzfiles(root)
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
     def real_1111_default_command(self):
         self.test_1111_default_command(True)
@@ -1243,8 +1243,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "units listed."))
         self.assertTrue(greps(out, "To show all installed unit files use 'systemctl list-unit-files'."))
         self.assertEqual(end, 0)
-        self.rm_zzfiles(root)
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
     def real_1201_get_default(self):
         self.test_1201_get_default(True)
@@ -1262,8 +1262,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s", cmd, end, out)
         if real: self.assertTrue(greps(out, "graphical.target"))
         else: self.assertTrue(greps(out, "multi-user.target"))
-        self.rm_zzfiles(root)
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
     def real_1211_set_default(self):
         self.test_1211_set_default(True)
@@ -1305,15 +1305,18 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         else: 
             old = "multi-user.target"
             self.assertTrue(greps(out, old))
-        self.rm_zzfiles(root)
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
-    def test_2001_can_create_test_services(self):
+    def real_2001_can_create_test_services(self):
+        self.test_2001_can_create_test_services(real = True)
+    def test_2001_can_create_test_services(self, real = False):
         """ check that two unit files can be created for testing """
         testname = self.testname()
         testdir = self.testdir()
-        root = self.root(testdir)
+        root = self.root(testdir, real)
         systemctl = cover() + _systemctl_py + " --root=" + root
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
         text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A""")
@@ -1327,6 +1330,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertIn("\nDescription", textA)
         self.assertIn("\nDescription", textB)
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
     def test_2002_list_units(self, real = False):
         """ check that two unit files can be found for 'list-units' """
@@ -1360,6 +1364,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertNotIn("To show all installed unit files use", out)
         self.assertEqual(len(lines(out)), 2)
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
     def test_2003_list_unit_files(self, real = False):
         """ check that two unit service files can be found for 'list-unit-files' """
@@ -1391,6 +1396,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertNotIn("unit files listed.", out)
         self.assertEqual(len(lines(out)), 2)
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
     def test_2004_list_unit_files_wanted(self, real = False):
         """ check that two unit files can be found for 'list-unit-files'
@@ -1425,6 +1431,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertNotIn("unit files listed.", out)
         self.assertEqual(len(lines(out)), 2)
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
     def test_2006_list_unit_files_wanted_and_unknown_type(self, real = False):
         """ check that two unit files can be found for 'list-unit-files'
@@ -1449,6 +1456,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertIn("0 unit files listed.", out)
         self.assertEqual(len(lines(out)), 3)
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
     def test_2008_list_unit_files_locations(self, real = False):
         """ check that unit files can be found for 'list-unit-files'
@@ -1518,6 +1526,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(lines(out)), 7)
         #
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
     def test_2010_list_unit_files_locations_user_mode(self, real = False):
         """ check that unit files can be found for 'list-unit-files'
@@ -1597,6 +1606,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(lines(out)), 5)
         #
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
     def test_2014_list_unit_files_locations_user_extra(self, real = False):
         """ check that unit files can be found for 'list-unit-files'
@@ -1688,6 +1698,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         logg.info("enabled services for User=%s", user)
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
     def test_2043_list_unit_files_common_targets(self, real = False):
         """ check that some unit target files can be found for 'list-unit-files' """
@@ -1728,6 +1739,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, r"multi-user.target\s+enabled"))
         self.assertEqual(len(lines(out)), num_targets + 2)
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
     def test_2044_list_unit_files_now(self, real = False):
         """ check that 'list-unit-files --now' presents a special debug list """
@@ -1752,6 +1764,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(out, r"enabled"))
         self.assertEqual(len(lines(out)), 2)
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
     def test_2140_show_environment_from_parts(self, real = False):
         """ check that the result of 'environment UNIT' can 
@@ -1791,6 +1804,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         a_lines = len(lines(out))
         #
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
     def real_2147_show_environment_from_some_parts(self):
         self.test_2147_show_environment_from_some_parts(True)
@@ -1915,6 +1929,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         a_lines = len(lines(out))
         #
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
     def test_2220_show_unit_is_parseable(self, real = False):
         """ check that 'show UNIT' is machine-readable """
@@ -1961,6 +1976,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 # found non-machine readable property line
                 self.assertEqual("word=value", line)
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
     def test_2221_show_unit_can_be_restricted_to_one_property(self, real = False):
         """ check that 'show UNIT' may return just one value if asked for"""
@@ -2002,6 +2018,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.assertEqual(lines(out), [ "PIDFile=" ])
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
     def test_2225_show_unit_for_multiple_matches(self, real = False):
         """ check that the result of 'show UNIT' for multiple services is 
@@ -2072,6 +2089,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 # found non-machine readable property line
                 self.assertEqual("word=value", line)
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
     def test_2227_show_unit_for_oneshot_service(self, real = False):
         """ check that 'show UNIT' is machine-readable """
@@ -2123,6 +2141,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 # found non-machine readable property line
                 self.assertEqual("word=value", line)
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
     def test_2230_show_unit_display_parsed_timeouts(self, real = False):
         """ check that 'show UNIT' show parsed timeoutss """
@@ -2225,6 +2244,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertIn("TimeoutStopUSec=3min 2s", rep)
         #
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
     def real_2240_show_environment_from_parts(self):
         self.test_2240_show_environment_from_parts(True)
@@ -2327,7 +2347,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.rm_zzfiles(root)
         self.coverage()
-
     def real_2300_override_environment_extras(self):
         self.test_2300_override_environment_extras(True)
     def test_2300_override_environment_extras(self, real = False):
@@ -2882,6 +2901,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertIn("ActiveState=inactive", rep)
         self.assertIn("SubState=dead", rep)
         self.assertIn("Id=zz-not-existing.service", rep)
+        #
+        self.rm_testdir()
+        self.rm_zzfiles(root)
+        self.coverage()
         ##
     def test_2612_show_unit_property_not_found(self, real = False):
         """ check when 'show UNIT' not found  """
@@ -2903,6 +2926,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 0)
         self.assertEqual(len(out.strip()), 0)
         ##
+        self.rm_testdir()
+        self.rm_zzfiles(root)
+        self.coverage()
     def test_2900_class_UnitConfParser(self):
         """ using systemctl.py as a helper library for 
             the UnitConfParser functions."""
@@ -3013,6 +3039,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "      \\$DEF6 \\$DEF7"))
         #
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
     def real_3002_enable_service_creates_a_symlink(self):
         self.test_3002_enable_service_creates_a_symlink(True)
@@ -3048,8 +3075,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         textB = file(enabled_file).read()
         self.assertTrue(greps(textB, "Testing B"))
         self.assertIn("\nDescription", textB)
-        self.rm_zzfiles(root)
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def real_3003_disable_service_removes_the_symlink(self):
@@ -3120,8 +3147,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertNotEqual(end, 0)
         #
-        self.rm_zzfiles(root)
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def real_3004_list_unit_files_when_enabled(self):
@@ -3188,8 +3215,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, r"zzb.service\s+disabled"))
         self.assertEqual(len(greps(out, "^zz")), 2)
         #
-        self.rm_zzfiles(root)
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def real_3005_is_enabled_result_when_enabled(self):
@@ -3255,8 +3282,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(lines(out)), 1)
         self.assertEqual(end, 1)
         #
-        self.rm_zzfiles(root)
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def test_3006_is_enabled_is_true_when_any_is_enabled(self, real = False):
@@ -3348,6 +3375,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(lines(out)), 2)
         #
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def test_3008_is_enabled_for_nonexistant_service(self, real = False):
@@ -3394,6 +3422,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(err, "Unit zz-not-existing-service.service could not be found."))
         #
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def test_3009_sysv_service_enable(self, real = False):
@@ -3535,6 +3564,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(lines(out)), 0)
         #
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def test_3010_check_preset_all(self, real = False):
@@ -3612,6 +3642,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 1)
         #
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def test_3011_check_preset_one(self, real = False):
@@ -3694,6 +3725,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 1)
         #
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def test_3012_check_preset_to_reset_one(self, real = False):
@@ -3818,6 +3850,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 1)
         #
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def test_3013_check_preset_to_reset_some(self, real = False):
@@ -3935,6 +3968,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 1)
         #
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def test_3015_check_preset_all_only_enable(self, real = False):
@@ -4045,6 +4079,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 0)
         #
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def test_3016_check_preset_all_only_disable(self, real = False):
@@ -4155,6 +4190,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 1)
         #
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def test_3020_default_services(self, real = False):
@@ -4216,6 +4252,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "c.service"))
         #
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def test_3021_default_services(self, real = False):
@@ -4303,6 +4340,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 0)
         #
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def test_3025_default_user_services(self, real = False):
@@ -4381,6 +4419,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "d.service"))
         #
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def test_3030_systemctl_py_start_simple(self, real = False):
@@ -4440,6 +4479,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def test_3031_systemctl_py_start_extra_simple(self, real = False):
@@ -4498,6 +4538,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def test_3032_systemctl_py_start_forking(self, real = False):
@@ -4575,6 +4616,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def test_3033_systemctl_py_start_forking_without_pid_file(self, real = False):
@@ -4650,6 +4692,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def test_3040_systemctl_py_start_simple_bad_stop(self, real = False):
@@ -4710,6 +4753,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def test_3041_systemctl_py_start_extra_simple_bad_start(self, real = False):
@@ -4768,6 +4812,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def test_3042_systemctl_py_start_forking_bad_stop(self, real = False):
@@ -4846,6 +4891,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def test_3043_systemctl_py_start_forking_bad_start(self, real = False):
@@ -4921,6 +4967,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def test_3049_systemctl_py_run_default_services_in_testenv(self, real = False):
@@ -4999,6 +5046,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def real_3050_systemctl_py_check_is_active(self):
@@ -5288,6 +5336,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def real_3060_is_active_for_forking(self):
@@ -6135,6 +6184,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(err, "Unit zz-not-existing-service.service could not be found."))
         #
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def real_3201_missing_environment_file_makes_service_ignored(self):
@@ -6182,6 +6232,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def real_3211_environment_files_are_included(self):
@@ -6250,6 +6301,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(top, testsleep))
         #
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def real_3240_may_expand_environment_variables(self):
@@ -6325,6 +6377,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertIn(F, log)
         #
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def real_3250_env_may_expand_special_variables(self):
@@ -6407,6 +6460,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             self.assertIn(Z, log)
         #
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def real_3255_user_mode_env_may_expand_special_variables(self):
@@ -6491,6 +6545,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             self.assertIn(Z, log)
         #
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def real_3260_env_may_expand_special_template_variables(self):
@@ -6573,6 +6628,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             self.assertIn(Z, log)
         #
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def real_3270_may_override_environment_from_commandline(self):
@@ -6677,6 +6733,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertIn(T, log)
         #
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def test_3301_service_config_show(self, real = False):
@@ -6761,6 +6818,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def test_3302_service_config_show_single_properties(self, real = False):
@@ -6822,6 +6880,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def test_3303_service_config_show_single_properties_plus_unknown(self, real = False):
@@ -6884,6 +6943,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def test_3401_service_status_show(self, real = False):
@@ -6948,6 +7008,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def test_3403_service_status_show_plus_unknown(self, real = False):
@@ -7012,6 +7073,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def test_3530_systemctl_py_default_workingdirectory_is_root(self, real = False):
@@ -7069,6 +7131,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def test_3531_systemctl_py_simple_in_workingdirectory(self, real = False):
@@ -7129,6 +7192,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def test_3532_systemctl_py_with_bad_workingdirectory(self, real = False):
@@ -7190,6 +7254,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def test_3533_systemctl_py_with_bad_workingdirectory(self, real = False):
@@ -7251,6 +7316,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def test_3601_non_absolute_ExecStopPost(self, real = False):
@@ -7291,6 +7357,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def test_3602_non_absolute_ExecStop(self, real = False):
@@ -7331,6 +7398,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def test_3603_non_absolute_ExecReload(self, real = False):
@@ -7374,6 +7442,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def test_3604_non_absolute_ExecStartPost(self, real = False):
@@ -7413,6 +7482,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def test_3605_non_absolute_ExecStartPre(self, real = False):
@@ -7452,6 +7522,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def test_3606_non_absolute_ExecStart(self, real = False):
@@ -7491,6 +7562,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def real_3609_exitcode_from_ExecReload(self):
@@ -7671,6 +7743,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def test_3710_systemctl_py_init_explicit_loop_in_testenv(self, real = False):
@@ -7798,6 +7871,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def test_3801_start_some_unknown(self, real = False):
@@ -7816,6 +7890,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(err, "Unit zz-unknown.service could not be found."))
         #
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def test_3802_stop_some_unknown(self, real = False):
@@ -7834,6 +7909,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(err, "Unit zz-unknown.service could not be found."))
         #
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def test_3803_restart_some_unknown(self, real = False):
@@ -7852,6 +7928,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(err, "Unit zz-unknown.service could not be found."))
         #
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def test_3804_reload_some_unknown(self, real = False):
@@ -7870,6 +7947,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(err, "Unit zz-unknown.service could not be found."))
         #
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def test_3805_reload_or_restart_some_unknown(self, real = False):
@@ -7888,6 +7966,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(err, "Unit zz-unknown.service could not be found."))
         #
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def test_3806_reload_or_try_restart_some_unknown(self, real = False):
@@ -7906,6 +7985,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(err, "Unit zz-unknown.service could not be found."))
         #
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def test_3807_try_restart_some_unknown(self, real = False):
@@ -7924,6 +8004,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(err, "Unit zz-unknown.service could not be found."))
         #
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def test_3808_kill_some_unknown(self, real = False):
@@ -7942,6 +8023,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(err, "Unit zz-unknown.service could not be found."))
         #
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def test_3809_reset_failed_some_unknown(self, real = False):
@@ -7960,6 +8042,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(err, "Unit zz-unknown.service could not be found."))
         #
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def test_3811_mask_some_unknown(self, real = False):
@@ -7978,6 +8061,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(err, "Unit zz-unknown.service could not be found."))
         #
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def test_3812_unmask_some_unknown(self, real = False):
@@ -7996,6 +8080,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(err, "Unit zz-unknown.service could not be found."))
         #
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def test_3813_enable_some_unknown(self, real = False):
@@ -8014,6 +8099,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(err, "Unit zz-unknown.service could not be found."))
         #
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def test_3814_disable_some_unknown(self, real = False):
@@ -8032,6 +8118,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(err, "Unit zz-unknown.service could not be found."))
         #
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def test_3815_is_enabled_some_unknown(self, real = False):
@@ -8068,6 +8155,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(err, "Unit zz-unknown.service could not be found."))
         #
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def test_3817_is_active_some_unknown(self, real = False):
@@ -8105,6 +8193,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(err, "Unit zz-unknown.service could not be found."))
         #
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def test_3819_status_some_unknown(self, real = False):
@@ -8123,9 +8212,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(err, "Unit zz-unknown.service could not be found."))
         #
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
-
     def test_3901_service_config_cat(self, real = False):
         """ check that a name service config can be printed as-is"""
         self.begin()
@@ -8161,6 +8250,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(orig + [""], data)
         #
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def test_3903_service_config_cat_plus_unknown(self, real = False):
@@ -8198,6 +8288,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(orig + [""], data)
         #
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def test_4030_simple_service_functions_system(self):
