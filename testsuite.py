@@ -13392,7 +13392,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
              cmd = "docker exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
         self.prep_coverage(testname)
-        cmd = "docker exec {testname} cp /usr/bin/sleep {bindir}/{testsleep}"
+        cmd = "docker exec {testname} bash -c 'cp \"$(command -v sleep)\" {bindir}/{testsleep}'"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/{testscript} {testname}:{bindir}/{testscript}"
         sh____(cmd.format(**locals()))
@@ -13810,7 +13810,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
         zzz_service = "/etc/systemd/{system}/zzz.service".format(**locals())
-        cmd = "docker exec {testname} cp /usr/bin/sleep {bindir}/{testsleep}"
+        cmd = "docker exec {testname} bash -c 'cp \"$(command -v sleep)\" {bindir}/{testsleep}'"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zzz.init {testname}:/usr/bin/zzz.init"
         sh____(cmd.format(**locals()))
@@ -14181,7 +14181,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
         zzz_service = "/etc/systemd/{system}/zzz.service".format(**locals())
-        cmd = "docker exec {testname} cp /usr/bin/sleep {bindir}/{testsleep}"
+        cmd = "docker exec {testname} bash -c 'cp \"$(command -v sleep)\" {bindir}/{testsleep}'"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zzz.init {testname}:/usr/bin/zzz.init"
         sh____(cmd.format(**locals()))
@@ -14566,7 +14566,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
         zzz_service = "/etc/systemd/{system}/zzz.service".format(**locals())
-        cmd = "docker exec {testname} cp /usr/bin/sleep {bindir}/{testsleep}"
+        cmd = "docker exec {testname} bash -c 'cp \"$(command -v sleep)\" {bindir}/{testsleep}'"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zzz.init {testname}:/usr/bin/zzz.init"
         sh____(cmd.format(**locals()))
@@ -14908,7 +14908,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
         zzz_service = "/etc/systemd/{system}/zzz.service".format(**locals())
-        cmd = "docker exec {testname} cp /usr/bin/sleep {bindir}/{testsleep}"
+        cmd = "docker exec {testname} bash -c 'cp \"$(command -v sleep)\" {bindir}/{testsleep}'"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zzz.service {testname}:{zzz_service}"
         sh____(cmd.format(**locals()))
@@ -15172,7 +15172,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.prep_coverage(testname)
         cmd = "docker exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
-        cmd = "docker exec {testname} cp /usr/bin/sleep {bindir}/{testsleep}"
+        cmd = "docker exec {testname} bash -c 'cp \"$(command -v sleep)\" {bindir}/{testsleep}'"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zzz.service {testname}:/etc/systemd/system/zzz.service"
         sh____(cmd.format(**locals()))
@@ -15463,7 +15463,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
              cmd = "docker exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
         self.prep_coverage(testname)
-        cmd = "docker exec {testname} cp /usr/bin/sleep {bindir}/{testsleep}"
+        cmd = "docker exec {testname} bash -c 'cp \"$(command -v sleep)\" {bindir}/{testsleep}'"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zzz.init {testname}:/etc/init.d/zzz"
         sh____(cmd.format(**locals()))
@@ -15788,7 +15788,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.prep_coverage(testname)
         cmd = "docker exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
-        cmd = "docker exec {testname} cp /usr/bin/sleep {bindir}/{testsleep}"
+        cmd = "docker exec {testname} bash -c 'cp \"$(command -v sleep)\" {bindir}/{testsleep}'"
         sh____(cmd.format(**locals()))
         zzz_service = "/etc/systemd/{system}/zzz.service".format(**locals())
         cmd = "docker cp {testdir}/zzz.service {testname}:{zzz_service}"
@@ -15988,7 +15988,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
              cmd = "docker exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
         self.prep_coverage(testname)
-        cmd = "docker exec {testname} cp /usr/bin/sleep {bindir}/{testsleep}"
+        cmd = "docker exec {testname} bash -c 'cp \"$(command -v sleep)\" {bindir}/{testsleep}'"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/{testscript} {testname}:{bindir}/{testscript}"
         sh____(cmd.format(**locals()))
@@ -16423,7 +16423,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
         zzz_service = "/etc/systemd/{system}/zzz.service".format(**locals())
-        cmd = "docker exec {testname} cp /usr/bin/sleep {bindir}/{testsleep}"
+        cmd = "docker exec {testname} bash -c 'cp \"$(command -v sleep)\" {bindir}/{testsleep}'"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zzz.init {testname}:/usr/bin/zzz.init"
         sh____(cmd.format(**locals()))
@@ -16811,7 +16811,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
         zzz_service = "/etc/systemd/{system}/zzz.service".format(**locals())
-        cmd = "docker exec {testname} cp /usr/bin/sleep {bindir}/{testsleep}"
+        cmd = "docker exec {testname} bash -c 'cp \"$(command -v sleep)\" {bindir}/{testsleep}'"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zzz.init {testname}:/usr/bin/zzz.init"
         sh____(cmd.format(**locals()))
@@ -17212,7 +17212,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
         zzz_service = "/etc/systemd/{system}/zzz.service".format(**locals())
-        cmd = "docker exec {testname} cp /usr/bin/sleep {bindir}/{testsleep}"
+        cmd = "docker exec {testname} bash -c 'cp \"$(command -v sleep)\" {bindir}/{testsleep}'"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zzz.init {testname}:/usr/bin/zzz.init"
         sh____(cmd.format(**locals()))
@@ -17570,7 +17570,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
         zzz_service = "/etc/systemd/{system}/zzz.service".format(**locals())
-        cmd = "docker exec {testname} cp /usr/bin/sleep {bindir}/{testsleep}"
+        cmd = "docker exec {testname} bash -c 'cp \"$(command -v sleep)\" {bindir}/{testsleep}'"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zzz.service {testname}:{zzz_service}"
         sh____(cmd.format(**locals()))
@@ -17851,7 +17851,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.prep_coverage(testname)
         cmd = "docker exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
-        cmd = "docker exec {testname} cp /usr/bin/sleep {bindir}/{testsleep}"
+        cmd = "docker exec {testname} bash -c 'cp \"$(command -v sleep)\" {bindir}/{testsleep}'"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zzz.service {testname}:/etc/systemd/system/zzz.service"
         sh____(cmd.format(**locals()))
@@ -18159,7 +18159,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
              cmd = "docker exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
         self.prep_coverage(testname)
-        cmd = "docker exec {testname} cp /usr/bin/sleep {bindir}/{testsleep}"
+        cmd = "docker exec {testname} bash -c 'cp \"$(command -v sleep)\" {bindir}/{testsleep}'"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zzz.init {testname}:/etc/init.d/zzz"
         sh____(cmd.format(**locals()))
@@ -18306,7 +18306,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
              cmd = "docker exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
         self.prep_coverage(testname)
-        cmd = "docker exec {testname} cp /usr/bin/sleep {bindir}/{testsleep}"
+        cmd = "docker exec {testname} bash -c 'cp \"$(command -v sleep)\" {bindir}/{testsleep}'"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/{testscript} {testname}:{bindir}/{testscript}"
         sh____(cmd.format(**locals()))
@@ -18520,7 +18520,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
         zzz_service = "/etc/systemd/system/zzz.service".format(**locals())
-        cmd = "docker exec {testname} cp /usr/bin/sleep {bindir}/{testsleep}"
+        cmd = "docker exec {testname} bash -c 'cp \"$(command -v sleep)\" {bindir}/{testsleep}'"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zzz.init {testname}:/usr/bin/zzz.init"
         sh____(cmd.format(**locals()))
@@ -18743,7 +18743,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
         zzz_service = "/etc/systemd/system/zzz.service".format(**locals())
-        cmd = "docker exec {testname} cp /usr/bin/sleep {bindir}/{testsleep}"
+        cmd = "docker exec {testname} bash -c 'cp \"$(command -v sleep)\" {bindir}/{testsleep}'"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zzz.init {testname}:/usr/bin/zzz.init"
         sh____(cmd.format(**locals()))
@@ -18970,7 +18970,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
         zzz_service = "/etc/systemd/system/zzz.service".format(**locals())
-        cmd = "docker exec {testname} cp /usr/bin/sleep {bindir}/{testsleep}"
+        cmd = "docker exec {testname} bash -c 'cp \"$(command -v sleep)\" {bindir}/{testsleep}'"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zzz.init {testname}:/usr/bin/zzz.init"
         sh____(cmd.format(**locals()))
@@ -19154,7 +19154,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
         zzz_service = "/etc/systemd/system/zzz.service".format(**locals())
-        cmd = "docker exec {testname} cp /usr/bin/sleep {bindir}/{testsleep}"
+        cmd = "docker exec {testname} bash -c 'cp \"$(command -v sleep)\" {bindir}/{testsleep}'"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zzz.service {testname}:{zzz_service}"
         sh____(cmd.format(**locals()))
@@ -19331,7 +19331,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
         zzz_service = "/etc/systemd/system/zzz.service".format(**locals())
-        cmd = "docker exec {testname} cp /usr/bin/sleep {bindir}/{testsleep}"
+        cmd = "docker exec {testname} bash -c 'cp \"$(command -v sleep)\" {bindir}/{testsleep}'"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zzz.service {testname}:{zzz_service}"
         sh____(cmd.format(**locals()))
@@ -19462,7 +19462,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.prep_coverage(testname)
         cmd = "docker exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
-        cmd = "docker exec {testname} cp /usr/bin/sleep /usr/bin/testsleep"
+        cmd = "docker exec {testname} bash -c 'cp \"$(command -v sleep)\" /usr/bin/testsleep'"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/killall {testname}:/usr/bin/killall"
         sh____(cmd.format(**locals()))
@@ -19536,7 +19536,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
              cmd = "docker exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
         self.prep_coverage(testname)
-        cmd = "docker exec {testname} cp /usr/bin/sleep /usr/bin/testsleep"
+        cmd = "docker exec {testname} bash -c 'cp \"$(command -v sleep)\" /usr/bin/testsleep'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
@@ -19634,7 +19634,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.prep_coverage(testname)
         cmd = "docker exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
-        cmd = "docker exec {testname} cp /usr/bin/sleep /usr/bin/testsleep"
+        cmd = "docker exec {testname} bash -c 'cp \"$(command -v sleep)\" /usr/bin/testsleep'"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/killall {testname}:/usr/bin/killall"
         sh____(cmd.format(**locals()))
@@ -19731,7 +19731,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.prep_coverage(testname)
         cmd = "docker exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
-        cmd = "docker exec {testname} cp /usr/bin/sleep /usr/bin/testsleep"
+        cmd = "docker exec {testname} bash -c 'cp \"$(command -v sleep)\" /usr/bin/testsleep'"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/killall {testname}:/usr/bin/killall"
         sh____(cmd.format(**locals()))
@@ -19816,7 +19816,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.prep_coverage(testname)
         cmd = "docker exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
-        cmd = "docker exec {testname} cp /usr/bin/sleep /usr/bin/testsleep"
+        cmd = "docker exec {testname} bash -c 'cp \"$(command -v sleep)\" /usr/bin/testsleep'"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/killall {testname}:/usr/bin/killall"
         sh____(cmd.format(**locals()))
@@ -19901,7 +19901,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.prep_coverage(testname)
         cmd = "docker exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
-        cmd = "docker exec {testname} cp /usr/bin/sleep /usr/bin/testsleep"
+        cmd = "docker exec {testname} bash -c 'cp \"$(command -v sleep)\" /usr/bin/testsleep'"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zza.service {testname}:/etc/systemd/system/zza.service"
         sh____(cmd.format(**locals()))
@@ -19999,7 +19999,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.prep_coverage(testname)
         cmd = "docker exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
-        cmd = "docker exec {testname} cp /usr/bin/sleep /usr/bin/testsleep"
+        cmd = "docker exec {testname} bash -c 'cp \"$(command -v sleep)\" /usr/bin/testsleep'"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zza.service {testname}:/etc/systemd/system/zza.service"
         sh____(cmd.format(**locals()))
@@ -20120,7 +20120,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.prep_coverage(testname)
         cmd = "docker exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
-        cmd = "docker exec {testname} cp /usr/bin/sleep /usr/bin/testsleep"
+        cmd = "docker exec {testname} bash -c 'cp \"$(command -v sleep)\" /usr/bin/testsleep'"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zza.service {testname}:/etc/systemd/system/zza.service"
         sh____(cmd.format(**locals()))
@@ -20225,7 +20225,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.prep_coverage(testname)
         cmd = "docker exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
-        cmd = "docker exec {testname} cp /usr/bin/sleep /usr/bin/testsleep"
+        cmd = "docker exec {testname} bash -c 'cp \"$(command -v sleep)\" /usr/bin/testsleep'"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zza.service {testname}:/etc/systemd/system/zza.service"
         sh____(cmd.format(**locals()))
@@ -20331,7 +20331,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.prep_coverage(testname)
         cmd = "docker exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
-        cmd = "docker exec {testname} cp /usr/bin/sleep /usr/bin/testsleep"
+        cmd = "docker exec {testname} bash -c 'cp \"$(command -v sleep)\" /usr/bin/testsleep'"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zza.service {testname}:/etc/systemd/system/zza.service"
         sh____(cmd.format(**locals()))
@@ -20443,7 +20443,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} cp /usr/bin/sleep /usr/bin/testsleep"
+        cmd = "docker exec {testname} bash -c 'cp \"$(command -v sleep)\" /usr/bin/testsleep'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
@@ -20550,7 +20550,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} cp /usr/bin/sleep /usr/bin/testsleep"
+        cmd = "docker exec {testname} bash -c 'cp \"$(command -v sleep)\" /usr/bin/testsleep'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
@@ -20654,7 +20654,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} cp /usr/bin/sleep /usr/bin/testsleep"
+        cmd = "docker exec {testname} bash -c 'cp \"$(command -v sleep)\" /usr/bin/testsleep'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
@@ -20796,7 +20796,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} cp /usr/bin/sleep /usr/bin/testsleep"
+        cmd = "docker exec {testname} bash -c 'cp \"$(command -v sleep)\" /usr/bin/testsleep'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
@@ -20943,7 +20943,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} cp /usr/bin/sleep /usr/bin/testsleep"
+        cmd = "docker exec {testname} bash -c 'cp \"$(command -v sleep)\" /usr/bin/testsleep'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
@@ -21080,7 +21080,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} cp /usr/bin/sleep /usr/bin/testsleep"
+        cmd = "docker exec {testname} bash -c 'cp \"$(command -v sleep)\" /usr/bin/testsleep'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
@@ -21230,7 +21230,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} cp /usr/bin/sleep /usr/bin/testsleep"
+        cmd = "docker exec {testname} bash -c 'cp \"$(command -v sleep)\" /usr/bin/testsleep'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
@@ -21353,7 +21353,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} cp /usr/bin/sleep /usr/bin/testsleep"
+        cmd = "docker exec {testname} bash -c 'cp \"$(command -v sleep)\" /usr/bin/testsleep'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
@@ -21509,7 +21509,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} cp /usr/bin/sleep /usr/bin/testsleep"
+        cmd = "docker exec {testname} bash -c 'cp \"$(command -v sleep)\" /usr/bin/testsleep'"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testsleep_sh} {testname}:/usr/bin/testsleep.sh"
         sh____(cmd.format(**locals()))
@@ -21628,7 +21628,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} cp /usr/bin/sleep /usr/bin/{testsleep}"
+        cmd = "docker exec {testname} bash -c 'cp \"$(command -v sleep)\" /usr/bin/{testsleep}'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} touch /var/log/systemctl.debug.log"
         sh____(cmd.format(**locals()))
