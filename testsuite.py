@@ -89,9 +89,7 @@ def refresh_tool(image):
 def coverage_tool(image = None, python = None):
     image = image or IMAGE
     python = python or _python
-    if python.endswith("3"):
-        return "coverage3"
-    return "coverage2"
+    return python + " -m coverage"
 def coverage_run(image = None, python = None):
     options = " run '--omit=*/six.py,*/extern/*.py,*/unitconfparser.py' --append -- "
     return coverage_tool(image, python) + options
