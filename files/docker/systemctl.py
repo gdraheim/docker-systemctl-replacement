@@ -1116,7 +1116,7 @@ class Systemctl:
             else:
                 if fnmatch.fnmatchcase(item, module_unit):
                     yield item
-                if fnmatch.fnmatchcase(item+suffix, module_unit):
+                if fnmatch.fnmatchcase(item, module_unit+suffix):
                     yield item
     def match_units(self, module = None, suffix=".service"): # -> [ units,.. ]
         """ Helper for about any command with multiple units which can
