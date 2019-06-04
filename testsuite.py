@@ -89,9 +89,9 @@ def refresh_tool(image):
 def coverage_tool(image = None, python = None):
     image = image or IMAGE
     python = python or _python
-    if python.endswith("3"):
-        return "coverage3"
-    return "coverage2"
+    # if python.endswith("3"):
+    #     return "coverage3"
+    return python + " -m coverage"
 def coverage_run(image = None, python = None):
     options = " run '--omit=*/six.py,*/extern/*.py,*/unitconfparser.py' --append -- "
     return coverage_tool(image, python) + options
@@ -20507,9 +20507,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-        self.assertGreater(running, 2)
-        self.assertGreater(starting, 2)
-        self.assertGreater(stopping, 2)
+        self.assertGreater(running, 1)
+        self.assertGreater(starting, 1)
+        self.assertGreater(stopping, 1)
         self.assertFalse(other)
         self.assertFalse(others)
     def test_6130_run_default_services_from_simple_saved_container(self):
