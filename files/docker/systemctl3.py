@@ -3500,7 +3500,7 @@ class Systemctl:
                     for required in requirelist.strip().split(" "):
                         deps[required.strip()] = style
         return deps
-    def get_start_dependencies(self, unit): # pragma: no cover
+    def get_start_dependencies(self, unit): # pragma: nocover
         """ the list of services to be started as well / TODO: unused """
         deps = {}
         unit_deps = self.get_dependencies_unit(unit)
