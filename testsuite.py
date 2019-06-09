@@ -20511,12 +20511,132 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         self.rm_testdir()
         self.assertGreater(initializing, 1)
-        self.assertGreater(running, 1)
         self.assertGreater(starting, 1)
+        self.assertGreater(running, 1)
         self.assertGreater(stopping, 1)
         self.assertGreater(degraded, 0)
-        self.assertFalse(other)
-        self.assertFalse(others)
+        self.assertEqual(other, 0)
+        self.assertEqual(others, 0)
+    def test_5810_systemctl_py_is_system_wait_running(self):
+        """ check that the startup and shutdown sequence with the sysvinit.status target
+            where 'is-system-running --wait' will wait till all services have started."""
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        images = IMAGES
+        image = self.local_image(COVERAGE or IMAGE or CENTOS)
+        if _python.endswith("python3") and "centos" in image: 
+            self.skipTest("no python3 on centos")
+        testname = self.testname()
+        testdir = self.testdir()
+        package = package_tool(image)
+        refresh = refresh_tool(image)
+        python = os.path.basename(_python)
+        python_coverage = coverage_package(image)
+        systemctl_py = _systemctl_py
+        sometime = SOMETIME or 188
+        FROM=200
+        UPTO=222
+        for xxx in xrange(FROM, UPTO):
+            text_file(os_path(testdir, "zz%i.service" %xxx),"""
+                [Unit]
+                Description=Testing %i
+                [Service]
+                Type=simple
+                ExecStart=/usr/bin/testsleep 99
+                [Install]
+                WantedBy=multi-user.target""" %xxx)
+        #
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} {refresh}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
+        sx____(cmd.format(**locals()))
+        if COVERAGE:
+             cmd = "docker exec {testname} {package} install -y {python_coverage}"
+             sx____(cmd.format(**locals()))
+        self.prep_coverage(testname)
+        cmd = "docker exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
+        sx____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'cp \"$(command -v sleep)\" /usr/bin/testsleep'"
+        sh____(cmd.format(**locals()))
+        for xxx in xrange(FROM, UPTO):
+            cmd = "docker cp {testdir}/zz{xxx}.service {testname}:/etc/systemd/system/"
+            sh____(cmd.format(**locals()))
+            cmd = "docker exec {testname} systemctl enable zz{xxx}.service"
+            sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl --version"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl default-services -v"
+        # sh____(cmd.format(**locals()))
+        out2 = output(cmd.format(**locals()))
+        logg.info("\n>\n%s", out2)
+        # .........................................vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+        testing="--coverage=initializing"
+        cmd = "docker commit -c 'CMD [\"/usr/bin/systemctl\",\"{testing}\"]'  {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}x"
+        sx____(cmd.format(**locals()))
+        logg.info("=========================================================================")
+        time.sleep(2)
+        logg.info("=========================================================================")
+        cmd = "docker run --detach --name {testname}x {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        initializing = 0
+        starting = 0
+        running = 0
+        other = 0
+        for xx in xrange(10,50):
+            cmd = "docker exec {testname}x systemctl is-system-running --wait -vv" # <<<<<<<
+            chk = output(cmd.format(**locals()))
+            logg.info("\n>>>\n%s", chk)
+            if chk.strip() in ["initializing"]: initializing += 1
+            elif chk.strip() in ["starting"]: starting += 1
+            elif chk.strip() in "running": running += 1
+            else: other += 1
+            top_container2 = "docker exec {testname}x ps -eo pid,ppid,user,args"
+            top = output(top_container2.format(**locals()))
+            logg.info("\n>>>\n%s", top)
+            time.sleep(2)
+            if running > 2: break
+        logg.info("-------------------------------------------------------------------------")
+        time.sleep(2)
+        logg.info("-------------------------------------------------------------------------")
+        cmd = "docker exec {testname}x systemctl halt"
+        sh____(cmd.format(**locals()))
+        stopping = 0
+        degraded = 0
+        others = 0
+        for xx in xrange(10,50):
+            cmd = "docker exec {testname}x systemctl is-system-running"
+            chk = output(cmd.format(**locals()))
+            logg.info("\n>>>\n%s", chk)
+            if not chk.strip(): break
+            if chk.strip() in ["stopping"]: stopping += 1
+            elif chk.strip() in ["degraded"]: degraded += 1
+            else: others += 1
+            ## top_container2 = "docker exec {testname}x ps -eo pid,ppid,user,args"
+            ## top = output(top_container2.format(**locals()))
+            ## logg.info("\n>>>\n%s", top)
+            ## time.sleep(2)
+        #
+        self.save_coverage(testname, testname+"x")
+        #
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}x"
+        sx____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
+        self.rm_testdir()
+        self.assertEqual(initializing, 0) # <<<
+        self.assertEqual(starting, 0) # <<<
+        self.assertGreater(running, 0)
+        self.assertGreater(stopping, 0)
+        self.assertGreater(degraded, 0)
+        self.assertEqual(other, 0)
+        self.assertEqual(others, 0)
     def test_6133_run_default_services_from_single_service_saved_container(self):
         """ check that we can enable services in a docker container to be run as default-services
             after it has been restarted from a commit-saved container image.

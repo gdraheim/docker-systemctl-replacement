@@ -46,6 +46,7 @@ _no_legend = False
 _no_ask_password = False
 _preset_mode = "all"
 _quiet = False
+_wait = False
 _root = ""
 _unit_type = None
 _unit_state = None
@@ -4165,7 +4166,15 @@ class Systemctl:
         status = self.read_status_from(conf)
         return status.get("SubState", "unknown")
     def system_is_system_running(self):
+        if _wait:
+            for attempt in xrange(DefaultMaximumTimeout):
+                state = self.is_system_running()
+                logg.debug("[%i] wait %s", attempt, state)
+                if state not in ["initializing", "starting"]:
+                    break
+                time.sleep(1)
         state = self.is_system_running()
+        logg.debug("is-system-running %s", state)
         if self._quiet:
             return state in [ "running" ]
         else:
@@ -4428,6 +4437,8 @@ if __name__ == "__main__":
         help="Start or stop unit in addition to enabling or disabling it")
     _o.add_option("-q","--quiet", action="store_true", default=_quiet,
         help="Suppress output")
+    _o.add_option("--wait", action="store_true", default=_wait,
+        help="For (re)start, wait until service stopped again")
     _o.add_option("--no-block", action="store_true", default=False,
         help="Do not wait until operation finished (ignored)")
     _o.add_option("--no-legend", action="store_true", default=_no_legend,
@@ -4490,6 +4501,7 @@ if __name__ == "__main__":
     _now = opt.now
     _preset_mode = opt.preset_mode
     _quiet = opt.quiet
+    _wait = opt.wait
     _root = opt.root
     _show_all = opt.show_all
     _unit_state = opt.state
