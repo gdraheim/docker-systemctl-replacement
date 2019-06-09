@@ -27,6 +27,7 @@ else:
     string_types = str
     xrange = range
 
+# --coverage=removelockfile,oldest,spawn,sleep,quick,initializing
 COVERAGE = os.environ.get("SYSTEMCTL_COVERAGE", "")
 DEBUG_AFTER = os.environ.get("SYSTEMCTL_DEBUG_AFTER", "") or False
 EXIT_WHEN_NO_MORE_PROCS = os.environ.get("SYSTEMCTL_EXIT_WHEN_NO_MORE_PROCS", "") or False
@@ -3916,6 +3917,8 @@ class Systemctl:
             the services are stopped again by 'systemctl halt'."""
         default_target = self._default_target
         default_services = self.system_default_services("S", default_target)
+        logg.debug("default services = %s", default_services)
+        if "initializing" in COVERAGE: time.sleep(3)
         self.sysinit_status(SubState = "starting")
         self.start_units(default_services)
         logg.info(" -- system is up")
@@ -4108,6 +4111,7 @@ class Systemctl:
                 logg.info("interrupted - exit init-loop")
                 result = e.message or "STOPPED"
         self.sysinit_status(ActiveState = None, SubState = "degraded")
+        if "initializing" in COVERAGE: time.sleep(3)
         self.read_log_files(units)
         self.read_log_files(units)
         self.stop_log_files(units)
