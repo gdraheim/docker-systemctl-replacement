@@ -4112,7 +4112,7 @@ class Systemctl:
                 logg.info("interrupted - exit init-loop")
                 result = e.message or "STOPPED"
         self.sysinit_status(ActiveState = None, SubState = "degraded")
-        if "initializing" in COVERAGE: time.sleep(5)
+        if "initializing" in COVERAGE: time.sleep(3)
         self.read_log_files(units)
         self.read_log_files(units)
         self.stop_log_files(units)

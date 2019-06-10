@@ -20619,7 +20619,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ## top_container2 = "docker exec {testname}x ps -eo pid,ppid,user,args"
             ## top = output(top_container2.format(**locals()))
             ## logg.info("\n>>>\n%s", top)
-            ## time.sleep(2)
+            time.sleep(2)
         #
         self.save_coverage(testname, testname+"x")
         #
