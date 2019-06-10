@@ -675,19 +675,19 @@ def time_to_seconds(text, maximum = None):
             return maximum
         if item.endswith("m"):
             try: value += 60 * int(item[:-1])
-            except: pass # pragma: no cover
+            except: pass # pragma: nocover
         if item.endswith("min"):
             try: value += 60 * int(item[:-3])
-            except: pass # pragma: no cover
+            except: pass # pragma: nocover
         elif item.endswith("ms"):
             try: value += int(item[:-2]) / 1000.
-            except: pass # pragma: no cover
+            except: pass # pragma: nocover
         elif item.endswith("s"):
             try: value += int(item[:-1])
-            except: pass # pragma: no cover
+            except: pass # pragma: nocover
         elif item:
             try: value += int(item)
-            except: pass # pragma: no cover
+            except: pass # pragma: nocover
     if value > maximum:
         return maximum
     if not value:
@@ -777,30 +777,30 @@ def sortedAfter(conflist, cmp = compareAfter):
                     itemB = sortlist[B]
                     before = compareAfter(itemA.conf, itemB.conf)
                     if before > 0 and itemA.rank <= itemB.rank:
-                        if DEBUG_AFTER: # pragma: no cover
+                        if DEBUG_AFTER: # pragma: nocover
                             logg.info("  %-30s before %s", itemA.conf.name(), itemB.conf.name())
                         itemA.rank = itemB.rank + 1
                         changed += 1
                     if before < 0 and itemB.rank <= itemA.rank:
-                        if DEBUG_AFTER: # pragma: no cover
+                        if DEBUG_AFTER: # pragma: nocover
                             logg.info("  %-30s before %s", itemB.conf.name(), itemA.conf.name())
                         itemB.rank = itemA.rank + 1
                         changed += 1
         if not changed:
-            if DEBUG_AFTER: # pragma: no cover
+            if DEBUG_AFTER: # pragma: nocover
                 logg.info("done in check %s of %s", check, len(sortlist))
             break
             # because Requires is almost always the same as the After clauses
             # we are mostly done in round 1 as the list is in required order
     for conf in conflist:
-        if DEBUG_AFTER: # pragma: no cover
+        if DEBUG_AFTER: # pragma: nocover
             logg.debug(".. %s", conf.name())
     for item in sortlist:
-        if DEBUG_AFTER: # pragma: no cover
+        if DEBUG_AFTER: # pragma: nocover
             logg.info("(%s) %s", item.rank, item.conf.name())
     sortedlist = sorted(sortlist, key = lambda item: -item.rank)
     for item in sortedlist:
-        if DEBUG_AFTER: # pragma: no cover
+        if DEBUG_AFTER: # pragma: nocover
             logg.info("[%s] %s", item.rank, item.conf.name())
     return [ item.conf for item in sortedlist ]
 
@@ -1859,7 +1859,7 @@ class Systemctl:
                 newcmd = self.exec_cmd(cmd, env, conf)
                 logg.info("%s start %s", runs, shell_cmd(newcmd))
                 forkpid = os.fork()
-                if not forkpid: # pragma: no cover
+                if not forkpid: # pragma: nocover
                     os.setsid() # detach child process from parent
                     self.execve_from(conf, newcmd, env)
                 run = subprocess_waitpid(forkpid)
@@ -1879,7 +1879,7 @@ class Systemctl:
                 newcmd = self.exec_cmd(cmd, env, conf)
                 logg.info("%s start %s", runs, shell_cmd(newcmd))
                 forkpid = os.fork()
-                if not forkpid: # pragma: no cover
+                if not forkpid: # pragma: nocover
                     os.setsid() # detach child process from parent
                     self.execve_from(conf, newcmd, env)
                 run = subprocess_waitpid(forkpid)
@@ -1913,7 +1913,7 @@ class Systemctl:
                 newcmd = self.exec_cmd(cmd, env, conf)
                 logg.info("%s start %s", runs, shell_cmd(newcmd))
                 forkpid = os.fork()
-                if not forkpid: # pragma: no cover
+                if not forkpid: # pragma: nocover
                     os.setsid() # detach child process from parent
                     self.execve_from(conf, newcmd, env)
                 self.write_status_from(conf, MainPID=forkpid)
@@ -1955,7 +1955,7 @@ class Systemctl:
                 newcmd = self.exec_cmd(cmd, env, conf)
                 logg.info("%s start %s", runs, shell_cmd(newcmd))
                 forkpid = os.fork()
-                if not forkpid: # pragma: no cover
+                if not forkpid: # pragma: nocover
                     os.setsid() # detach child process from parent
                     self.execve_from(conf, newcmd, env)
                 # via NOTIFY # self.write_status_from(conf, MainPID=forkpid)
@@ -1998,7 +1998,7 @@ class Systemctl:
                 if not newcmd: continue
                 logg.info("%s start %s", runs, shell_cmd(newcmd))
                 forkpid = os.fork()
-                if not forkpid: # pragma: no cover
+                if not forkpid: # pragma: nocover
                     os.setsid() # detach child process from parent
                     self.execve_from(conf, newcmd, env)
                 logg.info("%s started PID %s", runs, forkpid)
@@ -3652,17 +3652,17 @@ class Systemctl:
         if len(usedExecReload) > 0 and "/bin/kill " in usedExecReload[0]:
             logg.warning(" %s: the use of /bin/kill is not recommended for ExecReload as it is asychronous."
               + "\n\t\t\tThat means all the dependencies will perform the reload simultanously / out of order.", unit)
-        if conf.getlist("Service", "ExecRestart", []): #pragma: no cover
+        if conf.getlist("Service", "ExecRestart", []): #pragma: nocover
             logg.error(" %s: there no such thing as an ExecRestart (ignored)", unit)
-        if conf.getlist("Service", "ExecRestartPre", []): #pragma: no cover
+        if conf.getlist("Service", "ExecRestartPre", []): #pragma: nocover
             logg.error(" %s: there no such thing as an ExecRestartPre (ignored)", unit)
-        if conf.getlist("Service", "ExecRestartPost", []): #pragma: no cover 
+        if conf.getlist("Service", "ExecRestartPost", []): #pragma: nocover 
             logg.error(" %s: there no such thing as an ExecRestartPost (ignored)", unit)
-        if conf.getlist("Service", "ExecReloadPre", []): #pragma: no cover
+        if conf.getlist("Service", "ExecReloadPre", []): #pragma: nocover
             logg.error(" %s: there no such thing as an ExecReloadPre (ignored)", unit)
-        if conf.getlist("Service", "ExecReloadPost", []): #pragma: no cover
+        if conf.getlist("Service", "ExecReloadPost", []): #pragma: nocover
             logg.error(" %s: there no such thing as an ExecReloadPost (ignored)", unit)
-        if conf.getlist("Service", "ExecStopPre", []): #pragma: no cover
+        if conf.getlist("Service", "ExecStopPre", []): #pragma: nocover
             logg.error(" %s: there no such thing as an ExecStopPre (ignored)", unit)
         for env_file in conf.getlist("Service", "EnvironmentFile", []):
             if env_file.startswith("-"): continue
@@ -3674,7 +3674,7 @@ class Systemctl:
         if not conf:
             return True
         if not conf.data.has_section("Service"):
-            return True #pragma: no cover
+            return True #pragma: nocover
         haveType = conf.get("Service", "Type", "simple")
         if haveType in [ "sysv" ]:
             return True # we don't care about that
@@ -4112,7 +4112,7 @@ class Systemctl:
                 logg.info("interrupted - exit init-loop")
                 result = e.message or "STOPPED"
         self.sysinit_status(ActiveState = None, SubState = "degraded")
-        if "initializing" in COVERAGE: time.sleep(5)
+        if "initializing" in COVERAGE: time.sleep(3)
         self.read_log_files(units)
         self.read_log_files(units)
         self.stop_log_files(units)
