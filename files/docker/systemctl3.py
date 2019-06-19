@@ -1076,20 +1076,6 @@ class Systemctl:
         if conf is not None:
             return conf
         return self.default_unit_conf(module)
-    def match_sysd_templates(self, module = None, suffix=".service"): # -> generate[ unit ]
-        """ make a file glob on all known template units (systemd areas).
-            It returns no modules (!!) if no module pattern was given.
-            The module string should contain an instance name already. """
-        if not module:
-            return
-        self.scan_unit_sysd_files()
-        module_unit = parse_unit(systemd_normpath(module))
-        for item in sorted(self._file_for_unit_sysd.keys()):
-            if "@" not in item:
-                continue
-            service_unit = parse_unit(item)
-            if service_unit.prefix == module_unit.prefix:
-                yield "%s@%s.%s" % (service_unit.prefix, module_unit.instance, service_unit.suffix)
     def match_sysd_units(self, module = None, suffix=".service"): # -> generate[ unit ]
         """ make a file glob on all known units (systemd areas).
             It returns all modules if no module pattern was given. """
@@ -1100,6 +1086,12 @@ class Systemctl:
         for item in sorted(self._file_for_unit_sysd.keys()):
             if not module:
                 yield item
+            elif "@." in item:
+                if "@" in module_unit:
+                    item_unit = parse_unit(item)
+                    args_unit = parse_unit(module_unit)
+                    if item_unit.prefix == args_unit.prefix and args_unit.instance:
+                        yield "%s@%s.%s" % (item_unit.prefix, args_unit.instance, item_unit.suffix)
             else:
                 if fnmatch.fnmatchcase(item, module_unit):
                     yield item
@@ -1127,9 +1119,6 @@ class Systemctl:
             Also a single string as one module pattern may be given. """
         found = []
         for unit in self.match_sysd_units(module, suffix):
-            if unit not in found:
-                found.append(unit)
-        for unit in self.match_sysd_templates(module, suffix):
             if unit not in found:
                 found.append(unit)
         for unit in self.match_sysv_units(module, suffix):
