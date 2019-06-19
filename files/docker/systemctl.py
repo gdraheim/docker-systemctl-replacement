@@ -1910,6 +1910,7 @@ class Systemctl:
             for cmd in cmdlist:
                 pid = self.read_mainpid_from(conf, "")
                 env["MAINPID"] = str(pid)
+                check, cmd = checkstatus(cmd)
                 newcmd = self.exec_cmd(cmd, env, conf)
                 logg.info("%s start %s", runs, shell_cmd(newcmd))
                 forkpid = os.fork()
@@ -1952,6 +1953,7 @@ class Systemctl:
             for cmd in cmdlist:
                 mainpid = self.read_mainpid_from(conf, "")
                 env["MAINPID"] = str(mainpid)
+                check, cmd = checkstatus(cmd)
                 newcmd = self.exec_cmd(cmd, env, conf)
                 logg.info("%s start %s", runs, shell_cmd(newcmd))
                 forkpid = os.fork()
