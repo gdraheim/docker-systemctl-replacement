@@ -22688,6 +22688,62 @@ ExecStart=/usr/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_CONFIG_ARGS $KUBELE
         sh____(cmd.format(**locals()))
         #
         self.rm_testdir()
+    @unittest.expectedFailure
+    def test_8071_testing_ubuntu_ssh(self):
+        """ Checking the issue 71 on Ubuntu on starting ssh"""
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        images = IMAGES
+        image = self.local_image(IMAGE or UBUNTU)
+        package = package_tool(image)
+        refresh = refresh_tool(image)
+        testname = self.testname()
+        testdir = self.testdir(testname)
+        port=self.testport()
+        python = os.path.basename(_python)
+        systemctl_py = _systemctl_py
+        sometime = SOMETIME or 288
+        logg.info("%s:%s %s", testname, port, image)
+        #
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} {refresh}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} {package} install -y {python}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} {package} install -y wget procps openssh-server systemd net-tools"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} mkdir /run/systemd/system"
+        sh____(cmd.format(**locals()))
+        ## container = ip_container(testname)
+        cmd = "docker exec {testname} touch /var/log/systemctl.debug.log"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl stop dbus.service -vv"
+        sx____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl ps aux"
+        sx____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl status ssh -vv"
+        sx____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl start ssh -vv"
+        ## sx____(cmd.format(**locals()))
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        self.assertEqual(end, 0)
+        #
+        cmd = "docker exec {testname} systemctl stop ssh -vv"
+        sx____(cmd.format(**locals()))
+        #
+        cmd = "docker cp {testname}:/var/log/systemctl.debug.log {testdir}/systemctl.debug.log"
+        sh____(cmd.format(**locals()))
+        cmd = "docker stop {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sh____(cmd.format(**locals()))
+        #
+        self.rm_testdir()
 
 
     def test_9999_drop_local_mirrors(self):
