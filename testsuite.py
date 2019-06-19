@@ -22716,7 +22716,9 @@ ExecStart=/usr/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_CONFIG_ARGS $KUBELE
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} {package} install -y wget procps openssh-server systemd net-tools"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} mkdir /run/systemd/system"
+        cmd = "docker exec {testname} mkdir -p /run/systemd/system"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} mkdir -p /run/sshd" # <<< WORKAROUND #71
         sh____(cmd.format(**locals()))
         ## container = ip_container(testname)
         cmd = "docker exec {testname} touch /var/log/systemctl.debug.log"
