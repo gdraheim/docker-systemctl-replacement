@@ -1090,7 +1090,7 @@ class Systemctl:
                 if "@" in module_unit:
                     item_unit = parse_unit(item)
                     args_unit = parse_unit(module_unit)
-                    if item_unit.prefix == args_unit.prefix and args_unit.instance:
+                    if fnmatch.fnmatchcase(item_unit.prefix, args_unit.prefix):
                         yield "%s@%s.%s" % (item_unit.prefix, args_unit.instance, item_unit.suffix)
             else:
                 if fnmatch.fnmatchcase(item, module_unit):
