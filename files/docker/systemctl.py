@@ -4179,16 +4179,16 @@ class Systemctl:
             state = self.is_system_running()
             if "init" in state:
                 if target in [ "sysinit.target", "basic.target" ]:
-                    logg.info("system not initialized - wait %s", target)
+                    logg.debug("system not initialized - wait %s", target)
                     time.sleep(1)
                     continue
             if "start" in state or "stop" in state:
                 if target in [ "basic.target" ]:
-                    logg.info("system not running - wait %s", target)
+                    logg.debug("system not running - wait %s", target)
                     time.sleep(1)
                     continue
             if "running" not in state:
-                logg.info("system is %s", state)
+                logg.debug("system is %s", state)
             break
     def pidlist_of(self, pid):
         try: pid = int(pid)
