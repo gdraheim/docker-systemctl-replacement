@@ -1087,7 +1087,7 @@ class Systemctl:
             if not module:
                 yield item
             elif "@." in item:
-                if "@" in module_unit:
+                if "@" in module_unit or "*" in module_unit:
                     item_unit = parse_unit(item)
                     args_unit = parse_unit(module_unit)
                     if fnmatch.fnmatchcase(item_unit.prefix, args_unit.prefix):
