@@ -1456,6 +1456,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.rm_zzfiles(root)
         self.coverage()
+    def real_2008_list_unit_files_locations(self, real = True):
+        self.test_2008_list_unit_files_locations(real = True)
     def test_2008_list_unit_files_locations(self, real = False):
         """ check that unit files can be found for 'list-unit-files'
             in different standard locations on disk. """
@@ -1464,6 +1466,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         root = self.root(testdir, real)
         systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
+        self.rm_zzfiles(root)
+        #
         text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A
@@ -1492,8 +1496,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, r"zzb.service\s+disabled"))
         self.assertTrue(greps(out, r"zzc.service\s+disabled"))
         self.assertTrue(greps(out, r"zzd.service\s+disabled"))
-        self.assertIn("4 unit files listed.", out)
-        self.assertEqual(len(lines(out)), 7)
+        if not real: self.assertIn("4 unit files listed.", out)
+        if not real: self.assertEqual(len(lines(out)), 7)
         #
         cmd = "{systemctl} enable zza.service"
         out, end = output2(cmd.format(**locals()))
@@ -1520,8 +1524,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, r"zzb.service\s+enabled"))
         self.assertTrue(greps(out, r"zzc.service\s+enabled"))
         self.assertTrue(greps(out, r"zzd.service\s+enabled"))
-        self.assertIn("4 unit files listed.", out)
-        self.assertEqual(len(lines(out)), 7)
+        if not real: self.assertIn("4 unit files listed.", out)
+        if not real: self.assertEqual(len(lines(out)), 7)
         #
         self.rm_testdir()
         self.rm_zzfiles(root)
