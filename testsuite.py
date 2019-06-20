@@ -22993,7 +22993,6 @@ ExecStart=/usr/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_CONFIG_ARGS $KUBELE
         sh____(cmd.format(**locals()))
         #
         self.rm_testdir()
-    @unittest.expectedFailure
     def test_8071_testing_ubuntu_ssh(self):
         """ Checking the issue 71 on Ubuntu on starting ssh"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -23023,8 +23022,9 @@ ExecStart=/usr/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_CONFIG_ARGS $KUBELE
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} mkdir -p /run/systemd/system"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} mkdir -p /run/sshd" # <<< WORKAROUND #71
-        sh____(cmd.format(**locals()))
+        if not TODO: # WORKAROUND #71
+            cmd = "docker exec {testname} mkdir -p /run/sshd" 
+            sh____(cmd.format(**locals()))
         ## container = ip_container(testname)
         cmd = "docker exec {testname} touch /var/log/systemctl.debug.log"
         sh____(cmd.format(**locals()))
