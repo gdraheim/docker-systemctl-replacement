@@ -1918,9 +1918,9 @@ class Systemctl:
                         self.set_status_from(conf, "ExecMainCode", run.returncode)
                         active = run.returncode and "failed" or "active"
                         self.write_status_from(conf, AS=active)
-                    if run.returncode:
-                        service_result = "failed"
-                        break
+                if run.returncode and check:
+                    service_result = "failed"
+                    break
         elif runs in [ "notify" ]:
             # "notify" is the same as "simple" but we create a $NOTIFY_SOCKET 
             # and wait for startup completion by checking the socket messages
@@ -1963,9 +1963,9 @@ class Systemctl:
                         self.set_status_from(conf, "ExecMainCode", run.returncode or 0)
                         active = run.returncode and "failed" or "active"
                         self.write_status_from(conf, AS=active)
-                    if run.returncode:
-                        service_result = "failed"
-                        break
+                if run.returncode and check:
+                    service_result = "failed"
+                    break
             if service_result in [ "success" ] and mainpid:
                 logg.debug("okay, wating on socket for %ss", timeout)
                 results = self.wait_notify_socket(notify, timeout, mainpid)
