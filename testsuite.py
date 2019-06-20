@@ -10831,6 +10831,311 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
+    def test_4070_simple_template_service_functions_system(self):
+        """ check that we manage simple services in a root env
+            with commands like start, restart, stop, etc"""
+        self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        self.simple_template_service_functions("system", testname, testdir)
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def test_4071_simple_template_service_functions_user(self):
+        """ check that we manage simple services in a root env
+            with commands like start, restart, stop, etc"""
+        self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        self.simple_template_service_functions("user", testname, testdir)
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def simple_template_service_functions(self, system, testname, testdir):
+        """ check that we manage simple services in a root env
+            with commands like start, restart, stop, etc"""
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        systemctl += " --{system}".format(**locals())
+        testsleep = testname+"_testsleep"
+        testscript = testname+"_testscript.sh"
+        logfile = os_path(root, "/var/log/test.log")
+        bindir = os_path(root, "/usr/bin")
+        begin = "{"
+        end = "}"
+        text_file(logfile, "")
+        text_file(os_path(testdir, "zzz@.service"),"""
+            [Unit]
+            Description=Testing Z-%i
+            [Service]
+            Type=simple
+            ExecStartPre=/bin/echo %n
+            ExecStart={bindir}/{testsleep} 11%i
+            ExecStartPost=/bin/echo started $MAINPID
+            ExecStop=/bin/kill -3 $MAINPID
+            ExecStopPost=/bin/echo stopped $MAINPID
+            ExecStopPost=/bin/sleep 2
+            ExecReload=/bin/kill -18 $MAINPID
+            KillSignal=SIGQUIT
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        copy_tool(SLEEP_TOOL, os_path(bindir, testsleep))
+        zzz_service = "/etc/systemd/{system}/zzz@.service".format(**locals())
+        copy_file(os_path(testdir, "zzz@.service"), os_path(root, zzz_service))
+        #
+        if TODO:
+            cmd = "{systemctl} enable zzz@1.service -vv"
+            sh____(cmd.format(**locals()))
+            cmd = "{systemctl} enable zzz@2.service -vv"
+            sh____(cmd.format(**locals()))
+        cmd = "{systemctl} is-active zzz@1.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        if TODO: self.assertEqual(out.strip(), "inactive")
+        #
+        logg.info("== 'start' shall start a service that is NOT is-active ")
+        cmd = "{systemctl} start zzz@3.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        cmd = "{systemctl} is-active zzz@3.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        if TODO: self.assertEqual(end, 0)
+        if TODO: self.assertEqual(out.strip(), "active")
+        #
+        logg.info("== 'stop' shall stop a service that is-active")
+        cmd = "{systemctl} stop zzz@3.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, testsleep))
+        cmd = "{systemctl} is-active zzz@3.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        if TODO: self.assertEqual(end, 3)
+        if TODO: self.assertEqual(out.strip(), "inactive")
+        #
+        logg.info("== 'restart' shall start a service that NOT is-active")        
+        cmd = "{systemctl} restart zzz@3.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        cmd = "{systemctl} is-active zzz@3.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        if TODO: self.assertEqual(end, 0)
+        if TODO: self.assertEqual(out.strip(), "active")
+        top1= top
+        #
+        logg.info("== 'restart' shall restart a service that is-active")        
+        cmd = "{systemctl} restart zzz@3.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        cmd = "{systemctl} is-active zzz@3.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        if TODO: self.assertEqual(end, 0)
+        if TODO: self.assertEqual(out.strip(), "active")
+        top2 = top
+        #
+        logg.info("-- and we check that there is a new PID for the service process")
+        def find_pids(ps_output, command):
+            pids = []
+            for line in _lines(ps_output):
+                if command not in line: continue
+                m = re.match(r"\s*[\d:]*\s+(\S+)\s+(\S+)\s+(.*)", line)
+                pid, ppid, args = m.groups()
+                # logg.info("  %s | %s | %s", pid, ppid, args)
+                pids.append(pid)
+            return pids
+        ps1 = find_pids(top1, testsleep)
+        ps2 = find_pids(top2, testsleep)
+        logg.info("found PIDs %s and %s", ps1, ps2)
+        self.assertTrue(len(ps1), 1)
+        self.assertTrue(len(ps2), 1)
+        self.assertNotEqual(ps1[0], ps2[0])
+        #
+        #
+        logg.info("== 'reload' will NOT restart a service that is-active")        
+        cmd = "{systemctl} reload zzz@3.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        cmd = "{systemctl} is-active zzz@3.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        if TODO: self.assertEqual(end, 0)
+        if TODO: self.assertEqual(out.strip(), "active")
+        top3 = top
+        #
+        logg.info("-- and we check that there is NO new PID for the service process")
+        ps3 = find_pids(top3, testsleep)
+        logg.info("found PIDs %s and %s", ps2, ps3)
+        self.assertTrue(len(ps2), 1)
+        self.assertTrue(len(ps3), 1)
+        self.assertEqual(ps2[0], ps3[0])
+        #
+        logg.info("== 'reload-or-restart' will restart a service that is-active (if ExecReload)")        
+        cmd = "{systemctl} reload-or-restart zzz@3.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        cmd = "{systemctl} is-active zzz@3.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        if TODO: self.assertEqual(end, 0)
+        if TODO: self.assertEqual(out.strip(), "active")
+        top4 = top
+        #
+        logg.info("-- and we check that there is NO new PID for the service process (if ExecReload)")
+        ps4 = find_pids(top4, testsleep)
+        logg.info("found PIDs %s and %s", ps3, ps4)
+        self.assertTrue(len(ps3), 1)
+        self.assertTrue(len(ps4), 1)
+        self.assertEqual(ps3[0], ps4[0])
+        #
+        logg.info("== 'kill' will bring is-active non-active as well (when the PID is known)")        
+        cmd = "{systemctl} kill zzz@3.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, testsleep))
+        cmd = "{systemctl} is-active zzz@3.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        if TODO: self.assertEqual(end, 3)
+        if TODO: self.assertEqual(out.strip(), "inactive")
+        #
+        logg.info("== 'stop' will turn 'failed' to 'inactive' (when the PID is known)")        
+        cmd = "{systemctl} stop zzz@3.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertNotEqual(end, 0) # no PID known so 'kill $MAINPID' fails
+        cmd = "{systemctl} is-active zzz@3.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        if TODO: self.assertEqual(end, 3)
+        if TODO: self.assertEqual(out.strip(), "inactive")
+        #
+        logg.info("== 'reload-or-try-restart' will not start a not-active service")        
+        cmd = "{systemctl} reload-or-try-restart zzz@3.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, testsleep))
+        cmd = "{systemctl} is-active zzz@3.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        if TODO: self.assertEqual(end, 3)
+        if TODO: self.assertEqual(out.strip(), "inactive")
+        #
+        logg.info("== 'try-restart' will not start a not-active service")        
+        cmd = "{systemctl} try-restart zzz@3.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, testsleep))
+        cmd = "{systemctl} is-active zzz@3.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        if TODO: self.assertEqual(end, 3)
+        if TODO: self.assertEqual(out.strip(), "inactive")
+        #
+        logg.info("== 'reload-or-restart' will start a not-active service")        
+        cmd = "{systemctl} reload-or-restart zzz@3.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        cmd = "{systemctl} is-active zzz@3.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        if TODO: self.assertEqual(end, 0)
+        if TODO: self.assertEqual(out.strip(), "active")
+        top5 = top
+        #
+        logg.info("== 'reload-or-try-restart' will NOT restart an is-active service (with ExecReload)")        
+        cmd = "{systemctl} reload-or-try-restart zzz@3.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        cmd = "{systemctl} is-active zzz@3.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        if TODO: self.assertEqual(end, 0)
+        if TODO: self.assertEqual(out.strip(), "active")
+        top6 = top
+        #
+        logg.info("-- and we check that there is NO new PID for the service process (if ExecReload)")
+        ps5 = find_pids(top5, testsleep)
+        ps6 = find_pids(top6, testsleep)
+        logg.info("found PIDs %s and %s", ps5, ps6)
+        self.assertTrue(len(ps5), 1)
+        self.assertTrue(len(ps6), 1)
+        self.assertEqual(ps5[0], ps6[0])
+        #
+        logg.info("== 'try-restart' will restart an is-active service")        
+        cmd = "{systemctl} try-restart zzz@3.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        cmd = "{systemctl} is-active zzz@3.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        if TODO: self.assertEqual(end, 0)
+        if TODO: self.assertEqual(out.strip(), "active")
+        top7 = top
+        #
+        logg.info("-- and we check that there is a new PID for the service process")
+        ps7 = find_pids(top7, testsleep)
+        logg.info("found PIDs %s and %s", ps6, ps7)
+        self.assertTrue(len(ps6), 1)
+        self.assertTrue(len(ps7), 1)
+        self.assertNotEqual(ps6[0], ps7[0])
+
+        #
+        # cleanup
+        kill_testsleep = "killall {testsleep}"
+        sx____(kill_testsleep.format(**locals()))
+        time.sleep(1)
+
+
     def real_4090_simple_service_RemainAfterExit(self):
         self.test_4090_simple_service_RemainAfterExit(True)
     def test_4090_simple_service_RemainAfterExit(self, real = None):
