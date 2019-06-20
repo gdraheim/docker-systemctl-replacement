@@ -1471,21 +1471,36 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A
+            [Service]
+            ExecStart=/usr/bin/sleep 1
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(root, "/usr/lib/systemd/system/zzb.service"),"""
             [Unit]
             Description=Testing B
+            [Service]
+            ExecStart=/usr/bin/sleep 2
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(root, "/lib/systemd/system/zzc.service"),"""
             [Unit]
             Description=Testing C
+            [Service]
+            ExecStart=/usr/bin/sleep 3
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(root, "/var/run/systemd/system/zzd.service"),"""
             [Unit]
             Description=Testing D
+            [Service]
+            ExecStart=/usr/bin/sleep 4
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/var/run/systemd/system/zzz@.service"),"""
+            [Unit]
+            Description=Testing Z-%i
+            [Service]
+            ExecStart=/usr/bin/sleep 11%i
             [Install]
             WantedBy=multi-user.target""")
         cmd = "{systemctl} --type=service list-unit-files"
@@ -1496,8 +1511,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, r"zzb.service\s+disabled"))
         self.assertTrue(greps(out, r"zzc.service\s+disabled"))
         self.assertTrue(greps(out, r"zzd.service\s+disabled"))
-        if not real: self.assertIn("4 unit files listed.", out)
-        if not real: self.assertEqual(len(lines(out)), 7)
+        self.assertTrue(greps(out, r"zzz@.service\s+disabled"))
+        if not real: self.assertIn("5 unit files listed.", out)
+        if not real: self.assertEqual(len(lines(out)), 8)
         #
         cmd = "{systemctl} enable zza.service"
         out, end = output2(cmd.format(**locals()))
@@ -1524,8 +1540,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, r"zzb.service\s+enabled"))
         self.assertTrue(greps(out, r"zzc.service\s+enabled"))
         self.assertTrue(greps(out, r"zzd.service\s+enabled"))
-        if not real: self.assertIn("4 unit files listed.", out)
-        if not real: self.assertEqual(len(lines(out)), 7)
+        if not real: self.assertIn("5 unit files listed.", out)
+        if not real: self.assertEqual(len(lines(out)), 8)
         #
         self.rm_testdir()
         self.rm_zzfiles(root)
