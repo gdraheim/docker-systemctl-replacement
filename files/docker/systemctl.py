@@ -2,7 +2,7 @@
 from __future__ import print_function
 
 __copyright__ = "(C) 2016-2019 Guido U. Draheim, licensed under the EUPL"
-__version__ = "1.4.3244"
+__version__ = "1.4.3245"
 
 import logging
 logg = logging.getLogger("systemctl")
