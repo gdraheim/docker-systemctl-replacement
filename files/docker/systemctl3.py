@@ -19,6 +19,7 @@ import time
 import socket
 import datetime
 import fcntl
+import glob
 
 if sys.version[0] == '2':
     string_types = basestring
@@ -928,6 +929,11 @@ class Systemctl:
             return self._file_for_unit_sysd[module]
         if module and unit_of(module) in self._file_for_unit_sysd:
             return self._file_for_unit_sysd[unit_of(module)]
+        if "@" in module:
+            unit_args = parse_unit(module)
+            unit_name = "%s@.%s" % (unit_args.prefix, unit_args.suffix)
+            if unit_name in self._file_for_unit_sysd:
+                return self._file_for_unit_sysd[unit_name]
         return None
     def unit_sysv_file(self, module): # -> filename?
         """ file path for the given module (sysv) """
@@ -2922,7 +2928,7 @@ class Systemctl:
         return done, result
     def cat_unit(self, unit):
         try:
-            unit_file = self.unit_file(unit)
+            unit_file = self.unit_file(unit) # unit or template file
             if unit_file:
                 text = "# %s\n" % unit_file
                 text += open(unit_file).read()
@@ -3066,7 +3072,7 @@ class Systemctl:
                self.start_unit(unit)
         return done
     def enable_unit(self, unit):
-        unit_file = self.unit_file(unit)
+        unit_file = self.unit_file(unit) # unit or template file
         if not unit_file:
             logg.error("Unit %s could not be found.", unit)
             return False
@@ -3088,6 +3094,10 @@ class Systemctl:
         if not os.path.isdir(folder):
             os.makedirs(folder)
         target = os.path.join(folder, os.path.basename(unit_file))
+        if "@." in unit_file: # template instance support
+            unit_args = parse_unit(unit)
+            unit_name = "%s@%s.%s" % (unit_args.prefix, unit_args.instance, unit_args.suffix)
+            target = os.path.join(folder, unit_name)
         if True:
             _f = self._force and "-f" or ""
             logg.info("ln -s {_f} '{unit_file}' '{target}'".format(**locals()))
@@ -3162,7 +3172,7 @@ class Systemctl:
                done = False
         return done
     def disable_unit(self, unit):
-        unit_file = self.unit_file(unit)
+        unit_file = self.unit_file(unit) # unit or template file
         if not unit_file:
             logg.error("Unit %s could not be found.", unit)
             return False
@@ -3182,6 +3192,10 @@ class Systemctl:
             if self._root:
                 folder = os_path(self._root, folder)
             target = os.path.join(folder, os.path.basename(unit_file))
+            if "@." in unit_file: # template instance support
+                unit_args = parse_unit(unit)
+                unit_name = "%s@%s.%s" % (unit_args.prefix, unit_args.instance, unit_args.suffix)
+                target = os.path.join(folder, unit_name)
             if os.path.isfile(target):
                 try:
                     _f = self._force and "-f" or ""
@@ -3247,7 +3261,7 @@ class Systemctl:
                result = True
         return result, infos
     def is_enabled(self, unit):
-        unit_file = self.unit_file(unit)
+        unit_file = self.unit_file(unit) # unit or template file
         if not unit_file:
             logg.error("Unit %s could not be found.", unit)
             return False
@@ -3278,12 +3292,18 @@ class Systemctl:
         wanted = self.wanted_from(conf)
         if not wanted:
             return "static"
+        unit_name = conf.name()
         for folder in self.enablefolders(wanted):
             if self._root:
                 folder = os_path(self._root, folder)
-            target = os.path.join(folder, os.path.basename(unit_file))
+            target = os.path.join(folder, os.path.basename(unit_name))
             if os.path.isfile(target):
                 return "enabled"
+            if "@." in unit_name:
+                unit_args = parse_unit(unit_name)
+                unit_glob = "%s@*.%s" % (unit_args.prefix, unit_args.suffix)
+                if glob.glob(os.path.join(folder, unit_glob)):
+                    return "indirect"
         return "disabled"
     def mask_modules(self, *modules):
         """ [UNIT]... -- mask non-startable units """
@@ -3307,7 +3327,7 @@ class Systemctl:
                done = False
         return done
     def mask_unit(self, unit):
-        unit_file = self.unit_file(unit)
+        unit_file = self.unit_file(unit) # unit or template file
         if not unit_file:
             logg.error("Unit %s could not be found.", unit)
             return False
@@ -3324,6 +3344,10 @@ class Systemctl:
         if not os.path.isdir(folder):
             os.makedirs(folder)
         target = os.path.join(folder, os.path.basename(unit_file))
+        if "@." in unit_file: # template instance support
+            unit_args = parse_unit(unit)
+            unit_name = "%s@%s.%s" % (unit_args.prefix, unit_args.instance, unit_args.suffix)
+            target = os.path.join(folder, unit_name)
         if True:
             _f = self._force and "-f" or ""
             logg.debug("ln -s {_f} /dev/null '{target}'".format(**locals()))
@@ -3372,7 +3396,7 @@ class Systemctl:
                done = False
         return done
     def unmask_unit(self, unit):
-        unit_file = self.unit_file(unit)
+        unit_file = self.unit_file(unit) # unit or template file
         if not unit_file:
             logg.error("Unit %s could not be found.", unit)
             return False
@@ -3387,6 +3411,10 @@ class Systemctl:
         if self._root:
             folder = os_path(self._root, folder)
         target = os.path.join(folder, os.path.basename(unit_file))
+        if "@." in unit_file: # template instance support
+            unit_args = parse_unit(unit)
+            unit_name = "%s@%s.%s" % (unit_args.prefix, unit_args.instance, unit_args.suffix)
+            target = os.path.join(folder, unit_name)
         if True:
             _f = self._force and "-f" or ""
             logg.info("rm {_f} '{target}'".format(**locals()))

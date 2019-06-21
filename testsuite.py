@@ -1531,6 +1531,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
+        cmd = "{systemctl} enable zzz@9.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        #
+        self.assertTrue(os.path.exists(os_path(root, "/etc/systemd/system/multi-user.target.wants/zza.service")))
+        self.assertTrue(os.path.exists(os_path(root, "/etc/systemd/system/multi-user.target.wants/zzz@9.service")))
         #
         cmd = "{systemctl} --type=service list-unit-files"
         out, end = output2(cmd.format(**locals()))
@@ -1540,6 +1547,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, r"zzb.service\s+enabled"))
         self.assertTrue(greps(out, r"zzc.service\s+enabled"))
         self.assertTrue(greps(out, r"zzd.service\s+enabled"))
+        self.assertTrue(greps(out, r"zzz@.service\s+indirect"))
         if not real: self.assertIn("5 unit files listed.", out)
         if not real: self.assertEqual(len(lines(out)), 8)
         #
