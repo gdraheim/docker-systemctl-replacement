@@ -2329,6 +2329,10 @@ class Systemctl:
         if self.not_user_conf(conf):
             logg.error("Unit %s not for --user mode", unit)
             return False
+        active = self.get_active_unit(unit)
+        if active != "active":
+            logg.error("Job for %s invalid", unit)
+            return False
         return self.reload_unit_from(conf)
     def reload_unit_from(self, conf):
         if not conf: return False
