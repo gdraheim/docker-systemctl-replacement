@@ -2627,6 +2627,13 @@ class Systemctl:
                     self._kill_pid(pid, kill_signal)
         if doSendSIGHUP: 
             logg.info("stop SendSIGHUP to PIDs %s", pidlist)
+            if useKillMode in ["control-group"]:
+                for pid in pidlist:
+                    if pid_exists(pid) and not pid_zombie(pid):
+                        dead = False
+                        break
+            else:
+                if pid_exists(mainpid) and not pid_zombie(mainpid):
             for pid in pidlist:
                 self._kill_pid(pid, signal.SIGHUP)
         # wait for the processes to have exited
