@@ -2615,7 +2615,9 @@ class Systemctl:
             logg.debug("ignoring children when mainpid is already dead")
             # because we list child processes, not processes in control-group
             return True
-        pidlist = self.pidlist_of(mainpid) # here
+        pidlist = [mainpid]
+        if useKillMode in ["control-group"]:
+            pidlist = self.pidlist_of(mainpid) # here
         if pid_exists(mainpid):
             logg.info("stop kill PID %s", mainpid)
             self._kill_pid(mainpid, kill_signal)
@@ -2627,13 +2629,6 @@ class Systemctl:
                     self._kill_pid(pid, kill_signal)
         if doSendSIGHUP: 
             logg.info("stop SendSIGHUP to PIDs %s", pidlist)
-            if useKillMode in ["control-group"]:
-                for pid in pidlist:
-                    if pid_exists(pid) and not pid_zombie(pid):
-                        dead = False
-                        break
-            else:
-                if pid_exists(mainpid) and not pid_zombie(mainpid):
             for pid in pidlist:
                 self._kill_pid(pid, signal.SIGHUP)
         # wait for the processes to have exited
