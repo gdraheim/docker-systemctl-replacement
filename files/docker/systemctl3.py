@@ -4014,6 +4014,22 @@ class Systemctl:
                 logg.error("can not close log: %s\n\t%s", unit, e)
         self._log_file = {}
         self._log_hold = {}
+
+    # This function will retart failed units
+    # TODO://check service file for restart options instead of always restarting.
+    def restart_failed_units(self, units):
+        for unit in units:
+            try:
+              conf = self.load_unit_conf(unit)
+              isUnitFailed = self.is_failed_from(conf)
+              logg.debug("Current Unit: %s Status: %s" % (unit, isUnitFailed))
+              if isUnitFailed:
+                logg.info("Restarting failed unit: %s" % unit)
+                self.restart_unit(unit)
+                logg.info("%s has been restarted." % unit)
+            except:
+              logg.error("An error ocurred restarting the following unit %s." % unit)
+
     def init_loop_until_stop(self, units):
         """ this is the init-loop - it checks for any zombies to be reaped and
             waits for an interrupt. When a SIGTERM /SIGINT /Control-C signal
@@ -4047,6 +4063,7 @@ class Systemctl:
                     if not running:
                         logg.info("no more procs - exit init-loop")
                         break
+                self.restart_failed_units(units)
             except KeyboardInterrupt as e:
                 if e.args and e.args[0] == "SIGQUIT":
                     # the original systemd puts a coredump on that signal.
