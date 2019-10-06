@@ -3780,8 +3780,12 @@ class Systemctl:
             return self.enabled_default_system_services(sysv, default_target, igno)
     def enabled_default_user_services(self, sysv = "S", default_target = None, igno = []):
         logg.debug("check for default user services")
+        units = self.enabled_default_user_local_units(".service", default_target, igno)
+        units += self.enabled_default_user_system_units(".service", default_target, igno)
+        return units
+    def enabled_default_user_local_units(self, unit_kind = ".service", default_target = None, igno = []):
         default_target = default_target or self._default_target
-        default_services = []
+        units = []
         for basefolder in self.user_folders():
             if not basefolder:
                 continue
@@ -3794,8 +3798,12 @@ class Systemctl:
                     if os.path.isdir(path): continue
                     if self._ignored_unit(unit, igno):
                         continue # ignore
-                    if unit.endswith(".service"):
-                        default_services.append(unit)
+                    if unit.endswith(unit_kind):
+                        units.append(unit)
+        return units
+    def enabled_default_user_system_units(self, unit_kind = ".service", default_target = None, igno = []):
+        default_target = default_target or self._default_target
+        units = []
         for basefolder in self.system_folders():
             if not basefolder:
                 continue
@@ -3808,17 +3816,22 @@ class Systemctl:
                     if os.path.isdir(path): continue
                     if self._ignored_unit(unit, igno):
                         continue # ignore
-                    if unit.endswith(".service"):
+                    if unit.endswith(unit_kind):
                         conf = self.load_unit_conf(unit)
                         if self.not_user_conf(conf):
                             pass 
                         else:
-                            default_services.append(unit)
-        return default_services
+                            units.append(unit)
+        return units
     def enabled_default_system_services(self, sysv = "S", default_target = None, igno = []):
         logg.debug("check for default system services")
+        units = self.enabled_default_system_units(".service", default_target, igno)
+        units += self.enabled_default_sysv_units(sysv, default_target, igno)
+        return units
+    def enabled_default_system_units(self, unit_type = ".service", default_target = None, igno = []):
+        logg.debug("check for default system services")
         default_target = default_target or self._default_target
-        default_services = []
+        units = []
         for basefolder in self.system_folders():
             if not basefolder:
                 continue
@@ -3831,8 +3844,11 @@ class Systemctl:
                     if os.path.isdir(path): continue
                     if self._ignored_unit(unit, igno):
                         continue # ignore
-                    if unit.endswith(".service"):
-                        default_services.append(unit)
+                    if unit.endswith(unit_type):
+                        units.append(unit)
+        return units
+    def enabled_default_sysv_units(self, sysv = "S", default_target = None, igno = []):
+        units = []
         for folder in [ self.rc3_root_folder() ]:
             if not os.path.isdir(folder):
                 logg.warning("non-existant %s", folder)
@@ -3846,8 +3862,8 @@ class Systemctl:
                     unit = service + ".service"
                     if self._ignored_unit(unit, igno):
                         continue # ignore
-                    default_services.append(unit)
-        return default_services
+                    units.append(unit)
+        return units
     def system_default(self, arg = True):
         """ start units for default system level
             This will go through the enabled services in the default 'multi-user.target'.
@@ -4014,6 +4030,27 @@ class Systemctl:
                 logg.error("can not close log: %s\n\t%s", unit, e)
         self._log_file = {}
         self._log_hold = {}
+
+    def restart_failed_units(self, units):
+        """ This function will retart failed units """
+        # this is run from the init-loop to keep the 'default' units running
+        for unit in units:
+            try:
+                conf = self.load_unit_conf(unit)
+                restartPolicy = conf.get("Service", "Restart", "no")
+                isUnitFailed = self.is_failed_from(conf)
+                logg.debug("Current Unit: %s Status: %s" % (unit, isUnitFailed))
+                if isUnitFailed:
+                    # we do not have an exitcode for services in systemctl.py, so restart
+                    # when not in ["no", "on-success"] which is...
+                    if restartPolicy.lower() in ["on-failure", 
+                      "on-abnormal", "on-watchdog", "on-abort", "always"]:
+                        logg.info("Restarting failed unit: %s" % unit)
+                        self.restart_unit(unit)
+                        logg.info("%s has been restarted." % unit)
+            except:
+                logg.error("An error ocurred restarting the following unit %s." % unit)
+
     def init_loop_until_stop(self, units):
         """ this is the init-loop - it checks for any zombies to be reaped and
             waits for an interrupt. When a SIGTERM /SIGINT /Control-C signal
@@ -4047,6 +4084,7 @@ class Systemctl:
                     if not running:
                         logg.info("no more procs - exit init-loop")
                         break
+                self.restart_failed_units(units)
             except KeyboardInterrupt as e:
                 if e.args and e.args[0] == "SIGQUIT":
                     # the original systemd puts a coredump on that signal.
