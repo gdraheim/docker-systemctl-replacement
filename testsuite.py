@@ -5033,10 +5033,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(actCD.split("\n"), [ "inactive", "unknown",""])
         self.assertEqual(actBD.split("\n"), [ "active", "unknown", ""])
         self.assertEqual(actBCD.split("\n"), ["active", "inactive", "unknown", ""])
-        self.assertNotEqual(exitBC, 0)         ## this is how the original systemctl
-        self.assertNotEqual(exitCD, 0)         ## works. The documentation however
-        self.assertNotEqual(exitBD, 0)         ## says to return 0 if any service
-        self.assertNotEqual(exitBCD, 0)        ## is found to be 'active'
+        self.assertNotEqual(exitBC, 0)
+        self.assertNotEqual(exitCD, 0)
+        self.assertNotEqual(exitBD, 0)
+        self.assertNotEqual(exitBCD, 0)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep+" 99"))
@@ -5048,7 +5048,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         actBC, exitBC  = output2(is_active_BC.format(**locals()))
         self.assertEqual(actBC.split("\n"), ["active", "active", ""])
-        self.assertEqual(exitBC, 0)         ## all is-active => return 0
+        self.assertEqual(exitBC, 0)
         #
         cmd = "{systemctl} stop zzb.service zzc.service {vv}"
         out, end = output2(cmd.format(**locals()))
@@ -5175,10 +5175,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(actBD.split("\n"), [ "active", "unknown", ""])
         self.assertEqual(actBCD.split("\n"), ["active", "inactive", "unknown", ""])
         self.assertEqual(actBCDX.split("\n"), [""])
-        self.assertNotEqual(exitBC, 0)         ## this is how the original systemctl
-        self.assertNotEqual(exitCD, 0)         ## works. The documentation however
-        self.assertNotEqual(exitBD, 0)         ## says to return 0 if any service
-        self.assertNotEqual(exitBCD, 0)        ## is found to be 'active'
+        self.assertNotEqual(exitBC, 0)
+        self.assertNotEqual(exitCD, 0)
+        self.assertNotEqual(exitBD, 0)
+        self.assertNotEqual(exitBCD, 0)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep+" 99"))
