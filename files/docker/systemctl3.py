@@ -4031,23 +4031,44 @@ class Systemctl:
         self._log_file = {}
         self._log_hold = {}
 
+    def get_RestartSec(self, conf, maximum = 9):
+        delay = conf.get("Service", "RestartSec", "100ms")
+        return time_to_seconds(delay, maximum)
     def restart_failed_units(self, units):
         """ This function will retart failed units """
         # this is run from the init-loop to keep the 'default' units running
+        restartDelay = 0.1
+        restartUnits = []
         for unit in units:
             try:
                 conf = self.load_unit_conf(unit)
                 restartPolicy = conf.get("Service", "Restart", "no")
+                restartSec = get_RestartSec(conf)
+                if restartPolicy in ["no", "on-success"]:
+                    logg.debug("Skipping Unit: %s Restart=%s" % (unit, restartPolicy))
+                    continue
                 isUnitFailed = self.is_failed_from(conf)
                 logg.debug("Current Unit: %s Status: %s" % (unit, isUnitFailed))
                 if isUnitFailed:
-                    # we do not have an exitcode for services in systemctl.py, so restart
-                    # when not in ["no", "on-success"] which is...
-                    if restartPolicy.lower() in ["on-failure", 
-                      "on-abnormal", "on-watchdog", "on-abort", "always"]:
-                        logg.info("Restarting failed unit: %s" % unit)
-                        self.restart_unit(unit)
-                        logg.info("%s has been restarted." % unit)
+                    restartUnits += [ unit ]
+                    if restartSec > restartDelay:
+                        restartDelay = min(restartSec, 9)
+            except:
+                logg.error("An error ocurred restarting the following unit %s." % unit)
+        if not restartUnits:
+            return False
+        logg.info("restart delay by %ss for %s", restartDelay, restartUnits)
+        time.sleep(restartDelay)
+        for unit in restartUnits:
+            try:
+                conf = self.load_unit_conf(unit)
+                isUnitFailed = self.is_failed_from(conf)
+                logg.debug("Restart Unit: %s Status: %s" % (unit, isUnitFailed))
+                if isUnitFailed:
+                    restartUnits += [ unit ]
+                    logg.info("Restarting failed unit: %s" % unit)
+                    self.restart_unit(unit)
+                    logg.info("%s has been restarted." % unit)
             except:
                 logg.error("An error ocurred restarting the following unit %s." % unit)
 
