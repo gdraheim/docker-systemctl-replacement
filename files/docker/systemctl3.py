@@ -1040,6 +1040,14 @@ class Systemctl:
         if conf is not None:
             return conf
         return self.default_unit_conf(module)
+    def get_unit_type(self, module):
+        if module.endswith(".service"):
+            return "service"
+        if module.endswith(".socket"):
+            return "socket"
+        if module.endswith(".target"):
+            return "target"
+        return None
     def match_sysd_templates(self, modules = None, suffix=".service"): # -> generate[ unit ]
         """ make a file glob on all known template units (systemd areas).
             It returns no modules (!!) if no modules pattern were given.
@@ -1148,6 +1156,8 @@ class Systemctl:
         result = {}
         enabled = {}
         for unit in self.match_units(modules):
+            if _unit_type and self.get_unit_type(unit) not in _unit_type.split(","):
+                continue
             result[unit] = None
             enabled[unit] = ""
             try: 
