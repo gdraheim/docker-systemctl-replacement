@@ -4057,8 +4057,13 @@ class Systemctl:
                 logg.error("An error ocurred restarting the following unit %s." % unit)
         if not restartUnits:
             return False
+        state = self.is_system_running()
+        if state not in ["running"]:
+            logg.debug("no restart of %s failed units - system is %s" % (len(restartUnits), state))
+            return None
         logg.info("restart delay by %ss for %s", restartDelay, restartUnits)
         time.sleep(restartDelay)
+        restarted = 0
         for unit in restartUnits:
             try:
                 conf = self.load_unit_conf(unit)
@@ -4069,8 +4074,10 @@ class Systemctl:
                     logg.info("Restarting failed unit: %s" % unit)
                     self.restart_unit(unit)
                     logg.info("%s has been restarted." % unit)
+                    restarted += 1
             except:
                 logg.error("An error ocurred restarting the following unit %s." % unit)
+        return restarted
 
     def init_loop_until_stop(self, units):
         """ this is the init-loop - it checks for any zombies to be reaped and
