@@ -1421,27 +1421,47 @@ class Systemctl:
         with open(proc) as f:
             data = f.readline()
         f.closed
-        dataList = data.split()
+        stat_data = data.split()
+        started_ticks = stat_data[21]
+        # man proc(5): "(22) starttime = The time the process started after system boot."
+        #    ".. the value is expressed in clock ticks (divide by sysconf(_SC_CLK_TCK))."
+        # NOTE: for containers the start time is related to the boot time of host system.
 
         clkTickInt = os.sysconf_names['SC_CLK_TCK']
         clockTicksPerSec = os.sysconf(clkTickInt)
-        processStartTimeFloat = float(dataList[21]) / clockTicksPerSec
+        started_secs = float(started_ticks) / clockTicksPerSec
+        logg.debug("Proc started time: %.3f (%s)", started_secs, proc)
+        # this value is the start time from the host system
 
-        logg.debug("Process start time: %.3f" % (processStartTimeFloat))
-
-        #get system uptime
-        with open("/proc/uptime","rb") as f:
+        # Variant 1:
+        system_uptime = "/proc/uptime"
+        with open(system_uptime,"rb") as f:
             data = f.readline()
         f.closed
-
-        dataList = data.decode().split()
-        uptimeFloat = float(dataList[0])
+        uptime_data = data.decode().split()
+        uptime_secs = float(uptime_data[0])
+        logg.debug("System uptime secs: %.3f (%s)", uptime_secs, system_uptime)
 
         #get time now
         now = time.time()
-        timeProcessStarted = now - (uptimeFloat - processStartTimeFloat)
-        logg.debug("Process has been running since: %s" % (datetime.datetime.fromtimestamp(timeProcessStarted)))
-        return timeProcessStarted
+        started_time = now - (uptime_secs - started_secs)
+        logg.debug("Proc has been running since: %s" % (datetime.datetime.fromtimestamp(started_time)))
+
+        # Variant 2:
+        system_stat = "/proc/stat"
+        system_btime = 0
+        with open(system_stat,"rb") as f:
+            for line in f:
+                if line.startswith("btime"):
+                    system_btime = float(line.decode().split()[1])
+        f.closed
+        logg.debug("System btime secs: %.3f (%s)", system_btime, system_stat)
+
+        started_btime = system_btime + started_secs
+        logg.debug("Proc has been running since: %s" % (datetime.datetime.fromtimestamp(started_btime)))
+
+        # return started_time
+        return started_btime
 
     def get_filetime(self, filename):
         return os.path.getmtime(filename)
