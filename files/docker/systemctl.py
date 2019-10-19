@@ -1449,7 +1449,7 @@ class Systemctl:
         clkTickInt = os.sysconf_names['SC_CLK_TCK']
         clockTicksPerSec = os.sysconf(clkTickInt)
         started_secs = float(started_ticks) / clockTicksPerSec
-        logg.debug("Proc started time: %.3f (%s)", started_secs, proc)
+        logg.debug("  BOOT .. Proc started time:  %.3f (%s)", started_secs, proc)
         # this value is the start time from the host system
 
         # Variant 1:
@@ -1459,12 +1459,12 @@ class Systemctl:
         f.closed
         uptime_data = data.decode().split()
         uptime_secs = float(uptime_data[0])
-        logg.debug("System uptime secs: %.3f (%s)", uptime_secs, system_uptime)
+        logg.debug("  BOOT 1. System uptime secs: %.3f (%s)", uptime_secs, system_uptime)
 
         #get time now
         now = time.time()
         started_time = now - (uptime_secs - started_secs)
-        logg.debug("Proc has been running since: %s" % (datetime.datetime.fromtimestamp(started_time)))
+        logg.debug("  BOOT 1. Proc has been running since: %s" % (datetime.datetime.fromtimestamp(started_time)))
 
         # Variant 2:
         system_stat = "/proc/stat"
@@ -1474,10 +1474,10 @@ class Systemctl:
                 if line.startswith("btime"):
                     system_btime = float(line.decode().split()[1])
         f.closed
-        logg.debug("System btime secs: %.3f (%s)", system_btime, system_stat)
+        logg.debug("  BOOT 2. System btime secs: %.3f (%s)", system_btime, system_stat)
 
         started_btime = system_btime + started_secs
-        logg.debug("Proc has been running since: %s" % (datetime.datetime.fromtimestamp(started_btime)))
+        logg.debug("  BOOT 2. Proc has been running since: %s" % (datetime.datetime.fromtimestamp(started_btime)))
 
         # return started_time
         return started_btime
@@ -1492,7 +1492,7 @@ class Systemctl:
             logg.debug("  boot time: %s (%s)", datetime.datetime.fromtimestamp(boottime), "status modified later")
             return False # OK
         logg.info("  file time: %s (%s)", datetime.datetime.fromtimestamp(filetime), end22(filename))
-        logg.info("  boot time: %s (%s)", datetime.datetime.fromtimestamp(boottime), "status truncated now")
+        logg.info("  boot time: %s (%s)", datetime.datetime.fromtimestamp(boottime), "status TRUNCATED NOW")
         try:
             shutil_truncate(filename)
         except Exception as e:
