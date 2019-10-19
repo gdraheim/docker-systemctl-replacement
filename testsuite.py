@@ -10297,6 +10297,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
+    @unittest.expectedFailure
     def test_4060_oneshot_truncate_old_status(self):
         """ check that we manage a service that has some old .status
             file being around. That is a reboot has occurred and the
@@ -10403,6 +10404,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
+    @unittest.expectedFailure
     def test_4065_simple_truncate_old_pid(self):
         """ check that we manage a service that has some old .pid
             file being around. That is a reboot has occurred and the
