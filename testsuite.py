@@ -10297,7 +10297,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
-    @unittest.expectedFailure
     def test_4060_oneshot_truncate_old_status(self):
         """ check that we manage a service that has some old .status
             file being around. That is a reboot has occurred and the
@@ -10329,6 +10328,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         text_file(os_path(root, "/var/tmp/test.0"), """..""")
+        #
+        system_btime = 0
+        for line in open("/proc/stat", "rb"):
+            if line.startswith("btime"):
+                system_btime = float(line.decode().split()[1])
+        system_boot_time = datetime.datetime.fromtimestamp( system_btime )
         #
         cmd = "{systemctl} enable zzz.service -vv"
         sh____(cmd.format(**locals()))
@@ -10372,8 +10377,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         status_file = os_path(root, "/var/run/zzz.service.status")
         self.assertTrue(os.path.exists(status_file))
         sh____("LANG=C stat {status_file} | grep Modify:".format(**locals()))
-        sh____("LANG=C stat /proc/1/status | grep Modify:".format(**locals()))
-        sh____("touch -r /proc/1/status {status_file}".format(**locals()))
+        sh____("touch -d '{system_boot_time}' {status_file}".format(**locals()))
         sh____("LANG=C stat {status_file} | grep Modify:".format(**locals()))
         #
         logg.info("== the next is-active shall then truncate it")
@@ -10404,7 +10408,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
-    @unittest.expectedFailure
     def test_4065_simple_truncate_old_pid(self):
         """ check that we manage a service that has some old .pid
             file being around. That is a reboot has occurred and the
@@ -10432,6 +10435,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             """.format(**locals()))
         copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
+        #
+        system_btime = 0
+        for line in open("/proc/stat", "rb"):
+            if line.startswith("btime"):
+                system_btime = float(line.decode().split()[1])
+        system_boot_time = datetime.datetime.fromtimestamp( system_btime )
         #
         cmd = "{systemctl} enable zzz.service -vv"
         sh____(cmd.format(**locals()))
@@ -10474,7 +10483,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(os.path.exists(status_file))
         sh____("LANG=C stat {status_file} | grep Modify:".format(**locals()))
         sh____("LANG=C stat /proc/1/status | grep Modify:".format(**locals()))
-        sh____("touch -r /proc/1/status {status_file}".format(**locals()))
+        sh____("touch -d '{system_boot_time}' {status_file}".format(**locals()))
         sh____("LANG=C stat {status_file} | grep Modify:".format(**locals()))
         #
         pid_file = os_path(root, "/var/run/zzz.service.pid")
