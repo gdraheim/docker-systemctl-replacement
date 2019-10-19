@@ -1393,7 +1393,8 @@ class Systemctl:
             proc = "/proc/%s/stat" % pid
             try:
                 if os.path.exists(proc):
-                    return self.get_boottime_from_proc(pid)
+                    # return os.path.getmtime(proc) # did sometimes change
+                    return self.get_boottime_from_proc_stat_file(proc)
             except Exception as e: # pragma: nocover
                 logg.warning("could not access %s: %s", proc, e)
         return self.get_boottime_oldest()
@@ -1404,44 +1405,43 @@ class Systemctl:
             proc = "/proc/%s/stat" % name
             try:
                 if os.path.exists(proc):
-                    ctime = self.get_boottime_from_proc(name)
+                    # ctime = os.path.getmtime(proc) # did sometimes change
+                    ctime = self.get_boottime_from_proc_stat_file(proc)
                     if ctime < booted:
                         booted = ctime 
             except Exception as e: # pragma: nocover
                 logg.warning("could not access %s: %s", proc, e)
         return booted
 
-    #Use uptime, time process running in ticks, and current time to determine process boot time
-    #You can't use the modified timestamp of the status file because it isn't static.
-    def get_boottime_from_proc(self,pid):
-      #get time process started after boot in clock ticks
-      proc = "/proc/%s/stat" % pid
-      with open(proc) as f:
-        data = f.readline()
-      f.closed
-      dataList = data.split()
+    # Use uptime, time process running in ticks, and current time to determine process boot time
+    # You can't use the modified timestamp of the status file because it isn't static.
+    # ... using clock ticks it is known to be a linear time on Linux
+    def get_boottime_from_proc_stat_file(self, proc):
+        #get time process started after boot in clock ticks
+        with open(proc) as f:
+            data = f.readline()
+        f.closed
+        dataList = data.split()
 
-      clkTickInt = os.sysconf_names['SC_CLK_TCK']
-      clockTicksPerSec = os.sysconf(clkTickInt)
-      processStartTimeFloat = float(dataList[21]) / clockTicksPerSec
+        clkTickInt = os.sysconf_names['SC_CLK_TCK']
+        clockTicksPerSec = os.sysconf(clkTickInt)
+        processStartTimeFloat = float(dataList[21]) / clockTicksPerSec
 
-      logg.debug("Process start time: %.3f" % (processStartTimeFloat))
+        logg.debug("Process start time: %.3f" % (processStartTimeFloat))
 
-      #get system uptime
-      with open("/proc/uptime","rb") as f:
-        data = f.readline()
-      f.closed
+        #get system uptime
+        with open("/proc/uptime","rb") as f:
+            data = f.readline()
+        f.closed
 
-      dataList = data.decode().split()
-      uptimeFloat = float(dataList[0])
+        dataList = data.decode().split()
+        uptimeFloat = float(dataList[0])
 
-      #get time now
-      now = time.time()
-      timeProcessStarted = now - (uptimeFloat - processStartTimeFloat)
-      logg.debug("Process has been running since: %s" % (datetime.datetime.fromtimestamp(timeProcessStarted)))
-      return timeProcessStarted
-
-
+        #get time now
+        now = time.time()
+        timeProcessStarted = now - (uptimeFloat - processStartTimeFloat)
+        logg.debug("Process has been running since: %s" % (datetime.datetime.fromtimestamp(timeProcessStarted)))
+        return timeProcessStarted
 
     def get_filetime(self, filename):
         return os.path.getmtime(filename)
