@@ -1406,7 +1406,6 @@ class Systemctl:
         pid_max = BOOT_PID_MAX
         if pid_max < 0:
             pid_max = pid1 - pid_max
-        if "oldest" in COVERAGE: pid_max = 0
         for pid in xrange(pid1, pid_max):
             proc = "/proc/%s/stat" % pid
             try:

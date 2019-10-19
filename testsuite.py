@@ -20362,7 +20362,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         refresh = refresh_tool(image)
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "--coverage=spawn,oldest"
+            cov_option = "--coverage=spawn"
         sometime = SOMETIME or 188
         text_file(os_path(testdir, "zza.service"),"""
             [Unit]
@@ -20469,7 +20469,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         refresh = refresh_tool(image)
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "--coverage=spawn,oldest"
+            cov_option = "--coverage=spawn"
         sometime = SOMETIME or 188
         text_file(os_path(testdir, "zza.service"),"""
             [Unit]
@@ -20576,7 +20576,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         refresh = refresh_tool(image)
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "--coverage=spawn,oldest"
+            cov_option = "--coverage=spawn"
         sometime = SOMETIME or 188
         text_file(os_path(testdir, "zzb.service"),"""
             [Unit]
@@ -20718,7 +20718,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         refresh = refresh_tool(image)
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "--coverage=spawn,oldest"
+            cov_option = "--coverage=spawn"
         sometime = SOMETIME or 188
         text_file(os_path(testdir, "zzb.service"),"""
             [Unit]
@@ -20865,7 +20865,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         refresh = refresh_tool(image)
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "--coverage=spawn,oldest"
+            cov_option = "--coverage=spawn"
         sometime = SOMETIME or 188
         text_file(os_path(testdir, "zzb.service"),"""
             [Unit]
@@ -21002,7 +21002,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         refresh = refresh_tool(image)
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "--coverage=spawn,oldest"
+            cov_option = "--coverage=spawn"
         sometime = SOMETIME or 188
         text_file(os_path(testdir, "zzb.service"),"""
             [Unit]
@@ -21140,7 +21140,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         refresh = refresh_tool(image)
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "--coverage=spawn,oldest"
+            cov_option = "--coverage=spawn"
         sometime = SOMETIME or 288
         text_file(os_path(testdir, "zzb.service"),"""
             [Unit]
