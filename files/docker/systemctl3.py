@@ -824,6 +824,7 @@ class Systemctl:
         self._user_getlogin = os_getlogin()
         self._log_file = {} # init-loop
         self._log_hold = {} # init-loop
+        self._boottime = None # cache self.get_boottime()
     def user(self):
         return self._user_getlogin
     def user_mode(self):
@@ -1400,11 +1401,15 @@ class Systemctl:
             time.sleep(EpsilonTime)
             logg.info(" %s ................. boot sleep %ss", hint or "", EpsilonTime)
     def get_boottime(self):
+        """ detects the boot time of the container - in general the start time of PID 1 """
+        if self._boottime is None:
+            self._boottime = self.get_boottime_from_proc()
+        return self._boottime
+    def get_boottime_from_proc(self):
+        """ detects the latest boot time by looking at the start time of available process"""
         pid1 = BOOT_PID_MIN or 1
         pid_max = BOOT_PID_MAX
-        if "oldest" in COVERAGE:
-            with open("/proc/sys/kernel/pid_max") as f:
-                pid_max = int(f.readline.decode())
+        if "oldest" in COVERAGE: pid_max = 0
         for pid in xrange(pid1, pid_max - pid1 + 1):
             proc = "/proc/%s/stat" % pid
             if not os.path.exists(proc):
@@ -1414,7 +1419,18 @@ class Systemctl:
                 return self.get_boottime_from_proc_stat_file(proc)
             except Exception as e: # pragma: nocover
                 logg.warning("could not access %s: %s", proc, e)
-        return self.get_boottime_oldest()
+        # otherwise get the oldest entry in /proc
+        booted = time.time()
+        for name in os.listdir("/proc"):
+            proc = "/proc/%s/status" % name
+            try:
+                if os.path.exists(proc):
+                    ctime = os.path.getmtime(proc)
+                    if ctime < booted:
+                        booted = ctime 
+            except Exception as e: # pragma: nocover
+                logg.warning("could not access %s: %s", proc, e)
+        return booted
 
     # Use uptime, time process running in ticks, and current time to determine process boot time
     # You can't use the modified timestamp of the status file because it isn't static.
