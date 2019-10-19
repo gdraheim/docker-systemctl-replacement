@@ -708,6 +708,153 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(hosts, "::1.*localhost "))
         self.rm_testdir()
         self.coverage()
+    def test_1040_systemctl_override_str_config(self):
+        """ we can use -c name=something to override internals """
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            ExecStart=/bin/sleep 3
+        """)
+        #
+        cmd = "{systemctl} daemon-reload -c SysInitTarget=network.target -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        self.assertEqual(lines(out), [])
+        self.assertEqual(end, 0)
+        self.assertEqual(len(greps(err, "SysInitTarget=network.target")), 2)
+        self.rm_testdir()
+        self.rm_zzfiles(root)
+        self.coverage()
+    def test_1041_systemctl_override_int_config(self):
+        """ we can use -c name=something to override internals """
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            ExecStart=/bin/sleep 3
+        """)
+        #
+        cmd = "{systemctl} daemon-reload -c InitLoopSleep=1 -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        self.assertEqual(lines(out), [])
+        self.assertEqual(end, 0)
+        self.assertEqual(len(greps(err, "InitLoopSleep=1")), 2)
+        self.rm_testdir()
+        self.rm_zzfiles(root)
+        self.coverage()
+    def test_1042_systemctl_override_num_config(self):
+        """ we can use -c name=something to override internals """
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            ExecStart=/bin/sleep 3
+        """)
+        #
+        cmd = "{systemctl} daemon-reload -c MinimumYield=0.7 -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        self.assertEqual(lines(out), [])
+        self.assertEqual(end, 0)
+        self.assertEqual(len(greps(err, "MinimumYield=0.7")), 2)
+        self.rm_testdir()
+        self.rm_zzfiles(root)
+        self.coverage()
+    def test_1043_systemctl_override_true_config(self):
+        """ we can use -c name=something to override internals """
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            ExecStart=/bin/sleep 3
+        """)
+        #
+        cmd = "{systemctl} daemon-reload -c _show_all=True -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        self.assertEqual(lines(out), [])
+        self.assertEqual(end, 0)
+        self.assertEqual(len(greps(err, "_show_all=True")), 2)
+        self.rm_testdir()
+        self.rm_zzfiles(root)
+        self.coverage()
+    def test_1045_systemctl_override_fail_unknown_config(self):
+        """ we can use -c name=something to override internals """
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            ExecStart=/bin/sleep 3
+        """)
+        #
+        cmd = "{systemctl} daemon-reload -c FooBar=1 -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        self.assertEqual(lines(out), [])
+        self.assertEqual(end, 0)
+        self.assertTrue(greps(err, "unknown target config -c 'FooBar'"))
+        self.rm_testdir()
+        self.rm_zzfiles(root)
+        self.coverage()
+    def test_1046_systemctl_override_fail_unknown_type(self):
+        """ we can use -c name=something to override internals """
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            ExecStart=/bin/sleep 3
+        """)
+        #
+        cmd = "{systemctl} daemon-reload -c _extra_vars=1 -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        self.assertEqual(lines(out), [])
+        self.assertEqual(end, 0)
+        self.assertTrue(greps(err, "unknown target type -c '_extra_vars'.*'list'>"))
+        self.rm_testdir()
+        self.rm_zzfiles(root)
+        self.coverage()
+    def test_1047_systemctl_override_fail_unknown_setting(self):
+        """ we can use -c name=something to override internals """
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            ExecStart=/bin/sleep 3
+        """)
+        #
+        cmd = "{systemctl} daemon-reload -c SomeNonsenseHere -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        self.assertEqual(lines(out), [])
+        self.assertEqual(end, 0)
+        self.assertTrue(greps(err, "not a config setting format -c 'SomeNonsenseHere'"))
+        self.rm_testdir()
+        self.rm_zzfiles(root)
+        self.coverage()
     def test_1050_can_create_a_test_service(self):
         """ check that a unit file can be created for testing """
         testname = self.testname()
@@ -10352,6 +10499,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(act.strip(), "active\nunknown")
         self.assertEqual(end, 3) 
         self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        #
+        is_active = "{systemctl} is-active zzz.service other.service -vvvv"
+        act, end = output2(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "active\nunknown")
+        self.assertEqual(end, 3)
         #
         logg.info("== 'stop' shall stop a service that is-active")
         cmd = "{systemctl} stop zzz.service other.service -vv"
