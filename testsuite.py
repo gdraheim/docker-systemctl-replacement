@@ -649,7 +649,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         self.assertEqual(len(greps(open(logfile), " INFO ")), 1)
-        self.assertEqual(len(greps(open(logfile), " DEBUG ")), 3)
+        self.assertEqual(len(greps(open(logfile), " DEBUG ")), 8)
         self.rm_testdir()
         self.coverage()
     def test_1030_systemctl_force_ipv4(self):
@@ -7564,8 +7564,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             os.dup2(new_stderr, 2)
             systemctl_cmd = [ _systemctl_py, "--root="+root, "--init", "default", "-vv" ]
             env = os.environ.copy()
-            env["SYSTEMCTL_EXIT_WHEN_NO_MORE_SERVICES"] = "yes"
-            env["SYSTEMCTL_INITLOOP"] = "2" 
+            systemctl_cmd += ["-c", "ExitWhenNoMoreServices=yes" ]
+            systemctl_cmd += ["-c", "InitLoopSleep=2"]
             os.execve(_systemctl_py, systemctl_cmd, env)
         time.sleep(2)
         logg.info("all services running [systemctl.py PID %s]", pid)
@@ -7691,7 +7691,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             os.dup2(new_stderr, 2)
             systemctl_cmd = [ _systemctl_py, "--root="+root, "init", "zzb.service", "zzc.service", "-vv" ]
             env = os.environ.copy()
-            env["SYSTEMCTL_INITLOOP"] = "2" 
+            systemctl_cmd += ["-c", "InitLoopSleep=2"]
             os.execve(_systemctl_py, systemctl_cmd, env)
         time.sleep(3)
         logg.info("all services running [systemctl.py PID %s]", pid)

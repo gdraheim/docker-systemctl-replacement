@@ -27,10 +27,8 @@ else:
     string_types = str
     xrange = range
 
-COVERAGE = os.environ.get("SYSTEMCTL_COVERAGE", "")
-DEBUG_AFTER = os.environ.get("SYSTEMCTL_DEBUG_AFTER", "") or False
-EXIT_WHEN_NO_MORE_PROCS = os.environ.get("SYSTEMCTL_EXIT_WHEN_NO_MORE_PROCS", "") or False
-EXIT_WHEN_NO_MORE_SERVICES = os.environ.get("SYSTEMCTL_EXIT_WHEN_NO_MORE_SERVICES", "") or False
+COVERAGE = ""
+DEBUG_AFTER = False
 
 FOUND_OK = 0
 FOUND_INACTIVE = 2
@@ -53,7 +51,6 @@ _show_all = False
 _user_mode = False
 
 # common default paths
-_default_target = "multi-user.target"
 _system_folder1 = "/etc/systemd/system"
 _system_folder2 = "/var/run/systemd/system"
 _system_folder3 = "/usr/lib/systemd/system"
@@ -80,28 +77,39 @@ EpsilonTime = 0.1
 MinimumYield = 0.5
 MinimumTimeoutStartSec = 4
 MinimumTimeoutStopSec = 4
-DefaultTimeoutStartSec = int(os.environ.get("SYSTEMCTL_TIMEOUT_START_SEC", 90)) # official value
-DefaultTimeoutStopSec = int(os.environ.get("SYSTEMCTL_TIMEOUT_STOP_SEC", 90))   # official value
-DefaultMaximumTimeout = int(os.environ.get("SYSTEMCTL_MAXIMUM_TIMEOUT", 200))   # overrides all other
-InitLoopSleep = int(os.environ.get("SYSTEMCTL_INITLOOP", 5))
-ProcMaxDepth = 100
+DefaultTimeoutStartSec = 90   # official value
+DefaultTimeoutStopSec = 90    # official value
+DefaultTimeoutAbortSec = 3600 # officially it none (usually larget than StopSec)
+DefaultMaximumTimeout = 200   # overrides all other
+InitLoopSleep = 5
 MaxLockWait = None # equals DefaultMaximumTimeout
 DefaultPath = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 ResetLocale = ["LANG", "LANGUAGE", "LC_CTYPE", "LC_NUMERIC", "LC_TIME", "LC_COLLATE", "LC_MONETARY",
                "LC_MESSAGES", "LC_PAPER", "LC_NAME", "LC_ADDRESS", "LC_TELEPHONE", "LC_MEASUREMENT",
                "LC_IDENTIFICATION", "LC_ALL"]
 
+ExitWhenNoMoreServices = False
+ExitWhenNoMoreProcs = False
+DefaultUnit = os.environ.get("SYSTEMD_DEFAULT_UNIT", "default.target") # systemd.exe --unit=default.target
+DefaultTarget = os.environ.get("SYSTEMD_DEFAULT_TARGET", "multi-user.target") # DefaultUnit fallback
+LogLevel = os.environ.get("SYSTEMD_LOG_LEVEL", "info") # systemd.exe --log-level
+LogTarget = os.environ.get("SYSTEMD_LOG_TARGET", "journal-or-kmsg") # systemd.exe --log-target
+LogLocation = os.environ.get("SYSTEMD_LOG_LOCATION", "no") # systemd.exe --log-location
+ShowStatus = os.environ.get("SYSTEMD_SHOW_STATUS", "auto") # systemd.exe --show-status
+DefaultStandardOutput=os.environ.get("SYSTEMD_STANDARD_OUTPUT", "journal") # systemd.exe --default-standard-output
+DefaultStandardError=os.environ.get("SYSTEMD_STANDARD_ERROR", "inherit") # systemd.exe --default-standard-error
 REMOVE_LOCK_FILE = False
 BOOT_PID_MIN = 1
 BOOT_PID_MAX = 10
+PROC_MAX_DEPTH = 100
 
 # The systemd default is NOTIFY_SOCKET="/var/run/systemd/notify"
 _notify_socket_folder = "/var/run/systemd" # alias /run/systemd
 _pid_file_folder = "/var/run"
 _journal_log_folder = "/var/log/journal"
 
-_systemctl_debug_log = "/var/log/systemctl.debug.log"
-_systemctl_extra_log = "/var/log/systemctl.log"
+SYSTEMCTL_DEBUG_LOG = "/var/log/systemctl.debug.log"
+SYSTEMCTL_EXTRA_LOG = "/var/log/systemctl.log"
 
 _default_targets = [ "poweroff.target", "rescue.target", "sysinit.target", "basic.target", "multi-user.target", "graphical.target", "reboot.target" ]
 _feature_targets = [ "network.target", "remote-fs.target", "local-fs.target", "timers.target", "nfs-client.target" ]
@@ -808,10 +816,10 @@ class Systemctl:
         self._file_for_unit_sysv = None # name.service => /etc/init.d/name
         self._file_for_unit_sysd = None # name.service => /etc/systemd/system/name.service
         self._preset_file_list = None # /etc/systemd/system-preset/* => file content
-        self._default_target = _default_target
-        self._sysinit_target = None
-        self.exit_when_no_more_procs = EXIT_WHEN_NO_MORE_PROCS or False
-        self.exit_when_no_more_services = EXIT_WHEN_NO_MORE_SERVICES or False
+        self._default_target = DefaultTarget
+        self._sysinit_target = None # stores a UnitConf()
+        self.doExitWhenNoMoreProcs = ExitWhenNoMoreProcs or False
+        self.doExitWhenNoMoreServices = ExitWhenNoMoreServices or False
         self._user_mode = _user_mode
         self._user_getlogin = os_getlogin()
         self._log_file = {} # init-loop
@@ -3943,7 +3951,7 @@ class Systemctl:
         """ get current default run-level"""
         current = self._default_target
         folder = os_path(self._root, self.mask_folder())
-        target = os.path.join(folder, "default.target")
+        target = os.path.join(folder, DefaultUnit)
         if os.path.islink(target):
             current = os.path.basename(os.readlink(target))
         return current
@@ -3954,7 +3962,7 @@ class Systemctl:
             return (1, "Too few arguments")
         current = self._default_target
         folder = os_path(self._root, self.mask_folder())
-        target = os.path.join(folder, "default.target")
+        target = os.path.join(folder, DefaultUnit)
         if os.path.islink(target):
             current = os.path.basename(os.readlink(target))
         err, msg = 0, ""
@@ -3997,14 +4005,14 @@ class Systemctl:
             # like 'systemctl --init default'
             if self._now or self._show_all:
                 logg.debug("init default --now --all => no_more_procs")
-                self.exit_when_no_more_procs = True
+                self.doExitWhenNoMoreProcs = True
             return self.start_system_default(init = True)
         #
         # otherwise quit when all the init-services have died
-        self.exit_when_no_more_services = True
+        self.doExitWhenNoMoreServices = True
         if self._now or self._show_all:
             logg.debug("init services --now --all => no_more_procs")
-            self.exit_when_no_more_procs = True
+            self.doExitWhenNoMoreProcs = True
         found_all = True
         units = []
         for module in modules:
@@ -4081,7 +4089,7 @@ class Systemctl:
                 ##### the reaper goes round
                 running = self.system_reap_zombies()
                 # logg.debug("reap zombies - init-loop found %s running procs", running)
-                if self.exit_when_no_more_services:
+                if self.doExitWhenNoMoreServices:
                     active = False
                     for unit in units:
                         conf = self.load_unit_conf(unit)
@@ -4091,7 +4099,7 @@ class Systemctl:
                     if not active:
                         logg.info("no more services - exit init-loop")
                         break
-                if self.exit_when_no_more_procs:
+                if self.doExitWhenNoMoreProcs:
                     if not running:
                         logg.info("no more procs - exit init-loop")
                         break
@@ -4099,7 +4107,7 @@ class Systemctl:
                 if e.args and e.args[0] == "SIGQUIT":
                     # the original systemd puts a coredump on that signal.
                     logg.info("SIGQUIT - switch to no more procs check")
-                    self.exit_when_no_more_procs = True
+                    self.doExitWhenNoMoreProcs = True
                     continue
                 signal.signal(signal.SIGTERM, signal.SIG_DFL)
                 signal.signal(signal.SIGINT, signal.SIG_DFL)
@@ -4147,7 +4155,7 @@ class Systemctl:
         self.write_status_from(conf, **status)
     def sysinit_target(self):
         if not self._sysinit_target:
-            self._sysinit_target = self.default_unit_conf("sysinit.target", "System Initialization")
+            self._sysinit_target = self.default_unit_conf(SysInitTarget, "System Initialization")
         return self._sysinit_target
     def is_system_running(self):
         conf = self.sysinit_target()
@@ -4172,7 +4180,7 @@ class Systemctl:
         for attempt in xrange(int(SysInitWait)):
             state = self.is_system_running()
             if "init" in state:
-                if target in [ "sysinit.target", "basic.target" ]:
+                if target in [ SysInitTarget, "basic.target" ]:
                     logg.info("system not initialized - wait %s", target)
                     time.sleep(1)
                     continue
@@ -4189,7 +4197,7 @@ class Systemctl:
         except: return []
         pidlist = [ pid ]
         pids = [ pid ]
-        for depth in xrange(ProcMaxDepth):
+        for depth in xrange(PROC_MAX_DEPTH):
             for pid in os.listdir("/proc"):
                 try: pid = int(pid)
                 except: continue
@@ -4526,11 +4534,11 @@ if __name__ == "__main__":
             logg.warning("(ignored) not a config setting format -c '%s'", setting)
     #
     if _user_mode:
-        systemctl_debug_log = os_path(_root, _var_path(_systemctl_debug_log))
-        systemctl_extra_log = os_path(_root, _var_path(_systemctl_extra_log))
+        systemctl_debug_log = os_path(_root, _var_path(SYSTEMCTL_DEBUG_LOG))
+        systemctl_extra_log = os_path(_root, _var_path(SYSTEMCTL_EXTRA_LOG))
     else:
-        systemctl_debug_log = os_path(_root, _systemctl_debug_log)
-        systemctl_extra_log = os_path(_root, _systemctl_extra_log)
+        systemctl_debug_log = os_path(_root, SYSTEMCTL_DEBUG_LOG)
+        systemctl_extra_log = os_path(_root, SYSTEMCTL_EXTRA_LOG)
     if os.access(systemctl_extra_log, os.W_OK):
         loggfile = logging.FileHandler(systemctl_extra_log)
         loggfile.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
