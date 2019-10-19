@@ -829,6 +829,9 @@ class Systemctl:
         self._log_file = {} # init-loop
         self._log_hold = {} # init-loop
         self._boottime = None # cache self.get_boottime()
+        self._SYSTEMD_UNIT_PATH = None
+        self._SYSTEMD_SYSVINIT_PATH = None
+        self._SYSTEMD_PRESET_PATH = None
     def user(self):
         return self._user_getlogin
     def user_mode(self):
@@ -841,28 +844,56 @@ class Systemctl:
         for folder in self.system_folders():
             if folder: return folder
         raise Exception("did not find any systemd/system folder")
-    def init_folders(self):
-        if _init_folder1: yield _init_folder1
-        if _init_folder2: yield _init_folder2
-        if _init_folder9: yield _init_folder9
     def preset_folders(self):
-        if _preset_folder1: yield _preset_folder1
-        if _preset_folder2: yield _preset_folder2
-        if _preset_folder3: yield _preset_folder3
-        if _preset_folder4: yield _preset_folder4
-        if _preset_folder9: yield _preset_folder9
+        SYSTEMD_PRESET_PATH = self.get_SYSTEMD_PRESET_PATH()
+        for path in SYSTEMD_PRESET_PATH.split(":"):
+            if path.strip(): yield os.path.expanduser(path.strip())
+        if SYSTEMD_PRESET_PATH.endswith(":"):
+            if _preset_folder1: yield _preset_folder1
+            if _preset_folder2: yield _preset_folder2
+            if _preset_folder3: yield _preset_folder3
+            if _preset_folder4: yield _preset_folder4
+            if _preset_folder9: yield _preset_folder9
+    def init_folders(self):
+        SYSTEMD_SYSVINIT_PATH = self.get_SYSTEMD_SYSVINIT_PATH()
+        for path in SYSTEMD_SYSVINIT_PATH.split(":"):
+            if path.strip(): yield os.path.expanduser(path.strip())
+        if SYSTEMD_SYSVINIT_PATH.endswith(":"):
+            if _init_folder1: yield _init_folder1
+            if _init_folder2: yield _init_folder2
+            if _init_folder9: yield _init_folder9
     def user_folders(self):
-        if _user_folder1: yield os.path.expanduser(_user_folder1)
-        if _user_folder2: yield os.path.expanduser(_user_folder2)
-        if _user_folder3: yield os.path.expanduser(_user_folder3)
-        if _user_folder4: yield os.path.expanduser(_user_folder4)
-        if _user_folder9: yield os.path.expanduser(_user_folder9)
+        SYSTEMD_UNIT_PATH = self.get_SYSTEMD_UNIT_PATH()
+        for path in SYSTEMD_UNIT_PATH.split(":"):
+            if path.strip(): yield os.path.expanduser(path.strip())
+        if SYSTEMD_UNIT_PATH.endswith(":"):
+            if _user_folder1: yield os.path.expanduser(_user_folder1)
+            if _user_folder2: yield os.path.expanduser(_user_folder2)
+            if _user_folder3: yield os.path.expanduser(_user_folder3)
+            if _user_folder4: yield os.path.expanduser(_user_folder4)
+            if _user_folder9: yield os.path.expanduser(_user_folder9)
     def system_folders(self):
-        if _system_folder1: yield _system_folder1
-        if _system_folder2: yield _system_folder2
-        if _system_folder3: yield _system_folder3
-        if _system_folder4: yield _system_folder4
-        if _system_folder9: yield _system_folder9
+        SYSTEMD_UNIT_PATH = self.get_SYSTEMD_UNIT_PATH()
+        for path in SYSTEMD_UNIT_PATH.split(":"):
+            if path.strip(): yield os.path.expanduser(path.strip())
+        if SYSTEMD_UNIT_PATH.endswith(":"):
+            if _system_folder1: yield _system_folder1
+            if _system_folder2: yield _system_folder2
+            if _system_folder3: yield _system_folder3
+            if _system_folder4: yield _system_folder4
+            if _system_folder9: yield _system_folder9
+    def get_SYSTEMD_UNIT_PATH(self):
+        if self._SYSTEMD_UNIT_PATH is None:
+            self._SYSTEMD_UNIT_PATH = os.environ.get("SYSTEMD_UNIT_PATH", ":")
+        return self._SYSTEMD_UNIT_PATH
+    def get_SYSTEMD_SYSVINIT_PATH(self):
+        if self._SYSTEMD_SYSVINIT_PATH is None:
+            self._SYSTEMD_SYSVINIT_PATH = os.environ.get("SYSTEMD_SYSVINIT_PATH", ":")
+        return self._SYSTEMD_SYSVINIT_PATH
+    def get_SYSTEMD_PRESET_PATH(self):
+        if self._SYSTEMD_PRESET_PATH is None:
+            self._SYSTEMD_PRESET_PATH = os.environ.get("SYSTEMD_PRESET_PATH", ":")
+        return self._SYSTEMD_PRESET_PATH
     def sysd_folders(self):
         """ if --user then these folders are preferred """
         if self.user_mode():
