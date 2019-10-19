@@ -90,12 +90,12 @@ ExitWhenNoMoreServices = False
 ExitWhenNoMoreProcs = False
 DefaultUnit = os.environ.get("SYSTEMD_DEFAULT_UNIT", "default.target") # systemd.exe --unit=default.target
 DefaultTarget = os.environ.get("SYSTEMD_DEFAULT_TARGET", "multi-user.target") # DefaultUnit fallback
-LogLevel = os.environ.get("SYSTEMD_LOG_LEVEL", "info") # systemd.exe --log-level
-LogTarget = os.environ.get("SYSTEMD_LOG_TARGET", "journal-or-kmsg") # systemd.exe --log-target
-LogLocation = os.environ.get("SYSTEMD_LOG_LOCATION", "no") # systemd.exe --log-location
-ShowStatus = os.environ.get("SYSTEMD_SHOW_STATUS", "auto") # systemd.exe --show-status
-DefaultStandardOutput=os.environ.get("SYSTEMD_STANDARD_OUTPUT", "journal") # systemd.exe --default-standard-output
-DefaultStandardError=os.environ.get("SYSTEMD_STANDARD_ERROR", "inherit") # systemd.exe --default-standard-error
+# LogLevel = os.environ.get("SYSTEMD_LOG_LEVEL", "info") # systemd.exe --log-level
+# LogTarget = os.environ.get("SYSTEMD_LOG_TARGET", "journal-or-kmsg") # systemd.exe --log-target
+# LogLocation = os.environ.get("SYSTEMD_LOG_LOCATION", "no") # systemd.exe --log-location
+# ShowStatus = os.environ.get("SYSTEMD_SHOW_STATUS", "auto") # systemd.exe --show-status
+# DefaultStandardOutput=os.environ.get("SYSTEMD_STANDARD_OUTPUT", "journal") # systemd.exe --default-standard-output
+# DefaultStandardError=os.environ.get("SYSTEMD_STANDARD_ERROR", "inherit") # systemd.exe --default-standard-error
 
 EXEC_SPAWN = False
 REMOVE_LOCK_FILE = False
