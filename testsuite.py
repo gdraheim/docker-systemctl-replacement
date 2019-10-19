@@ -5903,7 +5903,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             scenario we test what happens if the lockfile is deleted in between."""
         self.begin()
         vv = "-vv"
-        removelockfile="--coverage=removelockfile,sleep"
+        removelockfile="--coverage=removelockfile"
+        timeouts = "-c MinimumTimeoutStartSec=7 -c MinimumTimeoutStopSec=7"
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -5928,7 +5929,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 echo zzz `date +%M:%S` "[$$]" started pid >>{logfile}
                 sleep 2
                 echo zzz `date +%M:%S` "[$$]" starting zza >>{logfile}
-                {systemctl} start zza.service {vv} {vv} {removelockfile} >>{logfile} 2>&1
+                {systemctl} start zza.service {vv} {vv} {removelockfile} {timeouts} >>{logfile} 2>&1
                 echo zzz `date +%M:%S` "[$$]" started zza >>{logfile}
                ) &
                sleep 1
@@ -5972,7 +5973,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        cmd = "{systemctl} start zzz.service {vv} {removelockfile}"
+        cmd = "{systemctl} start zzz.service {vv} {removelockfile} {timeouts}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
@@ -5994,7 +5995,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # cmd = "{systemctl} is-active zza.service zzz.service {vv}"
         # out, err, end = output3(cmd.format(**locals()))
         # logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        cmd = "{systemctl} start zza.service {vv} {vv} {removelockfile}"
+        cmd = "{systemctl} start zza.service {vv} {vv} {removelockfile} {timeouts}"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
         self.assertEqual(end, 0)

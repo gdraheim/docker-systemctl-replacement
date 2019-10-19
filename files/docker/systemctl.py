@@ -4468,9 +4468,6 @@ if __name__ == "__main__":
     logg.setLevel(max(0, logging.ERROR - 10 * opt.verbose))
     #
     COVERAGE = opt.coverage
-    if "sleep" in COVERAGE:
-         MinimumTimeoutStartSec = 7
-         MinimumTimeoutStopSec = 7
     if "quick" in COVERAGE:
          MinimumTimeoutStartSec = 4
          MinimumTimeoutStopSec = 4
