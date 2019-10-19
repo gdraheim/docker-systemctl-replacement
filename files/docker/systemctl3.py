@@ -122,6 +122,9 @@ _sysv_mappings["$network"] = "network.target"
 _sysv_mappings["$remote_fs"] = "remote-fs.target"
 _sysv_mappings["$timer"] = "timers.target"
 
+_pid_min = 1
+_pid_max = 10
+
 def shell_cmd(cmd):
     return " ".join(["'%s'" % part for part in cmd])
 def to_int(value, default = 0):
@@ -1387,31 +1390,21 @@ class Systemctl:
             time.sleep(EpsilonTime)
             logg.info(" %s ................. boot sleep %ss", hint or "", EpsilonTime)
     def get_boottime(self):
+        pid1 = _pid_min or 1
+        pid_max = _pid_max
         if "oldest" in COVERAGE:
-            return self.get_boottime_oldest()
-        for pid in xrange(10):
+            with open("/proc/sys/kernel/pid_max") as f:
+                pid_max = int(f.readline.decode())
+        for pid in xrange(pid1, pid_max - pid1 + 1):
             proc = "/proc/%s/stat" % pid
+            if not os.path.exists(proc):
+                continue
             try:
-                if os.path.exists(proc):
-                    # return os.path.getmtime(proc) # did sometimes change
-                    return self.get_boottime_from_proc_stat_file(proc)
+                # return os.path.getmtime(proc) # did sometimes change
+                return self.get_boottime_from_proc_stat_file(proc)
             except Exception as e: # pragma: nocover
                 logg.warning("could not access %s: %s", proc, e)
         return self.get_boottime_oldest()
-    def get_boottime_oldest(self):
-        # otherwise get the oldest entry in /proc
-        booted = time.time()
-        for name in os.listdir("/proc"):
-            proc = "/proc/%s/stat" % name
-            try:
-                if os.path.exists(proc):
-                    # ctime = os.path.getmtime(proc) # did sometimes change
-                    ctime = self.get_boottime_from_proc_stat_file(proc)
-                    if ctime < booted:
-                        booted = ctime 
-            except Exception as e: # pragma: nocover
-                logg.warning("could not access %s: %s", proc, e)
-        return booted
 
     # Use uptime, time process running in ticks, and current time to determine process boot time
     # You can't use the modified timestamp of the status file because it isn't static.
@@ -4458,6 +4451,8 @@ if __name__ == "__main__":
     #
     _o.add_option("--coverage", metavar="OPTIONLIST", default=COVERAGE,
         help="..support for coverage (e.g. spawn,oldest,sleep) [%default]")
+    _o.add_option("-c","--config", metavar="NAME=VAL", action="append", default=[],
+        help="..override internal variables (InitLoopSleep,SysInitTarget) {%default}")
     _o.add_option("-e","--extra-vars", "--environment", metavar="NAME=VAL", action="append", default=[],
         help="..override settings in the syntax of 'Environment='")
     _o.add_option("-v","--verbose", action="count", default=0,
@@ -4502,6 +4497,34 @@ if __name__ == "__main__":
         _user_mode = True
     if opt.system:
         _user_mode = False # override --user
+    #
+    for setting in opt.config:
+        if "=" in setting:
+            nam, val = setting.split("=", 1)
+            if nam in globals():
+                old = globals()[nam]
+                if old is False or old is True:
+                    logg.debug("yes %s=%s", nam, val)
+                    globals()[nam] = (val in ("true", "True", "TRUE", "yes", "y", "Y", "YES"))
+                    logg.debug("... _show_all=%s", _show_all)
+                elif isinstance(old, float):
+                    logg.debug("num %s=%s", nam, val)
+                    globals()[nam] = float(val)
+                    logg.debug("... MinimumYield=%s", MinimumYield)
+                elif isinstance(old, int):
+                    logg.debug("int %s=%s", nam, val)
+                    globals()[nam] = int(val)
+                    logg.debug("... InitLoopSleep=%s", InitLoopSleep)
+                elif isinstance(old, string_types):
+                    logg.debug("str %s=%s", nam, val)
+                    globals()[nam] = val.strip()
+                    logg.debug("... SysInitTarget=%s", SysInitTarget)
+                else:
+                    logg.warning("(ignored) unknown target type -c '%s' : %s", nam, type(old))
+            else:
+                logg.warning("(ignored) unknown target config -c '%s' : no such variable", nam)
+        else:
+            logg.warning("(ignored) not a config setting format -c '%s'", setting)
     #
     if _user_mode:
         systemctl_debug_log = os_path(_root, _var_path(_systemctl_debug_log))
