@@ -10727,6 +10727,56 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
+    def test_4069_simple_truncate_oldest_pid(self):
+        """ check that we manage a service that has some old .pid
+            file being around. That is a reboot has occurred and the
+            information is not relevant to the current system state."""
+        self.begin()
+        vv = "-vv"
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        logfile = os_path(root, "/var/log/test.log")
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        testsleep = self.testname("sleep")
+        bindir = os_path(root, "/usr/bin")
+        text_file(os_path(testdir, "zzz.service"),"""
+            [Unit]
+            Description=Testing Z
+            After=foo.service
+            [Service]
+            Type=simple
+            ExecStart={bindir}/{testsleep} 99
+            ExecStop=/usr/bin/killall {testsleep}
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
+        #
+        pid_max = open("/proc/sys/kernel/pid_max").read().strip()
+        systemctl += " -c BOOT_PID_MIN=%s" % (pid_max)
+        #
+        cmd = "{systemctl} enable zzz.service -vv"
+        sh____(cmd.format(**locals()))
+        cmd = "{systemctl} start zzz.service -vv"
+        sh____(cmd.format(**locals()))
+        #
+        cmd = "{systemctl} is-active zzz.service other.service -vvvv"
+        act, err, end = output3(cmd.format(**locals()))
+        self.assertEqual(act.strip(), "active\nunknown")
+        self.assertEqual(end, 3)
+        #
+        cmd = "{systemctl} stop zzz.service -vv"
+        sh____(cmd.format(**locals()))
+        #
+        logg.info("ERR => %s", err)
+        self.assertTrue(greps(err, "boottime from the oldest entry in /proc"))
+        #
+        self.rm_testdir()
+        self.coverage()
+        self.end()
     def real_4090_simple_service_RemainAfterExit(self):
         self.test_4090_simple_service_RemainAfterExit(True)
     def test_4090_simple_service_RemainAfterExit(self, real = None):

@@ -1415,10 +1415,10 @@ class Systemctl:
                     return self.path_proc_started(proc)
             except Exception as e: # pragma: nocover
                 logg.warning("could not access %s: %s", proc, e)
-        logg.debug(" boottime from  the oldest entry in /proc [nothing in %s..%s]", pid1, pid_max)
+        logg.debug(" boottime from the oldest entry in /proc [nothing in %s..%s]", pid1, pid_max)
         booted = time.time()
         for name in os.listdir("/proc"):
-            proc = "/proc/%s/status" % name
+            proc = "/proc/%s/stat" % name
             try:
                 if os.path.exists(proc):
                     # ctime = os.path.getmtime(proc)
