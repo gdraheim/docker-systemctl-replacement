@@ -43,6 +43,7 @@ UBUNTU = "ubuntu:18.04"
 OPENSUSE = "opensuse/leap:15.0"
 SOMETIME = ""
 
+QUICK = "-c DefaultMaximumTimeout=9"
 DOCKER_SOCKET = "/var/run/docker.sock"
 PSQL_TOOL = "/usr/bin/psql"
 
@@ -7307,7 +7308,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
-        quick = "--coverage=quick"
+        quick = QUICK
         systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
@@ -10229,7 +10230,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
-        quick = "--coverage=quick"
+        quick = QUICK
         systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         logfile = os_path(root, "/var/log/"+testsleep+".log")
@@ -11347,7 +11348,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
-        quick = "--coverage=quick"
+        quick = QUICK
         systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("testsleep")
         testsleepB = testsleep+"B"
@@ -11464,7 +11465,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
-        quick = "--coverage=quick"
+        quick = QUICK
         systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("testsleep")
         testsleepB = testsleep+"B"
@@ -11584,7 +11585,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
-        quick = "--coverage=quick"
+        quick = QUICK
         systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("testsleep")
         testsleepB = testsleep+"B"
@@ -11704,7 +11705,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
-        quick = "--coverage=quick"
+        quick = QUICK
         systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("testsleep")
         testsleepB = testsleep+"B"
@@ -11824,7 +11825,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
-        quick = "--coverage=quick"
+        quick = QUICK
         systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("testsleep")
         testsleepB = testsleep+"B"
@@ -13267,7 +13268,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         sometime = SOMETIME or 188
-        quick = "--coverage=quick"
+        quick = QUICK
         #
         user = self.user()
         root = ""
@@ -13681,7 +13682,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         sometime = SOMETIME or 188
-        quick = "--coverage=quick"
+        quick = QUICK
         #
         user = self.user()
         root = ""
@@ -14050,7 +14051,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         sometime = SOMETIME or 288
-        quick = "--coverage=quick"
+        quick = QUICK
         #
         user = self.user()
         root = ""
@@ -14432,7 +14433,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         sometime = SOMETIME or 288
-        quick = "--coverage=quick"
+        quick = QUICK
         #
         user = self.user()
         root = ""
@@ -14808,7 +14809,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         sometime = SOMETIME or 188
-        quick = "--coverage=quick"
+        quick = QUICK
         #
         user = self.user()
         root = ""
@@ -15074,7 +15075,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         sometime = SOMETIME or 188
-        quick = "--coverage=quick"
+        quick = QUICK
         #
         user = self.user()
         root = ""
@@ -15339,7 +15340,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         sometime = SOMETIME or 188
-        quick = "--coverage=quick"
+        quick = QUICK
         #
         user = self.user()
         root = ""
@@ -15686,7 +15687,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         sometime = SOMETIME or 288
-        quick = "--coverage=quick"
+        quick = QUICK
         #
         user = self.user()
         root = ""
@@ -15860,7 +15861,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         sometime = SOMETIME or 288
-        quick = "--coverage=quick"
+        quick = QUICK
         #
         user = self.user()
         root = ""
@@ -16291,7 +16292,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         sometime = SOMETIME or 188
-        quick = "--coverage=quick"
+        quick = QUICK
         #
         user = self.user()
         root = ""
@@ -16677,7 +16678,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         sometime = SOMETIME or 288
-        quick = "--coverage=quick"
+        quick = QUICK
         #
         user = self.user()
         root = ""
@@ -17075,7 +17076,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         sometime = SOMETIME or 288
-        quick = "--coverage=quick"
+        quick = QUICK
         #
         user = self.user()
         root = ""
@@ -17467,7 +17468,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         sometime = SOMETIME or 188
-        quick = "--coverage=quick"
+        quick = QUICK
         #
         user = self.user()
         root = ""
@@ -17750,7 +17751,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         sometime = SOMETIME or 188
-        quick = "--coverage=quick"
+        quick = QUICK
         #
         user = self.user()
         root = ""
@@ -18032,7 +18033,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         sometime = SOMETIME or 188
-        quick = "--coverage=quick"
+        quick = QUICK
         #
         user = self.user()
         root = ""
@@ -18179,7 +18180,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         sometime = SOMETIME or 288
-        quick = "--coverage=quick"
+        quick = QUICK
         #
         user = self.user()
         root = ""
@@ -18388,7 +18389,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         sometime = SOMETIME or 188
-        quick = "--coverage=quick"
+        quick = QUICK
         #
         user = self.user()
         root = ""
@@ -18609,7 +18610,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         sometime = SOMETIME or 288
-        quick = "--coverage=quick"
+        quick = QUICK
         #
         user = self.user()
         root = ""
@@ -18833,7 +18834,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         sometime = SOMETIME or 288
-        quick = "--coverage=quick"
+        quick = QUICK
         #
         user = self.user()
         root = ""
@@ -19051,7 +19052,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         sometime = SOMETIME or 188
-        quick = "--coverage=quick"
+        quick = QUICK
         #
         user = self.user()
         root = ""
@@ -19231,7 +19232,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         sometime = SOMETIME or 188
-        quick = "--coverage=quick"
+        quick = QUICK
         #
         user = self.user()
         root = ""

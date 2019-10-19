@@ -27,7 +27,6 @@ else:
     string_types = str
     xrange = range
 
-COVERAGE = ""
 DEBUG_AFTER = False
 
 FOUND_OK = 0
@@ -4473,8 +4472,6 @@ if __name__ == "__main__":
     _o.add_option("--no-pager", action="store_true",
         help="Do not pipe output into pager (ignored)")
     #
-    _o.add_option("--coverage", metavar="OPTIONLIST", default=COVERAGE,
-        help="..support for coverage (e.g. spawn,oldest,sleep) [%default]")
     _o.add_option("-c","--config", metavar="NAME=VAL", action="append", default=[],
         help="..override internal variables (InitLoopSleep,SysInitTarget) {%default}")
     _o.add_option("-e","--extra-vars", "--environment", metavar="NAME=VAL", action="append", default=[],
@@ -4491,12 +4488,6 @@ if __name__ == "__main__":
     logging.basicConfig(level = max(0, logging.FATAL - 10 * opt.verbose))
     logg.setLevel(max(0, logging.ERROR - 10 * opt.verbose))
     #
-    COVERAGE = opt.coverage
-    if "quick" in COVERAGE:
-         MinimumTimeoutStartSec = 4
-         MinimumTimeoutStopSec = 4
-         DefaultTimeoutStartSec = 9
-         DefaultTimeoutStopSec = 9
     _extra_vars = opt.extra_vars
     _force = opt.force
     _full = opt.full
