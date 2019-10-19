@@ -58,7 +58,7 @@ $LISTEN_PID, $LISTEN_FDS, $LISTEN_FDNAMES - Set by systemd for supervised proces
 $NOTIFY_SOCKET - Set by systemd for supervised processes for status and start-up completion notification. See sd_notify(3) for more information.
 
 
-## CONF
+## SYSTEM CONF
 
     /etc/systemd/system.conf, /etc/systemd/system.conf.d/*.conf, /run/systemd/system.conf.d/*.conf, /usr/lib/systemd/system.conf.d/*.conf
   
@@ -107,4 +107,93 @@ DefaultTasksMax=
 DefaultLimitCPU=, DefaultLimitFSIZE=, DefaultLimitDATA=, DefaultLimitSTACK=, DefaultLimitCORE=, DefaultLimitRSS=, DefaultLimitNOFILE=, DefaultLimitAS=, DefaultLimitNPROC=, DefaultLimitMEMLOCK=, DefaultLimitLOCKS=, DefaultLimitSIGPENDING=, DefaultLimitMSGQUEUE=, DefaultLimitNICE=, DefaultLimitRTPRIO=, DefaultLimitRTTIME=
 
 DefaultOOMPolicy=
+
+# UNIT CONF
+
+ * https://www.freedesktop.org/software/systemd/man/systemd.service.html
+
+It is a good idea to make the default values configurable which will then be overriden in the actual service unit config.
+
+    GuessMainPID=yes
+    TimeoutStartSec
+    TmeoutStopSec
+    TimeoutAbortSec
+    TimeoutSec # configures both TimeoutStartSec and TimeoutStopSec
+    TimeoutCleanSec=infinity # "systemctl clean" command
+    RuntimeMaxSec=
+    WatchdogSec
+    SuccessExitStatus
+    NonBlocking=false
+    NotifyAccess=none # main,exec,all
+    Sockets=
+    FileDescriptorStoreMax=
+    OOMPolicy=
+    OOMSCoreAdjust=
+
+
+* https://www.freedesktop.org/software/systemd/man/systemd.exec.html
+
+WorkingDirectory=
+
+RootDirectory=
+
+LimitCPU=, LimitFSIZE=, LimitDATA=, LimitSTACK=, LimitCORE=, LimitRSS=, LimitNOFILE=, LimitAS=, LimitNPROC=, LimitMEMLOCK=, LimitLOCKS=, LimitSIGPENDING=, LimitMSGQUEUE=, LimitNICE=, LimitRTPRIO=, LimitRTTIME=
+
+UMask
+
+OOMScoreAdjust
+
+TimerSlackNSec
+
+IgnoreSIGPIPE=true
+
+ProtectSystem, ProtectHome
+
+RuntimeDirectory=, StateDirectory=, CacheDirectory=, LogsDirectory=, ConfigurationDirectory=¶
+
+These options take a whitespace-separated list of directory names. The specified directory names must be relative, and may not include "..". If set, one or more directories by the specified names will be created (including their parents) below the locations defined in the following table, when the unit is started. Also, the corresponding environment variable is defined with the full path of directories. If multiple directories are set, then in the environment variable the paths are concatenated with colon (":").
+
+RuntimeDirectoryMode=, StateDirectoryMode=, CacheDirectoryMode=, LogsDirectoryMode=, ConfigurationDirectoryMode=
+
+The chmod for the mentioned dirs when they need to be created.
+
+RuntimeDirectoryPreserve=no
+
+ReadWritePaths=, ReadOnlyPaths=, InaccessiblePaths=¶
+
+TemporaryFileSystem
+
+PrivateTmp
+
+PrivateDevices
+
+PrivateNetwork
+
+NetworkNamespacePath
+
+PrivateUsers
+
+ProtectHostname, ProtectKernelTunables, ...
+
+RestrictAddressFamilies, RestrictNamespaces
+
+LockPersonality
+
+Environment, EnvironmentFile, PassEnvironment, UnsetEnvironment
+
+StandardInput, StandardOutput, StandardError
+StandardInputText=, StandardInputData=
+
+LogLevelMax
+LogExtraFields
+LogRateLimitIntervalSec=, LogRateLimitBurst=
+SyslogIdentifier
+SyslogFacility
+SyslogLevel
+SyslogLevelPrefix
+
+
+
+
+
 
