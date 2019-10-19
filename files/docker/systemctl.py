@@ -73,7 +73,6 @@ _preset_folder9 = None
 SystemCompatibilityVersion = 219
 SysInitTarget = "sysinit.target"
 SysInitWait = 5 # max for target
-EpsilonTime = 0.1
 MinimumYield = 0.5
 MinimumTimeoutStartSec = 4
 MinimumTimeoutStopSec = 4
@@ -99,8 +98,8 @@ ShowStatus = os.environ.get("SYSTEMD_SHOW_STATUS", "auto") # systemd.exe --show-
 DefaultStandardOutput=os.environ.get("SYSTEMD_STANDARD_OUTPUT", "journal") # systemd.exe --default-standard-output
 DefaultStandardError=os.environ.get("SYSTEMD_STANDARD_ERROR", "inherit") # systemd.exe --default-standard-error
 REMOVE_LOCK_FILE = False
-BOOT_PID_MIN = 1
-BOOT_PID_MAX = 10
+BOOT_PID_MIN = 0
+BOOT_PID_MAX = -9
 PROC_MAX_DEPTH = 100
 
 # The systemd default is NOTIFY_SOCKET="/var/run/systemd/notify"
@@ -150,6 +149,10 @@ def unit_of(module):
     if "." not in module:
         return module + ".service"
     return module
+def end22(name):
+    if name and len(name) > 22:
+        return "..." + name[-19:]
+    return name
 
 def os_path(root, path):
     if not root:
@@ -1392,14 +1395,6 @@ class Systemctl:
         else:
             conf.status[name] = value
     #
-    def wait_boot(self, hint = None):
-        booted = self.get_boottime()
-        while True:
-            now = time.time()
-            if booted + EpsilonTime <= now:
-                break
-            time.sleep(EpsilonTime)
-            logg.info(" %s ................. boot sleep %ss", hint or "", EpsilonTime)
     def get_boottime(self):
         """ detects the boot time of the container - in general the start time of PID 1 """
         if self._boottime is None:
@@ -1407,25 +1402,27 @@ class Systemctl:
         return self._boottime
     def get_boottime_from_proc(self):
         """ detects the latest boot time by looking at the start time of available process"""
-        pid1 = BOOT_PID_MIN or 1
+        pid1 = BOOT_PID_MIN or 0
         pid_max = BOOT_PID_MAX
+        if pid_max < 0:
+            pid_max = pid1 - pid_max
         if "oldest" in COVERAGE: pid_max = 0
-        for pid in xrange(pid1, pid_max - pid1 + 1):
+        for pid in xrange(pid1, pid_max):
             proc = "/proc/%s/stat" % pid
-            if not os.path.exists(proc):
-                continue
             try:
-                # return os.path.getmtime(proc) # did sometimes change
-                return self.get_boottime_from_proc_stat_file(proc)
+                if os.path.exists(proc):
+                    # return os.path.getmtime(proc) # did sometimes change
+                    return self.path_proc_started(proc)
             except Exception as e: # pragma: nocover
                 logg.warning("could not access %s: %s", proc, e)
-        # otherwise get the oldest entry in /proc
+        logg.debug(" boottime from  the oldest entry in /proc [nothing in %s..%s]", pid1, pid_max)
         booted = time.time()
         for name in os.listdir("/proc"):
             proc = "/proc/%s/status" % name
             try:
                 if os.path.exists(proc):
-                    ctime = os.path.getmtime(proc)
+                    # ctime = os.path.getmtime(proc)
+                    ctime = self.path_proc_started(proc)
                     if ctime < booted:
                         booted = ctime 
             except Exception as e: # pragma: nocover
@@ -1435,7 +1432,10 @@ class Systemctl:
     # Use uptime, time process running in ticks, and current time to determine process boot time
     # You can't use the modified timestamp of the status file because it isn't static.
     # ... using clock ticks it is known to be a linear time on Linux
-    def get_boottime_from_proc_stat_file(self, proc):
+    def get_proc_started(self, pid):
+        proc = "/proc/%s/status" % pid
+        return self.path_proc_started(proc)
+    def path_proc_started(self, proc):
         #get time process started after boot in clock ticks
         with open(proc) as f:
             data = f.readline()
@@ -1487,15 +1487,12 @@ class Systemctl:
     def truncate_old(self, filename):
         filetime = self.get_filetime(filename)
         boottime = self.get_boottime()
-        if isinstance(filetime, float):
-            filetime -= EpsilonTime
         if filetime >= boottime :
-            logg.debug("  file time: %s", datetime.datetime.fromtimestamp(filetime))
-            logg.debug("  boot time: %s", datetime.datetime.fromtimestamp(boottime))
+            logg.debug("  file time: %s (%s)", datetime.datetime.fromtimestamp(filetime), end22(filename))
+            logg.debug("  boot time: %s (%s)", datetime.datetime.fromtimestamp(boottime), "status modified later")
             return False # OK
-        logg.info("truncate old %s", filename)
-        logg.info("  file time: %s", datetime.datetime.fromtimestamp(filetime))
-        logg.info("  boot time: %s", datetime.datetime.fromtimestamp(boottime))
+        logg.info("  file time: %s (%s)", datetime.datetime.fromtimestamp(filetime), end22(filename))
+        logg.info("  boot time: %s (%s)", datetime.datetime.fromtimestamp(boottime), "status truncated now")
         try:
             shutil_truncate(filename)
         except Exception as e:
@@ -4177,7 +4174,7 @@ class Systemctl:
         conf = self.sysinit_target()
         status_file = self.status_file_from(conf)
         if not os.path.isfile(status_file):
-            time.sleep(EpsilonTime)
+            time.sleep(MinimumYield)
         if not os.path.isfile(status_file):
             return "offline"
         status = self.read_status_from(conf)
@@ -4595,25 +4592,21 @@ if __name__ == "__main__":
     command_name = command.replace("-","_").replace(".","_")+"_modules"
     command_func = getattr(systemctl, command_name, None)
     if callable(command_func) and not found:
-        systemctl.wait_boot(command_name)
         found = True
         result = command_func(*modules)
     command_name = "show_"+command.replace("-","_").replace(".","_")
     command_func = getattr(systemctl, command_name, None)
     if callable(command_func) and not found:
-        systemctl.wait_boot(command_name)
         found = True
         result = command_func(*modules)
     command_name = "system_"+command.replace("-","_").replace(".","_")
     command_func = getattr(systemctl, command_name, None)
     if callable(command_func) and not found:
-        systemctl.wait_boot(command_name)
         found = True
         result = command_func()
     command_name = "systems_"+command.replace("-","_").replace(".","_")
     command_func = getattr(systemctl, command_name, None)
     if callable(command_func) and not found:
-        systemctl.wait_boot(command_name)
         found = True
         result = command_func()
     if not found:

@@ -183,6 +183,60 @@ def beep():
         # sx___("play -n synth 0.1 tri  1000.0")
         sx____("play -V1 -q -n -c1 synth 0.1 sine 500")
 
+def get_proc_started(pid):
+    proc = "/proc/%s/stat" % pid
+    return path_proc_started(proc)
+def path_proc_started(proc):
+    #get time process started after boot in clock ticks
+    if not os.path.exists(proc):
+        logg.error("no such file %s", proc)
+        return 0
+    else:
+        with open(proc) as f:
+            data = f.readline()
+        f.closed
+        stat_data = data.split()
+        started_ticks = stat_data[21]
+        # man proc(5): "(22) starttime = The time the process started after system boot."
+        #    ".. the value is expressed in clock ticks (divide by sysconf(_SC_CLK_TCK))."
+        # NOTE: for containers the start time is related to the boot time of host system.
+
+        clkTickInt = os.sysconf_names['SC_CLK_TCK']
+        clockTicksPerSec = os.sysconf(clkTickInt)
+        started_secs = float(started_ticks) / clockTicksPerSec
+        logg.debug("Proc started time: %.3f (%s)", started_secs, proc)
+        # this value is the start time from the host system
+
+        # Variant 1:
+        system_uptime = "/proc/uptime"
+        with open(system_uptime,"rb") as f:
+            data = f.readline()
+        f.closed
+        uptime_data = data.decode().split()
+        uptime_secs = float(uptime_data[0])
+        logg.debug("System uptime secs: %.3f (%s)", uptime_secs, system_uptime)
+
+        #get time now
+        now = time.time()
+        started_time = now - (uptime_secs - started_secs)
+        logg.debug("Proc has been running since: %s" % (datetime.datetime.fromtimestamp(started_time)))
+
+        # Variant 2:
+        system_stat = "/proc/stat"
+        system_btime = 0
+        with open(system_stat,"rb") as f:
+            for line in f:
+                if line.startswith("btime"):
+                    system_btime = float(line.decode().split()[1])
+        f.closed
+        logg.debug("System btime secs: %.3f (%s)", system_btime, system_stat)
+
+        started_btime = system_btime + started_secs
+        logg.debug("Proc has been running since: %s" % (datetime.datetime.fromtimestamp(started_btime)))
+
+        # return started_time
+        return started_btime
+
 def download(base_url, filename, into):
     if not os.path.isdir(into):
         os.makedirs(into)
@@ -10477,11 +10531,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         text_file(os_path(root, "/var/tmp/test.0"), """..""")
         #
-        system_btime = 0
-        for line in open("/proc/stat", "rb"):
-            if line.startswith("btime"):
-                system_btime = float(line.decode().split()[1])
-        system_boot_time = datetime.datetime.fromtimestamp( system_btime )
+        getpid_boot_time = get_proc_started(os.getpid())
+        system_boot_time = datetime.datetime.fromtimestamp(getpid_boot_time - 1)
+        systemctl += " -c BOOT_PID_MIN=%s" % (os.getpid())
         #
         cmd = "{systemctl} enable zzz.service -vv"
         sh____(cmd.format(**locals()))
@@ -10589,11 +10641,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         #
-        system_btime = 0
-        for line in open("/proc/stat", "rb"):
-            if line.startswith("btime"):
-                system_btime = float(line.decode().split()[1])
-        system_boot_time = datetime.datetime.fromtimestamp( system_btime )
+        getpid_boot_time = get_proc_started(os.getpid())
+        system_boot_time = datetime.datetime.fromtimestamp(getpid_boot_time - 1)
+        systemctl += " -c BOOT_PID_MIN=%s" % (os.getpid())
         #
         cmd = "{systemctl} enable zzz.service -vv"
         sh____(cmd.format(**locals()))
