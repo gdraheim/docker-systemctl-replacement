@@ -91,6 +91,10 @@ ResetLocale = ["LANG", "LANGUAGE", "LC_CTYPE", "LC_NUMERIC", "LC_TIME", "LC_COLL
                "LC_MESSAGES", "LC_PAPER", "LC_NAME", "LC_ADDRESS", "LC_TELEPHONE", "LC_MEASUREMENT",
                "LC_IDENTIFICATION", "LC_ALL"]
 
+REMOVE_LOCK_FILE = False
+BOOT_PID_MIN = 1
+BOOT_PID_MAX = 10
+
 # The systemd default is NOTIFY_SOCKET="/var/run/systemd/notify"
 _notify_socket_folder = "/var/run/systemd" # alias /run/systemd
 _pid_file_folder = "/var/run"
@@ -122,8 +126,6 @@ _sysv_mappings["$network"] = "network.target"
 _sysv_mappings["$remote_fs"] = "remote-fs.target"
 _sysv_mappings["$timer"] = "timers.target"
 
-_pid_min = 1
-_pid_max = 10
 
 def shell_cmd(cmd):
     return " ".join(["'%s'" % part for part in cmd])
@@ -581,7 +583,7 @@ class waitlock:
         try:
             os.lseek(self.opened, 0, os.SEEK_SET)
             os.ftruncate(self.opened, 0)
-            if "removelockfile" in COVERAGE: # actually an optional implementation
+            if REMOVE_LOCK_FILE: # an optional implementation
                 lockfile = self.lockfile()
                 lockname = os.path.basename(lockfile)
                 os.unlink(lockfile) # ino is kept allocated because opened by this process
@@ -1390,8 +1392,8 @@ class Systemctl:
             time.sleep(EpsilonTime)
             logg.info(" %s ................. boot sleep %ss", hint or "", EpsilonTime)
     def get_boottime(self):
-        pid1 = _pid_min or 1
-        pid_max = _pid_max
+        pid1 = BOOT_PID_MIN or 1
+        pid_max = BOOT_PID_MAX
         if "oldest" in COVERAGE:
             with open("/proc/sys/kernel/pid_max") as f:
                 pid_max = int(f.readline.decode())

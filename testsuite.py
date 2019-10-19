@@ -5903,7 +5903,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             scenario we test what happens if the lockfile is deleted in between."""
         self.begin()
         vv = "-vv"
-        removelockfile="--coverage=removelockfile"
+        removelockfile="-c REMOVE_LOCK_FILE=True"
         timeouts = "-c MinimumTimeoutStartSec=7 -c MinimumTimeoutStopSec=7"
         testname = self.testname()
         testdir = self.testdir()
