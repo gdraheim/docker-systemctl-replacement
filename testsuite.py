@@ -79,6 +79,8 @@ def refresh_tool(image):
     #  {package} ar -f http://download.opensuse.org/update/leap/42.3/oss/openSUSE:Leap:42.3:Update.repo"
     if "opensuse:42.3" in image:
         return "bash -c 'zypper mr --no-gpgcheck oss-update && zypper refresh'"
+    if "opensuse/leap:15.1" in image:
+        return "bash -c 'zypper mr --no-gpgcheck repo-update && zypper refresh'"
     if "opensuse" in image:
         return "zypper refresh"
     if "ubuntu" in image:
@@ -20362,7 +20364,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         refresh = refresh_tool(image)
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "--coverage=spawn"
+            cov_option = "-c EXEC_SPAWN=True"
         sometime = SOMETIME or 188
         text_file(os_path(testdir, "zza.service"),"""
             [Unit]
@@ -20469,7 +20471,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         refresh = refresh_tool(image)
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "--coverage=spawn"
+            cov_option = "-c EXEC_SPAWN=True"
         sometime = SOMETIME or 188
         text_file(os_path(testdir, "zza.service"),"""
             [Unit]
@@ -20576,7 +20578,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         refresh = refresh_tool(image)
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "--coverage=spawn"
+            cov_option = "-c EXEC_SPAWN=True"
         sometime = SOMETIME or 188
         text_file(os_path(testdir, "zzb.service"),"""
             [Unit]
@@ -20718,7 +20720,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         refresh = refresh_tool(image)
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "--coverage=spawn"
+            cov_option = "-c EXEC_SPAWN=True"
         sometime = SOMETIME or 188
         text_file(os_path(testdir, "zzb.service"),"""
             [Unit]
@@ -20865,7 +20867,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         refresh = refresh_tool(image)
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "--coverage=spawn"
+            cov_option = "-c EXEC_SPAWN=True"
         sometime = SOMETIME or 188
         text_file(os_path(testdir, "zzb.service"),"""
             [Unit]
@@ -21002,7 +21004,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         refresh = refresh_tool(image)
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "--coverage=spawn"
+            cov_option = "-c EXEC_SPAWN=True"
         sometime = SOMETIME or 188
         text_file(os_path(testdir, "zzb.service"),"""
             [Unit]
@@ -21140,7 +21142,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         refresh = refresh_tool(image)
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "--coverage=spawn"
+            cov_option = "-c EXEC_SPAWN=True"
         sometime = SOMETIME or 288
         text_file(os_path(testdir, "zzb.service"),"""
             [Unit]
@@ -21263,7 +21265,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         refresh = refresh_tool(image)
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "--coverage=spawn"
+            cov_option = "-c EXEC_SPAWN=True"
         sometime = SOMETIME or 188
         text_file(os_path(testdir, "zzb.service"),"""
             [Unit]
@@ -21407,7 +21409,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleep_sh = os_path(testdir, "testsleep.sh")
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "--coverage=spawn"
+            cov_option = "-c EXEC_SPAWN=True"
         sometime = SOMETIME or 188
         shell_file(testsleep_sh,"""
             #! /bin/sh
@@ -21536,7 +21538,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         python_coverage = coverage_package(image)
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "--coverage=spawn"
+            cov_option = "-c EXEC_SPAWN=True"
         if _python.endswith("python3") and "centos" in image: 
            self.skipTest("no python3 on centos")
         package = package_tool(image)

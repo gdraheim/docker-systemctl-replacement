@@ -97,6 +97,8 @@ LogLocation = os.environ.get("SYSTEMD_LOG_LOCATION", "no") # systemd.exe --log-l
 ShowStatus = os.environ.get("SYSTEMD_SHOW_STATUS", "auto") # systemd.exe --show-status
 DefaultStandardOutput=os.environ.get("SYSTEMD_STANDARD_OUTPUT", "journal") # systemd.exe --default-standard-output
 DefaultStandardError=os.environ.get("SYSTEMD_STANDARD_ERROR", "inherit") # systemd.exe --default-standard-error
+
+EXEC_SPAWN = False
 REMOVE_LOCK_FILE = False
 BOOT_PID_MIN = 0
 BOOT_PID_MAX = -9
@@ -2115,7 +2117,7 @@ class Systemctl:
         env = self.extend_exec_env(env)
         env.update(envs) # set $HOME to ~$USER
         try:
-            if "spawn" in COVERAGE:
+            if EXEC_SPAWN:
                 os.spawnvpe(os.P_WAIT, cmd[0], cmd, env)
                 sys.exit(0)
             else: # pragma: nocover
