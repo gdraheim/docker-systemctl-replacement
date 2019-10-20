@@ -840,6 +840,7 @@ class Systemctl:
         self._SYSTEMD_SYSVINIT_PATH = None
         self._SYSTEMD_PRESET_PATH = None
         self._restarted_unit = {}
+        self._restart_failed_units = {}
     def user(self):
         return self._user_getlogin
     def user_mode(self):
@@ -4177,93 +4178,95 @@ class Systemctl:
         return time_to_seconds(delay, maximum)
     def restart_failed_units(self, units, maximum = None):
         """ This function will retart failed units """
+        me = os.getpid()
         maximum = maximum or DefaultStartLimitIntervalSec
         restartDelay = MinimumYield
-        restartUnits = []
         for unit in units:
+            now = time.time()
             try:
                 conf = self.load_unit_conf(unit)
                 restartPolicy = conf.get("Service", "Restart", "no")
                 restartSec = self.get_RestartSec(conf)
                 if restartPolicy in ["no", "on-success"]:
-                    logg.debug("Skipping Unit: %s Restart=%s", unit, restartPolicy)
+                    logg.debug("[%s] [%s] Current NoCheck (Restart=%s)", me, unit, restartPolicy)
                     continue
                 isUnitState = self.get_active_from(conf)
                 isUnitFailed = isUnitState in ["failed"]
-                logg.debug("Current Unit: %s Status: %s (%s)", unit, isUnitState, isUnitFailed)
-                if isUnitFailed:
-                    limitBurst = self.get_StartLimitBurst(conf)
-                    limitSecs = self.get_StartLimitIntervalSec(conf)
-                    if limitBurst > 1 and limitSecs >= 1:
-                      logg.debug("[%s] limitBurst=%s limitSecs=%s", unit, limitBurst, limitSecs)
-                      try:
-                        if unit not in self._restarted_unit:
-                            self._restarted_unit[unit] = []
-                        restarted = self._restarted_unit[unit]
-                        # logg.debug("[%s] restarted %s", unit, restarted)
-                        # logg.debug("[%s] len(%s) >= limit(%s)", unit, len(restarted), limitBurst)
-                        oldest = 0
-                        interval = 0
-                        if len(restarted) >= limitBurst:
-                            while len(restarted):
-                                oldest = restarted[0]
-                                interval = time.time() - oldest
-                                if interval > limitSecs:
-                                    restarted = restarted[1:]
-                                    continue
-                                break
-                            self._restarted_unit[unit] = restarted
-                        # all values in restarted have a time below limitSecs
-                        if len(restarted) >= limitBurst:
-                            logg.info("[%s] Blocking Restart - oldest %s is %s ago (allowed %s)", unit, oldest, interval, limitSecs)
-                            self.write_status_from(conf, AS="error")
-                            unit = None
+                logg.debug("[%s] [%s] Current Status: %s (%s)", me, unit, isUnitState, isUnitFailed)
+                if not isUnitFailed:
+                    if unit in self._restart_failed_units:
+                        del self._restart_failed_units
+                    continue
+                limitBurst = self.get_StartLimitBurst(conf)
+                limitSecs = self.get_StartLimitIntervalSec(conf)
+                if limitBurst > 1 and limitSecs >= 1:
+                  try:
+                    if unit not in self._restarted_unit:
+                        self._restarted_unit[unit] = []
+                        # we want to register restarts from now on
+                    restarted = self._restarted_unit[unit]
+                    logg.debug("[%s] [%s] Current limitSecs=%ss limitBurst=%sx (restarted %sx)", me, unit, limitSecs, limitBurst, len(restarted))
+                    oldest = 0
+                    interval = 0
+                    if len(restarted) >= limitBurst:
+                        logg.debug("[%s] [%s] restarted %s", me, unit, [ "%.3fs" % (t - now) for t in restarted ])
+                        while len(restarted):
+                            oldest = restarted[0]
+                            interval = time.time() - oldest
+                            if interval > limitSecs:
+                                restarted = restarted[1:]
+                                continue
                             break
-                      except Exception as e:
-                        logg.error("burst exception %s", e)
-                    if unit:
-                        restartUnits += [ unit ]
-                        if restartSec > restartDelay:
-                            restartDelay = min(restartSec, maximum)
+                        self._restarted_unit[unit] = restarted
+                        logg.debug("[%s] [%s] ratelimit %s", me, unit, [ "%.3fs" % (t - now) for t in restarted ])
+                        # all values in restarted have a time below limitSecs
+                    if len(restarted) >= limitBurst:
+                        logg.info("[%s] [%s] Blocking Restart - oldest %s is %s ago (allowed %s)", 
+                           me, unit, oldest, interval, limitSecs)
+                        self.write_status_from(conf, AS="error")
+                        unit = None
+                        continue
+                  except Exception as e:
+                    logg.error("[%s] burst exception %s", unit, e)
+                if unit:
+                    if unit not in self._restart_failed_units:
+                        self._restart_failed_units[unit] = now + restartSec
+                        logg.debug("[%s] [%s] restart scheduled in %+.3fs", me, unit, (self._restart_failed_units[unit] - now))
             except Exception as e:
-                logg.error("An error ocurred restarting the following unit %s.\n\t%s", unit, e)
-        if not restartUnits:
+                logg.error("[%s] [%s] An error ocurred while restart checking: %s", me, unit, e)
+        if not self._restart_failed_units:
             return False
         state = self.is_system_running()
         if state not in ["running"]:
-            logg.debug("no restart of %s failed units - system is %s", len(restartUnits), state)
+            logg.debug("[%s] no restart of %s failed units - system is %s", me, len(self._restart_failed_units), state)
             return None
-        logg.info("restart delay by %ss for %s", restartDelay, restartUnits)
-        # time.sleep(restartDelay)
-        restartDelayWatch = int(restartDelay)
-        for watch in xrange(restartDelayWatch):
-            for unit in restartUnits:
-                conf = self.load_unit_conf(unit)
-                isUnitState = self.get_active_from(conf)
-                isUnitFailed = isUnitState in ["failed"]
-                logg.debug("%s. Check Unit: %s Status: %s (%s)", watch, unit, isUnitState, isUnitFailed)
-            time.sleep(1)
-        time.sleep(max(0.1, restartDelay - restartDelayWatch))
-        restarted = 0
-        for unit in restartUnits:
+        # let's check if any of the restart_units has its restartSec expired
+        now = time.time()
+        restart_done = []
+        logg.debug("[%s] Restart checking  %s", me, [ "%+.3fs" % (t - now) for t in self._restart_failed_units.values() ])
+        for unit in sorted(self._restart_failed_units):
+            restartAt = self._restart_failed_units[unit]
+            if restartAt > now:
+                continue
+            restart_done.append(unit)
             try:
                 conf = self.load_unit_conf(unit)
                 isUnitState = self.get_active_from(conf)
                 isUnitFailed = isUnitState in ["failed"]
-                logg.debug("Restart Unit: %s Status: %s (%s)", unit, isUnitState, isUnitFailed)
+                logg.debug("[%s] [%s] Restart Status: %s (%s)", me, unit, isUnitState, isUnitFailed)
                 if isUnitFailed:
-                    restartUnits += [ unit ]
-                    logg.info("Restarting failed unit: %s", unit)
+                    logg.debug("[%s] [%s] --- restarting failed unit...", me, unit)
                     self.restart_unit(unit)
-                    logg.info("%s has been restarted.", unit)
-                    restarted += 1
-                    if unit not in self._restarted_unit:
-                        self._restarted_unit[unit] = []
+                    logg.debug("[%s] [%s] --- has been restarted.", me, unit)
                     if unit in self._restarted_unit:
                         self._restarted_unit[unit].append(time.time())
-            except:
-                logg.error("An error ocurred restarting the following unit %s.", unit)
-        return restarted
+            except Exception as e:
+                logg.error("[%s] [%s] An error ocurred while restarting: %s", me, unit, e)
+        for unit in restart_done:
+            if unit in self._restart_failed_units:
+                del self._restart_failed_units[unit]
+        logg.debug("[%s] Restart remaining %s", me, [ "%+.3fs" % (t - now) for t in self._restart_failed_units.values() ])
+        return restart_done
 
     def init_loop_until_stop(self, units):
         """ this is the init-loop - it checks for any zombies to be reaped and
