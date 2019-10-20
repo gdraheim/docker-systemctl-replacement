@@ -12997,8 +12997,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("systemctl.debug.log>\n\t%s", "\n\t".join(log))
         self.assertTrue(greps(log, "restart"))
         #
-        self.assertTrue(greps(log, "Restarting failed unit: zzc.service"))
-        self.assertTrue(greps(log, "Skipping Unit: zzd.service Restart=no"))
+        self.assertTrue(greps(log, ".zzc.service. --- restarting failed unit"))
+        self.assertTrue(greps(log, ".zzd.service. Current NoCheck .Restart=no."))
         #
         kill_testsleep = "{systemctl} __killall {testsleepA}"
         sx____(kill_testsleep.format(**locals()))
@@ -13048,7 +13048,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Restart=on-failure
             RestartSec=1
             StartLimitBurst=3
-            StartLimitIntervalSec=8
+            StartLimitIntervalSec=12
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
@@ -13059,7 +13059,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Type=simple
             ExecStart={bindir}/{testsleepB} 6
             Restart=on-failure
-            RestartSec=2
+            RestartSec=3
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
@@ -20890,8 +20890,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("systemctl.debug.log>\n\t%s", "\n\t".join(log))
         self.assertTrue(greps(log, "restart"))
         #
-        self.assertTrue(greps(log, "Restarting failed unit: zzc.service"))
-        self.assertTrue(greps(log, "Skipping Unit: zzd.service Restart=no"))
+        self.assertTrue(greps(log, ".zzc.service. --- restarting failed unit"))
+        self.assertTrue(greps(log, ".zzd.service. Current NoCheck .Restart=no."))
         #
         cmd = "docker stop {testname}x" # <<<
         # sh____(cmd.format(**locals()))
