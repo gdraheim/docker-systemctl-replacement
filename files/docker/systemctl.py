@@ -28,6 +28,7 @@ else:
     xrange = range
 
 DEBUG_AFTER = False
+DEBUG_STATUS = False
 
 FOUND_OK = 0
 FOUND_INACTIVE = 2
@@ -1400,16 +1401,16 @@ class Systemctl:
         elif isinstance(defaults, string_types):
            status["ActiveState"] = defaults
         if not status_file:
-            logg.debug("no status file. returning %s", status)
+            if DEBUG_STATUS: logg.debug("no status file. returning %s", status)
             return status
         if not os.path.isfile(status_file):
-            logg.debug("no status file: %s\n returning %s", status_file, status)
+            if DEBUG_STATUS: logg.debug("no status file: %s\n returning %s", status_file, status)
             return status
         if self.truncate_old(status_file):
-            logg.debug("old status file: %s\n returning %s", status_file, status)
+            if DEBUG_STATUS: logg.debug("old status file: %s\n returning %s", status_file, status)
             return status
         try:
-            logg.debug("reading %s", status_file)
+            if DEBUG_STATUS: logg.debug("reading %s", status_file)
             for line in open(status_file):
                 if line.strip(): 
                     m = re.match(r"(\w+)[:=](.*)", line)
@@ -2816,7 +2817,8 @@ class Systemctl:
                 logg.info("get_status_from %s => %s", conf.name(), state)
                 return state
         pid = self.read_mainpid_from(conf, "")
-        logg.debug("pid_file '%s' => PID %s", pid_file or status_file, pid)
+        if DEBUG_STATUS:
+            logg.debug("pid_file '%s' => PID %s", pid_file or status_file, pid)
         if pid:
             if not pid_exists(pid) or pid_zombie(pid):
                 return "failed"
@@ -2839,7 +2841,8 @@ class Systemctl:
                 else:
                     return self.get_status_from(conf, "SubState", "dead")
         pid = self.read_mainpid_from(conf, "")
-        logg.debug("pid_file '%s' => PID %s", pid_file or status_file, pid)
+        if DEBUG_STATUS:
+            logg.debug("pid_file '%s' => PID %s", pid_file or status_file, pid)
         if pid:
             if not pid_exists(pid) or pid_zombie(pid):
                 return "failed"
