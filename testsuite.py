@@ -4814,7 +4814,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
-        kill_testsleep = "{systemct} __killall {testsleep}"
+        kill_testsleep = "{systemctl} __killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
@@ -13140,6 +13140,218 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         kill_daemon = "{systemctl} __killall '*systemctl.py' -vvvv"
         sx____(kill_daemon.format(**locals()))
         time.sleep(InitLoopSleep+1)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        #
+        #@ self.rm_testdir()
+        self.coverage()
+        self.end()
+    def test_4760_systemctl_py_restart_sec_shortens_interval(self):
+        """ check that we can enable services in a docker container to be run as default-services
+            and RestartSec shortes the InitLoop interval"""
+        self.begin()
+        self.rm_testdir()
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        logfile = os_path(root, "/var/log/"+testname+".log")
+        testsleepA = self.testname("sleepA")
+        testsleepB = self.testname("sleepB")
+        bindir = os_path(root, "/usr/bin")
+        text_file(os_path(testdir, "zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            Type=simple
+            ExecStart={bindir}/{testsleepA} 2
+            Restart=on-failure
+            RestartSec=200ms
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        text_file(os_path(testdir, "zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            Type=simple
+            ExecStart={bindir}/{testsleepB} 6
+            Restart=on-failure
+            RestartSec=2
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        #
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleepA))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleepB))
+        copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
+        copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
+        cmd = "{systemctl} enable zza.service"
+        sh____(cmd.format(**locals()))
+        cmd = "{systemctl} enable zzb.service"
+        sh____(cmd.format(**locals()))
+        cmd = "{systemctl} default-services -v"
+        sh____(cmd.format(**locals()))
+        # sh____(cmd.format(**locals()))
+        out2 = output(cmd.format(**locals()))
+        logg.info("\n>\n%s", out2)
+        #
+        kill_daemon = "{systemctl} __killall '*systemctl.py' -vvvv"
+        sx____(kill_daemon.format(**locals()))
+        kill_testsleep = "{systemctl} __killall {testsleepA} -vvvv"
+        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = "{systemctl} __killall {testsleepB} -vvvv"
+        sx____(kill_testsleep.format(**locals()))
+        kill_daemon = "{systemctl} __killall :9 '*systemctl.py' -vvvv"
+        sx____(kill_daemon.format(**locals()))
+        #
+        debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
+        os_remove(debug_log)
+        text_file(debug_log, "")
+        cmd = "{systemctl} -1"
+        bg = background(cmd.format(**locals()))
+        time.sleep(1)
+        #
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, "sleepA"))
+        self.assertTrue(greps(top, "sleepB"))
+        #
+        logg.info("===============SLEEP")
+        time.sleep(6)
+        #
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        logg.info("==============>>")
+        #
+        log = lines(open(debug_log))
+        logg.info("systemctl.debug.log>\n\t%s", "\n\t".join(log[-20:]))
+        #
+        self.assertTrue(greps(log, ".zzb.service. set InitLoopSleep from 5s to 2 .caused by RestartSec=2.000s"))
+        self.assertFalse(greps(log, "zza.service.*set InitLoopSleep"))
+        #
+        kill_testsleep = "{systemctl} __killall {testsleepA}"
+        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = "{systemctl} __killall {testsleepB}"
+        sx____(kill_testsleep.format(**locals()))
+        #
+        logg.info("kill daemon at %s", bg.pid)
+        os.kill(bg.pid, signal.SIGTERM)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        time.sleep(2)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        kill_daemon = "{systemctl} __killall '*systemctl.py' -vvvv"
+        sx____(kill_daemon.format(**locals()))
+        time.sleep(1)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        #
+        #@ self.rm_testdir()
+        self.coverage()
+        self.end()
+    def test_4770_systemctl_py_restart_sec_shortens_interval(self):
+        """ check that we can enable services in a docker container to be run as default-services
+            and RestartSec shortes the InitLoop interval"""
+        self.begin()
+        self.rm_testdir()
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        logfile = os_path(root, "/var/log/"+testname+".log")
+        testsleepA = self.testname("sleepA")
+        testsleepB = self.testname("sleepB")
+        bindir = os_path(root, "/usr/bin")
+        text_file(os_path(testdir, "zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            Type=simple
+            ExecStart={bindir}/{testsleepA} 2
+            Restart=on-failure
+            RestartSec=2
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        text_file(os_path(testdir, "zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            Type=simple
+            ExecStart={bindir}/{testsleepB} 6
+            Restart=on-failure
+            RestartSec=0
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        #
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleepA))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleepB))
+        copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
+        copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
+        cmd = "{systemctl} enable zza.service"
+        sh____(cmd.format(**locals()))
+        cmd = "{systemctl} enable zzb.service"
+        sh____(cmd.format(**locals()))
+        cmd = "{systemctl} default-services -v"
+        sh____(cmd.format(**locals()))
+        # sh____(cmd.format(**locals()))
+        out2 = output(cmd.format(**locals()))
+        logg.info("\n>\n%s", out2)
+        #
+        kill_daemon = "{systemctl} __killall '*systemctl.py' -vvvv"
+        sx____(kill_daemon.format(**locals()))
+        kill_testsleep = "{systemctl} __killall {testsleepA} -vvvv"
+        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = "{systemctl} __killall {testsleepB} -vvvv"
+        sx____(kill_testsleep.format(**locals()))
+        kill_daemon = "{systemctl} __killall :9 '*systemctl.py' -vvvv"
+        sx____(kill_daemon.format(**locals()))
+        #
+        debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
+        os_remove(debug_log)
+        text_file(debug_log, "")
+        cmd = "{systemctl} -1"
+        bg = background(cmd.format(**locals()))
+        time.sleep(1)
+        #
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, "sleepA"))
+        self.assertTrue(greps(top, "sleepB"))
+        #
+        logg.info("===============SLEEP")
+        time.sleep(6)
+        #
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        logg.info("==============>>")
+        #
+        log = lines(open(debug_log))
+        logg.info("systemctl.debug.log>\n\t%s", "\n\t".join(log[-20:]))
+        #
+        self.assertTrue(greps(log, ".zza.service. set InitLoopSleep from 5s to 2"))
+        self.assertTrue(greps(log, ".zzb.service. set InitLoopSleep from 2s to 1 .caused by RestartSec=0!"))
+        #
+        kill_testsleep = "{systemctl} __killall {testsleepA}"
+        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = "{systemctl} __killall {testsleepB}"
+        sx____(kill_testsleep.format(**locals()))
+        #
+        logg.info("kill daemon at %s", bg.pid)
+        os.kill(bg.pid, signal.SIGTERM)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        time.sleep(2)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        kill_daemon = "{systemctl} __killall '*systemctl.py' -vvvv"
+        sx____(kill_daemon.format(**locals()))
+        time.sleep(1)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         #
@@ -22840,6 +23052,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} systemctl enable nginx"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} rpm -q --list nginx"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'rm /usr/share/nginx/html/index.html'" # newer nginx is broken
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} bash -c 'echo TEST_OK > /usr/share/nginx/html/index.html'"
         sh____(cmd.format(**locals()))

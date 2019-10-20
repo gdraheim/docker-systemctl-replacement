@@ -686,6 +686,8 @@ def time_to_seconds(text, maximum = None):
             except: pass # pragma: no cover
     if value > maximum:
         return maximum
+    if not value and text.strip() == "0":
+        return 0
     if not value:
         return 1
     return value
@@ -4178,15 +4180,15 @@ class Systemctl:
         return time_to_seconds(delay, maximum)
     def restart_failed_units(self, units, maximum = None):
         """ This function will retart failed units.
+        /
         NOTE that with standard settings the LimitBurst implementation has no effect. If
-        the InitLoopSleep is ticking at 5sec and the LimitBurst is 5x within 10secs then
-        within those 10sec only 2 loop rounds have come here checking for possible
-        restarts. That is actually quite okay for containers to not have quick restarts.
-        But if you do set '-c InitLoopSec=1' then you do also need to be aware that a
-        container application can get an 'is-failed' status of "error" indefinitely.
-        The LimitBurst does actually kill services forever leaving the container dead.
-        (the InitLoopSleep was originally meant to slowly reap zombies being around).
+        the InitLoopSleep is ticking at the Default of 5sec and the LimitBurst Default 
+        is 5x within a Default 10secs time frame then within those 10sec only 2 loop 
+        rounds have come here checking for possible restarts. You can directly shorten
+        the interval ('-c InitLoopSleep=1') or have it indirectly shorter from the
+        service descriptor's RestartSec ("RestartSec=2s").
         """
+        global InitLoopSleep
         me = os.getpid()
         maximum = maximum or DefaultStartLimitIntervalSec
         restartDelay = MinimumYield
@@ -4195,10 +4197,21 @@ class Systemctl:
             try:
                 conf = self.load_unit_conf(unit)
                 restartPolicy = conf.get("Service", "Restart", "no")
-                restartSec = self.get_RestartSec(conf)
                 if restartPolicy in ["no", "on-success"]:
                     logg.debug("[%s] [%s] Current NoCheck (Restart=%s)", me, unit, restartPolicy)
                     continue
+                restartSec = self.get_RestartSec(conf)
+                if restartSec == 0:
+                    if InitLoopSleep > 1:
+                        logg.warning("[%s] set InitLoopSleep from %ss to 1 (caused by RestartSec=0!)", 
+                            unit, InitLoopSleep)
+                        InitLoopSleep = 1
+                elif restartSec > 0.9 and restartSec < InitLoopSleep:
+                    restartSleep = int(restartSec + 0.2)
+                    if restartSleep < InitLoopSleep:
+                        logg.warning("[%s] set InitLoopSleep from %ss to %s (caused by RestartSec=%.3fs)", 
+                            unit, InitLoopSleep, restartSleep, restartSec)
+                        InitLoopSleep = restartSleep
                 isUnitState = self.get_active_from(conf)
                 isUnitFailed = isUnitState in ["failed"]
                 logg.debug("[%s] [%s] Current Status: %s (%s)", me, unit, isUnitState, isUnitFailed)
