@@ -82,6 +82,9 @@ DefaultTimeoutStartSec = 90   # official value
 DefaultTimeoutStopSec = 90    # official value
 DefaultTimeoutAbortSec = 3600 # officially it none (usually larget than StopSec)
 DefaultMaximumTimeout = 200   # overrides all other
+DefaultRestartSec = 0.1       # official value of 100ms
+DefaultStartLimitIntervalSec = 10 # official value
+DefaultStartLimitBurst = 5        # official value
 InitLoopSleep = 5
 MaxLockWait = None # equals DefaultMaximumTimeout
 DefaultPath = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
@@ -105,7 +108,6 @@ REMOVE_LOCK_FILE = False
 BOOT_PID_MIN = 0
 BOOT_PID_MAX = -9
 PROC_MAX_DEPTH = 100
-RESTART_FAILED_UNITS = True
 
 # The systemd default is NOTIFY_SOCKET="/var/run/systemd/notify"
 _notify_socket_folder = "/var/run/systemd" # alias /run/systemd
@@ -836,6 +838,7 @@ class Systemctl:
         self._SYSTEMD_UNIT_PATH = None
         self._SYSTEMD_SYSVINIT_PATH = None
         self._SYSTEMD_PRESET_PATH = None
+        self._restarted_unit = {}
     def user(self):
         return self._user_getlogin
     def user_mode(self):
@@ -4158,13 +4161,20 @@ class Systemctl:
         self._log_file = {}
         self._log_hold = {}
 
-    def get_RestartSec(self, conf, maximum = 9):
-        delay = conf.get("Service", "RestartSec", "100ms")
+    def get_StartLimitBurst(self, conf):
+        return conf.get("Service", "StartLimitBurst", DefaultStartLimitBurst) # 5
+    def get_StartLimitIntervalSec(self, conf, maximum = None):
+        maximum = maximum or DefaultStartLimitIntervalSec
+        interval = conf.get("Service", "StartLimitIntervalSec", DefaultStartLimitIntervalSec) # 10s
+        return float(time_to_seconds(interval, maximum))
+    def get_RestartSec(self, conf, maximum = None):
+        maximum = maximum or DefaultStartLimitIntervalSec
+        delay = conf.get("Service", "RestartSec", DefaultRestartSec)
         return time_to_seconds(delay, maximum)
-    def restart_failed_units(self, units):
+    def restart_failed_units(self, units, maximum = None):
         """ This function will retart failed units """
-        # this is run from the init-loop to keep the 'default' units running
-        restartDelay = 0.1
+        maximum = maximum or DefaultStartLimitIntervalSec
+        restartDelay = MinimumYield
         restartUnits = []
         for unit in units:
             try:
@@ -4177,9 +4187,28 @@ class Systemctl:
                 isUnitFailed = self.is_failed_from(conf)
                 logg.debug("Current Unit: %s Status: %s", unit, isUnitFailed)
                 if isUnitFailed:
-                    restartUnits += [ unit ]
-                    if restartSec > restartDelay:
-                        restartDelay = min(restartSec, 9)
+                    limitBurst = self.get_StartLimitBurst(conf)
+                    limitSecs = self.get_StartLimitIntervalSec(conf)
+                    if limitBurst > 1 and limitSecs >= 1:
+                      try:
+                        if unit not in self._restarted_unit:
+                            self._restarted_unit[unit] = []
+                        restarted = self._restarted_unit[unit]
+                        if len(restarted) >= limitBurst:
+                            oldest = restarted[0]
+                            interval = time.time() - oldest
+                            if interval > limitSecs:
+                                logg.info("Blocking Unit: %s - too many restarts (%s in %ss)",
+                                     unit, len(restarted), interval)
+                                unit = None
+                            keep = limitBurst - 1
+                            self._restarted_unit[unit] = restarted[-keep:]
+                      except Exception as e:
+                        logg.error("burst exception %s", e)
+                    if unit:
+                        restartUnits += [ unit ]
+                        if restartSec > restartDelay:
+                            restartDelay = min(restartSec, maximum)
             except Exception as e:
                 logg.error("An error ocurred restarting the following unit %s.\n\t%s", unit, e)
         if not restartUnits:
@@ -4202,6 +4231,10 @@ class Systemctl:
                     self.restart_unit(unit)
                     logg.info("%s has been restarted.", unit)
                     restarted += 1
+                    if unit not in self._restarted_unit:
+                        self._restarted_unit[unit] = []
+                    if unit in self._restarted_unit:
+                        self._restarted_unit[unit].append(time.time())
             except:
                 logg.error("An error ocurred restarting the following unit %s.", unit)
         return restarted
