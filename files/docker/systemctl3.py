@@ -30,6 +30,7 @@ else:
 DEBUG_AFTER = False
 DEBUG_STATUS = False
 DEBUG_BOOTTIME = True
+DEBUG_INITLOOP = False
 
 FOUND_OK = 0
 FOUND_INACTIVE = 2
@@ -4218,11 +4219,17 @@ class Systemctl:
         result = None
         while True:
             try:
+                if DEBUG_INITLOOP:
+                    logg.debug("DONE InitLoop (sleep %ss)", InitLoopSleep)
                 time.sleep(InitLoopSleep)
+                if DEBUG_INITLOOP:
+                    logg.debug("NEXT InitLoop (after %ss)", InitLoopSleep)
                 self.read_log_files(units)
-                ##### the reaper goes round
+                if DEBUG_INITLOOP:
+                    logg.debug("reap zombies - check current processes")
                 running = self.system_reap_zombies()
-                # logg.debug("reap zombies - init-loop found %s running procs", running)
+                if DEBUG_INITLOOP:
+                    logg.debug("reap zombies - init-loop found %s running procs", running)
                 if self.doExitWhenNoMoreServices:
                     active = False
                     for unit in units:
