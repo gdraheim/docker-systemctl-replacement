@@ -719,7 +719,26 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         self.assertEqual(len(greps(open(logfile), " INFO ")), 1)
-        self.assertEqual(len(greps(open(logfile), " DEBUG ")), 8)
+        self.assertEqual(len(greps(open(logfile), " DEBUG ")), 3)
+        self.rm_testdir()
+        self.coverage()
+    def test_1022_systemctl_with_systemctl_debug_level(self):
+        """ when /var/log/systemctl.debug.log exists then print DEBUG messages into it"""
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        systemctl += " -vvvv"
+        logfile = os_path(root, "/var/log/systemctl.log")
+        text_file(logfile,"")
+        #
+        cmd = "{systemctl} daemon-reload"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        log = lines(open(logfile))
+        logg.info("LOG=>\n %s", "\n ".join(log))
+        self.assertEqual(len(greps(open(logfile), " INFO ")), 1)
+        self.assertEqual(len(greps(open(logfile), " DEBUG ")), 3)
         self.rm_testdir()
         self.coverage()
     def test_1030_systemctl_force_ipv4(self):
