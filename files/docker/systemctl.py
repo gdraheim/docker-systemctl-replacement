@@ -108,6 +108,7 @@ REMOVE_LOCK_FILE = False
 BOOT_PID_MIN = 0
 BOOT_PID_MAX = -9
 PROC_MAX_DEPTH = 100
+RESTART_FAILED_UNITS = True
 
 # The systemd default is NOTIFY_SOCKET="/var/run/systemd/notify"
 _notify_socket_folder = "/var/run/systemd" # alias /run/systemd
@@ -4290,6 +4291,9 @@ class Systemctl:
                 signal.signal(signal.SIGINT, signal.SIG_DFL)
                 logg.info("interrupted - exit init-loop")
                 result = e.message or "STOPPED"
+            except Exception as e:
+                logg.info("interrupted - exception %s", e)
+                raise
         self.sysinit_status(ActiveState = None, SubState = "degraded")
         self.read_log_files(units)
         self.read_log_files(units)
