@@ -2829,7 +2829,8 @@ class Systemctl:
         if self.getsize(status_file):
             state = self.get_status_from(conf, "ActiveState", "")
             if state:
-                logg.info("get_status_from %s => %s", conf.name(), state)
+                if DEBUG_STATUS:
+                    logg.info("get_status_from %s => %s", conf.name(), state)
                 return state
         pid = self.read_mainpid_from(conf, "")
         if DEBUG_STATUS:
@@ -4163,10 +4164,12 @@ class Systemctl:
         self._log_hold = {}
 
     def get_StartLimitBurst(self, conf):
-        return conf.get("Service", "StartLimitBurst", DefaultStartLimitBurst) # 5
+        defaults = DefaultStartLimitBurst
+        return to_int(conf.get("Service", "StartLimitBurst", defaults), defaults) # 5
     def get_StartLimitIntervalSec(self, conf, maximum = None):
-        maximum = maximum or DefaultStartLimitIntervalSec
-        interval = conf.get("Service", "StartLimitIntervalSec", DefaultStartLimitIntervalSec) # 10s
+        maximum = maximum or 999
+        defaults = DefaultStartLimitIntervalSec
+        interval = conf.get("Service", "StartLimitIntervalSec", defaults) # 10s
         return float(time_to_seconds(interval, maximum))
     def get_RestartSec(self, conf, maximum = None):
         maximum = maximum or DefaultStartLimitIntervalSec
@@ -4185,25 +4188,37 @@ class Systemctl:
                 if restartPolicy in ["no", "on-success"]:
                     logg.debug("Skipping Unit: %s Restart=%s", unit, restartPolicy)
                     continue
-                isUnitFailed = self.is_failed_from(conf)
-                logg.debug("Current Unit: %s Status: %s", unit, isUnitFailed)
+                isUnitState = self.get_active_from(conf)
+                isUnitFailed = isUnitState in ["failed"]
+                logg.debug("Current Unit: %s Status: %s (%s)", unit, isUnitState, isUnitFailed)
                 if isUnitFailed:
                     limitBurst = self.get_StartLimitBurst(conf)
                     limitSecs = self.get_StartLimitIntervalSec(conf)
                     if limitBurst > 1 and limitSecs >= 1:
+                      logg.debug("[%s] limitBurst=%s limitSecs=%s", unit, limitBurst, limitSecs)
                       try:
                         if unit not in self._restarted_unit:
                             self._restarted_unit[unit] = []
                         restarted = self._restarted_unit[unit]
+                        # logg.debug("[%s] restarted %s", unit, restarted)
+                        # logg.debug("[%s] len(%s) >= limit(%s)", unit, len(restarted), limitBurst)
+                        oldest = 0
+                        interval = 0
                         if len(restarted) >= limitBurst:
-                            oldest = restarted[0]
-                            interval = time.time() - oldest
-                            if interval > limitSecs:
-                                logg.info("Blocking Unit: %s - too many restarts (%s in %ss)",
-                                     unit, len(restarted), interval)
-                                unit = None
-                            keep = limitBurst - 1
-                            self._restarted_unit[unit] = restarted[-keep:]
+                            while len(restarted):
+                                oldest = restarted[0]
+                                interval = time.time() - oldest
+                                if interval > limitSecs:
+                                    restarted = restarted[1:]
+                                    continue
+                                break
+                            self._restarted_unit[unit] = restarted
+                        # all values in restarted have a time below limitSecs
+                        if len(restarted) >= limitBurst:
+                            logg.info("[%s] Blocking Restart - oldest %s is %s ago (allowed %s)", unit, oldest, interval, limitSecs)
+                            self.write_status_from(conf, AS="error")
+                            unit = None
+                            break
                       except Exception as e:
                         logg.error("burst exception %s", e)
                     if unit:
@@ -4219,13 +4234,22 @@ class Systemctl:
             logg.debug("no restart of %s failed units - system is %s", len(restartUnits), state)
             return None
         logg.info("restart delay by %ss for %s", restartDelay, restartUnits)
-        time.sleep(restartDelay)
+        # time.sleep(restartDelay)
+        restartDelayWatch = int(restartDelay)
+        for watch in xrange(restartDelayWatch):
+            for unit in restartUnits:
+                conf = self.load_unit_conf(unit)
+                isUnitState = self.get_active_from(conf)
+                isUnitFailed = isUnitState in ["failed"]
+                logg.debug("%s. Check Unit: %s Status: %s (%s)", watch, unit, isUnitState, isUnitFailed)
+        time.sleep(max(0.1, restartDelay - restartDelayWatch))
         restarted = 0
         for unit in restartUnits:
             try:
                 conf = self.load_unit_conf(unit)
-                isUnitFailed = self.is_failed_from(conf)
-                logg.debug("Restart Unit: %s Status: %s", unit, isUnitFailed)
+                isUnitState = self.get_active_from(conf)
+                isUnitFailed = isUnitState in ["failed"]
+                logg.debug("Restart Unit: %s Status: %s (%s)", unit, isUnitState, isUnitFailed)
                 if isUnitFailed:
                     restartUnits += [ unit ]
                     logg.info("Restarting failed unit: %s", unit)
