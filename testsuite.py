@@ -12906,22 +12906,27 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out2 = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out2)
         #
-        kill_testsleep = "{systemctl} __killall {testsleepA}"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepB}"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepC}"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepD}"
-        sx____(kill_testsleep.format(**locals()))
-        kill_daemon = "{systemctl} __killall systemctl.py"
+        kill_daemon = "{systemctl} __killall '*systemctl.py' -vvvv"
         sx____(kill_daemon.format(**locals()))
+        kill_testsleep = "{systemctl} __killall {testsleepA} -vvvv"
+        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = "{systemctl} __killall {testsleepB} -vvvv"
+        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = "{systemctl} __killall {testsleepC} -vvvv"
+        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = "{systemctl} __killall {testsleepD} -vvvv"
+        sx____(kill_testsleep.format(**locals()))
+        kill_daemon = "{systemctl} __killall :9 '*systemctl.py' -vvvv"
+        sx____(kill_daemon.format(**locals()))
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
         #
         InitLoopSleep = 1
         systemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         systemctl += " -c DEBUG_BOOTTIME=no"
         #
         debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
+        os_remove(debug_log)
         text_file(debug_log, "")
         cmd = "{systemctl} -1"
         bg = background(cmd.format(**locals()))
@@ -13011,7 +13016,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(4)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall systemctl.py"
+        kill_daemon = "{systemctl} __killall '*systemctl.py'"
         sx____(kill_daemon.format(**locals()))
         time.sleep(InitLoopSleep+1)
         top = _recent(output(_top_list))
@@ -13073,11 +13078,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out2 = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out2)
         #
-        kill_testsleep = "{systemctl} __killall {testsleepA}"
+        kill_daemon = "{systemctl} __killall '*systemctl.py' -vvvv"
+        sx____(kill_daemon.format(**locals()))
+        kill_testsleep = "{systemctl} __killall {testsleepA} -vvvv"
         sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepB}"
+        kill_testsleep = "{systemctl} __killall {testsleepB} -vvvv"
         sx____(kill_testsleep.format(**locals()))
-        kill_daemon = "{systemctl} __killall systemctl.py"
+        kill_daemon = "{systemctl} __killall :9 '*systemctl.py' -vvvv"
         sx____(kill_daemon.format(**locals()))
         #
         InitLoopSleep = 1
@@ -13130,7 +13137,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(2)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall systemctl.py"
+        kill_daemon = "{systemctl} __killall '*systemctl.py' -vvvv"
         sx____(kill_daemon.format(**locals()))
         time.sleep(InitLoopSleep+1)
         top = _recent(output(_top_list))
