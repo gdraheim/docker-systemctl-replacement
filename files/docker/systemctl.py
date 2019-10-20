@@ -4242,6 +4242,7 @@ class Systemctl:
                 isUnitState = self.get_active_from(conf)
                 isUnitFailed = isUnitState in ["failed"]
                 logg.debug("%s. Check Unit: %s Status: %s (%s)", watch, unit, isUnitState, isUnitFailed)
+            time.sleep(1)
         time.sleep(max(0.1, restartDelay - restartDelayWatch))
         restarted = 0
         for unit in restartUnits:
