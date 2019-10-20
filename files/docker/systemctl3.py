@@ -31,6 +31,7 @@ DEBUG_AFTER = False
 DEBUG_STATUS = False
 DEBUG_BOOTTIME = True
 DEBUG_INITLOOP = False
+DEBUG_KILLALL = False
 
 FOUND_OK = 0
 FOUND_INACTIVE = 2
@@ -4475,12 +4476,25 @@ class Systemctl:
                     try:
                         cmdline = "/proc/{pid_dir}/cmdline".format(**locals())
                         cmd = open(cmdline).read().split("\0")
+                        if DEBUG_KILLALL: logg.debug("cmdline %s", cmd)
+                        found = None
                         cmd_exe = os.path.basename(cmd[0])
-                        cmd_arg = len(cmd) > 1 and os.path.basename(cmd[1]) or ""
-                        if fnmatch.fnmatchcase(cmd_exe, target) or fnmatch.fnmatchcase(cmd_arg, target):
-                            logg.debug("   found %s %s", pid_num, [ c for c in cmd ])
+                        if DEBUG_KILLALL: logg.debug("cmd.exe '%s'", cmd_exe)
+                        if fnmatch.fnmatchcase(cmd_exe, target): found = "exe"
+                        if len(cmd) > 1 and cmd_exe.startswith("python"): 
+                            cmd_arg = os.path.basename(cmd[1])
+                            if DEBUG_KILLALL: logg.debug("cmd.arg '%s'", cmd_arg)
+                            if fnmatch.fnmatchcase(cmd_arg, target): found = "arg"
+                            if cmd_exe.startswith("coverage") or cmd_arg.startswith("coverage"):
+                                x = cmd.index("--")
+                                if x > 0 and x+1 < len(cmd):
+                                    cmd_run = os.path.basename(cmd[x+1])
+                                    if DEBUG_KILLALL: logg.debug("cmd.run '%s'", cmd_run)
+                                    if fnmatch.fnmatchcase(cmd_run, target): found = "run"
+                        if found:
+                            if DEBUG_KILLALL: logg.debug("%s found %s %s", found, pid_num, [ c for c in cmd ])
                             if pid_num != os.getpid():
-                                logg.debug("kill -%s %s # %s", sig, pid_num, target)
+                                logg.debug(" kill -%s %s # %s", sig, pid_num, target)
                                 os.kill(pid_num, sig)
                     except Exception as e:
                         logg.error("kill -%s %s : %s", sig, pid_num, e)
