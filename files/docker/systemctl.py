@@ -29,6 +29,7 @@ else:
 
 DEBUG_AFTER = False
 DEBUG_STATUS = False
+DEBUG_BOOTTIME = True
 
 FOUND_OK = 0
 FOUND_INACTIVE = 2
@@ -1457,7 +1458,8 @@ class Systemctl:
                     return self.path_proc_started(proc)
             except Exception as e: # pragma: nocover
                 logg.warning("could not access %s: %s", proc, e)
-        logg.debug(" boottime from the oldest entry in /proc [nothing in %s..%s]", pid1, pid_max)
+        if DEBUG_BOOTTIME:
+            logg.debug(" boottime from the oldest entry in /proc [nothing in %s..%s]", pid1, pid_max)
         booted = time.time()
         for name in os.listdir("/proc"):
             proc = "/proc/%s/stat" % name
@@ -1491,7 +1493,8 @@ class Systemctl:
         clkTickInt = os.sysconf_names['SC_CLK_TCK']
         clockTicksPerSec = os.sysconf(clkTickInt)
         started_secs = float(started_ticks) / clockTicksPerSec
-        logg.debug("  BOOT .. Proc started time:  %.3f (%s)", started_secs, proc)
+        if DEBUG_BOOTTIME:
+            logg.debug("  BOOT .. Proc started time:  %.3f (%s)", started_secs, proc)
         # this value is the start time from the host system
 
         # Variant 1:
@@ -1501,12 +1504,14 @@ class Systemctl:
         f.closed
         uptime_data = data.decode().split()
         uptime_secs = float(uptime_data[0])
-        logg.debug("  BOOT 1. System uptime secs: %.3f (%s)", uptime_secs, system_uptime)
+        if DEBUG_BOOTTIME:
+            logg.debug("  BOOT 1. System uptime secs: %.3f (%s)", uptime_secs, system_uptime)
 
         #get time now
         now = time.time()
         started_time = now - (uptime_secs - started_secs)
-        logg.debug("  BOOT 1. Proc has been running since: %s" % (datetime.datetime.fromtimestamp(started_time)))
+        if DEBUG_BOOTTIME:
+            logg.debug("  BOOT 1. Proc has been running since: %s" % (datetime.datetime.fromtimestamp(started_time)))
 
         # Variant 2:
         system_stat = "/proc/stat"
@@ -1516,10 +1521,12 @@ class Systemctl:
                 if line.startswith("btime"):
                     system_btime = float(line.decode().split()[1])
         f.closed
-        logg.debug("  BOOT 2. System btime secs: %.3f (%s)", system_btime, system_stat)
+        if DEBUG_BOOTTIME:
+            logg.debug("  BOOT 2. System btime secs: %.3f (%s)", system_btime, system_stat)
 
         started_btime = system_btime + started_secs
-        logg.debug("  BOOT 2. Proc has been running since: %s" % (datetime.datetime.fromtimestamp(started_btime)))
+        if DEBUG_BOOTTIME:
+            logg.debug("  BOOT 2. Proc has been running since: %s" % (datetime.datetime.fromtimestamp(started_btime)))
 
         # return started_time
         return started_btime
@@ -1529,12 +1536,14 @@ class Systemctl:
     def truncate_old(self, filename):
         filetime = self.get_filetime(filename)
         boottime = self.get_boottime()
-        if filetime >= boottime :
-            logg.debug("  file time: %s (%s)", datetime.datetime.fromtimestamp(filetime), end22(filename))
-            logg.debug("  boot time: %s (%s)", datetime.datetime.fromtimestamp(boottime), "status modified later")
+        if filetime >= boottime:
+            if DEBUG_BOOTTIME:
+                logg.debug("  file time: %s (%s)", datetime.datetime.fromtimestamp(filetime), end22(filename))
+                logg.debug("  boot time: %s (%s)", datetime.datetime.fromtimestamp(boottime), "status modified later")
             return False # OK
-        logg.info("  file time: %s (%s)", datetime.datetime.fromtimestamp(filetime), end22(filename))
-        logg.info("  boot time: %s (%s)", datetime.datetime.fromtimestamp(boottime), "status TRUNCATED NOW")
+        if DEBUG_BOOTTIME:
+            logg.info("  file time: %s (%s)", datetime.datetime.fromtimestamp(filetime), end22(filename))
+            logg.info("  boot time: %s (%s)", datetime.datetime.fromtimestamp(boottime), "status TRUNCATED NOW")
         try:
             shutil_truncate(filename)
         except Exception as e:
