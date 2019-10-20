@@ -105,6 +105,7 @@ REMOVE_LOCK_FILE = False
 BOOT_PID_MIN = 0
 BOOT_PID_MAX = -9
 PROC_MAX_DEPTH = 100
+RESTART_FAILED_UNITS = True
 
 # The systemd default is NOTIFY_SOCKET="/var/run/systemd/notify"
 _notify_socket_folder = "/var/run/systemd" # alias /run/systemd
@@ -4244,7 +4245,8 @@ class Systemctl:
                     if not running:
                         logg.info("no more procs - exit init-loop")
                         break
-                self.restart_failed_units(units)
+                if RESTART_FAILED_UNITS:
+                    self.restart_failed_units(units)
             except KeyboardInterrupt as e:
                 if e.args and e.args[0] == "SIGQUIT":
                     # the original systemd puts a coredump on that signal.
