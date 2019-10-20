@@ -4177,7 +4177,16 @@ class Systemctl:
         delay = conf.get("Service", "RestartSec", DefaultRestartSec)
         return time_to_seconds(delay, maximum)
     def restart_failed_units(self, units, maximum = None):
-        """ This function will retart failed units """
+        """ This function will retart failed units.
+        NOTE that with standard settings the LimitBurst implementation has no effect. If
+        the InitLoopSleep is ticking at 5sec and the LimitBurst is 5x within 10secs then
+        within those 10sec only 2 loop rounds have come here checking for possible
+        restarts. That is actually quite okay for containers to not have quick restarts.
+        But if you do set '-c InitLoopSec=1' then you do also need to be aware that a
+        container application can get an 'is-failed' status of "error" indefinitely.
+        The LimitBurst does actually kill services forever leaving the container dead.
+        (the InitLoopSleep was originally meant to slowly reap zombies being around).
+        """
         me = os.getpid()
         maximum = maximum or DefaultStartLimitIntervalSec
         restartDelay = MinimumYield
