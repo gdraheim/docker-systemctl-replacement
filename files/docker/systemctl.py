@@ -19,6 +19,7 @@ import time
 import socket
 import datetime
 import fcntl
+import subprocess
 
 if sys.version[0] == '2':
     string_types = basestring
@@ -631,6 +632,14 @@ def must_have_failed(waitpid, cmd):
             waitpid = waitpidNEW(waitpid.pid, 11, waitpid.signal)
     return waitpid
 
+def output3(cmd, shell=True):
+    if isinstance(cmd, string_types):
+        logg.info(": %s", cmd)
+    else:
+        logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
+    run = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    out, err = run.communicate()
+    return out, err, run.returncode
 def subprocess_waitpid(pid):
     waitpid = collections.namedtuple("waitpid", ["pid", "returncode", "signal" ])
     run_pid, run_stat = os.waitpid(pid, 0)
@@ -4424,6 +4433,38 @@ class Systemctl:
                 pidlist = pids[:]
                 continue
         return pids
+    def echo(self, *targets):
+        line = " ".join(*targets)
+        logg.info(" == echo == %s", line)
+        return line
+    def killall(self, *targets):
+        mapping = {}
+        mapping["-3"] = signal.SIGQUIT
+        mapping["-QUIT"] = signal.SIGQUIT
+        mapping["-6"] = signal.SIGABRT
+        mapping["-ABRT"] = signal.SIGABRT
+        mapping["-9"] = signal.SIGKILL
+        mapping["-KILL"] = signal.SIGKILL
+        sig = signal.SIGTERM
+        for target in targets:
+            if target.startswith("-"):
+                if target in mapping:
+                    sig = mapping[target]
+                else: # pragma: nocover
+                    logg.error("unsupported %s", target)
+                continue
+            out, err, rc = output3("ps -C {target}".format(**locals()))
+            for line in out.split("\n"):
+                pid_col = line.split(" ",1)[0]
+                if pid_col.strip():
+                    pid_num = to_int(pid_col.strip(), 0)
+                    if pid_num and pid_num != os.getpid():
+                        try:
+                            logg.debug("kill -%s %s # %s", sig, pid_num, target)
+                            os.kill(pid_num, sig)
+                        except Exception as e:
+                            logg.error("kill -%s %s : %s", sig, pid_num, e)
+        return True
     def etc_hosts(self):
         path = "/etc/hosts"
         if self._root:

@@ -4607,7 +4607,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
-        kill_testsleep = "killall {testsleep}"
+        kill_testsleep = "{systemctl} __killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
@@ -4664,7 +4664,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
-        kill_testsleep = "killall {testsleep}"
+        kill_testsleep = "{systemctl} __killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
@@ -4740,7 +4740,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
-        kill_testsleep = "killall {testsleep}"
+        kill_testsleep = "{systemctl} __killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
@@ -4814,7 +4814,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
-        kill_testsleep = "killall {testsleep}"
+        kill_testsleep = "{systemct} __killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
@@ -4873,7 +4873,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
-        kill_testsleep = "killall {testsleep}"
+        kill_testsleep = "{systemctl} __killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
@@ -4930,7 +4930,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
-        kill_testsleep = "killall {testsleep}"
+        kill_testsleep = "{systemctl} __killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
@@ -5007,7 +5007,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
-        kill_testsleep = "killall {testsleep}"
+        kill_testsleep = "{systemctl} __killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
@@ -5081,7 +5081,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
-        kill_testsleep = "killall {testsleep}"
+        kill_testsleep = "{systemctl} __killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
@@ -5158,7 +5158,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)        
         self.assertFalse(greps(top, testsleep))
         #
-        kill_testsleep = "killall {testsleep}"
+        kill_testsleep = "{systemctl} __killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
@@ -5295,7 +5295,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(actBC.split("\n"), ["inactive", "inactive", ""])
         self.assertNotEqual(exitBC, 0)
         #
-        kill_testsleep = "killall {testsleep}"
+        kill_testsleep = "{systemctl} __killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.rm_zzfiles(root)
@@ -5432,7 +5432,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(actBC.split("\n"), ["active", "active", ""])
         self.assertNotEqual(exitBC, 0)
         #
-        kill_testsleep = "killall {testsleep}"
+        kill_testsleep = "{systemctl} __killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         #
         actBC, exitBC  = output2(is_active_BC.format(**locals()))
@@ -5449,7 +5449,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(actBC.split("\n"), ["inactive", "inactive", ""])
         self.assertNotEqual(exitBC, 0)
         #
-        kill_testsleep = "killall {testsleep}"
+        kill_testsleep = "{systemctl} __killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
@@ -5539,7 +5539,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(actZX.split("\n"), ["inactive", ""])
         self.assertEqual(exitZX, 3)
         #
-        kill_testsleep = "killall {testsleep}"
+        kill_testsleep = "{systemctl} __killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.rm_zzfiles(root)
@@ -5629,7 +5629,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(actZX.split("\n"), ["inactive", ""])
         self.assertEqual(exitZX, 1)
         #
-        kill_testsleep = "killall {testsleep}"
+        kill_testsleep = "{systemctl} __killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.rm_zzfiles(root)
@@ -5725,7 +5725,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(actZX.split("\n"), ["inactive", ""])
         self.assertEqual(exitZX, 3)
         #
-        kill_testsleep = "killall {testsleep}"
+        kill_testsleep = "{systemctl} __killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.rm_zzfiles(root)
@@ -5864,7 +5864,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("zzz.log>\n\t%s", "\n\t".join(log4))
         time.sleep(2)
         #
-        kill_testsleep = "killall {testsleep}"
+        kill_testsleep = "{systemctl} __killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.rm_zzfiles(root)
@@ -5979,7 +5979,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(err, "1. systemctl locked by"))
         self.assertTrue(greps(err, "the service is already running on PID")) # FIXME: may not be?
         #
-        kill_testsleep = "killall {testsleep}"
+        kill_testsleep = "{systemctl} __killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.rm_zzfiles(root)
@@ -6100,7 +6100,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         log1 = lines(open(logfile))
         logg.info("zzz.log>\n\t%s", "\n\t".join(log1))
         #
-        kill_testsleep = "killall {testsleep}"
+        kill_testsleep = "{systemctl} __killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.rm_zzfiles(root)
@@ -6346,7 +6346,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(top, testsleep))
         self.assertGreater(end, 0)
         #
-        kill_testsleep = "killall {testsleep}"
+        kill_testsleep = "{systemctl} __killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
@@ -6808,7 +6808,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 0)
         #
         # cleanup
-        kill_testsleep = "killall {testsleep}"
+        kill_testsleep = "{systemctl} __killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
@@ -6868,7 +6868,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 0)
         #
         # cleanup
-        kill_testsleep = "killall {testsleep}"
+        kill_testsleep = "{systemctl} __killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
@@ -6928,7 +6928,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(data), 3)
         #
         # cleanup
-        kill_testsleep = "killall {testsleep}"
+        kill_testsleep = "{systemctl} __killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
@@ -6991,7 +6991,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(data, "enabled[)]"))
         #
         # cleanup
-        kill_testsleep = "killall {testsleep}"
+        kill_testsleep = "{systemctl} __killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
@@ -7054,7 +7054,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(data, "enabled[)]"))
         #
         # cleanup
-        kill_testsleep = "killall {testsleep}"
+        kill_testsleep = "{systemctl} __killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
@@ -7110,7 +7110,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
-        kill_testsleep = "killall {testsleep}"
+        kill_testsleep = "{systemctl} __killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
@@ -7169,7 +7169,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
-        kill_testsleep = "killall {testsleep}"
+        kill_testsleep = "{systemctl} __killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
@@ -7229,7 +7229,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
-        kill_testsleep = "killall {testsleep}"
+        kill_testsleep = "{systemctl} __killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
@@ -7289,7 +7289,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
-        kill_testsleep = "killall {testsleep}"
+        kill_testsleep = "{systemctl} __killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
@@ -7328,7 +7328,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
         self.assertTrue(greps(err, "Exec is not an absolute"))
         #
-        kill_testsleep = "killall {testsleep}"
+        kill_testsleep = "{systemctl} __killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
@@ -7367,7 +7367,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
         self.assertTrue(greps(err, "Exec is not an absolute"))
         #
-        kill_testsleep = "killall {testsleep}"
+        kill_testsleep = "{systemctl} __killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
@@ -7409,7 +7409,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
         #
-        kill_testsleep = "killall {testsleep}"
+        kill_testsleep = "{systemctl} __killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
@@ -7447,7 +7447,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
         #
-        kill_testsleep = "killall {testsleep}"
+        kill_testsleep = "{systemctl} __killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
@@ -7485,7 +7485,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
         #
-        kill_testsleep = "killall {testsleep}"
+        kill_testsleep = "{systemctl} __killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
@@ -7523,7 +7523,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
         #
-        kill_testsleep = "killall {testsleep}"
+        kill_testsleep = "{systemctl} __killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
@@ -7575,7 +7575,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
         #
-        kill_testsleep = "killall {testsleep}"
+        kill_testsleep = "{systemctl} __killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.rm_zzfiles(root)
@@ -7703,7 +7703,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(txt_stdout, "starting B"))
         self.assertTrue(greps(txt_stdout, "starting C"))
         #
-        kill_testsleep = "killall {testsleep}"
+        kill_testsleep = "{systemctl} __killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
@@ -7829,7 +7829,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(txt_stdout, "starting B"))
         self.assertTrue(greps(txt_stdout, "starting C"))
         #
-        kill_testsleep = "killall {testsleep}"
+        kill_testsleep = "{systemctl} __killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
@@ -8575,7 +8575,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
 
         #
         # cleanup
-        kill_testsleep = "killall {testsleep}"
+        kill_testsleep = "{systemctl} __killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         time.sleep(1)
     def test_4032_forking_service_functions_system(self):
@@ -11115,7 +11115,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         else: self.assertEqual(out.strip(), "inactive")
         #
         # cleanup
-        kill_testsleep = "killall {testsleep}"
+        kill_testsleep = "{systemctl} __killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.rm_zzfiles(root)
@@ -11483,7 +11483,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        cmd = "killall {testsleepB}"
+        cmd = "{systemctl} __killall {testsleepB}"
         sx____(cmd.format(**locals())) # cleanup before check
         self.assertFalse(greps(top, testsleepB))
         #
@@ -11602,7 +11602,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(1) # kill is asynchronous
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        cmd = "killall {testsleepB}"
+        cmd = "{systemctl} __killall {testsleepB}"
         sx____(cmd.format(**locals())) # cleanup before check
         self.assertFalse(greps(top, testscriptB))
         self.assertFalse(greps(top, testsleepB))
@@ -11722,7 +11722,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(1) # kill is asynchronous
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        cmd = "killall {testsleepB}"
+        cmd = "{systemctl} __killall {testsleepB}"
         sx____(cmd.format(**locals())) # cleanup before check
         self.assertFalse(greps(top, testscriptB))
         self.assertFalse(greps(top, testsleepB))
@@ -11842,7 +11842,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(1) # kill is asynchronous
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        cmd = "killall {testsleepB}"
+        cmd = "{systemctl} __killall {testsleepB}"
         sx____(cmd.format(**locals())) # cleanup before check
         self.assertFalse(greps(top, testscriptB))
         self.assertTrue(greps(top, testsleepB)) ##TODO?##
@@ -11962,7 +11962,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(1) # kill is asynchronous
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        cmd = "killall {testsleepB}"
+        cmd = "{systemctl} __killall {testsleepB}"
         sx____(cmd.format(**locals())) # cleanup before check
         self.assertFalse(greps(top, testscriptB))
         self.assertFalse(greps(top, testsleepB))
@@ -12065,7 +12065,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(log[2], "stop-C")
         os.remove(logfile)
         #
-        kill_testsleep = "killall {testsleep}"
+        kill_testsleep = "{systemctl} __killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
@@ -12167,7 +12167,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(log[2], "stop-B")
         os.remove(logfile)
         #
-        kill_testsleep = "killall {testsleep}"
+        kill_testsleep = "{systemctl} __killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
@@ -12270,7 +12270,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(log[2], "stop-C")
         os.remove(logfile)
         #
-        kill_testsleep = "killall {testsleep}"
+        kill_testsleep = "{systemctl} __killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
@@ -12346,7 +12346,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(deps[0], "zza.service\t(Requested)")
         self.assertEqual(len(deps), 1)
         #
-        kill_testsleep = "killall {testsleep}"
+        kill_testsleep = "{systemctl} __killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
@@ -12445,7 +12445,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(deps[1], "zzc.service\t(Requested)")
         self.assertEqual(len(deps), 2)
         #
-        kill_testsleep = "killall {testsleep}"
+        kill_testsleep = "{systemctl} __killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
@@ -12544,7 +12544,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(deps[1], "zzc.service\t(Requested)")
         self.assertEqual(len(deps), 2)
         #
-        kill_testsleep = "killall {testsleep}"
+        kill_testsleep = "{systemctl} __killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
@@ -12620,7 +12620,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(deps[0], "zza.service:")
         self.assertEqual(len(deps), 1)
         #
-        kill_testsleep = "killall {testsleep}"
+        kill_testsleep = "{systemctl} __killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
@@ -12720,7 +12720,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(deps[2], "| | zzb.service: wanted to start")
         self.assertEqual(len(deps), 3)
         #
-        kill_testsleep = "killall {testsleep}"
+        kill_testsleep = "{systemctl} __killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
@@ -12820,7 +12820,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(deps[2], "| | zzb.service: required to start")
         self.assertEqual(len(deps), 3)
         #
-        kill_testsleep = "killall {testsleep}"
+        kill_testsleep = "{systemctl} __killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
@@ -12906,15 +12906,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out2 = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out2)
         #
-        kill_testsleep = "killall {testsleepA}"
+        kill_testsleep = "{systemctl} __killall {testsleepA}"
         sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "killall {testsleepB}"
+        kill_testsleep = "{systemctl} __killall {testsleepB}"
         sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "killall {testsleepC}"
+        kill_testsleep = "{systemctl} __killall {testsleepC}"
         sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "killall {testsleepD}"
+        kill_testsleep = "{systemctl} __killall {testsleepD}"
         sx____(kill_testsleep.format(**locals()))
-        kill_daemon = "killall systemctl.py"
+        kill_daemon = "{systemctl} __killall systemctl.py"
         sx____(kill_daemon.format(**locals()))
         #
         InitLoopSleep = 1
@@ -12943,7 +12943,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("systemctl.debug.log>\n\t%s", "\n\t".join(log))
         self.assertFalse(greps(log, "restart"))
         #
-        cmd = "killall {testsleepD}" # <<<
+        cmd = "{systemctl} __killall {testsleepD}" # <<<
         sh____(cmd.format(**locals()))
         #
         time.sleep(InitLoopSleep+1)
@@ -12956,7 +12956,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertEqual(len(greps(top, "zz")), 3)
         #
-        cmd = "killall {testsleepC}" # <<<
+        cmd = "{systemctl} __killall {testsleepC}" # <<<
         sh____(cmd.format(**locals()))
         #
         check = "{systemctl} list-units --state=running --type=service"
@@ -12995,13 +12995,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(log, "Restarting failed unit: zzc.service"))
         self.assertTrue(greps(log, "Skipping Unit: zzd.service Restart=no"))
         #
-        kill_testsleep = "killall {testsleepA}"
+        kill_testsleep = "{systemctl} __killall {testsleepA}"
         sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "killall {testsleepB}"
+        kill_testsleep = "{systemctl} __killall {testsleepB}"
         sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "killall {testsleepC}"
+        kill_testsleep = "{systemctl} __killall {testsleepC}"
         sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "killall {testsleepD}"
+        kill_testsleep = "{systemctl} __killall {testsleepD}"
         sx____(kill_testsleep.format(**locals()))
         #
         logg.info("kill daemon at %s", bg.pid)
@@ -13011,7 +13011,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(4)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "killall systemctl.py"
+        kill_daemon = "{systemctl} __killall systemctl.py"
         sx____(kill_daemon.format(**locals()))
         time.sleep(InitLoopSleep+1)
         top = _recent(output(_top_list))
@@ -13073,13 +13073,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out2 = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out2)
         #
-        kill_testsleep = "killall {testsleepA}"
+        kill_testsleep = "{systemctl} __killall {testsleepA}"
         sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "killall {testsleepB}"
+        kill_testsleep = "{systemctl} __killall {testsleepB}"
         sx____(kill_testsleep.format(**locals()))
-        kill_daemon = "killall systemctl.py"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "killall systemctl.py"
+        kill_daemon = "{systemctl} __killall systemctl.py"
         sx____(kill_daemon.format(**locals()))
         #
         InitLoopSleep = 1
@@ -13120,9 +13118,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(log, "zza.service.*Blocking Restart"))
         self.assertTrue(greps(log, "zza.service.*Status: error"))
         #
-        kill_testsleep = "killall {testsleepA}"
+        kill_testsleep = "{systemctl} __killall {testsleepA}"
         sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "killall {testsleepB}"
+        kill_testsleep = "{systemctl} __killall {testsleepB}"
         sx____(kill_testsleep.format(**locals()))
         #
         logg.info("kill daemon at %s", bg.pid)
@@ -13132,7 +13130,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(2)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "killall systemctl.py"
+        kill_daemon = "{systemctl} __killall systemctl.py"
         sx____(kill_daemon.format(**locals()))
         time.sleep(InitLoopSleep+1)
         top = _recent(output(_top_list))
