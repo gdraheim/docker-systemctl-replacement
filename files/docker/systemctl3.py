@@ -1466,7 +1466,7 @@ class Systemctl:
                 if os.path.exists(proc):
                     # return os.path.getmtime(proc) # did sometimes change
                     return self.path_proc_started(proc)
-            except Exception as e: # pragma: nocover
+            except Exception as e: # pragma: no cover
                 logg.warning("could not access %s: %s", proc, e)
         if DEBUG_BOOTTIME:
             logg.debug(" boottime from the oldest entry in /proc [nothing in %s..%s]", pid1, pid_max)
@@ -1479,7 +1479,7 @@ class Systemctl:
                     ctime = self.path_proc_started(proc)
                     if ctime < booted:
                         booted = ctime 
-            except Exception as e: # pragma: nocover
+            except Exception as e: # pragma: no cover
                 logg.warning("could not access %s: %s", proc, e)
         return booted
 
@@ -1934,7 +1934,7 @@ class Systemctl:
                 logg.info(" pre-start %s", shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid: 
-                    self.execve_from(conf, newcmd, env) # pragma: nocover
+                    self.execve_from(conf, newcmd, env) # pragma: no cover
                 run = subprocess_waitpid(forkpid)
                 logg.debug(" pre-start done (%s) <-%s>",
                     run.returncode or "OK", run.signal or "")
@@ -2124,7 +2124,7 @@ class Systemctl:
                 logg.info("post-fail %s", shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
-                    self.execve_from(conf, newcmd, env) # pragma: nocover
+                    self.execve_from(conf, newcmd, env) # pragma: no cover
                 run = subprocess_waitpid(forkpid)
                 logg.debug("post-fail done (%s) <-%s>", 
                     run.returncode or "OK", run.signal or "")
@@ -2136,7 +2136,7 @@ class Systemctl:
                 logg.info("post-start %s", shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
-                    self.execve_from(conf, newcmd, env) # pragma: nocover
+                    self.execve_from(conf, newcmd, env) # pragma: no cover
                 run = subprocess_waitpid(forkpid)
                 logg.debug("post-start done (%s) <-%s>", 
                     run.returncode or "OK", run.signal or "")
@@ -2180,7 +2180,7 @@ class Systemctl:
             if EXEC_SPAWN:
                 os.spawnvpe(os.P_WAIT, cmd[0], cmd, env)
                 sys.exit(0)
-            else: # pragma: nocover
+            else: # pragma: no cover
                 os.execve(cmd[0], cmd, env)
         except Exception as e:
             logg.error("(%s): %s", shell_cmd(cmd), e)
@@ -2252,7 +2252,7 @@ class Systemctl:
                 logg.info("%s stop %s", runs, shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
-                    self.execve_from(conf, newcmd, env) # pragma: nocover
+                    self.execve_from(conf, newcmd, env) # pragma: no cover
                 run = subprocess_waitpid(forkpid)
                 if run.returncode:
                     self.set_status_from(conf, "ExecStopCode", run.returncode)
@@ -2272,7 +2272,7 @@ class Systemctl:
                 logg.info("%s stop %s", runs, shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
-                    self.execve_from(conf, newcmd, env) # pragma: nocover
+                    self.execve_from(conf, newcmd, env) # pragma: no cover
                 run = subprocess_waitpid(forkpid)
                 if run.returncode and check: 
                     returncode = run.returncode
@@ -2303,7 +2303,7 @@ class Systemctl:
                 logg.info("%s stop %s", runs, shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
-                    self.execve_from(conf, newcmd, env) # pragma: nocover
+                    self.execve_from(conf, newcmd, env) # pragma: no cover
                 run = subprocess_waitpid(forkpid)
                 run = must_have_failed(run, newcmd) # TODO: a workaround
                 # self.write_status_from(conf, MainPID=run.pid) # no ExecStop
@@ -2338,7 +2338,7 @@ class Systemctl:
                 logg.info("fork stop %s", shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
-                    self.execve_from(conf, newcmd, env) # pragma: nocover
+                    self.execve_from(conf, newcmd, env) # pragma: no cover
                 run = subprocess_waitpid(forkpid)
                 if run.returncode and check:
                     returncode = run.returncode
@@ -2373,7 +2373,7 @@ class Systemctl:
                 logg.info("post-stop %s", shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
-                    self.execve_from(conf, newcmd, env) # pragma: nocover
+                    self.execve_from(conf, newcmd, env) # pragma: no cover
                 run = subprocess_waitpid(forkpid)
                 logg.debug("post-stop done (%s) <-%s>", 
                     run.returncode or "OK", run.signal or "")
@@ -2441,7 +2441,7 @@ class Systemctl:
                 logg.info("%s reload %s", runs, shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
-                    self.execve_from(conf, newcmd, env) # pragma: nocover
+                    self.execve_from(conf, newcmd, env) # pragma: no cover
                 run = subprocess_waitpid(forkpid)
                 self.set_status_from(conf, "ExecReloadCode", run.returncode)
                 if run.returncode:
@@ -2461,7 +2461,7 @@ class Systemctl:
                 logg.info("%s reload %s", runs, shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
-                    self.execve_from(conf, newcmd, env) # pragma: nocover
+                    self.execve_from(conf, newcmd, env) # pragma: no cover
                 run = subprocess_waitpid(forkpid)
                 if check and run.returncode: 
                     logg.error("Job for %s failed because the control process exited with error code. (%s)", 
@@ -4467,7 +4467,7 @@ class Systemctl:
             if target.startswith(":"):
                 if target in mapping:
                     sig = mapping[target]
-                else: # pragma: nocover
+                else: # pragma: no cover
                     logg.error("unsupported %s", target)
                 continue
             for pid_dir in os.listdir("/proc"):
@@ -4565,7 +4565,7 @@ class Systemctl:
                 if doctext:
                     doc = doctext
                 elif not self._show_all:
-                    continue # pragma: nocover
+                    continue # pragma: no cover
                 firstline = doc.split("\n")[0]
                 doc_text = firstline.strip()
                 if "--" not in firstline:
