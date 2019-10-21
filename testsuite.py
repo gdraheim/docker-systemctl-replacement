@@ -5228,7 +5228,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         actB, exitB  = output2(is_active_B.format(**locals()))
         actC, exitC  = output2(is_active_C.format(**locals()))
         actD, exitD  = output2(is_active_D.format(**locals()))
-        self.assertEqual(actA.strip(), "inactive") # "unknown"
+        self.assertEqual(actA.strip(), "inactive")
         self.assertEqual(actB.strip(), "inactive")
         self.assertEqual(actC.strip(), "inactive")
         self.assertEqual(exitA, 3)
@@ -5249,10 +5249,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         actB, exitB  = output2(is_active_B.format(**locals()))
         actC, exitC  = output2(is_active_C.format(**locals()))
         actD, exitD  = output2(is_active_D.format(**locals()))
-        self.assertEqual(actA.strip(), "inactive") # "unknown"
+        self.assertEqual(actA.strip(), "inactive")
         self.assertEqual(actB.strip(), "active")
         self.assertEqual(actC.strip(), "inactive")
-        self.assertEqual(actD.strip(), "inactive") # "unknown"
+        self.assertEqual(actD.strip(), "inactive")
         self.assertNotEqual(exitA, 0)
         self.assertEqual(exitB, 0)
         self.assertNotEqual(exitC, 0)
@@ -5368,10 +5368,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         actB, exitB  = output2(is_active_B.format(**locals()))
         actC, exitC  = output2(is_active_C.format(**locals()))
         actD, exitD  = output2(is_active_D.format(**locals()))
-        self.assertEqual(actA.strip(), "inactive") # "unknown"
+        self.assertEqual(actA.strip(), "inactive")
         self.assertEqual(actB.strip(), "inactive")
         self.assertEqual(actC.strip(), "inactive")
-        self.assertEqual(actD.strip(), "inactive") # "unknown"
+        self.assertEqual(actD.strip(), "inactive")
         self.assertEqual(exitA, 1)
         self.assertEqual(exitB, 1)
         self.assertEqual(exitC, 1)
@@ -5390,10 +5390,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         actB, exitB  = output2(is_active_B.format(**locals()))
         actC, exitC  = output2(is_active_C.format(**locals()))
         actD, exitD  = output2(is_active_D.format(**locals()))
-        self.assertEqual(actA.strip(), "inactive") # "unknown"
+        self.assertEqual(actA.strip(), "inactive")
         self.assertEqual(actB.strip(), "active")
         self.assertEqual(actC.strip(), "inactive")
-        self.assertEqual(actD.strip(), "inactive") # "unknown"
+        self.assertEqual(actD.strip(), "inactive")
         self.assertEqual(exitA, 1)
         self.assertEqual(exitB, 1)
         self.assertEqual(exitC, 1)
@@ -5511,7 +5511,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "{systemctl} is-active zzz.service {vv}"
         actZX, exitZX  = output2(cmd.format(**locals()))
-        self.assertEqual(actZX.split("\n"), ["unknown", ""])
+        self.assertEqual(actZX.split("\n"), ["inactive", ""])
         self.assertEqual(exitZX, 3)
         #
         cmd = "{systemctl} enable zzz.service {vv}"
@@ -5601,7 +5601,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "{systemctl} is-failed zzz.service {vv}"
         actZX, exitZX  = output2(cmd.format(**locals()))
-        self.assertEqual(actZX.split("\n"), ["unknown", ""])
+        self.assertEqual(actZX.split("\n"), ["inactive", ""])
         self.assertEqual(exitZX, 1)
         #
         cmd = "{systemctl} enable zzz.service"
@@ -5694,7 +5694,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "{systemctl} is-active zzz.service {vv}"
         actZX, exitZX  = output2(cmd.format(**locals()))
-        self.assertEqual(actZX.split("\n"), ["unknown", ""])
+        self.assertEqual(actZX.split("\n"), ["inactive", ""])
         self.assertEqual(exitZX, 3)
         #
         cmd = "{systemctl} enable zzz.service"
@@ -11604,7 +11604,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s", cmd, end, out)
         self.assertEqual(end, 3)
-        self.assertEqual(out.strip(), "unknown")
+        self.assertEqual(out.strip(), "inactive")
         #
         cmd = "{systemctl} enable zzz.service {vv}"
         sh____(cmd.format(**locals()))
@@ -14107,7 +14107,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertNotEqual(end, 0) 
-        self.assertTrue(greps(out, "unknown"))
+        self.assertTrue(greps(out, "inactive"))
         cmd = "{systemctl} is-failed zza.service"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
@@ -19540,7 +19540,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s", cmd, end, out)
         self.assertEqual(end, 3)
-        self.assertEqual(out.strip(), "unknown")
+        self.assertEqual(out.strip(), "inactive")
         #
         logg.info("== 'start' shall start a service that is NOT is-active ")
         cmd = "docker exec {testname} {systemctl} start zzz.service -vv"
@@ -19752,7 +19752,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
         self.assertEqual(end, 3)
         #TODO?# self.assertTrue(greps(err, "Unit zzz.service not for --user mode"))
-        self.assertEqual(out.strip(), "unknown")
+        self.assertEqual(out.strip(), "inactive")
         #
         logg.info("== 'start' shall start a service that is NOT is-active ")
         cmd = "docker exec {testname} {systemctl} start zzz.service -vvvv {quick}"
@@ -19976,7 +19976,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
         self.assertEqual(end, 3)
         #TODO?# self.assertTrue(greps(err, "Unit zzz.service not for --user mode"))
-        self.assertEqual(out.strip(), "unknown")
+        self.assertEqual(out.strip(), "inactive")
         #
         logg.info("== 'start' shall start a service that is NOT is-active ")
         cmd = "docker exec {testname} {systemctl} start zzz.service -vv -vv {quick}"
@@ -20203,7 +20203,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
         self.assertEqual(end, 3)
         #TODO?# self.assertTrue(greps(err, "Unit zzz.service not for --user mode"))
-        self.assertEqual(out.strip(), "unknown")
+        self.assertEqual(out.strip(), "inactive")
         #
         logg.info("== 'start' shall start a service that is NOT is-active ")
         cmd = "docker exec {testname} {systemctl} start zzz.service -vv {quick}"
@@ -20576,7 +20576,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
         self.assertEqual(end, 3)
         self.assertFalse(greps(err, "Unit zzz.service not for --user mode")) #TODO
-        self.assertEqual(out.strip(), "unknown")
+        self.assertEqual(out.strip(), "inactive")
         #
         cmd = "docker exec {testname} {systemctl} is-failed zzz.service -vv"
         out, err, end = output3(cmd.format(**locals()))
