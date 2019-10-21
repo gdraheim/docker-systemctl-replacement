@@ -7853,6 +7853,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 5)
         self.assertTrue(greps(err, "Unit zz-unknown.service not found."))
         #
+        self.rm_zzfiles(root)
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -7875,6 +7876,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if real: self.assertTrue(greps(err, "Unit zz-unknown.service not loaded."))
         else:    self.assertTrue(greps(err, "Unit zz-unknown.service not found."))
         #
+        self.rm_zzfiles(root)
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -7896,6 +7898,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 5)
         self.assertTrue(greps(err, "Unit zz-unknown.service not found."))
         #
+        self.rm_zzfiles(root)
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -7917,6 +7920,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 5)
         self.assertTrue(greps(err, "Unit zz-unknown.service not found."))
         #
+        self.rm_zzfiles(root)
         self.rm_testdir()
         self.coverage()
         self.end()
