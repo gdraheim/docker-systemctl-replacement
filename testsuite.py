@@ -8815,7 +8815,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} start zz-empty.service {vv}"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
-        self.assertEqual(end, 5)
+        self.assertEqual(end, 1)
         self.assertTrue(greps(err, "Unit zz-empty.service not found."))
         self.assertTrue(greps(err, "zz-empty.service not loaded.*Permission denied"))
         #
