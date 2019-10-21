@@ -33,9 +33,10 @@ DEBUG_BOOTTIME = True
 DEBUG_INITLOOP = False
 DEBUG_KILLALL = False
 
-FOUND_OK = 0
-FOUND_INACTIVE = 2
-FOUND_UNKNOWN = 4
+NOT_A_PROBLEM = 0   # FOUND_OK
+NOT_OK = 1          # FOUND_ERROR
+NOT_ACTIVE = 2      # FOUND_INACTIVE
+NOT_FOUND = 4       # FOUND_UNKNOWN
 
 # defaults for options
 _extra_vars = []
@@ -803,6 +804,7 @@ def sortedAfter(conflist, cmp = compareAfter):
 
 class Systemctl:
     def __init__(self):
+        self.error = NOT_A_PROBLEM # program exitcode or process returncode
         # from command line options or the defaults
         self._extra_vars = _extra_vars
         self._force = _force
@@ -1868,7 +1870,8 @@ class Systemctl:
         for module in modules:
             matched = self.match_units([ module ])
             if not matched:
-                logg.error("Unit %s could not be found.", unit_of(module))
+                logg.error("Unit %s not found.", unit_of(module))
+                self.error |= NOT_FOUND
                 found_all = False
                 continue
             for unit in matched:
@@ -1898,7 +1901,7 @@ class Systemctl:
         conf = self.load_unit_conf(unit)
         if conf is None:
             logg.debug("unit could not be loaded (%s)", unit)
-            logg.error("Unit %s could not be found.", unit)
+            logg.error("Unit %s not found.", unit)
             return False
         if self.not_user_conf(conf):
             logg.error("Unit %s not for --user mode", unit)
@@ -4871,4 +4874,6 @@ if __name__ == "__main__":
         logg.error("Unknown operation %s.", command)
         sys.exit(1)
     #
-    sys.exit(print_result(result))
+    exitcode = print_result(result)
+    exitcode |= systemctl.error
+    sys.exit(exitcode)
