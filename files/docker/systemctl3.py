@@ -2960,14 +2960,15 @@ class Systemctl:
             matched = self.match_units([ module ])
             if not matched:
                 logg.error("Unit %s could not be found.", unit_of(module))
+                self.error |= NOT_FOUND
                 found_all = False
                 continue
             for unit in matched:
                 if unit not in units:
                     units += [ unit ]
         status, result = self.status_units(units)
-        if not found_all:
-            status = 3 # same as (dead) # original behaviour
+        # if not found_all:
+        #     status = 3 # same as (dead) # original behaviour
         return (status, result)
     def status_units(self, units):
         """ concatenates the status output of all units

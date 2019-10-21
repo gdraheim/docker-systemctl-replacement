@@ -8219,38 +8219,74 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
-    def test_3818_get_preset_some_unknown(self):
-        """ check get-preset some unknown unit fails okay"""
-        self.skipTest("get-preset currently not exported")
-        self.begin()
+    def real_3819_status_some_unknown(self):
+        self. test_3819_status_some_unknown(True)
+    def test_3819_status_some_unknown(self, real = None):
+        """ check status some unknown unit fails okay"""
+        vv = self.begin()
         testname = self.testname()
         testdir = self.testdir()
-        root = self.root(testdir)
+        root = self.root(testdir, real)
         systemctl = cover() + _systemctl_py + " --root=" + root
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
         #
-        cmd = "{systemctl} get-preset zz-unknown.service -vv"
+        sh____("{systemctl} daemon-reload".format(**locals()))
+        cmd = "{systemctl} status zz-unknown.service {vv}"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
-        self.assertEqual(end, 1)
+        self.assertEqual(end, 4)
         self.assertTrue(greps(err, "Unit zz-unknown.service could not be found."))
         #
+        self.rm_zzfiles(root)
         self.rm_testdir()
         self.coverage()
         self.end()
-    def test_3819_status_some_unknown(self):
-        """ check get status some unknown unit fails okay"""
-        self.begin()
+    def real_3820_preset_some_unknown(self):
+        self. test_3820_preset_some_unknown(True)
+    def test_3820_preset_some_unknown(self, real = None):
+        """ check preset some unknown unit fails okay"""
+        vv = self.begin()
         testname = self.testname()
         testdir = self.testdir()
-        root = self.root(testdir)
+        root = self.root(testdir, real)
         systemctl = cover() + _systemctl_py + " --root=" + root
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
         #
-        cmd = "{systemctl} status zz-unknown.service -vv"
+        sh____("{systemctl} daemon-reload".format(**locals()))
+        cmd = "{systemctl} preset zz-unknown.service {vv}"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
-        self.assertEqual(end, 3)
-        self.assertTrue(greps(err, "Unit zz-unknown.service could not be found."))
+        self.assertEqual(end, 1)
+        if real:
+            self.assertTrue(greps(err, "Failed to preset unit: Unit file zz-unknown.service does not exist."))
+        if not real:
+            self.assertTrue(greps(err, "Unit zz-unknown.service could not be found."))
         #
+        self.rm_zzfiles(root)
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    # def real_3821_get_preset_some_unknown(self):
+    #     self. test_3821_get_preset_some_unknown(True)
+    def test_3821_get_preset_some_unknown(self, real = None):
+        """ check get-preset some unknown unit fails okay"""
+        self.skipTest("get-preset currently not exported")
+        vv = self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir, real)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
+        #
+        sh____("{systemctl} daemon-reload".format(**locals()))
+        cmd = "{systemctl} get-preset zz-unknown.service {vv}"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 1)
+        if not real:
+            self.assertTrue(greps(err, "Unit zz-unknown.service not found."))
+        #
+        self.rm_zzfiles(root)
         self.rm_testdir()
         self.coverage()
         self.end()
