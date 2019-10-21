@@ -7924,20 +7924,25 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
-    def test_3805_reload_or_restart_some_unknown(self):
+    def real_3805_reload_or_restart_some_unknown(self):
+        self. test_3805_reload_or_restart_some_unknown(True)
+    def test_3805_reload_or_restart_some_unknown(self, real = None):
         """ check reload-or-restart some unknown unit fails okay"""
-        self.begin()
+        vv = self.begin()
         testname = self.testname()
         testdir = self.testdir()
-        root = self.root(testdir)
+        root = self.root(testdir, real)
         systemctl = cover() + _systemctl_py + " --root=" + root
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
         #
-        cmd = "{systemctl} reload-or-restart zz-unknown.service -vv"
+        sh____("{systemctl} daemon-reload".format(**locals()))
+        cmd = "{systemctl} reload-or-restart zz-unknown.service {vv}"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
-        self.assertEqual(end, 1)
-        self.assertTrue(greps(err, "Unit zz-unknown.service could not be found."))
+        self.assertEqual(end, 5)
+        self.assertTrue(greps(err, "Unit zz-unknown.service not found."))
         #
+        self.rm_zzfiles(root)
         self.rm_testdir()
         self.coverage()
         self.end()
