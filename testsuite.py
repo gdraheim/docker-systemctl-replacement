@@ -6300,19 +6300,19 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, r"^disabled"))
         self.assertFalse(greps(out, r"^enabled"))
         self.assertEqual(len(lines(out)), 1)
-        self.assertTrue(greps(err, "Unit zz-not-existing-service.service could not be found."))
+        self.assertTrue(greps(err, "Unit zz-not-existing-service.service not found."))
         #
         cmd = "{systemctl} --no-legend mask zz-not-existing-service.service"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        self.assertEqual(end, 1)
-        self.assertTrue(greps(err, "Unit zz-not-existing-service.service could not be found."))
+        self.assertEqual(end, 5)
+        self.assertTrue(greps(err, "Unit zz-not-existing-service.service not found."))
         #
         cmd = "{systemctl} --no-legend unmask zz-not-existing-service.service"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        self.assertEqual(end, 1)
-        self.assertTrue(greps(err, "Unit zz-not-existing-service.service could not be found."))
+        self.assertEqual(end, 5)
+        self.assertTrue(greps(err, "Unit zz-not-existing-service.service not found."))
         #
         self.rm_testdir()
         self.coverage()
