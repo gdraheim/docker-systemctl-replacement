@@ -14112,7 +14112,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 1)
-        self.assertTrue(greps(out, "unknown"))
+        self.assertTrue(greps(out, "inactive"))
         #
         cmd = "{systemctl} status zza.service"
         out, end = output2(cmd.format(**locals()))
@@ -20583,7 +20583,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
         self.assertEqual(end, 1)
         self.assertFalse(greps(err, "Unit zzz.service not for --user mode")) #TODO
-        self.assertEqual(out.strip(), "unknown")
+        self.assertEqual(out.strip(), "inactive")
         #
         cmd = "docker exec {testname} {systemctl} is-enabled zzz.service -vv"
         out, err, end = output3(cmd.format(**locals()))
