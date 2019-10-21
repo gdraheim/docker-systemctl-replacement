@@ -2909,8 +2909,9 @@ class Systemctl:
         for module in modules:
             units = self.match_units([ module ])
             if not units:
-                logg.error("Unit %s could not be found.", unit_of(module))
-                return 1
+                logg.error("Unit %s not found.", unit_of(module))
+                self.error |= NOT_FOUND
+                return False
             for unit in units:
                 if not self.reset_failed_unit(unit):
                     logg.error("Unit %s could not be reset.", unit_of(module))
@@ -2920,7 +2921,7 @@ class Systemctl:
     def reset_failed_unit(self, unit):
         conf = self.get_unit_conf(unit)
         if not conf.loaded():
-            logg.warning("Unit %s could not be found.", unit)
+            logg.warning("Unit %s not found.", unit)
             return False
         if self.not_user_conf(conf):
             logg.error("Unit %s not for --user mode", unit)
@@ -3390,7 +3391,8 @@ class Systemctl:
         for module in modules:
             matched = self.match_units([ module ])
             if not matched:
-                logg.error("Unit %s could not be found.", unit_of(module))
+                logg.error("Unit %s not found.", unit_of(module))
+                self.error |= NOT_FOUND
                 found_all = False
                 continue
             for unit in matched:
@@ -3407,7 +3409,7 @@ class Systemctl:
     def mask_unit(self, unit):
         unit_file = self.unit_file(unit)
         if not unit_file:
-            logg.error("Unit %s could not be found.", unit)
+            logg.error("Unit %s not found.", unit)
             return False
         if self.is_sysv_file(unit_file):
             logg.error("Initscript %s can not be masked", unit)
@@ -3455,7 +3457,8 @@ class Systemctl:
         for module in modules:
             matched = self.match_units([ module ])
             if not matched:
-                logg.error("Unit %s could not be found.", unit_of(module))
+                logg.error("Unit %s not found.", unit_of(module))
+                self.error |= NOT_FOUND
                 found_all = False
                 continue
             for unit in matched:
@@ -3472,7 +3475,7 @@ class Systemctl:
     def unmask_unit(self, unit):
         unit_file = self.unit_file(unit)
         if not unit_file:
-            logg.error("Unit %s could not be found.", unit)
+            logg.error("Unit %s not found.", unit)
             return False
         if self.is_sysv_file(unit_file):
             logg.error("Initscript %s can not be un/masked", unit)
