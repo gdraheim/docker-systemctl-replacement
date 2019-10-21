@@ -8189,6 +8189,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
         self.assertEqual(end, 1)
+        self.assertEqual(out, "inactive\n")
         if not real:
             self.assertTrue(greps(err, "Unit zz-unknown.service not found."))
         #

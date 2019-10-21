@@ -2889,7 +2889,7 @@ class Systemctl:
             if not units:
                 logg.error("Unit %s not found.", unit_of(module))
                 # self.error |= NOT_FOUND
-                results += [ "unknown" ]
+                results += [ "inactive" ]
                 continue
             for unit in units:
                 active = self.get_active_unit(unit) 
