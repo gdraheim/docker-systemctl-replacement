@@ -4221,34 +4221,34 @@ class Systemctl:
                 limitBurst = self.get_StartLimitBurst(conf)
                 limitSecs = self.get_StartLimitIntervalSec(conf)
                 if limitBurst > 1 and limitSecs >= 1:
-                  try:
-                    if unit not in self._restarted_unit:
-                        self._restarted_unit[unit] = []
-                        # we want to register restarts from now on
-                    restarted = self._restarted_unit[unit]
-                    logg.debug("[%s] [%s] Current limitSecs=%ss limitBurst=%sx (restarted %sx)", me, unit, limitSecs, limitBurst, len(restarted))
-                    oldest = 0
-                    interval = 0
-                    if len(restarted) >= limitBurst:
-                        logg.debug("[%s] [%s] restarted %s", me, unit, [ "%.3fs" % (t - now) for t in restarted ])
-                        while len(restarted):
-                            oldest = restarted[0]
-                            interval = time.time() - oldest
-                            if interval > limitSecs:
-                                restarted = restarted[1:]
-                                continue
-                            break
-                        self._restarted_unit[unit] = restarted
-                        logg.debug("[%s] [%s] ratelimit %s", me, unit, [ "%.3fs" % (t - now) for t in restarted ])
-                        # all values in restarted have a time below limitSecs
-                    if len(restarted) >= limitBurst:
-                        logg.info("[%s] [%s] Blocking Restart - oldest %s is %s ago (allowed %s)", 
-                           me, unit, oldest, interval, limitSecs)
-                        self.write_status_from(conf, AS="error")
-                        unit = None
-                        continue
-                  except Exception as e:
-                    logg.error("[%s] burst exception %s", unit, e)
+                    try:
+                        if unit not in self._restarted_unit:
+                            self._restarted_unit[unit] = []
+                            # we want to register restarts from now on
+                        restarted = self._restarted_unit[unit]
+                        logg.debug("[%s] [%s] Current limitSecs=%ss limitBurst=%sx (restarted %sx)", me, unit, limitSecs, limitBurst, len(restarted))
+                        oldest = 0
+                        interval = 0
+                        if len(restarted) >= limitBurst:
+                            logg.debug("[%s] [%s] restarted %s", me, unit, [ "%.3fs" % (t - now) for t in restarted ])
+                            while len(restarted):
+                                oldest = restarted[0]
+                                interval = time.time() - oldest
+                                if interval > limitSecs:
+                                    restarted = restarted[1:]
+                                    continue
+                                break
+                            self._restarted_unit[unit] = restarted
+                            logg.debug("[%s] [%s] ratelimit %s", me, unit, [ "%.3fs" % (t - now) for t in restarted ])
+                            # all values in restarted have a time below limitSecs
+                        if len(restarted) >= limitBurst:
+                            logg.info("[%s] [%s] Blocking Restart - oldest %s is %s ago (allowed %s)", 
+                               me, unit, oldest, interval, limitSecs)
+                            self.write_status_from(conf, AS="error")
+                            unit = None
+                            continue
+                    except Exception as e:
+                        logg.error("[%s] burst exception %s", unit, e)
                 if unit:
                     if unit not in self._restart_failed_units:
                         self._restart_failed_units[unit] = now + restartSec
