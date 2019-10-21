@@ -5199,8 +5199,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
-        systemctl_py = _systemctl_py
-        sx____("{systemctl_py} __killall {testsleep}".format(**locals()))
+        sx____(_systemctl_py+" __killall {testsleep}".format(**locals()))
         copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
@@ -5299,7 +5298,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(actBC.split("\n"), ["inactive", "inactive", ""])
         self.assertNotEqual(exitBC, 0)
         #
-        kill_testsleep = "{systemctl} __killall {testsleep}"
+        kill_testsleep = _systemctl_py+" __killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.rm_zzfiles(root)
@@ -5340,6 +5339,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
+        sx____(_systemctl_py+" __killall {testsleep}".format(**locals()))
         copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
@@ -5368,10 +5368,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         actB, exitB  = output2(is_active_B.format(**locals()))
         actC, exitC  = output2(is_active_C.format(**locals()))
         actD, exitD  = output2(is_active_D.format(**locals()))
-        self.assertEqual(actA.strip(), "unknown")
+        self.assertEqual(actA.strip(), "inactive") # "unknown"
         self.assertEqual(actB.strip(), "inactive")
         self.assertEqual(actC.strip(), "inactive")
-        self.assertEqual(actD.strip(), "unknown")
+        self.assertEqual(actD.strip(), "inactive") # "unknown"
         self.assertEqual(exitA, 1)
         self.assertEqual(exitB, 1)
         self.assertEqual(exitC, 1)
@@ -5390,10 +5390,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         actB, exitB  = output2(is_active_B.format(**locals()))
         actC, exitC  = output2(is_active_C.format(**locals()))
         actD, exitD  = output2(is_active_D.format(**locals()))
-        self.assertEqual(actA.strip(), "unknown")
+        self.assertEqual(actA.strip(), "inactive") # "unknown"
         self.assertEqual(actB.strip(), "active")
         self.assertEqual(actC.strip(), "inactive")
-        self.assertEqual(actD.strip(), "unknown")
+        self.assertEqual(actD.strip(), "inactive") # "unknown"
         self.assertEqual(exitA, 1)
         self.assertEqual(exitB, 1)
         self.assertEqual(exitC, 1)
@@ -5411,14 +5411,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         actBCD, exitBCD  = output2(is_active_BCD.format(**locals()))
         actBCDX, exitBCDX  = output2(is_active_BCDX.format(**locals()))
         self.assertEqual(actBC.split("\n"), ["active", "inactive", ""])
-        self.assertEqual(actCD.split("\n"), [ "inactive", "unknown",""])
-        self.assertEqual(actBD.split("\n"), [ "active", "unknown", ""])
-        self.assertEqual(actBCD.split("\n"), ["active", "inactive", "unknown", ""])
+        self.assertEqual(actCD.split("\n"), [ "inactive", "inactive",""])
+        self.assertEqual(actBD.split("\n"), [ "active", "inactive", ""])
+        self.assertEqual(actBCD.split("\n"), ["active", "inactive", "inactive", ""])
         self.assertEqual(actBCDX.split("\n"), [""])
-        self.assertNotEqual(exitBC, 0)
-        self.assertNotEqual(exitCD, 0)
-        self.assertNotEqual(exitBD, 0)
-        self.assertNotEqual(exitBCD, 0)
+        if not real:
+            self.assertNotEqual(exitBC, 0)
+            self.assertNotEqual(exitCD, 0)
+            self.assertNotEqual(exitBD, 0)
+            self.assertNotEqual(exitBCD, 0)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep+" 99"))
@@ -5440,9 +5441,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(kill_testsleep.format(**locals()))
         #
         actBC, exitBC  = output2(is_active_BC.format(**locals()))
-        self.assertEqual(exitBC, 0)
-        if TODO or real: self.assertEqual(actBC.split("\n"), ["inactive", "inactive", ""]) 
-        else: self.assertEqual(actBC.split("\n"), ["failed", "failed", ""])
+        if real: 
+            self.assertEqual(exitBC, 1)
+            self.assertEqual(actBC.split("\n"), ["active", "active", ""]) 
+        else: 
+            self.assertEqual(exitBC, 0)
+            self.assertEqual(actBC.split("\n"), ["failed", "failed", ""])
         #
         cmd = "{systemctl} stop zzb.service zzc.service {vv}"
         out, end = output2(cmd.format(**locals()))
@@ -5453,7 +5457,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(actBC.split("\n"), ["inactive", "inactive", ""])
         self.assertNotEqual(exitBC, 0)
         #
-        kill_testsleep = "{systemctl} __killall {testsleep}"
+        kill_testsleep = _systemctl_py+" __killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
         self.coverage()
