@@ -8311,6 +8311,37 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
+    def real_3822_show_some_unknown(self):
+        self. test_3822_show_some_unknown(True)
+    def test_3822_show_some_unknown(self, real = None):
+        """ check show some unknown unit fails okay"""
+        vv = self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir, real)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
+        #
+        sh____("{systemctl} daemon-reload".format(**locals()))
+        cmd = "{systemctl} show zz-unknown.service {vv}"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        if not real:
+            self.assertTrue(greps(err, "Unit zz-unknown.service could not be found."))
+            self.assertTrue(greps(out, "Description=NOT-FOUND zz-unknown.service"))
+            self.assertTrue(greps(out, "UnitFileState=static"))
+        self.assertTrue(greps(out, "Id=zz-unknown.service"))
+        self.assertTrue(greps(out, "Names=zz-unknown.service"))
+        self.assertTrue(greps(out, "MainPID=0"))
+        self.assertTrue(greps(out, "SubState=dead"))
+        self.assertTrue(greps(out, "ActiveState=inactive"))
+        self.assertTrue(greps(out, "LoadState=not-found"))
+        #
+        self.rm_zzfiles(root)
+        self.rm_testdir()
+        self.coverage()
+        self.end()
 
     def test_3901_service_config_cat(self):
         """ check that a name service config can be printed as-is"""
