@@ -8342,6 +8342,73 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
+    def test_3830_start_some_empty_file_problem(self, real = None):
+        """ check start some empty file unit fails okay"""
+        vv = self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir, real)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
+        text_file(os_path(root, "/etc/systemd/system/zz-empty.service"), "")
+        #
+        sh____("{systemctl} daemon-reload".format(**locals()))
+        cmd = "{systemctl} start zz-empty.service {vv}"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 1)
+        # self.assertTrue(greps(err, "Unit zz-empty.service not found."))
+        self.assertTrue(greps(err, "zz-empty.service: .* file without .Service. section"))
+        #
+        self.rm_zzfiles(root)
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def test_3831_start_some_syntax_problem(self, real = None):
+        """ check start some syntax problem unit fails okay"""
+        vv = self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir, real)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
+        text_file(os_path(root, "/etc/systemd/system/zz-empty.service"), "()")
+        #
+        sh____("{systemctl} daemon-reload".format(**locals()))
+        cmd = "{systemctl} start zz-empty.service {vv}"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 1)
+        self.assertTrue(greps(err, "Unit zz-empty.service not found."))
+        self.assertTrue(greps(err, "zz-empty.service not loaded.*bad ini line"))
+        #
+        self.rm_zzfiles(root)
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def test_3832_start_some_inaccessible(self, real = None):
+        """ check start some inaccessible unit fails okay"""
+        vv = self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir, real)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
+        text_file(os_path(root, "/etc/systemd/system/zz-empty.service"), "()")
+        os.chmod(os_path(root, "/etc/systemd/system/zz-empty.service"), 111)
+        #
+        sh____("{systemctl} daemon-reload".format(**locals()))
+        cmd = "{systemctl} start zz-empty.service {vv}"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 5)
+        self.assertTrue(greps(err, "Unit zz-empty.service not found."))
+        self.assertTrue(greps(err, "zz-empty.service not loaded.*Permission denied"))
+        #
+        self.rm_zzfiles(root)
+        self.rm_testdir()
+        self.coverage()
+        self.end()
 
     def test_3901_service_config_cat(self):
         """ check that a name service config can be printed as-is"""
