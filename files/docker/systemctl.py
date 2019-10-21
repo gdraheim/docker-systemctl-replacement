@@ -1528,7 +1528,7 @@ class Systemctl:
         system_btime = 0
         with open(system_stat,"rb") as f:
             for line in f:
-                if line.startswith("btime"):
+                if line.startswith(b"btime"):
                     system_btime = float(line.decode().split()[1])
         f.closed
         if DEBUG_BOOTTIME:
