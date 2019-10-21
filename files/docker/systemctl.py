@@ -2828,7 +2828,7 @@ class Systemctl:
         """ returns 'active' 'inactive' 'failed' 'unknown' """
         conf = self.get_unit_conf(unit)
         if not conf.loaded():
-            logg.warning("Unit %s could not be found.", unit)
+            logg.warning("Unit %s not found.", unit)
             return "unknown"
         return self.get_active_from(conf)
     def get_active_from(self, conf):
@@ -3033,7 +3033,7 @@ class Systemctl:
             unit_file = self.unit_file(unit)
             if unit_file:
                 return open(unit_file).read()
-            logg.error("no file for unit '%s'", unit)
+            logg.error("No files found for %s", unit) 
         except Exception as e:
             print("Unit {} is not-loaded: {}".format(unit, e))
         return False
@@ -3355,7 +3355,7 @@ class Systemctl:
     def is_enabled(self, unit):
         unit_file = self.unit_file(unit)
         if not unit_file:
-            logg.error("Unit %s could not be found.", unit)
+            logg.error("Unit %s not found.", unit)
             return False
         if self.is_sysv_file(unit_file):
             return self.is_enabled_sysv(unit_file)
