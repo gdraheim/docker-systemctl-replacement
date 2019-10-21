@@ -2913,7 +2913,7 @@ class Systemctl:
             units = self.match_units([ module ])
             if not units:
                 logg.error("Unit %s not found.", unit_of(module))
-                self.error |= NOT_FOUND
+                # self.error |= NOT_FOUND
                 return False
             for unit in units:
                 if not self.reset_failed_unit(unit):
