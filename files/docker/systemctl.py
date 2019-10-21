@@ -2789,8 +2789,10 @@ class Systemctl:
         for module in modules:
             units = self.match_units([ module ])
             if not units:
-                logg.error("Unit %s could not be found.", unit_of(module))
-                results += [ "unknown" ]
+                logg.error("Unit %s not found.", unit_of(module))
+                # self.error |= NOT_FOUND
+                self.error |= NOT_ACTIVE
+                results += [ "inactive" ]
                 continue
             for unit in units:
                 active = self.get_active_unit(unit) 
@@ -2802,9 +2804,9 @@ class Systemctl:
         status = "active" in results
         ## how 'systemctl' works:
         non_active = [ result for result in results if result != "active" ]
+        if non_active:
+           self.error |= NOT_ACTIVE
         status = not non_active
-        if not status:
-            status = 3
         if not _quiet:
             return status, results
         else:
