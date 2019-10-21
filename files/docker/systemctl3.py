@@ -2885,7 +2885,8 @@ class Systemctl:
         for module in modules:
             units = self.match_units([ module ])
             if not units:
-                logg.error("Unit %s could not be found.", unit_of(module))
+                logg.error("Unit %s not found.", unit_of(module))
+                # self.error |= NOT_FOUND
                 results += [ "unknown" ]
                 continue
             for unit in units:
