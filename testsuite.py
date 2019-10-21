@@ -3561,19 +3561,19 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, r"^disabled"))
         self.assertFalse(greps(out, r"^enabled"))
         self.assertEqual(len(lines(out)), 1)
-        self.assertTrue(greps(err, "Unit zz-not-existing-service.service could not be found."))
+        self.assertTrue(greps(err, "Unit zz-not-existing-service.service not found."))
         #
         cmd = "{systemctl} --no-legend enable zz-not-existing-service.service"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
         self.assertEqual(end, 1)
-        self.assertTrue(greps(err, "Unit zz-not-existing-service.service could not be found."))
+        self.assertTrue(greps(err, "Unit zz-not-existing-service.service not found."))
         #
         cmd = "{systemctl} --no-legend disable zz-not-existing-service.service"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
         self.assertEqual(end, 1)
-        self.assertTrue(greps(err, "Unit zz-not-existing-service.service could not be found."))
+        self.assertTrue(greps(err, "Unit zz-not-existing-service.service not found."))
         #
         self.rm_testdir()
         self.coverage()
@@ -5199,6 +5199,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
+        systemctl_py = _systemctl_py
+        sx____("{systemctl_py} __killall {testsleep}".format(**locals()))
         copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
@@ -5227,7 +5229,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         actB, exitB  = output2(is_active_B.format(**locals()))
         actC, exitC  = output2(is_active_C.format(**locals()))
         actD, exitD  = output2(is_active_D.format(**locals()))
-        self.assertEqual(actA.strip(), "unknown")
+        self.assertEqual(actA.strip(), "inactive") # "unknown"
         self.assertEqual(actB.strip(), "inactive")
         self.assertEqual(actC.strip(), "inactive")
         self.assertEqual(exitA, 3)
@@ -5248,10 +5250,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         actB, exitB  = output2(is_active_B.format(**locals()))
         actC, exitC  = output2(is_active_C.format(**locals()))
         actD, exitD  = output2(is_active_D.format(**locals()))
-        self.assertEqual(actA.strip(), "unknown")
+        self.assertEqual(actA.strip(), "inactive") # "unknown"
         self.assertEqual(actB.strip(), "active")
         self.assertEqual(actC.strip(), "inactive")
-        self.assertEqual(actD.strip(), "unknown")
+        self.assertEqual(actD.strip(), "inactive") # "unknown"
         self.assertNotEqual(exitA, 0)
         self.assertEqual(exitB, 0)
         self.assertNotEqual(exitC, 0)
@@ -5267,13 +5269,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         actBD, exitBD  = output2(is_active_BD.format(**locals()))
         actBCD, exitBCD  = output2(is_active_BCD.format(**locals()))
         self.assertEqual(actBC.split("\n"), ["active", "inactive", ""])
-        self.assertEqual(actCD.split("\n"), [ "inactive", "unknown",""])
-        self.assertEqual(actBD.split("\n"), [ "active", "unknown", ""])
-        self.assertEqual(actBCD.split("\n"), ["active", "inactive", "unknown", ""])
-        self.assertNotEqual(exitBC, 0)
-        self.assertNotEqual(exitCD, 0)
-        self.assertNotEqual(exitBD, 0)
-        self.assertNotEqual(exitBCD, 0)
+        self.assertEqual(actCD.split("\n"), [ "inactive", "inactive",""])
+        self.assertEqual(actBD.split("\n"), [ "active", "inactive", ""])
+        self.assertEqual(actBCD.split("\n"), ["active", "inactive", "inactive", ""])
+        if not real:
+            self.assertNotEqual(exitBC, 0)  #TODO
+            self.assertNotEqual(exitCD, 0)
+            self.assertNotEqual(exitBD, 0)
+            self.assertNotEqual(exitBCD, 0)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep+" 99"))
