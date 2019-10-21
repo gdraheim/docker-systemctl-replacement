@@ -3147,7 +3147,8 @@ class Systemctl:
         for module in modules:
             matched = self.match_units([ module ])
             if not matched:
-                logg.error("Unit %s could not be found.", unit_of(module))
+                logg.error("Unit %s not found.", unit_of(module))
+                self.error |= NOT_FOUND
                 found_all = False
                 continue
             for unit in matched:
@@ -3167,7 +3168,7 @@ class Systemctl:
     def enable_unit(self, unit):
         unit_file = self.unit_file(unit)
         if not unit_file:
-            logg.error("Unit %s could not be found.", unit)
+            logg.error("Unit %s not found.", unit)
             return False
         if self.is_sysv_file(unit_file):
             if self.user_mode():
@@ -3246,7 +3247,8 @@ class Systemctl:
         for module in modules:
             matched = self.match_units([ module ])
             if not matched:
-                logg.error("Unit %s could not be found.", unit_of(module))
+                logg.error("Unit %s not found.", unit_of(module))
+                self.error |= NOT_FOUND
                 found_all = False
                 continue
             for unit in matched:
@@ -3263,7 +3265,7 @@ class Systemctl:
     def disable_unit(self, unit):
         unit_file = self.unit_file(unit)
         if not unit_file:
-            logg.error("Unit %s could not be found.", unit)
+            logg.error("Unit %s not found.", unit)
             return False
         if self.is_sysv_file(unit_file):
             if self.user_mode():
