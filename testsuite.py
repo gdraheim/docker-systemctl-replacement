@@ -8162,11 +8162,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} is-enabled zz-unknown.service {vv}"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 1)
         if real:
-            self.assertEqual(end, 1)
             self.assertTrue(greps(err, "Failed to get unit file state for zz-unknown.service: No such file or directory")) #TODO
         else:
-            self.assertEqual(end, 5)
             self.assertTrue(greps(err, "Unit zz-unknown.service not found."))
         #
         self.rm_zzfiles(root)
