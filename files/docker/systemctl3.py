@@ -486,8 +486,6 @@ class SystemctlConf:
         self.drop_in_files = {}
         self._root = _root
         self._user_mode = _user_mode
-    def os_path(self, path):
-        return os_path(self._root, path)
     def os_path_var(self, path):
         if self._user_mode:
             return os_path(self._root, _var_path(path))
