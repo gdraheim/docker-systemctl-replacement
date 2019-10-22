@@ -1429,9 +1429,7 @@ class Systemctl:
                         key, value = m.group(1), m.group(2)
                         if key.strip():
                             status[key.strip()] = value.strip()
-                    elif line in [ "active", "inactive", "failed"]:
-                        status["ActiveState"] = line
-                    else:
+                    else: #pragma: no cover
                         logg.warning("ignored %s", line.strip())
         except:
             logg.warning("bad read of status file '%s'", status_file)
