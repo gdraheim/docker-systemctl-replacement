@@ -161,10 +161,18 @@ def unit_of(module):
     if "." not in module:
         return module + ".service"
     return module
-def end22(name):
-    if name and len(name) > 22:
-        return "..." + name[-19:]
-    return name
+def o22(part):
+    if isinstance(part, string_types):
+        if len(part) <= 22:
+            return part
+        return part[:5] + "..." + part[-14:]
+    return part
+def o99(part, shorter=0):
+    if isinstance(part, string_types):
+        if len(part) <= 99:
+            return part
+        return part[:20] + "-.-" + part[-(75-shorter):]
+    return part
 
 def os_path(root, path):
     if not root:
@@ -1550,11 +1558,11 @@ class Systemctl:
         boottime = self.get_boottime()
         if filetime >= boottime:
             if DEBUG_BOOTTIME:
-                logg.debug("  file time: %s (%s)", datetime.datetime.fromtimestamp(filetime), end22(filename))
+                logg.debug("  file time: %s (%s)", datetime.datetime.fromtimestamp(filetime), o22(filename))
                 logg.debug("  boot time: %s (%s)", datetime.datetime.fromtimestamp(boottime), "status modified later")
             return False # OK
         if DEBUG_BOOTTIME:
-            logg.info("  file time: %s (%s)", datetime.datetime.fromtimestamp(filetime), end22(filename))
+            logg.info("  file time: %s (%s)", datetime.datetime.fromtimestamp(filetime), o22(filename))
             logg.info("  boot time: %s (%s)", datetime.datetime.fromtimestamp(boottime), "status TRUNCATED NOW")
         try:
             shutil_truncate(filename)
@@ -1803,7 +1811,7 @@ class Systemctl:
                        "why-is-socket-path-length-limited-to-a-hundred-chars")
             logg.debug("old notify socketfile (%s) = %s", len(socketfile), socketfile)
             notify_socket_folder = re.sub("^(/var)?", get_runtime_dir(), _notify_socket_folder)
-            notify_name = notify_name[0:min(100-len(notify_socket_folder),len(notify_name))]
+            notify_name = o99(notify_name, len(notify_socket_folder))
             socketfile = os.path.join(notify_socket_folder, notify_name)
             # occurs during testsuite.py for ~user/test.tmp/root path
             logg.info("new notify socketfile (%s) = %s", len(socketfile), socketfile)
@@ -4863,6 +4871,7 @@ if __name__ == "__main__":
         loggfile.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
         logg.addHandler(loggfile)
         logg.setLevel(logging.DEBUG)
+    logg.info("systemctl.debug.log >> %s", systemctl_debug_log)
     logg.info("EXEC BEGIN %s %s%s%s", os.path.realpath(sys.argv[0]), " ".join(args),
         _user_mode and " --user" or " --system", _init and " --init" or "", )
     #
