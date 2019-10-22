@@ -4254,7 +4254,7 @@ class Systemctl:
                 logg.debug("[%s] [%s] Current Status: %s (%s)", me, unit, isUnitState, isUnitFailed)
                 if not isUnitFailed:
                     if unit in self._restart_failed_units:
-                        del self._restart_failed_units
+                        del self._restart_failed_units[unit]
                     continue
                 limitBurst = self.get_StartLimitBurst(conf)
                 limitSecs = self.get_StartLimitIntervalSec(conf)
