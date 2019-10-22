@@ -12015,7 +12015,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
-    def test_4050_forking_service_failed_functions(self):
+    def test_4060_forking_service_failed_functions(self):
         """ check that we manage forking services in a root env
             with basic run-service commands: start, stop, restart,
             checking the executions when some part fails."""
@@ -12296,7 +12296,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
-    def test_4060_oneshot_truncate_old_status(self):
+    def test_4070_oneshot_truncate_old_status(self):
         """ check that we manage a service that has some old .status
             file being around. That is a reboot has occurred and the
             information is not relevant to the current system state."""
@@ -12410,7 +12410,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
-    def test_4065_simple_truncate_old_pid(self):
+    def test_4075_simple_truncate_old_pid(self):
         """ check that we manage a service that has some old .pid
             file being around. That is a reboot has occurred and the
             information is not relevant to the current system state."""
@@ -12524,7 +12524,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
-    def test_4069_simple_truncate_oldest_pid(self):
+    def test_4079_simple_truncate_oldest_pid(self):
         """ check that we manage a service that has some old .pid
             file being around. That is a reboot has occurred and the
             information is not relevant to the current system state."""
