@@ -6200,6 +6200,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertTrue(greps(out, "enabled"))
+        self.assertFalse(greps(out, "masked"))
         # .........................................
         cmd = "{systemctl} mask zzb.service"
         out, end = output2(cmd.format(**locals()))
@@ -6231,6 +6232,18 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertTrue(greps(out, "masked"))
+        #
+        # second mask
+        #
+        cmd = "{systemctl} mask zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "{systemctl} status zzb.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertFalse(greps(out, "enabled"))
+        self.assertTrue(greps(out, "masked"))
+        self.assertEqual(end, 3)
         self.rm_zzfiles(root)
         self.rm_testdir()
         self.coverage()
