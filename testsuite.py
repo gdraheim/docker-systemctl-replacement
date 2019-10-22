@@ -15550,7 +15550,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(out, "stopping\n")
         self.assertEqual(rc, 1)
         #
-        time.sleep(2) # atleast 1sec per ExecStop upon Halt # TODO?
+        for attempt in xrange(10):
+            top = _recent(output(_top_list))
+            logg.info("\n>>>\n%s", top)
+            if greps(top, "sleepA") or greps(top, "sleepB"):
+                time.sleep(1)
+                continue
+            break
+        # atleast 1sec per ExecStop upon Halt # TODO?
+        logg.info("===================== time to stop the subprocesses: %ss", attempt)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, "sleepA")) 
