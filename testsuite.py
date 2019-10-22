@@ -6636,9 +6636,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
-    def real_3250_nonrecursive_expand_variables(self):
-        self.test_3250_nonrecursive_expand_variables(True)
-    def test_3250_nonrecursive_expand_variables(self, real = None):
+    def real_3250_nonlazy_expand_variables(self):
+        self.test_3250_nonlazy_expand_variables(True)
+    def test_3250_nonlazy_expand_variables(self, real = None):
         """ check that variables can contain variables that get (not?) expanded."""
         vv = self.begin()
         testname = self.testname()
@@ -6711,7 +6711,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
-    def test_3251_nonrecursive_expand_variables_empty_vars(self, real = None):
+    def test_3251_nonlazy_expand_variables_empty_vars(self, real = None):
         """ check that variables can contain variables that get (not?) expanded.
             Here we show the oldstyle result (up to systemctl.py v1.4)"""
         vv = self.begin()
