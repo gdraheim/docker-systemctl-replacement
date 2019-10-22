@@ -6786,6 +6786,81 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
+    def real_3260_recursive_expand_variables(self):
+        self.test_3260_recursive_expand_variables(True)
+    def test_3260_recursive_expand_variables(self, real = None):
+        """ check that variables can contain variables that get (not?) expanded."""
+        vv = self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir, real)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        systemctl += " -c EXPAND_VARS_MAXDEPTH=5"
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
+        print_sh = os_path(root, "/usr/bin/zz_print.sh")
+        logfile = os_path(root, "/var/log/zz_print_sh.log")
+        text_file(os_path(root, "/etc/sysconfig/zz_b.conf"),"""
+            DEF1='def1'
+            DEF3="${DEF4}.def3"
+            DEF4="${DEF1}.${${DEF2}}"
+            DEF5="${DEF1}.${${DEF3}}"
+            DEF6="${DEF3}.${DEF3}"
+            """)
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            Environment=DEF2=DEF3
+            EnvironmentFile=/etc/sysconfig/zz_b.conf
+            ExecStart=/bin/sleep 3
+            ExecStartPost=%s A.${DEF1}
+            ExecStartPost=%s B.${DEF2}
+            ExecStartPost=%s C.${DEF3}
+            ExecStartPost=%s D.${DEF4}
+            ExecStartPost=%s E.${DEF5}
+            ExecStartPost=%s F.${DEF6}
+            [Install]
+            WantedBy=multi-user.target""" 
+            % (print_sh, print_sh, print_sh, print_sh, 
+               print_sh, print_sh,))
+        text_file(logfile, "")
+        shell_file(print_sh, """
+            #! /bin/sh
+            logfile='{logfile}'
+            echo "'$1'" >> "$logfile"
+            """.format(**locals()))
+        #
+        cmd = "{systemctl} start zzb.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        log = lines(open(logfile))
+        logg.info("LOG \n%s", log)
+        if real:
+            A="'A.def1'"
+            B="'B.DEF3'"
+            C="'C.${DEF4}.def3'"
+            D="'D.${DEF1}.${${DEF2}}'"  # todo?
+            E="'E.${DEF1}.${${DEF3}}'"  # todo?
+            F="'F.${DEF3}.${DEF3}'"     # todo?
+        else:
+            A="'A.def1'"
+            B="'B.DEF3'"
+            C="'C.${DEF4}.def3'"
+            D="'D.def1.${DEF4}.def3'"
+            E="'E.def1.${def1.def1.def1.def1.${DEF4}.def3.def3.def3.def3.def3}'"
+            F="'F.def1.def1.def1.def1.${DEF4}.def3.def3.def3.def3.def3.def1.def1.def1.def1.${DEF4}.def3.def3.def3.def3.def3'"
+        # so effectivly sysd-systemctl does not have a recursive expansion #TODO?
+        self.assertIn(A, log)
+        self.assertIn(B, log)
+        self.assertIn(C, log)
+        self.assertIn(D, log)
+        self.assertIn(E, log)
+        self.assertIn(F, log)
+        #
+        self.rm_testdir()
+        self.coverage()
+        self.end()
     def test_3270_env_may_expand_special_variables(self):
         """ check that different flavours for special
             variables get expanded."""
