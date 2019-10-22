@@ -27,6 +27,13 @@ from fnmatch import fnmatchcase as fnmatch
 from glob import glob
 import json
 
+if sys.version[0] == '2':
+    string_types = basestring
+    BlockingIOError = IOError
+else:
+    string_types = str
+    xrange = range
+
 logg = logging.getLogger("TESTING")
 _python = "/usr/bin/python"
 _systemctl_py = "files/docker/systemctl.py"
@@ -184,6 +191,46 @@ def each_non_runuser(lines):
         if 'runuser -u' in line:
             continue
         yield line
+
+def i2(part, indent="  "):
+    if isinstance(part, string_types):
+        if "\n" in part.strip():
+            lines = part.strip().split("\n")
+            text = indent
+            newline = "\n" + indent
+            text += newline.join(lines)
+            if part.endswith("\n"):
+                text += "\n"
+            return text
+    return part
+def o22(part):
+    return only22(part)
+def oi22(part):
+    return only22(part, indent="  ")
+def only22(part, indent=""):
+    if isinstance(part, string_types):
+        if "\n" in part.strip():
+            lines = part.strip().split("\n")
+            if len(lines) <= 22:
+                return part
+            skipped = len(lines) - 22 + 3
+            real = lines[:5] + ["...","... (%s lines skipped)" % skipped,"..."] + lines[-14:]
+            text = indent
+            newline = "\n" + indent
+            text += newline.join(real)
+            if part.endswith("\n"):
+                text += "\n"
+            return text
+    if isinstance(part, string_types):
+        if len(part) <= 22:
+            return part
+        return part[5:] + "..." + part[-14:]
+    if isinstance(part, list):
+        if len(part) <= 22:
+            return part
+        skipped = len(part) - 22 + 3
+        return part[:5] + ["...","... (%s lines skipped)" % skipped,"..."] + part[-14:]
+    return part
 
 def beep():
     if os.name == "nt":
@@ -6171,7 +6218,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(target, "/dev/null")
         cmd = "{systemctl} show zzb.service"
         out, end = output2(cmd.format(**locals()))
-        logg.info(" %s =>%s\n%s", cmd, end, out)
+        logg.info(" %s =>%s\n%s", cmd, end, oi22(out))
         self.assertTrue(greps(out, "LoadState=masked"))
         self.assertTrue(greps(out, "UnitFileState=masked"))
         self.assertTrue(greps(out, "Id=zzb.service"))
@@ -6245,7 +6292,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(target, "/dev/null")
         cmd = "{systemctl} show zzb.service"
         out, end = output2(cmd.format(**locals()))
-        logg.info(" %s =>%s\n%s", cmd, end, out)
+        logg.info(" %s =>%s\n%s", cmd, end, oi22(out))
         self.assertTrue(greps(out, "LoadState=masked"))
         self.assertTrue(greps(out, "UnitFileState=masked"))
         self.assertTrue(greps(out, "Id=zzb.service"))
@@ -6264,7 +6311,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(os.path.exists(mask_file))
         cmd = "{systemctl} show zzb.service"
         out, end = output2(cmd.format(**locals()))
-        logg.info(" %s =>%s\n%s", cmd, end, out)
+        logg.info(" %s =>%s\n%s", cmd, end, oi22(out))
         self.assertTrue(greps(out, "LoadState=loaded"))
         self.assertTrue(greps(out, "Id=zzb.service"))
         self.assertTrue(greps(out, "Names=zzb.service"))
