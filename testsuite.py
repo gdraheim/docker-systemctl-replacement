@@ -9306,6 +9306,68 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
+    def real_3900_start_false_execpre(self):
+        self.test_3900_start_false_execpre(True)
+    def test_3900_start_false_execpre(self, real = None):
+        """ check that a failed execpre is handled"""
+        vv = self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir, real)
+        logfile = os_path(root, "/var/log/test.log")
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
+        testsleep = self.testname("sleep")
+        bindir = os_path(root, "/usr/bin")
+        self.rm_testdir()
+        self.rm_zzfiles(root)
+        text_file(os_path(testdir, "zzz.service"),"""
+            [Unit]
+            Description=Testing Z
+            After=foo.service
+            [Service]
+            Type=simple
+            ExecStartPre="/bin/false"
+            ExecStart={bindir}/{testsleep} 9
+            ExecStop=/usr/bin/killall {testsleep}
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
+        sx____("{systemctl} reset-failed zzz.service".format(**locals()))
+        sh____("{systemctl} daemon-reload".format(**locals()))
+        #
+        cmd = "{systemctl} enable zzz.service {vv}"
+        sh____(cmd.format(**locals()))
+        cmd = "{systemctl} is-active zzz.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        self.assertEqual(out.strip(), "inactive")
+        #
+        logg.info("== try to 'start' the service  ")
+        cmd = "{systemctl} start zzz.service {vv}"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, i2(err))
+        self.assertEqual(end, 1)
+        self.assertTrue(greps(err, "control process exited with error code"))
+        #
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, testsleep))
+        cmd = "{systemctl} is-active zzz.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        self.assertEqual(out.strip(), "failed")
+        #
+        sx____("{systemctl} reset-failed zzz.service".format(**locals()))
+        self.rm_testdir()
+        self.rm_zzfiles(root)
+        self.coverage()
+        self.end()
     def test_4030_simple_service_functions_system(self):
         """ check that we manage simple services in a root env
             with commands like start, restart, stop, etc"""
