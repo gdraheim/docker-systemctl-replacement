@@ -6635,7 +6635,83 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
-    def test_3250_env_may_expand_special_variables(self):
+    def real_3250_nonrecursive_expand_variables(self):
+        self.test_3250_nonrecursive_expand_variables(True)
+    def test_3250_nonrecursive_expand_variables(self, real = None):
+        """ check that variables can contain variables that get (not?) expanded."""
+        vv = self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir, real)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
+        print_sh = os_path(root, "/usr/bin/zz_print.sh")
+        logfile = os_path(root, "/var/log/zz_print_sh.log")
+        text_file(os_path(root, "/etc/sysconfig/zz_b.conf"),"""
+            DEF1='def1'
+            DEF2="def2.def3"
+            DEF3="${DEF4}.${DEF5}"
+            DEF4="${DEF1}.${DEF2}"
+            DEF5="${DEF1111}.def5.${DEF2222}"
+            DEF6="${DEF3}.${DEF3}"
+            """)
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            Environment=DEF2=foo
+            EnvironmentFile=/etc/sysconfig/zz_b.conf
+            ExecStart=/bin/sleep 3
+            ExecStartPost=%s A.${DEF1}
+            ExecStartPost=%s B.${DEF2}
+            ExecStartPost=%s C.${DEF3}
+            ExecStartPost=%s D.${DEF4}
+            ExecStartPost=%s E.${DEF5}
+            ExecStartPost=%s F.${DEF6}
+            [Install]
+            WantedBy=multi-user.target""" 
+            % (print_sh, print_sh, print_sh, print_sh, 
+               print_sh, print_sh,))
+        text_file(logfile, "")
+        shell_file(print_sh, """
+            #! /bin/sh
+            logfile='{logfile}'
+            echo "'$1'" >> "$logfile"
+            """.format(**locals()))
+        #
+        cmd = "{systemctl} start zzb.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        log = lines(open(logfile))
+        logg.info("LOG \n%s", log)
+        if real:
+            A="'A.def1'"
+            B="'B.def2.def3'"
+            C="'C.${DEF4}.${DEF5}'"             #TODO
+            D="'D.${DEF1}.${DEF2}'"             #TODO
+            E="'E.${DEF1111}.def5.${DEF2222}'"  #TODO
+            F="'F.${DEF3}.${DEF3}'"             #TODO
+        else:
+            A="'A.def1'"
+            B="'B.def2.def3'"
+            C="'C..'"
+            D="'D.def1.def2.def3'"
+            E="'E..def5.'"
+            F="'F....'"
+        # so effectivly both systemctl.py and sysd-systemctl do no lazy expansion
+        # here - but sysd-systemctl will keep the unkonwn value in the text.
+        self.assertIn(A, log)
+        self.assertIn(B, log)
+        self.assertIn(C, log)
+        self.assertIn(D, log)
+        self.assertIn(E, log)
+        self.assertIn(F, log)
+        #
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def test_3270_env_may_expand_special_variables(self):
         """ check that different flavours for special
             variables get expanded."""
         self.begin()
@@ -6709,7 +6785,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
-    def test_3260_user_mode_env_may_expand_special_variables(self):
+    def test_3280_user_mode_env_may_expand_special_variables(self):
         """ check that different flavours for special
             variables get expanded. Differently in --user mode."""
         self.begin()
@@ -6784,7 +6860,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
-    def test_3270_may_override_environment_from_commandline(self):
+    def test_3290_may_override_environment_from_commandline(self):
         """ check that --extra-vars can be given on the commandline
             to override settings in Environment= and EnvironmentFile=."""
         self.begin()
