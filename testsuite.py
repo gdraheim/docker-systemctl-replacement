@@ -7890,7 +7890,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} start zzz.service -vv"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        self.assertEqual(end, 0)
+        self.assertEqual(end, 1)
         self.assertTrue(greps(err, "Exec is not an absolute"))
         #
         cmd = "{systemctl} stop zzz.service -vv"
