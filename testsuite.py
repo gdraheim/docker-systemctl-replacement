@@ -6763,10 +6763,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if real:
             A="'A.def1'"
             B="'B.def2.def3'"
-            C="'C.${DEF4}.${DEF5}'"             #TODO
-            D="'D.${DEF1}.${DEF2}'"             #TODO
-            E="'E.${DEF1111}.def5.${DEF2222}'"  #TODO
-            F="'F.${DEF3}.${DEF3}'"             #TODO
+            C="'C.${DEF4}.${DEF5}'"
+            D="'D.${DEF1}.${DEF2}'"
+            E="'E.${DEF1111}.def5.${DEF2222}'"
+            F="'F.${DEF3}.${DEF3}'"
         else:
             A="'A.def1'"
             B="'B.def2.def3'"
