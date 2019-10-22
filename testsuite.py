@@ -9853,7 +9853,87 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
         self.end()
-
+    def real_3937_start_false_exec_notify(self):
+        self.test_3937_start_false_exec_notify(True)
+    def test_3937_start_false_exec_notify(self, real = None):
+        """ check that we manage notify services in a root env
+            and false handling."""
+        vv = self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        testsleep = testname+"_sleep"
+        logfile = os_path(root, "/var/log/"+testsleep+".log")
+        bindir = os_path(root, "/usr/bin")
+        os.makedirs(os_path(root, "/var/run"))
+        text_file(logfile, "created\n")
+        shell_file(os_path(testdir, "zzz.init"), """
+            #! /bin/bash
+            case "$1" in start)
+                ls -l  $NOTIFY_SOCKET
+                {bindir}/{testsleep} 3 0<&- &>/dev/null &
+                echo "$!" > {root}/var/run/zzz.init.pid
+                echo "READY=1" | socat -v -d - UNIX-CLIENT:$NOTIFY_SOCKET
+                wait %1
+                # ps -o pid,ppid,args
+            ;; stop)
+                killall {testsleep}
+            ;; esac 
+            echo "done$1" >&2
+            exit 0
+            """.format(**locals()))
+        text_file(os_path(testdir, "zzz.service"),"""
+            [Unit]
+            Description=Testing Z
+            [Service]
+            Type=notify
+            PIDFile={root}/var/run/zzz.init.pid
+            ExecStart={root}/usr/bin/zzz.init start
+            ExecStop={root}/usr/bin/zzz.init stop
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        zzz_service = "/etc/systemd/system/zzz.service".format(**locals())
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/usr/bin/zzz.init"))
+        copy_file(os_path(testdir, "zzz.service"), os_path(root, zzz_service))
+        #
+        cmd = "{systemctl} enable zzz.service -vv"
+        sh____(cmd.format(**locals()))
+        #
+        cmd = "{systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        self.assertEqual(out.strip(), "inactive")
+        #
+        logg.info("== 'start' shall start a service that is NOT is-active ")
+        cmd = "{systemctl} start zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        cmd = "{systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(out.strip(), "active")
+        #
+        os.remove(os_path(root, "/var/run/zzz.init.pid"))
+        time.sleep(4)
+        #
+        cmd = "{systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        self.assertEqual(out.strip(), "inactive")
+        #
+        logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
+        self.end()
     def test_4030_simple_service_functions_system(self):
         """ check that we manage simple services in a root env
             with commands like start, restart, stop, etc"""
