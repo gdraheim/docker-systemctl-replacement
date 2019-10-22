@@ -484,6 +484,7 @@ class SystemctlConf:
         self.status = None
         self.masked = None
         self.module = module
+        self.nonloaded_path = ""
         self.drop_in_files = {}
         self._root = _root
         self._user_mode = _user_mode
@@ -985,7 +986,7 @@ class Systemctl:
     def is_user_conf(self, conf):
         if not conf:
             return False # no such conf >> ignored
-        filename = conf.filename()
+        filename = conf.nonloaded_path or conf.filename()
         if filename and "/user/" in filename:
             return True
         return False
@@ -1052,6 +1053,7 @@ class Systemctl:
                 data.read_sysd(path)
         conf = SystemctlConf(data, module)
         conf.masked = masked
+        conf.nonloaded_path = path # if masked
         conf.drop_in_files = drop_in_files
         conf._root = self._root
         self._loaded_file_sysd[path] = conf
