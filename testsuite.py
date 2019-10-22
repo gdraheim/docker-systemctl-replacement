@@ -11206,11 +11206,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             self.skipTest("missing /usr/bin/socat")
         testname = self.testname()
         testdir = self.testdir()
-        self.notify_service_functions_with_reload("system", testname, testdir)
+        self.notify_service_functions_with_failed("system", testname, testdir)
         self.rm_testdir()
         self.coverage()
         self.end()
-    def test_4039_notify_service_functions_with_reload_failed(self):
+    def test_4039_notify_service_functions_with_failed(self):
         """ check that we manage notify services in a root env
             with basic run-service commands: start, stop, restart,
             reload, try-restart, reload-or-restart, kill and
@@ -11221,11 +11221,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             self.skipTest("missing /usr/bin/socat")
         testname = self.testname()
         testdir = self.testdir()
-        self.notify_service_functions_with_reload("user", testname, testdir)
+        self.notify_service_functions_with_failed("user", testname, testdir)
         self.rm_testdir()
         self.coverage()
         self.end()
-    def notify_service_functions_with_reload(self, system, testname, testdir):
+    def notify_service_functions_with_failed(self, system, testname, testdir):
         user = self.user()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
