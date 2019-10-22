@@ -5305,6 +5305,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertNotEqual(exitC, 0)
         self.assertNotEqual(exitD, 0)
         #
+        logg.info("== checking with --quiet")
+        is_active_A = "{systemctl} is-active zza.service --quiet"
+        is_active_B = "{systemctl} is-active zzb.service --quiet"
+        actA, exitA  = output2(is_active_A.format(**locals()))
+        actB, exitB  = output2(is_active_B.format(**locals()))
+        self.assertEqual(actA, "")
+        self.assertEqual(actB, "")
+        self.assertNotEqual(exitA, 0)
+        self.assertEqual(exitB, 0)
+        #
         logg.info("== checking combinations of arguments")
         is_active_BC = "{systemctl} is-active zzb.service zzc.service "
         is_active_CD = "{systemctl} is-active zzc.service zzd.service"
@@ -5445,6 +5455,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(exitB, 1)
         self.assertEqual(exitC, 1)
         self.assertEqual(exitD, 1)
+        #
+        logg.info("== checking with --quiet")
+        is_active_A = "{systemctl} is-failed zza.service --quiet"
+        is_active_B = "{systemctl} is-failed zzb.service --quiet"
+        actA, exitA  = output2(is_active_A.format(**locals()))
+        actB, exitB  = output2(is_active_B.format(**locals()))
+        self.assertEqual(actA, "")
+        self.assertEqual(actB, "")
+        self.assertEqual(exitA, 1)
+        self.assertEqual(exitB, 1)
         #
         logg.info("== checking combinations of arguments")
         is_active_BC = "{systemctl} is-failed zzb.service zzc.service {vv}"
