@@ -8670,26 +8670,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
-    def test_3849_API_status_some_unknown(self, real = None):
-        """ check API status some unknown unit fails okay"""
-        vv = self.begin()
-        testname = self.testname()
-        testdir = self.testdir()
-        root = self.root(testdir, real)
-        systemctl = cover() + _systemctl_py + " --root=" + root
-        if real: vv, systemctl = "", "/usr/bin/systemctl"
-        #
-        sh____("{systemctl} daemon-reload".format(**locals()))
-        cmd = "{systemctl} __status_unit zz-unknown.service {vv}"
-        out, err, end = output3(cmd.format(**locals()))
-        logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
-        # self.assertEqual(end, 4)
-        self.assertTrue(greps(out, "NOT-FOUND zz-unknown.service"))
-        #
-        self.rm_zzfiles(root)
-        self.rm_testdir()
-        self.coverage()
-        self.end()
     def test_3850_API_preset_all_some_unknown(self, real = None):
         """ check API preset_all some unknown unit fails okay"""
         vv = self.begin()

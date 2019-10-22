@@ -2806,12 +2806,12 @@ class Systemctl:
         ## how 'systemctl' works:
         non_active = [ result for result in results if result != "active" ]
         if non_active:
-           self.error |= NOT_ACTIVE
-        status = not non_active
-        if not _quiet:
-            return status, results
-        else:
-            return status
+            self.error |= NOT_ACTIVE
+        if non_active:
+            self.error |= NOT_OK # status
+        if _quiet:
+            return []
+        return results
     def is_active_from(self, conf):
         """ used in try-restart/other commands to check if needed. """
         if not conf: return False
@@ -2899,11 +2899,13 @@ class Systemctl:
                     active = "inactive"
                 results += [ active ]
                 break
-        status = "failed" in results
-        if not _quiet:
-            return status, results
+        if "failed" in results:
+            self.error = 0
         else:
-            return status
+            self.error |= NOT_OK
+        if _quiet:
+            return []
+        return results
     def is_failed_from(self, conf):
         if conf is None: return True
         return self.get_active_from(conf) == "failed"
@@ -2968,20 +2970,24 @@ class Systemctl:
             for unit in matched:
                 if unit not in units:
                     units += [ unit ]
-        status, result = self.status_units(units)
+        result = self.status_units(units)
         # if not found_all:
-        #     status = 3 # same as (dead) # original behaviour
-        return (status, result)
+        #     self.error |= NOT_OK | NOT_ACTIVE # 3
+        #     # same as (dead) # original behaviour
+        return result
     def status_units(self, units):
         """ concatenates the status output of all units
             and the last non-successful statuscode """
-        status, result = 0, ""
+        status = 0 
+        result = ""
         for unit in units:
             status1, result1 = self.status_unit(unit)
             if status1: status = status1
             if result: result += "\n\n"
             result += result1
-        return status, result
+        if status:
+            self.error |= NOT_OK | NOT_ACTIVE # 3 
+        return result
     def status_unit(self, unit):
         conf = self.get_unit_conf(unit)
         result = "%s - %s" % (unit, self.get_description_from(conf))
@@ -3011,13 +3017,16 @@ class Systemctl:
             matched = self.match_units([ module ])
             if not matched:
                 logg.error("Unit %s could not be found.", unit_of(module))
+                # self.error |= NOT_FOUND
                 found_all = False
                 continue
             for unit in matched:
                 if unit not in units:
                     units += [ unit ]
-        done, result = self.cat_units(units)
-        return (done and found_all, result)
+        result = self.cat_units(units)
+        if not found_all:
+            self.error |= NOT_OK
+        return result
     def cat_units(self, units):
         done = True
         result = ""
@@ -3029,7 +3038,9 @@ class Systemctl:
                if result:
                    result += "\n\n"
                result += text
-        return done, result
+        if not done:
+            self.error = NOT_OK
+        return result
     def cat_unit(self, unit):
         try:
             unit_file = self.unit_file(unit)
@@ -3353,7 +3364,9 @@ class Systemctl:
             infos += [ self.enabled_unit(unit) ]
             if self.is_enabled(unit):
                result = True
-        return result, infos
+        if not result:
+            self.error |= NOT_OK
+        return infos
     def is_enabled(self, unit):
         unit_file = self.unit_file(unit)
         if not unit_file:
@@ -3836,7 +3849,7 @@ class Systemctl:
            --property=. This command is intended to be used whenever
            computer-parsable output is required. Use status if you are looking
            for formatted human-readable output.
-  
+           /
            NOTE: only a subset of properties is implemented """
         notfound = []
         found_all = True
@@ -3846,6 +3859,7 @@ class Systemctl:
             if not matched:
                 logg.error("Unit %s could not be found.", unit_of(module))
                 units += [ module ]
+                # self.error |= NOT_FOUND
                 found_all = False
                 continue
             for unit in matched:
@@ -4072,13 +4086,14 @@ class Systemctl:
         """ set current default run-level"""
         if not modules:
             logg.debug(".. no runlevel given")
-            return (1, "Too few arguments")
+            self.error |= NOT_OK
+            return "Too few arguments"
         current = self._default_target
         folder = os_path(self._root, self.mask_folder())
         target = os.path.join(folder, DefaultUnit)
         if os.path.islink(target):
             current = os.path.basename(os.readlink(target))
-        err, msg = 0, ""
+        msg = ""
         for module in modules:
             if module == current:
                 continue
@@ -4087,7 +4102,8 @@ class Systemctl:
                 if targetname == module:
                     targetfile = targetpath
             if not targetfile:
-                err, msg = 3, "No such runlevel %s" % (module)
+                self.error |= NOT_OK | NOT_ACTIVE # 3
+                msg = "No such runlevel %s" % (module)
                 continue
             #
             if os.path.islink(target):
@@ -4097,7 +4113,7 @@ class Systemctl:
             os.symlink(targetfile, target)
             msg = "Created symlink from %s -> %s" % (target, targetfile)
             logg.debug("%s", msg)
-        return (err, msg)
+        return msg
     def init_modules(self, *modules):
         """ [UNIT*] -- init loop: '--init default' or '--init start UNIT*'
         The systemctl init service will start the enabled 'default' services, 
@@ -4248,11 +4264,13 @@ class Systemctl:
                             self._restarted_unit[unit] = []
                             # we want to register restarts from now on
                         restarted = self._restarted_unit[unit]
-                        logg.debug("[%s] [%s] Current limitSecs=%ss limitBurst=%sx (restarted %sx)", me, unit, limitSecs, limitBurst, len(restarted))
+                        logg.debug("[%s] [%s] Current limitSecs=%ss limitBurst=%sx (restarted %sx)", 
+                            me, unit, limitSecs, limitBurst, len(restarted))
                         oldest = 0
                         interval = 0
                         if len(restarted) >= limitBurst:
-                            logg.debug("[%s] [%s] restarted %s", me, unit, [ "%.3fs" % (t - now) for t in restarted ])
+                            logg.debug("[%s] [%s] restarted %s", 
+                                me, unit, [ "%.3fs" % (t - now) for t in restarted ])
                             while len(restarted):
                                 oldest = restarted[0]
                                 interval = time.time() - oldest
@@ -4261,7 +4279,8 @@ class Systemctl:
                                     continue
                                 break
                             self._restarted_unit[unit] = restarted
-                            logg.debug("[%s] [%s] ratelimit %s", me, unit, [ "%.3fs" % (t - now) for t in restarted ])
+                            logg.debug("[%s] [%s] ratelimit %s", 
+                                me, unit, [ "%.3fs" % (t - now) for t in restarted ])
                             # all values in restarted have a time below limitSecs
                         if len(restarted) >= limitBurst:
                             logg.info("[%s] [%s] Blocking Restart - oldest %s is %s ago (allowed %s)", 
@@ -4274,19 +4293,22 @@ class Systemctl:
                 if unit:
                     if unit not in self._restart_failed_units:
                         self._restart_failed_units[unit] = now + restartSec
-                        logg.debug("[%s] [%s] restart scheduled in %+.3fs", me, unit, (self._restart_failed_units[unit] - now))
+                        logg.debug("[%s] [%s] restart scheduled in %+.3fs", 
+                            me, unit, (self._restart_failed_units[unit] - now))
             except Exception as e:
                 logg.error("[%s] [%s] An error ocurred while restart checking: %s", me, unit, e)
         if not self._restart_failed_units:
             return False
         state = self.is_system_running()
         if state not in ["running"]:
-            logg.debug("[%s] no restart of %s failed units - system is %s", me, len(self._restart_failed_units), state)
+            logg.debug("[%s] no restart of %s failed units - system is %s", 
+                me, len(self._restart_failed_units), state)
             return None
         # let's check if any of the restart_units has its restartSec expired
         now = time.time()
         restart_done = []
-        logg.debug("[%s] Restart checking  %s", me, [ "%+.3fs" % (t - now) for t in self._restart_failed_units.values() ])
+        logg.debug("[%s] Restart checking  %s", 
+            me, [ "%+.3fs" % (t - now) for t in self._restart_failed_units.values() ])
         for unit in sorted(self._restart_failed_units):
             restartAt = self._restart_failed_units[unit]
             if restartAt > now:
@@ -4308,7 +4330,8 @@ class Systemctl:
         for unit in restart_done:
             if unit in self._restart_failed_units:
                 del self._restart_failed_units[unit]
-        logg.debug("[%s] Restart remaining %s", me, [ "%+.3fs" % (t - now) for t in self._restart_failed_units.values() ])
+        logg.debug("[%s] Restart remaining %s", 
+            me, [ "%+.3fs" % (t - now) for t in self._restart_failed_units.values() ])
         return restart_done
 
     def init_loop_until_stop(self, units):
@@ -4420,13 +4443,11 @@ class Systemctl:
         return status.get("SubState", "unknown")
     def system_is_system_running(self):
         state = self.is_system_running()
+        if state not in [ "running" ]:
+            self.error |= NOT_OK # 1
         if self._quiet:
-            return state in [ "running" ]
-        else:
-            if state in [ "running" ]:
-                return True, state
-            else:
-                return False, state
+            return None
+        return state
     def wait_system(self, target = None):
         target = target or SysInitTarget
         for attempt in xrange(int(SysInitWait)):
@@ -4639,25 +4660,13 @@ def print_result(result):
         logg_info("EXEC END None")
     elif result is True:
         logg_info("EXEC END True")
-        result = None
         exitcode = 0
     elif result is False:
         logg_info("EXEC END False")
-        result = None
-        exitcode = 1
-    elif isinstance(result, tuple) and len(result) == 2:
-        exitcode, status = result
-        logg_info("EXEC END %s '%s'", exitcode, status)
-        if exitcode is True: exitcode = 0
-        if exitcode is False: exitcode = 1
-        result = status
+        exitcode = NOT_OK # the only case that exitcode gets set
     elif isinstance(result, int):
         logg_info("EXEC END %s", result)
-        exitcode = result
-        result = None
-    #
-    if result is None:
-        pass
+        # exitcode = result # we do not do that anymore
     elif isinstance(result, string_types):
         print(result)
         result1 = result.split("\n")[0][:-20]
