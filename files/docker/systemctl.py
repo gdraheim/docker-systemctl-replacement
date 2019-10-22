@@ -4875,7 +4875,6 @@ if __name__ == "__main__":
         loggfile.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
         logg.addHandler(loggfile)
         logg.setLevel(logging.DEBUG)
-    logg.info("systemctl.debug.log >> %s", systemctl_debug_log)
     logg.info("EXEC BEGIN %s %s%s%s", os.path.realpath(sys.argv[0]), " ".join(args),
         _user_mode and " --user" or " --system", _init and " --init" or "", )
     #
