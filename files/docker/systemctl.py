@@ -110,6 +110,7 @@ REMOVE_LOCK_FILE = False
 BOOT_PID_MIN = 0
 BOOT_PID_MAX = -9
 PROC_MAX_DEPTH = 100
+EXPAND_VARS_MAXDEPTH = 20
 RESTART_FAILED_UNITS = True
 
 # The systemd default is NOTIFY_SOCKET="/var/run/systemd/notify"
@@ -1657,7 +1658,7 @@ class Systemctl:
             logg.debug("can not expand ${%s}", m.group(1))
             return "" # empty string
         #
-        maxdepth = 20
+        maxdepth = EXPAND_VARS_MAXDEPTH
         expanded = re.sub("[$](\w+)", lambda m: get_env1(m), cmd.replace("\\\n",""))
         for depth in xrange(maxdepth):
             new_text = re.sub("[$][{](\w+)[}]", lambda m: get_env2(m), expanded)
