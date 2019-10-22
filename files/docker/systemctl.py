@@ -111,6 +111,7 @@ BOOT_PID_MIN = 0
 BOOT_PID_MAX = -9
 PROC_MAX_DEPTH = 100
 EXPAND_VARS_MAXDEPTH = 20
+EXPAND_KEEP_VARS = True
 RESTART_FAILED_UNITS = True
 
 # The systemd default is NOTIFY_SOCKET="/var/run/systemd/notify"
@@ -1648,15 +1649,19 @@ class Systemctl:
         return env
     def expand_env(self, cmd, env):
         def get_env1(m):
-            if m.group(1) in env:
-                return env[m.group(1)]
-            logg.debug("can not expand $%s", m.group(1))
-            return "" # empty string
+            name = m.group(1)
+            if name in env:
+                return env[name]
+            namevar = "$%s" % name
+            logg.debug("can not expand %s", namevar)
+            return (EXPAND_KEEP_VARS and namevar or "")
         def get_env2(m):
-            if m.group(1) in env:
-                return env[m.group(1)]
-            logg.debug("can not expand ${%s}", m.group(1))
-            return "" # empty string
+            name = m.group(1)
+            if name in env:
+                return env[name]
+            namevar = "${%s}" % name
+            logg.debug("can not expand %s", namevar)
+            return (EXPAND_KEEP_VARS and namevar or "")
         #
         maxdepth = EXPAND_VARS_MAXDEPTH
         expanded = re.sub("[$](\w+)", lambda m: get_env1(m), cmd.replace("\\\n",""))
