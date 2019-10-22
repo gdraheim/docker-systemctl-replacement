@@ -6650,7 +6650,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logfile = os_path(root, "/var/log/zz_print_sh.log")
         text_file(os_path(root, "/etc/sysconfig/zz_b.conf"),"""
             DEF1='def1'
-            DEF2="def2.def3"
             DEF3="${DEF4}.${DEF5}"
             DEF4="${DEF1}.${DEF2}"
             DEF5="${DEF1111}.def5.${DEF2222}"
@@ -6660,7 +6659,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Testing B
             [Service]
-            Environment=DEF2=foo
+            Environment=DEF2=def2.def3
             EnvironmentFile=/etc/sysconfig/zz_b.conf
             ExecStart=/bin/sleep 3
             ExecStartPost=%s A.${DEF1}
@@ -6726,7 +6725,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logfile = os_path(root, "/var/log/zz_print_sh.log")
         text_file(os_path(root, "/etc/sysconfig/zz_b.conf"),"""
             DEF1='def1'
-            DEF2="def2.def3"
             DEF3="${DEF4}.${DEF5}"
             DEF4="${DEF1}.${DEF2}"
             DEF5="${DEF1111}.def5.${DEF2222}"
@@ -6736,7 +6734,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Testing B
             [Service]
-            Environment=DEF2=foo
+            Environment=DEF2=def2.def3
             EnvironmentFile=/etc/sysconfig/zz_b.conf
             ExecStart=/bin/sleep 3
             ExecStartPost=%s A.${DEF1}
