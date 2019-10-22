@@ -9378,7 +9378,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 3)
         self.assertEqual(out.strip(), "failed")
         #
-        sx____("{systemctl} reset-failed zzz.service".format(**locals()))
+        cmd = "{systemctl} reset-failed zzz.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        cmd = "{systemctl} is-active zzz.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        self.assertEqual(out.strip(), "inactive")
+        #
         self.rm_testdir()
         self.rm_zzfiles(root)
         self.coverage()
@@ -9439,7 +9448,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 3)
         self.assertEqual(out.strip(), "failed")
         #
-        sx____("{systemctl} reset-failed zzz.service".format(**locals()))
+        cmd = "{systemctl} reset-failed zzz.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        cmd = "{systemctl} is-active zzz.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        self.assertEqual(out.strip(), "inactive")
+        #
         self.rm_testdir()
         self.rm_zzfiles(root)
         self.coverage()
@@ -9488,8 +9506,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} start zzz.service {vv}"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s\n%s", cmd, end, out, i2(err))
-        if real: self.assertEqual(end, 0)
-        else: self.assertEqual(end, 1) # TODO: simple Exec should not wait_testpid!!
+        self.assertEqual(end, 1)
+        if real: 
+           self.assertTrue(greps(err, "because the control process exited with error code."))
         #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
@@ -9500,9 +9519,18 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 3)
         self.assertEqual(out.strip(), "failed")
         #
-        sx____("{systemctl} reset-failed zzz.service".format(**locals()))
-        self.rm_testdir()
+        cmd = "{systemctl} reset-failed zzz.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        cmd = "{systemctl} is-active zzz.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        self.assertEqual(out.strip(), "inactive")
+        #
         self.rm_zzfiles(root)
+        self.rm_testdir()
         self.coverage()
         self.end()
     def real_3903_start_false_exec_oneshot(self):
@@ -9549,8 +9577,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} start zzz.service {vv}"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s\n%s", cmd, end, out, i2(err))
-        if real: self.assertEqual(end, 0)
-        else: self.assertEqual(end, 1) # TODO: simple Exec should not wait_testpid!!
+        self.assertEqual(end, 1)
+        if real:
+           self.assertTrue(greps(err, "because the control process exited with error code."))
         #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
@@ -9561,7 +9590,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 3)
         self.assertEqual(out.strip(), "failed")
         #
-        sx____("{systemctl} reset-failed zzz.service".format(**locals()))
+        cmd = "{systemctl} reset-failed zzz.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        cmd = "{systemctl} is-active zzz.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        self.assertEqual(out.strip(), "inactive")
+        #
         self.rm_testdir()
         self.rm_zzfiles(root)
         self.coverage()
@@ -9610,8 +9648,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} start zzz.service {vv}"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s\n%s", cmd, end, out, i2(err))
-        if real: self.assertEqual(end, 0)
-        else: self.assertEqual(end, 1) # TODO: simple Exec should not wait_testpid!!
+        self.assertEqual(end, 1)
+        if real:
+           self.assertTrue(greps(err, "because the control process exited with error code."))
         #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
@@ -9622,7 +9661,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 3)
         self.assertEqual(out.strip(), "failed")
         #
-        sx____("{systemctl} reset-failed zzz.service".format(**locals()))
+        cmd = "{systemctl} reset-failed zzz.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        cmd = "{systemctl} is-active zzz.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        self.assertEqual(out.strip(), "inactive")
+        #
         self.rm_testdir()
         self.rm_zzfiles(root)
         self.coverage()
