@@ -1780,7 +1780,7 @@ class Systemctl:
         if not os.path.isdir(log_folder):
             os.makedirs(log_folder)
         return open(os.path.join(log_file), "a")
-    def chdir_workingdir(self, conf, check = True):
+    def chdir_workingdir(self, conf):
         """ if specified then change the working directory """
         # the original systemd will start in '/' even if User= is given
         if self._root:
@@ -1793,11 +1793,16 @@ class Systemctl:
                 ignore = True
             into = os_path(self._root, self.expand_special(workingdir, conf))
             try: 
-               return os.chdir(into)
+               logg.debug("chdir workingdir '%s'", into)
+               os.chdir(into)
+               return False
             except Exception as e:
                if not ignore:
                    logg.error("chdir workingdir '%s': %s", into, e)
-                   if check: raise
+                   return into
+               else:
+                   logg.debug("chdir workingdir '%s': %s", into, e)
+                   return None
         return None
     def notify_socket_from(self, conf, socketfile = None):
         """ creates a notify-socket for the (non-privileged) user """
@@ -2193,7 +2198,10 @@ class Systemctl:
         runuser = self.expand_special(conf.get("Service", "User", ""), conf)
         rungroup = self.expand_special(conf.get("Service", "Group", ""), conf)
         envs = shutil_setuid(runuser, rungroup)
-        self.chdir_workingdir(conf, check = False) # some dirs need setuid before
+        badpath = self.chdir_workingdir(conf) # some dirs need setuid before
+        if badpath:
+            logg.error("(%s): bad workingdir: '%s'", shell_cmd(cmd), badpath)
+            sys.exit(1)
         env = self.extend_exec_env(env)
         env.update(envs) # set $HOME to ~$USER
         try:
