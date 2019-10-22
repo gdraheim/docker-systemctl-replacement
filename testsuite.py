@@ -8759,6 +8759,26 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
+    def test_3829_preset_all_user_some_unknown(self, real = None):
+        """ check prset-all --user some unknown unit fails okay"""
+        vv = self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir, real)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
+        #
+        sh____("{systemctl} daemon-reload".format(**locals()))
+        cmd = "{systemctl} preset-all --user {vv}"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertTrue(greps(err, "preset-all makes no sense in --user mode"))
+        #
+        self.rm_zzfiles(root)
+        self.rm_testdir()
+        self.coverage()
+        self.end()
     def test_3831_API_start_some_unknown(self, real = None):
         """ check API start some unknown unit fails okay"""
         vv = self.begin()
