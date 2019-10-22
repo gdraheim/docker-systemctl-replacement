@@ -6287,6 +6287,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertTrue(greps(out, "enabled"))
+        self.assertFalse(greps(out, "masked"))
         # .........................................
         cmd = "{systemctl} mask zzb.service"
         out, end = output2(cmd.format(**locals()))
@@ -6323,6 +6324,88 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         mask_file = os_path(root, "/etc/systemd/system/zzb.service")
         self.assertFalse(os.path.exists(mask_file))
         cmd = "{systemctl} show zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, oi22(out))
+        self.assertTrue(greps(out, "LoadState=loaded"))
+        self.assertTrue(greps(out, "Id=zzb.service"))
+        self.assertTrue(greps(out, "Names=zzb.service"))
+        self.rm_zzfiles(root)
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def real_3106_testing_user_mask_unmask_service(self):
+        self.test_3106_testing_user_mask_unmask_service(True)
+    def test_3106_testing_user_mask_unmask_service(self, real = False):
+        """ check that a service can be unmasked """
+        self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir, real)
+        vv = "-vv"
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
+        self.rm_zzfiles(root)
+        #
+        text_file(os_path(root, "/usr/lib/systemd/user/zza.service"),"""
+            [Unit]
+            Description=Testing A""")
+        text_file(os_path(root, "/usr/lib/systemd/user/zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            ExecStart=/bin/sleep 2
+            [Install]
+            WantedBy=multi-user.target""")
+        cmd = "{systemctl} daemon-reload"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "{systemctl} enable --user zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        cmd = "{systemctl} status --user zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertTrue(greps(out, "enabled"))
+        self.assertFalse(greps(out, "masked"))
+        # .........................................
+        cmd = "{systemctl} mask --user zzb.service {vv} {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        cmd = "{systemctl} status --user zzb.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertFalse(greps(out, "enabled"))
+        self.assertTrue(greps(out, "masked"))
+        if real: self.assertTrue(greps(out, "/dev/null"))
+        else: self.assertTrue(greps(out, "None, "))
+        xdg_config = os.path.expanduser("~/.config")
+        mask_file = os_path(root, xdg_config + "/systemd/user/zzb.service")
+        self.assertTrue(os.path.islink(mask_file))
+        target = os.readlink(mask_file)
+        self.assertEqual(target, "/dev/null")
+        cmd = "{systemctl} show --user zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, oi22(out))
+        self.assertTrue(greps(out, "LoadState=masked"))
+        self.assertTrue(greps(out, "UnitFileState=masked"))
+        self.assertTrue(greps(out, "Id=zzb.service"))
+        self.assertTrue(greps(out, "Names=zzb.service"))
+        # .................................................
+        cmd = "{systemctl} unmask --user zzb.service {vv} {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        cmd = "{systemctl} status --user zzb.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertTrue(greps(out, "enabled"))
+        self.assertFalse(greps(out, "masked"))
+        xdg_config = os.path.expanduser("~/.config")
+        mask_file = os_path(root, xdg_config + "/systemd/system/zzb.service")
+        self.assertFalse(os.path.exists(mask_file))
+        cmd = "{systemctl} show --user zzb.service"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, oi22(out))
         self.assertTrue(greps(out, "LoadState=loaded"))
