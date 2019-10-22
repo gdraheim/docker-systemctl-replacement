@@ -7611,26 +7611,28 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_tool(os_path(testdir, "zzz.sh"), os_path(root, "/usr/bin/zzz.sh"))
         # os.makedirs(os_path(root, workingdir)) <<<
         #
+        debug_log = os_path(root, "/var/log/systemctl.debug.log")
+        text_file(debug_log, "")
+        #
         cmd = "{systemctl} start zzz.service -vv"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(end, 0)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        self.assertTrue(greps(top, testsleep))
-        #
-        log = lines(open(logfile).read())
-        logg.info("LOG %s\n| %s", logfile, "\n| ".join(log))
-        self.assertNotIn(os_path(root,workingdir), log) # <<<<<<<<<< CHECK
-        self.assertIn(root, log)
-        #
-        cmd = "{systemctl} stop zzz.service -vv"
-        out, end = output2(cmd.format(**locals()))
-        logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(end, 0)
+        self.assertEqual(end, 1)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
+        #
+        log = open(debug_log).read()
+        logg.info("systemctl.debug.log:\n%s", i2(log))
+        self.assertTrue(greps(log, "ERROR chdir workingdir.*such file or directory"))
+        self.assertTrue(greps(log, "bad workingdir"))
+        #
+        cmd = "{systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        self.assertEqual(out, "inactive\n")
+        #
         kill_testsleep = "{systemctl} __killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         self.rm_testdir()
@@ -7671,6 +7673,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_tool(os_path(testdir, "zzz.sh"), os_path(root, "/usr/bin/zzz.sh"))
         # os.makedirs(os_path(root, workingdir)) <<<
         #
+        debug_log = os_path(root, "/var/log/systemctl.debug.log")
+        text_file(debug_log, "")
+        #
         cmd = "{systemctl} start zzz.service -vv"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
@@ -7678,6 +7683,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
+        #
+        log = open(debug_log).read()
+        logg.info("systemctl.debug.log:\n%s", i2(log))
+        self.assertTrue(greps(log, "DEBUG chdir workingdir.*such file or directory"))
+        self.assertFalse(greps(log, "bad workingdir"))
         #
         log = lines(open(logfile).read())
         logg.info("LOG %s\n| %s", logfile, "\n| ".join(log))
