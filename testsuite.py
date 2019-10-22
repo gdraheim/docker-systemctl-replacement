@@ -224,7 +224,7 @@ def only22(part, indent=""):
     if isinstance(part, string_types):
         if len(part) <= 22:
             return part
-        return part[5:] + "..." + part[-14:]
+        return part[:5] + "..." + part[-14:]
     if isinstance(part, list):
         if len(part) <= 22:
             return part
@@ -351,6 +351,11 @@ def os_getlogin():
 def os_remove(path):
     if os.path.exists(path):
         os.remove(path)
+def get_runtime_dir():
+    explicit = os.environ.get("XDG_RUNTIME_DIR", "")
+    if explicit: return explicit
+    user = os_getlogin()
+    return "/tmp/run-"+user
 
 ############ local mirror helpers #############
 def ip_container(name):
@@ -6997,7 +7002,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             """.format(**locals()))
         #
         RUN = "/run" # for system-mode
-        RUN = os.environ.get("XDG_RUNTIME_DIR") or "/tmp/run-"+os_getlogin()
+        RUN = get_runtime_dir()
         cmd = "{systemctl} --user start 'zzb zzc.service' -vv"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
@@ -12015,6 +12020,156 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
+    def test_4050_notify_service_functions_with_long_servicename(self):
+        """ check that we manage notify services in a root env
+            with a very long servicename (limiting the socket name)"""
+        self.begin()
+        if not os.path.exists("/usr/bin/socat"):
+            self.skipTest("missing /usr/bin/socat")
+        testname = self.testname()
+        testdir = self.testdir()
+        self.notify_service_functions_with_long_servicename("system", testname, testdir)
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def test_4051_notify_service_functions_with_long_servicename(self):
+        """ check that we manage notify services in a root env
+            with a very long servicename (limiting the socket name)"""
+        # test_4037 is also triggering len(socketfile) > 100 | "new notify socketfile"
+        self.begin()
+        if not os.path.exists("/usr/bin/socat"):
+            self.skipTest("missing /usr/bin/socat")
+        testname = self.testname()
+        testdir = self.testdir()
+        self.notify_service_functions_with_long_servicename("user", testname, testdir)
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def notify_service_functions_with_long_servicename(self, system, testname, testdir):
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        systemctl += " --{system}".format(**locals())
+        testsleep = self.testname("sleep")
+        logfile = os_path(root, "/var/log/"+testsleep+".log")
+        bindir = os_path(root, "/usr/bin")
+        os.makedirs(os_path(root, "/var/run"))
+        text_file(logfile, "created\n")
+        begin = "{" ; end = "}"
+        shell_file(os_path(testdir, "zzz.init"), """
+            #! /bin/bash
+            logfile={logfile}
+            start() {begin} 
+                ls -l  $NOTIFY_SOCKET
+                {bindir}/{testsleep} 4 0<&- &>/dev/null &
+                echo "MAINPID=$!" | socat -v -d - UNIX-CLIENT:$NOTIFY_SOCKET
+                echo "READY=1" | socat -v -d - UNIX-CLIENT:$NOTIFY_SOCKET
+                wait %1
+                # ps -o pid,ppid,args
+            {end}
+            stop() {begin}
+                killall {testsleep}
+            {end}
+            case "$1" in start)
+               date "+START.%T" >> $logfile
+               start >> $logfile 2>&1
+               date "+start.%T" >> $logfile
+            ;; stop)
+               date "+STOP.%T" >> $logfile
+               stop >> $logfile 2>&1
+               date "+stop.%T" >> $logfile
+            ;; restart)
+               date "+RESTART.%T" >> $logfile
+               stop >> $logfile 2>&1
+               start >> $logfile 2>&1
+               date "+.%T" >> $logfile
+            ;; reload)
+               date "+RELOAD.%T" >> $logfile
+               echo "...." >> $logfile 2>&1
+               date "+reload.%T" >> $logfile
+            ;; esac 
+            echo "done$1" >&2
+            exit 0
+            """.format(**locals()))
+        zzz_service = "zzz-using-a-very-long-service-name-which-needs-to-be-truncated-for-the-notify-socket-file.service"
+        text_file(os_path(testdir, zzz_service),"""
+            [Unit]
+            Description=Testing Z
+            [Service]
+            Type=notify
+            # PIDFile={root}/var/run/zzz.init.pid
+            ExecStart={root}/usr/bin/zzz.init start
+            ExecReload={root}/usr/bin/zzz.init reload
+            ExecStop={root}/usr/bin/zzz.init stop
+            TimeoutRestartSec=4
+            TimeoutReloadSec=4
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        zzz_service_path = "/etc/systemd/{system}/{zzz_service}".format(**locals())
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/usr/bin/zzz.init"))
+        copy_file(os_path(testdir, zzz_service), os_path(root, zzz_service_path))
+        #
+        if system in ["user"]:
+            debug_log = os_path(root, os_path(get_runtime_dir(), "/log/systemctl.debug.log"))
+        else:
+            debug_log = os_path(root, "/var/log/systemctl.debug.log")
+        text_file(debug_log, "")
+        logg.info("debug.log = %s", debug_log)
+        #
+        cmd = "{systemctl} enable {zzz_service} -vv"
+        sh____(cmd.format(**locals()))
+        #
+        cmd = "{systemctl} is-active {zzz_service} -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        self.assertEqual(out.strip(), "inactive")
+        #
+        logg.info("== 'start' shall start a service that is NOT is-active ")
+        cmd = "{systemctl} start {zzz_service} -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        #
+        log = open(debug_log).read()
+        logg.info("debug.log>>%s", i2(log))
+        self.assertTrue(greps(log, "old notify socketfile [(]1\\d\\d[)]"))
+        self.assertTrue(greps(log, "new notify socketfile [(]99[)]"))
+        #
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        cmd = "{systemctl} is-active {zzz_service} -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(out.strip(), "active")
+        #
+        time.sleep(5) # -> "failed"
+        cmd = "{systemctl} is-active {zzz_service} -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        self.assertEqual(out.strip(), "failed")
+        #
+        logg.info("== 'stop' shall stop a service that is-active")
+        cmd = "{systemctl} stop {zzz_service} -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, testsleep))
+        cmd = "{systemctl} is-active {zzz_service} -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        self.assertEqual(out.strip(), "inactive")
+        #
+        logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
+
     def test_4060_forking_service_failed_functions(self):
         """ check that we manage forking services in a root env
             with basic run-service commands: start, stop, restart,
