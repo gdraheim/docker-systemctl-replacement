@@ -1631,10 +1631,10 @@ class Systemctl:
         env = os.environ.copy()
         for env_part in conf.getlist("Service", "Environment", []):
             for name, value in self.read_env_part(self.expand_special(env_part, conf)):
-                env[name] = value # a '$word' is not special here
+                env[name] = value # a '$word' is not special here (lazy expansion)
         for env_file in conf.getlist("Service", "EnvironmentFile", []):
             for name, value in self.read_env_file(self.expand_special(env_file, conf)):
-                env[name] = self.expand_env(value, env)
+                env[name] = self.expand_env(value, env) # but nonlazy expansion here
         logg.debug("extra-vars %s", self.extra_vars())
         for extra in self.extra_vars():
             if extra.startswith("@"):
