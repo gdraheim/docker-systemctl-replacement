@@ -39,6 +39,7 @@ _python = "/usr/bin/python"
 _systemctl_py = "files/docker/systemctl.py"
 COVERAGE = "" # make it an image name = detect_local_system()
 TODO = False
+KEEP = 0
 
 CENTOSVER = { "7.3": "7.3.1611", "7.4": "7.4.1708", "7.5": "7.5.1804" }
 TESTED_OS = [ "centos:7.3.1611", "centos:7.4.1708", "centos:7.5.1804" ]
@@ -444,7 +445,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = testname or self.caller_testname()
         newdir = "tmp/tmp."+testname
         if os.path.isdir(newdir):
-            shutil.rmtree(newdir)
+            if not KEEP:
+                shutil.rmtree(newdir)
         return newdir
     def makedirs(self, path):
         if not os.path.isdir(path):
@@ -23833,7 +23835,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
-        # self.rm_testdir()
+        self.rm_testdir()
 
     def test_6130_run_default_services_from_simple_saved_container(self):
         """ check that we can enable services in a docker container to be run as default-services
@@ -25981,6 +25983,8 @@ if __name__ == "__main__":
        help="gather coverage.py data (use -aa for new set) [%default]")
     _o.add_option("-l","--logfile", metavar="FILE", default="",
        help="additionally save the output log to a file [%default]")
+    _o.add_option("--keep", action="count", default=KEEP,
+       help="keep tempdir and other data after testcase [%default]")
     _o.add_option("--xmlresults", metavar="FILE", default=None,
        help="capture results as a junit xml file [%default]")
     _o.add_option("--sometime", metavar="SECONDS", default=SOMETIME,
@@ -25998,6 +26002,7 @@ if __name__ == "__main__":
     opt, args = _o.parse_args()
     logging.basicConfig(level = logging.WARNING - opt.verbose * 5)
     TODO = opt.todo
+    KEEP = opt.keep
     #
     OPENSUSE = opt.opensuse
     UBUNTU = opt.ubuntu
