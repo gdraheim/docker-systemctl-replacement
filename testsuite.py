@@ -12634,7 +12634,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         log = open(debug_log).read()
         logg.info("debug.log>>%s", i2(log))
-        self.assertTrue(greps(log, "old notify socketfile [(][12]\\d\\d[)]"))
+        self.assertTrue(greps(log, "old notify socketfile [(][12345]\\d\\d[)]"))
         self.assertTrue(greps(log, "new notify socketfile [(]99[)]"))
         #
         top = _recent(output(_top_list))
@@ -12784,7 +12784,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         log = open(debug_log).read()
         logg.info("debug.log>>%s", i2(log))
-        self.assertTrue(greps(log, "old notify socketfile [(][12]\\d\\d[)]"))
+        self.assertTrue(greps(log, "old notify socketfile [(][12345]\\d\\d[)]"))
         self.assertTrue(greps(log, "new notify socketfile [(]99[)].*run-using-special-notify-folder"))
         #
         top = _recent(output(_top_list))
