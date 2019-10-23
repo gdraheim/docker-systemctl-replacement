@@ -79,6 +79,8 @@ def refresh_tool(image):
     #  {package} ar -f http://download.opensuse.org/update/leap/42.3/oss/openSUSE:Leap:42.3:Update.repo"
     if "opensuse:42.3" in image:
         return "bash -c 'zypper mr --no-gpgcheck oss-update && zypper refresh'"
+    if "opensuse/leap:15.1" in image:
+        return "bash -c 'zypper mr --no-gpgcheck repo-update && zypper refresh'"
     if "opensuse" in image:
         return "zypper refresh"
     if "ubuntu" in image:
