@@ -11860,6 +11860,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         self.oneshot_service_functions("system", testname, testdir)
+        self.rm_testdir()
+        self.end()
     def test_4041_oneshot_service_functions_user(self):
         """ check that we manage oneshot services in a root env
             with basic run-service commands: start, stop, restart,
@@ -11869,6 +11871,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         self.oneshot_service_functions("user", testname, testdir)
+        self.rm_testdir()
+        self.end()
     def oneshot_service_functions(self, system, testname, testdir):
         user = self.user()
         root = self.root(testdir)
