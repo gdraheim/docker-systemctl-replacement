@@ -504,6 +504,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def begin(self):
         self._started = time.time()
         logg.info("[[%s]]", datetime.datetime.fromtimestamp(self._started).strftime("%H:%M:%S"))
+        return "-vv"
     def end(self, maximum = 99):
         runtime = time.time() - self._started
         self.assertLess(runtime, maximum)
