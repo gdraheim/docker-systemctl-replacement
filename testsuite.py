@@ -8039,7 +8039,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("== try to 'start' the service  ")
         cmd = "{systemctl} start zzz.service {vv}"
         out, err, end = output3(cmd.format(**locals()))
-        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, i2(err))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
         self.assertEqual(end, 1)
         self.assertTrue(greps(err, "control process exited with error code"))
         #
