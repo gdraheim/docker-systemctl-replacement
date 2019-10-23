@@ -9770,6 +9770,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(out.strip(), "inactive")
         #
         logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
+        self.rm_testdir()
         self.end()
     def real_3936_start_false_exec_notify(self):
         self.test_3936_start_false_exec_notify(True)
@@ -9849,6 +9850,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(out.strip(), "failed")
         #
         logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
+        self.rm_testdir()
         self.end()
     def real_3937_start_false_exec_notify(self):
         self.test_3937_start_false_exec_notify(True)
@@ -9930,6 +9932,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(out.strip(), "inactive")
         #
         logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
+        self.rm_testdir()
         self.end()
     def real_3938_start_slowe_exec_notify(self):
         self.test_3938_slow_false_exec_notify(True)
@@ -10016,6 +10019,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(out.strip(), "inactive")
         #
         logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
+        self.rm_testdir()
         self.end()
     def real_3939_start_slowe_exec_forking(self):
         self.test_3939_slow_false_exec_forking(True)
@@ -10122,20 +10126,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(out.strip(), "inactive")
         #
         logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
-        self.end()
-    def test_4030_simple_service_functions_system(self):
-        """ check that we manage simple services in a root env
-            with commands like start, restart, stop, etc"""
-        self.begin()
-        testname = self.testname()
-        testdir = self.testdir()
-        self.simple_service_functions("system", testname, testdir)
         self.rm_testdir()
-        self.coverage()
         self.end()
-    def real_3911_stop_false_exec_simple(self):
-        self.test_3911_stop_false_exec_simple(True)
-    def test_3911_stop_false_exec_simple(self, real = None):
+    def real_3941_stop_false_exec_simple(self):
+        self.test_3941_stop_false_exec_simple(True)
+    def test_3941_stop_false_exec_simple(self, real = None):
         """ check that a failed exec is handled"""
         vv = self.begin()
         testname = self.testname()
@@ -10208,9 +10203,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_zzfiles(root)
         self.coverage()
         self.end()
-    def real_3913_stop_false_exec_oneshot(self):
-        self.test_3913_stop_false_exec_oneshot(True)
-    def test_3913_stop_false_exec_oneshot(self, real = None):
+    def real_3943_stop_false_exec_oneshot(self):
+        self.test_3943_stop_false_exec_oneshot(True)
+    def test_3943_stop_false_exec_oneshot(self, real = None):
         """ check that a failed exec is handled"""
         vv = self.begin()
         testname = self.testname()
@@ -10283,9 +10278,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_zzfiles(root)
         self.coverage()
         self.end()
-    def real_3914_stop_false_exec_forking(self):
-        self.test_3914_stop_false_exec_forking(True)
-    def test_3914_stop_false_exec_forking(self, real = None):
+    def real_3944_stop_false_exec_forking(self):
+        self.test_3944_stop_false_exec_forking(True)
+    def test_3944_stop_false_exec_forking(self, real = None):
         """ check that a failed exec is handled"""
         vv = self.begin()
         testname = self.testname()
@@ -10356,6 +10351,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____("{systemctl} reset-failed zzz.service".format(**locals()))
         self.rm_testdir()
         self.rm_zzfiles(root)
+        self.coverage()
+        self.end()
+    def test_4030_simple_service_functions_system(self):
+        """ check that we manage simple services in a root env
+            with commands like start, restart, stop, etc"""
+        self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        self.simple_service_functions("system", testname, testdir)
+        self.rm_testdir()
         self.coverage()
         self.end()
     def test_4031_simple_service_functions_user(self):
