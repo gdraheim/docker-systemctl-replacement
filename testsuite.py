@@ -24864,7 +24864,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out3 = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out3)
         #
-        top_container = "docker exec {testname} ps -eo pid,ppid,user,args"
+        top_container = "docker exec {testname}x ps -eo pid,ppid,user,args"
         top = output(top_container.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, "testsleep 99"))
