@@ -9841,12 +9841,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 3)
         self.assertEqual(out.strip(), "failed")
         #
-        cmd = "{systemctl} is-active zzz.service {vv}"
-        out, end = output2(cmd.format(**locals()))
-        logg.info(" %s =>%s \n%s", cmd, end, out)
-        self.assertEqual(end, 3)
-        self.assertEqual(out.strip(), "inactive")
-        #
         logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
         self.end()
     def real_3937_start_false_exec_notify(self):
