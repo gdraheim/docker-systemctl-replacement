@@ -31,7 +31,7 @@ UA ubuntu-apache2.dockerfile: ; ./testsuite.py test_6005
 DJ docker-jenkins: ; ./testsuite.py test_900*
 
 COVERAGE=--coverage
-est_%: ; rm .coverage* ; ./testsuite.py "t$@" -vv --coverage
+est_%: ; rm .coverage*; rm -rf tmp/tmp.t$@ ; ./testsuite.py "t$@" -vv --coverage --keep
 test_%: ; ./testsuite.py "$@" -vv
 real_%: ; ./testsuite.py "$@" -vv
 test: ; $(MAKE) "test_[1234]"
