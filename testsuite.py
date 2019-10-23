@@ -22088,6 +22088,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} rpm -q --list nginx"
         sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'rm /usr/share/nginx/html/index.html'" # newer nginx is broken
+        sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} bash -c 'echo TEST_OK > /usr/share/nginx/html/index.html'"
         sh____(cmd.format(**locals()))
         #
