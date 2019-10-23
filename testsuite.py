@@ -1288,6 +1288,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 0)
         self.assertTrue(greps(out, r"^disable"))
         self.assertEqual(len(lines(out)), 1)
+        self.rm_testdir()
     def test_1090_syntax_errors_are_shown_on_daemon_reload(self):
         """ check that preset files do work internally"""
         self.begin()
@@ -1349,6 +1350,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, r"d.service: Service lacks both ExecStart and ExecStop"))
         self.assertTrue(greps(out, r"g.service: there may be only one ExecStart statement"))
         self.assertTrue(greps(out, r"c.service: the use of /bin/kill is not recommended"))
+        self.rm_testdir()
         self.end()
     def real_1090_syntax_errors_are_shown_in_journal_after_try_start(self):
         """ check that preset files do work internally"""
@@ -1459,6 +1461,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
         # self.assertEqual(end, 0)
         self.assertTrue(greps(err, r"deprecated"))
+        self.rm_testdir()
         self.end()
 
     def real_1101_get_bad_command(self):
@@ -3120,6 +3123,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertIn("ActiveState=inactive", rep)
         self.assertIn("SubState=dead", rep)
         self.assertIn("Id=zz-not-existing.service", rep)
+        self.rm_testdir()
         ##
     def test_2612_show_unit_property_not_found(self):
         """ check when 'show UNIT' not found  """
@@ -3139,6 +3143,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
         self.assertEqual(end, 0)
         self.assertEqual(len(out.strip()), 0)
+        self.rm_testdir()
         ##
     def test_2900_class_UnitConfParser(self):
         """ using systemctl.py as a helper library for 
