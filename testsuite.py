@@ -6996,20 +6996,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} start zzz.service -vv"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(end, 0)
+        self.assertEqual(end, 1)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        self.assertTrue(greps(top, testsleep))
-        #
-        log = lines(open(logfile).read())
-        logg.info("LOG %s\n| %s", logfile, "\n| ".join(log))
-        self.assertNotIn(os_path(root,workingdir), log) # <<<<<<<<<< CHECK
-        self.assertIn(root, log)
+        self.assertFalse(greps(top, testsleep))
         #
         cmd = "{systemctl} stop zzz.service -vv"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(end, 0)
+        self.assertEqual(end, 1)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
