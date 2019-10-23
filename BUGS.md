@@ -32,17 +32,19 @@ be defeated by
     # or /dev/.run/systemd or /dev/.systemd
 
 Sadly it must be done before calling ansible's "service" module
-(and indrectly "systemctl.py") so there is no help to make this 
-just on a temporary basis. If you have installed the "initscripts" 
-package then it will work without such a workaround because
-chkconfig exists and handles the "enabled" thing correctly 
-(but only for the existing SysV style init.d services).
+(and indrectly the systemctl replacement) so there is no help
+to make this just on a temporary basis. If you have installed
+the "initscripts" package then it will work without such a
+workaround because chkconfig exists and handles the "enabled"
+thing correctly (but only for the existing SysV style init.d
+services).
 
 ## Restart=on-failure
 
-Because the "systemctl.py" program is not a daemon it will not
-watch over the started applications. As such any option in a
-service unit file like "Restart=on-failure" is disregarded.
+Because the systemctl replacement script is not a daemon it
+will not watch over the started applications. As such any
+option in a service unit file like "Restart=on-failure" is
+disregarded.
 
 As a designer of a docker application container one should
 take that as a warning - the process is buggy and it may

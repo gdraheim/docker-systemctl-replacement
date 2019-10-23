@@ -4,7 +4,7 @@
 from __future__ import print_function
 
 __copyright__ = "(C) Guido Draheim, licensed under the EUPL"""
-__version__ = "1.4.3000"
+__version__ = "1.4.3207"
 
 ## NOTE:
 ## The testcases 1000...4999 are using a --root=subdir environment
@@ -79,6 +79,8 @@ def refresh_tool(image):
     #  {package} ar -f http://download.opensuse.org/update/leap/42.3/oss/openSUSE:Leap:42.3:Update.repo"
     if "opensuse:42.3" in image:
         return "bash -c 'zypper mr --no-gpgcheck oss-update && zypper refresh'"
+    if "opensuse/leap:15.1" in image:
+        return "bash -c 'zypper mr --no-gpgcheck repo-update && zypper refresh'"
     if "opensuse" in image:
         return "zypper refresh"
     if "ubuntu" in image:
@@ -504,7 +506,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def begin(self):
         self._started = time.time()
         logg.info("[[%s]]", datetime.datetime.fromtimestamp(self._started).strftime("%H:%M:%S"))
-    def end(self, maximum = 66):
+        return "-vv"
+    def end(self, maximum = 99):
         runtime = time.time() - self._started
         self.assertLess(runtime, maximum)
     #
@@ -1142,6 +1145,34 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(out, r"g.service:.* there may be only one ExecReload statement")) # systemctl.py special
         self.assertFalse(greps(out, r"c.service:.* the use of /bin/kill is not recommended")) # systemctl.py special
         sh____("rm /etc/systemd/system/zz*")
+    def test_1099_errors_message_on_dot_include(self):
+        """ check that '.include' is accepted but marked deprecated"""
+        self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
+            .include /etc/systemd/system/zzb.service
+            [Unit]
+            Description=Testing A""")
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            Type=foo
+            ExecStart=runA
+            ExecReload=runB
+            ExecStop=runC
+            [Install]
+            WantedBy=multi-user.target""")
+        cmd = "{systemctl} status zza.service"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        # self.assertEqual(end, 0)
+        self.assertTrue(greps(err, r"deprecated"))
+        self.end()
+
     def real_1101_get_bad_command(self):
         self.test_1101_bad_command(True)
     def test_1101_bad_command(self, real = False):
@@ -2838,8 +2869,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             import sys
             sys.path += [ "{systemctl_py_dir}" ]
             import systemctl
-            data = systemctl.UnitConfigParser({defaults})
-            conf = systemctl.UnitConf(data)
+            data = systemctl.UnitConfParser({defaults})
+            conf = systemctl.SystemctlConf(data)
             print("DEFAULTS", conf.data.defaults())
             print("FILENAME", conf.filename())
             data.read(sys.argv[1])
@@ -4992,6 +5023,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertNotEqual(exitC, 0)
         self.assertNotEqual(exitD, 0)
         #
+        logg.info("== checking with --quiet")
+        is_active_A = "{systemctl} is-active zza.service --quiet"
+        is_active_B = "{systemctl} is-active zzb.service --quiet"
+        actA, exitA  = output2(is_active_A.format(**locals()))
+        actB, exitB  = output2(is_active_B.format(**locals()))
+        self.assertEqual(actA, "")
+        self.assertEqual(actB, "")
+        self.assertNotEqual(exitA, 0)
+        self.assertEqual(exitB, 0)
+        #
         logg.info("== checking combinations of arguments")
         is_active_BC = "{systemctl} is-active zzb.service zzc.service "
         is_active_CD = "{systemctl} is-active zzc.service zzd.service"
@@ -5130,6 +5171,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(exitB, 1)
         self.assertEqual(exitC, 1)
         self.assertEqual(exitD, 1)
+        #
+        logg.info("== checking with --quiet")
+        is_active_A = "{systemctl} is-failed zza.service --quiet"
+        is_active_B = "{systemctl} is-failed zzb.service --quiet"
+        actA, exitA  = output2(is_active_A.format(**locals()))
+        actB, exitB  = output2(is_active_B.format(**locals()))
+        self.assertEqual(actA, "")
+        self.assertEqual(actB, "")
+        self.assertEqual(exitA, 1)
+        self.assertEqual(exitB, 1)
         #
         logg.info("== checking combinations of arguments")
         is_active_BC = "{systemctl} is-failed zzb.service zzc.service {vv}"
@@ -6947,20 +6998,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} start zzz.service -vv"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(end, 0)
+        self.assertEqual(end, 1)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        self.assertTrue(greps(top, testsleep))
-        #
-        log = lines(open(logfile).read())
-        logg.info("LOG %s\n| %s", logfile, "\n| ".join(log))
-        self.assertNotIn(os_path(root,workingdir), log) # <<<<<<<<<< CHECK
-        self.assertIn(root, log)
+        self.assertFalse(greps(top, testsleep))
         #
         cmd = "{systemctl} stop zzz.service -vv"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(end, 0)
+        self.assertEqual(end, 1)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
@@ -7213,7 +7259,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} start zzz.service -vv"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        self.assertEqual(end, 0)
+        self.assertEqual(end, 1)
         self.assertTrue(greps(err, "Exec is not an absolute"))
         #
         cmd = "{systemctl} stop zzz.service -vv"
@@ -7949,6 +7995,68 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
+    def real_3900_start_false_execpre(self):
+        self.test_3900_start_false_execpre(True)
+    def test_3900_start_false_execpre(self, real = None):
+        """ check that a failed execpre is handled"""
+        vv = self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir, real)
+        logfile = os_path(root, "/var/log/test.log")
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
+        testsleep = self.testname("sleep")
+        bindir = os_path(root, "/usr/bin")
+        self.rm_testdir()
+        self.rm_zzfiles(root)
+        text_file(os_path(testdir, "zzz.service"),"""
+            [Unit]
+            Description=Testing Z
+            After=foo.service
+            [Service]
+            Type=simple
+            ExecStartPre="/bin/false"
+            ExecStart={bindir}/{testsleep} 9
+            ExecStop=/usr/bin/killall {testsleep}
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
+        sx____("{systemctl} reset-failed zzz.service".format(**locals()))
+        sh____("{systemctl} daemon-reload".format(**locals()))
+        #
+        cmd = "{systemctl} enable zzz.service {vv}"
+        sh____(cmd.format(**locals()))
+        cmd = "{systemctl} is-active zzz.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        self.assertEqual(out.strip(), "inactive")
+        #
+        logg.info("== try to 'start' the service  ")
+        cmd = "{systemctl} start zzz.service {vv}"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        self.assertEqual(end, 1)
+        self.assertTrue(greps(err, "control process exited with error code"))
+        #
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, testsleep))
+        cmd = "{systemctl} is-active zzz.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        self.assertEqual(out.strip(), "failed")
+        #
+        sx____("{systemctl} reset-failed zzz.service".format(**locals()))
+        self.rm_testdir()
+        self.rm_zzfiles(root)
+        self.coverage()
+        self.end()
     def test_4030_simple_service_functions_system(self):
         """ check that we manage simple services in a root env
             with commands like start, restart, stop, etc"""
@@ -8312,6 +8420,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # cleanup
         kill_testsleep = "killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
+        time.sleep(1)
     def test_4032_forking_service_functions_system(self):
         """ check that we manage forking services in a root env
             with basic run-service commands: start, stop, restart,
@@ -15478,6 +15587,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "docker exec {testname} {systemctl} enable zzz.service -vv"
         sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} {systemctl} is-system-running -vv"
+        sx____(cmd.format(**locals()))
         cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
@@ -20023,6 +20134,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(greps(top, " root ")), 3)
         self.assertEqual(len(greps(top, " somebody ")), 1)
         #
+        check = "docker exec {testname}x bash -c 'ls -ld /var/run/*.status; grep PID /var/run/*.status'"
+        top = output(check.format(**locals()))
+        logg.info("\n>>>\n%s", top)
         check = "docker exec {testname}x systemctl list-units"
         top = output(check.format(**locals()))
         logg.info("\n>>>\n%s", top)
@@ -21975,6 +22089,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} systemctl enable nginx"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} rpm -q --list nginx"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'rm /usr/share/nginx/html/index.html'" # newer nginx is broken
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} bash -c 'echo TEST_OK > /usr/share/nginx/html/index.html'"
         sh____(cmd.format(**locals()))

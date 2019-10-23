@@ -3,7 +3,8 @@
 Before any release "make check" should report no problems.
 
 Some testcases are skipped as they are known bugs or they
-point to missing features of systemctl.py. That's okay.
+point to missing features of the systemctl replacement
+script. That's okay.
 
 The testsuite is organized by four digit numbers. In all
 documents (and issue tickets) only the number is used to
@@ -33,14 +34,14 @@ testcases of test_9000...test_9009 in that order.
 
 ## docker-container or subdir-root
 
-The systemctl.py script supports a non-standard option '--root'
+The systemctl script supports a non-standard option '--root'
 which will ensure that *.service files and other data are being
 searched below that point. So with --root=/tmp/run2 you can
 install a /tmp/run2/etc/systemd/system/zzc.service to be the
-only file being interpreted by systemctl.py.
+only file being interpreted by the systemctl replacement.
 
-If there is no --root option being used then systemctl.py will
-inspect the standard systemd locations on the disk. This can
+If there is no --root option being used then the systemctl script 
+will inspect the standard systemd locations on the disk. This can
 be handy in some circumstance but for that test cases that is
 only an option inside a docker container where one can control
 the files that are being installed as test data.
@@ -49,15 +50,15 @@ Note that
 * the testcases 1000...4999 are using a --root=subdir environment
 * the testcases 5000...9999 will start a docker container to work.
 
-Also remember that not all systemctl.py commands have been checked
-to interpret the --root=subdir option correctly. Be wary when you
-run systemctl.py outside of a docker container.
+Also remember that not all systemctl replacment script commands have 
+been checked to interpret the --root=subdir option correctly. Be 
+wary when you run systemctl.py outside of a docker container.
 
 ## python line coverage
 
 There is an option --coverage on the testsuite which will use an
 install pycoverage (in /usr/bin/coverage2) tool to gather the
-testsuite coverage of the systemctl.py tool.
+testsuite coverage of the systemctl.py replacement script.
 
 The result will be in files/docker/systemctl.py,cover !
 

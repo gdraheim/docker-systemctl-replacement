@@ -77,10 +77,10 @@ package installation. Or just do it firsthand.
 
     - name: update systemd
       package: name="systemd" state="latest"
-      when: ansible_connection == 'docker'
+      when: "ansible_connection == 'docker'"
     - name: install systemctl.py
       copy: src="files/docker/systemctl.py" dest="/usr/bin/systemctl"
-      when: ansible_connection == 'docker'
+      when: "ansible_connection == 'docker'"
 
 Note that such a setup will also work when using Ansible's 
 service module to start/stop/enable services on a target host.
@@ -100,8 +100,8 @@ then it is also executed when then following commands are run
     chkconfig xx on    =>  systemctl enable xx
     chkconfig xx off   =>  systemctl disable xx
 
-You can see that when enabling the implicit logging for systemctl.py by
-doing a `touch /var/log/systemctl.log`
+You can see that when enabling the implicit logging for the systemctl
+replacement script by doing a `touch /var/log/systemctl.log`
 
 ## Python Installation
 
@@ -119,9 +119,65 @@ work, you need to overwrite /usr/bin/systemctl and to install Python.
 
     - name: install systemctl.py
       copy: src="files/docker/systemctl.py" dest="/usr/bin/systemctl"
-      when: ansible_connection == 'docker'
+      when: "ansible_connection == 'docker'"
     - name: install python for systemctl.py
-      package: name=python
-      when: ansible_connection == 'docker'
+      package: name="python"
+      when: "ansible_connection == 'docker'"
 
 You can also use `systemctl3.py` along with `python3` for the same effect.
+
+## Ansible Workaround
+
+There are a number of cases where systemd is installed in a target operating
+system but systemd does not control the system services. So the makers of
+Ansible try to be clever (since about version 2.2) checking for a target to
+be systemd-controlled for real. This is done like this in 
+`ansible/modules/system/service.py`
+
+    def check_systemd():
+        # tools must be installed
+        if location.get('systemctl', False):
+            # this should show if systemd is the boot init system
+            # these mirror systemd's own sd_boot test 
+            for canary in ["/run/systemd/system/", "/dev/.run/systemd/", "/dev/.systemd/"]:
+                if os.path.exists(canary):
+                     return True
+            # If all else fails, check if init is the systemd command, using comm as cmdline could be symlink
+            try:
+                f = open('/proc/1/comm', 'r')
+            except IOError:
+               # If comm doesn't exist, old kernel, no systemd
+               return False
+            for line in f:
+                if 'systemd' in line:
+                    return True
+        return False
+
+In order to defeat these extra checks it is a good idea to simply create
+the run-directory that is used by systemctl replacement script anyway. However 
+this must be done before starting any Ansible "service:" call. If you do run some
+direct shell "systemctl" (or non-installed "systemctl.py") command before 
+that time then you would not need it.
+
+
+    - hosts: a
+      gather_facts: no
+      pre_tasks:
+      - name: install systemctl.py
+        copy: src="files/docker/systemctl.py" dest="/usr/bin/systemctl"
+        when: "ansible_connection == 'docker'"
+      - name: install python for systemctl.py
+        package: name=python
+        when: "ansible_connection == 'docker'"
+      - name: ensure run directory for ansible check_systemd
+        file: name="/run/systemd/system/" state="directory"
+        when: "ansible_connection == 'docker'"
+      tasks:
+      - name: check some service
+        service: name="dbus.service" state="stopped"
+
+If you do not create the run-directory then Ansible will fall back into
+thinking it is a SystemV like operating system with all services living in 
+the `/etc/init.d` world. As a result all the calls to "service:" will
+result in "Could not find the requested service dbus.service: host".
+

@@ -75,7 +75,13 @@ Based on that `ansible_connection` one can enable the
 systemctl-replacement to intercept subsequent calls
 to `"service:"` steps. Effectivly Ansible scripts that 
 shall be run on real virtual machines can be tested 
-with docker containers.
+with docker containers. However in newer centos/ubuntu
+images you need to check for python first.
+
+    - copy: src="files/docker/systemctl.py" dest="/usr/bin/systemctl"
+    - package: name="python"
+    - file: name="/run/systemd/system/" state="directory"
+    - service: name="dbus.service" state="stopped"
 
 See [SERVICE-MANAGER](SERVICE-MANAGER.md) for more details.
 
@@ -91,16 +97,17 @@ a special functionality in unix'ish operating systems.
 
 The docker-stop command will send a SIGTERM to PID-1 in
 the container - but NOT to any other process. If the CMD
-is the actual application (java -jar whatever) then this
-works fine as it will also clean up its subprocesses. In
-many other cases it is not sufficient leaving zombie
-processes around. 
+is the actual application (exec java -jar whatever) then 
+this works fine as it will also clean up its subprocesses. 
+In many other cases it is not sufficient leaving 
+[zombie processes](https://www.howtogeek.com/119815/) 
+around.
 
 Zombie processes may also occur when a master process does 
 not do a `wait` for its children or the children were
 explicitly "disown"ed to run as a daemon themselves. The
-systemctl.py script can help here as it implements the
-"zombie reaper" functionality that the standard unix
+systemctl replacment script can help here as it implements 
+the "zombie reaper" functionality that the standard unix
 init daemon would provide. Otherwise the zombie PIDs would
 continue to live forever (as long as the container is
 running) filling also the process table of the docker host
@@ -126,15 +133,15 @@ allowing to stop all services that are found as
 start. It does execute all the "systemctl stop xx"
 commands to bring down the enabled services correctly.
 
-This is most useful when systemctl.py has been run as the
-entrypoint of a container - so when a "docker stop"
-sends a SIGTERM to the container's PID-1 then all the
-services are shut down before exiting the container.
-This can be permanently achieved by registering
-systemctl.py  as the CMD attribute of an image,
-perhaps by a "docker commit" like this:
+This is most useful when the systemctl replacement script 
+has been run as the entrypoint of a container - so when a 
+"docker stop" sends a SIGTERM to the container's PID-1 then 
+all the services are shut down before exiting the container.
+This can be permanently achieved by registering the
+systemctl replacement script  as the CMD attribute of an 
+image, perhaps by a "docker commit" like this:
 
-    docker commit -c "CMD ['/usr/bin/systemctl.py']" \
+    docker commit -c "CMD ['/usr/bin/systemctl']" \
         -m "<comment>" <container> <new-image>
 
 After all it allows to use a docker container to be
@@ -149,23 +156,25 @@ See [INIT-DAEMON](INIT-DAEMON.md) for more details.
 
 There is an extensive testsuite in the project that allows
 for a high line coverage of the tool. All the major functionality
-of the systemctl.py is being tested so that its usage in 
-continuous development pipeline will no break on updates of
-the script. If the systemctl.py script has some important
+of the systemctl replacement script is being tested so that its 
+usage in continuous development pipeline will no break on updates 
+of the script. If the systemctl.py script has some important
 changes in the implementation details it will be marked with
-an update of the major version. 
+an update of the major version.
 
 Please run the `testsuite.py` or `make check` upon providing
 a patch. It takes a couple of minutes because it may download
-a number of packages during provisioning - with the help of the
-scripting of the gdraheim/docker-centos-repo-mirror project this 
-can be reduced a lot (it even runs without internet connection).
+a number of packages during provisioning - but with the help of the
+[docker-mirror-packages-repo](https://github.com/gdraheim/docker-mirror-packages-repo)
+scripting this can be reduced a lot (it even runs without internet connection).
 
 Some real world examples have been cut out into a seperate
 project. This includes dockerfile and ansible based tests
 to provide common applications like webservers, databases
 and even a Jenkins application. You may want to have a look
-at https://github.com/gdraheim/docker-systemctl-images
+at [gdraheim/docker-systemctl-images](https://github.com/gdraheim/docker-systemctl-images)
+list.
+
 
 See [TESTSUITE](TESTUITE.md) for more details.
 
@@ -177,9 +186,10 @@ does not cover all commands of "systemctl" and it will not
 cover all the functionality of SystemD. The implementation
 tries to align with SystemD's systemctl commands as close
 as possible as quite some third party tools are interpreting
-the output of it.
+the output of it. However the implemented software 
+[ARCHITECTURE](ARCHITECTURE.md) is very different.
 
-The systemctl.py script has a long [HISTORY](HISTORY.md)
+The systemctl replacement script has a long [HISTORY](HISTORY.md)
 now with over a [thousand commits on github](https://github.com/gdraheim/docker-systemctl-replacement/tree/master)
 (mostly for the testsuite). It has also garnered some additional 
 functionality like the [USERMODE](USERMODE.md) which is 
