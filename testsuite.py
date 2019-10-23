@@ -15595,7 +15595,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         #
-        #@ self.rm_testdir()
+        self.rm_testdir()
         self.coverage()
         self.end()
     def test_4710_systemctl_py_restart_failed_units_rate_limit(self):
@@ -15716,7 +15716,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         #
-        #@ self.rm_testdir()
+        self.rm_testdir()
         self.coverage()
         self.end()
     def test_4760_systemctl_py_restart_sec_shortens_interval(self):
@@ -15822,7 +15822,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         #
-        #@ self.rm_testdir()
+        self.rm_testdir()
         self.coverage()
         self.end()
     def test_4770_systemctl_py_restart_sec_shortens_interval(self):
@@ -15928,7 +15928,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         #
-        #@ self.rm_testdir()
+        self.rm_testdir()
         self.coverage()
         self.end()
     def test_4800_is_system_running_features(self):
@@ -16073,7 +16073,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         log = open(debug_log).read()
         logg.info("systemctl.debug.log>\n\t%s", oi22(log))
         #
-        #@ self.rm_testdir()
+        self.rm_testdir()
         self.coverage()
         self.end()
     def test_4900_unreadable_files_can_be_handled(self):
