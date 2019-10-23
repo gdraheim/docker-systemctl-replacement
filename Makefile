@@ -152,6 +152,12 @@ clean:
 	- rm -rf tmp/tmp.test_*
 	- rm -rf tmp/systemctl.py
 
+box:
+	docker rm -f $@ ; docker run -d --name $@ --rm=true centos:centos7 sleep 600
+	docker cp files/docker/systemctl.py box:/usr/bin/systemctl
+	docker exec box systemctl daemon-reload -vvv
+	@ echo : docker exec -it box bash
+
 branch=master
 up:
 	test -f files/docker/systemctl.py.bak || \
@@ -164,3 +170,4 @@ up:
 	test -f files/docker/systemctl.py.bak && \
 	  mv -v files/docker/systemctl.py.bak \
 	        files/docker/systemctl.py
+

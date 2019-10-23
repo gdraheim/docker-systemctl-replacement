@@ -43,6 +43,7 @@ UBUNTU = "ubuntu:18.04"
 OPENSUSE = "opensuse/leap:15.0"
 SOMETIME = ""
 
+QUICK = "-c DefaultMaximumTimeout=9"
 DOCKER_SOCKET = "/var/run/docker.sock"
 PSQL_TOOL = "/usr/bin/psql"
 
@@ -79,6 +80,8 @@ def refresh_tool(image):
     #  {package} ar -f http://download.opensuse.org/update/leap/42.3/oss/openSUSE:Leap:42.3:Update.repo"
     if "opensuse:42.3" in image:
         return "bash -c 'zypper mr --no-gpgcheck oss-update && zypper refresh'"
+    if "opensuse/leap:15.1" in image:
+        return "bash -c 'zypper mr --no-gpgcheck repo-update && zypper refresh'"
     if "opensuse" in image:
         return "zypper refresh"
     if "ubuntu" in image:
@@ -185,6 +188,60 @@ def beep():
         # using 'sox' on Linux as "\a" is usually disabled
         # sx___("play -n synth 0.1 tri  1000.0")
         sx____("play -V1 -q -n -c1 synth 0.1 sine 500")
+
+def get_proc_started(pid):
+    proc = "/proc/%s/stat" % pid
+    return path_proc_started(proc)
+def path_proc_started(proc):
+    #get time process started after boot in clock ticks
+    if not os.path.exists(proc):
+        logg.error("no such file %s", proc)
+        return 0
+    else:
+        with open(proc) as f:
+            data = f.readline()
+        f.closed
+        stat_data = data.split()
+        started_ticks = stat_data[21]
+        # man proc(5): "(22) starttime = The time the process started after system boot."
+        #    ".. the value is expressed in clock ticks (divide by sysconf(_SC_CLK_TCK))."
+        # NOTE: for containers the start time is related to the boot time of host system.
+
+        clkTickInt = os.sysconf_names['SC_CLK_TCK']
+        clockTicksPerSec = os.sysconf(clkTickInt)
+        started_secs = float(started_ticks) / clockTicksPerSec
+        logg.debug("Proc started time: %.3f (%s)", started_secs, proc)
+        # this value is the start time from the host system
+
+        # Variant 1:
+        system_uptime = "/proc/uptime"
+        with open(system_uptime,"rb") as f:
+            data = f.readline()
+        f.closed
+        uptime_data = data.decode().split()
+        uptime_secs = float(uptime_data[0])
+        logg.debug("System uptime secs: %.3f (%s)", uptime_secs, system_uptime)
+
+        #get time now
+        now = time.time()
+        started_time = now - (uptime_secs - started_secs)
+        logg.debug("Proc has been running since: %s" % (datetime.datetime.fromtimestamp(started_time)))
+
+        # Variant 2:
+        system_stat = "/proc/stat"
+        system_btime = 0
+        with open(system_stat,"rb") as f:
+            for line in f:
+                if line.startswith("btime"):
+                    system_btime = float(line.decode().split()[1])
+        f.closed
+        logg.debug("System btime secs: %.3f (%s)", system_btime, system_stat)
+
+        started_btime = system_btime + started_secs
+        logg.debug("Proc has been running since: %s" % (datetime.datetime.fromtimestamp(started_btime)))
+
+        # return started_time
+        return started_btime
 
 def download(base_url, filename, into):
     if not os.path.isdir(into):
@@ -652,7 +709,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         self.assertEqual(len(greps(open(logfile), " INFO ")), 1)
-        self.assertEqual(len(greps(open(logfile), " DEBUG ")), 3)
+        self.assertEqual(len(greps(open(logfile), " DEBUG ")), 8)
         self.rm_testdir()
         self.coverage()
     def test_1030_systemctl_force_ipv4(self):
@@ -710,6 +767,153 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(hosts, "127.0.0.1.*localhost "))
         self.assertTrue(greps(hosts, "::1.*localhost "))
         self.rm_testdir()
+        self.coverage()
+    def test_1040_systemctl_override_str_config(self):
+        """ we can use -c name=something to override internals """
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            ExecStart=/bin/sleep 3
+        """)
+        #
+        cmd = "{systemctl} daemon-reload -c SysInitTarget=network.target -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        self.assertEqual(lines(out), [])
+        self.assertEqual(end, 0)
+        self.assertEqual(len(greps(err, "SysInitTarget=network.target")), 2)
+        self.rm_testdir()
+        self.rm_zzfiles(root)
+        self.coverage()
+    def test_1041_systemctl_override_int_config(self):
+        """ we can use -c name=something to override internals """
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            ExecStart=/bin/sleep 3
+        """)
+        #
+        cmd = "{systemctl} daemon-reload -c InitLoopSleep=1 -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        self.assertEqual(lines(out), [])
+        self.assertEqual(end, 0)
+        self.assertEqual(len(greps(err, "InitLoopSleep=1")), 2)
+        self.rm_testdir()
+        self.rm_zzfiles(root)
+        self.coverage()
+    def test_1042_systemctl_override_num_config(self):
+        """ we can use -c name=something to override internals """
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            ExecStart=/bin/sleep 3
+        """)
+        #
+        cmd = "{systemctl} daemon-reload -c MinimumYield=0.7 -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        self.assertEqual(lines(out), [])
+        self.assertEqual(end, 0)
+        self.assertEqual(len(greps(err, "MinimumYield=0.7")), 2)
+        self.rm_testdir()
+        self.rm_zzfiles(root)
+        self.coverage()
+    def test_1043_systemctl_override_true_config(self):
+        """ we can use -c name=something to override internals """
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            ExecStart=/bin/sleep 3
+        """)
+        #
+        cmd = "{systemctl} daemon-reload -c _show_all=True -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        self.assertEqual(lines(out), [])
+        self.assertEqual(end, 0)
+        self.assertEqual(len(greps(err, "_show_all=True")), 2)
+        self.rm_testdir()
+        self.rm_zzfiles(root)
+        self.coverage()
+    def test_1045_systemctl_override_fail_unknown_config(self):
+        """ we can use -c name=something to override internals """
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            ExecStart=/bin/sleep 3
+        """)
+        #
+        cmd = "{systemctl} daemon-reload -c FooBar=1 -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        self.assertEqual(lines(out), [])
+        self.assertEqual(end, 0)
+        self.assertTrue(greps(err, "unknown target config -c 'FooBar'"))
+        self.rm_testdir()
+        self.rm_zzfiles(root)
+        self.coverage()
+    def test_1046_systemctl_override_fail_unknown_type(self):
+        """ we can use -c name=something to override internals """
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            ExecStart=/bin/sleep 3
+        """)
+        #
+        cmd = "{systemctl} daemon-reload -c _extra_vars=1 -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        self.assertEqual(lines(out), [])
+        self.assertEqual(end, 0)
+        self.assertTrue(greps(err, "unknown target type -c '_extra_vars'.*'list'>"))
+        self.rm_testdir()
+        self.rm_zzfiles(root)
+        self.coverage()
+    def test_1047_systemctl_override_fail_unknown_setting(self):
+        """ we can use -c name=something to override internals """
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            ExecStart=/bin/sleep 3
+        """)
+        #
+        cmd = "{systemctl} daemon-reload -c SomeNonsenseHere -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        self.assertEqual(lines(out), [])
+        self.assertEqual(end, 0)
+        self.assertTrue(greps(err, "not a config setting format -c 'SomeNonsenseHere'"))
+        self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
     def test_1050_can_create_a_test_service(self):
         """ check that a unit file can be created for testing """
@@ -5755,7 +5959,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             scenario we test what happens if the lockfile is deleted in between."""
         self.begin()
         vv = "-vv"
-        removelockfile="--coverage=removelockfile,sleep"
+        removelockfile="-c REMOVE_LOCK_FILE=True"
+        timeouts = "-c MinimumTimeoutStartSec=7 -c MinimumTimeoutStopSec=7"
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -5780,7 +5985,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 echo zzz `date +%M:%S` "[$$]" started pid >>{logfile}
                 sleep 2
                 echo zzz `date +%M:%S` "[$$]" starting zza >>{logfile}
-                {systemctl} start zza.service {vv} {vv} {removelockfile} >>{logfile} 2>&1
+                {systemctl} start zza.service {vv} {vv} {removelockfile} {timeouts} >>{logfile} 2>&1
                 echo zzz `date +%M:%S` "[$$]" started zza >>{logfile}
                ) &
                sleep 1
@@ -5824,7 +6029,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        cmd = "{systemctl} start zzz.service {vv} {removelockfile}"
+        cmd = "{systemctl} start zzz.service {vv} {removelockfile} {timeouts}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
@@ -5846,7 +6051,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # cmd = "{systemctl} is-active zza.service zzz.service {vv}"
         # out, err, end = output3(cmd.format(**locals()))
         # logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        cmd = "{systemctl} start zza.service {vv} {vv} {removelockfile}"
+        cmd = "{systemctl} start zza.service {vv} {vv} {removelockfile} {timeouts}"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
         self.assertEqual(end, 0)
@@ -7102,7 +7307,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
-        quick = "--coverage=quick"
+        quick = QUICK
         systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
@@ -7415,8 +7620,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             os.dup2(new_stderr, 2)
             systemctl_cmd = [ _systemctl_py, "--root="+root, "--init", "default", "-vv" ]
             env = os.environ.copy()
-            env["SYSTEMCTL_EXIT_WHEN_NO_MORE_SERVICES"] = "yes"
-            env["SYSTEMCTL_INITLOOP"] = "2" 
+            systemctl_cmd += ["-c", "ExitWhenNoMoreServices=yes" ]
+            systemctl_cmd += ["-c", "InitLoopSleep=2"]
             os.execve(_systemctl_py, systemctl_cmd, env)
         time.sleep(2)
         logg.info("all services running [systemctl.py PID %s]", pid)
@@ -7542,7 +7747,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             os.dup2(new_stderr, 2)
             systemctl_cmd = [ _systemctl_py, "--root="+root, "init", "zzb.service", "zzc.service", "-vv" ]
             env = os.environ.copy()
-            env["SYSTEMCTL_INITLOOP"] = "2" 
+            systemctl_cmd += ["-c", "InitLoopSleep=2"]
             os.execve(_systemctl_py, systemctl_cmd, env)
         time.sleep(3)
         logg.info("all services running [systemctl.py PID %s]", pid)
@@ -10024,7 +10229,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
-        quick = "--coverage=quick"
+        quick = QUICK
         systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         logfile = os_path(root, "/var/log/"+testsleep+".log")
@@ -10328,6 +10533,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         text_file(os_path(root, "/var/tmp/test.0"), """..""")
         #
+        getpid_boot_time = get_proc_started(os.getpid())
+        system_boot_time = datetime.datetime.fromtimestamp(getpid_boot_time - 1)
+        systemctl += " -c BOOT_PID_MIN=%s" % (os.getpid())
+        #
         cmd = "{systemctl} enable zzz.service -vv"
         sh____(cmd.format(**locals()))
         is_active = "{systemctl} is-active zzz.service other.service {vv}"
@@ -10345,6 +10554,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(act.strip(), "active\nunknown")
         self.assertEqual(end, 3) 
         self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
+        #
+        is_active = "{systemctl} is-active zzz.service other.service -vvvv"
+        act, end = output2(is_active.format(**locals()))
+        self.assertEqual(act.strip(), "active\nunknown")
+        self.assertEqual(end, 3)
         #
         logg.info("== 'stop' shall stop a service that is-active")
         cmd = "{systemctl} stop zzz.service other.service -vv"
@@ -10370,8 +10584,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         status_file = os_path(root, "/var/run/zzz.service.status")
         self.assertTrue(os.path.exists(status_file))
         sh____("LANG=C stat {status_file} | grep Modify:".format(**locals()))
-        sh____("LANG=C stat /proc/1/status | grep Modify:".format(**locals()))
-        sh____("touch -r /proc/1/status {status_file}".format(**locals()))
+        sh____("touch -d '{system_boot_time}' {status_file}".format(**locals()))
         sh____("LANG=C stat {status_file} | grep Modify:".format(**locals()))
         #
         logg.info("== the next is-active shall then truncate it")
@@ -10430,6 +10643,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         #
+        getpid_boot_time = get_proc_started(os.getpid())
+        system_boot_time = datetime.datetime.fromtimestamp(getpid_boot_time - 1)
+        systemctl += " -c BOOT_PID_MIN=%s" % (os.getpid())
+        #
         cmd = "{systemctl} enable zzz.service -vv"
         sh____(cmd.format(**locals()))
         is_active = "{systemctl} is-active zzz.service other.service {vv}"
@@ -10471,7 +10688,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(os.path.exists(status_file))
         sh____("LANG=C stat {status_file} | grep Modify:".format(**locals()))
         sh____("LANG=C stat /proc/1/status | grep Modify:".format(**locals()))
-        sh____("touch -r /proc/1/status {status_file}".format(**locals()))
+        sh____("touch -d '{system_boot_time}' {status_file}".format(**locals()))
         sh____("LANG=C stat {status_file} | grep Modify:".format(**locals()))
         #
         pid_file = os_path(root, "/var/run/zzz.service.pid")
@@ -10508,6 +10725,56 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("== and the status_file / pid_file is also cleaned away")
         self.assertFalse(os.path.exists(status_file))
         self.assertFalse(os.path.exists(pid_file))
+        #
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def test_4069_simple_truncate_oldest_pid(self):
+        """ check that we manage a service that has some old .pid
+            file being around. That is a reboot has occurred and the
+            information is not relevant to the current system state."""
+        self.begin()
+        vv = "-vv"
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        logfile = os_path(root, "/var/log/test.log")
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        testsleep = self.testname("sleep")
+        bindir = os_path(root, "/usr/bin")
+        text_file(os_path(testdir, "zzz.service"),"""
+            [Unit]
+            Description=Testing Z
+            After=foo.service
+            [Service]
+            Type=simple
+            ExecStart={bindir}/{testsleep} 99
+            ExecStop=/usr/bin/killall {testsleep}
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
+        #
+        pid_max = open("/proc/sys/kernel/pid_max").read().strip()
+        systemctl += " -c BOOT_PID_MIN=%s" % (pid_max)
+        #
+        cmd = "{systemctl} enable zzz.service -vv"
+        sh____(cmd.format(**locals()))
+        cmd = "{systemctl} start zzz.service -vv"
+        sh____(cmd.format(**locals()))
+        #
+        cmd = "{systemctl} is-active zzz.service other.service -vvvv"
+        act, err, end = output3(cmd.format(**locals()))
+        self.assertEqual(act.strip(), "active\nunknown")
+        self.assertEqual(end, 3)
+        #
+        cmd = "{systemctl} stop zzz.service -vv"
+        sh____(cmd.format(**locals()))
+        #
+        logg.info("ERR => %s", err)
+        self.assertTrue(greps(err, "boottime from the oldest entry in /proc"))
         #
         self.rm_testdir()
         self.coverage()
@@ -11080,7 +11347,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
-        quick = "--coverage=quick"
+        quick = QUICK
         systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("testsleep")
         testsleepB = testsleep+"B"
@@ -11197,7 +11464,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
-        quick = "--coverage=quick"
+        quick = QUICK
         systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("testsleep")
         testsleepB = testsleep+"B"
@@ -11317,7 +11584,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
-        quick = "--coverage=quick"
+        quick = QUICK
         systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("testsleep")
         testsleepB = testsleep+"B"
@@ -11437,7 +11704,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
-        quick = "--coverage=quick"
+        quick = QUICK
         systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("testsleep")
         testsleepB = testsleep+"B"
@@ -11557,7 +11824,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         user = self.user()
         root = self.root(testdir)
-        quick = "--coverage=quick"
+        quick = QUICK
         systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("testsleep")
         testsleepB = testsleep+"B"
@@ -13000,7 +13267,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         sometime = SOMETIME or 188
-        quick = "--coverage=quick"
+        quick = QUICK
         #
         user = self.user()
         root = ""
@@ -13414,7 +13681,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         sometime = SOMETIME or 188
-        quick = "--coverage=quick"
+        quick = QUICK
         #
         user = self.user()
         root = ""
@@ -13783,7 +14050,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         sometime = SOMETIME or 288
-        quick = "--coverage=quick"
+        quick = QUICK
         #
         user = self.user()
         root = ""
@@ -14165,7 +14432,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         sometime = SOMETIME or 288
-        quick = "--coverage=quick"
+        quick = QUICK
         #
         user = self.user()
         root = ""
@@ -14541,7 +14808,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         sometime = SOMETIME or 188
-        quick = "--coverage=quick"
+        quick = QUICK
         #
         user = self.user()
         root = ""
@@ -14807,7 +15074,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         sometime = SOMETIME or 188
-        quick = "--coverage=quick"
+        quick = QUICK
         #
         user = self.user()
         root = ""
@@ -15072,7 +15339,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         sometime = SOMETIME or 188
-        quick = "--coverage=quick"
+        quick = QUICK
         #
         user = self.user()
         root = ""
@@ -15419,7 +15686,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         sometime = SOMETIME or 288
-        quick = "--coverage=quick"
+        quick = QUICK
         #
         user = self.user()
         root = ""
@@ -15593,7 +15860,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         sometime = SOMETIME or 288
-        quick = "--coverage=quick"
+        quick = QUICK
         #
         user = self.user()
         root = ""
@@ -16024,7 +16291,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         sometime = SOMETIME or 188
-        quick = "--coverage=quick"
+        quick = QUICK
         #
         user = self.user()
         root = ""
@@ -16410,7 +16677,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         sometime = SOMETIME or 288
-        quick = "--coverage=quick"
+        quick = QUICK
         #
         user = self.user()
         root = ""
@@ -16808,7 +17075,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         sometime = SOMETIME or 288
-        quick = "--coverage=quick"
+        quick = QUICK
         #
         user = self.user()
         root = ""
@@ -17200,7 +17467,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         sometime = SOMETIME or 188
-        quick = "--coverage=quick"
+        quick = QUICK
         #
         user = self.user()
         root = ""
@@ -17483,7 +17750,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         sometime = SOMETIME or 188
-        quick = "--coverage=quick"
+        quick = QUICK
         #
         user = self.user()
         root = ""
@@ -17765,7 +18032,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         sometime = SOMETIME or 188
-        quick = "--coverage=quick"
+        quick = QUICK
         #
         user = self.user()
         root = ""
@@ -17912,7 +18179,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         sometime = SOMETIME or 288
-        quick = "--coverage=quick"
+        quick = QUICK
         #
         user = self.user()
         root = ""
@@ -18121,7 +18388,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         sometime = SOMETIME or 188
-        quick = "--coverage=quick"
+        quick = QUICK
         #
         user = self.user()
         root = ""
@@ -18342,7 +18609,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         sometime = SOMETIME or 288
-        quick = "--coverage=quick"
+        quick = QUICK
         #
         user = self.user()
         root = ""
@@ -18566,7 +18833,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         sometime = SOMETIME or 288
-        quick = "--coverage=quick"
+        quick = QUICK
         #
         user = self.user()
         root = ""
@@ -18784,7 +19051,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         sometime = SOMETIME or 188
-        quick = "--coverage=quick"
+        quick = QUICK
         #
         user = self.user()
         root = ""
@@ -18964,7 +19231,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         sometime = SOMETIME or 188
-        quick = "--coverage=quick"
+        quick = QUICK
         #
         user = self.user()
         root = ""
@@ -20097,7 +20364,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         refresh = refresh_tool(image)
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "--coverage=spawn,oldest"
+            cov_option = "-c EXEC_SPAWN=True"
         sometime = SOMETIME or 188
         text_file(os_path(testdir, "zza.service"),"""
             [Unit]
@@ -20204,7 +20471,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         refresh = refresh_tool(image)
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "--coverage=spawn,oldest"
+            cov_option = "-c EXEC_SPAWN=True"
         sometime = SOMETIME or 188
         text_file(os_path(testdir, "zza.service"),"""
             [Unit]
@@ -20311,7 +20578,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         refresh = refresh_tool(image)
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "--coverage=spawn,oldest"
+            cov_option = "-c EXEC_SPAWN=True"
         sometime = SOMETIME or 188
         text_file(os_path(testdir, "zzb.service"),"""
             [Unit]
@@ -20453,7 +20720,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         refresh = refresh_tool(image)
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "--coverage=spawn,oldest"
+            cov_option = "-c EXEC_SPAWN=True"
         sometime = SOMETIME or 188
         text_file(os_path(testdir, "zzb.service"),"""
             [Unit]
@@ -20600,7 +20867,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         refresh = refresh_tool(image)
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "--coverage=spawn,oldest"
+            cov_option = "-c EXEC_SPAWN=True"
         sometime = SOMETIME or 188
         text_file(os_path(testdir, "zzb.service"),"""
             [Unit]
@@ -20737,7 +21004,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         refresh = refresh_tool(image)
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "--coverage=spawn,oldest"
+            cov_option = "-c EXEC_SPAWN=True"
         sometime = SOMETIME or 188
         text_file(os_path(testdir, "zzb.service"),"""
             [Unit]
@@ -20875,7 +21142,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         refresh = refresh_tool(image)
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "--coverage=spawn,oldest"
+            cov_option = "-c EXEC_SPAWN=True"
         sometime = SOMETIME or 288
         text_file(os_path(testdir, "zzb.service"),"""
             [Unit]
@@ -20998,7 +21265,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         refresh = refresh_tool(image)
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "--coverage=spawn"
+            cov_option = "-c EXEC_SPAWN=True"
         sometime = SOMETIME or 188
         text_file(os_path(testdir, "zzb.service"),"""
             [Unit]
@@ -21142,7 +21409,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleep_sh = os_path(testdir, "testsleep.sh")
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "--coverage=spawn"
+            cov_option = "-c EXEC_SPAWN=True"
         sometime = SOMETIME or 188
         shell_file(testsleep_sh,"""
             #! /bin/sh
@@ -21271,7 +21538,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         python_coverage = coverage_package(image)
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "--coverage=spawn"
+            cov_option = "-c EXEC_SPAWN=True"
         if _python.endswith("python3") and "centos" in image: 
            self.skipTest("no python3 on centos")
         package = package_tool(image)

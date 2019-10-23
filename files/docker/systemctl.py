@@ -27,10 +27,7 @@ else:
     string_types = str
     xrange = range
 
-COVERAGE = os.environ.get("SYSTEMCTL_COVERAGE", "")
-DEBUG_AFTER = os.environ.get("SYSTEMCTL_DEBUG_AFTER", "") or False
-EXIT_WHEN_NO_MORE_PROCS = os.environ.get("SYSTEMCTL_EXIT_WHEN_NO_MORE_PROCS", "") or False
-EXIT_WHEN_NO_MORE_SERVICES = os.environ.get("SYSTEMCTL_EXIT_WHEN_NO_MORE_SERVICES", "") or False
+DEBUG_AFTER = False
 
 FOUND_OK = 0
 FOUND_INACTIVE = 2
@@ -53,7 +50,6 @@ _show_all = False
 _user_mode = False
 
 # common default paths
-_default_target = "multi-user.target"
 _system_folder1 = "/etc/systemd/system"
 _system_folder2 = "/var/run/systemd/system"
 _system_folder3 = "/usr/lib/systemd/system"
@@ -76,28 +72,44 @@ _preset_folder9 = None
 SystemCompatibilityVersion = 219
 SysInitTarget = "sysinit.target"
 SysInitWait = 5 # max for target
-EpsilonTime = 0.1
 MinimumYield = 0.5
 MinimumTimeoutStartSec = 4
 MinimumTimeoutStopSec = 4
-DefaultTimeoutStartSec = int(os.environ.get("SYSTEMCTL_TIMEOUT_START_SEC", 90)) # official value
-DefaultTimeoutStopSec = int(os.environ.get("SYSTEMCTL_TIMEOUT_STOP_SEC", 90))   # official value
-DefaultMaximumTimeout = int(os.environ.get("SYSTEMCTL_MAXIMUM_TIMEOUT", 200))   # overrides all other
-InitLoopSleep = int(os.environ.get("SYSTEMCTL_INITLOOP", 5))
-ProcMaxDepth = 100
+DefaultTimeoutStartSec = 90   # official value
+DefaultTimeoutStopSec = 90    # official value
+DefaultTimeoutAbortSec = 3600 # officially it none (usually larget than StopSec)
+DefaultMaximumTimeout = 200   # overrides all other
+InitLoopSleep = 5
 MaxLockWait = None # equals DefaultMaximumTimeout
 DefaultPath = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 ResetLocale = ["LANG", "LANGUAGE", "LC_CTYPE", "LC_NUMERIC", "LC_TIME", "LC_COLLATE", "LC_MONETARY",
                "LC_MESSAGES", "LC_PAPER", "LC_NAME", "LC_ADDRESS", "LC_TELEPHONE", "LC_MEASUREMENT",
                "LC_IDENTIFICATION", "LC_ALL"]
 
+ExitWhenNoMoreServices = False
+ExitWhenNoMoreProcs = False
+DefaultUnit = os.environ.get("SYSTEMD_DEFAULT_UNIT", "default.target") # systemd.exe --unit=default.target
+DefaultTarget = os.environ.get("SYSTEMD_DEFAULT_TARGET", "multi-user.target") # DefaultUnit fallback
+# LogLevel = os.environ.get("SYSTEMD_LOG_LEVEL", "info") # systemd.exe --log-level
+# LogTarget = os.environ.get("SYSTEMD_LOG_TARGET", "journal-or-kmsg") # systemd.exe --log-target
+# LogLocation = os.environ.get("SYSTEMD_LOG_LOCATION", "no") # systemd.exe --log-location
+# ShowStatus = os.environ.get("SYSTEMD_SHOW_STATUS", "auto") # systemd.exe --show-status
+# DefaultStandardOutput=os.environ.get("SYSTEMD_STANDARD_OUTPUT", "journal") # systemd.exe --default-standard-output
+# DefaultStandardError=os.environ.get("SYSTEMD_STANDARD_ERROR", "inherit") # systemd.exe --default-standard-error
+
+EXEC_SPAWN = False
+REMOVE_LOCK_FILE = False
+BOOT_PID_MIN = 0
+BOOT_PID_MAX = -9
+PROC_MAX_DEPTH = 100
+
 # The systemd default is NOTIFY_SOCKET="/var/run/systemd/notify"
 _notify_socket_folder = "/var/run/systemd" # alias /run/systemd
 _pid_file_folder = "/var/run"
 _journal_log_folder = "/var/log/journal"
 
-_systemctl_debug_log = "/var/log/systemctl.debug.log"
-_systemctl_extra_log = "/var/log/systemctl.log"
+SYSTEMCTL_DEBUG_LOG = "/var/log/systemctl.debug.log"
+SYSTEMCTL_EXTRA_LOG = "/var/log/systemctl.log"
 
 _default_targets = [ "poweroff.target", "rescue.target", "sysinit.target", "basic.target", "multi-user.target", "graphical.target", "reboot.target" ]
 _feature_targets = [ "network.target", "remote-fs.target", "local-fs.target", "timers.target", "nfs-client.target" ]
@@ -122,6 +134,7 @@ _sysv_mappings["$network"] = "network.target"
 _sysv_mappings["$remote_fs"] = "remote-fs.target"
 _sysv_mappings["$timer"] = "timers.target"
 
+
 def shell_cmd(cmd):
     return " ".join(["'%s'" % part for part in cmd])
 def to_int(value, default = 0):
@@ -137,6 +150,10 @@ def unit_of(module):
     if "." not in module:
         return module + ".service"
     return module
+def end22(name):
+    if name and len(name) > 22:
+        return "..." + name[-19:]
+    return name
 
 def os_path(root, path):
     if not root:
@@ -578,7 +595,7 @@ class waitlock:
         try:
             os.lseek(self.opened, 0, os.SEEK_SET)
             os.ftruncate(self.opened, 0)
-            if "removelockfile" in COVERAGE: # actually an optional implementation
+            if REMOVE_LOCK_FILE: # an optional implementation
                 lockfile = self.lockfile()
                 lockname = os.path.basename(lockfile)
                 os.unlink(lockfile) # ino is kept allocated because opened by this process
@@ -803,14 +820,18 @@ class Systemctl:
         self._file_for_unit_sysv = None # name.service => /etc/init.d/name
         self._file_for_unit_sysd = None # name.service => /etc/systemd/system/name.service
         self._preset_file_list = None # /etc/systemd/system-preset/* => file content
-        self._default_target = _default_target
-        self._sysinit_target = None
-        self.exit_when_no_more_procs = EXIT_WHEN_NO_MORE_PROCS or False
-        self.exit_when_no_more_services = EXIT_WHEN_NO_MORE_SERVICES or False
+        self._default_target = DefaultTarget
+        self._sysinit_target = None # stores a UnitConf()
+        self.doExitWhenNoMoreProcs = ExitWhenNoMoreProcs or False
+        self.doExitWhenNoMoreServices = ExitWhenNoMoreServices or False
         self._user_mode = _user_mode
         self._user_getlogin = os_getlogin()
         self._log_file = {} # init-loop
         self._log_hold = {} # init-loop
+        self._boottime = None # cache self.get_boottime()
+        self._SYSTEMD_UNIT_PATH = None
+        self._SYSTEMD_SYSVINIT_PATH = None
+        self._SYSTEMD_PRESET_PATH = None
     def user(self):
         return self._user_getlogin
     def user_mode(self):
@@ -823,28 +844,56 @@ class Systemctl:
         for folder in self.system_folders():
             if folder: return folder
         raise Exception("did not find any systemd/system folder")
-    def init_folders(self):
-        if _init_folder1: yield _init_folder1
-        if _init_folder2: yield _init_folder2
-        if _init_folder9: yield _init_folder9
     def preset_folders(self):
-        if _preset_folder1: yield _preset_folder1
-        if _preset_folder2: yield _preset_folder2
-        if _preset_folder3: yield _preset_folder3
-        if _preset_folder4: yield _preset_folder4
-        if _preset_folder9: yield _preset_folder9
+        SYSTEMD_PRESET_PATH = self.get_SYSTEMD_PRESET_PATH()
+        for path in SYSTEMD_PRESET_PATH.split(":"):
+            if path.strip(): yield os.path.expanduser(path.strip())
+        if SYSTEMD_PRESET_PATH.endswith(":"):
+            if _preset_folder1: yield _preset_folder1
+            if _preset_folder2: yield _preset_folder2
+            if _preset_folder3: yield _preset_folder3
+            if _preset_folder4: yield _preset_folder4
+            if _preset_folder9: yield _preset_folder9
+    def init_folders(self):
+        SYSTEMD_SYSVINIT_PATH = self.get_SYSTEMD_SYSVINIT_PATH()
+        for path in SYSTEMD_SYSVINIT_PATH.split(":"):
+            if path.strip(): yield os.path.expanduser(path.strip())
+        if SYSTEMD_SYSVINIT_PATH.endswith(":"):
+            if _init_folder1: yield _init_folder1
+            if _init_folder2: yield _init_folder2
+            if _init_folder9: yield _init_folder9
     def user_folders(self):
-        if _user_folder1: yield os.path.expanduser(_user_folder1)
-        if _user_folder2: yield os.path.expanduser(_user_folder2)
-        if _user_folder3: yield os.path.expanduser(_user_folder3)
-        if _user_folder4: yield os.path.expanduser(_user_folder4)
-        if _user_folder9: yield os.path.expanduser(_user_folder9)
+        SYSTEMD_UNIT_PATH = self.get_SYSTEMD_UNIT_PATH()
+        for path in SYSTEMD_UNIT_PATH.split(":"):
+            if path.strip(): yield os.path.expanduser(path.strip())
+        if SYSTEMD_UNIT_PATH.endswith(":"):
+            if _user_folder1: yield os.path.expanduser(_user_folder1)
+            if _user_folder2: yield os.path.expanduser(_user_folder2)
+            if _user_folder3: yield os.path.expanduser(_user_folder3)
+            if _user_folder4: yield os.path.expanduser(_user_folder4)
+            if _user_folder9: yield os.path.expanduser(_user_folder9)
     def system_folders(self):
-        if _system_folder1: yield _system_folder1
-        if _system_folder2: yield _system_folder2
-        if _system_folder3: yield _system_folder3
-        if _system_folder4: yield _system_folder4
-        if _system_folder9: yield _system_folder9
+        SYSTEMD_UNIT_PATH = self.get_SYSTEMD_UNIT_PATH()
+        for path in SYSTEMD_UNIT_PATH.split(":"):
+            if path.strip(): yield os.path.expanduser(path.strip())
+        if SYSTEMD_UNIT_PATH.endswith(":"):
+            if _system_folder1: yield _system_folder1
+            if _system_folder2: yield _system_folder2
+            if _system_folder3: yield _system_folder3
+            if _system_folder4: yield _system_folder4
+            if _system_folder9: yield _system_folder9
+    def get_SYSTEMD_UNIT_PATH(self):
+        if self._SYSTEMD_UNIT_PATH is None:
+            self._SYSTEMD_UNIT_PATH = os.environ.get("SYSTEMD_UNIT_PATH", ":")
+        return self._SYSTEMD_UNIT_PATH
+    def get_SYSTEMD_SYSVINIT_PATH(self):
+        if self._SYSTEMD_SYSVINIT_PATH is None:
+            self._SYSTEMD_SYSVINIT_PATH = os.environ.get("SYSTEMD_SYSVINIT_PATH", ":")
+        return self._SYSTEMD_SYSVINIT_PATH
+    def get_SYSTEMD_PRESET_PATH(self):
+        if self._SYSTEMD_PRESET_PATH is None:
+            self._SYSTEMD_PRESET_PATH = os.environ.get("SYSTEMD_PRESET_PATH", ":")
+        return self._SYSTEMD_PRESET_PATH
     def sysd_folders(self):
         """ if --user then these folders are preferred """
         if self.user_mode():
@@ -1378,52 +1427,103 @@ class Systemctl:
         else:
             conf.status[name] = value
     #
-    def wait_boot(self, hint = None):
-        booted = self.get_boottime()
-        while True:
-            now = time.time()
-            if booted + EpsilonTime <= now:
-                break
-            time.sleep(EpsilonTime)
-            logg.info(" %s ................. boot sleep %ss", hint or "", EpsilonTime)
     def get_boottime(self):
-        if "oldest" in COVERAGE:
-            return self.get_boottime_oldest()
-        for pid in xrange(10):
-            proc = "/proc/%s/status" % pid
+        """ detects the boot time of the container - in general the start time of PID 1 """
+        if self._boottime is None:
+            self._boottime = self.get_boottime_from_proc()
+        return self._boottime
+    def get_boottime_from_proc(self):
+        """ detects the latest boot time by looking at the start time of available process"""
+        pid1 = BOOT_PID_MIN or 0
+        pid_max = BOOT_PID_MAX
+        if pid_max < 0:
+            pid_max = pid1 - pid_max
+        for pid in xrange(pid1, pid_max):
+            proc = "/proc/%s/stat" % pid
             try:
                 if os.path.exists(proc):
-                    return os.path.getmtime(proc)
+                    # return os.path.getmtime(proc) # did sometimes change
+                    return self.path_proc_started(proc)
             except Exception as e: # pragma: nocover
                 logg.warning("could not access %s: %s", proc, e)
-        return self.get_boottime_oldest()
-    def get_boottime_oldest(self):
-        # otherwise get the oldest entry in /proc
+        logg.debug(" boottime from the oldest entry in /proc [nothing in %s..%s]", pid1, pid_max)
         booted = time.time()
         for name in os.listdir("/proc"):
-            proc = "/proc/%s/status" % name
+            proc = "/proc/%s/stat" % name
             try:
                 if os.path.exists(proc):
-                    ctime = os.path.getmtime(proc)
+                    # ctime = os.path.getmtime(proc)
+                    ctime = self.path_proc_started(proc)
                     if ctime < booted:
                         booted = ctime 
             except Exception as e: # pragma: nocover
                 logg.warning("could not access %s: %s", proc, e)
         return booted
+
+    # Use uptime, time process running in ticks, and current time to determine process boot time
+    # You can't use the modified timestamp of the status file because it isn't static.
+    # ... using clock ticks it is known to be a linear time on Linux
+    def get_proc_started(self, pid):
+        proc = "/proc/%s/status" % pid
+        return self.path_proc_started(proc)
+    def path_proc_started(self, proc):
+        #get time process started after boot in clock ticks
+        with open(proc) as f:
+            data = f.readline()
+        f.closed
+        stat_data = data.split()
+        started_ticks = stat_data[21]
+        # man proc(5): "(22) starttime = The time the process started after system boot."
+        #    ".. the value is expressed in clock ticks (divide by sysconf(_SC_CLK_TCK))."
+        # NOTE: for containers the start time is related to the boot time of host system.
+
+        clkTickInt = os.sysconf_names['SC_CLK_TCK']
+        clockTicksPerSec = os.sysconf(clkTickInt)
+        started_secs = float(started_ticks) / clockTicksPerSec
+        logg.debug("  BOOT .. Proc started time:  %.3f (%s)", started_secs, proc)
+        # this value is the start time from the host system
+
+        # Variant 1:
+        system_uptime = "/proc/uptime"
+        with open(system_uptime,"rb") as f:
+            data = f.readline()
+        f.closed
+        uptime_data = data.decode().split()
+        uptime_secs = float(uptime_data[0])
+        logg.debug("  BOOT 1. System uptime secs: %.3f (%s)", uptime_secs, system_uptime)
+
+        #get time now
+        now = time.time()
+        started_time = now - (uptime_secs - started_secs)
+        logg.debug("  BOOT 1. Proc has been running since: %s" % (datetime.datetime.fromtimestamp(started_time)))
+
+        # Variant 2:
+        system_stat = "/proc/stat"
+        system_btime = 0
+        with open(system_stat,"rb") as f:
+            for line in f:
+                if line.startswith("btime"):
+                    system_btime = float(line.decode().split()[1])
+        f.closed
+        logg.debug("  BOOT 2. System btime secs: %.3f (%s)", system_btime, system_stat)
+
+        started_btime = system_btime + started_secs
+        logg.debug("  BOOT 2. Proc has been running since: %s" % (datetime.datetime.fromtimestamp(started_btime)))
+
+        # return started_time
+        return started_btime
+
     def get_filetime(self, filename):
         return os.path.getmtime(filename)
     def truncate_old(self, filename):
         filetime = self.get_filetime(filename)
         boottime = self.get_boottime()
-        if isinstance(filetime, float):
-            filetime -= EpsilonTime
         if filetime >= boottime :
-            logg.debug("  file time: %s", datetime.datetime.fromtimestamp(filetime))
-            logg.debug("  boot time: %s", datetime.datetime.fromtimestamp(boottime))
+            logg.debug("  file time: %s (%s)", datetime.datetime.fromtimestamp(filetime), end22(filename))
+            logg.debug("  boot time: %s (%s)", datetime.datetime.fromtimestamp(boottime), "status modified later")
             return False # OK
-        logg.info("truncate old %s", filename)
-        logg.info("  file time: %s", datetime.datetime.fromtimestamp(filetime))
-        logg.info("  boot time: %s", datetime.datetime.fromtimestamp(boottime))
+        logg.info("  file time: %s (%s)", datetime.datetime.fromtimestamp(filetime), end22(filename))
+        logg.info("  boot time: %s (%s)", datetime.datetime.fromtimestamp(boottime), "status TRUNCATED NOW")
         try:
             shutil_truncate(filename)
         except Exception as e:
@@ -2047,7 +2147,7 @@ class Systemctl:
         env = self.extend_exec_env(env)
         env.update(envs) # set $HOME to ~$USER
         try:
-            if "spawn" in COVERAGE:
+            if EXEC_SPAWN:
                 os.spawnvpe(os.P_WAIT, cmd[0], cmd, env)
                 sys.exit(0)
             else: # pragma: nocover
@@ -3895,7 +3995,7 @@ class Systemctl:
         """ get current default run-level"""
         current = self._default_target
         folder = os_path(self._root, self.mask_folder())
-        target = os.path.join(folder, "default.target")
+        target = os.path.join(folder, DefaultUnit)
         if os.path.islink(target):
             current = os.path.basename(os.readlink(target))
         return current
@@ -3906,7 +4006,7 @@ class Systemctl:
             return (1, "Too few arguments")
         current = self._default_target
         folder = os_path(self._root, self.mask_folder())
-        target = os.path.join(folder, "default.target")
+        target = os.path.join(folder, DefaultUnit)
         if os.path.islink(target):
             current = os.path.basename(os.readlink(target))
         err, msg = 0, ""
@@ -3949,14 +4049,14 @@ class Systemctl:
             # like 'systemctl --init default'
             if self._now or self._show_all:
                 logg.debug("init default --now --all => no_more_procs")
-                self.exit_when_no_more_procs = True
+                self.doExitWhenNoMoreProcs = True
             return self.start_system_default(init = True)
         #
         # otherwise quit when all the init-services have died
-        self.exit_when_no_more_services = True
+        self.doExitWhenNoMoreServices = True
         if self._now or self._show_all:
             logg.debug("init services --now --all => no_more_procs")
-            self.exit_when_no_more_procs = True
+            self.doExitWhenNoMoreProcs = True
         found_all = True
         units = []
         for module in modules:
@@ -4033,7 +4133,7 @@ class Systemctl:
                 ##### the reaper goes round
                 running = self.system_reap_zombies()
                 # logg.debug("reap zombies - init-loop found %s running procs", running)
-                if self.exit_when_no_more_services:
+                if self.doExitWhenNoMoreServices:
                     active = False
                     for unit in units:
                         conf = self.load_unit_conf(unit)
@@ -4043,7 +4143,7 @@ class Systemctl:
                     if not active:
                         logg.info("no more services - exit init-loop")
                         break
-                if self.exit_when_no_more_procs:
+                if self.doExitWhenNoMoreProcs:
                     if not running:
                         logg.info("no more procs - exit init-loop")
                         break
@@ -4051,7 +4151,7 @@ class Systemctl:
                 if e.args and e.args[0] == "SIGQUIT":
                     # the original systemd puts a coredump on that signal.
                     logg.info("SIGQUIT - switch to no more procs check")
-                    self.exit_when_no_more_procs = True
+                    self.doExitWhenNoMoreProcs = True
                     continue
                 signal.signal(signal.SIGTERM, signal.SIG_DFL)
                 signal.signal(signal.SIGINT, signal.SIG_DFL)
@@ -4099,13 +4199,13 @@ class Systemctl:
         self.write_status_from(conf, **status)
     def sysinit_target(self):
         if not self._sysinit_target:
-            self._sysinit_target = self.default_unit_conf("sysinit.target", "System Initialization")
+            self._sysinit_target = self.default_unit_conf(SysInitTarget, "System Initialization")
         return self._sysinit_target
     def is_system_running(self):
         conf = self.sysinit_target()
         status_file = self.status_file_from(conf)
         if not os.path.isfile(status_file):
-            time.sleep(EpsilonTime)
+            time.sleep(MinimumYield)
         if not os.path.isfile(status_file):
             return "offline"
         status = self.read_status_from(conf)
@@ -4124,7 +4224,7 @@ class Systemctl:
         for attempt in xrange(int(SysInitWait)):
             state = self.is_system_running()
             if "init" in state:
-                if target in [ "sysinit.target", "basic.target" ]:
+                if target in [ SysInitTarget, "basic.target" ]:
                     logg.info("system not initialized - wait %s", target)
                     time.sleep(1)
                     continue
@@ -4141,7 +4241,7 @@ class Systemctl:
         except: return []
         pidlist = [ pid ]
         pids = [ pid ]
-        for depth in xrange(ProcMaxDepth):
+        for depth in xrange(PROC_MAX_DEPTH):
             for pid in os.listdir("/proc"):
                 try: pid = int(pid)
                 except: continue
@@ -4403,8 +4503,8 @@ if __name__ == "__main__":
     _o.add_option("--no-pager", action="store_true",
         help="Do not pipe output into pager (ignored)")
     #
-    _o.add_option("--coverage", metavar="OPTIONLIST", default=COVERAGE,
-        help="..support for coverage (e.g. spawn,oldest,sleep) [%default]")
+    _o.add_option("-c","--config", metavar="NAME=VAL", action="append", default=[],
+        help="..override internal variables (InitLoopSleep,SysInitTarget) {%default}")
     _o.add_option("-e","--extra-vars", "--environment", metavar="NAME=VAL", action="append", default=[],
         help="..override settings in the syntax of 'Environment='")
     _o.add_option("-v","--verbose", action="count", default=0,
@@ -4419,15 +4519,6 @@ if __name__ == "__main__":
     logging.basicConfig(level = max(0, logging.FATAL - 10 * opt.verbose))
     logg.setLevel(max(0, logging.ERROR - 10 * opt.verbose))
     #
-    COVERAGE = opt.coverage
-    if "sleep" in COVERAGE:
-         MinimumTimeoutStartSec = 7
-         MinimumTimeoutStopSec = 7
-    if "quick" in COVERAGE:
-         MinimumTimeoutStartSec = 4
-         MinimumTimeoutStopSec = 4
-         DefaultTimeoutStartSec = 9
-         DefaultTimeoutStopSec = 9
     _extra_vars = opt.extra_vars
     _force = opt.force
     _full = opt.full
@@ -4450,12 +4541,40 @@ if __name__ == "__main__":
     if opt.system:
         _user_mode = False # override --user
     #
+    for setting in opt.config:
+        if "=" in setting:
+            nam, val = setting.split("=", 1)
+            if nam in globals():
+                old = globals()[nam]
+                if old is False or old is True:
+                    logg.debug("yes %s=%s", nam, val)
+                    globals()[nam] = (val in ("true", "True", "TRUE", "yes", "y", "Y", "YES"))
+                    logg.debug("... _show_all=%s", _show_all)
+                elif isinstance(old, float):
+                    logg.debug("num %s=%s", nam, val)
+                    globals()[nam] = float(val)
+                    logg.debug("... MinimumYield=%s", MinimumYield)
+                elif isinstance(old, int):
+                    logg.debug("int %s=%s", nam, val)
+                    globals()[nam] = int(val)
+                    logg.debug("... InitLoopSleep=%s", InitLoopSleep)
+                elif isinstance(old, string_types):
+                    logg.debug("str %s=%s", nam, val)
+                    globals()[nam] = val.strip()
+                    logg.debug("... SysInitTarget=%s", SysInitTarget)
+                else:
+                    logg.warning("(ignored) unknown target type -c '%s' : %s", nam, type(old))
+            else:
+                logg.warning("(ignored) unknown target config -c '%s' : no such variable", nam)
+        else:
+            logg.warning("(ignored) not a config setting format -c '%s'", setting)
+    #
     if _user_mode:
-        systemctl_debug_log = os_path(_root, _var_path(_systemctl_debug_log))
-        systemctl_extra_log = os_path(_root, _var_path(_systemctl_extra_log))
+        systemctl_debug_log = os_path(_root, _var_path(SYSTEMCTL_DEBUG_LOG))
+        systemctl_extra_log = os_path(_root, _var_path(SYSTEMCTL_EXTRA_LOG))
     else:
-        systemctl_debug_log = os_path(_root, _systemctl_debug_log)
-        systemctl_extra_log = os_path(_root, _systemctl_extra_log)
+        systemctl_debug_log = os_path(_root, SYSTEMCTL_DEBUG_LOG)
+        systemctl_extra_log = os_path(_root, SYSTEMCTL_EXTRA_LOG)
     if os.access(systemctl_extra_log, os.W_OK):
         loggfile = logging.FileHandler(systemctl_extra_log)
         loggfile.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
@@ -4496,25 +4615,21 @@ if __name__ == "__main__":
     command_name = command.replace("-","_").replace(".","_")+"_modules"
     command_func = getattr(systemctl, command_name, None)
     if callable(command_func) and not found:
-        systemctl.wait_boot(command_name)
         found = True
         result = command_func(*modules)
     command_name = "show_"+command.replace("-","_").replace(".","_")
     command_func = getattr(systemctl, command_name, None)
     if callable(command_func) and not found:
-        systemctl.wait_boot(command_name)
         found = True
         result = command_func(*modules)
     command_name = "system_"+command.replace("-","_").replace(".","_")
     command_func = getattr(systemctl, command_name, None)
     if callable(command_func) and not found:
-        systemctl.wait_boot(command_name)
         found = True
         result = command_func()
     command_name = "systems_"+command.replace("-","_").replace(".","_")
     command_func = getattr(systemctl, command_name, None)
     if callable(command_func) and not found:
-        systemctl.wait_boot(command_name)
         found = True
         result = command_func()
     if not found:
