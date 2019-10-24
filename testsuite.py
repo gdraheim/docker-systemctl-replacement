@@ -448,6 +448,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             if not KEEP:
                 shutil.rmtree(newdir)
         return newdir
+    def rm_docker(self, testname):
+        if not KEEP:
+            sx____("docker stop " + testname)
+            for x in xrange(20):
+                status = output("docker inspect -f '{{.State}}{{.Status}}' " + testname)
+                logg.info("%s status %s", testname, status)
+                if status not in [ "running" ]:
+                    break
+                time.sleep(1)
+            sx____("docker rm -f " + testname)
     def makedirs(self, path):
         if not os.path.isdir(path):
             os.makedirs(path)
@@ -16342,11 +16352,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out)
         #
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
-        self.assertTrue(greps(out, "systemctl.py"))
-        #
+        self.rm_docker(testname)
         self.rm_testdir()
+        #
+        self.assertTrue(greps(out, "systemctl.py"))
     def test_5001_coverage_systemctl_py_inside_container(self):
         """ check that we can run systemctl.py with coverage inside a docker container """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -16382,11 +16391,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.save_coverage(testname)     ### fetch {image}:.coverage and set path to develop systemctl.py
         #
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
-        self.assertTrue(greps(out, "systemctl.py"))
-        #
+        self.rm_docker(testname)
         self.rm_testdir()
+        #
+        self.assertTrue(greps(out, "systemctl.py"))
     def test_5002_systemctl_py_enable_in_container(self):
         """ check that we can enable services in a docker container """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -16447,13 +16455,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.save_coverage(testname)
         #
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
+        self.rm_testdir()
+        #
         self.assertTrue(greps(out, "zza.service.*static"))
         self.assertTrue(greps(out, "zzb.service.*disabled"))
         self.assertTrue(greps(out, "zzc.service.*enabled"))
-        #
-        self.rm_testdir()
     def test_5003_systemctl_py_default_services_in_container(self):
         """ check that we can enable services in a docker container to have default-services"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -16518,16 +16525,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.save_coverage(testname)
         #
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
+        self.rm_testdir()
+        #
         self.assertTrue(greps(out2, "zzb.service"))
         self.assertTrue(greps(out2, "zzc.service"))
         self.assertEqual(len(lines(out2)), 2)
         self.assertTrue(greps(out3, "zzb.service"))
         self.assertTrue(greps(out3, "zzc.service"))
         # self.assertGreater(len(lines(out2)), 2)
-        #
-        self.rm_testdir()
     #
     #
     #  compare the following with the test_4030 series
@@ -16944,8 +16950,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.save_coverage(testname)
         #
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
     def test_5032_runuser_forking_service_functions_system(self):
         """ check that we manage forking services in a root env
             with basic run-service commands: start, stop, restart,
@@ -17313,8 +17318,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("LOG\n%s", " "+output("docker exec {testname} cat {logfile}".format(**locals())).replace("\n","\n "))
         self.save_coverage(testname)
         #
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
     def test_5034_runuser_notify_service_functions_system(self):
         """ check that we manage notify services in a root env
             with basic run-service commands: start, stop, restart,
@@ -17693,8 +17697,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.save_coverage(testname)
         #
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
     def test_5036_runuser_notify_service_functions_with_reload(self):
         """ check that we manage notify services in a root env
             with basic run-service commands: start, stop, restart,
@@ -18071,8 +18074,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.save_coverage(testname)
         #
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
     def test_5040_runuser_oneshot_service_functions(self):
         """ check that we manage oneshot services in a root env
             with basic run-service commands: start, stop, restart,
@@ -18351,8 +18353,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.save_coverage(testname)
         #
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
     def test_5042_runuser_oneshot_and_unknown_service_functions(self):
         """ check that we manage multiple services even when some
             services are not actually known. Along with oneshot serivce
@@ -18615,8 +18616,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.save_coverage(testname)
         #
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
         self.rm_testdir()
         self.end()
     def test_5044_runuser_sysv_service_functions(self):
@@ -18943,8 +18943,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.save_coverage(testname)
         #
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
         self.rm_testdir()
         self.end(122)
     #
@@ -19115,10 +19114,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.save_coverage(testname)
         #
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
         if True:
             cmd = "cat {testdir}/gobal.systemctl.debug.log | sed -e s/^/GLOBAL:.../"
             sx____(cmd.format(**locals()))
@@ -19552,10 +19550,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.save_coverage(testname)
         #
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
     def test_5132_usermode_forking_service_functions_system(self):
         """ check that we manage forking services in a root env
             with basic run-service commands: start, stop, restart,
@@ -19937,10 +19934,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("LOG\n%s", " "+output("docker exec {testname} cat {logfile}".format(**locals())).replace("\n","\n "))
         self.save_coverage(testname)
         #
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
     def test_5134_usermode_notify_service_functions_system(self):
         """ check that we manage notify services in a root env
             with basic run-service commands: start, stop, restart,
@@ -20334,10 +20330,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.save_coverage(testname)
         #
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
     def test_5136_usermode_notify_service_functions_with_reload(self):
         """ check that we manage notify services in a root env
             with basic run-service commands: start, stop, restart,
@@ -20728,10 +20723,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.save_coverage(testname)
         #
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
     def test_5140_usermode_oneshot_service_functions(self):
         """ check that we manage oneshot services in a root env
             with basic run-service commands: start, stop, restart,
@@ -21025,10 +21019,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.save_coverage(testname)
         #
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
     def test_5142_usermode_oneshot_and_unknown_service_functions(self):
         """ check that we manage multiple services even when some
             services are not actually known. Along with oneshot serivce
@@ -21306,10 +21299,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.save_coverage(testname)
         #
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
         self.rm_testdir()
         self.end()
     def test_5144_usermode_sysv_service_functions(self):
@@ -21438,10 +21430,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.save_coverage(testname)
         #
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
         self.rm_testdir()
         self.end()
     #
@@ -21649,10 +21640,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.save_coverage(testname)
         #
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
     def test_5232_bad_usermode_forking_service_functions_system(self):
         """ check that we are disallowed to manage forking services in a root env
             with basic run-service commands: start, stop, restart,
@@ -21871,8 +21861,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{testname}"
-        sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
     def test_5234_bad_usermode_notify_service_functions_system(self):
         """ check that we are disallowed to manage notify services in a root env
             with basic run-service commands: start, stop, restart,
@@ -22092,10 +22081,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.save_coverage(testname)
         #
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
     def test_5236_bad_usermode_notify_service_functions_with_reload(self):
         """ check that we manage notify services in a root env
             with basic run-service commands: start, stop, restart,
@@ -22312,10 +22300,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.save_coverage(testname)
         #
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
     def test_5240_bad_usermode_oneshot_service_functions(self):
         """ check that we are disallowed to manage oneshot services in a root env
             with basic run-service commands: start, stop, restart,
@@ -22496,10 +22483,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.save_coverage(testname)
         #
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
     def test_5290_bad_usermode_other_commands(self):
         """ check that we are disallowed to manage oneshot services in a root env
             with other commands: enable, disable, mask, unmaks,..."""
@@ -22649,10 +22635,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.save_coverage(testname)
         #
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
     #
     #
     #
@@ -22740,8 +22725,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.save_coverage(testname)
         #
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
         self.rm_testdir()
     def test_5431_systemctl_py_start_extra_simple(self):
         """ check that we can start simple services in a container"""
@@ -22815,8 +22799,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.save_coverage(testname)
         #
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
         self.rm_testdir()
     def test_5432_systemctl_py_start_forking(self):
         """ check that we can start forking services in a container w/ PIDFile"""
@@ -22914,8 +22897,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.save_coverage(testname)
         #
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
         self.rm_testdir()
     def test_5433_systemctl_py_start_forking_without_pid_file(self):
         """ check that we can start forking services in a container without PIDFile"""
@@ -23011,8 +22993,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.save_coverage(testname)
         #
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
         self.rm_testdir()
     def test_5435_systemctl_py_start_notify_by_timeout(self):
         """ check that we can start simple services in a container w/ notify timeout"""
@@ -23094,8 +23075,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.save_coverage(testname)
         #
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
         self.rm_testdir()
     def test_5500_systemctl_py_run_default_services_in_container(self):
         """ check that we can enable services in a docker container to be run as default-services"""
@@ -23188,8 +23168,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.save_coverage(testname)
         #
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
         self.rm_testdir()
     def test_5520_systemctl_py_run_default_services_from_saved_container(self):
         """ check that we can enable services in a docker container to be run as default-services
@@ -23307,12 +23286,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.save_coverage(testname, testname+"x")
         #
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}x"
         sx____(cmd.format(**locals()))
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
         self.rm_testdir()
     def test_5530_systemctl_py_run_default_services_from_simple_saved_container(self):
         """ check that we can enable services in a docker container to be run as default-services
@@ -23413,12 +23391,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.save_coverage(testname, testname+"x")
         #
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}x"
         sx____(cmd.format(**locals()))
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
         self.rm_testdir()
     def test_5533_systemctl_py_run_default_services_from_single_service_saved_container(self):
         """ check that we can enable services in a docker container to be run as default-services
@@ -23518,12 +23495,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.save_coverage(testname, testname+"x")
         #
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}x"
         sx____(cmd.format(**locals()))
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
         self.rm_testdir()
 
     def test_5600_systemctl_py_list_units_running(self):
@@ -23637,12 +23613,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.save_coverage(testname, testname+"x")
         #
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}x"
         sx____(cmd.format(**locals()))
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
         self.rm_testdir()
 
     def test_5700_systemctl_py_restart_failed_units(self):
@@ -23847,12 +23822,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         log = lines(open(testdir+"/systemctl.debug.log"))
         #
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}x"
         sx____(cmd.format(**locals()))
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
         self.rm_testdir()
 
     def test_6130_run_default_services_from_simple_saved_container(self):
@@ -23955,12 +23929,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.save_coverage(testname, testname+"x")
         #
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}x"
         sx____(cmd.format(**locals()))
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
         self.rm_testdir()
     def test_6133_run_default_services_from_single_service_saved_container(self):
         """ check that we can enable services in a docker container to be run as default-services
@@ -24063,12 +24036,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.save_coverage(testname, testname+"x")
         #
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}x"
         sx____(cmd.format(**locals()))
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
         self.rm_testdir()
     def test_6160_systemctl_py_init_default_halt_to_exit_container(self):
         """ check that we can 'halt' in a docker container to stop the service
@@ -24205,12 +24177,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.save_coverage(testname, testname+"x")
         #
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}x"
         sx____(cmd.format(**locals()))
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
         self.rm_testdir()
     def test_6170_systemctl_py_init_all_stop_last_service_to_exit_container(self):
         """ check that we can 'stop <service>' in a docker container to stop the service
@@ -24352,12 +24323,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.save_coverage(testname, testname+"x")
         #
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}x"
         sx____(cmd.format(**locals()))
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
         self.rm_testdir()
     def test_6180_systemctl_py_init_explicit_halt_to_exit_container(self):
         """ check that we can 'halt' in a docker container to stop the service
@@ -24489,12 +24459,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.save_coverage(testname, testname+"x")
         #
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}x"
         sx____(cmd.format(**locals()))
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
         self.rm_testdir()
     def test_6190_systemctl_py_init_explicit_stop_last_service_to_exit_container(self):
         """ check that we can 'stop <service>' in a docker container to stop the service
@@ -24627,12 +24596,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.save_coverage(testname, testname+"x")
         #
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}x"
         sx____(cmd.format(**locals()))
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
         self.rm_testdir()
     def test_6200_systemctl_py_switch_users_is_possible(self):
         """ check that we can put setuid/setgid definitions in a service
@@ -24752,10 +24720,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.save_coverage(testname)
         #
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
         self.rm_testdir()
     def test_6201_systemctl_py_switch_users_is_possible_from_saved_container(self):
         """ check that we can put setuid/setgid definitions in a service
@@ -24893,12 +24860,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.save_coverage(testname, testname+"x")
         #
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}x"
         sx____(cmd.format(**locals()))
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
         self.rm_testdir()
     def test_6210_switch_users_and_workingdir_coverage(self):
         """ check that we can put workingdir and setuid/setgid definitions in a service
@@ -25030,10 +24996,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.save_coverage(testname)
         #
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
         self.rm_testdir()
     def test_6600_systemctl_py_can_reap_zombies_in_a_container(self):
         """ check that we can reap zombies in a container managed by systemctl.py"""
@@ -25169,12 +25134,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.save_coverage(testname, testname+"x")
         #
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}x"
         sx____(cmd.format(**locals()))
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
         self.rm_testdir()
 
     def test_7001_centos_httpd(self):
@@ -25233,12 +25197,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "grep OK {tmp}/{testname}.txt"
         sh____(cmd.format(**locals()))
         # CLEAN
-        cmd = "docker stop {testname}"
-        sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
-        sh____(cmd.format(**locals()))
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
         self.rm_testdir()
     def test_7002_centos_postgres(self):
         """ WHEN using a systemd-enabled CentOS 7, 
@@ -25319,12 +25280,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "grep testuser_ok {tmp}/{testname}.txt"
         sh____(cmd.format(**locals()))
         # CLEAN
-        cmd = "docker stop {testname}"
-        sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
-        sh____(cmd.format(**locals()))
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
         self.rm_testdir()
     def test_7003_opensuse_syslog(self):
         """ WHEN using a systemd-enabled CentOS 7 ..."""
@@ -25368,12 +25326,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} systemctl stop syslog.socket -vvv"
         sh____(cmd.format(**locals()))
         # CLEAN
-        cmd = "docker stop {testname}"
-        sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
-        sh____(cmd.format(**locals()))
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
         self.rm_testdir()
     def test_7011_centos_httpd_socket_notify(self):
         """ WHEN using an image for a systemd-enabled CentOS 7, 
@@ -25439,10 +25394,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "docker cp {testname}:/var/log/systemctl.debug.log {testdir}/systemctl.debug.log"
         sh____(cmd.format(**locals()))
-        cmd = "docker stop {testname}"
-        sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
-        sh____(cmd.format(**locals()))
         # CHECK
         self.assertEqual(len(greps(open(testdir+"/systemctl.debug.log"), " ERROR ")), 0)
         self.assertTrue(greps(open(testdir+"/systemctl.debug.log"), "use NOTIFY_SOCKET="))
@@ -25451,6 +25402,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(open(testdir+"/systemctl.debug.log"), "stop '/bin/kill' '-WINCH'"))
         self.assertTrue(greps(open(testdir+"/systemctl.debug.log"), "wait [$]NOTIFY_SOCKET"))
         self.assertTrue(greps(open(testdir+"/systemctl.debug.log"), "wait for PID .* is done"))
+        self.rm_docker(testname)
         self.rm_testdir()
     def test_7020_ubuntu_apache2_with_saved_container(self):
         """ WHEN using a systemd enabled Ubuntu as the base image
@@ -25507,12 +25459,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "grep OK {tmp}/{testname}.txt"
         sh____(cmd.format(**locals()))
         # CLEAN
-        cmd = "docker stop {testname}"
-        sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
-        sh____(cmd.format(**locals()))
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
         self.rm_testdir()
     def test_7502_centos_postgres_user_mode_container(self):
         """ WHEN using a systemd-enabled CentOS 7, 
@@ -25592,12 +25541,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "grep testuser_ok {tmp}/{testname}.txt"
         sh____(cmd.format(**locals()))
         # CLEAN
-        cmd = "docker stop {testname}"
-        sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
-        sh____(cmd.format(**locals()))
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
         self.rm_testdir()
     # @unittest.expectedFailure
     def test_8001_issue_1_start_mariadb_centos_7_0(self):
@@ -25667,8 +25613,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if greps(top, "mysqld ") and had_mysqld_safe:
             logg.critical("mysqld still running => this is an uptream error!")
         #
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
         self.rm_testdir()
     def test_8002_issue_2_start_rsyslog_centos7(self):
         """ issue 2: rsyslog on centos 7 does not start"""
@@ -25714,8 +25659,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, "/usr/sbin/rsyslog"))
         #
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
         self.rm_testdir()
     def test_8011_centos_httpd_socket_notify(self):
         """ start/restart behaviour if a httpd has failed - issue #11 """
@@ -25796,11 +25740,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "docker cp {testname}:/var/log/systemctl.debug.log {testdir}/systemctl.debug.log"
         sh____(cmd.format(**locals()))
-        cmd = "docker stop {testname}"
-        sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
-        sh____(cmd.format(**locals()))
         #
+        self.rm_docker(testname)
         self.rm_testdir()
     def test_8031_centos_nginx_restart(self):
         """ start/restart behaviour if a nginx has failed - issue #31 """
@@ -25879,11 +25820,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "docker cp {testname}:/var/log/systemctl.debug.log {testdir}/systemctl.debug.log"
         sh____(cmd.format(**locals()))
-        cmd = "docker stop {testname}"
-        sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
-        sh____(cmd.format(**locals()))
         #
+        self.rm_docker(testname)
         self.rm_testdir()
     def test_8034_testing_mask_unmask(self):
         """ Checking the issue 34 on Ubuntu """
