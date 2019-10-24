@@ -450,13 +450,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         return newdir
     def rm_docker(self, testname):
         if not KEEP:
-            sx____("docker stop " + testname)
-            for x in xrange(20):
-                status = output("docker inspect -f '{{.State}}{{.Status}}' " + testname)
-                logg.info("%s status %s", testname, status)
-                if status not in [ "running" ]:
-                    break
-                time.sleep(1)
+            sx____("docker stop -t 6 " + testname)
             sx____("docker rm -f " + testname)
     def makedirs(self, path):
         if not os.path.isdir(path):
