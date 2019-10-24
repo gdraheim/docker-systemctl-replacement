@@ -316,13 +316,11 @@ def ignore_signals_and_raise_keyboard_interrupt(signame):
     signal.signal(signal.SIGINT, signal.SIG_IGN)
     raise KeyboardInterrupt(signame)
 
-class SystemctlConfigParser:
-    """ A *.service files has a structure similar to an *.ini file but it is
-        actually not like it. Settings may occur multiple times in each section
-        and they create an implicit list. In reality all the settings are
-        globally uniqute, so that an 'environment' can be printed without
-        adding prefixes. Settings are continued with a backslash at the end
-        of the line.  """
+class SystemctlConfData:
+    """ A *.service files has a structure similar to an *.ini file so
+        that data is structured in sections and values. Actually the
+        values are lists - the raw data is in .getlist(). Otherwise
+        .get() will return the first line that was encountered. """
     def __init__(self, defaults=None, dict_type=None, allow_no_value=False):
         self._defaults = defaults or {}
         self._dict_type = dict_type or collections.OrderedDict
@@ -391,6 +389,18 @@ class SystemctlConfigParser:
                 return []
             raise AttributeError("option {} in {} does not exist".format(option, section))
         return self._conf[section][option] # returns a list, possibly empty
+    def filenames(self):
+        return self._files
+
+class SystemctlConfigParser(SystemctlConfData):
+    """ A *.service files has a structure similar to an *.ini file but it is
+        actually not like it. Settings may occur multiple times in each section
+        and they create an implicit list. In reality all the settings are
+        globally uniqute, so that an 'environment' can be printed without
+        adding prefixes. Settings are continued with a backslash at the end
+        of the line.  """
+    # def __init__(self, defaults=None, dict_type=None, allow_no_value=False):
+    #   SystemctlConfData.__init__(self, defaults, dict_type, allow_no_value)
     def read(self, filename):
         return self.read_sysd(filename)
     def read_sysd(self, filename):
@@ -441,6 +451,7 @@ class SystemctlConfigParser:
             else:
                 # hint: an empty line shall reset the value-list
                 self.set(section, name, text and text or None)
+        return self
     def read_sysv(self, filename):
         """ an LSB header is scanned and converted to (almost)
             equivalent settings of a SystemD ini-style input """
@@ -481,8 +492,7 @@ class SystemctlConfigParser:
                 if item.strip() in _runlevel_mappings:
                     self.set("Install", "WantedBy", _runlevel_mappings[item.strip()])
         self.set("Service", "Type", "sysv")
-    def filenames(self):
-        return self._files
+        return self
 
 # UnitConfParser = ConfigParser.RawConfigParser
 UnitConfParser = SystemctlConfigParser
