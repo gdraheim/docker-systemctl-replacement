@@ -547,7 +547,7 @@ class SystemctlConf:
         filename = self.filename()
         if filename:
             name = os.path.basename(filename)
-        return self.get("Unit", "Id", name)
+        return self.module or name
     def set(self, section, name, value):
         return self.data.set(section, name, value)
     def get(self, section, name, default, allow_no_value = False):
@@ -1122,8 +1122,6 @@ class Systemctl:
         """ a unit conf that can be printed to the user where
             attributes are empty and loaded() is False """
         data = UnitConfParser()
-        data.set("Unit","Id", module)
-        data.set("Unit", "Names", module)
         data.set("Unit", "Description", description or ("NOT-FOUND "+module))
         # assert(not data.loaded())
         conf = SystemctlConf(data, module)
@@ -3887,8 +3885,9 @@ class Systemctl:
             loaded = "not-loaded"
             if "NOT-FOUND" in self.get_description_from(conf):
                 loaded = "not-found"
-        yield "Id", unit
-        yield "Names", unit
+        names = { unit: 1, conf.name(): 1 }
+        yield "Id", conf.name()
+        yield "Names", " ".join(sorted(names.keys()))
         yield "Description", self.get_description_from(conf) # conf.get("Unit", "Description")
         yield "PIDFile", self.pid_file_from(conf) # not self.pid_file_from w/o default location
         yield "MainPID", self.active_pid_from(conf) or "0"  # status["MainPID"] or PIDFile-read
