@@ -474,6 +474,11 @@ class SystemctlConfigParser(SystemctlConfData):
                         key, val = m.group(1), m.group(2).strip()
                         self.set(section, key, val)
                 continue
+        self.systemd_sysv_generator(filename)
+        return self
+    def systemd_sysv_generator(self, filename):
+        """ see systemd-sysv-generator(8) """
+        self.set("Unit", "SourcePath", filename)
         description = self.get("init.d", "Description", "")
         if description:
             self.set("Unit", "Description", description)
@@ -486,13 +491,21 @@ class SystemctlConfigParser(SystemctlConfData):
         if provides:
             self.set("Install", "Alias", provides)
         # if already in multi-user.target then start it there.
-        runlevels = self.get("init.d", "Default-Start","")
-        if runlevels:
-            for item in runlevels.split(" "):
-                if item.strip() in _runlevel_mappings:
-                    self.set("Install", "WantedBy", _runlevel_mappings[item.strip()])
-        self.set("Service", "Type", "sysv")
-        return self
+        runlevels = self.get("init.d", "Default-Start","3 5")
+        for item in runlevels.split(" "):
+            if item.strip() in _runlevel_mappings:
+                self.set("Install", "WantedBy", _runlevel_mappings[item.strip()])
+        self.set("Service", "Restart", "no")
+        self.set("Service", "TimeoutSec", DefaultMaximumTimeout)
+        self.set("Service", "KillMode", "process")
+        self.set("Service", "GuessMainPID", "no")
+        # self.set("Service", "RemainAfterExit", "yes")
+        # self.set("Service", "SuccessExitStatus", "5 6")
+        self.set("Service", "ExecStart", filename + " start")
+        self.set("Service", "ExecStop", filename + " stop")
+        if description: # LSB style initscript
+            self.set("Service", "ExecReload", filename + " reload")
+        self.set("Service", "Type", "forking") # not "sysv" anymore
 
 # UnitConfParser = ConfigParser.RawConfigParser
 UnitConfParser = SystemctlConfigParser
@@ -1973,26 +1986,7 @@ class Systemctl:
                     active = "failed"
                     self.write_status_from(conf, AS=active )
                     return False
-        if runs in [ "sysv" ]:
-            status_file = self.status_file_from(conf)
-            if True:
-                exe = conf.filename()
-                cmd = "'%s' start" % exe
-                env["SYSTEMCTL_SKIP_REDIRECT"] = "yes"
-                newcmd = self.exec_cmd(cmd, env, conf)
-                logg.info("%s start %s", runs, shell_cmd(newcmd))
-                forkpid = os.fork()
-                if not forkpid: # pragma: no cover
-                    os.setsid() # detach child process from parent
-                    self.execve_from(conf, newcmd, env)
-                run = subprocess_waitpid(forkpid)
-                self.set_status_from(conf, "ExecMainCode", run.returncode)
-                logg.info("%s start done (%s) <-%s>", runs, 
-                    run.returncode or "OK", run.signal or "")
-                active = run.returncode and "failed" or "active"
-                self.write_status_from(conf, AS=active )
-                return True
-        elif runs in [ "oneshot" ]:
+        if runs in [ "oneshot" ]:
             status_file = self.status_file_from(conf)
             if self.get_status_from(conf, "ActiveState", "unknown") == "active":
                 logg.warning("the service was already up once")
@@ -2281,25 +2275,7 @@ class Systemctl:
         self.exec_check_service(conf, env, "ExecStop")
         returncode = 0
         service_result = "success"
-        if runs in [ "sysv" ]:
-            status_file = self.status_file_from(conf)
-            if True:
-                exe = conf.filename()
-                cmd = "'%s' stop" % exe
-                env["SYSTEMCTL_SKIP_REDIRECT"] = "yes"
-                newcmd = self.exec_cmd(cmd, env, conf)
-                logg.info("%s stop %s", runs, shell_cmd(newcmd))
-                forkpid = os.fork()
-                if not forkpid:
-                    self.execve_from(conf, newcmd, env) # pragma: no cover
-                run = subprocess_waitpid(forkpid)
-                if run.returncode:
-                    self.set_status_from(conf, "ExecStopCode", run.returncode)
-                    self.write_status_from(conf, AS="failed")
-                else:
-                    self.clean_status_from(conf) # "inactive"
-                return True
-        elif runs in [ "oneshot" ]:
+        if runs in [ "oneshot" ]:
             status_file = self.status_file_from(conf)
             if self.get_status_from(conf, "ActiveState", "unknown") == "inactive":
                 logg.warning("the service is already down once")
@@ -2471,26 +2447,7 @@ class Systemctl:
         runs = conf.get("Service", "Type", "simple").lower()
         env = self.get_env(conf)
         self.exec_check_service(conf, env, "ExecReload")
-        if runs in [ "sysv" ]:
-            status_file = self.status_file_from(conf)
-            if True:
-                exe = conf.filename()
-                cmd = "'%s' reload" % exe
-                env["SYSTEMCTL_SKIP_REDIRECT"] = "yes"
-                newcmd = self.exec_cmd(cmd, env, conf)
-                logg.info("%s reload %s", runs, shell_cmd(newcmd))
-                forkpid = os.fork()
-                if not forkpid:
-                    self.execve_from(conf, newcmd, env) # pragma: no cover
-                run = subprocess_waitpid(forkpid)
-                self.set_status_from(conf, "ExecReloadCode", run.returncode)
-                if run.returncode:
-                    self.write_status_from(conf, AS="failed")
-                    return False
-                else:
-                    self.write_status_from(conf, AS="active")
-                    return True
-        elif runs in [ "simple", "notify", "forking" ]:
+        if runs in [ "simple", "notify", "forking" ]:
             if not self.is_active_from(conf):
                 logg.info("no reload on inactive service %s", conf.name())
                 return True
@@ -3765,7 +3722,7 @@ class Systemctl:
         usedExecStart = []
         usedExecStop = []
         usedExecReload = []
-        if haveType not in [ "simple", "forking", "notify", "oneshot", "dbus", "idle", "sysv"]:
+        if haveType not in [ "simple", "forking", "notify", "oneshot", "dbus", "idle"]:
             logg.error(" %s: Failed to parse service type, ignoring: %s", unit, haveType)
             errors += 100
         for line in haveExecStart:
@@ -3827,7 +3784,7 @@ class Systemctl:
         if not conf.data.has_section("Service"):
             return True #pragma: no cover
         haveType = conf.get("Service", "Type", "simple")
-        if haveType in [ "sysv" ]:
+        if self.is_sysv_file(conf.filename()):
             return True # we don't care about that
         abspath = 0
         notexists = 0
