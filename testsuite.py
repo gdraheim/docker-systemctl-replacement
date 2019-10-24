@@ -20337,6 +20337,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         self.usermode_notify_service_functions_with_reload("system", testname, testdir)
         self.rm_testdir()
+        self.coverage()
         logg.error("too long") #TODO
         self.end(200)
     def test_5137_usermode_notify_service_functions_with_reload_user(self):
@@ -20349,8 +20350,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         self.usermode_notify_service_functions_with_reload("user", testname, testdir)
+        self.rm_testdir()
         self.coverage()
-        self.end(266) #TODO# too long?
+        logg.error("too long") #TODO
+        self.end(266)
     def usermode_notify_service_functions_with_reload(self, system, testname, testdir):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -22086,6 +22089,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         self.bad_usermode_notify_service_functions_with_reload("", testname, testdir)
         self.rm_testdir()
+        self.coverage()
         logg.error("too long") #TODO
         self.end(200)
     def test_5237_bad_usermode_notify_service_functions_with_reload_user(self):
@@ -22098,8 +22102,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         self.bad_usermode_notify_service_functions_with_reload("User=foo", testname, testdir)
+        self.rm_testdir()
         self.coverage()
-        self.end(266) #TODO# too long?
+        logg.error("too long") #TODO
+        self.end(266)
     def bad_usermode_notify_service_functions_with_reload(self, extra, testname, testdir):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
