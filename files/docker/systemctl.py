@@ -2970,9 +2970,11 @@ class Systemctl:
             service_unit = self.get_socket_service_from(conf)
             service_conf = self.load_unit_conf(service_unit)
             return self.get_active_service_from(service_conf)
+        elif conf.name().endswith(".target"):
+            return self.get_active_target_from(conf)
         else:
             logg.debug("is-active not implemented for unit type: %s", conf.name())
-            return False
+            return "unknown" # TODO: "inactive" ?
     def get_active_service_from(self, conf):
         """ returns 'active' 'inactive' 'failed' 'unknown' """
         # used in try-restart/other commands to check if needed.
@@ -2997,6 +2999,15 @@ class Systemctl:
             return "active"
         else:
             return "inactive"
+    def get_active_target_from(self, conf):
+        """ returns 'active' 'inactive' 'failed' 'unknown' """
+        default_target = DefaultTarget
+        sysinit_target = SysInitTarget
+        if conf.name() in [ sysinit_target, "default.target", default_target ]:
+            status = self.is_system_running()
+            if status in [ "running" ]:
+                return "active"
+        return "inactive"
     def get_substate_from(self, conf):
         """ returns 'running' 'exited' 'dead' 'failed' 'plugged' 'mounted' """
         if not conf: return False
