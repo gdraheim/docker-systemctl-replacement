@@ -1,4 +1,4 @@
-**please change stable dockerfiles to download from LTS branch/v1.4**
+*please change stable dockerfiles to download from LTS branch/v1.4*
 
 # docker systemctl replacement
 
