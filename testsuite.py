@@ -25466,6 +25466,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         images = IMAGES
         image = self.local_image(IMAGE or UBUNTU)
         systemctl_py = _systemctl_py
+        python = os.path.basename(_python)
         sometime = SOMETIME or 288
         logg.info("%s:%s %s", testname, port, image)
         #
