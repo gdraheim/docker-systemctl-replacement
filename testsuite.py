@@ -18942,7 +18942,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-        self.end()
+        self.end(122)
     #
     #
     #  compare the following with the test_5030 series
