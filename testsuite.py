@@ -25322,6 +25322,55 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
+    def test_7003_opensuse_syslog(self):
+        """ WHEN using a systemd-enabled CentOS 7 ..."""
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if IMAGE and "centos" not in IMAGE: self.skipTest("centos-based test")
+        images = IMAGES
+        image = self.local_image(IMAGE or OPENSUSE)
+        if _python.endswith("python3") and "centos" in image: 
+            self.skipTest("no python3 on centos")
+        package = package_tool(image)
+        refresh = refresh_tool(image)
+        testname=self.testname()
+        ## testport=self.testport()
+        python = os.path.basename(_python)
+        name="opensuse-syslog"
+        systemctl_py = _systemctl_py
+        sometime = SOMETIME or 288
+        ## logg.info("%s:%s %s", testname, testport, image)
+        # WHEN
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} {package} install -y {python}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} {package} install -y rsyslog"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(cmd.format(**locals()))
+        #?# cmd = "docker exec {testname} systemctl enable syslog.socket"
+        #?# sh____(cmd.format(**locals()))
+        #
+        cmd = "docker exec {testname} systemctl start syslog.socket -vvv"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl is-active syslog.socket -vvv"
+        sx____(cmd.format(**locals())) 
+        # -> it does currently return "inactive" but same for "syslog.service"
+        #
+        cmd = "docker exec {testname} systemctl stop syslog.socket -vvv"
+        sh____(cmd.format(**locals()))
+        # CLEAN
+        cmd = "docker stop {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
+        self.rm_testdir()
     def test_7011_centos_httpd_socket_notify(self):
         """ WHEN using an image for a systemd-enabled CentOS 7, 
             THEN we can create an image with an Apache HTTP service 
@@ -25416,7 +25465,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         port=self.testport()
         images = IMAGES
         image = self.local_image(IMAGE or UBUNTU)
-        python = os.path.basename(_python)
         systemctl_py = _systemctl_py
         sometime = SOMETIME or 288
         logg.info("%s:%s %s", testname, port, image)
