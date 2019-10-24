@@ -9695,6 +9695,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_3935_start_false_exec_notify(self, real = None):
         """ check that we manage notify services in a root env
             and false handling."""
+        if not os.path.exists("/usr/bin/socat"):
+            self.skipTest("missing /usr/bin/socat")
         vv = self.begin()
         testname = self.testname()
         testdir = self.testdir()
@@ -9785,6 +9787,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_3936_start_false_exec_notify(self, real = None):
         """ check that we manage notify services in a root env
             and false handling."""
+        if not os.path.exists("/usr/bin/socat"):
+            self.skipTest("missing /usr/bin/socat")
         vv = self.begin()
         testname = self.testname()
         testdir = self.testdir()
@@ -9865,6 +9869,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_3937_start_false_exec_notify(self, real = None):
         """ check that we manage notify services in a root env
             and false handling."""
+        if not os.path.exists("/usr/bin/socat"):
+            self.skipTest("missing /usr/bin/socat")
         vv = self.begin()
         testname = self.testname()
         testdir = self.testdir()
@@ -9947,6 +9953,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_3938_start_slow_exec_notify(self, real = None):
         """ check that we manage notify services in a root env
             and slow handling."""
+        if not os.path.exists("/usr/bin/socat"):
+            self.skipTest("missing /usr/bin/socat")
         vv = self.begin()
         testname = self.testname()
         testdir = self.testdir()
