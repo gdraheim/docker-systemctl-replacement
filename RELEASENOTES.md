@@ -1,3 +1,5 @@
+**please change stable container dockerfiles to download from LTS branch/v1.4**
+
 RELEASE 1.4
 
 Additional features have been put into the 1.4 series of systemctl.py. The
@@ -74,6 +76,28 @@ The general README itself contains an easier introduction with a hint on how
 a multi-service container looks like from the inside. That should make some
 visual impression on everyone who has already worked with containers so far.
 
+RELEASE 1.4.3424
 
+There are a couple of bugfixes. The most prominent is a missing 'break' in 
+the InitLoop (from --init), so that a SIGTERM to PID 1 of a container did 
+not initiate a 'halt' shutdown sequence. However that was the intention in
+support of a 'docker stop container'.
 
+The ExecStartPre subprocess and the change to WorkingDir did not fail even
+when they should. This is fixed now but it may provoke some new errors
+downstream. Which is a good thing as the same may happen to that service 
+on a systemd controlled machine.
 
+Other than that, testcases were updated to opensuse/leap:15.1. The helper
+project 'docker-mirror-packages-repo' does even support more version but
+that is not part of the v1.4 anymore.
+
+Since early 2019 there has been an LTS bugfix branch for v1.4 already. The 
+difference to the 'master' branch was minimal however. By November 2019
+the 'master' branch will be switched to v1.5 which has a couple of 
+functional changes. Some projects did not download from LTS branch/v1.4
+but directly from master - they should change their processes soon as the 
+next rebuild from 'master' may change some behaviour. Specifically, the 
+v1.4 generation was implicitly "Restart=no" but the v1.5 generation will 
+enable "Restart=always" by default (running from the init loop, i.e. if 
+systemctl.py is running on PID 1 or started with --init).
