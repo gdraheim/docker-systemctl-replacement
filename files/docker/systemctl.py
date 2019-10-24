@@ -182,6 +182,10 @@ def os_path(root, path):
     while path.startswith(os.path.sep):
         path = path[1:]
     return os.path.join(root, path)
+def path_replace_extension(path, old, new):
+    if path.endswith(old):
+        path = path[:-len(old)]
+    return path + new
 
 def os_getlogin():
     """ NOT using os.getlogin() """
@@ -1951,6 +1955,9 @@ class Systemctl:
         timeout = conf.get("Service", "TimeoutSec", DefaultTimeoutStartSec)
         timeout = conf.get("Service", "TimeoutStartSec", timeout)
         return time_to_seconds(timeout, DefaultMaximumTimeout)
+    def get_SocketTimeoutSec(self, conf):
+        timeout = conf.get("Socket", "TimeoutSec", DefaultTimeoutStartSec)
+        return time_to_seconds(timeout, DefaultMaximumTimeout)
     def start_unit_from(self, conf):
         if not conf: return False
         if self.syntax_check(conf) > 100: return False
@@ -1958,6 +1965,14 @@ class Systemctl:
             logg.debug(" start unit %s => %s", conf.name(), conf.filename())
             return self.do_start_unit_from(conf)
     def do_start_unit_from(self, conf):
+        if conf.name().endswith(".service"):
+            return self.do_start_service_from(conf)
+        elif conf.name().endswith(".socket"):
+            return self.do_start_socket_from(conf)
+        else:
+            logg.error("start not implemented for unit type: %s", conf.name())
+            return False
+    def do_start_service_from(self, conf):
         timeout = self.get_TimeoutStartSec(conf)
         doRemainAfterExit = conf.getbool("Service", "RemainAfterExit", "no")
         runs = conf.get("Service", "Type", "simple").lower()
@@ -2168,6 +2183,79 @@ class Systemctl:
                 logg.debug("post-start done (%s) <-%s>", 
                     run.returncode or "OK", run.signal or "")
             return True
+    def get_socket_service_from(self, conf):
+        socket_unit = os.path.basename(conf.filename())
+        accept = conf.getbool("Socket", "Accept", False)
+        service_type = accept and "@.service" or ".service"
+        service_name = path_replace_extension(socket_unit, ".socket", service_type)
+        service_unit = conf.get("Socket", "Service", service_name)
+        logg.debug("socket %s -> service %s", socket_unit, service_unit)
+        return service_unit
+    def do_start_socket_from(self, conf):
+        runs = "socket"
+        timeout = self.get_SocketTimeoutSec(conf)
+        accept = conf.getbool("Socket", "Accept", False)
+        service_unit = self.get_socket_service_from(conf)
+        service_conf = self.load_unit_conf(service_unit)
+        if service_conf is None:
+            logg.debug("unit could not be loaded (%s)", service_unit)
+            logg.error("Unit %s not found.", service_unit)
+            return False
+        env = self.get_env(conf)
+        if True:
+            for cmd in conf.getlist("Socket", "ExecStartPre", []):
+                check, cmd = checkstatus(cmd)
+                newcmd = self.exec_cmd(cmd, env, conf)
+                logg.info(" pre-start %s", shell_cmd(newcmd))
+                forkpid = os.fork()
+                if not forkpid: 
+                    self.execve_from(conf, newcmd, env) # pragma: no cover
+                run = subprocess_waitpid(forkpid)
+                logg.debug(" pre-start done (%s) <-%s>",
+                    run.returncode or "OK", run.signal or "")
+                if run.returncode and check:
+                    logg.error("the ExecStartPre control process exited with error code")
+                    active = "failed"
+                    self.write_status_from(conf, AS=active )
+                    return False
+        if not accept:
+            # we do not listen but have the service started right away
+            done = self.do_start_service_from(service_conf)
+            service_result = done and "success" or "failed"
+        else:
+            service_result = "failed"
+            logg.error("socket accept=yes is not implemented. sorry.")
+        # POST sequence
+        active = self.is_active_from(conf)
+        if not active:
+            logg.warning("%s start not active", runs)
+            # according to the systemd documentation, a failed start-sequence
+            # should execute the ExecStopPost sequence allowing some cleanup.
+            env["SERVICE_RESULT"] = service_result
+            for cmd in conf.getlist("Socket", "ExecStopPost", []):
+                check, cmd = checkstatus(cmd)
+                newcmd = self.exec_cmd(cmd, env, conf)
+                logg.info("post-fail %s", shell_cmd(newcmd))
+                forkpid = os.fork()
+                if not forkpid:
+                    self.execve_from(conf, newcmd, env) # pragma: no cover
+                run = subprocess_waitpid(forkpid)
+                logg.debug("post-fail done (%s) <-%s>", 
+                    run.returncode or "OK", run.signal or "")
+            return False
+        else:
+            for cmd in conf.getlist("Socket", "ExecStartPost", []):
+                check, cmd = checkstatus(cmd)
+                newcmd = self.exec_cmd(cmd, env, conf)
+                logg.info("post-start %s", shell_cmd(newcmd))
+                forkpid = os.fork()
+                if not forkpid:
+                    self.execve_from(conf, newcmd, env) # pragma: no cover
+                run = subprocess_waitpid(forkpid)
+                logg.debug("post-start done (%s) <-%s>", 
+                    run.returncode or "OK", run.signal or "")
+            return True
+        return False
     def extend_exec_env(self, env):
         env = env.copy()
         # implant DefaultPath into $PATH
@@ -2267,6 +2355,14 @@ class Systemctl:
             logg.info(" stop unit %s => %s", conf.name(), conf.filename())
             return self.do_stop_unit_from(conf)
     def do_stop_unit_from(self, conf):
+        if conf.name().endswith(".service"):
+            return self.do_stop_service_from(conf)
+        elif conf.name().endswith(".socket"):
+            return self.do_stop_socket_from(conf)
+        else:
+            logg.error("stop not implemented for unit type: %s", conf.name())
+            return False
+    def do_stop_service_from(self, conf):
         timeout = self.get_TimeoutStopSec(conf)
         runs = conf.get("Service", "Type", "simple").lower()
         env = self.get_env(conf)
@@ -2391,6 +2487,39 @@ class Systemctl:
                 logg.debug("post-stop done (%s) <-%s>", 
                     run.returncode or "OK", run.signal or "")
         return service_result == "success"
+    def do_stop_socket_from(self, conf):
+        runs = "socket"
+        timeout = self.get_SocketTimeoutSec(conf)
+        accept = conf.getbool("Socket", "Accept", False)
+        service_unit = self.get_socket_service_from(conf)
+        service_conf = self.load_unit_conf(service_unit)
+        if service_conf is None:
+            logg.debug("unit could not be loaded (%s)", service_unit)
+            logg.error("Unit %s not found.", service_unit)
+            return False
+        env = self.get_env(conf)
+        if not accept:
+            # we do not listen but have the service started right away
+            done = self.do_stop_service_from(service_conf)
+            service_result = done and "success" or "failed"
+        else:
+            service_result = "failed"
+            logg.error("socket accept=yes is not implemented. sorry.")
+        # POST sequence
+        active = self.is_active_from(conf)
+        if not active:
+            env["SERVICE_RESULT"] = service_result
+            for cmd in conf.getlist("Service", "ExecStopPost", []):
+                check, cmd = checkstatus(cmd)
+                newcmd = self.exec_cmd(cmd, env, conf)
+                logg.info("post-stop %s", shell_cmd(newcmd))
+                forkpid = os.fork()
+                if not forkpid:
+                    self.execve_from(conf, newcmd, env) # pragma: no cover
+                run = subprocess_waitpid(forkpid)
+                logg.debug("post-stop done (%s) <-%s>", 
+                    run.returncode or "OK", run.signal or "")
+        return service_result == "success"
     def wait_vanished_pid(self, pid, timeout):
         if not pid:
             return True
@@ -2442,6 +2571,16 @@ class Systemctl:
             logg.info(" reload unit %s => %s", conf.name(), conf.filename())
             return self.do_reload_unit_from(conf)
     def do_reload_unit_from(self, conf):
+        if conf.name().endswith(".service"):
+            return self.do_reload_service_from(conf)
+        elif conf.name().endswith(".socket"):
+            service_unit = self.get_socket_service_from(conf)
+            service_conf = self.load_unit_conf(service_unit)
+            return self.do_reload_service_from(service_conf)
+        else:
+            logg.error("reload not implemented for unit type: %s", conf.name())
+            return False
+    def do_reload_service_from(self, conf):
         runs = conf.get("Service", "Type", "simple").lower()
         env = self.get_env(conf)
         self.exec_check_service(conf, env, "ExecReload")
@@ -2825,6 +2964,16 @@ class Systemctl:
             return "unknown"
         return self.get_active_from(conf)
     def get_active_from(self, conf):
+        if conf.name().endswith(".service"):
+            return self.get_active_service_from(conf)
+        elif conf.name().endswith(".socket"):
+            service_unit = self.get_socket_service_from(conf)
+            service_conf = self.load_unit_conf(service_unit)
+            return self.get_active_service_from(service_conf)
+        else:
+            logg.debug("is-active not implemented for unit type: %s", conf.name())
+            return False
+    def get_active_service_from(self, conf):
         """ returns 'active' 'inactive' 'failed' 'unknown' """
         # used in try-restart/other commands to check if needed.
         if not conf: return "unknown"
