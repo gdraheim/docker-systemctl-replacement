@@ -326,16 +326,20 @@ def ignore_signals_and_raise_keyboard_interrupt(signame):
     signal.signal(signal.SIGINT, signal.SIG_IGN)
     raise KeyboardInterrupt(signame)
 
+_default_dict_type = collections.OrderedDict
+_default_conf_type = collections.OrderedDict
+
 class SystemctlConfData:
     """ A *.service files has a structure similar to an *.ini file so
         that data is structured in sections and values. Actually the
         values are lists - the raw data is in .getlist(). Otherwise
         .get() will return the first line that was encountered. """
-    def __init__(self, defaults=None, dict_type=None, allow_no_value=False):
+    def __init__(self, defaults=None, dict_type=None, conf_type=None, allow_no_value=False):
         self._defaults = defaults or {}
-        self._dict_type = dict_type or collections.OrderedDict
+        self._conf_type = conf_type or _default_conf_type
+        self._dict_type = dict_type or _default_dict_type
         self._allow_no_value = allow_no_value
-        self._conf = self._dict_type()
+        self._conf = self._conf_type()
         self._files = []
     def defaults(self):
         return self._defaults
