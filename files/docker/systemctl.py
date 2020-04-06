@@ -2150,7 +2150,7 @@ class Systemctl:
                 results = self.wait_notify_socket(notify, timeout, mainpid)
                 if "MAINPID" in results:
                     new_pid = to_intN(results["MAINPID"])
-                    if new_pid and to_int(new_pid) != mainpid:
+                    if new_pid and new_pid != mainpid:
                         logg.info("NEW PID %s from sd_notify (was PID %s)", new_pid, mainpid)
                         self.write_status_from(conf, MainPID=new_pid)
                         mainpid = new_pid
