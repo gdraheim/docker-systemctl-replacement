@@ -2708,7 +2708,8 @@ class Systemctl:
         if not conf.loaded():
             logg.warning("Unit %s could not be found.", unit)
             return "unknown"
-        return self.get_active_from(conf)
+        else:
+            return self.get_active_from(conf)
     def get_active_from(self, conf):
         """ returns 'active' 'inactive' 'failed' 'unknown' """
         # used in try-restart/other commands to check if needed.
