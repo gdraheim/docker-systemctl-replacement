@@ -1268,7 +1268,7 @@ class Systemctl:
                 result[unit] = "loaded"
                 description[unit] = self.get_description_from(conf)
                 active[unit] = self.get_active_from(conf)
-                substate[unit] = self.get_substate_from(conf)
+                substate[unit] = self.get_substate_from(conf) or "unknown"
             except Exception as e:
                 logg.warning("list-units: %s", e)
             if self._unit_state:
