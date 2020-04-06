@@ -971,7 +971,7 @@ class Systemctl:
         return result
     def load_sysd_template_conf(self, module): # -> conf?
         """ read the unit template with a UnitConfParser (systemd) """
-        if "@" in module:
+        if module and "@" in module:
             unit = parse_unit(module)
             service = "%s@.service" % unit.prefix
             return self.load_sysd_unit_conf(service)
