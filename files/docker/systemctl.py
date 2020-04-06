@@ -4476,11 +4476,11 @@ class Systemctl:
                             logg.info("[%s] [%s] Blocking Restart - oldest %s is %s ago (allowed %s)", 
                                me, unit, oldest, interval, limitSecs)
                             self.write_status_from(conf, AS="error")
-                            unit = None
+                            unit = "" # dropped out
                             continue
                     except Exception as e:
                         logg.error("[%s] burst exception %s", unit, e)
-                if unit:
+                if unit: # not dropped out
                     if unit not in self._restart_failed_units:
                         self._restart_failed_units[unit] = now + restartSec
                         logg.debug("[%s] [%s] restart scheduled in %+.3fs", 
