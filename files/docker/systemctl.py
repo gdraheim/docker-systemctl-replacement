@@ -1466,7 +1466,7 @@ class Systemctl:
                     try: del conf.status[key]
                     except KeyError: pass
                 else:
-                    conf.status[key] = value
+                    conf.status[key] = strE(value)
         try:
             with open(status_file, "w") as f:
                 for key in sorted(conf.status):
