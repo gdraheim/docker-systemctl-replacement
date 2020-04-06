@@ -372,6 +372,10 @@ class SystemctlConfData:
             self._conf[section][option] = [ value ]
         else:
             self._conf[section][option].append(value)
+    def getstr(self, section, option, default = None, allow_no_value = False):
+        done = self.get(section, option, strE(default), allow_no_value)
+        if done is None: return strE(default)
+        return done
     def get(self, section, option, default = None, allow_no_value = False):
         allow_no_value = allow_no_value or self._allow_no_value
         if section not in self._conf:
@@ -514,7 +518,7 @@ class SystemctlConfigParser(SystemctlConfData):
         if provides:
             self.set("Install", "Alias", provides)
         # if already in multi-user.target then start it there.
-        runlevels = self.get("init.d", "Default-Start","3 5")
+        runlevels = self.getstr("init.d", "Default-Start","3 5")
         for item in runlevels.split(" "):
             if item.strip() in _runlevel_mappings:
                 self.set("Install", "WantedBy", _runlevel_mappings[item.strip()])
@@ -574,7 +578,7 @@ class SystemctlConf:
     def set(self, section, name, value):
         return self.data.set(section, name, value)
     def get(self, section, name, default, allow_no_value = False):
-        return self.data.get(section, name, default, allow_no_value)
+        return self.data.getstr(section, name, default, allow_no_value)
     def getlist(self, section, name, default = None, allow_no_value = False):
         return self.data.getlist(section, name, default or [], allow_no_value)
     def getbool(self, section, name, default = None):
