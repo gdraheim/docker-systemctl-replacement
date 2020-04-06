@@ -4318,7 +4318,8 @@ class Systemctl:
         (and no unit is started/stoppped wether given or not).
         """
         if self._now:
-            return self.init_loop_until_stop([])
+            result = self.init_loop_until_stop([])
+            return not not result
         if not modules:
             # like 'systemctl --init default'
             if self._now or self._show_all:
