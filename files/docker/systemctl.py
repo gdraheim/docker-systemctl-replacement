@@ -4422,6 +4422,7 @@ class Systemctl:
             now = time.time()
             try:
                 conf = self.load_unit_conf(unit)
+                if not conf: continue
                 restartPolicy = conf.get("Service", "Restart", "no")
                 if restartPolicy in ["no", "on-success"]:
                     logg.debug("[%s] [%s] Current NoCheck (Restart=%s)", me, unit, restartPolicy)
