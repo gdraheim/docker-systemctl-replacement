@@ -167,10 +167,12 @@ def to_int(value, default = 0):
     except:
         return default
 def to_list(value):
+    if not value:
+        return []
     if isinstance(value, list):
-         return value
+        return value
     if isinstance(value, tuple):
-         return list(value)
+        return list(value)
     return str(value or "").split(",")
 def unit_of(module):
     if "." not in module:
