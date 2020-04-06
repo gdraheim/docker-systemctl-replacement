@@ -4612,6 +4612,7 @@ class Systemctl:
     def sysinit_target(self):
         if not self._sysinit_target:
             self._sysinit_target = self.default_unit_conf(SysInitTarget, "System Initialization")
+        assert self._sysinit_target is not None
         return self._sysinit_target
     def is_system_running(self):
         conf = self.sysinit_target()
