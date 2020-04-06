@@ -1481,7 +1481,7 @@ class Systemctl:
     def read_status_from(self, conf, defaults = None):
         status_file = self.status_file_from(conf)
         status = {}
-        if hasattr(defaults, "keys"):
+        if defaults is not None:
            for key in defaults.keys():
                status[key] = defaults[key]
         elif isinstance(defaults, basestring):
