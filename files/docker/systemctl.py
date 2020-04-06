@@ -661,6 +661,8 @@ class waitlock:
         except Exception as e:
             logg.warning("oops, %s", e)
 
+waitpid_result = collections.namedtuple("waitpid", ["pid", "returncode", "signal" ])
+
 def must_have_failed(waitpid, cmd):
     # found to be needed on ubuntu:16.04 to match test result from ubuntu:18.04 and other distros
     # .... I have tracked it down that python's os.waitpid() returns an exitcode==0 even when the
@@ -675,21 +677,18 @@ def must_have_failed(waitpid, cmd):
         if pid is None: # unknown $MAINPID
             if not waitpid.returncode:
                 logg.error("waitpid %s did return %s => correcting as 11", cmd, waitpid.returncode)
-            waitpidNEW = collections.namedtuple("waitpidNEW", ["pid", "returncode", "signal" ])
-            waitpid = waitpidNEW(waitpid.pid, 11, waitpid.signal)
+            waitpid = waitpid_result(waitpid.pid, 11, waitpid.signal)
     return waitpid
 
 def subprocess_waitpid(pid):
-    waitpid = collections.namedtuple("waitpid", ["pid", "returncode", "signal" ])
     run_pid, run_stat = os.waitpid(pid, 0)
-    return waitpid(run_pid, os.WEXITSTATUS(run_stat), os.WTERMSIG(run_stat))
+    return waitpid_result(run_pid, os.WEXITSTATUS(run_stat), os.WTERMSIG(run_stat))
 def subprocess_testpid(pid):
-    testpid = collections.namedtuple("testpid", ["pid", "returncode", "signal" ])
     run_pid, run_stat = os.waitpid(pid, os.WNOHANG)
     if run_pid:
-        return testpid(run_pid, os.WEXITSTATUS(run_stat), os.WTERMSIG(run_stat))
+        return waitpid_result(run_pid, os.WEXITSTATUS(run_stat), os.WTERMSIG(run_stat))
     else:
-        return testpid(pid, None, 0)
+        return waitpid_result(pid, None, 0)
 
 def parse_unit(name): # -> object(prefix, instance, suffix, ...., name, component)
     unit_name, suffix = name, ""
