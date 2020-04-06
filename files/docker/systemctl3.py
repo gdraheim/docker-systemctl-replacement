@@ -732,7 +732,7 @@ def parse_unit(name): # -> object(prefix, instance, suffix, ...., name, componen
 def time_to_seconds(text, maximum = None):
     if maximum is None:
         maximum = DefaultMaximumTimeout
-    value = 0
+    value = 0.
     for part in str(text).split(" "):
         item = part.strip()
         if item == "infinity":
@@ -744,7 +744,7 @@ def time_to_seconds(text, maximum = None):
             try: value += 60 * int(item[:-3])
             except: pass # pragma: no cover
         elif item.endswith("ms"):
-            try: value += 1 # int(item[:-2]) / 1000.
+            try: value += int(item[:-2]) / 1000.
             except: pass # pragma: no cover
         elif item.endswith("s"):
             try: value += int(item[:-1])
@@ -755,9 +755,9 @@ def time_to_seconds(text, maximum = None):
     if value > maximum:
         return maximum
     if not value and text.strip() == "0":
-        return 0
+        return 0.
     if not value:
-        return 1
+        return 1.
     return value
 def seconds_to_time(seconds):
     seconds = float(seconds)
@@ -1928,7 +1928,7 @@ class Systemctl:
         logg.info("wait $NOTIFY_SOCKET, timeout %s", timeout)
         results = {}
         seenREADY = None
-        for attempt in xrange(timeout+1):
+        for attempt in xrange(int(timeout)+1):
             if pid and not self.is_active_pid(pid):
                 logg.info("dead PID %s", pid)
                 return results
