@@ -1566,10 +1566,10 @@ class Systemctl:
         return self.path_proc_started(proc)
     def path_proc_started(self, proc):
         #get time process started after boot in clock ticks
-        with open(proc) as f:
-            data = f.readline()
-        f.closed
-        stat_data = data.split()
+        with open(proc) as file_stat:
+            data_stat = file_stat.readline()
+        file_stat.close()
+        stat_data = data_stat.split()
         started_ticks = stat_data[21]
         # man proc(5): "(22) starttime = The time the process started after system boot."
         #    ".. the value is expressed in clock ticks (divide by sysconf(_SC_CLK_TCK))."
@@ -1584,10 +1584,10 @@ class Systemctl:
 
         # Variant 1:
         system_uptime = "/proc/uptime"
-        with open(system_uptime,"rb") as f:
-            data = f.readline()
-        f.closed
-        uptime_data = data.decode().split()
+        with open(system_uptime,"rb") as file_uptime:
+            data_uptime = file_uptime.readline()
+        file_uptime.close()
+        uptime_data = data_uptime.decode().split()
         uptime_secs = float(uptime_data[0])
         if DEBUG_BOOTTIME:
             logg.debug("  BOOT 1. System uptime secs: %.3f (%s)", uptime_secs, system_uptime)
@@ -1600,7 +1600,7 @@ class Systemctl:
 
         # Variant 2:
         system_stat = "/proc/stat"
-        system_btime = 0
+        system_btime = 0.
         with open(system_stat,"rb") as f:
             for line in f:
                 assert isinstance(line, bytes)
