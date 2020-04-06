@@ -3333,13 +3333,13 @@ class Systemctl:
         if True:
             for folder in self.system_folders():
                  yield self.default_enablefolder(wanted, folder)
-    def enablefolder(self, wanted = None):
+    def enablefolder(self, wanted):
         if self.user_mode():
             user_folder = self.user_folder()
             return self.default_enablefolder(wanted, user_folder)
         else:
             return self.default_enablefolder(wanted)
-    def default_enablefolder(self, wanted = None, basefolder = None):
+    def default_enablefolder(self, wanted, basefolder = None):
         basefolder = basefolder or self.system_folder()
         if not wanted: 
             return wanted
