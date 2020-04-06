@@ -2474,7 +2474,7 @@ class Systemctl:
             status_file = self.status_file_from(conf)
             pid_file = self.pid_file_from(conf)
             for cmd in conf.getlist("Service", "ExecStop", []):
-                active = self.is_active_from(conf)
+                # active = self.is_active_from(conf)
                 if pid_file:
                     new_pid = self.read_mainpid_from(conf)
                     if new_pid:
