@@ -1033,7 +1033,7 @@ class Systemctl:
         data = UnitConfParser()
         data.set("Unit","Id", module)
         data.set("Unit", "Names", module)
-        data.set("Unit", "Description", description or ("NOT-FOUND "+module))
+        data.set("Unit", "Description", description or ("NOT-FOUND " + str(module)))
         # assert(not data.loaded())
         conf = SystemctlConf(data, module)
         conf._root = self._root
