@@ -3180,7 +3180,7 @@ class Systemctl:
         result = "%s - %s" % (unit, self.get_description_from(conf))
         loaded = conf.loaded()
         if loaded:
-            filename = conf.filename()
+            filename = strE(conf.filename())
             enabled = self.enabled_from(conf)
             result += "\n    Loaded: {loaded} ({filename}, {enabled})".format(**locals())
             for path in conf.overrides():
@@ -3577,7 +3577,7 @@ class Systemctl:
         conf = self.get_unit_conf(unit)
         return self.enabled_from(conf)
     def enabled_from(self, conf):
-        unit_file = conf.filename()
+        unit_file = strE(conf.filename())
         if self.is_sysv_file(unit_file):
             state = self.is_enabled_sysv(unit_file)
             if state: 
@@ -4011,7 +4011,7 @@ class Systemctl:
         if not abspath and not notexists:
             return True
         if True:
-            filename = conf.filename()
+            filename = strE(conf.filename())
             if len(filename) > 45: filename = "..." + filename[-42:]
             logg.error(" !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
             logg.error(" Found %s problems in %s", abspath + notexists, filename)
