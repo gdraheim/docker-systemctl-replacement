@@ -429,7 +429,7 @@ class SystemctlConfigParser(SystemctlConfData):
     def read_sysd(self, filename):
         initscript = False
         initinfo = False
-        section = None
+        section = "GLOBAL"
         nextline = False
         name, text = "", ""
         if os.path.isfile(filename):
@@ -480,7 +480,7 @@ class SystemctlConfigParser(SystemctlConfData):
             equivalent settings of a SystemD ini-style input """
         initscript = False
         initinfo = False
-        section = None
+        section = "GLOBAL"
         if os.path.isfile(filename):
             self._files.append(filename)
         for orig_line in open(filename):
