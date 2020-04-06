@@ -3833,8 +3833,8 @@ class Systemctl:
             # unit_deps = self.get_start_dependencies(unit) # TODO
             unit_deps = self.get_dependencies_unit(unit)
             for dep_unit, styles in unit_deps.items():
-                styles = to_list(styles)
-                for dep_style in styles:
+                dep_styles = to_list(styles)
+                for dep_style in dep_styles:
                     if dep_unit in deps:
                         if dep_style not in deps[dep_unit]:
                             deps[dep_unit].append( dep_style)
