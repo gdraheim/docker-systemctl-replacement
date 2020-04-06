@@ -4817,7 +4817,8 @@ class Systemctl:
                 lines.append("%s %s %s" % (prog, arg, doc_text))
         if not okay:
             self.show_help()
-            return False
+            self.error |= NOT_OK
+            return []
         return lines
     def systemd_version(self):
         """ the version line for systemd compatibility """
