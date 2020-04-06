@@ -1989,7 +1989,7 @@ class Systemctl:
         service_result = "success"
         if True:
             if runs in [ "simple", "forking", "notify" ]:
-                env["MAINPID"] = str(self.read_mainpid_from(conf, ""))
+                env["MAINPID"] = strE(self.read_mainpid_from(conf, ""))
             for cmd in conf.getlist("Service", "ExecStartPre", []):
                 check, cmd = checkstatus(cmd)
                 newcmd = self.exec_cmd(cmd, env, conf)
@@ -2045,7 +2045,7 @@ class Systemctl:
                 logg.debug("ExecStart[%s]: %s", idx, cmd)
             for cmd in cmdlist:
                 pid = self.read_mainpid_from(conf, "")
-                env["MAINPID"] = str(pid)
+                env["MAINPID"] = strE(pid)
                 newcmd = self.exec_cmd(cmd, env, conf)
                 logg.info("%s start %s", runs, shell_cmd(newcmd))
                 forkpid = os.fork()
@@ -2054,7 +2054,7 @@ class Systemctl:
                     self.execve_from(conf, newcmd, env)
                 self.write_status_from(conf, MainPID=forkpid)
                 logg.info("%s started PID %s", runs, forkpid)
-                env["MAINPID"] = str(forkpid)
+                env["MAINPID"] = strE(forkpid)
                 time.sleep(MinimumYield)
                 run = subprocess_testpid(forkpid)
                 if run.returncode is not None:
@@ -2087,7 +2087,7 @@ class Systemctl:
             mainpid = None
             for cmd in cmdlist:
                 mainpid = self.read_mainpid_from(conf, "")
-                env["MAINPID"] = str(mainpid)
+                env["MAINPID"] = strE(mainpid)
                 newcmd = self.exec_cmd(cmd, env, conf)
                 logg.info("%s start %s", runs, shell_cmd(newcmd))
                 forkpid = os.fork()
@@ -2098,7 +2098,7 @@ class Systemctl:
                 logg.info("%s started PID %s", runs, forkpid)
                 mainpid = forkpid
                 self.write_status_from(conf, MainPID=mainpid)
-                env["MAINPID"] = str(mainpid)
+                env["MAINPID"] = strE(mainpid)
                 time.sleep(MinimumYield)
                 run = subprocess_testpid(forkpid)
                 if run.returncode is not None:
@@ -2123,7 +2123,7 @@ class Systemctl:
                 logg.info("%s start done %s", runs, mainpid)
                 pid = self.read_mainpid_from(conf, "")
                 if pid:
-                    env["MAINPID"] = str(pid)
+                    env["MAINPID"] = strE(pid)
                 else:
                     service_result = "timeout" # "could not start service"
         elif runs in [ "forking" ]:
@@ -2148,7 +2148,7 @@ class Systemctl:
                 pid = self.wait_pid_file(pid_file) # application PIDFile
                 logg.info("%s start done PID %s [%s]", runs, pid, pid_file)
                 if pid:
-                    env["MAINPID"] = str(pid)
+                    env["MAINPID"] = strE(pid)
             if not pid_file:
                 time.sleep(MinimumTimeoutStartSec)
                 logg.warning("No PIDFile for forking %s", strQ(conf.filename()))
@@ -2413,7 +2413,7 @@ class Systemctl:
             pid = 0
             for cmd in conf.getlist("Service", "ExecStop", []):
                 check, cmd = checkstatus(cmd)
-                env["MAINPID"] = str(self.read_mainpid_from(conf, ""))
+                env["MAINPID"] = strE(self.read_mainpid_from(conf, ""))
                 newcmd = self.exec_cmd(cmd, env, conf)
                 logg.info("%s stop %s", runs, shell_cmd(newcmd))
                 forkpid = os.fork()
@@ -2446,7 +2446,7 @@ class Systemctl:
                 if pid_file:
                     new_pid = self.read_mainpid_from(conf, "")
                     if new_pid:
-                        env["MAINPID"] = str(new_pid)
+                        env["MAINPID"] = strE(new_pid)
                 check, cmd = checkstatus(cmd)
                 logg.debug("{env} %s", env)
                 newcmd = self.exec_cmd(cmd, env, conf)
@@ -2595,7 +2595,7 @@ class Systemctl:
                 logg.info("no reload on inactive service %s", conf.name())
                 return True
             for cmd in conf.getlist("Service", "ExecReload", []):
-                env["MAINPID"] = str(self.read_mainpid_from(conf, ""))
+                env["MAINPID"] = strE(self.read_mainpid_from(conf, ""))
                 check, cmd = checkstatus(cmd)
                 newcmd = self.exec_cmd(cmd, env, conf)
                 logg.info("%s reload %s", runs, shell_cmd(newcmd))
@@ -4057,7 +4057,7 @@ class Systemctl:
         yield "Names", " ".join(sorted(names.keys()))
         yield "Description", self.get_description_from(conf) # conf.get("Unit", "Description")
         yield "PIDFile", self.pid_file_from(conf) # not self.pid_file_from w/o default location
-        yield "MainPID", self.active_pid_from(conf) or "0"  # status["MainPID"] or PIDFile-read
+        yield "MainPID", strE(self.active_pid_from(conf))   # status["MainPID"] or PIDFile-read
         yield "SubState", self.get_substate_from(conf)      # status["SubState"] or notify-result
         yield "ActiveState", self.get_active_from(conf)     # status["ActiveState"]
         yield "LoadState", loaded
