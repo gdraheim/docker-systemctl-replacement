@@ -1991,11 +1991,11 @@ class Systemctl:
             return False
         return self.start_unit_from(conf)
     def get_TimeoutStartSec(self, conf):
-        timeout = conf.get("Service", "TimeoutSec", DefaultTimeoutStartSec)
+        timeout = conf.get("Service", "TimeoutSec", strE(DefaultTimeoutStartSec))
         timeout = conf.get("Service", "TimeoutStartSec", timeout)
         return time_to_seconds(timeout, DefaultMaximumTimeout)
     def get_SocketTimeoutSec(self, conf):
-        timeout = conf.get("Socket", "TimeoutSec", DefaultTimeoutStartSec)
+        timeout = conf.get("Socket", "TimeoutSec", strE(DefaultTimeoutStartSec))
         return time_to_seconds(timeout, DefaultMaximumTimeout)
     def start_unit_from(self, conf):
         if not conf: return False
@@ -2382,7 +2382,7 @@ class Systemctl:
         return self.stop_unit_from(conf)
 
     def get_TimeoutStopSec(self, conf):
-        timeout = conf.get("Service", "TimeoutSec", DefaultTimeoutStartSec)
+        timeout = conf.get("Service", "TimeoutSec", strE(DefaultTimeoutStartSec))
         timeout = conf.get("Service", "TimeoutStopSec", timeout)
         return time_to_seconds(timeout, DefaultMaximumTimeout)
     def stop_unit_from(self, conf):
@@ -4394,15 +4394,15 @@ class Systemctl:
 
     def get_StartLimitBurst(self, conf):
         defaults = DefaultStartLimitBurst
-        return to_int(conf.get("Service", "StartLimitBurst", defaults), defaults) # 5
+        return to_int(conf.get("Service", "StartLimitBurst", strE(defaults)), defaults) # 5
     def get_StartLimitIntervalSec(self, conf, maximum = None):
         maximum = maximum or 999
         defaults = DefaultStartLimitIntervalSec
-        interval = conf.get("Service", "StartLimitIntervalSec", defaults) # 10s
-        return float(time_to_seconds(interval, maximum))
+        interval = conf.get("Service", "StartLimitIntervalSec", strE(defaults)) # 10s
+        return time_to_seconds(interval, maximum)
     def get_RestartSec(self, conf, maximum = None):
         maximum = maximum or DefaultStartLimitIntervalSec
-        delay = conf.get("Service", "RestartSec", DefaultRestartSec)
+        delay = conf.get("Service", "RestartSec", strE(DefaultRestartSec))
         return time_to_seconds(delay, maximum)
     def restart_failed_units(self, units, maximum = None):
         """ This function will retart failed units.
