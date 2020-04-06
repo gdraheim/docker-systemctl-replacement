@@ -3051,7 +3051,7 @@ class Systemctl:
         return "inactive"
     def get_substate_from(self, conf):
         """ returns 'running' 'exited' 'dead' 'failed' 'plugged' 'mounted' """
-        if not conf: return False
+        if not conf: return None
         pid_file = self.pid_file_from(conf)
         if pid_file:
             if not os.path.exists(pid_file):
