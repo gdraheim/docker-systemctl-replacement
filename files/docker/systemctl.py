@@ -1284,7 +1284,7 @@ class Systemctl:
         if self._no_legend:
             return result
         found = "%s loaded units listed." % len(result)
-        return result + [ "", found, hint ]
+        return result + [ ("", "", ""), (found, "", ""), (hint, "", "") ]
     def list_service_unit_files(self, *modules): # -> [ (unit,enabled) ]
         """ show all the service units and the enabled status"""
         logg.debug("list service unit files for %s", modules)
@@ -1353,7 +1353,7 @@ class Systemctl:
         if self._no_legend:
             return result
         found = "%s unit files listed." % len(result)
-        return [ ("UNIT FILE", "STATE") ] + result + [ "", found ]
+        return [ ("UNIT FILE", "STATE") ] + result + [ ("", ""), (found, "") ]
     ##
     ##
     def get_description(self, unit, default = None):
