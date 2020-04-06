@@ -2611,7 +2611,11 @@ class Systemctl:
         elif conf.name().endswith(".socket"):
             service_unit = self.get_socket_service_from(conf)
             service_conf = self.load_unit_conf(service_unit)
-            return self.do_reload_service_from(service_conf)
+            if service_conf:
+                return self.do_reload_service_from(service_conf)
+            else:
+                logg.error("no %s found for unit type: %s", service_unit, conf.name())
+                return False
         else:
             logg.error("reload not implemented for unit type: %s", conf.name())
             return False
@@ -2993,8 +2997,8 @@ class Systemctl:
         return None
     def get_active_unit(self, unit):
         """ returns 'active' 'inactive' 'failed' 'unknown' """
-        conf = self.get_unit_conf(unit)
-        if not conf.loaded():
+        conf = self.load_unit_conf(unit)
+        if not conf:
             logg.warning("Unit %s not found.", unit)
             return "unknown"
         return self.get_active_from(conf)
@@ -3113,8 +3117,8 @@ class Systemctl:
                 break
         return status
     def reset_failed_unit(self, unit):
-        conf = self.get_unit_conf(unit)
-        if not conf.loaded():
+        conf = self.load_unit_conf(unit)
+        if not conf:
             logg.warning("Unit %s not found.", unit)
             return False
         if self.not_user_conf(conf):
