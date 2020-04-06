@@ -703,6 +703,8 @@ def subprocess_testpid(pid):
     else:
         return waitpid_result(pid, None, 0)
 
+parse_result = collections.namedtuple("UnitName", ["name", "prefix", "instance", "suffix", "component" ])
+
 def parse_unit(name): # -> object(prefix, instance, suffix, ...., name, component)
     unit_name, suffix = name, ""
     has_suffix = name.rfind(".")
@@ -718,8 +720,7 @@ def parse_unit(name): # -> object(prefix, instance, suffix, ...., name, componen
     has_component = prefix.rfind("-")
     if has_component > 0: 
         component = prefix[has_component+1:]
-    UnitName = collections.namedtuple("UnitName", ["name", "prefix", "instance", "suffix", "component" ])
-    return UnitName(name, prefix, instance, suffix, component)
+    return parse_result(name, prefix, instance, suffix, component)
 
 def time_to_seconds(text, maximum = None):
     if maximum is None:
