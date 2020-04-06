@@ -2165,8 +2165,7 @@ class Systemctl:
             logg.error("unsupported run type '%s'", runs)
             return False
         # POST sequence
-        active = self.is_active_from(conf)
-        if not active:
+        if not self.is_active_from(conf):
             logg.warning("%s start not active", runs)
             # according to the systemd documentation, a failed start-sequence
             # should execute the ExecStopPost sequence allowing some cleanup.
@@ -2237,8 +2236,7 @@ class Systemctl:
             service_result = "failed"
             logg.error("socket accept=yes is not implemented. sorry.")
         # POST sequence
-        active = self.is_active_from(conf)
-        if not active:
+        if not self.is_active_from(conf):
             logg.warning("%s start not active", runs)
             # according to the systemd documentation, a failed start-sequence
             # should execute the ExecStopPost sequence allowing some cleanup.
@@ -2484,8 +2482,7 @@ class Systemctl:
             logg.error("unsupported run type '%s'", runs)
             return False
         # POST sequence
-        active = self.is_active_from(conf)
-        if not active:
+        if not self.is_active_from(conf):
             env["SERVICE_RESULT"] = service_result
             for cmd in conf.getlist("Service", "ExecStopPost", []):
                 check, cmd = checkstatus(cmd)
@@ -2517,8 +2514,7 @@ class Systemctl:
             service_result = "failed"
             logg.error("socket accept=yes is not implemented. sorry.")
         # POST sequence
-        active = self.is_active_from(conf)
-        if not active:
+        if not self.is_active_from(conf):
             env["SERVICE_RESULT"] = service_result
             for cmd in conf.getlist("Service", "ExecStopPost", []):
                 check, cmd = checkstatus(cmd)
