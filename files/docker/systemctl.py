@@ -806,7 +806,7 @@ def compareAfter(confA, confB):
             return -1
     return 0
 
-def sortedAfter(conflist, cmp = compareAfter):
+def conf_sortedAfter(conflist, cmp = compareAfter):
     # the normal sorted() does only look at two items
     # so if "A after C" and a list [A, B, C] then
     # it will see "A = B" and "B = C" assuming that
@@ -3832,7 +3832,7 @@ class Systemctl:
             if conf.loaded():
                 deps_conf.append(conf)
         result = []
-        for dep in sortedAfter(deps_conf, cmp=compareAfter):
+        for dep in conf_sortedAfter(deps_conf, cmp=compareAfter):
             line = (dep.name(),  "(%s)" % (" ".join(deps[dep.name()])))
             result.append(line)
         return result
@@ -3847,7 +3847,7 @@ class Systemctl:
                     logg.debug("ignoring masked unit %s", unit)
                     continue
                 conflist.append(conf)
-        sortlist = sortedAfter(conflist)
+        sortlist = conf_sortedAfter(conflist)
         return [ item.name() for item in sortlist ]
     def sortedBefore(self, unitlist):
         """ get correct start order for the unit list (ignoring masked units) """
@@ -3860,7 +3860,7 @@ class Systemctl:
                     logg.debug("ignoring masked unit %s", unit)
                     continue
                 conflist.append(conf)
-        sortlist = sortedAfter(reversed(conflist))
+        sortlist = conf_sortedAfter(reversed(conflist))
         return [ item.name() for item in reversed(sortlist) ]
     def system_daemon_reload(self):
         """ reload does will only check the service files here.
