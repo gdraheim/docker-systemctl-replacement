@@ -523,7 +523,7 @@ class SystemctlConfigParser(SystemctlConfData):
             if item.strip() in _runlevel_mappings:
                 self.set("Install", "WantedBy", _runlevel_mappings[item.strip()])
         self.set("Service", "Restart", "no")
-        self.set("Service", "TimeoutSec", DefaultMaximumTimeout)
+        self.set("Service", "TimeoutSec", strE(DefaultMaximumTimeout))
         self.set("Service", "KillMode", "process")
         self.set("Service", "GuessMainPID", "no")
         # self.set("Service", "RemainAfterExit", "yes")
