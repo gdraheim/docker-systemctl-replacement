@@ -957,14 +957,17 @@ class Systemctl:
     def get_SYSTEMD_UNIT_PATH(self):
         if self._SYSTEMD_UNIT_PATH is None:
             self._SYSTEMD_UNIT_PATH = os.environ.get("SYSTEMD_UNIT_PATH", ":")
+        assert self._SYSTEMD_UNIT_PATH is not None
         return self._SYSTEMD_UNIT_PATH
     def get_SYSTEMD_SYSVINIT_PATH(self):
         if self._SYSTEMD_SYSVINIT_PATH is None:
             self._SYSTEMD_SYSVINIT_PATH = os.environ.get("SYSTEMD_SYSVINIT_PATH", ":")
+        assert self._SYSTEMD_SYSVINIT_PATH is not None
         return self._SYSTEMD_SYSVINIT_PATH
     def get_SYSTEMD_PRESET_PATH(self):
         if self._SYSTEMD_PRESET_PATH is None:
             self._SYSTEMD_PRESET_PATH = os.environ.get("SYSTEMD_PRESET_PATH", ":")
+        assert self._SYSTEMD_PRESET_PATH is not None
         return self._SYSTEMD_PRESET_PATH
     def sysd_folders(self):
         """ if --user then these folders are preferred """
