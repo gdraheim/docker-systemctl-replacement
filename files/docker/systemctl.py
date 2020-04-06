@@ -2033,7 +2033,7 @@ class Systemctl:
                 logg.info("%s start done (%s) <-%s>", runs, 
                     run.returncode or "OK", run.signal or "")
             if True:
-                self.set_status_from(conf, "ExecMainCode", returncode)
+                self.set_status_from(conf, "ExecMainCode", strE(returncode))
                 active = returncode and "failed" or "active"
                 self.write_status_from(conf, AS=active)
         elif runs in [ "simple" ]: 
@@ -2066,7 +2066,7 @@ class Systemctl:
                     logg.info("%s stopped PID %s (%s) <-%s>", runs, run.pid, 
                         run.returncode or "OK", run.signal or "")
                     if doRemainAfterExit:
-                        self.set_status_from(conf, "ExecMainCode", run.returncode)
+                        self.set_status_from(conf, "ExecMainCode", strE(run.returncode))
                         active = run.returncode and "failed" or "active"
                         self.write_status_from(conf, AS=active)
                     if run.returncode:
@@ -2110,7 +2110,7 @@ class Systemctl:
                     logg.info("%s stopped PID %s (%s) <-%s>", runs, run.pid, 
                         run.returncode or "OK", run.signal or "")
                     if doRemainAfterExit:
-                        self.set_status_from(conf, "ExecMainCode", run.returncode or 0)
+                        self.set_status_from(conf, "ExecMainCode", strE(run.returncode))
                         active = run.returncode and "failed" or "active"
                         self.write_status_from(conf, AS=active)
                     if run.returncode:
@@ -2158,7 +2158,7 @@ class Systemctl:
                 time.sleep(MinimumTimeoutStartSec)
                 logg.warning("No PIDFile for forking %s", strQ(conf.filename()))
                 status_file = self.status_file_from(conf)
-                self.set_status_from(conf, "ExecMainCode", returncode)
+                self.set_status_from(conf, "ExecMainCode", strE(returncode))
                 active = returncode and "failed" or "active"
                 self.write_status_from(conf, AS=active)
         else:
@@ -2400,7 +2400,7 @@ class Systemctl:
                     break
             if True:
                 if returncode:
-                    self.set_status_from(conf, "ExecStopCode", returncode)
+                    self.set_status_from(conf, "ExecStopCode", strE(returncode))
                     self.write_status_from(conf, AS="failed")
                 else:
                     self.clean_status_from(conf) # "inactive"
@@ -2476,7 +2476,7 @@ class Systemctl:
                     self.clean_pid_file_from(conf)
             if returncode:
                 if os.path.isfile(status_file):
-                    self.set_status_from(conf, "ExecStopCode", returncode)
+                    self.set_status_from(conf, "ExecStopCode", strE(returncode))
                     self.write_status_from(conf, AS="failed")
             else:
                 self.clean_status_from(conf) # "inactive"
