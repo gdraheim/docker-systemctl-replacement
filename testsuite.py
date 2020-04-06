@@ -2344,7 +2344,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, r"^Id="))
         self.assertTrue(greps(out, r"^Names="))
         self.assertTrue(greps(out, r"^Description="))
-        self.assertTrue(greps(out, r"^MainPID="))
+        self.assertFalse(greps(out, r"^MainPID="))
         self.assertTrue(greps(out, r"^LoadState="))
         self.assertTrue(greps(out, r"^ActiveState="))
         self.assertTrue(greps(out, r"^SubState="))
