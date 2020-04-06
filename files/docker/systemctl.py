@@ -3198,7 +3198,7 @@ class Systemctl:
         result = "%s - %s" % (unit, self.get_description_from(conf))
         loaded = conf.loaded()
         if loaded:
-            filename = strE(conf.filename())
+            filename = str(conf.filename())
             enabled = self.enabled_from(conf)
             result += "\n    Loaded: {loaded} ({filename}, {enabled})".format(**locals())
             for path in conf.overrides():
