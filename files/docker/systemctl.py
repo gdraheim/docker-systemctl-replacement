@@ -4492,7 +4492,8 @@ class Systemctl:
             except Exception as e:
                 logg.error("[%s] [%s] An error ocurred while restart checking: %s", me, unit, e)
         if not self._restart_failed_units:
-            return False
+            self.error |= NOT_OK
+            return []
         # NOTE: this function is only called from InitLoop when "running"
         # let's check if any of the restart_units has its restartSec expired
         now = time.time()
