@@ -4495,6 +4495,7 @@ class Systemctl:
             restart_done.append(unit)
             try:
                 conf = self.load_unit_conf(unit)
+                if not conf: continue
                 isUnitState = self.get_active_from(conf)
                 isUnitFailed = isUnitState in ["failed"]
                 logg.debug("[%s] [%s] Restart Status: %s (%s)", me, unit, isUnitState, isUnitFailed)
