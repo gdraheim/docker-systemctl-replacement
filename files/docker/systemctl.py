@@ -737,7 +737,7 @@ def time_to_seconds(text, maximum = None):
             try: value += 60 * int(item[:-3])
             except: pass # pragma: no cover
         elif item.endswith("ms"):
-            try: value += int(item[:-2]) / 1000.
+            try: value += 1 # int(item[:-2]) / 1000.
             except: pass # pragma: no cover
         elif item.endswith("s"):
             try: value += int(item[:-1])
