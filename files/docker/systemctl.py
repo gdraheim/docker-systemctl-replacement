@@ -1346,7 +1346,7 @@ class Systemctl:
         result = []
         if self._now:
             basics = self.list_service_unit_basics()
-            result = [ (filename, sysv + " " + name) for name, sysv, filename in basics ]
+            result = [ (name, sysv + " " + filename) for name, sysv, filename in basics ]
         elif self._unit_type == "target":
             result = self.list_target_unit_files()
         elif self._unit_type == "service":
