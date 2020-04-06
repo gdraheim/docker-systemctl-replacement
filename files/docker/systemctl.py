@@ -20,11 +20,8 @@ import socket
 import datetime
 import fcntl
 
-if sys.version[0] == '2':
-    string_types = basestring
-    BlockingIOError = IOError
-else:
-    string_types = str
+if sys.version[0] == '3':
+    basestring = str
     xrange = range
 
 DEBUG_AFTER = False
@@ -154,7 +151,7 @@ def to_int(value, default = 0):
     except:
         return default
 def to_list(value):
-    if isinstance(value, string_types):
+    if isinstance(value, basestring):
          return [ value ]
     return value
 def unit_of(module):
@@ -162,13 +159,13 @@ def unit_of(module):
         return module + ".service"
     return module
 def o22(part):
-    if isinstance(part, string_types):
+    if isinstance(part, basestring):
         if len(part) <= 22:
             return part
         return part[:5] + "..." + part[-14:]
     return part
 def o99(part, shorter=0):
-    if isinstance(part, string_types):
+    if isinstance(part, basestring):
         if len(part) <= 99:
             return part
         return part[:20] + "-.-" + part[-(75-shorter):]
@@ -625,7 +622,7 @@ class waitlock:
                     os.write(self.opened, content.encode("utf-8"))
                     logg.debug("[%s] %s. holding lock on %s", os.getpid(), attempt, lockname)
                     return True
-                except BlockingIOError as e:
+                except IOError as e:
                     whom = os.read(self.opened, 4096)
                     os.lseek(self.opened, 0, os.SEEK_SET)
                     logg.info("[%s] %s. systemctl locked by %s", os.getpid(), attempt, whom.rstrip())
@@ -1446,7 +1443,7 @@ class Systemctl:
         if hasattr(defaults, "keys"):
            for key in defaults.keys():
                status[key] = defaults[key]
-        elif isinstance(defaults, string_types):
+        elif isinstance(defaults, basestring):
            status["ActiveState"] = defaults
         if not status_file:
             if DEBUG_STATUS: logg.debug("no status file. returning %s", status)
@@ -4815,7 +4812,7 @@ def print_result(result):
     elif isinstance(result, int):
         logg_info("EXEC END %s", result)
         # exitcode = result # we do not do that anymore
-    elif isinstance(result, string_types):
+    elif isinstance(result, basestring):
         print(result)
         result1 = result.split("\n")[0][:-20]
         if result == result1:
@@ -4972,7 +4969,7 @@ if __name__ == "__main__":
                     logg.debug("int %s=%s", nam, val)
                     globals()[nam] = int(val)
                     logg.debug("... InitLoopSleep=%s", InitLoopSleep)
-                elif isinstance(old, string_types):
+                elif isinstance(old, basestring):
                     logg.debug("str %s=%s", nam, val)
                     globals()[nam] = val.strip()
                     logg.debug("... SysInitTarget=%s", SysInitTarget)
