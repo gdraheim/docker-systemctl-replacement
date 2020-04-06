@@ -1523,6 +1523,7 @@ class Systemctl:
         """ detects the boot time of the container - in general the start time of PID 1 """
         if self._boottime is None:
             self._boottime = self.get_boottime_from_proc()
+        assert self._boottime is not None
         return self._boottime
     def get_boottime_from_proc(self):
         """ detects the latest boot time by looking at the start time of available process"""
@@ -3239,6 +3240,7 @@ class Systemctl:
         """ reads all preset files, returns the scanned files """
         if self._preset_file_list is None:
             self._preset_file_list = {}
+            assert self._preset_file_list is not None
             for folder in self.preset_folders():
                 if not folder: 
                     continue
@@ -3261,6 +3263,7 @@ class Systemctl:
         """ [UNIT] check the *.preset of this unit
         """
         self.load_preset_files()
+        assert self._preset_file_list is not None
         for filename in sorted(self._preset_file_list.keys()):
             preset = self._preset_file_list[filename]
             status = preset.get_preset(unit)
