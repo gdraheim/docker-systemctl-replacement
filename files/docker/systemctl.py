@@ -4145,12 +4145,12 @@ class Systemctl:
             units += self.enabled_default_sysv_units(sysv, default_target, igno)
             return units
     def enabled_default_user_local_units(self, unit_kind = ".service", default_target = None, igno = []):
-        default_target = default_target or self._default_target
+        target = default_target or self._default_target
         units = []
         for basefolder in self.user_folders():
             if not basefolder:
                 continue
-            folder = self.default_enablefolder(default_target, basefolder)
+            folder = self.default_enablefolder(target, basefolder)
             if self._root:
                 folder = os_path(self._root, folder)
             if os.path.isdir(folder):
