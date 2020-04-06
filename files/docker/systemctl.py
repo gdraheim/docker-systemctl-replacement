@@ -4231,7 +4231,7 @@ class Systemctl:
         self.sysinit_status(SubState = "initializing")
         logg.info("system default requested - %s", arg)
         init = self._now or self._init
-        self.start_system_default(init = init)
+        return self.start_system_default(init = init)
     def start_system_default(self, init = False):
         """ detect the default.target services and start them.
             When --init is given then the init-loop is run and
@@ -4246,6 +4246,7 @@ class Systemctl:
             sig = self.init_loop_until_stop(default_services)
             logg.info("init-loop %s", sig)
             self.stop_system_default()
+        return True
     def stop_system_default(self):
         """ detect the default.target services and stop them.
             This is commonly run through 'systemctl halt' or
@@ -4255,14 +4256,16 @@ class Systemctl:
         self.sysinit_status(SubState = "stopping")
         self.stop_units(default_services)
         logg.info(" -- system is down")
+        return True
     def system_halt(self, arg = True):
         """ stop units from default system level """
         logg.info("system halt requested - %s", arg)
-        self.stop_system_default()
+        done = self.stop_system_default()
         try: 
             os.kill(1, signal.SIGQUIT) # exit init-loop on no_more_procs
         except Exception as e:
             logg.warning("SIGQUIT to init-loop on PID-1: %s", e)
+        return done
     def system_get_default(self):
         """ get current default run-level"""
         current = self._default_target
