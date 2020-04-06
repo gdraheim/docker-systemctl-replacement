@@ -366,12 +366,12 @@ class SystemctlConfData:
     def set(self, section, option, value):
         if section not in self._conf:
             self._conf[section] = self._dict_type()
-        if option not in self._conf[section]:
+        if value is None:
+            self._conf[section][option] = []
+        elif option not in self._conf[section]:
             self._conf[section][option] = [ value ]
         else:
             self._conf[section][option].append(value)
-        if value is None:
-            self._conf[section][option] = []
     def get(self, section, option, default = None, allow_no_value = False):
         allow_no_value = allow_no_value or self._allow_no_value
         if section not in self._conf:
