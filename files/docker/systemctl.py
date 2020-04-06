@@ -616,7 +616,7 @@ class PresetFile:
 class waitlock:
     def __init__(self, conf):
         self.conf = conf # currently unused
-        self.opened = None
+        self.opened = -1
         self.lockfolder = conf.os_path_var(_notify_socket_folder)
         try:
             folder = self.lockfolder
@@ -670,7 +670,7 @@ class waitlock:
                 logg.debug("[%s] lockfile removed for %s", os.getpid(), lockname)
             fcntl.flock(self.opened, fcntl.LOCK_UN)
             os.close(self.opened) # implies an unlock but that has happend like 6 seconds later
-            self.opened = None
+            self.opened = -1
         except Exception as e:
             logg.warning("oops, %s", e)
 
