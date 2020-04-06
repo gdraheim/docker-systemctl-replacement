@@ -85,7 +85,7 @@ DefaultRestartSec = 0.1       # official value of 100ms
 DefaultStartLimitIntervalSec = 10 # official value
 DefaultStartLimitBurst = 5        # official value
 InitLoopSleep = 5
-MaxLockWait = None # equals DefaultMaximumTimeout
+MaxLockWait = 0 # equals DefaultMaximumTimeout
 DefaultPath = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 ResetLocale = ["LANG", "LANGUAGE", "LC_CTYPE", "LC_NUMERIC", "LC_TIME", "LC_COLLATE", "LC_MONETARY",
                "LC_MESSAGES", "LC_PAPER", "LC_NAME", "LC_ADDRESS", "LC_TELEPHONE", "LC_MEASUREMENT",
