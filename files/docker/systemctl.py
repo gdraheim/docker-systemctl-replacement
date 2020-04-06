@@ -4578,8 +4578,8 @@ class Systemctl:
         """ check to reap children """
         selfpid = os.getpid()
         running = 0
-        for pid in os.listdir("/proc"):
-            try: pid = int(pid)
+        for pid_file in os.listdir("/proc"):
+            try: pid = int(pid_file)
             except: continue
             if pid == selfpid:
                 continue
@@ -4651,16 +4651,16 @@ class Systemctl:
         pidlist = [ pid ]
         pids = [ pid ]
         for depth in xrange(PROC_MAX_DEPTH):
-            for pid in os.listdir("/proc"):
-                try: pid = int(pid)
+            for pid_file in os.listdir("/proc"):
+                try: pid = int(pid_file)
                 except: continue
                 proc_status = "/proc/%s/status" % pid
                 if os.path.isfile(proc_status):
                     try:
                         for line in open(proc_status):
                             if line.startswith("PPid:"):
-                                ppid = line[len("PPid:"):].strip()
-                                try: ppid = int(ppid)
+                                ppid_text = line[len("PPid:"):].strip()
+                                try: ppid = int(ppid_text)
                                 except: continue
                                 if ppid in pidlist and pid not in pids:
                                     pids += [ pid ]
