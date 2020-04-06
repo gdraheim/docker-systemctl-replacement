@@ -8759,7 +8759,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             self.assertTrue(greps(out, "UnitFileState=static"))
         self.assertTrue(greps(out, "Id=zz-unknown.service"))
         self.assertTrue(greps(out, "Names=zz-unknown.service"))
-        self.assertTrue(greps(out, "MainPID=0"))
+        self.assertFalse(greps(out, "MainPID=0"))
         self.assertTrue(greps(out, "SubState=dead"))
         self.assertTrue(greps(out, "ActiveState=inactive"))
         self.assertTrue(greps(out, "LoadState=not-found"))
