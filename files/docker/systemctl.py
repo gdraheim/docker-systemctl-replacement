@@ -3242,7 +3242,8 @@ class Systemctl:
             logg.error("No files found for %s", unit) 
         except Exception as e:
             print("Unit {} is not-loaded: {}".format(unit, e))
-        return False
+        self.error |= NOT_FOUND
+        return None
     ##
     ##
     def load_preset_files(self, module = None): # -> [ preset-file-names,... ]
