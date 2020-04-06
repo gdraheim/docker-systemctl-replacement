@@ -3003,7 +3003,8 @@ class Systemctl:
         if not conf:
             logg.warning("Unit %s not found.", unit)
             return "unknown"
-        return self.get_active_from(conf)
+        else:
+            return self.get_active_from(conf)
     def get_active_from(self, conf):
         if conf.name().endswith(".service"):
             return self.get_active_service_from(conf)
