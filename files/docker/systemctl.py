@@ -4456,8 +4456,8 @@ class Systemctl:
                         restarted = self._restarted_unit[unit]
                         logg.debug("[%s] [%s] Current limitSecs=%ss limitBurst=%sx (restarted %sx)", 
                             me, unit, limitSecs, limitBurst, len(restarted))
-                        oldest = 0
-                        interval = 0
+                        oldest = 0.
+                        interval = 0.
                         if len(restarted) >= limitBurst:
                             logg.debug("[%s] [%s] restarted %s", 
                                 me, unit, [ "%.3fs" % (t - now) for t in restarted ])
