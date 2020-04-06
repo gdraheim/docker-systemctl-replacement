@@ -1868,9 +1868,9 @@ class Systemctl:
                    logg.debug("chdir workingdir '%s': %s", into, e)
                    return None
         return None
+    NotifySocket = collections.namedtuple("NotifySocket", ["socket", "socketfile" ])
     def notify_socket_from(self, conf, socketfile = None):
-        """ creates a notify-socket for the (non-privileged) user """
-        NotifySocket = collections.namedtuple("NotifySocket", ["socket", "socketfile" ])
+        """ creates a notify-socket for the (non-privileged) user """    
         notify_socket_folder = conf.os_path_var(_notify_socket_folder)
         notify_name = "notify." + str(conf.name() or "systemctl")
         notify_socket = os.path.join(notify_socket_folder, notify_name)
@@ -1894,7 +1894,7 @@ class Systemctl:
         sock = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
         sock.bind(socketfile)
         os.chmod(socketfile, 0o777) # the service my run under some User=setting
-        return NotifySocket(sock, socketfile)
+        return Systemctl.NotifySocket(sock, socketfile)
     def read_notify_socket(self, notify, timeout):
         notify.socket.settimeout(timeout or DefaultMaximumTimeout)
         result = ""
