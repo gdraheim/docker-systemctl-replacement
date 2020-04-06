@@ -3853,8 +3853,9 @@ class Systemctl:
             if conf.loaded():
                 deps_conf.append(conf)
         result = []
-        for dep in conf_sortedAfter(deps_conf, cmp=compareAfter):
-            line = (dep.name(),  "(%s)" % (" ".join(deps[dep.name()])))
+        sortlist = conf_sortedAfter(deps_conf, cmp=compareAfter)
+        for item in sortlist:
+            line = (item.name(),  "(%s)" % (" ".join(deps[item.name()])))
             result.append(line)
         return result
     def sortedAfter(self, unitlist):
