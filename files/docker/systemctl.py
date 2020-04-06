@@ -2334,7 +2334,8 @@ class Systemctl:
         env.update(envs) # set $HOME to ~$USER
         try:
             if EXEC_SPAWN:
-                os.spawnvpe(os.P_WAIT, cmd[0], cmd, env)
+                cmd_args = [ arg for arg in cmd ] # satisfy mypy
+                os.spawnvpe(os.P_WAIT, cmd[0], cmd_args, env)
                 sys.exit(0)
             else: # pragma: no cover
                 os.execve(cmd[0], cmd, env)
