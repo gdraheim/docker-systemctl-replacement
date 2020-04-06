@@ -1011,6 +1011,7 @@ class Systemctl:
     def unit_sysd_file(self, module = None): # -> filename?
         """ file path for the given module (systemd) """
         self.scan_unit_sysd_files()
+        assert self._file_for_unit_sysd is not None
         if module and module in self._file_for_unit_sysd:
             return self._file_for_unit_sysd[module]
         if module and unit_of(module) in self._file_for_unit_sysd:
@@ -1019,6 +1020,7 @@ class Systemctl:
     def unit_sysv_file(self, module = None): # -> filename?
         """ file path for the given module (sysv) """
         self.scan_unit_sysv_files()
+        assert self._file_for_unit_sysv is not None
         if module and module in self._file_for_unit_sysv:
             return self._file_for_unit_sysv[module]
         if module and unit_of(module) in self._file_for_unit_sysv:
@@ -1034,6 +1036,8 @@ class Systemctl:
     def is_sysv_file(self, filename):
         """ for routines that have a special treatment for init.d services """
         self.unit_file() # scan all
+        assert self._file_for_unit_sysd is not None
+        assert self._file_for_unit_sysv is not None
         if not filename: return None
         if filename in self._file_for_unit_sysd.values(): return False
         if filename in self._file_for_unit_sysv.values(): return True
@@ -1092,6 +1096,7 @@ class Systemctl:
         """ read the unit file with a UnitConfParser (systemd) """
         path = self.unit_sysd_file(module)
         if not path: return None
+        assert self._loaded_file_sysd is not None
         if path in self._loaded_file_sysd:
             return self._loaded_file_sysd[path]
         masked = None
@@ -1117,6 +1122,7 @@ class Systemctl:
         """ read the unit file with a UnitConfParser (sysv) """
         path = self.unit_sysv_file(module)
         if not path: return None
+        assert self._loaded_file_sysv is not None
         if path in self._loaded_file_sysv:
             return self._loaded_file_sysv[path]
         data = UnitConfParser()
@@ -1172,6 +1178,7 @@ class Systemctl:
         if not modules:
             return
         self.scan_unit_sysd_files()
+        assert self._file_for_unit_sysd is not None
         for item in sorted(self._file_for_unit_sysd.keys()):
             if "@" not in item:
                 continue
@@ -1188,6 +1195,7 @@ class Systemctl:
             Also a single string as one module pattern may be given. """
         modules = to_list(modules)
         self.scan_unit_sysd_files()
+        assert self._file_for_unit_sysd is not None
         for item in sorted(self._file_for_unit_sysd.keys()):
             if not modules:
                 yield item
@@ -1201,6 +1209,7 @@ class Systemctl:
             Also a single string as one module pattern may be given. """
         modules = to_list(modules)
         self.scan_unit_sysv_files()
+        assert self._file_for_unit_sysv is not None
         for item in sorted(self._file_for_unit_sysv.keys()):
             if not modules:
                 yield item
@@ -1227,6 +1236,8 @@ class Systemctl:
     def list_service_unit_basics(self):
         """ show all the basic loading state of services """
         filename = self.unit_file() # scan all
+        assert self._file_for_unit_sysd is not None
+        assert self._file_for_unit_sysv is not None
         result = []
         for name, value in self._file_for_unit_sysd.items():
             result += [ (name, "SysD", value) ]
