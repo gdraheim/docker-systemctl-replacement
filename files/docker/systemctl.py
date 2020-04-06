@@ -142,9 +142,18 @@ _sysv_mappings["$network"] = "network.target"
 _sysv_mappings["$remote_fs"] = "remote-fs.target"
 _sysv_mappings["$timer"] = "timers.target"
 
-
+def strE(part):
+    if not part:
+        return ""
+    return str(part)
+def strQ(part):
+    if part is None:
+        return ""
+    if isinstance(part, int):
+        return str(part)
+    return "'%s'" % part
 def shell_cmd(cmd):
-    return " ".join(["'%s'" % part for part in cmd])
+    return " ".join([strQ(part) for part in cmd])
 def to_int(value, default = 0):
     try:
         return int(value)
@@ -582,7 +591,7 @@ class PresetFile:
             if m:
                 status, pattern = m.group(1), m.group(2)
                 if fnmatch.fnmatchcase(unit, pattern):
-                    logg.debug("%s %s => %s [%s]", status, pattern, unit, self.filename())
+                    logg.debug("%s %s => %s %s", status, pattern, unit, strQ(self.filename()))
                     return status
         return None
 
@@ -1029,15 +1038,15 @@ class Systemctl:
         if not conf:
             return True # no such conf >> ignored
         if not self.user_mode():
-            logg.debug("%s no --user mode >> accept", conf.filename())
+            logg.debug("%s no --user mode >> accept", strQ(conf.filename()))
             return False
         if self.is_user_conf(conf):
-            logg.debug("%s is /user/ conf >> accept", conf.filename())
+            logg.debug("%s is /user/ conf >> accept", strQ(conf.filename()))
             return False
         # to allow for 'docker run -u user' with system services
         user = self.expand_special(conf.get("Service", "User", ""), conf)
         if user and user == self.user():
-            logg.debug("%s with User=%s >> accept", conf.filename(), user)
+            logg.debug("%s with User=%s >> accept", strQ(conf.filename()), user)
             return False
         return True
     def find_drop_in_files(self, unit):
@@ -1721,7 +1730,7 @@ class Systemctl:
             confs["i"] = sh_escape(unit.instance)
             confs["J"] = unit.component
             confs["j"] = sh_escape(unit.component)
-            confs["f"] = sh_escape(conf.filename())
+            confs["f"] = sh_escape(strE(conf.filename()))
             VARTMP = "/var/tmp"
             TMP = "/tmp"
             RUN = "/run"
@@ -1788,7 +1797,7 @@ class Systemctl:
         return newcmd
     def path_journal_log(self, conf): # never None
         """ /var/log/zzz.service.log or /var/log/default.unit.log """
-        filename = os.path.basename(conf.filename() or "")
+        filename = os.path.basename(strE(conf.filename()))
         unitname = (conf.name() or "default")+".unit"
         name = filename or unitname
         log_folder = conf.os_path_var(self._journal_log_folder)
@@ -1959,7 +1968,7 @@ class Systemctl:
         if not conf: return False
         if self.syntax_check(conf) > 100: return False
         with waitlock(conf):
-            logg.debug(" start unit %s => %s", conf.name(), conf.filename())
+            logg.debug(" start unit %s => %s", conf.name(), strQ(conf.filename()))
             return self.do_start_unit_from(conf)
     def do_start_unit_from(self, conf):
         if conf.name().endswith(".service"):
@@ -2142,7 +2151,7 @@ class Systemctl:
                     env["MAINPID"] = str(pid)
             if not pid_file:
                 time.sleep(MinimumTimeoutStartSec)
-                logg.warning("No PIDFile for forking %s", conf.filename())
+                logg.warning("No PIDFile for forking %s", strQ(conf.filename()))
                 status_file = self.status_file_from(conf)
                 self.set_status_from(conf, "ExecMainCode", returncode)
                 active = returncode and "failed" or "active"
@@ -2276,7 +2285,7 @@ class Systemctl:
     def execve_from(self, conf, cmd, env):
         """ this code is commonly run in a child process // returns exit-code"""
         runs = conf.get("Service", "Type", "simple").lower()
-        logg.debug("%s process for %s", runs, conf.filename())
+        logg.debug("%s process for %s", runs, strQ(conf.filename()))
         inp = open("/dev/zero")
         out = self.open_journal_log(conf)
         os.dup2(inp.fileno(), sys.stdin.fileno())
@@ -2349,7 +2358,7 @@ class Systemctl:
         if not conf: return False
         if self.syntax_check(conf) > 100: return False
         with waitlock(conf):
-            logg.info(" stop unit %s => %s", conf.name(), conf.filename())
+            logg.info(" stop unit %s => %s", conf.name(), strQ(conf.filename()))
             return self.do_stop_unit_from(conf)
     def do_stop_unit_from(self, conf):
         if conf.name().endswith(".service"):
@@ -2565,7 +2574,7 @@ class Systemctl:
         if not conf: return False
         if self.syntax_check(conf) > 100: return False
         with waitlock(conf):
-            logg.info(" reload unit %s => %s", conf.name(), conf.filename())
+            logg.info(" reload unit %s => %s", conf.name(), strQ(conf.filename()))
             return self.do_reload_unit_from(conf)
     def do_reload_unit_from(self, conf):
         if conf.name().endswith(".service"):
@@ -2642,7 +2651,7 @@ class Systemctl:
         if not conf: return False
         if self.syntax_check(conf) > 100: return False
         with waitlock(conf):
-            logg.info(" restart unit %s => %s", conf.name(), conf.filename())
+            logg.info(" restart unit %s => %s", conf.name(), strQ(conf.filename()))
             if not self.is_active_from(conf):
                 return self.do_start_unit_from(conf)
             else:
@@ -2684,7 +2693,7 @@ class Systemctl:
             logg.error("Unit %s not for --user mode", unit)
             return False
         with waitlock(conf):
-            logg.info(" try-restart unit %s => %s", conf.name(), conf.filename())
+            logg.info(" try-restart unit %s => %s", conf.name(), strQ(conf.filename()))
             if self.is_active_from(conf):
                 return self.do_restart_unit_from(conf)
         return True
@@ -2725,7 +2734,7 @@ class Systemctl:
         """ do 'reload' if specified, otherwise do 'restart' """
         if not conf: return False
         with waitlock(conf):
-            logg.info(" reload-or-restart unit %s => %s", conf.name(), conf.filename())
+            logg.info(" reload-or-restart unit %s => %s", conf.name(), strQ(conf.filename()))
             return self.do_reload_or_restart_unit_from(conf)
     def do_reload_or_restart_unit_from(self, conf):
         if not self.is_active_from(conf):
@@ -2772,7 +2781,7 @@ class Systemctl:
         return self.reload_or_try_restart_unit_from(conf)
     def reload_or_try_restart_unit_from(self, conf):
         with waitlock(conf):
-            logg.info(" reload-or-try-restart unit %s => %s", conf.name(), conf.filename())
+            logg.info(" reload-or-try-restart unit %s => %s", conf.name(), strQ(conf.filename()))
             return self.do_reload_or_try_restart_unit_from(conf)
     def do_reload_or_try_restart_unit_from(self, conf):
         if conf.getlist("Service", "ExecReload", []):
@@ -2816,7 +2825,7 @@ class Systemctl:
     def kill_unit_from(self, conf):
         if not conf: return False
         with waitlock(conf):
-            logg.info(" kill unit %s => %s", conf.name(), conf.filename())
+            logg.info(" kill unit %s => %s", conf.name(), strQ(conf.filename()))
             return self.do_kill_unit_from(conf)
     def do_kill_unit_from(self, conf):
         started = time.time()
@@ -2833,10 +2842,10 @@ class Systemctl:
         self.clean_status_from(conf) # clear RemainAfterExit and TimeoutStartSec
         if not mainpid:
             if useKillMode in ["control-group"]:
-                logg.warning("no main PID [%s]", conf.filename())
+                logg.warning("no main PID %s", strQ(conf.filename()))
                 logg.warning("and there is no control-group here")
             else:
-                logg.info("no main PID [%s]", conf.filename())
+                logg.info("no main PID %s", strQ(conf.filename()))
             return False
         if not pid_exists(mainpid) or pid_zombie(mainpid):
             logg.debug("ignoring children when mainpid is already dead")
@@ -3854,14 +3863,15 @@ class Systemctl:
                 conf = self.get_unit_conf(unit)
             except Exception as e:
                 logg.error("%s: can not read unit file %s\n\t%s", 
-                    unit, conf.filename(), e)
+                    unit, strQ(conf.filename()), e)
                 continue
             errors += self.syntax_check(conf)
         if errors:
             logg.warning(" (%s) found %s problems", errors, errors % 100)
         return True # errors
     def syntax_check(self, conf):
-        if conf.filename() and conf.filename().endswith(".service"):
+        filename = conf.filename()
+        if filename and filename.endswith(".service"):
             return self.syntax_check_service(conf)
         return 0
     def syntax_check_service(self, conf):
