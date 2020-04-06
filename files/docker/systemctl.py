@@ -3027,7 +3027,7 @@ class Systemctl:
                 return state
         pid = self.read_mainpid_from(conf)
         if DEBUG_STATUS:
-            logg.debug("pid_file '%s' => PID %s", pid_file or status_file, pid)
+            logg.debug("pid_file '%s' => PID %s", pid_file or status_file, strE(pid))
         if pid:
             if not pid_exists(pid) or pid_zombie(pid):
                 return "failed"
@@ -3060,7 +3060,7 @@ class Systemctl:
                     return self.get_status_from(conf, "SubState", "dead")
         pid = self.read_mainpid_from(conf)
         if DEBUG_STATUS:
-            logg.debug("pid_file '%s' => PID %s", pid_file or status_file, pid)
+            logg.debug("pid_file '%s' => PID %s", pid_file or status_file, strE(pid))
         if pid:
             if not pid_exists(pid) or pid_zombie(pid):
                 return "failed"
