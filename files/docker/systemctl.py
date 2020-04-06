@@ -4088,9 +4088,9 @@ class Systemctl:
         yield "Names", " ".join(sorted(names.keys()))
         yield "Description", self.get_description_from(conf) # conf.get("Unit", "Description")
         yield "PIDFile", self.pid_file_from(conf) # not self.pid_file_from w/o default location
-        yield "MainPID", strE(self.active_pid_from(conf))   # status["MainPID"] or PIDFile-read
-        yield "SubState", self.get_substate_from(conf)      # status["SubState"] or notify-result
-        yield "ActiveState", self.get_active_from(conf)     # status["ActiveState"]
+        yield "MainPID", strE(self.active_pid_from(conf))            # status["MainPID"] or PIDFile-read
+        yield "SubState", self.get_substate_from(conf) or "unknown"  # status["SubState"] or notify-result
+        yield "ActiveState", self.get_active_from(conf) or "unknown" # status["ActiveState"]
         yield "LoadState", loaded
         yield "UnitFileState", self.enabled_from(conf)
         yield "TimeoutStartUSec", seconds_to_time(self.get_TimeoutStartSec(conf))
