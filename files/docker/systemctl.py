@@ -3254,7 +3254,7 @@ class Systemctl:
             logg.error("No files found for %s", unit) 
         except Exception as e:
             print("Unit {} is not-loaded: {}".format(unit, e))
-        self.error |= NOT_FOUND
+        self.error |= NOT_OK
         return None
     ##
     ##
