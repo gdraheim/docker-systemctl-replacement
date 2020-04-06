@@ -4811,6 +4811,7 @@ class Systemctl:
                     if "--" not in doc_text:
                         doc_text = "-- " + doc_text
                 else: 
+                    func_name = arg # FIXME
                     logg.debug("__doc__ of %s is none", func_name)
                     if not self._show_all: continue
                 lines.append("%s %s %s" % (prog, arg, doc_text))
