@@ -1603,6 +1603,7 @@ class Systemctl:
         system_btime = 0
         with open(system_stat,"rb") as f:
             for line in f:
+                assert isinstance(line, bytes)
                 if line.startswith(b"btime"):
                     system_btime = float(line.decode().split()[1])
         f.closed
@@ -1901,6 +1902,7 @@ class Systemctl:
         result = ""
         try:
             result, client_address = notify.socket.recvfrom(4096)
+            assert isinstance(result, bytes)
             if result:
                 result = result.decode("utf-8")
                 result_txt = result.replace("\n","|")
