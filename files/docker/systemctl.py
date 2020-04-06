@@ -154,6 +154,13 @@ def strQ(part):
     return "'%s'" % part
 def shell_cmd(cmd):
     return " ".join([strQ(part) for part in cmd])
+def to_intN(value, default = None):
+    if not value:
+        return default
+    try:
+        return int(value)
+    except:
+        return default
 def to_int(value, default = 0):
     try:
         return int(value)
@@ -1349,7 +1356,7 @@ class Systemctl:
             # some pid-files from applications contain multiple lines
             for line in open(pid_file):
                 if line.strip(): 
-                    pid = to_int(line.strip())
+                    pid = to_intN(line.strip())
                     break
         except Exception as e:
             logg.warning("bad read of pid file '%s': %s", pid_file, e)
@@ -1387,7 +1394,9 @@ class Systemctl:
         if pid_file:
             return self.read_pid_file(pid_file, default)
         status = self.read_status_from(conf)
-        return status.get("MainPID", default)
+        if "MainPID" in status:
+            return to_intN(status["MainPID"], default)
+        return default
     def clean_pid_file_from(self, conf):
         pid_file = self.pid_file_from(conf)
         if pid_file and os.path.isfile(pid_file):
@@ -2120,7 +2129,7 @@ class Systemctl:
                 logg.debug("okay, wating on socket for %ss", timeout)
                 results = self.wait_notify_socket(notify, timeout, mainpid)
                 if "MAINPID" in results:
-                    new_pid = results["MAINPID"]
+                    new_pid = to_intN(results["MAINPID"])
                     if new_pid and to_int(new_pid) != mainpid:
                         logg.info("NEW PID %s from sd_notify (was PID %s)", new_pid, mainpid)
                         self.write_status_from(conf, MainPID=new_pid)
@@ -2429,7 +2438,7 @@ class Systemctl:
                     returncode = run.returncode
                     service_result = "failed"
                     break
-            pid = env.get("MAINPID",0)
+            pid = to_intN(env.get("MAINPID"))
             if pid:
                 if self.wait_vanished_pid(pid, timeout):
                     self.clean_pid_file_from(conf)
@@ -2462,7 +2471,7 @@ class Systemctl:
                     returncode = run.returncode
                     service_result = "failed"
                     break
-            pid = env.get("MAINPID",0)
+            pid = to_intN(env.get("MAINPID"))
             if pid:
                 if self.wait_vanished_pid(pid, timeout):
                     self.clean_pid_file_from(conf)
@@ -4668,7 +4677,7 @@ class Systemctl:
                     logg.error("unsupported %s", target)
                 continue
             for pid_dir in os.listdir("/proc"):
-                pid_num = to_int(pid_dir, 0)
+                pid_num = to_intN(pid_dir)
                 if pid_num:
                     try:
                         cmdline = "/proc/{pid_dir}/cmdline".format(**locals())
