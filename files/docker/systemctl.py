@@ -2196,7 +2196,7 @@ class Systemctl:
             return True
     def get_socket_service_from(self, conf):
         socket_unit = conf.name()
-        accept = conf.getbool("Socket", "Accept", False)
+        accept = conf.getbool("Socket", "Accept", "no")
         service_type = accept and "@.service" or ".service"
         service_name = path_replace_extension(socket_unit, ".socket", service_type)
         service_unit = conf.get("Socket", "Service", service_name)
@@ -2205,7 +2205,7 @@ class Systemctl:
     def do_start_socket_from(self, conf):
         runs = "socket"
         timeout = self.get_SocketTimeoutSec(conf)
-        accept = conf.getbool("Socket", "Accept", False)
+        accept = conf.getbool("Socket", "Accept", "no")
         service_unit = self.get_socket_service_from(conf)
         service_conf = self.load_unit_conf(service_unit)
         if service_conf is None:
@@ -2501,7 +2501,7 @@ class Systemctl:
     def do_stop_socket_from(self, conf):
         runs = "socket"
         timeout = self.get_SocketTimeoutSec(conf)
-        accept = conf.getbool("Socket", "Accept", False)
+        accept = conf.getbool("Socket", "Accept", "no")
         service_unit = self.get_socket_service_from(conf)
         service_conf = self.load_unit_conf(service_unit)
         if service_conf is None:
