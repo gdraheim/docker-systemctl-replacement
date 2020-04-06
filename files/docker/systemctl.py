@@ -194,8 +194,8 @@ def shutil_setuid(user = None, group = None):
             os.setgid(gid)
             logg.debug("setgid %s", gid)
         groups = [g.gr_gid for g in grp.getgrall() if gname in g.gr_mem]
-        os.setgroups(groups)
-        logg.debug("setgroups %s", groups)
+        if groups:
+            os.setgroups(groups)
         uid = pw.pw_uid
         os.setuid(uid)
         logg.debug("setuid %s '%s'", uid, user)
