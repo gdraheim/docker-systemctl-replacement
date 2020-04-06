@@ -1872,7 +1872,7 @@ class Systemctl:
         return None
     NotifySocket = collections.namedtuple("NotifySocket", ["socket", "socketfile" ])
     def notify_socket_from(self, conf, socketfile = None):
-        """ creates a notify-socket for the (non-privileged) user """    
+        """ creates a notify-socket for the (non-privileged) user """
         notify_socket_folder = conf.os_path_var(_notify_socket_folder)
         notify_name = "notify." + str(conf.name() or "systemctl")
         notify_socket = os.path.join(notify_socket_folder, notify_name)
