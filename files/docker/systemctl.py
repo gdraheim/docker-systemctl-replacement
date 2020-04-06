@@ -1338,15 +1338,16 @@ class Systemctl:
         whose filename (just the last component of the path) matches one of
         them are shown. This command reacts to limitations of --type being
         --type=service or --type=target (and --now for some basics)."""
+        result = []
         if self._now:
-            result = self.list_service_unit_basics()
+            basics = self.list_service_unit_basics()
+            result = [ (filename, sysv + " " + name) for name, sysv, filename in basics ]
         elif self._unit_type == "target":
             result = self.list_target_unit_files()
         elif self._unit_type == "service":
             result = self.list_service_unit_files()
         elif self._unit_type:
             logg.warning("unsupported unit --type=%s", self._unit_type)
-            result = []
         else:
             result = self.list_target_unit_files()
             result += self.list_service_unit_files(*modules)
