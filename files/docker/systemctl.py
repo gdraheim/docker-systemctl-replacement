@@ -2190,7 +2190,7 @@ class Systemctl:
                     run.returncode or "OK", run.signal or "")
             return True
     def get_socket_service_from(self, conf):
-        socket_unit = os.path.basename(conf.filename())
+        socket_unit = conf.name()
         accept = conf.getbool("Socket", "Accept", False)
         service_type = accept and "@.service" or ".service"
         service_name = path_replace_extension(socket_unit, ".socket", service_type)
