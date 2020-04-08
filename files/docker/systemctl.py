@@ -4596,7 +4596,7 @@ class Systemctl:
                 signal.signal(signal.SIGTERM, signal.SIG_DFL)
                 signal.signal(signal.SIGINT, signal.SIG_DFL)
                 logg.info("interrupted - exit init-loop")
-                result = e.message or "STOPPED"
+                result = str(e) or "STOPPED"
                 break
             except Exception as e:
                 logg.info("interrupted - exception %s", e)
