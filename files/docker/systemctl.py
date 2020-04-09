@@ -177,7 +177,7 @@ def _var_path(path):
     return path
 
 
-def shutil_setuid(user = None, group = None):
+def shutil_setuid(user = None, group = None, xgroups = None):
     """ set fork-child uid/gid (returns pw-info env-settings)"""
     if group:
         import grp
@@ -194,6 +194,8 @@ def shutil_setuid(user = None, group = None):
             os.setgid(gid)
             logg.debug("setgid %s", gid)
         groups = [g.gr_gid for g in grp.getgrall() if user in g.gr_mem]
+        if xgroups:
+            groups += [g.gr_gid for g in grp.getgrall() if g.gr_name in xgroups and g.gr_gid not in groups]
         if groups:
             os.setgroups(groups)
         uid = pw.pw_uid
@@ -2046,6 +2048,13 @@ class Systemctl:
         if "LANG" not in locale:
             env["LANG"] = locale.get("LANGUAGE", locale.get("LC_CTYPE", "C"))
         return env
+    def expand_list(self, group_lines, conf):
+        result = []
+        for line in group_lines:
+            for item in line.split():
+                if item:
+                    result.append(self.expand_special(item, conf))
+        return result
     def execve_from(self, conf, cmd, env):
         """ this code is commonly run in a child process // returns exit-code"""
         runs = conf.get("Service", "Type", "simple").lower()
@@ -2057,7 +2066,8 @@ class Systemctl:
         os.dup2(out.fileno(), sys.stderr.fileno())
         runuser = self.expand_special(conf.get("Service", "User", ""), conf)
         rungroup = self.expand_special(conf.get("Service", "Group", ""), conf)
-        envs = shutil_setuid(runuser, rungroup)
+        xgroups = self.expand_list(conf.getlist("Service", "SupplementaryGroups", []), conf) 
+        envs = shutil_setuid(runuser, rungroup, xgroups)
         badpath = self.chdir_workingdir(conf) # some dirs need setuid before
         if badpath:
             logg.error("(%s): bad workingdir: '%s'", shell_cmd(cmd), badpath)
