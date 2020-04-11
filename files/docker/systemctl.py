@@ -1077,7 +1077,7 @@ class Systemctl:
             logg.debug("%s is /user/ conf >> accept", strQ(conf.filename()))
             return False
         # to allow for 'docker run -u user' with system services
-        user = self.expand_special(conf.get("Service", "User", ""), conf)
+        user = self.get_User(conf)
         if user and user == self.user():
             logg.debug("%s with User=%s >> accept", strQ(conf.filename()), user)
             return False
@@ -2333,6 +2333,12 @@ class Systemctl:
                 if item:
                     result.append(self.expand_special(item, conf))
         return result
+    def get_User(self, conf):
+        return self.expand_special(conf.get("Service", "User", ""), conf)
+    def get_Group(self, conf):
+        return self.expand_special(conf.get("Service", "Group", ""), conf)
+    def get_SupplementaryGroups(self, conf):
+        return self.expand_list(conf.getlist("Service", "SupplementaryGroups", []), conf)
     def execve_from(self, conf, cmd, env):
         """ this code is commonly run in a child process // returns exit-code"""
         runs = conf.get("Service", "Type", "simple").lower()
@@ -2342,9 +2348,9 @@ class Systemctl:
         os.dup2(inp.fileno(), sys.stdin.fileno())
         os.dup2(out.fileno(), sys.stdout.fileno())
         os.dup2(out.fileno(), sys.stderr.fileno())
-        runuser = self.expand_special(conf.get("Service", "User", ""), conf)
-        rungroup = self.expand_special(conf.get("Service", "Group", ""), conf)
-        xgroups = self.expand_list(conf.getlist("Service", "SupplementaryGroups", []), conf) 
+        runuser = self.get_User(conf)
+        rungroup = self.get_Group(conf)
+        xgroups = self.get_SupplementaryGroups(conf)
         envs = shutil_setuid(runuser, rungroup, xgroups)
         badpath = self.chdir_workingdir(conf) # some dirs need setuid before
         if badpath:
