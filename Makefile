@@ -43,11 +43,15 @@ st_%: ; $(MAKE) 3 && ./testsuite.py "te$@" -vv $(WITH3)
 
 WITH3 = --python=/usr/bin/python3 --with=files/docker/systemctl3.py
 todo/test%:             ; ./testsuite.py   "$(notdir $@)" -vv --todo
+15.1/test%:             ; ./testsuite.py   "$(notdir $@)" -vv --image=opensuse/leap:15.1
 15.0/test%:             ; ./testsuite.py   "$(notdir $@)" -vv --image=opensuse/leap:15.0
 42.3/test%:             ; ./testsuite.py   "$(notdir $@)" -vv --image=opensuse:42.3
 42.2/test%:             ; ./testsuite.py   "$(notdir $@)" -vv --image=opensuse:42.2
 18.04/test%:            ; ./testsuite.py   "$(notdir $@)" -vv --image=ubuntu:18.04
 16.04/test%:            ; ./testsuite.py   "$(notdir $@)" -vv --image=ubuntu:16.04
+8.0/test%:              ; ./testsuite.py   "$(notdir $@)" -vv --image=centos:8.0.1905
+7.7/test%:              ; ./testsuite.py   "$(notdir $@)" -vv --image=centos:7.7.1908
+7.6/test%:              ; ./testsuite.py   "$(notdir $@)" -vv --image=centos:7.6.1810
 7.5/test%:              ; ./testsuite.py   "$(notdir $@)" -vv --image=centos:7.5.1804
 7.4/test%:              ; ./testsuite.py   "$(notdir $@)" -vv --image=centos:7.4.1708
 7.3/test%:              ; ./testsuite.py   "$(notdir $@)" -vv --image=centos:7.3.1611
@@ -61,6 +65,9 @@ nightrun: checkall
 	$(MAKE) checks
 checkall:
 	$(MAKE) "test_[1234]"
+	$(MAKE) "7.8/test_[567]"
+	$(MAKE) "7.7/test_[567]"
+	$(MAKE) "7.6/test_[567]"
 	$(MAKE) "7.5/test_[567]"
 	$(MAKE) "7.4/test_[567]"
 	$(MAKE) "7.3/test_[567]"
@@ -70,11 +77,13 @@ checkall:
 	$(MAKE) "42.3/test_[567]"
 	$(MAKE) "18.04/st_[567]"
 	$(MAKE) "16.04/st_[567]"
+	$(MAKE) "15.1/st_[567]"
 	$(MAKE) "15.0/st_[567]"
 	$(MAKE) "42.3/st_[567]"
 
 check: check2018
 	@ echo please run 'make checks' now
+19 check2019: ; ./testsuite.py -vv --opensuse=15.1 --centos=7.7 --ubuntu=18.04
 18 check2018: ; ./testsuite.py -vv --opensuse=15.0 --centos=7.5 --ubuntu=18.04
 17 check2017: ; ./testsuite.py -vv --opensuse=42.3 --centos=7.4 --ubuntu=16.04
 16 check2016: ; ./testsuite.py -vv --opensuse=42.2 --centos=7.3 --ubuntu=16.04
