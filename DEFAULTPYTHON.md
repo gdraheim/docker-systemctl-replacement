@@ -1,24 +1,31 @@
 centos:7.3.1611
+* does not have /usr/libexec/platform-python
 * python = python2
 * python2 : installed (2.7.5)
 * python3 : yum install --enablerepo=base -y python3 (3.6.8)
 
 centos:7.4.1708
+* does not have /usr/libexec/platform-python
 * python = python2 
 * python2 : installed (2.7.5)
 * python3 ; yum install --enablerepo=base -y python3 (3.6.8)
 
 centos:7.5.1804
+* does not have /usr/libexec/platform-python
 * python = python2 
 * python2 : installed (2.7.5)
 * python3 ; yum install --enablerepo=base -y python3 (3.6.8)
 
 centos:7.6.1810
+* /usr/libexec/platform-python = python2
+* /usr/libexec/platform-python : installed (2.7.5)
 * python = python2 
 * python2 : installed (2.7.5)
 * python3 ; yum install --enablerepo=base -y python3 (3.6.8)
 
 centos:7.7.1908
+* /usr/libexec/platform-python = python2
+* /usr/libexec/platform-python : installed (2.7.5)
 * python = python2 
 * python2 : installed (2.7.5)
 * python3 ; yum install --enablerepo=base -y python3 (3.6.8)
