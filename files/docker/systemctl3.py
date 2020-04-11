@@ -142,6 +142,12 @@ _sysv_mappings["$network"] = "network.target"
 _sysv_mappings["$remote_fs"] = "remote-fs.target"
 _sysv_mappings["$timer"] = "timers.target"
 
+def strYes(value):
+    if value is True:
+        return "yes"
+    if not value:
+        return "no"
+    return str(value)
 def strE(part):
     if not part:
         return ""
@@ -4135,6 +4141,10 @@ class Systemctl:
         yield "TimeoutStartUSec", seconds_to_time(self.get_TimeoutStartSec(conf))
         yield "TimeoutStopUSec", seconds_to_time(self.get_TimeoutStopSec(conf))
         yield "NeedDaemonReload", "no"
+        yield "SendSIGKILL", strYes(self.get_SendSIGKILL(conf))
+        yield "SendSIGHUP", strYes(self.get_SendSIGHUP(conf))
+        yield "KillMode", strE(self.get_KillMode(conf))
+        yield "KillSignal", strE(self.get_KillSignal(conf))
         env_parts = []
         for env_part in conf.getlist("Service", "Environment", []):
             env_parts.append(self.expand_special(env_part, conf))
