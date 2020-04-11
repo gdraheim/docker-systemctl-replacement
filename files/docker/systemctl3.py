@@ -4145,6 +4145,9 @@ class Systemctl:
         yield "SendSIGHUP", strYes(self.get_SendSIGHUP(conf))
         yield "KillMode", strE(self.get_KillMode(conf))
         yield "KillSignal", strE(self.get_KillSignal(conf))
+        yield "StartLimitBurst", strE(self.get_StartLimitBurst(conf))
+        yield "StartLimitIntervalSec", seconds_to_time(self.get_StartLimitIntervalSec(conf))
+        yield "RestartSec", seconds_to_time(self.get_RestartSec(conf))
         env_parts = []
         for env_part in conf.getlist("Service", "Environment", []):
             env_parts.append(self.expand_special(env_part, conf))
