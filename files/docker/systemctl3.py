@@ -2891,10 +2891,10 @@ class Systemctl:
             return self.do_kill_unit_from(conf)
     def do_kill_unit_from(self, conf):
         started = time.time()
-        doSendSIGKILL = conf.getbool("Service", "SendSIGKILL", "yes")
-        doSendSIGHUP = conf.getbool("Service", "SendSIGHUP", "no")
-        useKillMode = conf.get("Service", "KillMode", "control-group")
-        useKillSignal = conf.get("Service", "KillSignal", "SIGTERM")
+        doSendSIGKILL = self.get_SendSIGKILL(conf)
+        doSendSIGHUP = self.get_SendSIGHUP(conf)
+        useKillMode = self.get_KillMode(conf)
+        useKillSignal = self.get_KillSignal(conf)
         kill_signal = getattr(signal, useKillSignal)
         timeout = self.get_TimeoutStopSec(conf)
         status_file = self.status_file_from(conf)
@@ -4145,6 +4145,14 @@ class Systemctl:
             env_files.append(self.expand_special(env_file, conf))
         if env_files:
             yield "EnvironmentFile", " ".join(env_files)
+    def get_SendSIGKILL(self, conf):
+        return conf.getbool("Service", "SendSIGKILL", "yes")
+    def get_SendSIGHUP(self, conf):
+        return conf.getbool("Service", "SendSIGHUP", "no")
+    def get_KillMode(self, conf):
+        return conf.get("Service", "KillMode", "control-group")
+    def get_KillSignal(self, conf):
+        return conf.get("Service", "KillSignal", "SIGTERM")
     #
     igno_centos = [ "netconsole", "network" ]
     igno_opensuse = [ "raw", "pppoe", "*.local", "boot.*", "rpmconf*", "postfix*" ]
