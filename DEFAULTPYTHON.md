@@ -1,3 +1,8 @@
+## Default Python
+
+Docker was shipped with RHEL 7.0 since 2014, and openSUSE adopted it in the same year.
+Docker was dropped in RHEL 8.0 to be replaced by 'podman' which is mostly compatible.
+
 centos:7.3.1611
 * does not have /usr/libexec/platform-python
 * python = python2
