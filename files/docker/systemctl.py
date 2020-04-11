@@ -4129,6 +4129,9 @@ class Systemctl:
         yield "ActiveState", self.get_active_from(conf) or "unknown" # status["ActiveState"]
         yield "LoadState", loaded
         yield "UnitFileState", self.enabled_from(conf)
+        yield "User", self.get_User(conf)
+        yield "Group", self.get_Group(conf)
+        yield "SupplementaryGroups", self.get_SupplementaryGroups(conf)
         yield "TimeoutStartUSec", seconds_to_time(self.get_TimeoutStartSec(conf))
         yield "TimeoutStopUSec", seconds_to_time(self.get_TimeoutStopSec(conf))
         yield "NeedDaemonReload", "no"
