@@ -4152,6 +4152,8 @@ class Systemctl:
         yield "StartLimitBurst", strE(self.get_StartLimitBurst(conf))
         yield "StartLimitIntervalSec", seconds_to_time(self.get_StartLimitIntervalSec(conf))
         yield "RestartSec", seconds_to_time(self.get_RestartSec(conf))
+        yield "RemainAfterExit", strYes(self.get_RemainAfterExit(conf))
+        yield "WorkingDirectory", strE(self.get_WorkingDirectory(conf))
         env_parts = []
         for env_part in conf.getlist("Service", "Environment", []):
             env_parts.append(self.expand_special(env_part, conf))
