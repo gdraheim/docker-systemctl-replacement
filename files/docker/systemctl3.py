@@ -1,4 +1,6 @@
 #! /usr/bin/python3
+## type hints are provided in 'types/systemctl3.pyi'
+
 from __future__ import print_function
 
 __copyright__ = "(C) 2016-2019 Guido U. Draheim, licensed under the EUPL"

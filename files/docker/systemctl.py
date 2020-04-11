@@ -1,4 +1,6 @@
 #! /usr/bin/python
+## generated from systemctl3.py - do not change
+
 from __future__ import print_function
 
 __copyright__ = "(C) 2016-2019 Guido U. Draheim, licensed under the EUPL"

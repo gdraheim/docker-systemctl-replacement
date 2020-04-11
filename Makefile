@@ -23,6 +23,13 @@ help:
 3:
 	cp -v files/docker/systemctl.py files/docker/systemctl3.py
 	sed -i -e "s|/usr/bin/python|/usr/bin/python3|" files/docker/systemctl3.py
+	sed -i -e "s|generated from systemctl3.*|type hints are provided in 'types/systemctl3.pyi'|" files/docker/systemctl3.py
+	diff -U1 files/docker/systemctl.py files/docker/systemctl3.py || true
+
+2:
+	cp -v files/docker/systemctl3.py files/docker/systemctl.py
+	sed -i -e "s|/usr/bin/python3|/usr/bin/python|" files/docker/systemctl.py
+	sed -i -e "s|type hints are provide.*|generated from systemctl3.py - do not change|" files/docker/systemctl.py
 	diff -U1 files/docker/systemctl.py files/docker/systemctl3.py || true
 
 alltests: CH CP UA DJ
