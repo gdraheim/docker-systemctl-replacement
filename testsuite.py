@@ -1,7 +1,5 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 """ Testcases for docker-systemctl-replacement functionality """
-
-from __future__ import print_function
 
 __copyright__ = "(C) Guido Draheim, licensed under the EUPL"""
 __version__ = "1.5.3420"
@@ -27,12 +25,8 @@ from fnmatch import fnmatchcase as fnmatch
 from glob import glob
 import json
 
-if sys.version[0] == '2':
-    string_types = basestring
-    BlockingIOError = IOError
-else:
-    string_types = str
-    xrange = range
+xrange = range
+string_types = (str, bytes)
 
 logg = logging.getLogger("TESTING")
 _python = "/usr/bin/python"
@@ -117,42 +111,53 @@ def cover(image = None, python = None):
     if not COVERAGE: return ""
     return coverage_run(image, python)
 
+def decodes(text):
+    if text is None: return None
+    if isinstance(text, bytes):
+        encoded = sys.getdefaultencoding()
+        if encoded in ["ascii"]:
+            encoded = "utf-8"
+        try: 
+            return text.decode(encoded)
+        except:
+            return text.decode("latin-1")
+    return text
 def sh____(cmd, shell=True):
-    if isinstance(cmd, basestring):
+    if isinstance(cmd, string_types):
         logg.info(": %s", cmd)
     else:    
         logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
     return subprocess.check_call(cmd, shell=shell)
 def sx____(cmd, shell=True):
-    if isinstance(cmd, basestring):
+    if isinstance(cmd, string_types):
         logg.info(": %s", cmd)
     else:    
         logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
     return subprocess.call(cmd, shell=shell)
 def output(cmd, shell=True):
-    if isinstance(cmd, basestring):
+    if isinstance(cmd, string_types):
         logg.info(": %s", cmd)
     else:    
         logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
     run = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE)
     out, err = run.communicate()
-    return out
+    return decodes(out)
 def output2(cmd, shell=True):
-    if isinstance(cmd, basestring):
+    if isinstance(cmd, string_types):
         logg.info(": %s", cmd)
     else:    
         logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
     run = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE)
     out, err = run.communicate()
-    return out, run.returncode
+    return decodes(out), run.returncode
 def output3(cmd, shell=True):
-    if isinstance(cmd, basestring):
+    if isinstance(cmd, string_types):
         logg.info(": %s", cmd)
     else:    
         logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
     run = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out, err = run.communicate()
-    return out, err, run.returncode
+    return decodes(out), decodes(err), run.returncode
 def background(cmd, shell=True):
     BackgroundProcess = collections.namedtuple("BackgroundProcess", ["pid", "run", "log" ])
     log = open(os.devnull, "wb")
@@ -161,9 +166,11 @@ def background(cmd, shell=True):
     logg.info("PID %s = %s", pid, cmd)
     return BackgroundProcess(pid, run, log)
 
+def reads(filename):
+    return decodes(open(filename, "rb").read())
 def _lines(lines):
-    if isinstance(lines, basestring):
-        lines = lines.split("\n")
+    if isinstance(lines, string_types):
+        lines = decodes(lines).split("\n")
         if len(lines) and lines[-1] == "":
             lines = lines[:-1]
     return lines
@@ -273,7 +280,7 @@ def path_proc_started(proc):
         with open(system_uptime,"rb") as f:
             data = f.readline()
         f.closed
-        uptime_data = data.decode().split()
+        uptime_data = decodes(data).split()
         uptime_secs = float(uptime_data[0])
         logg.debug("System uptime secs: %.3f (%s)", uptime_secs, system_uptime)
 
@@ -287,8 +294,8 @@ def path_proc_started(proc):
         system_btime = 0
         with open(system_stat,"rb") as f:
             for line in f:
-                if line.startswith("btime"):
-                    system_btime = float(line.decode().split()[1])
+                if line.startswith(b"btime"):
+                    system_btime = float(decodes(line).split()[1])
         f.closed
         logg.debug("System btime secs: %.3f (%s)", system_btime, system_stat)
 
@@ -488,11 +495,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(1)
         if os.path.isfile(".coverage"):
             # shutil.copy(".coverage", newcoverage)
-            f = open(".coverage")
+            f = open(".coverage", "rb")
             text = f.read()
             f.close()
-            text2 = re.sub(r"(\]\}\})[^{}]*(\]\}\})$", r"\1", text)
-            f = open(newcoverage, "w")
+            text2 = re.sub(rb"(\]\}\})[^{}]*(\]\}\})$", rb"\1", text)
+            f = open(newcoverage, "wb")
             f.write(text2)
             f.close()
     def root(self, testdir, real = None):
@@ -808,7 +815,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(os_path(root, "/etc/hosts"),"""
             127.0.0.1 localhost localhost4
             ::1 localhost localhost6""")
-        hosts = open(os_path(root, "/etc/hosts")).read()
+        hosts = reads(os_path(root, "/etc/hosts"))
         self.assertEqual(len(lines(hosts)), 2)
         self.assertTrue(greps(hosts, "127.0.0.1.*localhost4"))
         self.assertTrue(greps(hosts, "::1.*localhost6"))
@@ -820,7 +827,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(lines(out), [])
         self.assertEqual(end, 0)
-        hosts = open(os_path(root, "/etc/hosts")).read()
+        hosts = reads(os_path(root, "/etc/hosts"))
         self.assertEqual(len(lines(hosts)), 2)
         self.assertTrue(greps(hosts, "127.0.0.1.*localhost4"))
         self.assertTrue(greps(hosts, "::1.*localhost6"))
@@ -836,7 +843,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(os_path(root, "/etc/hosts"),"""
             127.0.0.1 localhost localhost4
             ::1 localhost localhost6""")
-        hosts = open(os_path(root, "/etc/hosts")).read()
+        hosts = reads(os_path(root, "/etc/hosts"))
         self.assertEqual(len(lines(hosts)), 2)
         self.assertTrue(greps(hosts, "127.0.0.1.*localhost4"))
         self.assertTrue(greps(hosts, "::1.*localhost6"))
@@ -848,7 +855,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(lines(out), [])
         self.assertEqual(end, 0)
-        hosts = open(os_path(root, "/etc/hosts")).read()
+        hosts = reads(os_path(root, "/etc/hosts"))
         self.assertEqual(len(lines(hosts)), 2)
         self.assertTrue(greps(hosts, "127.0.0.1.*localhost4"))
         self.assertTrue(greps(hosts, "::1.*localhost6"))
@@ -1012,7 +1019,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A""")
-        textA = file(os_path(root, "/etc/systemd/system/zza.service")).read()
+        textA = reads(os_path(root, "/etc/systemd/system/zza.service"))
         self.assertTrue(greps(textA, "Testing A"))
         self.assertIn("\nDescription", textA)
         self.rm_testdir()
@@ -1026,7 +1033,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A""")
-        textA = file(os_path(root, "/etc/systemd/system/zza.service")).read()
+        textA = reads(os_path(root, "/etc/systemd/system/zza.service"))
         self.assertTrue(greps(textA, "Testing A"))
         cmd = "{systemctl} __get_description zza.service"
         out, end = output2(cmd.format(**locals()))
@@ -1047,7 +1054,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Service]
             PIDFile=/var/run/foo.pid
             """)
-        textA = file(os_path(root, "/etc/systemd/system/zza.service")).read()
+        textA = reads(os_path(root, "/etc/systemd/system/zza.service"))
         self.assertTrue(greps(textA, "Testing A"))
         self.assertTrue(greps(textA, "PIDFile="))
         cmd = "{systemctl} __test_pid_file zza.service"
@@ -1069,7 +1076,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Service]
             Type=simple
             """)
-        textA = file(os_path(root, "/etc/systemd/system/zza.service")).read()
+        textA = reads(os_path(root, "/etc/systemd/system/zza.service"))
         self.assertTrue(greps(textA, "Testing A"))
         self.assertFalse(greps(textA, "PIDFile="))
         cmd = "{systemctl} __test_pid_file zza.service"
@@ -1091,7 +1098,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Service]
             Type=oneshot
             """)
-        textA = file(os_path(root, "/etc/systemd/system/zza.service")).read()
+        textA = reads(os_path(root, "/etc/systemd/system/zza.service"))
         self.assertTrue(greps(textA, "Testing A"))
         self.assertFalse(greps(textA, "PIDFile="))
         cmd = "{systemctl} __get_status_file zza.service"
@@ -1113,7 +1120,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Service]
             #PIDFile=/var/run/zzfoo.pid
             """)
-        textA = file(os_path(root, "/etc/systemd/system/zza.service")).read()
+        textA = reads(os_path(root, "/etc/systemd/system/zza.service"))
         self.assertTrue(greps(textA, "Testing A"))
         self.assertTrue(greps(textA, "PIDFile="))
         cmd = "{systemctl} __test_pid_file zza.service"
@@ -1136,7 +1143,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Service]
             ;PIDFile=/var/run/zzfoo.pid
             """)
-        textA = file(os_path(root, "/etc/systemd/system/zza.service")).read()
+        textA = reads(os_path(root, "/etc/systemd/system/zza.service"))
         self.assertTrue(greps(textA, "Testing A"))
         self.assertTrue(greps(textA, "PIDFile="))
         cmd = "{systemctl} __test_pid_file zza.service"
@@ -1160,7 +1167,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Service]
             PIDFile=/var/run/zzfoo.pid
             """)
-        textA = file(os_path(root, "/etc/systemd/system/zza.service")).read()
+        textA = reads(os_path(root, "/etc/systemd/system/zza.service"))
         self.assertTrue(greps(textA, "Testing A"))
         self.assertTrue(greps(textA, "quite special"))
         self.assertTrue(greps(textA, "PIDFile="))
@@ -1191,7 +1198,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Service]
             PIDFile=/var/run/zzfoo.pid
             """)
-        textA = file(os_path(root, "/etc/systemd/system/zza.service")).read()
+        textA = reads(os_path(root, "/etc/systemd/system/zza.service"))
         self.assertTrue(greps(textA, "Testing A"))
         self.assertTrue(greps(textA, "quite special"))
         self.assertTrue(greps(textA, "PIDFile="))
@@ -1584,8 +1591,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(os_path(root, "/etc/systemd/system/zzb.service"),"""
             [Unit]
             Description=Testing B""")
-        textA = file(os_path(root, "/etc/systemd/system/zza.service")).read()
-        textB = file(os_path(root, "/etc/systemd/system/zzb.service")).read()
+        textA = reads(os_path(root, "/etc/systemd/system/zza.service"))
+        textB = reads(os_path(root, "/etc/systemd/system/zzb.service"))
         self.assertTrue(greps(textA, "Testing A"))
         self.assertTrue(greps(textB, "Testing B"))
         self.assertIn("\nDescription", textA)
@@ -3295,7 +3302,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 0)
         enabled_file = os_path(root, "/etc/systemd/system/multi-user.target.wants/zzb.service")
         self.assertTrue(os.path.islink(enabled_file))
-        textB = file(enabled_file).read()
+        textB = reads(enabled_file)
         self.assertTrue(greps(textB, "Testing B"))
         self.assertIn("\nDescription", textB)
         self.rm_zzfiles(root)
@@ -3333,7 +3340,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 0)
         enabled_file = os_path(root, "/etc/systemd/system/multi-user.target.wants/zzb.service")
         self.assertTrue(os.path.islink(enabled_file))
-        textB = file(enabled_file).read()
+        textB = reads(enabled_file)
         self.assertTrue(greps(textB, "Testing B"))
         self.assertIn("\nDescription", textB)
         #
@@ -6233,7 +6240,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 0)
         enabled_file = os_path(root, "/etc/systemd/system/multi-user.target.wants/zzb.service")
         self.assertTrue(os.path.islink(enabled_file))
-        textB = file(enabled_file).read()
+        textB = reads(enabled_file)
         self.assertTrue(greps(textB, "Testing B"))
         self.assertIn("\nDescription", textB)
         cmd = "{systemctl} status zzb.service"
@@ -6320,7 +6327,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 0)
         enabled_file = os_path(root, "/etc/systemd/system/multi-user.target.wants/zzb.service")
         self.assertTrue(os.path.islink(enabled_file))
-        textB = file(enabled_file).read()
+        textB = reads(enabled_file)
         self.assertTrue(greps(textB, "Testing B"))
         self.assertIn("\nDescription", textB)
         cmd = "{systemctl} status zzb.service"
@@ -7516,7 +7523,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         #
-        log = lines(open(logfile).read())
+        log = lines(reads(logfile))
         logg.info("LOG %s\n| %s", logfile, "\n| ".join(log))
         self.assertIn(root, log) # <<<<<<<<<< CHECK
         #
@@ -7575,7 +7582,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         #
-        log = lines(open(logfile).read())
+        log = lines(reads(logfile))
         logg.info("LOG %s\n| %s", logfile, "\n| ".join(log))
         self.assertIn(os_path(root,workingdir), log) # <<<<<<<<<< CHECK
         #
@@ -7637,7 +7644,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         #
-        log = open(debug_log).read()
+        log = reads(debug_log)
         logg.info("systemctl.debug.log:\n%s", i2(log))
         self.assertTrue(greps(log, "ERROR chdir workingdir.*such file or directory"))
         self.assertTrue(greps(log, "bad workingdir"))
@@ -7699,12 +7706,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         #
-        log = open(debug_log).read()
+        log = reads(debug_log)
         logg.info("systemctl.debug.log:\n%s", i2(log))
         self.assertTrue(greps(log, "DEBUG chdir workingdir.*such file or directory"))
         self.assertFalse(greps(log, "bad workingdir"))
         #
-        log = lines(open(logfile).read())
+        log = lines(reads(logfile))
         logg.info("LOG %s\n| %s", logfile, "\n| ".join(log))
         self.assertNotIn(os_path(root,workingdir), log) # <<<<<<<<<< CHECK
         self.assertIn(root, log)
@@ -9779,7 +9786,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 3)
         self.assertEqual(out.strip(), "inactive")
         #
-        logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
+        logg.info("LOG\n%s", " "+reads(logfile).replace("\n","\n "))
         self.rm_testdir()
         self.end()
     def real_3936_start_false_exec_notify(self):
@@ -9861,7 +9868,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 3)
         self.assertEqual(out.strip(), "failed")
         #
-        logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
+        logg.info("LOG\n%s", " "+reads(logfile).replace("\n","\n "))
         self.rm_testdir()
         self.end()
     def real_3937_start_false_exec_notify(self):
@@ -9945,7 +9952,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 3)
         self.assertEqual(out.strip(), "inactive")
         #
-        logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
+        logg.info("LOG\n%s", " "+reads(logfile).replace("\n","\n "))
         self.rm_testdir()
         self.end()
     def real_3938_start_slowe_exec_notify(self):
@@ -10034,7 +10041,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 3)
         self.assertEqual(out.strip(), "inactive")
         #
-        logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
+        logg.info("LOG\n%s", " "+reads(logfile).replace("\n","\n "))
         self.rm_testdir()
         self.end()
     def real_3939_start_slowe_exec_forking(self):
@@ -10122,7 +10129,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(out.strip(), "active")
         #
         time.sleep(1)
-        pid = open(os_path(root, "/var/run/zzz.init.pid")).read()
+        pid = reads(os_path(root, "/var/run/zzz.init.pid"))
         os.kill(int(pid), signal.SIGTERM)
         #
         cmd = "{systemctl} is-active zzz.service -vv"
@@ -10141,7 +10148,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 3)
         self.assertEqual(out.strip(), "inactive")
         #
-        logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
+        logg.info("LOG\n%s", " "+reads(logfile).replace("\n","\n "))
         self.rm_testdir()
         self.end()
     def real_3941_stop_false_exec_simple(self):
@@ -11059,7 +11066,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(len(ps7), 1)
         self.assertNotEqual(ps6[0], ps7[0])
         #
-        logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
+        logg.info("LOG\n%s", " "+reads(logfile).replace("\n","\n "))
     def test_4034_notify_service_functions_system(self):
         """ check that we manage notify services in a root env
             with basic run-service commands: start, stop, restart,
@@ -11391,7 +11398,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(len(ps7), 1)
         self.assertNotEqual(ps6[0], ps7[0])
         #
-        logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
+        logg.info("LOG\n%s", " "+reads(logfile).replace("\n","\n "))
     def test_4036_notify_service_functions_with_reload(self):
         """ check that we manage notify services in a root env
             with basic run-service commands: start, stop, restart,
@@ -11727,7 +11734,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(len(ps7), 1)
         self.assertNotEqual(ps6[0], ps7[0])
         #
-        logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
+        logg.info("LOG\n%s", " "+reads(logfile).replace("\n","\n "))
     def test_4038_notify_service_functions_with_failed(self):
         """ check that we manage notify services in a root env
             with basic run-service commands: start, stop, restart,
@@ -11866,7 +11873,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 3)
         self.assertEqual(out.strip(), "inactive")
         #
-        logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
+        logg.info("LOG\n%s", " "+reads(logfile).replace("\n","\n "))
     def test_4040_oneshot_service_functions(self):
         """ check that we manage oneshot services in a root env
             with basic run-service commands: start, stop, restart,
@@ -12072,7 +12079,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.1")))
         self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
         #
-        logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
+        logg.info("LOG\n%s", " "+reads(logfile).replace("\n","\n "))
     def test_4042_oneshot_and_unknown_service_functions(self):
         """ check that we manage multiple services even when some
             services are not actually known. Along with oneshot serivce
@@ -12262,7 +12269,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.1")))
         self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
         #
-        logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
+        logg.info("LOG\n%s", " "+reads(logfile).replace("\n","\n "))
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -12547,7 +12554,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(len(ps7), 1)
         self.assertNotEqual(ps6[0], ps7[0])
         #
-        logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
+        logg.info("LOG\n%s", " "+reads(logfile).replace("\n","\n "))
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -12664,7 +12671,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         #
-        log = open(debug_log).read()
+        log = reads(debug_log)
         logg.info("debug.log>>%s", i2(log))
         self.assertTrue(greps(log, "old notify socketfile [(][12345]\\d\\d[)]"))
         self.assertTrue(greps(log, "new notify socketfile [(]99[)]"))
@@ -12699,7 +12706,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 3)
         self.assertEqual(out.strip(), "inactive")
         #
-        logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
+        logg.info("LOG\n%s", " "+reads(logfile).replace("\n","\n "))
     def test_4052_notify_service_functions_with_other_notify_dir(self):
         """ check that we manage notify services in a root env
             with a very long servicename (limiting the socket name)"""
@@ -12814,7 +12821,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         #
-        log = open(debug_log).read()
+        log = reads(debug_log)
         logg.info("debug.log>>%s", i2(log))
         self.assertTrue(greps(log, "old notify socketfile [(][12345]\\d\\d[)]"))
         self.assertTrue(greps(log, "new notify socketfile [(]99[)].*run-using-special-notify-folder"))
@@ -12849,7 +12856,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 3)
         self.assertEqual(out.strip(), "inactive")
         #
-        logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
+        logg.info("LOG\n%s", " "+reads(logfile).replace("\n","\n "))
 
     def test_4060_forking_service_failed_functions(self):
         """ check that we manage forking services in a root env
@@ -13242,7 +13249,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # and the status_file is also cleaned away
         self.assertFalse(os.path.exists(status_file))
         #
-        logg.info("LOG\n%s", " "+open(logfile).read().replace("\n","\n "))
+        logg.info("LOG\n%s", " "+reads(logfile).replace("\n","\n "))
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -13388,7 +13395,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         #
-        pid_max = open("/proc/sys/kernel/pid_max").read().strip()
+        pid_max = reads("/proc/sys/kernel/pid_max").strip()
         systemctl += " -c BOOT_PID_MIN=%s" % (pid_max)
         #
         cmd = "{systemctl} enable zzz.service -vv"
@@ -14074,7 +14081,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(top, testscriptB))
         self.assertFalse(greps(top, testsleepB)) # kills children as well
         #
-        log = lines(open(logfile).read())
+        log = lines(reads(logfile))
         logg.info("LOG %s\n| %s", logfile, "\n| ".join(log))
         self.assertTrue(greps(log, "ignored"))
         self.assertFalse(greps(log, "sighup"))
@@ -14192,7 +14199,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(top, testscriptB)) 
         self.assertFalse(greps(top, testsleepB)) # and it kills children
         #
-        log = lines(open(logfile).read())
+        log = lines(reads(logfile))
         logg.info("LOG %s\n| %s", logfile, "\n| ".join(log))
         self.assertTrue(greps(log, "ignored"))
         self.assertFalse(greps(log, "sighup"))
@@ -14312,7 +14319,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(top, testscriptB)) 
         self.assertFalse(greps(top, testsleepB)) # and it kills children
         #
-        log = lines(open(logfile).read())
+        log = lines(reads(logfile))
         logg.info("LOG %s\n| %s", logfile, "\n| ".join(log))
         self.assertTrue(greps(log, "ignored"))
         self.assertTrue(greps(log, "sighup"))
@@ -14432,7 +14439,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(top, testscriptB)) 
         self.assertTrue(greps(top, testsleepB))
         #
-        log = lines(open(logfile).read())
+        log = lines(reads(logfile))
         logg.info("LOG %s\n| %s", logfile, "\n| ".join(log))
         # self.assertTrue(greps(log, "ignored"))
         # self.assertTrue(greps(log, "sighup"))
@@ -14552,7 +14559,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(top, testscriptB)) 
         self.assertFalse(greps(top, testsleepB)) ##TODO?##
         #
-        log = lines(open(logfile).read())
+        log = lines(reads(logfile))
         logg.info("LOG %s\n| %s", logfile, "\n| ".join(log))
         # self.assertTrue(greps(log, "ignored"))
         # self.assertTrue(greps(log, "sighup"))
@@ -16061,7 +16068,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         os.kill(bg.pid, signal.SIGTERM)
         #
         time.sleep(1)
-        log = open(debug_log).read()
+        log = reads(debug_log)
         logg.info("systemctl.debug.log>\n\t%s", oi22(log))
         self.assertTrue(greps(log, "interrupted - exit init-loop"))
         #
@@ -16095,7 +16102,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         #
-        log = open(debug_log).read()
+        log = reads(debug_log)
         logg.info("systemctl.debug.log>\n\t%s", oi22(log))
         #
         self.rm_testdir()
@@ -16126,7 +16133,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         os.makedirs(os_path(root, "/var/run"))
         os.makedirs(os_path(root, "/var/log"))
         #
-        os.chmod(os_path(root, "/etc/systemd/system/zza.service"), 0222)
+        os.chmod(os_path(root, "/etc/systemd/system/zza.service"), 0o222)
         #
         cmd = "{systemctl} start zza"
         out, end = output2(cmd.format(**locals()))
@@ -16523,7 +16530,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>\n%s", out2)
         cmd = "docker exec {testname} systemctl --all default-services -vv"
         out3 = output(cmd.format(**locals()))
-        logg.info("\n>\n%s", out3)
+        logg.info("\ndefault-service>\n%s", out3)
         #
         self.save_coverage(testname)
         #
