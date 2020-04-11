@@ -2018,6 +2018,8 @@ class Systemctl:
     def get_SocketTimeoutSec(self, conf):
         timeout = conf.get("Socket", "TimeoutSec", strE(DefaultTimeoutStartSec))
         return time_to_seconds(timeout, DefaultMaximumTimeout)
+    def get_RemainAfterExit(self, conf):
+        return conf.getbool("Service", "RemainAfterExit", "no")
     def start_unit_from(self, conf):
         if not conf: return False
         if self.syntax_check(conf) > 100: return False
@@ -2034,7 +2036,7 @@ class Systemctl:
             return False
     def do_start_service_from(self, conf):
         timeout = self.get_TimeoutStartSec(conf)
-        doRemainAfterExit = conf.getbool("Service", "RemainAfterExit", "no")
+        doRemainAfterExit = self.get_RemainAfterExit(conf)
         runs = conf.get("Service", "Type", "simple").lower()
         env = self.get_env(conf)
         self.exec_check_service(conf, env, "Exec") # all...
