@@ -1862,12 +1862,14 @@ class Systemctl:
         if not os.path.isdir(log_folder):
             os.makedirs(log_folder)
         return open(os.path.join(log_file), "a")
+    def get_WorkingDirectory(self, conf):
+        return conf.get("Service", "WorkingDirectory", "")
     def chdir_workingdir(self, conf):
         """ if specified then change the working directory """
         # the original systemd will start in '/' even if User= is given
         if self._root:
             os.chdir(self._root)
-        workingdir = conf.get("Service", "WorkingDirectory", "")
+        workingdir = self.get_WorkingDirectory(conf)
         if workingdir:
             ignore = False
             if workingdir.startswith("-"):
