@@ -47,35 +47,35 @@ centos:8.1.1911
 * python3 ; yum install --enablerepo=BaseOS -y python3 (3.6.8)
 * python2 = does not setup 'python'
 
-opensuse:42.2
+opensuse:42.2 (2016.11)
 * zypper is not python anymore
 * python2 : zypper install -r OSS -y python2 (2.7.13)
 * python2 = with 'python' (actually package 'python' provides 'python2')
 * python3 : zypper install -r OSS -y python3 (3.4.6)
 * python3 = does not setup 'python'
 
-opensuse:42.3
+opensuse:42.3 (2017.07)
 * zypper is not python anymore
 * python2 : zypper install -r OSS -y python2 (2.7.13)
 * python2 = with 'python' (actually package 'python' provides 'python2')
 * python3 : zypper install -r OSS -y python3 (3.4.6)
 * python3 = does not setup 'python'
 
-opensuse/leap:15.0
+opensuse/leap:15.0 (2018.05)
 * zypper is binary
 * python2 : zypper install -r repo-oss -y python2 (2.7.14)
 * python2 = with 'python' (actually package 'python-base' provides 'python2')
 * python3 : zypper install -r repo-oss -y python3 (3.6.5)
 * python3 = does not setup 'python'
 
-opensuse/leap:15.1
+opensuse/leap:15.1 (2019.05)
 * zypper is binary
 * python2 : zypper install -r repo-oss -y python2 (2.7.14)
 * python2 = with 'python' (actually package 'python-base' provides 'python2')
 * python3 : zypper install -r repo-oss -y python3 (3.6.5)
 * python3 = does not setup 'python'
 
-opensuse/leap:15.2
+opensuse/leap:15.2 (2020.05)
 * zypper is binary
 * python2 : zypper install -r repo-oss -y python2 (2.7.17)
 * python2 = with 'python' (actually package 'python-base' provides 'python2')
