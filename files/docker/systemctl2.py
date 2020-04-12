@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#! /usr/bin/python2
 ## generated from systemctl3.py - do not change
 
 from __future__ import print_function
