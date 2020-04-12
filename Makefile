@@ -24,6 +24,10 @@ help:
 	cp -v files/docker/systemctl.py files/docker/systemctl3.py
 	sed -i -e "s|/usr/bin/python|/usr/bin/python3|" files/docker/systemctl3.py
 	diff -U1 files/docker/systemctl.py files/docker/systemctl3.py || true
+2:
+	cp -v files/docker/systemctl.py files/docker/systemctl2.py
+	sed -i -e "s|/usr/bin/python|/usr/bin/python2|" files/docker/systemctl2.py
+	diff -U1 files/docker/systemctl.py files/docker/systemctl2.py || true
 
 alltests: CH CP UA DJ
 
@@ -93,7 +97,7 @@ tests: ; $(MAKE) "test_[1234]"
 
 nightrun: checkall
 	$(MAKE) checks
-checkall: checkall2018
+checkall: checkall2019
 checkall2018: $(MAKE) 
 	$(MAKE) -j1 tests
 	$(MAKE) -j1 7.5/tests 7.4/tests 7.3/tests
@@ -109,7 +113,7 @@ checkall2019:
 	$(MAKE) -j1 18.04/test3 16.04/test3
 	$(MAKE) -j1 15.1/test3 15.0/test3 42.3/test3
 
-check: check2018
+check: check2019
 	@ echo please run 'make checks' now
 19 check2019: ; ./testsuite.py -vv --opensuse=15.1 --centos=7.7 --ubuntu=18.04
 18 check2018: ; ./testsuite.py -vv --opensuse=15.0 --centos=7.5 --ubuntu=18.04
