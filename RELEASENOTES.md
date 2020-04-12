@@ -101,3 +101,18 @@ next rebuild from 'master' may change some behaviour. Specifically, the
 v1.4 generation was implicitly "Restart=no" but the v1.5 generation will 
 enable "Restart=always" by default (running from the init loop, i.e. if 
 systemctl.py is running on PID 1 or started with --init).
+
+RELEASE 1.4.4147
+
+This version integrates the User=x default groups and any of the specified
+SupplementaryGroups when running a service under a different user account.
+The 'show <unit>' command does present more values including User/Group.
+
+The python3 type hints in release 1.5.x have revealed some missing checks
+for None values that have been added as needed. Those were cherry-picked
+into the LTS 1.4 branch. The next release will make python3 the default.
+
+Other than that the testsuite was updated to check2019 with centos 7.7 and
+opensuse 15.1 as the defaults. As some distros have stopped shipping a
+default '/usr/bin/python' there is also a variant with '/usr/bin/python2'
+by now that can be downloaded directly = 'files/docker/systemctl2.py'.
