@@ -29,8 +29,8 @@ xrange = range
 string_types = (str, bytes)
 
 logg = logging.getLogger("TESTING")
-_python = "/usr/bin/python"
-_systemctl_py = "files/docker/systemctl.py"
+_python = "/usr/bin/python3"
+_systemctl_py = "files/docker/systemctl3.py"
 COVERAGE = "" # make it an image name = detect_local_system()
 TODO = False
 KEEP = 0
