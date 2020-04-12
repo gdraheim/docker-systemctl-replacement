@@ -26,8 +26,6 @@ help:
 	diff -U1 files/docker/systemctl.py files/docker/systemctl3.py || true
 
 alltests: CH CP UA DJ
-.PHONY: tests
-tests: alltests
 
 CH centos-httpd.dockerfile: ; ./testsuite.py test_6001
 CP centos-postgres.dockerfile: ; ./testsuite.py test_6002
@@ -66,41 +64,50 @@ todo/test_%:             ; ./testsuite.py   "$(notdir $@)" -vv --todo
 18.04/st_%: ; $(MAKE) 3 && ./testsuite.py "te$(notdir $@)" -vv --image=ubuntu:18.04       $(WITH3)
 16.04/st_%: ; $(MAKE) 3 && ./testsuite.py "te$(notdir $@)" -vv --image=ubuntu:16.04       $(WITH3)
 
-
+test3list = st_[567]
+testslist = test_[567]
+tests: ; $(MAKE) "test_[1234]"
+.PHONY: tests
+15.2/tests:  ; $(MAKE) "15.2/$(testslist)"
+15.1/tests:  ; $(MAKE) "15.1/$(testslist)"
+15.0/tests:  ; $(MAKE) "15.0/$(testslist)"
+42.3/tests:  ; $(MAKE) "42.3/$(testslist)"
+42.2/tests:  ; $(MAKE) "42.2/$(testslist)"
+19.10/tests: ; $(MAKE) "19.10/$(testslist)"
+18.04/tests: ; $(MAKE) "19.04/$(testslist)"
+16.04/tests: ; $(MAKE) "16.04/$(testslist)"
+8.1/tests:   ; $(MAKE) "8.1/$(testslist)"
+8.0/tests:   ; $(MAKE) "8.0/$(testslist)"
+7.7/tests:   ; $(MAKE) "7.7/$(testslist)"
+7.6/tests:   ; $(MAKE) "7.6/$(testslist)"
+7.5/tests:   ; $(MAKE) "7.5/$(testslist)"
+7.4/tests:   ; $(MAKE) "7.4/$(testslist)"
+7.3/tests:   ; $(MAKE) "7.3/$(testslist)"
+15.2/test3:  ; $(MAKE) "15.2/$(test3list)"
+15.1/test3:  ; $(MAKE) "15.1/$(test3list)"
+15.0/test3:  ; $(MAKE) "15.0/$(test3list)"
+42.3/test3:  ; $(MAKE) "42.3/$(test3list)"
+42.2/test3:  ; $(MAKE) "42.2/$(test3list)"
+18.04/test3: ; $(MAKE) "19.04/$(test3list)"
+16.04/test3: ; $(MAKE) "16.04/$(test3list)"
 
 nightrun: checkall
 	$(MAKE) checks
 checkall: checkall2018
-checkall2018:
-	$(MAKE) "test_[1234]"
-	$(MAKE) "7.5/test_[567]"
-	$(MAKE) "7.4/test_[567]"
-	$(MAKE) "7.3/test_[567]"
-	$(MAKE) "18.04/test_[567]"
-	$(MAKE) "16.04/test_[567]"
-	$(MAKE) "15.0/test_[567]"
-	$(MAKE) "42.3/test_[567]"
-	$(MAKE) "18.04/st_[567]"
-	$(MAKE) "16.04/st_[567]"
-	$(MAKE) "15.0/st_[567]"
-	$(MAKE) "42.3/st_[567]"
+checkall2018: $(MAKE) 
+	$(MAKE) -j1 tests
+	$(MAKE) -j1 7.5/tests 7.4/tests 7.3/tests
+	$(MAKE) -j1 18.04/tests 16.04/tests
+	$(MAKE) -j1 15.0/tests 42.3/tests
+	$(MAKE) -j1 18.04/test3 16.04/test3
+	$(MAKE) -j1 15.0/test3 42.3/test3
 checkall2019:
-	$(MAKE) "test_[1234]"
-	$(MAKE) "7.8/test_[567]"
-	$(MAKE) "7.7/test_[567]"
-	$(MAKE) "7.6/test_[567]"
-	$(MAKE) "7.5/test_[567]"
-	$(MAKE) "7.4/test_[567]"
-	$(MAKE) "7.3/test_[567]"
-	$(MAKE) "18.04/test_[567]"
-	$(MAKE) "16.04/test_[567]"
-	$(MAKE) "15.0/test_[567]"
-	$(MAKE) "42.3/test_[567]"
-	$(MAKE) "18.04/st_[567]"
-	$(MAKE) "16.04/st_[567]"
-	$(MAKE) "15.1/st_[567]"
-	$(MAKE) "15.0/st_[567]"
-	$(MAKE) "42.3/st_[567]"
+	$(MAKE) -j1 tests
+	$(MAKE) -j1 7.7/tests 7.5/tests 7.4/tests 7.3/tests
+	$(MAKE) -j1 18.04/tests 16.04/tests
+	$(MAKE) -j1 15.1/tests 15.0/tests 42.3/tests
+	$(MAKE) -j1 18.04/test3 16.04/test3
+	$(MAKE) -j1 15.1/test3 15.0/test3 42.3/test3
 
 check: check2018
 	@ echo please run 'make checks' now
