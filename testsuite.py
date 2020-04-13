@@ -4,7 +4,7 @@
 from __future__ import print_function
 
 __copyright__ = "(C) Guido Draheim, licensed under the EUPL"""
-__version__ = "1.4.3424"
+__version__ = "1.4.4147"
 
 ## NOTE:
 ## The testcases 1000...4999 are using a --root=subdir environment
@@ -31,9 +31,9 @@ _systemctl_py = "files/docker/systemctl.py"
 COVERAGE = "" # make it an image name = detect_local_system()
 TODO = False
 
-CENTOSVER = { "7.3": "7.3.1611", "7.4": "7.4.1708", "7.5": "7.5.1804" }
-TESTED_OS = [ "centos:7.3.1611", "centos:7.4.1708", "centos:7.5.1804" ]
-TESTED_OS += [ "opensuse:42.2", "opensuse:42.3", "opensuse/leap:15.0" ]
+CENTOSVER = { "7.3": "7.3.1611", "7.4": "7.4.1708", "7.5": "7.5.1804", "7.7": "7.7.1908" }
+TESTED_OS = [ "centos:7.3.1611", "centos:7.4.1708", "centos:7.5.1804", "centos:7.7.1908" ]
+TESTED_OS += [ "opensuse:42.2", "opensuse:42.3", "opensuse/leap:15.0", "opensuse/leap:15.1" ]
 TESTED_OS += [ "ubuntu:14.04", "ubuntu:16.04", "ubuntu:18.04" ]
 
 IMAGES = "localhost:5000/systemctl/testing"
@@ -80,7 +80,7 @@ def refresh_tool(image):
     if "opensuse:42.3" in image:
         return "bash -c 'zypper mr --no-gpgcheck oss-update && zypper refresh'"
     if "opensuse/leap:15.1" in image:
-        return "bash -c 'zypper mr --no-gpgcheck repo-update && zypper refresh'"
+        return "bash -c 'zypper mr --no-gpgcheck repo-update && zypper mr --no-gpgcheck repo-update-non-oss && zypper refresh'"
     if "opensuse" in image:
         return "zypper refresh"
     if "ubuntu" in image:
