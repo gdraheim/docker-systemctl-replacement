@@ -1810,7 +1810,7 @@ class Systemctl:
         returncode = 0
         service_result = "success"
         if True:
-            if runs in [ "simple", "forking", "notify" ]:
+            if runs in [ "simple", "forking", "notify", "idle" ]:
                 env["MAINPID"] = str(self.read_mainpid_from(conf, ""))
             for cmd in conf.getlist("Service", "ExecStartPre", []):
                 check, cmd = checkstatus(cmd)
@@ -1872,7 +1872,7 @@ class Systemctl:
                 self.set_status_from(conf, "ExecMainCode", returncode)
                 active = returncode and "failed" or "active"
                 self.write_status_from(conf, AS=active)
-        elif runs in [ "simple" ]: 
+        elif runs in [ "simple", "idle" ]:
             status_file = self.status_file_from(conf)
             pid = self.read_mainpid_from(conf, "")
             if self.is_active_pid(pid):
@@ -2197,7 +2197,7 @@ class Systemctl:
                 self.do_kill_unit_from(conf)
                 self.clean_pid_file_from(conf)
                 self.clean_status_from(conf) # "inactive"
-        elif runs in [ "simple", "notify" ]:
+        elif runs in [ "simple", "notify", "idle" ]:
             status_file = self.status_file_from(conf)
             size = os.path.exists(status_file) and os.path.getsize(status_file)
             logg.info("STATUS %s %s", status_file, size)
@@ -2356,7 +2356,7 @@ class Systemctl:
                 else:
                     self.write_status_from(conf, AS="active")
                     return True
-        elif runs in [ "simple", "notify", "forking" ]:
+        elif runs in [ "simple", "notify", "forking", "idle" ]:
             if not self.is_active_from(conf):
                 logg.info("no reload on inactive service %s", conf.name())
                 return True
@@ -3617,7 +3617,7 @@ class Systemctl:
                 logg.error(" %s: Executable path is not absolute, ignoring: %s", unit, line.strip())
                 errors += 1
             usedExecReload.append(line)
-        if haveType in ["simple", "notify", "forking"]:
+        if haveType in ["simple", "notify", "forking", "idle"]:
             if not usedExecStart and not usedExecStop:
                 logg.error(" %s: Service lacks both ExecStart and ExecStop= setting. Refusing.", unit)
                 errors += 101
