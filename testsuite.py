@@ -3171,14 +3171,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         unitconfparser_py = os_path(root, "/usr/bin/unitconfparser.py")
         service_file = os_path(root, "/etc/systemd/system/zzb.service")
         defaults = {"a1": "default1"}
+        systemctl = os.path.splitext(os.path.basename(_systemctl_py))[0]
         shell_file(unitconfparser_py,"""
             #! {python_exe}
             from __future__ import print_function
             import sys
             sys.path += [ "{systemctl_py_dir}" ]
-            import systemctl
-            data = systemctl.UnitConfParser({defaults})
-            conf = systemctl.SystemctlConf(data)
+            import {systemctl}
+            data = {systemctl}.UnitConfParser({defaults})
+            conf = {systemctl}.SystemctlConf(data)
             print("DEFAULTS", conf.data.defaults())
             print("FILENAME", conf.filename())
             data.read(sys.argv[1])
