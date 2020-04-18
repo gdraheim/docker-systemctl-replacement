@@ -21,10 +21,10 @@ version:
 help:
 	python files/docker/systemctl3.py help
 2:
-	cp -v files/docker/systemctl3.py files/docker/systemctl2.py
-	sed -i -e "s|/usr/bin/python3|/usr/bin/python2|" files/docker/systemctl2.py
-	sed -i -e "s|type hints are provide.*|generated from systemctl3.py - do not change|" files/docker/systemctl2.py
-	diff -U1 files/docker/systemctl2.py files/docker/systemctl3.py || true
+	cp -v files/docker/systemctl3.py files/docker/systemctl.py
+	sed -i -e "s|/usr/bin/python3|/usr/bin/python2|" files/docker/systemctl.py
+	sed -i -e "s|type hints are provide.*|generated from systemctl3.py - do not change|" files/docker/systemctl.py
+	diff -U1 files/docker/systemctl.py files/docker/systemctl3.py || true
 
 alltests: CH CP UA DJ
 
@@ -40,7 +40,7 @@ real_%: ; ./testsuite.py "$@" -vv
 test: ; $(MAKE) "test_[1234]"
 st_%: ; $(MAKE) 3 && ./testsuite.py "te$@" -vv $(WITH3)
 
-WITH2 = --python=/usr/bin/python2 --with=files/docker/systemctl2.py
+WITH2 = --python=/usr/bin/python2 --with=files/docker/systemctl.py
 WITH3 = --python=/usr/bin/python3 --with=files/docker/systemctl3.py
 todo/test_%:             ; ./testsuite.py   "$(notdir $@)" -vv --todo
 15.2/test_%:             ; ./testsuite.py   "$(notdir $@)" -vv --image=opensuse/leap:15.2
@@ -184,7 +184,7 @@ coverage3:
 
 tmp_systemctl_py_2:
 	@ test -d tmp || mkdir tmp
-	@ cp files/docker/systemctl2.py tmp/systemctl.py
+	@ cp files/docker/systemctl.py tmp/systemctl.py
 tmp_systemctl_py_3:
 	@ test -d tmp || mkdir tmp
 	@ cp files/docker/systemctl3.py tmp/systemctl.py
