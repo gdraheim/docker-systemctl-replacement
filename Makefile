@@ -24,7 +24,7 @@ help:
 	cp -v files/docker/systemctl3.py files/docker/systemctl.py
 	sed -i -e "s|/usr/bin/python3|/usr/bin/python2|" files/docker/systemctl.py
 	sed -i -e "s|type hints are provide.*|generated from systemctl3.py - do not change|" files/docker/systemctl.py
-	diff -U1 files/docker/systemctl.py files/docker/systemctl3.py || true
+	diff -U1 files/docker/systemctl3.py files/docker/systemctl.py || true
 
 alltests: CH CP UA DJ
 
