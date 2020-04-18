@@ -227,6 +227,74 @@ def get_home():
     explicit = os.environ.get("HOME", "")
     if explicit: return explicit
     return os.path.expanduser("~")
+    if root: return "root"
+    uid = os.geteuid()
+    import pwd
+    return pwd.getpwuid(uid).pw_name
+def get_HOME(root = False):
+    if root: return "/root"
+    return get_home()
+def get_USER_ID(root = False):
+    ID = 0
+    if root: return ID
+    return os.geteuid()
+def get_USER(root = False):
+    if root: return "root"
+    uid = os.geteuid()
+    import pwd
+    return pwd.getpwuid(uid).pw_name
+def get_GROUP_ID(root = False):
+    ID = 0
+    if root: return ID
+    return os.getegid()
+def get_GROUP(root = False):
+    if root: return "root"
+    import grp
+    gid = os.getegid()
+    import grp
+    return grp.getgrgid(gid).gr_name
+def get_TMP(root = False):
+    TMP = "/tmp"
+    if root: return TMP
+    return os.environ.get("TMPDIR", os.environ.get("TEMP", os.environ.get("TMP", TMP)))
+def get_VARTMP(root = False):
+    VARTMP = "/var/tmp"
+    if root: return VARTMP
+    return os.environ.get("TMPDIR", os.environ.get("TEMP", os.environ.get("TMP", VARTMP)))
+def get_SHELL(root = False):
+    SHELL = "/bin/sh"
+    if root: return SHELL
+    return os.environ.get("SHELL", SHELL)
+def get_RUNTIME_DIR(root = False):
+    RUN = "/run"
+    if root: return RUN
+    return os.environ.get("XDG_RUNTIME_DIR", get_runtime_dir())
+def get_CONFIG_HOME(root = False):
+    CONFIG = "/etc"
+    if root: return CONFIG
+    HOME = get_HOME(root)
+    return os.environ.get("XDG_CONFIG_HOME", HOME + "/.config")
+def get_CACHE_HOME(root = False):
+    CACHE = "/var/cache"
+    if root: return CACHE
+    HOME = get_HOME(root)
+    return os.environ.get("XDG_CACHE_HOME", HOME + "/.cache")
+def get_DATA_HOME(root = False):
+    SHARE = "/usr/share"
+    if root: return SHARE
+    HOME = get_HOME(root)
+    return os.environ.get("XDG_DATA_HOME", HOME + "/.local/share")
+def get_LOG_DIR(root = False):
+    LOGDIR = "/var/log"
+    if root: return LOGDIR
+    CONFIG = get_CONFIG_HOME(root)
+    return os.path.join(CONFIG, "log")
+def get_VARLIB_HOME(root = False):
+    VARLIB = "/var/lib"
+    if root: return VARLIB
+    CONFIG = get_CONFIG_HOME(root)
+    return CONFIG
+
 
 def _var_path(path):
     """ assumes that the path starts with /var - when in 
@@ -1784,29 +1852,20 @@ class Systemctl:
             confs["J"] = unit.component
             confs["j"] = sh_escape(unit.component)
             confs["f"] = sh_escape(strE(conf.filename()))
-            VARTMP = "/var/tmp"
-            TMP = "/tmp"
-            RUN = "/run"
-            DAT = "/var/lib"
-            LOG = "/var/log"
-            CACHE = "/var/cache"
-            CONFIG = "/etc"
-            HOME = "/root"
-            USER = "root"
-            UID = 0
-            SHELL = "/bin/sh"
-            if self.is_user_conf(conf):
-                USER = os_getlogin()
-                HOME = get_home()
-                RUN = os.environ.get("XDG_RUNTIME_DIR", get_runtime_dir())
-                CONFIG = os.environ.get("XDG_CONFIG_HOME", HOME + "/.config")
-                CACHE = os.environ.get("XDG_CACHE_HOME", HOME + "/.cache")
-                SHARE = os.environ.get("XDG_DATA_HOME", HOME + "/.local/share")
-                DAT = CONFIG
-                LOG = os.path.join(CONFIG, "log")
-                SHELL = os.environ.get("SHELL", SHELL)
-                VARTMP = os.environ.get("TMPDIR", os.environ.get("TEMP", os.environ.get("TMP", VARTMP)))
-                TMP = os.environ.get("TMPDIR", os.environ.get("TEMP", os.environ.get("TMP", TMP)))
+            root = not self.is_user_conf(conf)
+            VARTMP = get_VARTMP(root)     # $TMPDIR              # "/var/tmp"
+            TMP = get_TMP(root)           # $TMPDIR              # "/tmp"
+            RUN = get_RUNTIME_DIR(root)   # $XDG_RUNTIME_DIR     # "/run"
+            ETC = get_CONFIG_HOME(root)   # $XDG_CONFIG_HOME     # "/etc"
+            DAT = get_VARLIB_HOME(root)   # $XDG_CONFIG_HOME     # "/var/lib"
+            LOG = get_LOG_DIR(root)       # $XDG_CONFIG_HOME/log # "/var/log"
+            CACHE = get_CACHE_HOME(root)  # $XDG_CACHE_HOME      # "/var/cache"
+            HOME = get_HOME(root)         # $HOME or ~           # "/root"
+            USER = get_USER(root)         # geteuid().pw_name    # "root"
+            USER_ID = get_USER_ID(root)   # geteuid()            # 0
+            GROUP = get_GROUP(root)       # getegid().gr_name    # "root"
+            GROUP_ID = get_GROUP_ID(root) # getegid()            # 0
+            SHELL = get_SHELL(root)       # $SHELL               # "/bin/sh"
             confs["V"] = os_path(self._root, VARTMP)
             confs["T"] = os_path(self._root, TMP)
             confs["t"] = os_path(self._root, RUN)
@@ -1814,8 +1873,12 @@ class Systemctl:
             confs["s"] = SHELL
             confs["h"] = HOME
             confs["u"] = USER
+            confs["U"] = USER_ID
+            confs["g"] = GROUP
+            confs["G"] = GROUP_ID
+            confs["L"] = os_path(self._root, LOG)
             confs["C"] = os_path(self._root, CACHE)
-            confs["E"] = os_path(self._root, CONFIG)
+            confs["E"] = os_path(self._root, ETC)
             return confs
         def get_conf1(m):
             confs = get_confs(conf)
