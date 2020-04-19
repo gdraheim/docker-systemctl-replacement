@@ -52,7 +52,24 @@ break. And so will your containered service. If you need a
 fallback solutation then the container clould application
 should monitor the docker container.
 
+## The systemd package was updated
 
+In the [docker-systemctl-images](https://github.com/gdraheim/docker-systemctl-images)
+examples we have a number of occasions that the script needs
+to be installed twice - before and after a package install.
 
+    COPY files/docker/systemctl.py /usr/bin/systemctl
+    RUN yum install -y postgresql-server postgresql-utils
+    COPY files/docker/systemctl.py /usr/bin/systemctl
 
+That's because the package install (e.g. postgresql-server)
+has a dependency on the "systemd" package which will
+implicitly get updated. That update will overwrite the
+/usr/bin/systemctl path with the original systemd binary.
 
+You will notice that when a systemctl command says that it
+can not operate. Which means it is not systemctl.py but the
+original systemd systemctl trying to talk to the systemd daemon:
+
+    Failed to get D-Bus connection: Operation not permitted.
+    System has not been booted with systemd as init system (PID 1). Cant' operate.
