@@ -4204,6 +4204,7 @@ class Systemctl:
         yield "ActiveState", self.get_active_from(conf) or "unknown" # status["ActiveState"]
         yield "LoadState", loaded
         yield "UnitFileState", self.enabled_from(conf)
+        yield "StatusFile", self.status_file_from(conf)
         yield "User", self.get_User(conf) or ""
         yield "Group", self.get_Group(conf) or ""
         yield "SupplementaryGroups", " ".join(self.get_SupplementaryGroups(conf))
