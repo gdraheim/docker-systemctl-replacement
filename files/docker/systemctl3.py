@@ -115,7 +115,6 @@ RESTART_FAILED_UNITS = True
 
 # The systemd default is NOTIFY_SOCKET="/var/run/systemd/notify"
 _notify_socket_folder = "/var/run/systemd" # alias /run/systemd
-_pid_file_folder = "/var/run"
 _journal_log_folder = "/var/log/journal"
 
 SYSTEMCTL_DEBUG_LOG = "/var/log/systemctl.debug.log"
@@ -199,10 +198,16 @@ def o99(part, shorter=0):
         return part[:20] + "-.-" + part[-(75-shorter):]
     return part
 
+def is_good_root(root):
+    if not root:
+        return True
+    return root.strip(os.path.sep).count(os.path.sep) > 1
 def os_path(root, path):
     if not root:
         return path
     if not path:
+        return path
+    if is_good_root(root) and path.startswith(root):
         return path
     while path.startswith(os.path.sep):
         path = path[1:]
@@ -222,6 +227,30 @@ def get_runtime_dir():
     if explicit: return explicit
     user = os_getlogin()
     return "/tmp/run-"+user
+def get_RUN(root = False):
+    tmp_var = get_TMP(root)
+    if _root:
+       tmp_var = _root
+    if root:
+        for p in ("/run", "/var/run", "{tmp_var}/run"):
+            path = p.format(**locals())
+            if os.path.isdir(path) and os.access(path, os.W_OK):
+                return path
+        os.makedirs(path) # "/tmp/run"
+        return path
+    else:
+        uid = get_USER_ID(root)
+        for p in ("/run/user/{uid}", "/var/run/user/{uid}", "{tmp_var}/run/user/{uid}"):
+            path = p.format(**locals())
+            if os.path.isdir(path) and os.access(path, os.W_OK):
+                return path
+        os.makedirs(path, 0o700) # "/tmp/run/user/{uid}"
+        return path
+def get_PID_DIR(root = False):
+    if root:
+        return get_RUN(root)
+    else:
+        return os.path.join(get_RUN(root), "run") # compat with older systemctl.py
 
 def get_home():
     explicit = os.environ.get("HOME", "")
@@ -968,7 +997,6 @@ class Systemctl:
         self._unit_type = _unit_type
         # some common constants that may be changed
         self._systemd_version = SystemCompatibilityVersion
-        self._pid_file_folder = _pid_file_folder 
         self._journal_log_folder = _journal_log_folder
         # and the actual internal runtime state
         self._loaded_file_sysv = {} # /etc/init.d/name => config data
@@ -1491,7 +1519,7 @@ class Systemctl:
     def pid_file_from(self, conf, default = ""):
         """ get the specified pid file path (not a computed default) """
         pid_file = conf.get("Service", "PIDFile", default)
-        return self.expand_special(pid_file, conf)
+        return os_path(self._root, self.expand_special(pid_file, conf))
     def read_mainpid_from(self, conf, default = None):
         """ MAINPID is either the PIDFile content written from the application
             or it is the value in the status file written by this systemctl.py code """
@@ -1519,10 +1547,11 @@ class Systemctl:
         if conf is None: return default
         status_file = conf.get("Service", "StatusFile", default)
         # this not a real setting, but do the expand_special anyway
-        return self.expand_special(status_file, conf)
+        return os_path(self._root, self.expand_special(status_file, conf))
     def default_status_file(self, conf): # -> text
         """ default file pattern where to store a status mark """
-        folder = conf.os_path_var(self._pid_file_folder)
+        root = not self.is_user_conf(conf)
+        folder = get_PID_DIR(root)
         name = "%s.status" % conf.name()
         return os.path.join(folder, name)
     def clean_status_from(self, conf):
@@ -5183,6 +5212,8 @@ if __name__ == "__main__":
         logg.setLevel(logging.DEBUG)
     logg.info("EXEC BEGIN %s %s%s%s", os.path.realpath(sys.argv[0]), " ".join(args),
         _user_mode and " --user" or " --system", _init and " --init" or "", )
+    if _root and not is_good_root(_root):
+        logg.warning("the --root=path should have alteast three levels /tmp/test_123/root")
     #
     #
     systemctl = Systemctl()
