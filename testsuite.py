@@ -1061,7 +1061,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info("%s => \n%s", cmd, out)
         self.assertEqual(end, 0)
-        self.assertTrue(greps(out, "/var/run/foo.pid"))
+        self.assertTrue(greps(out, "/run/foo.pid"))
         self.rm_testdir()
         self.coverage()
     def test_1053_can_have_default_pid_file_for_simple_service(self):
@@ -1083,7 +1083,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info("%s => \n%s", cmd, out)
         self.assertEqual(end, 0)
-        self.assertTrue(greps(out, "/var/run/zza.service.status"))
+        self.assertTrue(greps(out, "/run/zza.service.status"))
         self.rm_testdir()
         self.coverage()
     def test_1055_other_services_use_a_status_file(self):
@@ -1105,7 +1105,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info("%s => \n%s", cmd, out)
         self.assertEqual(end, 0)
-        self.assertTrue(greps(out, "/var/run/zza.service.status"))
+        self.assertTrue(greps(out, "/run/zza.service.status"))
         self.rm_testdir()
         self.coverage()
     def test_1060_can_have_shell_like_commments(self):
@@ -1127,8 +1127,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info("%s => \n%s", cmd, out)
         self.assertEqual(end, 0)
-        self.assertFalse(greps(out, "/var/run/zzfoo.pid"))
-        self.assertTrue(greps(out, "/var/run/zza.service.status"))
+        self.assertFalse(greps(out, "/run/zzfoo.pid"))
+        self.assertTrue(greps(out, "/run/zza.service.status"))
         self.rm_testdir()
         self.coverage()
     def test_1061_can_have_winini_like_commments(self):
@@ -1150,8 +1150,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info("%s => \n%s", cmd, out)
         self.assertEqual(end, 0)
-        self.assertFalse(greps(out, "/var/run/zzfoo.pid"))
-        self.assertTrue(greps(out, "/var/run/zza.service.status"))
+        self.assertFalse(greps(out, "/run/zzfoo.pid"))
+        self.assertTrue(greps(out, "/run/zza.service.status"))
         self.rm_testdir()
         self.coverage()
     def test_1062_can_have_multi_line_settings_with_linebreak_mark(self):
@@ -1181,7 +1181,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info("%s => \n%s", cmd, out)
         self.assertEqual(end, 0)
-        self.assertTrue(greps(out, "/var/run/zzfoo.pid"))
+        self.assertTrue(greps(out, "/run/zzfoo.pid"))
         self.rm_testdir()
         self.coverage()
     def test_1063_but_a_missing_linebreak_is_a_syntax_error(self):
@@ -1212,7 +1212,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info("%s => \n%s", cmd, out)
         self.assertEqual(end, 0)
-        self.assertFalse(greps(out, "/var/run/zzfoo.pid"))
+        self.assertFalse(greps(out, "/run/zzfoo.pid"))
         self.rm_testdir()
         self.coverage()
     def test_1070_external_env_files_can_be_parsed(self):
@@ -13220,7 +13220,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
         #
         logg.info("== mark the status file as being too old")
-        status_file = os_path(root, "/var/run/zzz.service.status")
+        status_file = os_path(root, "/run/zzz.service.status")
         self.assertTrue(os.path.exists(status_file))
         sh____("LANG=C stat {status_file} | grep Modify:".format(**locals()))
         sh____("touch -d '{system_boot_time}' {status_file}".format(**locals()))
@@ -13323,7 +13323,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         time.sleep(2)
         logg.info("== mark the status file as being too old")
-        status_file = os_path(root, "/var/run/zzz.service.status")
+        status_file = os_path(root, "/run/zzz.service.status")
         self.assertTrue(os.path.exists(status_file))
         sh____("LANG=C stat {status_file} | grep Modify:".format(**locals()))
         sh____("LANG=C stat /proc/1/status | grep Modify:".format(**locals()))
