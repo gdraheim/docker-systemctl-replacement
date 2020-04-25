@@ -1902,9 +1902,9 @@ class Systemctl:
             confs["s"] = SHELL
             confs["h"] = HOME
             confs["u"] = USER
-            confs["U"] = USER_ID
+            confs["U"] = str(USER_ID)
             confs["g"] = GROUP
-            confs["G"] = GROUP_ID
+            confs["G"] = str(GROUP_ID)
             confs["L"] = os_path(self._root, LOG)
             confs["C"] = os_path(self._root, CACHE)
             confs["E"] = os_path(self._root, ETC)
