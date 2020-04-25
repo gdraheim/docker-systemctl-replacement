@@ -256,7 +256,6 @@ def get_home():
     explicit = os.environ.get("HOME", "")
     if explicit: return explicit
     return os.path.expanduser("~")
-    if root: return "root"
     uid = os.geteuid()
     import pwd
     return pwd.getpwuid(uid).pw_name
