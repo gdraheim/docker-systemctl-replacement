@@ -1541,14 +1541,14 @@ class Systemctl:
         conf = self.get_unit_conf(unit)
         return self.status_file_from(conf)
     def status_file_from(self, conf, default = None):
-        if default is None:
-           default = self.default_status_file(conf)
-        if conf is None: return default
-        status_file = conf.get("Service", "StatusFile", default)
+        status_file = self.get_StatusFile(conf)
         # this not a real setting, but do the expand_special anyway
         return os_path(self._root, self.expand_special(status_file, conf))
-    def default_status_file(self, conf): # -> text
-        """ default file pattern where to store a status mark """
+    def get_StatusFile(self, conf, default = None): # -> text
+        """ file where to store a status mark """
+        status_file = conf.get("Service", "StatusFile", default)
+        if status_file:
+            return status_file
         root = not self.is_user_conf(conf)
         folder = get_PID_DIR(root)
         name = "%s.status" % conf.name()
@@ -4232,7 +4232,7 @@ class Systemctl:
         yield "ActiveState", self.get_active_from(conf) or "unknown" # status["ActiveState"]
         yield "LoadState", loaded
         yield "UnitFileState", self.enabled_from(conf)
-        yield "StatusFile", self.status_file_from(conf)
+        yield "StatusFile", self.get_StatusFile(conf)
         yield "User", self.get_User(conf) or ""
         yield "Group", self.get_Group(conf) or ""
         yield "SupplementaryGroups", " ".join(self.get_SupplementaryGroups(conf))
