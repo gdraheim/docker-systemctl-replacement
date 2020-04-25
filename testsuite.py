@@ -13220,7 +13220,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
         #
         logg.info("== mark the status file as being too old")
-        status_file = os_path(root, "/run/zzz.service.status")
+        # status_file = os_path(root, "/run/zzz.service.status")
+        cmd = "{systemctl} -p StatusFile show zzz.service"
+        status_file = output(cmd.format(**locals())).split("=",1)[1].strip()
+        logg.info("status_file = %s", status_file)
         self.assertTrue(os.path.exists(status_file))
         sh____("LANG=C stat {status_file} | grep Modify:".format(**locals()))
         sh____("touch -d '{system_boot_time}' {status_file}".format(**locals()))
@@ -13323,7 +13326,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         time.sleep(2)
         logg.info("== mark the status file as being too old")
-        status_file = os_path(root, "/run/zzz.service.status")
+        # status_file = os_path(root, "/var/run/zzz.service.status")
+        cmd = "{systemctl} -p StatusFile show zzz.service"
+        status_file = output(cmd.format(**locals())).split("=",1)[1].strip()
+        logg.info("status_file = %s", status_file)
         self.assertTrue(os.path.exists(status_file))
         sh____("LANG=C stat {status_file} | grep Modify:".format(**locals()))
         sh____("LANG=C stat /proc/1/status | grep Modify:".format(**locals()))
