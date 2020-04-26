@@ -15437,6 +15437,103 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
+    def test_4300_background_default_journal(self):
+        self.begin()
+        self.rm_testdir()
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        logfile = os_path(root, "/var/log/"+testname+".log")
+        testsleepA = self.testname("sleepA")
+        testsleepB = self.testname("sleepB")
+        bindir = os_path(root, "/usr/bin")
+        text_file(os_path(testdir, "zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            Type=simple
+            ExecStart={bindir}/{testsleepA} 44
+            Restart=on-failure
+            RestartSec=4
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        text_file(os_path(testdir, "zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            Type=simple
+            ExecStart={bindir}/{testsleepB} 55
+            Restart=on-failure
+            RestartSec=5
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleepA))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleepB))
+        copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
+        copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
+        cmd = "{systemctl} enable zza.service"
+        sh____(cmd.format(**locals()))
+        cmd = "{systemctl} enable zzb.service"
+        sh____(cmd.format(**locals()))
+        #
+        systemctl_py = os.path.basename(_systemctl_py)
+        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
+        sx____(kill_daemon.format(**locals()))
+        kill_testsleep = "{systemctl} __killall {testsleepA} -vvvv"
+        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = "{systemctl} __killall {testsleepB} -vvvv"
+        sx____(kill_testsleep.format(**locals()))
+        #
+        InitLoopSleep = 1
+        initsystemctl = systemctl
+        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += " -c DEBUG_BOOTTIME=no"
+        #
+        debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
+        os_remove(debug_log)
+        text_file(debug_log, "")
+        cmd = "{initsystemctl} -1"
+        init = background(cmd.format(**locals()))
+        time.sleep(InitLoopSleep+1)
+        #
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
+        #
+        cmd = "{systemctl} show zza.service -p JournalFile"
+        journal_a=output(cmd.format(**locals())).strip().split("=",1)[1]
+        cmd = "{systemctl} show zzb.service -p JournalFile"
+        journal_b=output(cmd.format(**locals())).strip().split("=",1)[1]
+        logg.info("journal zza = %s", journal_a)
+        logg.info("journal zzb = %s", journal_b)
+        for attempt in xrange(5):
+            time.sleep(1)
+            if not os.path.exists(journal_a): continue
+            if not os.path.exists(journal_b): continue
+            break
+        self.assertTrue(os.path.exists(journal_a))
+        self.assertTrue(os.path.exists(journal_b))
+        #
+        logg.info("kill daemon at %s", init.pid)
+        os.kill(init.pid, signal.SIGTERM)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        time.sleep(4)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
+        sx____(kill_daemon.format(**locals()))
+        time.sleep(InitLoopSleep+1)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        #
+        self.rm_testdir()
+        self.coverage()
+        self.end()
     def test_4700_systemctl_py_restart_failed_units(self):
         """ check that we can enable services in a docker container to be run as default-services
             and failed units are going to be restarted"""
@@ -15518,7 +15615,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out2 = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out2)
         #
-        kill_daemon = "{systemctl} __killall '*systemctl.py' -vvvv"
+        systemctl_py = os.path.basename(_systemctl_py)
+        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
         sx____(kill_daemon.format(**locals()))
         kill_testsleep = "{systemctl} __killall {testsleepA} -vvvv"
         sx____(kill_testsleep.format(**locals()))
@@ -15534,14 +15632,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         #
         InitLoopSleep = 1
-        systemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
-        systemctl += " -c DEBUG_BOOTTIME=no"
+        initsystemctl = systemctl
+        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += " -c DEBUG_BOOTTIME=no"
         #
         debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
         os_remove(debug_log)
         text_file(debug_log, "")
-        cmd = "{systemctl} -1"
-        bg = background(cmd.format(**locals()))
+        cmd = "{initsystemctl} -1"
+        init = background(cmd.format(**locals()))
         time.sleep(InitLoopSleep+1)
         #
         top = _recent(output(_top_list))
@@ -15621,14 +15720,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         kill_testsleep = "{systemctl} __killall {testsleepD}"
         sx____(kill_testsleep.format(**locals()))
         #
-        logg.info("kill daemon at %s", bg.pid)
-        os.kill(bg.pid, signal.SIGTERM)
+        logg.info("kill daemon at %s", init.pid)
+        os.kill(init.pid, signal.SIGTERM)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         time.sleep(4)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*systemctl.py'"
+        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
         sx____(kill_daemon.format(**locals()))
         time.sleep(InitLoopSleep+1)
         top = _recent(output(_top_list))
