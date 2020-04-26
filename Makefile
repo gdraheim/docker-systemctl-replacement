@@ -4,11 +4,14 @@ FOR=today
 DAY=%u
 # 'make version FOR=yesterday' or 'make version DAY=0'
 
-version1:
+GIT=git
+VERFILES = files/docker/systemctl.py files/docker/systemctl3.py testsuite.py
+
+verfiles:
 	@ grep -l __version__ */*.??* */*/*.??* | { while read f; do echo $$f; done; } 
 
 version:
-	@ grep -l __version__ */*.??* */*/*.??* *.py | { while read f; do : \
+	@ grep -l __version__ $(VERFILES) | { while read f; do : \
 	; Y=`date +%Y -d "$(FOR)"` ; X=$$(expr $$Y - $B) \
 	; D=`date +%W$(DAY) -d "$(FOR)"` ; sed -i \
 	-e "/^ *__version__/s/[.]-*[0123456789][0123456789][0123456789]*\"/.$$X$$D\"/" \
@@ -16,7 +19,10 @@ version:
 	-e "/^ *__copyright__/s/(C) [0123456789]*-[0123456789]*/(C) $B-$$Y/" \
 	-e "/^ *__copyright__/s/(C) [0123456789]* /(C) $$Y /" \
 	$$f; done; }
-	@ grep ^__version__ files/*/*.??*
+	@ grep ^__version__ $(VERFILES)
+	@ $(GIT) add $(VERFILES) || true
+	@ ver=`cat files/docker/systemctl3.py | sed -e '/__version__/!d' -e 's/.*= *"//' -e 's/".*//' -e q` \
+	; echo "# $(GIT) commit -m v$$ver"
 
 help:
 	python files/docker/systemctl3.py help
@@ -24,6 +30,7 @@ help:
 	cp -v files/docker/systemctl3.py files/docker/systemctl.py
 	sed -i -e "s|/usr/bin/python3|/usr/bin/python2|" files/docker/systemctl.py
 	sed -i -e "s|type hints are provide.*|generated from systemctl3.py - do not change|" files/docker/systemctl.py
+	$(GIT) add files/docker/systemctl.py || true
 	diff -U1 files/docker/systemctl3.py files/docker/systemctl.py || true
 
 alltests: CH CP UA DJ
