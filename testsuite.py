@@ -15455,8 +15455,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Service]
             Type=simple
             ExecStart={bindir}/{testsleepA} 44
-            Restart=on-failure
-            RestartSec=4
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
@@ -15466,8 +15464,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Service]
             Type=simple
             ExecStart={bindir}/{testsleepB} 55
-            Restart=on-failure
-            RestartSec=5
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
@@ -15517,6 +15513,232 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             break
         self.assertTrue(os.path.exists(journal_a))
         self.assertTrue(os.path.exists(journal_b))
+        #
+        logg.info("kill daemon at %s", init.pid)
+        os.kill(init.pid, signal.SIGTERM)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        time.sleep(4)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
+        sx____(kill_daemon.format(**locals()))
+        time.sleep(InitLoopSleep+1)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        #
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def test_4301_background_default_journal_written(self):
+        self.begin()
+        self.rm_testdir()
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        logfile = os_path(root, "/var/log/"+testname+".log")
+        testsleepA = self.testname("sleepA")
+        testsleepB = self.testname("sleepB")
+        bindir = os_path(root, "/usr/bin")
+        shell_file(os_path(testdir, "testsleepA.bin"),"""
+            #! /bin/sh
+            echo running testsleepA
+            exec {bindir}/{testsleepA} "$@"
+            """.format(**locals()))
+        shell_file(os_path(testdir, "testsleepB.bin"),"""
+            #! /bin/sh
+            echo running testsleepB
+            exec {bindir}/{testsleepB} "$@"
+            """.format(**locals()))
+        text_file(os_path(testdir, "zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            Type=simple
+            ExecStart={bindir}/{testsleepA}.bin 44
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        text_file(os_path(testdir, "zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            Type=simple
+            ExecStart={bindir}/{testsleepB}.bin 55
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleepA))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleepB))
+        copy_tool(os_path(testdir, "testsleepA.bin"), os_path(bindir, testsleepA + ".bin"))
+        copy_tool(os_path(testdir, "testsleepB.bin"), os_path(bindir, testsleepB + ".bin"))
+        copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
+        copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
+        cmd = "{systemctl} enable zza.service"
+        sh____(cmd.format(**locals()))
+        cmd = "{systemctl} enable zzb.service"
+        sh____(cmd.format(**locals()))
+        #
+        systemctl_py = os.path.basename(_systemctl_py)
+        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
+        sx____(kill_daemon.format(**locals()))
+        kill_testsleep = "{systemctl} __killall {testsleepA} -vvvv"
+        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = "{systemctl} __killall {testsleepB} -vvvv"
+        sx____(kill_testsleep.format(**locals()))
+        #
+        InitLoopSleep = 1
+        initsystemctl = systemctl
+        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += " -c DEBUG_BOOTTIME=no"
+        #
+        debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
+        os_remove(debug_log)
+        text_file(debug_log, "")
+        cmd = "{initsystemctl} -1"
+        init = background(cmd.format(**locals()))
+        time.sleep(InitLoopSleep+1)
+        #
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
+        #
+        cmd = "{systemctl} show zza.service -p JournalFile"
+        journal_a=output(cmd.format(**locals())).strip().split("=",1)[1]
+        cmd = "{systemctl} show zzb.service -p JournalFile"
+        journal_b=output(cmd.format(**locals())).strip().split("=",1)[1]
+        logg.info("journal zza = %s", journal_a)
+        logg.info("journal zzb = %s", journal_b)
+        time.sleep(1)
+        self.assertTrue(os.path.exists(journal_a))
+        self.assertTrue(os.path.exists(journal_b))
+        out_a = open(journal_a).read()
+        out_b = open(journal_b).read()
+        logg.info("out_a=%s", out_a.strip())
+        logg.info("out_b=%s", out_b.strip())
+        self.assertTrue(greps(out_a, "running testsleepA"))
+        self.assertTrue(greps(out_b, "running testsleepB"))
+        self.assertFalse(greps(out_a, "running testsleepB"))
+        self.assertFalse(greps(out_b, "running testsleepA"))
+        #
+        logg.info("kill daemon at %s", init.pid)
+        os.kill(init.pid, signal.SIGTERM)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        time.sleep(4)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
+        sx____(kill_daemon.format(**locals()))
+        time.sleep(InitLoopSleep+1)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        #
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def test_4311_background_logfile_journal(self):
+        self.begin()
+        self.rm_testdir()
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        logfile = os_path(root, "/var/log/"+testname+".log")
+        testsleepA = self.testname("sleepA")
+        testsleepB = self.testname("sleepB")
+        bindir = os_path(root, "/usr/bin")
+        shell_file(os_path(testdir, "testsleepA.bin"),"""
+            #! /bin/sh
+            echo running testsleepA
+            exec {bindir}/{testsleepA} "$@"
+            """.format(**locals()))
+        shell_file(os_path(testdir, "testsleepB.bin"),"""
+            #! /bin/sh
+            echo running testsleepB
+            exec {bindir}/{testsleepB} "$@"
+            """.format(**locals()))
+        text_file(os_path(testdir, "zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            Type=simple
+            ExecStart={bindir}/{testsleepA}.bin 44
+            StandardOutput=file:{root}/var/log/zza.log
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        text_file(os_path(testdir, "zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            Type=simple
+            ExecStart={bindir}/{testsleepB}.bin 55
+            StandardOutput=file:{root}/var/log/zzb.log
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleepA))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleepB))
+        copy_tool(os_path(testdir, "testsleepA.bin"), os_path(bindir, testsleepA + ".bin"))
+        copy_tool(os_path(testdir, "testsleepB.bin"), os_path(bindir, testsleepB + ".bin"))
+        copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
+        copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
+        cmd = "{systemctl} enable zza.service"
+        sh____(cmd.format(**locals()))
+        cmd = "{systemctl} enable zzb.service"
+        sh____(cmd.format(**locals()))
+        #
+        systemctl_py = os.path.basename(_systemctl_py)
+        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
+        sx____(kill_daemon.format(**locals()))
+        kill_testsleep = "{systemctl} __killall {testsleepA} -vvvv"
+        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = "{systemctl} __killall {testsleepB} -vvvv"
+        sx____(kill_testsleep.format(**locals()))
+        #
+        InitLoopSleep = 1
+        initsystemctl = systemctl
+        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += " -c DEBUG_BOOTTIME=no"
+        #
+        debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
+        os_remove(debug_log)
+        text_file(debug_log, "")
+        cmd = "{initsystemctl} -1"
+        init = background(cmd.format(**locals()))
+        time.sleep(InitLoopSleep+1)
+        #
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
+        #
+        cmd = "{systemctl} show zza.service -p JournalFile"
+        journal_a=output(cmd.format(**locals())).strip().split("=",1)[1]
+        cmd = "{systemctl} show zzb.service -p JournalFile"
+        journal_b=output(cmd.format(**locals())).strip().split("=",1)[1]
+        logg.info("journal zza = %s", journal_a)
+        logg.info("journal zzb = %s", journal_b)
+        time.sleep(1)
+        self.assertFalse(os.path.exists(journal_a))
+        self.assertFalse(os.path.exists(journal_b))
+        log_a = root + "/var/log/zza.log"
+        log_b = root + "/var/log/zzb.log"
+        logg.info("log zza = %s", log_a)
+        logg.info("log zzb = %s", log_b)
+        self.assertTrue(os.path.exists(log_a))
+        self.assertTrue(os.path.exists(log_b))
+        out_a = open(log_a).read()
+        out_b = open(log_b).read()
+        logg.info("out_a=%s", out_a.strip())
+        logg.info("out_b=%s", out_b.strip())
+        self.assertTrue(greps(out_a, "running testsleepA"))
+        self.assertTrue(greps(out_b, "running testsleepB"))
+        self.assertFalse(greps(out_a, "running testsleepB"))
+        self.assertFalse(greps(out_b, "running testsleepA"))
         #
         logg.info("kill daemon at %s", init.pid)
         os.kill(init.pid, signal.SIGTERM)
