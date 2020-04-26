@@ -2378,8 +2378,9 @@ class Systemctl:
             done = self.do_start_service_from(service_conf)
             service_result = done and "success" or "failed"
         else:
-            service_result = "failed"
-            logg.error("socket accept=yes is not implemented. sorry.")
+            # we do not listen but have the service started right away
+            done = self.do_start_service_from(service_conf)
+            service_result = done and "success" or "failed"
         # POST sequence
         if not self.is_active_from(conf):
             logg.warning("%s start not active", runs)
@@ -2745,8 +2746,8 @@ class Systemctl:
             done = self.do_stop_service_from(service_conf)
             service_result = done and "success" or "failed"
         else:
-            service_result = "failed"
-            logg.error("socket accept=yes is not implemented. sorry.")
+            done = self.do_stop_service_from(service_conf)
+            service_result = done and "success" or "failed"
         # POST sequence
         if not self.is_active_from(conf):
             env["SERVICE_RESULT"] = service_result
