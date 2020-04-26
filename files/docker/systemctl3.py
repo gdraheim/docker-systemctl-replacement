@@ -2468,7 +2468,7 @@ class Systemctl:
             inp = open("/dev/zero", "rb")
         try:
             if std_out in ["null"]:
-                inp = open("/dev/null", "wb")
+                out = open("/dev/null", "wb")
             elif std_out.startswith("file:"):
                 fname = std_out[len("file:"):]
                 fdir = os.path.dirname(fname)
@@ -2489,6 +2489,7 @@ class Systemctl:
         try:
             if std_err in ["inherit"]:
                 err = out
+            elif std_err in ["null"]:
                 err = open("/dev/null", "wb")
             elif std_err.startswith("file:"):
                 fname = std_err[len("file:"):]
@@ -2508,10 +2509,7 @@ class Systemctl:
             err = self.open_journal_log(conf)
         if msg:
             logg.debug("%s", msg)
-            err.write("msg:")
             err.write(msg.strip().encode("utf-8"))
-            err.write("\n")
-            err.flush()
         os.dup2(inp.fileno(), sys.stdin.fileno())
         os.dup2(out.fileno(), sys.stdout.fileno())
         os.dup2(err.fileno(), sys.stderr.fileno())
