@@ -101,8 +101,9 @@ DefaultTarget = os.environ.get("SYSTEMD_DEFAULT_TARGET", "multi-user.target") # 
 # LogTarget = os.environ.get("SYSTEMD_LOG_TARGET", "journal-or-kmsg") # systemd.exe --log-target
 # LogLocation = os.environ.get("SYSTEMD_LOG_LOCATION", "no") # systemd.exe --log-location
 # ShowStatus = os.environ.get("SYSTEMD_SHOW_STATUS", "auto") # systemd.exe --show-status
-# DefaultStandardOutput=os.environ.get("SYSTEMD_STANDARD_OUTPUT", "journal") # systemd.exe --default-standard-output
-# DefaultStandardError=os.environ.get("SYSTEMD_STANDARD_ERROR", "inherit") # systemd.exe --default-standard-error
+DefaultStandardInput=os.environ.get("SYSTEMD_STANDARD_INPUT", "null")
+DefaultStandardOutput=os.environ.get("SYSTEMD_STANDARD_OUTPUT", "journal") # systemd.exe --default-standard-output
+DefaultStandardError=os.environ.get("SYSTEMD_STANDARD_ERROR", "inherit") # systemd.exe --default-standard-error
 
 EXEC_SPAWN = False
 REMOVE_LOCK_FILE = False
@@ -2442,15 +2443,85 @@ class Systemctl:
         return self.expand_special(conf.get("Service", "Group", ""), conf)
     def get_SupplementaryGroups(self, conf):
         return self.expand_list(conf.getlist("Service", "SupplementaryGroups", []), conf)
+    def skip_journal_log(self, conf):
+        std_out = conf.get("Service", "StandardOutput", DefaultStandardOutput)
+        std_err = conf.get("Service", "StandardError", DefaultStandardError)
+        out, err = False, False
+        if std_out in ["null"]: out = True
+        if std_out.startswith("file:"): out = True
+        if std_err in ["inherit"]: std_err = std_out
+        if std_err in ["null"]: err = True
+        if std_err.startswith("file:"): err = True
+        if std_err.startswith("append:"): err = True
+        return out and err
+    def dup2_journal_log(self, conf):
+        msg = ""
+        std_inp = conf.get("Service", "StandardInput", DefaultStandardInput)
+        std_out = conf.get("Service", "StandardOutput", DefaultStandardOutput)
+        std_err = conf.get("Service", "StandardError", DefaultStandardError)
+        inp, out, err = None, None, None
+        if std_inp in ["null"]:
+            inp = open("/dev/null", "rb")
+        elif std_inp.startswith("file:"):
+            inp = open(std_inp[len("file:")], "rb")
+        else:
+            inp = open("/dev/zero", "rb")
+        try:
+            if std_out in ["null"]:
+                inp = open("/dev/null", "wb")
+            elif std_out.startswith("file:"):
+                fname = std_out[len("file:"):]
+                fdir = os.path.dirname(fname)
+                if not os.path.exists(fdir):
+                    os.makedirs(fdir)
+                out = open(fname, "wb")
+            elif std_out.startswith("append:"):
+                fname = std_out[len("append:"):]
+                fdir = os.path.dirname(fname)
+                if not os.path.exists(fdir):
+                    os.makedirs(fdir)
+                out = open(fname, "ab")
+        except Exception as e:
+            msg += "\n%s: %s" % (fname, e)
+        if out is None:
+            out = self.open_journal_log(conf)
+            err = out
+        try:
+            if std_err in ["inherit"]:
+                err = out
+                err = open("/dev/null", "wb")
+            elif std_err.startswith("file:"):
+                fname = std_err[len("file:"):]
+                fdir = os.path.dirname(fname)
+                if not os.path.exists(fdir):
+                    os.makedirs(fdir)
+                err = open(fname, "wb")
+            elif std_err.startswith("append:"):
+                fname = std_err[len("append:"):]
+                fdir = os.path.dirname(fname)
+                if not os.path.exists(fdir):
+                    os.makedirs(fdir)
+                err = open(fname, "ab")
+        except Exception as e:
+            msg += "\n%s: %s" % (fname, e)
+        if err is None:
+            err = self.open_journal_log(conf)
+        if msg:
+            logg.debug("%s", msg)
+            err.write("msg:")
+            err.write(msg.strip().encode("utf-8"))
+            err.write("\n")
+            err.flush()
+        os.dup2(inp.fileno(), sys.stdin.fileno())
+        os.dup2(out.fileno(), sys.stdout.fileno())
+        os.dup2(err.fileno(), sys.stderr.fileno())
     def execve_from(self, conf, cmd, env):
         """ this code is commonly run in a child process // returns exit-code"""
         runs = conf.get("Service", "Type", "simple").lower()
         logg.debug("%s process for %s", runs, strQ(conf.filename()))
-        inp = open("/dev/zero")
-        out = self.open_journal_log(conf)
-        os.dup2(inp.fileno(), sys.stdin.fileno())
-        os.dup2(out.fileno(), sys.stdout.fileno())
-        os.dup2(out.fileno(), sys.stderr.fileno())
+        #
+        self.dup2_journal_log(conf)
+        #
         runuser = self.get_User(conf)
         rungroup = self.get_Group(conf)
         xgroups = self.get_SupplementaryGroups(conf)
@@ -4233,6 +4304,7 @@ class Systemctl:
         yield "LoadState", loaded
         yield "UnitFileState", self.enabled_from(conf)
         yield "StatusFile", self.get_StatusFile(conf)
+        yield "JournalFile", self.path_journal_log(conf)
         yield "User", self.get_User(conf) or ""
         yield "Group", self.get_Group(conf) or ""
         yield "SupplementaryGroups", " ".join(self.get_SupplementaryGroups(conf))
@@ -4518,6 +4590,7 @@ class Systemctl:
         for unit in units:
             conf = self.load_unit_conf(unit)
             if not conf: continue
+            if self.skip_journal_log(conf): continue
             log_path = self.path_journal_log(conf)
             try:
                 opened = os.open(log_path, os.O_RDONLY | os.O_NONBLOCK)
