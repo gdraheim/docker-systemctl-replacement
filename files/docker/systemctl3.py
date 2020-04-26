@@ -3,8 +3,8 @@
 
 from __future__ import print_function
 
-__copyright__ = "(C) 2016-2019 Guido U. Draheim, licensed under the EUPL"
-__version__ = "1.5.3420"
+__copyright__ = "(C) 2016-2020 Guido U. Draheim, licensed under the EUPL"
+__version__ = "1.5.4167"
 
 import logging
 logg = logging.getLogger("systemctl")
