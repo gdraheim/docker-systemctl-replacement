@@ -2508,8 +2508,9 @@ class Systemctl:
         if err is None:
             err = self.open_journal_log(conf)
         if msg:
-            logg.debug("%s", msg)
-            err.write(msg.strip().encode("utf-8"))
+            err.write("ERROR:")
+            err.write(msg.strip())
+            err.write("\n")
         os.dup2(inp.fileno(), sys.stdin.fileno())
         os.dup2(out.fileno(), sys.stdout.fileno())
         os.dup2(err.fileno(), sys.stderr.fileno())
