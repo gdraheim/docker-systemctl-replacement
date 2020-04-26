@@ -2462,56 +2462,59 @@ class Systemctl:
         std_err = conf.get("Service", "StandardError", DefaultStandardError)
         inp, out, err = None, None, None
         if std_inp in ["null"]:
-            inp = open("/dev/null", "rb")
+            inp = open("/dev/null", "r")
         elif std_inp.startswith("file:"):
             fname = std_inp[len("file:"):]
             if os.path.exists(fname):
-                inp = open(fname, "rb")
+                inp = open(fname, "r")
             else:
-                inp = open("/dev/zero", "rb")
+                inp = open("/dev/zero", "r")
         else:
-            inp = open("/dev/zero", "rb")
+            inp = open("/dev/zero", "r")
+        assert inp is not None
         try:
             if std_out in ["null"]:
-                out = open("/dev/null", "wb")
+                out = open("/dev/null", "w")
             elif std_out.startswith("file:"):
                 fname = std_out[len("file:"):]
                 fdir = os.path.dirname(fname)
                 if not os.path.exists(fdir):
                     os.makedirs(fdir)
-                out = open(fname, "wb")
+                out = open(fname, "w")
             elif std_out.startswith("append:"):
                 fname = std_out[len("append:"):]
                 fdir = os.path.dirname(fname)
                 if not os.path.exists(fdir):
                     os.makedirs(fdir)
-                out = open(fname, "ab")
+                out = open(fname, "a")
         except Exception as e:
             msg += "\n%s: %s" % (fname, e)
         if out is None:
             out = self.open_journal_log(conf)
             err = out
+        assert out is not None
         try:
             if std_err in ["inherit"]:
                 err = out
             elif std_err in ["null"]:
-                err = open("/dev/null", "wb")
+                err = open("/dev/null", "w")
             elif std_err.startswith("file:"):
                 fname = std_err[len("file:"):]
                 fdir = os.path.dirname(fname)
                 if not os.path.exists(fdir):
                     os.makedirs(fdir)
-                err = open(fname, "wb")
+                err = open(fname, "w")
             elif std_err.startswith("append:"):
                 fname = std_err[len("append:"):]
                 fdir = os.path.dirname(fname)
                 if not os.path.exists(fdir):
                     os.makedirs(fdir)
-                err = open(fname, "ab")
+                err = open(fname, "a")
         except Exception as e:
             msg += "\n%s: %s" % (fname, e)
         if err is None:
             err = self.open_journal_log(conf)
+        assert err is not None
         if msg:
             err.write("ERROR:")
             err.write(msg.strip())
