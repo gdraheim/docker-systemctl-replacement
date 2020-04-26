@@ -2463,7 +2463,11 @@ class Systemctl:
         if std_inp in ["null"]:
             inp = open("/dev/null", "rb")
         elif std_inp.startswith("file:"):
-            inp = open(std_inp[len("file:")], "rb")
+            fname = std_inp[len("file:"):]
+            if os.path.exists(fname):
+                inp = open(fname, "rb")
+            else:
+                inp = open("/dev/zero", "rb")
         else:
             inp = open("/dev/zero", "rb")
         try:
