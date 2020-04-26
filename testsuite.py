@@ -508,6 +508,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not os.path.isdir(root_folder):
             os.makedirs(root_folder)
         return os.path.abspath(root_folder)
+    def socat(self):
+        if False and os.path.exists("/usr/bin/socat"):
+            return "/usr/bin/socat"
+        else:
+            here = os.path.abspath(os.path.dirname(sys.argv[0]))
+            return os.path.join(here, "reply.py")
     def user(self):
         return os_getlogin()
     def local_system(self):
@@ -9703,8 +9709,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_3935_start_false_exec_notify(self, real = None):
         """ check that we manage notify services in a root env
             and false handling."""
-        if not os.path.exists("/usr/bin/socat"):
-            self.skipTest("missing /usr/bin/socat")
+        socat = self.socat()
+        if not os.path.exists(socat):
+            self.skipTest("missing "+socat)
         vv = self.begin()
         testname = self.testname()
         testdir = self.testdir()
@@ -9721,8 +9728,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             case "$1" in start)
                 ls -l  $NOTIFY_SOCKET
                 {bindir}/{testsleep} 3 0<&- &>/dev/null &
-                echo "MAINPID=$!" | socat -v -d - UNIX-CLIENT:$NOTIFY_SOCKET
-                echo "READY=1" | socat -v -d - UNIX-CLIENT:$NOTIFY_SOCKET
+                echo "MAINPID=$!" | {socat} -v -d - UNIX-CLIENT:$NOTIFY_SOCKET
+                echo "READY=1" | {socat} -v -d - UNIX-CLIENT:$NOTIFY_SOCKET
                 wait %1
                 # ps -o pid,ppid,args
             ;; stop)
@@ -9795,8 +9802,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_3936_start_false_exec_notify(self, real = None):
         """ check that we manage notify services in a root env
             and false handling."""
-        if not os.path.exists("/usr/bin/socat"):
-            self.skipTest("missing /usr/bin/socat")
+        socat = self.socat()
+        if not os.path.exists(socat):
+            self.skipTest("missing "+socat)
         vv = self.begin()
         testname = self.testname()
         testdir = self.testdir()
@@ -9814,7 +9822,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 ls -l  $NOTIFY_SOCKET
                 {bindir}/{testsleep} 3 0<&- &>/dev/null &
                 echo "$!" > {root}/var/run/zzz.init.pid
-                echo "READY=1" | socat -v -d - UNIX-CLIENT:$NOTIFY_SOCKET
+                echo "READY=1" | {socat} -v -d - UNIX-CLIENT:$NOTIFY_SOCKET
                 wait %1
                 # ps -o pid,ppid,args
             ;; stop)
@@ -9877,8 +9885,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_3937_start_false_exec_notify(self, real = None):
         """ check that we manage notify services in a root env
             and false handling."""
-        if not os.path.exists("/usr/bin/socat"):
-            self.skipTest("missing /usr/bin/socat")
+        socat = self.socat()
+        if not os.path.exists(socat):
+            self.skipTest("missing "+socat)
         vv = self.begin()
         testname = self.testname()
         testdir = self.testdir()
@@ -9896,7 +9905,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 ls -l  $NOTIFY_SOCKET
                 {bindir}/{testsleep} 3 0<&- &>/dev/null &
                 echo "$!" > {root}/var/run/zzz.init.pid
-                echo "READY=1" | socat -v -d - UNIX-CLIENT:$NOTIFY_SOCKET
+                echo "READY=1" | {socat} -v -d - UNIX-CLIENT:$NOTIFY_SOCKET
                 wait %1
                 # ps -o pid,ppid,args
             ;; stop)
@@ -9961,8 +9970,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_3938_start_slow_exec_notify(self, real = None):
         """ check that we manage notify services in a root env
             and slow handling."""
-        if not os.path.exists("/usr/bin/socat"):
-            self.skipTest("missing /usr/bin/socat")
+        socat = self.socat()
+        if not os.path.exists(socat):
+            self.skipTest("missing "+socat)
         vv = self.begin()
         testname = self.testname()
         testdir = self.testdir()
@@ -9985,7 +9995,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 sleep 1
                 echo "$PID" > {root}/var/run/zzz.init.pid
                 sleep 1
-                echo "READY=1" | socat -v -d - UNIX-CLIENT:$NOTIFY_SOCKET
+                echo "READY=1" | {socat} -v -d - UNIX-CLIENT:$NOTIFY_SOCKET
                 wait %1
                 # ps -o pid,ppid,args
             ;; stop)
@@ -11074,8 +11084,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             reload, try-restart, reload-or-restart, kill and
             reload-or-try-restart."""
         self.begin()
-        if not os.path.exists("/usr/bin/socat"):
-            self.skipTest("missing /usr/bin/socat")
+        socat = self.socat()
+        if not os.path.exists(socat):
+            self.skipTest("missing "+socat)
         testname = self.testname()
         testdir = self.testdir()
         self.notify_service_functions("system", testname, testdir)
@@ -11088,8 +11099,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             reload, try-restart, reload-or-restart, kill and
             reload-or-try-restart."""
         self.begin()
-        if not os.path.exists("/usr/bin/socat"):
-            self.skipTest("missing /usr/bin/socat")
+        socat = self.socat()
+        if not os.path.exists(socat):
+            self.skipTest("missing "+socat)
         testname = self.testname()
         testdir = self.testdir()
         self.notify_service_functions("user", testname, testdir)
@@ -11097,6 +11109,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.coverage()
         self.end()
     def notify_service_functions(self, system, testname, testdir):
+        socat = self.socat()
         user = self.user()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
@@ -11113,8 +11126,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             start() {begin} 
                 ls -l  $NOTIFY_SOCKET
                 {bindir}/{testsleep} 111 0<&- &>/dev/null &
-                echo "MAINPID=$!" | socat -v -d - UNIX-CLIENT:$NOTIFY_SOCKET
-                echo "READY=1" | socat -v -d - UNIX-CLIENT:$NOTIFY_SOCKET
+                echo "MAINPID=$!" | {socat} -v -d - UNIX-CLIENT:$NOTIFY_SOCKET
+                echo "READY=1" | {socat} -v -d - UNIX-CLIENT:$NOTIFY_SOCKET
                 wait %1
                 # ps -o pid,ppid,args
             {end}
@@ -11406,8 +11419,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             reload, try-restart, reload-or-restart, kill and
             reload-or-try-restart. (with ExecReload)"""
         self.begin()
-        if not os.path.exists("/usr/bin/socat"):
-            self.skipTest("missing /usr/bin/socat")
+        socat = self.socat()
+        if not os.path.exists(socat):
+            self.skipTest("missing "+socat)
         testname = self.testname()
         testdir = self.testdir()
         self.notify_service_functions_with_reload("system", testname, testdir)
@@ -11421,8 +11435,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             reload-or-try-restart. (with ExecReload)"""
         # test_4037 is triggering len(socketfile) > 100 | "new notify socketfile"
         self.begin()
-        if not os.path.exists("/usr/bin/socat"):
-            self.skipTest("missing /usr/bin/socat")
+        socat = self.socat()
+        if not os.path.exists(socat):
+            self.skipTest("missing "+socat)
         testname = self.testname()
         testdir = self.testdir()
         self.notify_service_functions_with_reload("user", testname, testdir)
@@ -11430,6 +11445,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.coverage()
         self.end()
     def notify_service_functions_with_reload(self, system, testname, testdir):
+        socat = self.socat()
         user = self.user()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
@@ -11446,8 +11462,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             start() {begin} 
                 ls -l  $NOTIFY_SOCKET
                 {bindir}/{testsleep} 111 0<&- &>/dev/null &
-                echo "MAINPID=$!" | socat -v -d - UNIX-CLIENT:$NOTIFY_SOCKET
-                echo "READY=1" | socat -v -d - UNIX-CLIENT:$NOTIFY_SOCKET
+                echo "MAINPID=$!" | {socat} -v -d - UNIX-CLIENT:$NOTIFY_SOCKET
+                echo "READY=1" | {socat} -v -d - UNIX-CLIENT:$NOTIFY_SOCKET
                 wait %1
                 # ps -o pid,ppid,args
             {end}
@@ -11742,8 +11758,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             reload, try-restart, reload-or-restart, kill and
             reload-or-try-restart. (with ExecReload)"""
         self.begin()
-        if not os.path.exists("/usr/bin/socat"):
-            self.skipTest("missing /usr/bin/socat")
+        socat = self.socat()
+        if not os.path.exists(socat):
+            self.skipTest("missing "+socat)
         testname = self.testname()
         testdir = self.testdir()
         self.notify_service_functions_with_failed("system", testname, testdir)
@@ -11757,8 +11774,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             reload-or-try-restart. (with ExecReload)"""
         # test_4037 is triggering len(socketfile) > 100 | "new notify socketfile"
         self.begin()
-        if not os.path.exists("/usr/bin/socat"):
-            self.skipTest("missing /usr/bin/socat")
+        socat = self.socat()
+        if not os.path.exists(socat):
+            self.skipTest("missing "+socat)
         testname = self.testname()
         testdir = self.testdir()
         self.notify_service_functions_with_failed("user", testname, testdir)
@@ -11766,6 +11784,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.coverage()
         self.end()
     def notify_service_functions_with_failed(self, system, testname, testdir):
+        socat = self.socat()
         user = self.user()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
@@ -11782,8 +11801,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             start() {begin} 
                 ls -l  $NOTIFY_SOCKET
                 {bindir}/{testsleep} 4 0<&- &>/dev/null &
-                echo "MAINPID=$!" | socat -v -d - UNIX-CLIENT:$NOTIFY_SOCKET
-                echo "READY=1" | socat -v -d - UNIX-CLIENT:$NOTIFY_SOCKET
+                echo "MAINPID=$!" | {socat} -v -d - UNIX-CLIENT:$NOTIFY_SOCKET
+                echo "READY=1" | {socat} -v -d - UNIX-CLIENT:$NOTIFY_SOCKET
                 wait %1
                 # ps -o pid,ppid,args
             {end}
@@ -12563,8 +12582,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ check that we manage notify services in a root env
             with a very long servicename (limiting the socket name)"""
         self.begin()
-        if not os.path.exists("/usr/bin/socat"):
-            self.skipTest("missing /usr/bin/socat")
+        socat = self.socat()
+        if not os.path.exists(socat):
+            self.skipTest("missing "+socat)
         testname = self.testname()
         testdir = self.testdir()
         self.notify_service_functions_with_long_servicename("system", testname, testdir)
@@ -12576,8 +12596,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             with a very long servicename (limiting the socket name)"""
         # test_4037 is also triggering len(socketfile) > 100 | "new notify socketfile"
         self.begin()
-        if not os.path.exists("/usr/bin/socat"):
-            self.skipTest("missing /usr/bin/socat")
+        socat = self.socat()
+        if not os.path.exists(socat):
+            self.skipTest("missing "+socat)
         testname = self.testname()
         testdir = self.testdir()
         self.notify_service_functions_with_long_servicename("user", testname, testdir)
@@ -12585,6 +12606,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.coverage()
         self.end()
     def notify_service_functions_with_long_servicename(self, system, testname, testdir):
+        socat = self.socat()
         user = self.user()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
@@ -12601,8 +12623,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             start() {begin} 
                 ls -l  $NOTIFY_SOCKET
                 {bindir}/{testsleep} 4 0<&- &>/dev/null &
-                echo "MAINPID=$!" | socat -v -d - UNIX-CLIENT:$NOTIFY_SOCKET
-                echo "READY=1" | socat -v -d - UNIX-CLIENT:$NOTIFY_SOCKET
+                echo "MAINPID=$!" | {socat} -v -d - UNIX-CLIENT:$NOTIFY_SOCKET
+                echo "READY=1" | {socat} -v -d - UNIX-CLIENT:$NOTIFY_SOCKET
                 wait %1
                 # ps -o pid,ppid,args
             {end}
@@ -12712,8 +12734,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ check that we manage notify services in a root env
             with a very long servicename (limiting the socket name)"""
         self.begin()
-        if not os.path.exists("/usr/bin/socat"):
-            self.skipTest("missing /usr/bin/socat")
+        socat = self.socat()
+        if not os.path.exists(socat):
+            self.skipTest("missing "+socat)
         testname = self.testname()
         testdir = self.testdir()
         self.notify_service_functions_with_other_notify_dir("system", testname, testdir)
@@ -12725,8 +12748,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             with a very long servicename (limiting the socket name)"""
         # test_4037 is also triggering len(socketfile) > 100 | "new notify socketfile"
         self.begin()
-        if not os.path.exists("/usr/bin/socat"):
-            self.skipTest("missing /usr/bin/socat")
+        socat = self.socat()
+        if not os.path.exists(socat):
+            self.skipTest("missing "+socat)
         testname = self.testname()
         testdir = self.testdir()
         self.notify_service_functions_with_other_notify_dir("user", testname, testdir)
@@ -12734,6 +12758,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.coverage()
         self.end()
     def notify_service_functions_with_other_notify_dir(self, system, testname, testdir):
+        socat = self.socat()
         user = self.user()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
@@ -12751,8 +12776,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             start() {begin} 
                 ls -l  $NOTIFY_SOCKET
                 {bindir}/{testsleep} 4 0<&- &>/dev/null &
-                echo "MAINPID=$!" | socat -v -d - UNIX-CLIENT:$NOTIFY_SOCKET
-                echo "READY=1" | socat -v -d - UNIX-CLIENT:$NOTIFY_SOCKET
+                echo "MAINPID=$!" | {socat} -v -d - UNIX-CLIENT:$NOTIFY_SOCKET
+                echo "READY=1" | {socat} -v -d - UNIX-CLIENT:$NOTIFY_SOCKET
                 wait %1
                 # ps -o pid,ppid,args
             {end}
