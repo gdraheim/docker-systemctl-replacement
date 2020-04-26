@@ -14887,7 +14887,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
-    def test_4301_systemctl_py_list_dependencies_with_after(self):
+    def test_4261_systemctl_py_list_dependencies_with_after(self):
         """ check list-dependencies - standard order of starting
             units is simply the command line order"""
         self.begin()
@@ -14963,7 +14963,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
-    def test_4302_systemctl_py_list_dependencies_with_wants(self):
+    def test_4262_systemctl_py_list_dependencies_with_wants(self):
         """ check list-dependencies - standard order of starting
             units is simply the command line order"""
         self.begin()
@@ -15062,7 +15062,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
-    def test_4303_systemctl_py_list_dependencies_with_requires(self):
+    def test_4263_systemctl_py_list_dependencies_with_requires(self):
         """ check list-dependencies - standard order of starting
             units is simply the command line order"""
         self.begin()
@@ -15161,7 +15161,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
-    def test_4401_systemctl_py_list_dependencies_with_after(self):
+    def test_4271_systemctl_py_list_dependencies_with_after(self):
         """ check list-dependencies - standard order of starting
             units is simply the command line order"""
         self.begin()
@@ -15237,7 +15237,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
-    def test_4402_systemctl_py_list_dependencies_with_wants(self):
+    def test_4272_systemctl_py_list_dependencies_with_wants(self):
         """ check list-dependencies - standard order of starting
             units is simply the command line order"""
         self.begin()
@@ -15337,7 +15337,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
-    def test_4403_systemctl_py_list_dependencies_with_requires(self):
+    def test_4273_systemctl_py_list_dependencies_with_requires(self):
         """ check list-dependencies - standard order of starting
             units is simply the command line order"""
         self.begin()
