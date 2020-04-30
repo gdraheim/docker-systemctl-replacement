@@ -4436,7 +4436,7 @@ if __name__ == "__main__":
     #    help="Enable/disable unit files globally") # for all user logins
     # _o.add_option("--runtime", action="store_true",
     #     help="Enable unit files only temporarily until next reboot")
-    _o.add_option("--force", action="store_true", default=_force,
+    _o.add_option("-f", "--force", action="store_true", default=_force,
         help="When enabling unit files, override existing symblinks / When shutting down, execute action immediately")
     _o.add_option("--preset-mode", metavar="TYPE", default=_preset_mode,
         help="Apply only enable, only disable, or all presets [%default]")
@@ -4529,6 +4529,10 @@ if __name__ == "__main__":
     logg.debug("======= systemctl.py " + " ".join(args))
     command = args[0]
     modules = args[1:]
+    try:
+        modules.remove("service")
+    except ValueError:
+        pass
     if opt.ipv4:
         systemctl.force_ipv4()
     elif opt.ipv6:
