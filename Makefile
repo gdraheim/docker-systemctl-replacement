@@ -45,9 +45,9 @@ est_%: ; rm .coverage*; rm -rf tmp/tmp.t$@ ; ./testsuite.py "t$@" -vv --coverage
 test_%: ; ./testsuite.py "$@" -vv
 real_%: ; ./testsuite.py "$@" -vv
 test: ; $(MAKE) "test_[1234]"
-st_%: ; $(MAKE) 3 && ./testsuite.py "te$@" -vv $(WITH3)
+st_%: ; $(MAKE) 2 && ./testsuite.py "te$@" -vv $(WITH2)
 
-WITH2 = --python=/usr/bin/python2 --with=files/docker/systemctl.py
+WITH2 = --python=/usr/bin/python  --with=files/docker/systemctl.py
 WITH3 = --python=/usr/bin/python3 --with=files/docker/systemctl3.py
 todo/test_%:             ; ./testsuite.py   "$(notdir $@)" -vv --todo
 15.2/test_%:             ; ./testsuite.py   "$(notdir $@)" -vv --image=opensuse/leap:15.2
@@ -72,6 +72,11 @@ todo/test_%:             ; ./testsuite.py   "$(notdir $@)" -vv --todo
 42.2/st_%:  ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv --image=opensuse:42.2      $(WITH2)
 18.04/st_%: ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv --image=ubuntu:18.04       $(WITH2)
 16.04/st_%: ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv --image=ubuntu:16.04       $(WITH2)
+7.7/test_%: ; $(MAKE) 2 && ./testsuite.py   "$(notdir $@)" -vv --image=centos:7.7.1908    $(WITH2)
+7.6/test_%: ; $(MAKE) 2 && ./testsuite.py   "$(notdir $@)" -vv --image=centos:7.6.1810    $(WITH2)
+7.5/test_%: ; $(MAKE) 2 && ./testsuite.py   "$(notdir $@)" -vv --image=centos:7.5.1804    $(WITH2)
+7.4/test_%: ; $(MAKE) 2 && ./testsuite.py   "$(notdir $@)" -vv --image=centos:7.4.1708    $(WITH2)
+7.3/test_%: ; $(MAKE) 2 && ./testsuite.py   "$(notdir $@)" -vv --image=centos:7.3.1611    $(WITH2)
 
 test2list = st_[567]
 testslist = test_[567]
@@ -99,6 +104,11 @@ tests: ; $(MAKE) "test_[1234]"
 42.2/test2:  ; $(MAKE) "42.2/$(test2list)"
 18.04/test2: ; $(MAKE) "18.04/$(test2list)"
 16.04/test2: ; $(MAKE) "16.04/$(test2list)"
+7.7/test2:   ; $(MAKE) "7.7/$(test2list)"
+7.6/test2:   ; $(MAKE) "7.6/$(test2list)"
+7.5/test2:   ; $(MAKE) "7.5/$(test2list)"
+7.4/test2:   ; $(MAKE) "7.4/$(test2list)"
+7.3/test2:   ; $(MAKE) "7.3/$(test2list)"
 
 nightrun: checkall
 	$(MAKE) checks
@@ -111,12 +121,15 @@ checkall2018: $(MAKE)
 	$(MAKE) -j1 18.04/test2 16.04/test2
 	$(MAKE) -j1 15.0/test2 42.3/test2
 checkall2019:
-	$(MAKE) -j1 tests
+	$(MAKE) -j1 tests checkall2019.3 checkall2019.2
+checkall2019.3:
 	$(MAKE) -j1 7.7/tests 7.5/tests 7.4/tests 7.3/tests
 	$(MAKE) -j1 18.04/tests 16.04/tests
 	$(MAKE) -j1 15.1/tests 15.0/tests 42.3/tests
+checkall2019.2:
+	$(MAKE) -j1 7.7/test2 7.5/test2 7.4/test2 7.3/test2
 	$(MAKE) -j1 18.04/test2 16.04/test2
-	$(MAKE) -j1 15.1/test2 15.0/test3 42.3/test2
+	$(MAKE) -j1 15.1/test2 15.0/test2 42.3/test2
 
 check: check2018
 	@ echo please run 'make checks' now
