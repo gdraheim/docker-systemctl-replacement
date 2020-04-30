@@ -4798,14 +4798,17 @@ class Systemctl:
         signal.signal(signal.SIGTERM, lambda signum, frame: ignore_signals_and_raise_keyboard_interrupt("SIGTERM"))
         self.start_log_files(units)
         self.sysinit_status(ActiveState = "active", SubState = "running")
+        timestamp = time.time()
         result = None
         while True:
             try:
                 if DEBUG_INITLOOP:
                     logg.debug("DONE InitLoop (sleep %ss)", InitLoopSleep)
-                time.sleep(InitLoopSleep)
-                if DEBUG_INITLOOP:
-                    logg.debug("NEXT InitLoop (after %ss)", InitLoopSleep)
+                sleeping = InitLoopSleep - (time.time() - timestamp)
+                if sleeping > 0:
+                    time.sleep(sleeping)
+                    if DEBUG_INITLOOP:
+                        logg.debug("NEXT InitLoop (after %ss)", sleeping)
                 self.read_log_files(units)
                 if DEBUG_INITLOOP:
                     logg.debug("reap zombies - check current processes")
