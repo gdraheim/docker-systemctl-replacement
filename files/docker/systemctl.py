@@ -2393,7 +2393,7 @@ class Systemctl:
                 if unit not in units:
                     units += [ unit ]
         return self.listen_units(units) and found_all
-    def listen_units(self, units, init = None):
+    def listen_units(self, units):
         """ fails if any socket does not start """
         self.wait_system()
         done = True
@@ -2539,7 +2539,7 @@ class Systemctl:
         for item in unsupported:
             if conf.get("Socket", item, ""):
                 logg.warning("%s: %s sockets are not implemented", conf.name(), item)
-                return False
+                return None
         vListenDatagram = conf.get("Socket", "ListenDatagram", "")
         vListenStream = conf.get("Socket", "ListenStream", "")
         address = vListenStream or vListenDatagram
