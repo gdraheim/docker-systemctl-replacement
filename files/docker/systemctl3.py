@@ -2587,7 +2587,7 @@ class Systemctl:
             symlinks = conf.getlist("Socket", "SymLinks", [])
             dirpath = os.path.dirname(path)
             if not os.path.isdir(dirpath):
-                os.makedirs(path, int(dirmode, 8))
+                os.makedirs(dirpath, int(dirmode, 8))
             if os.path.exists(path):
                 os.unlink(path)
             sock.bind(path)
