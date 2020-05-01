@@ -2401,13 +2401,7 @@ class Systemctl:
             return self.do_listen_unit_from(conf)
     def do_listen_unit_from(self, conf):
         if conf.name().endswith(".socket"):
-            accept = conf.getbool("Socket", "Accept", "no")
-            if accept:
-                service_unit = self.get_socket_service_from(conf)
-                service_conf = self.load_unit_conf(service_unit)
-                return self.do_start_service_from(service_conf)
-            else:
-                return self.do_start_socket_from(conf)
+            return self.do_start_socket_from(conf)
         else:
             logg.error("listen not implemented for unit type: %s", conf.name())
             return False
