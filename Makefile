@@ -47,7 +47,7 @@ real_%: ; ./testsuite.py "$@" -vv
 test: ; $(MAKE) "test_[1234]"
 st_%: ; $(MAKE) 2 && ./testsuite.py "te$@" -vv $(WITH2)
 
-WITH2 = --python=/usr/bin/python  --with=files/docker/systemctl.py
+WITH2 = --python=/usr/bin/python2 --with=files/docker/systemctl.py
 WITH3 = --python=/usr/bin/python3 --with=files/docker/systemctl3.py
 todo/test_%:             ; ./testsuite.py   "$(notdir $@)" -vv --todo
 15.2/test_%:             ; ./testsuite.py   "$(notdir $@)" -vv --image=opensuse/leap:15.2
