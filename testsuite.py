@@ -13206,7 +13206,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         getpid_boot_time = get_proc_started(os.getpid())
         system_boot_time = datetime.datetime.fromtimestamp(getpid_boot_time - 1)
-        systemctl += " -c BOOT_PID_MIN=%s" % (os.getpid())
+        systemctl += " -c BOOT_PID_MIN=%s -c DEBUG_BOOTTIME" % (os.getpid())
         #
         cmd = "{systemctl} enable zzz.service -vv"
         sh____(cmd.format(**locals()))
@@ -13319,7 +13319,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         getpid_boot_time = get_proc_started(os.getpid())
         system_boot_time = datetime.datetime.fromtimestamp(getpid_boot_time - 1)
-        systemctl += " -c BOOT_PID_MIN=%s" % (os.getpid())
+        systemctl += " -c BOOT_PID_MIN=%s -c DEBUG_BOOTTIME" % (os.getpid())
         #
         cmd = "{systemctl} enable zzz.service -vv"
         sh____(cmd.format(**locals()))
@@ -13435,7 +13435,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         #
         pid_max = reads("/proc/sys/kernel/pid_max").strip()
-        systemctl += " -c BOOT_PID_MIN=%s" % (pid_max)
+        systemctl += " -c BOOT_PID_MIN=%s -c DEBUG_BOOTTIME" % (pid_max)
         #
         cmd = "{systemctl} enable zzz.service -vv"
         sh____(cmd.format(**locals()))
@@ -15519,7 +15519,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
-        initsystemctl += " -c DEBUG_BOOTTIME=no"
         #
         debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
         os_remove(debug_log)
@@ -15624,7 +15623,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
-        initsystemctl += " -c DEBUG_BOOTTIME=no"
         #
         debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
         os_remove(debug_log)
@@ -15735,7 +15733,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
-        initsystemctl += " -c DEBUG_BOOTTIME=no"
         #
         debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
         os_remove(debug_log)
@@ -15853,7 +15850,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
-        initsystemctl += " -c DEBUG_BOOTTIME=no"
         #
         debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
         os_remove(debug_log)
@@ -15972,7 +15968,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
-        initsystemctl += " -c DEBUG_BOOTTIME=no"
         #
         debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
         os_remove(debug_log)
@@ -16091,7 +16086,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
-        initsystemctl += " -c DEBUG_BOOTTIME=no"
         #
         debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
         os_remove(debug_log)
@@ -16196,7 +16190,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
-        initsystemctl += " -c DEBUG_BOOTTIME=no"
         #
         debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
         os_remove(debug_log)
@@ -16301,7 +16294,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
-        initsystemctl += " -c DEBUG_BOOTTIME=no"
         #
         debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
         os_remove(debug_log)
@@ -16424,7 +16416,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
-        initsystemctl += " -c DEBUG_BOOTTIME=no"
         #
         debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
         os_remove(debug_log)
@@ -16551,7 +16542,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
-        initsystemctl += " -c DEBUG_BOOTTIME=no"
         #
         debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
         os_remove(debug_log)
@@ -16679,7 +16669,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
-        initsystemctl += " -c DEBUG_BOOTTIME=no"
         #
         debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
         os_remove(debug_log)
@@ -16807,7 +16796,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
-        initsystemctl += " -c DEBUG_BOOTTIME=no"
         #
         debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
         os_remove(debug_log)
@@ -16939,7 +16927,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
-        initsystemctl += " -c DEBUG_BOOTTIME=no"
         #
         debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
         os_remove(debug_log)
@@ -17069,7 +17056,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
-        initsystemctl += " -c DEBUG_BOOTTIME=no"
         #
         debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
         os_remove(debug_log)
@@ -17197,7 +17183,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
-        initsystemctl += " -c DEBUG_BOOTTIME=no"
         #
         debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
         os_remove(debug_log)
@@ -17329,7 +17314,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
-        initsystemctl += " -c DEBUG_BOOTTIME=no"
         #
         debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
         os_remove(debug_log)
@@ -17458,7 +17442,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
-        initsystemctl += " -c DEBUG_BOOTTIME=no"
         #
         debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
         os_remove(debug_log)
@@ -17588,7 +17571,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
-        initsystemctl += " -c DEBUG_BOOTTIME=no"
         #
         debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
         os_remove(debug_log)
@@ -17722,7 +17704,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
-        initsystemctl += " -c DEBUG_BOOTTIME=no"
         #
         debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
         os_remove(debug_log)
@@ -17844,7 +17825,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
-        initsystemctl += " -c DEBUG_BOOTTIME=no"
         #
         debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
         os_remove(debug_log)
@@ -17958,7 +17938,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
-        initsystemctl += " -c DEBUG_BOOTTIME=no"
         #
         debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
         os_remove(debug_log)
@@ -18072,7 +18051,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
-        initsystemctl += " -c DEBUG_BOOTTIME=no"
         #
         debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
         os_remove(debug_log)
@@ -18178,7 +18156,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
-        initsystemctl += " -c DEBUG_BOOTTIME=no"
         #
         debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
         os_remove(debug_log)
@@ -18497,7 +18474,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
-        initsystemctl += " -c DEBUG_BOOTTIME=no"
         #
         debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
         os_remove(debug_log)
@@ -18663,7 +18639,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         systemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
-        systemctl += " -c DEBUG_BOOTTIME=no"
         #
         debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
         os_remove(debug_log)
