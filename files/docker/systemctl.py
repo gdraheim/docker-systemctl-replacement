@@ -96,6 +96,7 @@ ResetLocale = ["LANG", "LANGUAGE", "LC_CTYPE", "LC_NUMERIC", "LC_TIME", "LC_COLL
                "LC_MESSAGES", "LC_PAPER", "LC_NAME", "LC_ADDRESS", "LC_TELEPHONE", "LC_MEASUREMENT",
                "LC_IDENTIFICATION", "LC_ALL"]
 LocaleConf="/etc/locale.conf"
+DefaultListenBacklog=2
 
 ExitWhenNoMoreServices = False
 ExitWhenNoMoreProcs = False
@@ -147,6 +148,19 @@ _sysv_mappings["$local_fs"] = "local-fs.target"
 _sysv_mappings["$network"] = "network.target"
 _sysv_mappings["$remote_fs"] = "remote-fs.target"
 _sysv_mappings["$timer"] = "timers.target"
+
+def strINET(value):
+    if value == socket.SOCK_DGRAM:
+        return "UDP"
+    if value == socket.SOCK_STREAM:
+        return "TCP"
+    if value == socket.SOCK_RAW:
+        return "RAW"
+    if value == socket.SOCK_RDM:
+        return "RDM"
+    if value == socket.SOCK_SEQPACKET:
+        return "SEQ"
+    return "<?>"
 
 def strYes(value):
     if value is True:
@@ -661,11 +675,20 @@ class SystemctlSocket:
         self.skip = skip
     def fileno(self):
         return self.sock.fileno()
-    def listen(self):
-        if not self.skip:
-            self.sock.listen()
+    def listen(self, backlog = None):
+        if backlog is None:
+            backlog = DefaultListenBacklog
+        dgram = (self.sock.type == socket.SOCK_DGRAM)
+        if not dgram and not self.skip:
+            self.sock.listen(backlog)
     def name(self):
         return self.conf.name()
+    def addr(self):
+        stream = self.conf.get("Socket", "ListenStream", "")
+        dgram = self.conf.get("Socket", "ListenDatagram", "")
+        return stream or dgram
+    def close(self):
+        self.sock.close()
 
 class SystemctlConf:
     def __init__(self, data, module = None):
@@ -2410,11 +2433,20 @@ class Systemctl:
         logg.debug("%s: accepting %s", conf.name(), sock.fileno())
         service_unit = self.get_socket_service_from(conf)
         service_conf = self.load_unit_conf(service_unit)
-        conn, addr = sock.accept()
         if service_conf is None or TestAccept: #pragma: no cover
-            stuff = conn.recv(1024)
-            logg.debug("%s: '%s'", conf.name(), stuff)
-            conn.close()
+            if sock.type == socket.SOCK_STREAM:
+                conn, addr = sock.accept()
+                data = conn.recv(1024)
+                logg.debug("%s: '%s'", conf.name(), data)
+                conn.send(b"ERROR: "+data.upper())
+                conn.close()
+                return False
+            if sock.type == socket.SOCK_DGRAM:
+                data, sender = sock.recvfrom(1024)
+                logg.debug("%s: '%s'", conf.name(), data)
+                sock.sendto(b"ERROR: "+data.upper(), sender)
+                return False
+            logg.error("can not accept socket type %s", strINET(sock.type))
             return False
         return self.do_start_service_from(service_conf)
     def get_socket_service_from(self, conf):
@@ -2516,13 +2548,7 @@ class Systemctl:
             sock = self.create_unix_socket(conf, path, not vListenStream)
             self.set_status_from(conf, "path", path)
             return sock
-        m = re.match(r"(\d+)", address)
-        if m:
-            port = m.group(1)
-            sock = self.create_port_socket(conf, port, not vListenStream)
-            self.set_status_from(conf, "port", port)
-            return sock
-        m = re.match(r"(\d+[.]\d+[.]\d+[.]\d+[.]):(\d+)", address)
+        m = re.match(r"(\d+[.]\d*[.]\d*[.]\d+):(\d+)", address)
         if m:
             addr, port = m.group(1), m.group(2)
             sock = self.create_port_ipv4_socket(conf, addr, port, not vListenStream)
@@ -2535,6 +2561,12 @@ class Systemctl:
             sock = self.create_port_ipv6_socket(conf, addr, port, not vListenStream)
             self.set_status_from(conf, "port", port)
             self.set_status_from(conf, "addr", addr)
+            return sock
+        m = re.match(r"(\d+)$", address)
+        if m:
+            port = m.group(1)
+            sock = self.create_port_socket(conf, port, not vListenStream)
+            self.set_status_from(conf, "port", port)
             return sock
         if re.match("@.*", address):
             logg.warning("%s: abstract namespace socket not implemented (%s)", conf.name(), address)
@@ -2578,30 +2610,33 @@ class Systemctl:
             return None
         return sock
     def create_port_socket(self, conf, port, dgram):
-        sock_stream = dgram and socket.SOCK_DGRAM or socket.SOCK_STREAM
-        sock = socket.socket(socket.AF_INET, sock_stream)
+        inet = dgram and socket.SOCK_DGRAM or socket.SOCK_STREAM
+        sock = socket.socket(socket.AF_INET, inet)
         try:
             sock.bind(('', int(port)))
+            logg.info("%s: bound socket at %s %s:%s", conf.name(), strINET(inet), "*", port)
         except Exception as e:
             logg.error("%s: create socket failed (%s:%s): %s", conf.name(), "*", port, e)
             sock.close()
             return None
         return sock
     def create_port_ipv4_socket(self, conf, addr, port, dgram):
-        sock_stream = dgram and socket.SOCK_DGRAM or socket.SOCK_STREAM
-        sock = socket.socket(socket.AF_INET, sock_stream)
+        inet = dgram and socket.SOCK_DGRAM or socket.SOCK_STREAM
+        sock = socket.socket(socket.AF_INET, inet)
         try:
             sock.bind((addr, int(port)))
+            logg.info("%s: bound socket at %s %s:%s", conf.name(), strINET(inet), addr, port)
         except Exception as e:
             logg.error("%s: create socket failed (%s:%s): %s", conf.name(), addr, port, e)
             sock.close()
             return None
         return sock
     def create_port_ipv6_socket(self, conf, addr, port, dgram):
-        sock_stream = dgram and socket.SOCK_DGRAM or socket.SOCK_STREAM
-        sock = socket.socket(socket.AF_INET6, sock_stream)
+        inet = dgram and socket.SOCK_DGRAM or socket.SOCK_STREAM
+        sock = socket.socket(socket.AF_INET6, inet)
         try:
             sock.bind((addr, int(port)))
+            logg.info("%s: bound socket at %s [%s]:%s", conf.name(), strINET(inet), addr, port)
         except Exception as e:
             logg.error("%s: create socket failed ([%s]:%s): %s", conf.name(), addr, port, e)
             sock.close()
@@ -2625,7 +2660,7 @@ class Systemctl:
         parts = path.split(os.pathsep)
         for part in parts:
             if os.path.isfile(part):
-                for var, val in self.read_env_file(part):
+                for var, val in self.read_env_file("-"+part):
                     locale[var] = val
                     env[var] = val
         if "LANG" not in locale:
@@ -5005,6 +5040,7 @@ class Systemctl:
             for sock in self._sockets.values():
                 listen.register(sock)
                 sock.listen()
+                logg.debug("%s: listen %s", sock.name(), sock.addr())
         self.sysinit_status(ActiveState = "active", SubState = "running")
         timestamp = time.time()
         result = None
