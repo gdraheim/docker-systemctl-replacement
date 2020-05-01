@@ -32,8 +32,8 @@ DEBUG_STATUS = False
 DEBUG_BOOTTIME = True
 DEBUG_INITLOOP = False
 DEBUG_KILLALL = False
-DEBUG_LISTEN = False
-DEBUG_ACCEPT = False
+TestListen = False
+TestAccept = False
 
 NOT_A_PROBLEM = 0   # FOUND_OK
 NOT_OK = 1          # FOUND_ERROR
@@ -2410,7 +2410,7 @@ class Systemctl:
         service_unit = self.get_socket_service_from(conf)
         service_conf = self.load_unit_conf(service_unit)
         conn, addr = sock.accept()
-        if service_conf is None or DEBUG_ACCEPT: #pragma: no cover
+        if service_conf is None or TestAccept: #pragma: no cover
             stuff = conn.recv(1024)
             logg.debug("%s: '%s'", conf.name(), stuff)
             conn.close()
@@ -2463,7 +2463,7 @@ class Systemctl:
             self.write_status_from(conf, AS=state)
         else:
             sock = self.create_socket(conf)
-            if sock and DEBUG_LISTEN:
+            if sock and TestListen:
                 self._sockets[conf.name()] = SystemctlSocket(conf, sock)
                 service_result = "success"
             else:
@@ -5493,12 +5493,20 @@ if __name__ == "__main__":
     #
     for setting in opt.config:
         if "=" in setting:
-            nam, val = setting.split("=", 1)
+            nam, val = setting, "1"
+            if "=" in setting:
+                nam, val = setting.split("=", 1)
+            elif nam.startswith("no-") or nam.startswith("NO-"):
+                nam, val = nam[3:], "0"
+            elif nam.stratswith("No") or nam.startswith("NO"):
+                nam, val = nam[2:], "0"
+            if nam.startswith("__"):
+                nam = "DEBUG_"+nam[2:]
             if nam in globals():
                 old = globals()[nam]
                 if old is False or old is True:
                     logg.debug("yes %s=%s", nam, val)
-                    globals()[nam] = (val in ("true", "True", "TRUE", "yes", "y", "Y", "YES"))
+                    globals()[nam] = (val in ("true", "True", "TRUE", "yes", "y", "Y", "YES", "1"))
                     logg.debug("... _show_all=%s", _show_all)
                 elif isinstance(old, float):
                     logg.debug("num %s=%s", nam, val)
