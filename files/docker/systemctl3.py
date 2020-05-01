@@ -148,6 +148,19 @@ _sysv_mappings["$network"] = "network.target"
 _sysv_mappings["$remote_fs"] = "remote-fs.target"
 _sysv_mappings["$timer"] = "timers.target"
 
+def strINET(value):
+    if value == socket.SOCK_DGRAM:
+        return "UDP"
+    if value == socket.SOCK_STREAM:
+        return "TCP"
+    if value == socket.SOCK_RAW:
+        return "RAW"
+    if value == socket.SOCK_RDM:
+        return "RDM"
+    if value == socket.SOCK_SEQPACKET:
+        return "SEQ"
+    return "<?>"
+
 def strYes(value):
     if value is True:
         return "yes"
@@ -662,10 +675,15 @@ class SystemctlSocket:
     def fileno(self):
         return self.sock.fileno()
     def listen(self):
-        if not self.skip:
+        dgram = (self.sock.type == socket.SOCK_DGRAM)
+        if not dgram and not self.skip:
             self.sock.listen()
     def name(self):
         return self.conf.name()
+    def addr(self):
+        stream = self.conf.get("Socket", "ListenStream", "")
+        dgram = self.conf.get("Socket", "ListenDatagram", "")
+        return stream or dgram
 
 class SystemctlConf:
     def __init__(self, data, module = None):
@@ -2410,11 +2428,20 @@ class Systemctl:
         logg.debug("%s: accepting %s", conf.name(), sock.fileno())
         service_unit = self.get_socket_service_from(conf)
         service_conf = self.load_unit_conf(service_unit)
-        conn, addr = sock.accept()
         if service_conf is None or TestAccept: #pragma: no cover
-            stuff = conn.recv(1024)
-            logg.debug("%s: '%s'", conf.name(), stuff)
-            conn.close()
+            if sock.type == socket.SOCK_STREAM:
+                conn, addr = sock.accept()
+                data = conn.recv(1024)
+                logg.debug("%s: '%s'", conf.name(), data)
+                conn.send(b"ERROR: "+data.upper())
+                conn.close()
+                return False
+            if sock.type == socket.SOCK_DGRAM:
+                data, sender = sock.recvfrom(1024)
+                logg.debug("%s: '%s'", conf.name(), data)
+                sock.sendto(b"ERROR: "+data.upper(), sender)
+                return False
+            logg.error("can not accept socket type %s", strINET(sock.type))
             return False
         return self.do_start_service_from(service_conf)
     def get_socket_service_from(self, conf):
@@ -2578,10 +2605,11 @@ class Systemctl:
             return None
         return sock
     def create_port_socket(self, conf, port, dgram):
-        sock_stream = dgram and socket.SOCK_DGRAM or socket.SOCK_STREAM
-        sock = socket.socket(socket.AF_INET, sock_stream)
+        inet = dgram and socket.SOCK_DGRAM or socket.SOCK_STREAM
+        sock = socket.socket(socket.AF_INET, inet)
         try:
             sock.bind(('', int(port)))
+            logg.info("%s: bound socket at %s %s:%s", conf.name(), strINET(inet), "*", port)
         except Exception as e:
             logg.error("%s: create socket failed (%s:%s): %s", conf.name(), "*", port, e)
             sock.close()
@@ -2592,6 +2620,7 @@ class Systemctl:
         sock = socket.socket(socket.AF_INET, sock_stream)
         try:
             sock.bind((addr, int(port)))
+            logg.info("%s: bound socket at %s %s:%s", conf.name(), strINET(inet), addr, port)
         except Exception as e:
             logg.error("%s: create socket failed (%s:%s): %s", conf.name(), addr, port, e)
             sock.close()
@@ -2602,6 +2631,7 @@ class Systemctl:
         sock = socket.socket(socket.AF_INET6, sock_stream)
         try:
             sock.bind((addr, int(port)))
+            logg.info("%s: bound socket at %s [%s]:%s", conf.name(), strINET(inet), addr, port)
         except Exception as e:
             logg.error("%s: create socket failed ([%s]:%s): %s", conf.name(), addr, port, e)
             sock.close()
@@ -5005,6 +5035,7 @@ class Systemctl:
             for sock in self._sockets.values():
                 listen.register(sock)
                 sock.listen()
+                logg.debug("%s: listen %s", sock.name(), sock.addr())
         self.sysinit_status(ActiveState = "active", SubState = "running")
         timestamp = time.time()
         result = None
