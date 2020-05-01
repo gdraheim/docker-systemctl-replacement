@@ -29169,7 +29169,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} {package} install -y {python}"
+        cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} {package} install -y rsyslog"
         sh____(cmd.format(**locals()))
@@ -29707,7 +29707,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} {package} install -y {python}"
+        cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} {package} install -y rsyslog"
         sh____(cmd.format(**locals()))
