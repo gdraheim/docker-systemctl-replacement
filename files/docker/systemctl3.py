@@ -96,6 +96,7 @@ ResetLocale = ["LANG", "LANGUAGE", "LC_CTYPE", "LC_NUMERIC", "LC_TIME", "LC_COLL
                "LC_MESSAGES", "LC_PAPER", "LC_NAME", "LC_ADDRESS", "LC_TELEPHONE", "LC_MEASUREMENT",
                "LC_IDENTIFICATION", "LC_ALL"]
 LocaleConf="/etc/locale.conf"
+DefaultListenBacklog=2
 
 ExitWhenNoMoreServices = False
 ExitWhenNoMoreProcs = False
@@ -674,10 +675,12 @@ class SystemctlSocket:
         self.skip = skip
     def fileno(self):
         return self.sock.fileno()
-    def listen(self):
+    def listen(self, backlog = None):
+        if backlog is None:
+            backlog = DefaultListenBacklog
         dgram = (self.sock.type == socket.SOCK_DGRAM)
         if not dgram and not self.skip:
-            self.sock.listen()
+            self.sock.listen(backlog)
     def name(self):
         return self.conf.name()
     def addr(self):
