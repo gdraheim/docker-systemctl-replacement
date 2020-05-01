@@ -29,7 +29,7 @@ if sys.version[0] == '3':
 
 DEBUG_AFTER = False
 DEBUG_STATUS = False
-DEBUG_BOOTTIME = True
+DEBUG_BOOTTIME = False
 DEBUG_INITLOOP = False
 DEBUG_KILLALL = False
 TestListen = False
