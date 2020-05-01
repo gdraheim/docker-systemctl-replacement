@@ -21,6 +21,7 @@ import time
 import socket
 import datetime
 import fcntl
+import select
 
 if sys.version[0] == '3':
     basestring = str
@@ -338,7 +339,6 @@ def _var_path(path):
         return re.sub("^(/var)?", get_runtime_dir(), path)
     return path
 
-
 def shutil_setuid(user = None, group = None, xgroups = None):
     """ set fork-child uid/gid (returns pw-info env-settings)"""
     if group:
@@ -650,6 +650,19 @@ class SystemctlConfigParser(SystemctlConfData):
 
 # UnitConfParser = ConfigParser.RawConfigParser
 UnitConfParser = SystemctlConfigParser
+
+class SystemctlSocket:
+    def __init__(self, conf, sock, skip = False):
+        self.conf = conf
+        self.sock = sock
+        self.skip = skip
+    def fileno(self):
+        return self.sock.fileno()
+    def listen(self):
+        if not self.skip:
+            self.sock.listen()
+    def name(self):
+        return self.conf.name()
 
 class SystemctlConf:
     def __init__(self, data, module = None):
@@ -1018,6 +1031,7 @@ class Systemctl:
         self._SYSTEMD_PRESET_PATH = None
         self._restarted_unit = {}
         self._restart_failed_units = {}
+        self._sockets = {}
     def user(self):
         return self._user_getlogin
     def user_mode(self):
@@ -2338,6 +2352,74 @@ class Systemctl:
                 logg.debug("post-start done (%s) <-%s>", 
                     run.returncode or "OK", run.signal or "")
             return True
+    def listen_modules(self, *modules):
+        """ [UNIT]... -- listen socket units"""
+        found_all = True
+        units = []
+        for module in modules:
+            matched = self.match_units(to_list(module))
+            if not matched:
+                logg.error("Unit %s not found.", unit_of(module))
+                self.error |= NOT_FOUND
+                found_all = False
+                continue
+            for unit in matched:
+                if unit not in units:
+                    units += [ unit ]
+        return self.listen_units(units) and found_all
+    def listen_units(self, units, init = None):
+        """ fails if any socket does not start """
+        self.wait_system()
+        done = True
+        started_units = []
+        for unit in self.sortedAfter(units):
+            started_units.append(unit)
+            if not self.listen_unit(unit):
+                done = False
+        logg.info("init-loop start")
+        sig = self.init_loop_until_stop(started_units)
+        logg.info("init-loop %s", sig)
+        for unit in reversed(started_units):
+            pass # self.stop_unit(unit)
+        return done
+    def listen_unit(self, unit):
+        conf = self.load_unit_conf(unit)
+        if conf is None:
+            logg.debug("unit could not be loaded (%s)", unit)
+            logg.error("Unit %s not found.", unit)
+            return False
+        if self.not_user_conf(conf):
+            logg.error("Unit %s not for --user mode", unit)
+            return False
+        return self.listen_unit_from(conf)
+    def listen_unit_from(self, conf):
+        if not conf: return False
+        with waitlock(conf):
+            logg.debug(" listen unit %s => %s", conf.name(), strQ(conf.filename()))
+            return self.do_listen_unit_from(conf)
+    def do_listen_unit_from(self, conf):
+        if conf.name().endswith(".socket"):
+            accept = conf.getbool("Socket", "Accept", "no")
+            if accept:
+                service_unit = self.get_socket_service_from(conf)
+                service_conf = self.load_unit_conf(service_unit)
+                return self.do_start_service_from(service_conf)
+            else:
+                return self.do_start_socket_from(conf)
+        else:
+            logg.error("listen not implemented for unit type: %s", conf.name())
+            return False
+    def do_accept_socket_from(self, conf, sock):
+        logg.debug("%s: accepting %s", conf.name(), sock.fileno())
+        service_unit = self.get_socket_service_from(conf)
+        service_conf = self.load_unit_conf(service_unit)
+        conn, addr = sock.accept()
+        if service_conf is None: #pragma: no cover
+            stuff = conn.recv(1024)
+            logg.debug("%s: '%s'", conf.name(), stuff)
+            conn.close()
+            return False
+        return self.do_start_service_from(service_conf)
     def get_socket_service_from(self, conf):
         socket_unit = conf.name()
         accept = conf.getbool("Socket", "Accept", "no")
@@ -2350,6 +2432,7 @@ class Systemctl:
         runs = "socket"
         timeout = self.get_SocketTimeoutSec(conf)
         accept = conf.getbool("Socket", "Accept", "no")
+        stream = conf.get("Socket", "ListenStream", "")
         service_unit = self.get_socket_service_from(conf)
         service_conf = self.load_unit_conf(service_unit)
         if service_conf is None:
@@ -2373,17 +2456,26 @@ class Systemctl:
                     active = "failed"
                     self.write_status_from(conf, AS=active )
                     return False
-        if not accept:
+        if accept and stream:
             # we do not listen but have the service started right away
             done = self.do_start_service_from(service_conf)
             service_result = done and "success" or "failed"
+            if not self.is_active_from(service_conf):
+                service_result = "failed"
+            state = service_result
+            if service_result in ["success"]: state = "active"
+            self.write_status_from(conf, AS=state)
         else:
-            # we do not listen but have the service started right away
-            done = self.do_start_service_from(service_conf)
-            service_result = done and "success" or "failed"
+            sock = self.create_socket(conf)
+            if sock:
+                self._sockets[conf.name()] = SystemctlSocket(conf, sock)
+                service_result = "success"
+            else:
+                service_result = "failed"
+            state = sock and "active" or "failed"
+            self.write_status_from(conf, AS=state)
         # POST sequence
-        if not self.is_active_from(conf):
-            logg.warning("%s start not active", runs)
+        if service_result in ["failed"]:
             # according to the systemd documentation, a failed start-sequence
             # should execute the ExecStopPost sequence allowing some cleanup.
             env["SERVICE_RESULT"] = service_result
@@ -2411,6 +2503,113 @@ class Systemctl:
                     run.returncode or "OK", run.signal or "")
             return True
         return False
+    def create_socket(self, conf):
+        unsupported = ["ListenUSBFunction", "ListenMessageQueue", "ListenNetlink"]
+        unsupported += [ "ListenSpecial", "ListenFIFO", "ListenSequentialPacket"]
+        for item in unsupported:
+            if conf.get("Socket", item, ""):
+                logg.warning("%s: %s sockets are not implemented", conf.name(), item)
+                return False
+        vListenDatagram = conf.get("Socket", "ListenDatagram", "")
+        vListenStream = conf.get("Socket", "ListenStream", "")
+        address = vListenStream or vListenDatagram
+        m = re.match(r"(/.*)", address)
+        if m:
+            path = m.group(1)
+            sock = self.create_unix_socket(conf, path, not vListenStream)
+            self.set_status_from(conf, "path", path)
+            return sock
+        m = re.match(r"(\d+)", address)
+        if m:
+            port = m.group(1)
+            sock = self.create_port_socket(conf, port, not vListenStream)
+            self.set_status_from(conf, "port", port)
+            return sock
+        m = re.match(r"(\d+[.]\d+[.]\d+[.]\d+[.]):(\d+)", address)
+        if m:
+            addr, port = m.group(1), m.group(2)
+            sock = self.create_port_ipv4_socket(conf, addr, port, not vListenStream)
+            self.set_status_from(conf, "port", port)
+            self.set_status_from(conf, "addr", addr)
+            return sock
+        m = re.match(r"\[([0-9a-fA-F:]*)\]:(\d+)", address)
+        if m:
+            addr, port = m.group(1), m.group(2)
+            sock = self.create_port_ipv6_socket(conf, addr, port, not vListenStream)
+            self.set_status_from(conf, "port", port)
+            self.set_status_from(conf, "addr", addr)
+            return sock
+        if re.match("@.*", address):
+            logg.warning("%s: abstract namespace socket not implemented (%s)", conf.name(), address)
+            return None
+        if re.match("vsock:.*", address):
+            logg.warning("%s: virtual machine socket not implemented (%s)", conf.name(), address)
+            return None
+        logg.error("%s: unknown socket address type (%s)", conf.name(), address)
+        return None
+    def create_unix_socket(self, conf, path, dgram):
+        sock_stream = dgram and socket.SOCK_DGRAM or socket.SOCK_STREAM
+        sock = socket.socket(socket.AF_UNIX, sock_stream)
+        try:
+            dirmode = conf.get("Socket", "DirectoryMode", "0755")
+            mode = conf.get("Socket", "SocketMode", "0666")
+            user = conf.get("Socket", "SocketUser", "")
+            group = conf.get("Socket", "SocketGroup", "")
+            symlinks = conf.getlist("Socket", "SymLinks", [])
+            dirpath = os.path.dirname(path)
+            if not os.path.isdir(dirpath):
+                os.makedirs(path, int(dirmode, 8))
+            if os.path.exists(path):
+                os.unlink(path)
+            sock.bind(path)
+            os.fchmod(sock.fileno(), int(mode, 8))
+            if user or group:
+                uid, gid = -1, -1
+                if user:
+                    import pwd
+                    uid = pwd.getpwnam(user).pw_uid
+                    gid = pwd.getpwnam(user).pw_gid
+                if group:
+                    import grp
+                    gid = grp.getgrnam(group).gr_gid
+                os.fchown(sock.fileno(), uid, gid)
+            if symlinks:
+                logg.warning("%s: symlinks for socket not implemented (%s)", conf.name(), path)
+        except Exception as e:
+            logg.error("%s: create socket failed [%s]: %s", conf.name(), path, e)
+            sock.close()
+            return None
+        return sock
+    def create_port_socket(self, conf, port, dgram):
+        sock_stream = dgram and socket.SOCK_DGRAM or socket.SOCK_STREAM
+        sock = socket.socket(socket.AF_INET, sock_stream)
+        try:
+            sock.bind(('', int(port)))
+        except Exception as e:
+            logg.error("%s: create socket failed (%s:%s): %s", conf.name(), "*", port, e)
+            sock.close()
+            return None
+        return sock
+    def create_port_ipv4_socket(self, conf, addr, port, dgram):
+        sock_stream = dgram and socket.SOCK_DGRAM or socket.SOCK_STREAM
+        sock = socket.socket(socket.AF_INET, sock_stream)
+        try:
+            sock.bind((addr, int(port)))
+        except Exception as e:
+            logg.error("%s: create socket failed (%s:%s): %s", conf.name(), addr, port, e)
+            sock.close()
+            return None
+        return sock
+    def create_port_ipv6_socket(self, conf, addr, port, dgram):
+        sock_stream = dgram and socket.SOCK_DGRAM or socket.SOCK_STREAM
+        sock = socket.socket(socket.AF_INET6, sock_stream)
+        try:
+            sock.bind((addr, int(port)))
+        except Exception as e:
+            logg.error("%s: create socket failed ([%s]:%s): %s", conf.name(), addr, port, e)
+            sock.close()
+            return None
+        return sock
     def extend_exec_env(self, env):
         env = env.copy()
         # implant DefaultPath into $PATH
@@ -4395,12 +4594,14 @@ class Systemctl:
         if self.user_mode():
             logg.debug("check for default user services")
             units = self.enabled_default_user_local_units(".socket", "sockets.target", igno)
+            units += self.enabled_default_user_local_units(".socket", default_target, igno) #FIXME?
             units += self.enabled_default_user_local_units(".service", default_target, igno)
             units += self.enabled_default_user_system_units(".service", default_target, igno)
             return units
         else:
             logg.debug("check for default system services")
             units = self.enabled_default_system_units(".socket", "sockets.target", igno)
+            units += self.enabled_default_system_units(".socket", default_target, igno) #FIXME?
             units += self.enabled_default_system_units(".service", default_target, igno)
             units += self.enabled_default_sysv_units(sysv, default_target, igno)
             return units
@@ -4797,6 +4998,12 @@ class Systemctl:
         signal.signal(signal.SIGINT, lambda signum, frame: ignore_signals_and_raise_keyboard_interrupt("SIGINT"))
         signal.signal(signal.SIGTERM, lambda signum, frame: ignore_signals_and_raise_keyboard_interrupt("SIGTERM"))
         self.start_log_files(units)
+        listen = None
+        if self._sockets:
+            listen = select.poll()
+            for sock in self._sockets.values():
+                listen.register(sock)
+                sock.listen()
         self.sysinit_status(ActiveState = "active", SubState = "running")
         timestamp = time.time()
         result = None
@@ -4804,11 +5011,23 @@ class Systemctl:
             try:
                 if DEBUG_INITLOOP:
                     logg.debug("DONE InitLoop (sleep %ss)", InitLoopSleep)
-                sleeping = InitLoopSleep - (time.time() - timestamp)
-                if sleeping > 0:
-                    time.sleep(sleeping)
-                    if DEBUG_INITLOOP:
-                        logg.debug("NEXT InitLoop (after %ss)", sleeping)
+                sleep_sec = InitLoopSleep - (time.time() - timestamp)
+                if sleep_sec < MinimumYield:
+                    sleep_sec = MinimumYield
+                if listen is not None:
+                    sleep_ms = int(sleep_sec * 1000)
+                    logg.debug("POLL %s sockets (sleep %sms)", len(self._sockets), sleep_ms)
+                    accepting = listen.poll(sleep_ms)
+                    for sock_fileno, event in accepting:
+                        for sock in self._sockets.values():
+                            if sock.fileno() == sock_fileno:
+                                logg.debug("%s: accepting %s", sock.name(), sock_fileno)
+                                self.do_accept_socket_from(sock.conf, sock.sock)
+                else:
+                    time.sleep(sleep_sec)
+                timestamp = time.time()
+                if DEBUG_INITLOOP:
+                    logg.debug("NEXT InitLoop (after %ss)", sleep_sec)
                 self.read_log_files(units)
                 if DEBUG_INITLOOP:
                     logg.debug("reap zombies - check current processes")
@@ -4846,6 +5065,13 @@ class Systemctl:
                 logg.info("interrupted - exception %s", e)
                 raise
         self.sysinit_status(ActiveState = None, SubState = "degraded")
+        if listen is not None and self._sockets:
+            for sock in self._sockets.values():
+                try:
+                    listen.unregister(sock)
+                    sock.close()
+                except Exception as e:
+                    logg.warning("close socket: %s", e)
         self.read_log_files(units)
         self.read_log_files(units)
         self.stop_log_files(units)
@@ -4981,7 +5207,9 @@ class Systemctl:
                         if DEBUG_KILLALL: logg.debug("cmd.exe '%s'", cmd_exe)
                         if fnmatch.fnmatchcase(cmd_exe, target): found = "exe"
                         if len(cmd) > 1 and cmd_exe.startswith("python"): 
-                            cmd_arg = os.path.basename(cmd[1])
+                            X = 1
+                            while cmd[X].startswith("-"): X += 1 # atleast '-u' unbuffered
+                            cmd_arg = os.path.basename(cmd[X])
                             if DEBUG_KILLALL: logg.debug("cmd.arg '%s'", cmd_arg)
                             if fnmatch.fnmatchcase(cmd_arg, target): found = "arg"
                             if cmd_exe.startswith("coverage") or cmd_arg.startswith("coverage"):
