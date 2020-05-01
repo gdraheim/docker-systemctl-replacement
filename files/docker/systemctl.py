@@ -2485,23 +2485,24 @@ class Systemctl:
                     active = "failed"
                     self.write_status_from(conf, AS=active )
                     return False
-        if accept and stream:
+        listening=False
+        if not accept:
+            sock = self.create_socket(conf)
+            if sock and TestListen:
+                listening=True
+                self._sockets[conf.name()] = SystemctlSocket(conf, sock)
+                service_result = "success"
+                state = sock and "active" or "failed"
+                self.write_status_from(conf, AS=state)
+        if not listening:
             # we do not listen but have the service started right away
             done = self.do_start_service_from(service_conf)
             service_result = done and "success" or "failed"
             if not self.is_active_from(service_conf):
                 service_result = "failed"
             state = service_result
-            if service_result in ["success"]: state = "active"
-            self.write_status_from(conf, AS=state)
-        else:
-            sock = self.create_socket(conf)
-            if sock and TestListen:
-                self._sockets[conf.name()] = SystemctlSocket(conf, sock)
-                service_result = "success"
-            else:
-                service_result = "failed"
-            state = sock and "active" or "failed"
+            if service_result in ["success"]: 
+                state = "active"
             self.write_status_from(conf, AS=state)
         # POST sequence
         if service_result in ["failed"]:
