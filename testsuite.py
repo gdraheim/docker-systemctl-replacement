@@ -1019,7 +1019,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
         self.assertEqual(lines(out), [])
         self.assertEqual(end, 0)
-        self.assertTrue(greps(err, "not a config setting format -c 'SomeNonsenseHere'"))
+        self.assertTrue(greps(err, "unknown target config -c 'SomeNonsenseHere'"))
         self.rm_testdir()
         self.rm_zzfiles(root)
         self.coverage()
