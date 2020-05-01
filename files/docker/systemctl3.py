@@ -32,6 +32,8 @@ DEBUG_STATUS = False
 DEBUG_BOOTTIME = True
 DEBUG_INITLOOP = False
 DEBUG_KILLALL = False
+DEBUG_LISTEN = False
+DEBUG_ACCEPT = False
 
 NOT_A_PROBLEM = 0   # FOUND_OK
 NOT_OK = 1          # FOUND_ERROR
@@ -2414,7 +2416,7 @@ class Systemctl:
         service_unit = self.get_socket_service_from(conf)
         service_conf = self.load_unit_conf(service_unit)
         conn, addr = sock.accept()
-        if service_conf is None: #pragma: no cover
+        if service_conf is None or DEBUG_ACCEPT: #pragma: no cover
             stuff = conn.recv(1024)
             logg.debug("%s: '%s'", conf.name(), stuff)
             conn.close()
@@ -2467,7 +2469,7 @@ class Systemctl:
             self.write_status_from(conf, AS=state)
         else:
             sock = self.create_socket(conf)
-            if sock:
+            if sock and DEBUG_LISTEN:
                 self._sockets[conf.name()] = SystemctlSocket(conf, sock)
                 service_result = "success"
             else:
