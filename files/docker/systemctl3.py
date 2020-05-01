@@ -5492,40 +5492,35 @@ if __name__ == "__main__":
         _user_mode = False # override --user
     #
     for setting in opt.config:
+        nam, val = setting, "1"
         if "=" in setting:
-            nam, val = setting, "1"
-            if "=" in setting:
-                nam, val = setting.split("=", 1)
-            elif nam.startswith("no-") or nam.startswith("NO-"):
-                nam, val = nam[3:], "0"
-            elif nam.stratswith("No") or nam.startswith("NO"):
-                nam, val = nam[2:], "0"
-            if nam.startswith("__"):
-                nam = "DEBUG_"+nam[2:]
-            if nam in globals():
-                old = globals()[nam]
-                if old is False or old is True:
-                    logg.debug("yes %s=%s", nam, val)
-                    globals()[nam] = (val in ("true", "True", "TRUE", "yes", "y", "Y", "YES", "1"))
-                    logg.debug("... _show_all=%s", _show_all)
-                elif isinstance(old, float):
-                    logg.debug("num %s=%s", nam, val)
-                    globals()[nam] = float(val)
-                    logg.debug("... MinimumYield=%s", MinimumYield)
-                elif isinstance(old, int):
-                    logg.debug("int %s=%s", nam, val)
-                    globals()[nam] = int(val)
-                    logg.debug("... InitLoopSleep=%s", InitLoopSleep)
-                elif isinstance(old, basestring):
-                    logg.debug("str %s=%s", nam, val)
-                    globals()[nam] = val.strip()
-                    logg.debug("... SysInitTarget=%s", SysInitTarget)
-                else:
-                    logg.warning("(ignored) unknown target type -c '%s' : %s", nam, type(old))
+            nam, val = setting.split("=", 1)
+        elif nam.startswith("no-") or nam.startswith("NO-"):
+            nam, val = nam[3:], "0"
+        elif nam.startswith("No") or nam.startswith("NO"):
+            nam, val = nam[2:], "0"
+        if nam in globals():
+            old = globals()[nam]
+            if old is False or old is True:
+                logg.debug("yes %s=%s", nam, val)
+                globals()[nam] = (val in ("true", "True", "TRUE", "yes", "y", "Y", "YES", "1"))
+                logg.debug("... _show_all=%s", _show_all)
+            elif isinstance(old, float):
+                logg.debug("num %s=%s", nam, val)
+                globals()[nam] = float(val)
+                logg.debug("... MinimumYield=%s", MinimumYield)
+            elif isinstance(old, int):
+                logg.debug("int %s=%s", nam, val)
+                globals()[nam] = int(val)
+                logg.debug("... InitLoopSleep=%s", InitLoopSleep)
+            elif isinstance(old, basestring):
+                logg.debug("str %s=%s", nam, val)
+                globals()[nam] = val.strip()
+                logg.debug("... SysInitTarget=%s", SysInitTarget)
             else:
-                logg.warning("(ignored) unknown target config -c '%s' : no such variable", nam)
+                logg.warning("(ignored) unknown target type -c '%s' : %s", nam, type(old))
         else:
-            logg.warning("(ignored) not a config setting format -c '%s'", setting)
+            logg.warning("(ignored) unknown target config -c '%s' : no such variable", nam)
     #
     if _user_mode:
         systemctl_debug_log = os_path(_root, _var_path(SYSTEMCTL_DEBUG_LOG))
