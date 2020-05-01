@@ -684,6 +684,8 @@ class SystemctlSocket:
         stream = self.conf.get("Socket", "ListenStream", "")
         dgram = self.conf.get("Socket", "ListenDatagram", "")
         return stream or dgram
+    def close(self):
+        self.sock.close()
 
 class SystemctlConf:
     def __init__(self, data, module = None):
@@ -2543,13 +2545,7 @@ class Systemctl:
             sock = self.create_unix_socket(conf, path, not vListenStream)
             self.set_status_from(conf, "path", path)
             return sock
-        m = re.match(r"(\d+)", address)
-        if m:
-            port = m.group(1)
-            sock = self.create_port_socket(conf, port, not vListenStream)
-            self.set_status_from(conf, "port", port)
-            return sock
-        m = re.match(r"(\d+[.]\d+[.]\d+[.]\d+[.]):(\d+)", address)
+        m = re.match(r"(\d+[.]\d*[.]\d*[.]\d+):(\d+)", address)
         if m:
             addr, port = m.group(1), m.group(2)
             sock = self.create_port_ipv4_socket(conf, addr, port, not vListenStream)
@@ -2562,6 +2558,12 @@ class Systemctl:
             sock = self.create_port_ipv6_socket(conf, addr, port, not vListenStream)
             self.set_status_from(conf, "port", port)
             self.set_status_from(conf, "addr", addr)
+            return sock
+        m = re.match(r"(\d+)$", address)
+        if m:
+            port = m.group(1)
+            sock = self.create_port_socket(conf, port, not vListenStream)
+            self.set_status_from(conf, "port", port)
             return sock
         if re.match("@.*", address):
             logg.warning("%s: abstract namespace socket not implemented (%s)", conf.name(), address)
@@ -2616,8 +2618,8 @@ class Systemctl:
             return None
         return sock
     def create_port_ipv4_socket(self, conf, addr, port, dgram):
-        sock_stream = dgram and socket.SOCK_DGRAM or socket.SOCK_STREAM
-        sock = socket.socket(socket.AF_INET, sock_stream)
+        inet = dgram and socket.SOCK_DGRAM or socket.SOCK_STREAM
+        sock = socket.socket(socket.AF_INET, inet)
         try:
             sock.bind((addr, int(port)))
             logg.info("%s: bound socket at %s %s:%s", conf.name(), strINET(inet), addr, port)
@@ -2627,8 +2629,8 @@ class Systemctl:
             return None
         return sock
     def create_port_ipv6_socket(self, conf, addr, port, dgram):
-        sock_stream = dgram and socket.SOCK_DGRAM or socket.SOCK_STREAM
-        sock = socket.socket(socket.AF_INET6, sock_stream)
+        inet = dgram and socket.SOCK_DGRAM or socket.SOCK_STREAM
+        sock = socket.socket(socket.AF_INET6, inet)
         try:
             sock.bind((addr, int(port)))
             logg.info("%s: bound socket at %s [%s]:%s", conf.name(), strINET(inet), addr, port)
