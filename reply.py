@@ -224,7 +224,7 @@ if __name__ == "__main__":
     o.add_option("-v", "--verbose", action="count", default=0,
        help="increase logging level [%default]")
     opt, args = o.parse_args()
-    PORT = opt.port
+    PORT = int(opt.port)
     ADDR = opt.addr
     FILE = opt.file
     DATA = opt.send
