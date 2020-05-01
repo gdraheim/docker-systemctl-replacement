@@ -210,14 +210,35 @@ class SocketTCPServer(socketserver.TCPServer):
 
 def socketTCP():
     ppid = os.getpid()
-    path = FILE.format(**locals())
     server = SocketTCPServer((ADDR, PORT), ServerTCP)
     try:
         print("server", path)
         server.serve_forever()
     finally:
         server.shutdown()
-        os.remove(path)
+
+class SocketUDPServer(socketserver.UDPServer):
+    def server_bind(self):
+        LISTEN_FDS = int(os.environ.get("LISTEN_FDS", 0))
+        LISTEN_PID = os.environ.get("LISTEN_PID", None) or os.getpid()
+        print("LISTEN_FDS:", str(LISTEN_FDS))
+        print("LISTEN_PID:", str(LISTEN_PID))
+        if LISTEN_FDS == 0:
+            socketserver.TCPServer.server_bind(self)
+        else:
+            print("rebind socket")
+            print("address_family:", str(self.address_family))
+            print("socket_type:", str(self.socket_type))
+            self.socket = socket.fromfd(3, self.address_family, self.socket_type)
+
+def socketUDP():
+    ppid = os.getpid()
+    server = SocketUDPServer((ADDR, PORT), ServerUDP)
+    try:
+        print("server", path)
+        server.serve_forever()
+    finally:
+        server.shutdown()
 
 def echo():
     for i in range(100):
