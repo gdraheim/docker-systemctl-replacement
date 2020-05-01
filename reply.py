@@ -39,6 +39,21 @@ def serverINET():
             conn.send(utf8(strips(data).upper()))  # echo
         conn.close()
 
+def serverINET6():
+    while True:
+        s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+        s.bind((ADDR, PORT))
+        s.listen(1)
+        #
+        conn, addr = s.accept()
+        print('Connection address:', addr)
+        while True:
+            data = conn.recv(BUFS)
+            if not data: break
+            print("received:", data)
+            conn.send(utf8(strips(data).upper()))  # echo
+        conn.close()
+
 class ServerTCP(socketserver.BaseRequestHandler):
      def handle(self):
           data = self.request.recv(BUFS)
@@ -62,8 +77,28 @@ def streamTCP():
     server.serve_forever()
 
 def sendTCP():
+    if ADDR and ":" in ADDR:
+        sendTCP6()
+    else:
+        sendTCP4()
+
+def sendTCP4():
     reply=""
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        sock.connect((ADDR, PORT))
+        sock.sendall(utf8(DATA + "\n"))
+        reply = sock.recv(BUFS)
+    except Exception as e:
+        reply=str(e)
+    finally:
+        sock.close()
+    print("request:", strips(DATA))
+    print("replied:", strips(reply))
+
+def sendTCP6():
+    reply=""
+    sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
     try:
         sock.connect((ADDR, PORT))
         sock.sendall(utf8(DATA + "\n"))
