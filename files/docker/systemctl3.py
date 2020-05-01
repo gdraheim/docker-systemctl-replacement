@@ -2625,7 +2625,7 @@ class Systemctl:
         parts = path.split(os.pathsep)
         for part in parts:
             if os.path.isfile(part):
-                for var, val in self.read_env_file(part):
+                for var, val in self.read_env_file("-"+part):
                     locale[var] = val
                     env[var] = val
         if "LANG" not in locale:
