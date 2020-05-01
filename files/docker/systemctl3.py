@@ -92,6 +92,7 @@ DefaultPath = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 ResetLocale = ["LANG", "LANGUAGE", "LC_CTYPE", "LC_NUMERIC", "LC_TIME", "LC_COLLATE", "LC_MONETARY",
                "LC_MESSAGES", "LC_PAPER", "LC_NAME", "LC_ADDRESS", "LC_TELEPHONE", "LC_MEASUREMENT",
                "LC_IDENTIFICATION", "LC_ALL"]
+LocaleConf="/etc/locale.conf"
 
 # The systemd default is NOTIFY_SOCKET="/var/run/systemd/notify"
 _notify_socket_folder = "/var/run/systemd" # alias /run/systemd
@@ -2044,9 +2045,13 @@ class Systemctl:
             if name in env:
                 del env[name]
         locale = {}
-        for var, val in self.read_env_file("/etc/locale.conf"):
-            locale[var] = val
-            env[var] = val
+        path = env.get("LOCALE_CONF", LocaleConf)
+        parts = path.split(os.pathsep)
+        for part in parts:
+            if os.path.isfile(part):
+                for var, val in self.read_env_file(part):
+                    locale[var] = val
+                    env[var] = val
         if "LANG" not in locale:
             env["LANG"] = locale.get("LANGUAGE", locale.get("LC_CTYPE", "C"))
         return env
