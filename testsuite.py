@@ -36,9 +36,9 @@ SKIP = True
 TODO = False
 KEEP = 0
 
-CENTOSVER = { "7.3": "7.3.1611", "7.4": "7.4.1708", "7.5": "7.5.1804" }
-TESTED_OS = [ "centos:7.3.1611", "centos:7.4.1708", "centos:7.5.1804" ]
-TESTED_OS += [ "opensuse:42.2", "opensuse:42.3", "opensuse/leap:15.0" ]
+CENTOSVER = { "7.3": "7.3.1611", "7.4": "7.4.1708", "7.5": "7.5.1804", "7.6": "7.6.1810", "7.7": "7.7.1908", "8.0": "8.0.1905", "8.1": "8.1.1911" }
+TESTED_OS = [ "centos:7.3.1611", "centos:7.4.1708", "centos:7.5.1804", "centos:7.6.1810", "centos:7.7.1908", "centos:8.0.1905" ]
+TESTED_OS += [ "opensuse:42.2", "opensuse:42.3", "opensuse/leap:15.0", "opensuse/leap:15.1" ]
 TESTED_OS += [ "ubuntu:14.04", "ubuntu:16.04", "ubuntu:18.04" ]
 
 IMAGES = "localhost:5000/systemctl/testing"
@@ -29072,6 +29072,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         image = self.local_image(IMAGE or CENTOS)
         if _python.endswith("python3") and "centos:7" in image: 
             if SKIP: self.skipTest("no python3 on centos:7")
+        python = os.path.basename(_python)
+        python_x = python_package(_python, image)
         package = package_tool(image)
         refresh = refresh_tool(image)
         testname=self.testname()
@@ -29086,6 +29088,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} {refresh}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} {package} install -y httpd httpd-tools"
         sh____(cmd.format(**locals()))
@@ -29134,6 +29140,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         image = self.local_image(IMAGE or CENTOS)
         if _python.endswith("python3") and "centos:7" in image: 
             if SKIP: self.skipTest("no python3 on centos:7")
+        python = os.path.basename(_python)
+        python_x = python_package(_python, image)
         package = package_tool(image)
         refresh = refresh_tool(image)
         testname=self.testname()
@@ -29150,6 +29158,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} {refresh}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} {package} install -y postgresql-server postgresql-utils"
         sh____(cmd.format(**locals()))
@@ -29208,6 +29220,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         image = self.local_image(IMAGE or OPENSUSE)
         if _python.endswith("python3") and "centos:7" in image: 
             if SKIP: self.skipTest("no python3 on centos:7")
+        python = os.path.basename(_python)
+        python_x = python_package(_python, image)
         package = package_tool(image)
         refresh = refresh_tool(image)
         testname=self.testname()
@@ -29264,6 +29278,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         image = self.local_image(IMAGE or CENTOS)
         if _python.endswith("python3") and "centos:7" in image: 
             if SKIP: self.skipTest("no python3 on centos:7")
+        python = os.path.basename(_python)
+        python_x = python_package(_python, image)
         package = package_tool(image)
         refresh = refresh_tool(image)
         testname=self.testname()
@@ -29278,6 +29294,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} {refresh}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} {package} install -y httpd httpd-tools"
         sh____(cmd.format(**locals()))
@@ -29345,6 +29365,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl_py = _systemctl_py
         python = os.path.basename(_python)
         python_x = python_package(_python, image)
+        package = package_tool(image)
+        refresh = refresh_tool(image)
         sometime = SOMETIME or 288
         logg.info("%s:%s %s", testname, port, image)
         #
@@ -29352,11 +29374,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} apt-get update"
+        cmd = "docker exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || apt-get install -y {python_x}'"
+        cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} apt-get install -y apache2"
+        cmd = "docker exec {testname} {package} install -y apache2"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
@@ -29404,6 +29426,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         image = self.local_image(IMAGE or CENTOS)
         if _python.endswith("python3") and "centos:7" in image: 
             if SKIP: self.skipTest("no python3 on centos:7")
+        python = os.path.basename(_python)
+        python_x = python_package(_python, image)
         package = package_tool(image)
         refresh = refresh_tool(image)
         testname=self.testname()
@@ -29420,6 +29444,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} {refresh}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} {package} install -y postgresql-server postgresql-utils"
         sh____(cmd.format(**locals()))
@@ -29487,6 +29515,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             if SKIP: self.skipTest("no python3 on centos:7")
         # image = "centos:centos7.0.1406" # <<<< can not yum-install mariadb-server ?
         # image = "centos:centos7.1.1503"
+        python = os.path.basename(_python)
+        python_x = python_package(_python, image)
+        package = package_tool(image)
+        refresh = refresh_tool(image)
         testname = self.testname()
         testdir = self.testdir()
         systemctl_py = _systemctl_py
@@ -29497,6 +29529,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} {refresh}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} yum install -y mariadb"
         sh____(cmd.format(**locals()))
@@ -29552,6 +29588,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         image = self.local_image(IMAGE or CENTOS)
         if _python.endswith("python3") and "centos:7" in image: 
             if SKIP: self.skipTest("no python3 on centos:7")
+        python = os.path.basename(_python)
+        python_x = python_package(_python, image)
+        package = package_tool(image)
+        refresh = refresh_tool(image)
         testname = self.testname()
         testdir = self.testdir()
         systemctl_py = _systemctl_py
@@ -29561,6 +29601,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} {refresh}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} yum install -y rsyslog"
         sh____(cmd.format(**locals()))
@@ -29597,6 +29641,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         image = self.local_image(IMAGE or CENTOS)
         if _python.endswith("python3") and "centos:7" in image: 
             if SKIP: self.skipTest("no python3 on centos:7")
+        python = os.path.basename(_python)
+        python_x = python_package(_python, image)
+        package = package_tool(image)
+        refresh = refresh_tool(image)
         testname=self.testname()
         testdir = self.testdir(testname)
         testport=self.testport()
@@ -29609,6 +29657,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} {refresh}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} yum install -y httpd httpd-tools"
         sh____(cmd.format(**locals()))
@@ -29680,6 +29732,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         image = self.local_image(IMAGE or CENTOS)
         if _python.endswith("python3") and "centos:7" in image: 
             if SKIP: self.skipTest("no python3 on centos:7")
+        python = os.path.basename(_python)
+        python_x = python_package(_python, image)
         package = package_tool(image)
         refresh = refresh_tool(image)
         testname=self.testname()
@@ -29696,6 +29750,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} {package} install -y epel-release"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} {refresh}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} {package} install -y nginx"
         sh____(cmd.format(**locals()))
