@@ -50,33 +50,33 @@ st_%: ; $(MAKE) 2 && ./testsuite.py "te$@" -vv $(WITH2)
 WITH2 = --python=/usr/bin/python2 --with=files/docker/systemctl.py
 WITH3 = --python=/usr/bin/python3 --with=files/docker/systemctl3.py
 todo/test_%:             ; ./testsuite.py   "$(notdir $@)" -vv --todo
-15.2/test_%:             ; ./testsuite.py   "$(notdir $@)" -vv --image=opensuse/leap:15.2
-15.1/test_%:             ; ./testsuite.py   "$(notdir $@)" -vv --image=opensuse/leap:15.1
-15.0/test_%:             ; ./testsuite.py   "$(notdir $@)" -vv --image=opensuse/leap:15.0
-42.3/test_%:             ; ./testsuite.py   "$(notdir $@)" -vv --image=opensuse:42.3
-42.2/test_%:             ; ./testsuite.py   "$(notdir $@)" -vv --image=opensuse:42.2
-19.10/test_%:            ; ./testsuite.py   "$(notdir $@)" -vv --image=ubuntu:19.10
-18.04/test_%:            ; ./testsuite.py   "$(notdir $@)" -vv --image=ubuntu:18.04
-16.04/test_%:            ; ./testsuite.py   "$(notdir $@)" -vv --image=ubuntu:16.04
-8.1/test_%:              ; ./testsuite.py   "$(notdir $@)" -vv --image=centos:8.1.1911
-8.0/test_%:              ; ./testsuite.py   "$(notdir $@)" -vv --image=centos:8.0.1905
-7.7/test_%:              ; ./testsuite.py   "$(notdir $@)" -vv --image=centos:7.7.1908
-7.6/test_%:              ; ./testsuite.py   "$(notdir $@)" -vv --image=centos:7.6.1810
-7.5/test_%:              ; ./testsuite.py   "$(notdir $@)" -vv --image=centos:7.5.1804
-7.4/test_%:              ; ./testsuite.py   "$(notdir $@)" -vv --image=centos:7.4.1708
-7.3/test_%:              ; ./testsuite.py   "$(notdir $@)" -vv --image=centos:7.3.1611
-15.2/st_%:  ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv --image=opensuse/leap:15.2 $(WITH2)
-15.1/st_%:  ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv --image=opensuse/leap:15.1 $(WITH2)
-15.0/st_%:  ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv --image=opensuse/leap:15.0 $(WITH2)
-42.3/st_%:  ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv --image=opensuse:42.3      $(WITH2)
-42.2/st_%:  ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv --image=opensuse:42.2      $(WITH2)
-18.04/st_%: ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv --image=ubuntu:18.04       $(WITH2)
-16.04/st_%: ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv --image=ubuntu:16.04       $(WITH2)
-7.7/st_%:   ; $(MAKE) 2 && ./testsuite.py   "$(notdir $@)" -vv --image=centos:7.7.1908    $(WITH2)
-7.6/st_%:   ; $(MAKE) 2 && ./testsuite.py   "$(notdir $@)" -vv --image=centos:7.6.1810    $(WITH2)
-7.5/st_%:   ; $(MAKE) 2 && ./testsuite.py   "$(notdir $@)" -vv --image=centos:7.5.1804    $(WITH2)
-7.4/st_%:   ; $(MAKE) 2 && ./testsuite.py   "$(notdir $@)" -vv --image=centos:7.4.1708    $(WITH2)
-7.3/st_%:   ; $(MAKE) 2 && ./testsuite.py   "$(notdir $@)" -vv --image=centos:7.3.1611    $(WITH2)
+15.2/test_%:             ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=opensuse/leap:15.2
+15.1/test_%:             ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=opensuse/leap:15.1
+15.0/test_%:             ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=opensuse/leap:15.0
+42.3/test_%:             ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=opensuse:42.3
+42.2/test_%:             ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=opensuse:42.2
+19.10/test_%:            ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=ubuntu:19.10
+18.04/test_%:            ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=ubuntu:18.04
+16.04/test_%:            ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=ubuntu:16.04
+8.1/test_%:              ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=centos:8.1.1911
+8.0/test_%:              ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=centos:8.0.1905
+7.7/test_%:              ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=centos:7.7.1908
+7.6/test_%:              ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=centos:7.6.1810
+7.5/test_%:              ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=centos:7.5.1804
+7.4/test_%:              ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=centos:7.4.1708
+7.3/test_%:              ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=centos:7.3.1611
+15.2/st_%:  ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv $(FORCE) --image=opensuse/leap:15.2 $(WITH2)
+15.1/st_%:  ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv $(FORCE) --image=opensuse/leap:15.1 $(WITH2)
+15.0/st_%:  ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv $(FORCE) --image=opensuse/leap:15.0 $(WITH2)
+42.3/st_%:  ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv $(FORCE) --image=opensuse:42.3      $(WITH2)
+42.2/st_%:  ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv $(FORCE) --image=opensuse:42.2      $(WITH2)
+18.04/st_%: ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv $(FORCE) --image=ubuntu:18.04       $(WITH2)
+16.04/st_%: ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv $(FORCE) --image=ubuntu:16.04       $(WITH2)
+7.7/st_%:   ; $(MAKE) 2 && ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=centos:7.7.1908    $(WITH2)
+7.6/st_%:   ; $(MAKE) 2 && ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=centos:7.6.1810    $(WITH2)
+7.5/st_%:   ; $(MAKE) 2 && ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=centos:7.5.1804    $(WITH2)
+7.4/st_%:   ; $(MAKE) 2 && ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=centos:7.4.1708    $(WITH2)
+7.3/st_%:   ; $(MAKE) 2 && ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=centos:7.3.1611    $(WITH2)
 
 test2list = st_[567]
 testslist = test_[567]
@@ -112,8 +112,8 @@ tests: ; $(MAKE) "test_[1234]"
 
 nightrun: checkall
 	$(MAKE) checks
-checkall: checkall2018
-checkall2018: $(MAKE) 
+checkall: checkall2019
+checkall2018:
 	$(MAKE) -j1 tests
 	$(MAKE) -j1 7.5/tests 7.4/tests 7.3/tests
 	$(MAKE) -j1 18.04/tests 16.04/tests
@@ -123,7 +123,7 @@ checkall2018: $(MAKE)
 checkall2019:
 	$(MAKE) -j1 tests checkall2019.3 checkall2019.2
 checkall2019.3:
-	$(MAKE) -j1 7.7/tests 7.5/tests 7.4/tests 7.3/tests
+	$(MAKE) -j1 8.0/tests
 	$(MAKE) -j1 18.04/tests 16.04/tests
 	$(MAKE) -j1 15.1/tests 15.0/tests 42.3/tests
 checkall2019.2:
