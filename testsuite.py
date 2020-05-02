@@ -29134,8 +29134,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             in the in the database with a known password. """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
-        if IMAGE and "centos" not in IMAGE: 
-            if SKIP: self.skipTest("centos-based test")
+        if IMAGE and "centos:7" not in IMAGE: 
+            if SKIP: self.skipTest("centos:7 based test")
         images = IMAGES
         image = self.local_image(IMAGE or CENTOS)
         if _python.endswith("python3") and "centos:7" in image: 
@@ -29272,8 +29272,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             and in the systemctl.debug.log we can see NOTIFY_SOCKET
             messages with Apache sending a READY and MAINPID value."""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
-        if IMAGE and "centos" not in IMAGE: 
-            if SKIP: self.skipTest("centos-based test")
+        if IMAGE and "centos:7" not in IMAGE: 
+            if SKIP: self.skipTest("centos:7 based test")
         images = IMAGES
         image = self.local_image(IMAGE or CENTOS)
         if _python.endswith("python3") and "centos:7" in image: 
@@ -29420,8 +29420,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             user-mode *.service files."""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
-        if IMAGE and "centos" not in IMAGE: 
-            if SKIP: self.skipTest("centos-based test")
+        if IMAGE and "centos:7" not in IMAGE: 
+            if SKIP: self.skipTest("centos:7 based test")
         images = IMAGES
         image = self.local_image(IMAGE or CENTOS)
         if _python.endswith("python3") and "centos:7" in image: 
