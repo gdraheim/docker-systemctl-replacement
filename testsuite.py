@@ -29214,8 +29214,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_7003_opensuse_syslog(self):
         """ WHEN using a systemd-enabled CentOS 7 ..."""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
-        if IMAGE and "opensuse" not in IMAGE: 
-            if SKIP: self.skipTest("opensuse-based test")
+        if IMAGE and "opensuse/leap" not in IMAGE: 
+            if SKIP: self.skipTest("opensuse/leap based test")
         images = IMAGES
         image = self.local_image(IMAGE or OPENSUSE)
         if _python.endswith("python3") and "centos:7" in image: 
