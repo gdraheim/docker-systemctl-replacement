@@ -72,11 +72,11 @@ todo/test_%:             ; ./testsuite.py   "$(notdir $@)" -vv --todo
 42.2/st_%:  ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv --image=opensuse:42.2      $(WITH2)
 18.04/st_%: ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv --image=ubuntu:18.04       $(WITH2)
 16.04/st_%: ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv --image=ubuntu:16.04       $(WITH2)
-7.7/test_%: ; $(MAKE) 2 && ./testsuite.py   "$(notdir $@)" -vv --image=centos:7.7.1908    $(WITH2)
-7.6/test_%: ; $(MAKE) 2 && ./testsuite.py   "$(notdir $@)" -vv --image=centos:7.6.1810    $(WITH2)
-7.5/test_%: ; $(MAKE) 2 && ./testsuite.py   "$(notdir $@)" -vv --image=centos:7.5.1804    $(WITH2)
-7.4/test_%: ; $(MAKE) 2 && ./testsuite.py   "$(notdir $@)" -vv --image=centos:7.4.1708    $(WITH2)
-7.3/test_%: ; $(MAKE) 2 && ./testsuite.py   "$(notdir $@)" -vv --image=centos:7.3.1611    $(WITH2)
+7.7/st_%:   ; $(MAKE) 2 && ./testsuite.py   "$(notdir $@)" -vv --image=centos:7.7.1908    $(WITH2)
+7.6/st_%:   ; $(MAKE) 2 && ./testsuite.py   "$(notdir $@)" -vv --image=centos:7.6.1810    $(WITH2)
+7.5/st_%:   ; $(MAKE) 2 && ./testsuite.py   "$(notdir $@)" -vv --image=centos:7.5.1804    $(WITH2)
+7.4/st_%:   ; $(MAKE) 2 && ./testsuite.py   "$(notdir $@)" -vv --image=centos:7.4.1708    $(WITH2)
+7.3/st_%:   ; $(MAKE) 2 && ./testsuite.py   "$(notdir $@)" -vv --image=centos:7.3.1611    $(WITH2)
 
 test2list = st_[567]
 testslist = test_[567]
