@@ -1991,7 +1991,7 @@ class Systemctl:
         for part in shlex.split(cmd3):
             newcmd += [ re.sub("[$][{](\w+)[}]", lambda m: get_env2(m), part) ]
         return newcmd
-    def path_journal_log(self, conf):
+    def get_journal_log_from(self, conf):
         return os_path(self._root, self.get_journal_log(conf))
     def get_journal_log(self, conf):
         """ /var/log/zzz.service.log or /var/log/default.unit.log """
@@ -2004,7 +2004,7 @@ class Systemctl:
             log_file = "dot."+log_file
         return os.path.join(log_folder, log_file)
     def open_journal_log(self, conf):
-        log_file = self.path_journal_log(conf)
+        log_file = self.get_journal_log_from(conf)
         log_folder = os.path.dirname(log_file)
         if not os.path.isdir(log_folder):
             os.makedirs(log_folder)
@@ -4868,7 +4868,7 @@ class Systemctl:
             conf = self.load_unit_conf(unit)
             if not conf: continue
             if self.skip_journal_log(conf): continue
-            log_path = self.path_journal_log(conf)
+            log_path = self.get_journal_log_from(conf)
             try:
                 opened = os.open(log_path, os.O_RDONLY | os.O_NONBLOCK)
                 self._log_file[unit] = opened
