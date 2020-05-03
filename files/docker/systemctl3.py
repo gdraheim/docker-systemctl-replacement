@@ -221,6 +221,12 @@ def o22(part):
             return part
         return part[:5] + "..." + part[-14:]
     return part
+def o44(part):
+    if isinstance(part, basestring):
+        if len(part) <= 44:
+            return part
+        return part[:10] + "..." + part[-31:]
+    return part
 def o77(part):
     if isinstance(part, basestring):
         if len(part) <= 77:
@@ -2052,13 +2058,18 @@ class Systemctl:
                            "why-is-socket-path-length-limited-to-a-hundred-chars")
                 logg.debug("old notify socketfile (%s) = %s", len(socketfile), socketfile)
             notify_socket_folder = expand_path(_notify_socket_folder, not conf._user_mode)
+            notify_name44 = o44(notify_name)
             notify_name77 = o77(notify_name)
             socketfile = os.path.join(notify_socket_folder, notify_name77)
+            if len(socketfile) > 100:
+                socketfile = os.path.join(notify_socket_folder, notify_name44)
             pref = "zz.%i." % (get_USER_ID(),)
             if len(socketfile) > 100:
                 socketfile = os.path.join(get_TMP(), pref + notify_name)
             if len(socketfile) > 100:
                 socketfile = os.path.join(get_TMP(), pref + notify_name77)
+            if len(socketfile) > 100: # pragma: no cover
+                socketfile = os.path.join(get_TMP(), pref + notify_name44)
             if debug:
                 logg.info("new notify socketfile (%s) = %s", len(socketfile), socketfile)
         return socketfile
