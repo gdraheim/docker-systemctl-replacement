@@ -2002,7 +2002,7 @@ class Systemctl:
             log_file = "dot."+log_file
         return os.path.join(log_folder, log_file)
     def open_journal_log(self, conf):
-        log_file = self.path_journal_log(conf)
+        log_file = os_path(self._root, self.path_journal_log(conf))
         log_folder = os.path.dirname(log_file)
         if not os.path.isdir(log_folder):
             os.makedirs(log_folder)
