@@ -15537,9 +15537,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
         #
-        cmd = "{systemctl} show zza.service -p JournalFile"
+        cmd = "{systemctl} show zza.service -p JournalFilePath"
         journal_a=output(cmd.format(**locals())).strip().split("=",1)[1]
-        cmd = "{systemctl} show zzb.service -p JournalFile"
+        cmd = "{systemctl} show zzb.service -p JournalFilePath"
         journal_b=output(cmd.format(**locals())).strip().split("=",1)[1]
         logg.info("journal zza = %s", journal_a)
         logg.info("journal zzb = %s", journal_b)
@@ -15641,9 +15641,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
         #
-        cmd = "{systemctl} show zza.service -p JournalFile"
+        cmd = "{systemctl} show zza.service -p JournalFilePath"
         journal_a=output(cmd.format(**locals())).strip().split("=",1)[1]
-        cmd = "{systemctl} show zzb.service -p JournalFile"
+        cmd = "{systemctl} show zzb.service -p JournalFilePath"
         journal_b=output(cmd.format(**locals())).strip().split("=",1)[1]
         logg.info("journal zza = %s", journal_a)
         logg.info("journal zzb = %s", journal_b)
@@ -15751,9 +15751,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
         #
-        cmd = "{systemctl} show zza.service -p JournalFile"
+        cmd = "{systemctl} show zza.service -p JournalFilePath"
         journal_a=output(cmd.format(**locals())).strip().split("=",1)[1]
-        cmd = "{systemctl} show zzb.service -p JournalFile"
+        cmd = "{systemctl} show zzb.service -p JournalFilePath"
         journal_b=output(cmd.format(**locals())).strip().split("=",1)[1]
         logg.info("journal zza = %s", journal_a)
         logg.info("journal zzb = %s", journal_b)
@@ -15868,9 +15868,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
         #
-        cmd = "{systemctl} show zza.service -p JournalFile"
+        cmd = "{systemctl} show zza.service -p JournalFilePath"
         journal_a=output(cmd.format(**locals())).strip().split("=",1)[1]
-        cmd = "{systemctl} show zzb.service -p JournalFile"
+        cmd = "{systemctl} show zzb.service -p JournalFilePath"
         journal_b=output(cmd.format(**locals())).strip().split("=",1)[1]
         logg.info("journal zza = %s", journal_a)
         logg.info("journal zzb = %s", journal_b)
@@ -15986,9 +15986,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
         #
-        cmd = "{systemctl} show zza.service -p JournalFile"
+        cmd = "{systemctl} show zza.service -p JournalFilePath"
         journal_a=output(cmd.format(**locals())).strip().split("=",1)[1]
-        cmd = "{systemctl} show zzb.service -p JournalFile"
+        cmd = "{systemctl} show zzb.service -p JournalFilePath"
         journal_b=output(cmd.format(**locals())).strip().split("=",1)[1]
         logg.info("journal zza = %s", journal_a)
         logg.info("journal zzb = %s", journal_b)
@@ -16104,9 +16104,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
         #
-        cmd = "{systemctl} show zza.service -p JournalFile"
+        cmd = "{systemctl} show zza.service -p JournalFilePath"
         journal_a=output(cmd.format(**locals())).strip().split("=",1)[1]
-        cmd = "{systemctl} show zzb.service -p JournalFile"
+        cmd = "{systemctl} show zzb.service -p JournalFilePath"
         journal_b=output(cmd.format(**locals())).strip().split("=",1)[1]
         logg.info("journal zza = %s", journal_a)
         logg.info("journal zzb = %s", journal_b)
@@ -16208,9 +16208,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
         #
-        cmd = "{systemctl} show zza.service -p JournalFile"
+        cmd = "{systemctl} show zza.service -p JournalFilePath"
         journal_a=output(cmd.format(**locals())).strip().split("=",1)[1]
-        cmd = "{systemctl} show zzb.service -p JournalFile"
+        cmd = "{systemctl} show zzb.service -p JournalFilePath"
         journal_b=output(cmd.format(**locals())).strip().split("=",1)[1]
         logg.info("journal zza = %s", journal_a)
         logg.info("journal zzb = %s", journal_b)
@@ -16312,9 +16312,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
         #
-        cmd = "{systemctl} show zza.service -p JournalFile"
+        cmd = "{systemctl} show zza.service -p JournalFilePath"
         journal_a=output(cmd.format(**locals())).strip().split("=",1)[1]
-        cmd = "{systemctl} show zzb.service -p JournalFile"
+        cmd = "{systemctl} show zzb.service -p JournalFilePath"
         journal_b=output(cmd.format(**locals())).strip().split("=",1)[1]
         logg.info("journal zza = %s", journal_a)
         logg.info("journal zzb = %s", journal_b)
@@ -16434,9 +16434,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
         #
-        cmd = "{systemctl} show zza.service -p JournalFile"
+        cmd = "{systemctl} show zza.service -p JournalFilePath"
         journal_a=output(cmd.format(**locals())).strip().split("=",1)[1]
-        cmd = "{systemctl} show zzb.service -p JournalFile"
+        cmd = "{systemctl} show zzb.service -p JournalFilePath"
         journal_b=output(cmd.format(**locals())).strip().split("=",1)[1]
         logg.info("journal zza = %s", journal_a)
         logg.info("journal zzb = %s", journal_b)
@@ -16560,9 +16560,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
         #
-        cmd = "{systemctl} show zza.service -p JournalFile"
+        cmd = "{systemctl} show zza.service -p JournalFilePath"
         journal_a=output(cmd.format(**locals())).strip().split("=",1)[1]
-        cmd = "{systemctl} show zzb.service -p JournalFile"
+        cmd = "{systemctl} show zzb.service -p JournalFilePath"
         journal_b=output(cmd.format(**locals())).strip().split("=",1)[1]
         logg.info("journal zza = %s", journal_a)
         logg.info("journal zzb = %s", journal_b)
@@ -16687,9 +16687,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
         #
-        cmd = "{systemctl} show zza.service -p JournalFile"
+        cmd = "{systemctl} show zza.service -p JournalFilePath"
         journal_a=output(cmd.format(**locals())).strip().split("=",1)[1]
-        cmd = "{systemctl} show zzb.service -p JournalFile"
+        cmd = "{systemctl} show zzb.service -p JournalFilePath"
         journal_b=output(cmd.format(**locals())).strip().split("=",1)[1]
         logg.info("journal zza = %s", journal_a)
         logg.info("journal zzb = %s", journal_b)
@@ -16814,9 +16814,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
         #
-        cmd = "{systemctl} show zza.service -p JournalFile"
+        cmd = "{systemctl} show zza.service -p JournalFilePath"
         journal_a=output(cmd.format(**locals())).strip().split("=",1)[1]
-        cmd = "{systemctl} show zzb.service -p JournalFile"
+        cmd = "{systemctl} show zzb.service -p JournalFilePath"
         journal_b=output(cmd.format(**locals())).strip().split("=",1)[1]
         logg.info("journal zza = %s", journal_a)
         logg.info("journal zzb = %s", journal_b)
@@ -16945,9 +16945,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
         #
-        cmd = "{systemctl} show zza.service -p JournalFile"
+        cmd = "{systemctl} show zza.service -p JournalFilePath"
         journal_a=output(cmd.format(**locals())).strip().split("=",1)[1]
-        cmd = "{systemctl} show zzb.service -p JournalFile"
+        cmd = "{systemctl} show zzb.service -p JournalFilePath"
         journal_b=output(cmd.format(**locals())).strip().split("=",1)[1]
         logg.info("journal zza = %s", journal_a)
         logg.info("journal zzb = %s", journal_b)
@@ -17074,9 +17074,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
         #
-        cmd = "{systemctl} show zza.service -p JournalFile"
+        cmd = "{systemctl} show zza.service -p JournalFilePath"
         journal_a=output(cmd.format(**locals())).strip().split("=",1)[1]
-        cmd = "{systemctl} show zzb.service -p JournalFile"
+        cmd = "{systemctl} show zzb.service -p JournalFilePath"
         journal_b=output(cmd.format(**locals())).strip().split("=",1)[1]
         logg.info("journal zza = %s", journal_a)
         logg.info("journal zzb = %s", journal_b)
@@ -17201,9 +17201,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
         #
-        cmd = "{systemctl} show zza.service -p JournalFile"
+        cmd = "{systemctl} show zza.service -p JournalFilePath"
         journal_a=output(cmd.format(**locals())).strip().split("=",1)[1]
-        cmd = "{systemctl} show zzb.service -p JournalFile"
+        cmd = "{systemctl} show zzb.service -p JournalFilePath"
         journal_b=output(cmd.format(**locals())).strip().split("=",1)[1]
         logg.info("journal zza = %s", journal_a)
         logg.info("journal zzb = %s", journal_b)
@@ -17332,9 +17332,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
         #
-        cmd = "{systemctl} show zza.service -p JournalFile"
+        cmd = "{systemctl} show zza.service -p JournalFilePath"
         journal_a=output(cmd.format(**locals())).strip().split("=",1)[1]
-        cmd = "{systemctl} show zzb.service -p JournalFile"
+        cmd = "{systemctl} show zzb.service -p JournalFilePath"
         journal_b=output(cmd.format(**locals())).strip().split("=",1)[1]
         logg.info("journal zza = %s", journal_a)
         logg.info("journal zzb = %s", journal_b)
@@ -17460,9 +17460,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
         #
-        cmd = "{systemctl} show zza.service -p JournalFile"
+        cmd = "{systemctl} show zza.service -p JournalFilePath"
         journal_a=output(cmd.format(**locals())).strip().split("=",1)[1]
-        cmd = "{systemctl} show zzb.service -p JournalFile"
+        cmd = "{systemctl} show zzb.service -p JournalFilePath"
         journal_b=output(cmd.format(**locals())).strip().split("=",1)[1]
         logg.info("journal zza = %s", journal_a)
         logg.info("journal zzb = %s", journal_b)
@@ -17589,9 +17589,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
         #
-        cmd = "{systemctl} show zza.service -p JournalFile"
+        cmd = "{systemctl} show zza.service -p JournalFilePath"
         journal_a=output(cmd.format(**locals())).strip().split("=",1)[1]
-        cmd = "{systemctl} show zzb.service -p JournalFile"
+        cmd = "{systemctl} show zzb.service -p JournalFilePath"
         journal_b=output(cmd.format(**locals())).strip().split("=",1)[1]
         logg.info("journal zza = %s", journal_a)
         logg.info("journal zzb = %s", journal_b)
@@ -17722,9 +17722,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
         #
-        cmd = "{systemctl} show zza.service -p JournalFile"
+        cmd = "{systemctl} show zza.service -p JournalFilePath"
         journal_a=output(cmd.format(**locals())).strip().split("=",1)[1]
-        cmd = "{systemctl} show zzb.service -p JournalFile"
+        cmd = "{systemctl} show zzb.service -p JournalFilePath"
         journal_b=output(cmd.format(**locals())).strip().split("=",1)[1]
         logg.info("journal zza = %s", journal_a)
         logg.info("journal zzb = %s", journal_b)
@@ -17843,9 +17843,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
         #
-        cmd = "{systemctl} show zza.service -p JournalFile"
+        cmd = "{systemctl} show zza.service -p JournalFilePath"
         journal_a=output(cmd.format(**locals())).strip().split("=",1)[1]
-        cmd = "{systemctl} show zzb.service -p JournalFile"
+        cmd = "{systemctl} show zzb.service -p JournalFilePath"
         journal_b=output(cmd.format(**locals())).strip().split("=",1)[1]
         logg.info("journal zza = %s", journal_a)
         logg.info("journal zzb = %s", journal_b)
@@ -17956,9 +17956,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
         #
-        cmd = "{systemctl} show zza.service -p JournalFile"
+        cmd = "{systemctl} show zza.service -p JournalFilePath"
         journal_a=output(cmd.format(**locals())).strip().split("=",1)[1]
-        cmd = "{systemctl} show zzb.service -p JournalFile"
+        cmd = "{systemctl} show zzb.service -p JournalFilePath"
         journal_b=output(cmd.format(**locals())).strip().split("=",1)[1]
         logg.info("journal zza = %s", journal_a)
         logg.info("journal zzb = %s", journal_b)
@@ -18069,9 +18069,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
         #
-        cmd = "{systemctl} show zza.service -p JournalFile"
+        cmd = "{systemctl} show zza.service -p JournalFilePath"
         journal_a=output(cmd.format(**locals())).strip().split("=",1)[1]
-        cmd = "{systemctl} show zzb.service -p JournalFile"
+        cmd = "{systemctl} show zzb.service -p JournalFilePath"
         journal_b=output(cmd.format(**locals())).strip().split("=",1)[1]
         logg.info("journal zza = %s", journal_a)
         logg.info("journal zzb = %s", journal_b)
