@@ -357,19 +357,6 @@ def expand_path(path, root = False):
     XDG_RUNTIME_DIR=get_RUNTIME_DIR(root)
     return os.path.expanduser(path.replace("${","{").format(**locals()))
 
-def _var_path(path):
-    """ assumes that the path starts with /var - when in 
-        user mode it shall be moved to /run/user/1001/run/
-        or as a fallback path to /tmp/run-{user}/ so that
-        you may find /var/log in /tmp/run-{user}/log .."""
-    if path.startswith("/var"): 
-        runtime = get_runtime_dir() # $XDG_RUNTIME_DIR
-        if not os.path.isdir(runtime):
-            os.makedirs(runtime)
-            os.chmod(runtime, 0o700)
-        return re.sub("^(/var)?", get_runtime_dir(), path)
-    return path
-
 def shutil_setuid(user = None, group = None, xgroups = None):
     """ set fork-child uid/gid (returns pw-info env-settings)"""
     if group:
@@ -715,10 +702,6 @@ class SystemctlConf:
         self.drop_in_files = {}
         self._root = _root
         self._user_mode = _user_mode
-    def os_path_var(self, path):
-        if self._user_mode:
-            return os_path(self._root, _var_path(path))
-        return os_path(self._root, path)
     def loaded(self):
         files = self.data.filenames()
         if self.masked:
