@@ -272,12 +272,13 @@ def get_PID_DIR(root = False):
         return os.path.join(get_RUN(root), "run") # compat with older systemctl.py
 
 def get_home():
-    explicit = os.environ.get("HOME", "")
-    if explicit: return explicit
-    return os.path.expanduser("~")
-    uid = os.geteuid()
-    import pwd
-    return pwd.getpwuid(uid).pw_name
+    if False: # pragma: no cover
+        explicit = os.environ.get("HOME", "")   # >> On Unix, an initial ~ (tilde) is replaced by the
+        if explicit: return explicit            # environment variable HOME if it is set; otherwise
+        uid = os.geteuid()                      # the current users home directory is looked up in the
+        import pwd                              # password directory through the built-in module pwd.
+        return pwd.getpwuid(uid).pw_name        # An initial ~user i looked up directly in the
+    return os.path.expanduser("~")              # password directory. << from docs(os.path.expanduser)
 def get_HOME(root = False):
     if root: return "/root"
     return get_home()
