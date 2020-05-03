@@ -1991,7 +1991,9 @@ class Systemctl:
         for part in shlex.split(cmd3):
             newcmd += [ re.sub("[$][{](\w+)[}]", lambda m: get_env2(m), part) ]
         return newcmd
-    def path_journal_log(self, conf): # never None
+    def path_journal_log(self, conf):
+        return os_path(self._root, self.get_journal_log(conf))
+    def get_journal_log(self, conf):
         """ /var/log/zzz.service.log or /var/log/default.unit.log """
         filename = os.path.basename(strE(conf.filename()))
         unitname = (conf.name() or "default")+".unit"
@@ -2002,7 +2004,7 @@ class Systemctl:
             log_file = "dot."+log_file
         return os.path.join(log_folder, log_file)
     def open_journal_log(self, conf):
-        log_file = os_path(self._root, self.path_journal_log(conf))
+        log_file = self.path_journal_log(conf)
         log_folder = os.path.dirname(log_file)
         if not os.path.isdir(log_folder):
             os.makedirs(log_folder)
@@ -4577,7 +4579,7 @@ class Systemctl:
         yield "LoadState", loaded
         yield "UnitFileState", self.enabled_from(conf)
         yield "StatusFile", self.get_StatusFile(conf)
-        yield "JournalFile", self.path_journal_log(conf)
+        yield "JournalFile", self.get_journal_log(conf)
         yield "User", self.get_User(conf) or ""
         yield "Group", self.get_Group(conf) or ""
         yield "SupplementaryGroups", " ".join(self.get_SupplementaryGroups(conf))
