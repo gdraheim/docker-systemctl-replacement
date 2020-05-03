@@ -18200,6 +18200,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
         #
+        oo = reads(debug_log.format(**locals()))
+        logg.info("debug.log>>\%s", oo)
+        #
         cmd = "./reply.py sendUNIX -d foo -f {sockfile}"
         out, end = output2(cmd.format(**locals()))
         self.assertEqual(end, 0)
@@ -18208,7 +18211,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "replied: FOO"))
         #
         log = "{root}/var/log/zza.log"
-        out = open(log.format(**locals())).read()
+        out = reads(log.format(**locals()))
         logg.info("zza.log>>%s", out)
         self.assertTrue(greps(out, "received:.*foo"))
         #
@@ -18299,7 +18302,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "request: foo"))
         self.assertTrue(greps(out, "replied: FOO"))
         log = "{root}/var/log/zza.log"
-        out = open(log.format(**locals())).read()
+        out = reads(log.format(**locals()))
         logg.info("zza.log>>\n%s", out)
         self.assertTrue(greps(out, "received:.*foo"))
         #
