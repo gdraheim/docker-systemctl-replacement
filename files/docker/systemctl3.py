@@ -2038,7 +2038,7 @@ class Systemctl:
                    return None
         return None
     NotifySocket = collections.namedtuple("NotifySocket", ["socket", "socketfile" ])
-    def notify_socket_from(self, conf, socketfile = None):
+    def get_notify_socket_from(self, conf, socketfile = None):
         """ creates a notify-socket for the (non-privileged) user """
         notify_socket_folder = expand_path(_notify_socket_folder, not conf._user_mode)
         notify_name = "notify." + str(conf.name() or "systemctl")
@@ -2053,6 +2053,9 @@ class Systemctl:
             socketfile = os.path.join(notify_socket_folder, notify_name)
             # occurs during testsuite.py for ~user/test.tmp/root path
             logg.info("new notify socketfile (%s) = %s", len(socketfile), socketfile)
+        return socketfile
+    def notify_socket_from(self, conf, socketfile = None):
+        socketfile = self.get_notify_socket_from(conf, socketfile)
         try:
             if not os.path.isdir(os.path.dirname(socketfile)):
                 os.makedirs(os.path.dirname(socketfile))
@@ -4585,6 +4588,7 @@ class Systemctl:
         yield "StatusFilePath", self.get_status_file_from(conf)
         yield "JournalFile", self.get_journal_log(conf)
         yield "JournalFilePath", self.get_journal_log_from(conf)
+        yield "NotifySocket", self.get_notify_socket_from(conf)
         yield "User", self.get_User(conf) or ""
         yield "Group", self.get_Group(conf) or ""
         yield "SupplementaryGroups", " ".join(self.get_SupplementaryGroups(conf))
