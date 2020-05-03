@@ -784,7 +784,7 @@ class waitlock:
     def __init__(self, conf):
         self.conf = conf # currently unused
         self.opened = -1
-        self.lockfolder = conf.os_path_var(_notify_socket_folder)
+        self.lockfolder = expand_path(_notify_socket_folder, not _user_mode)
         try:
             folder = self.lockfolder
             if not os.path.isdir(folder):
@@ -2046,7 +2046,7 @@ class Systemctl:
     NotifySocket = collections.namedtuple("NotifySocket", ["socket", "socketfile" ])
     def notify_socket_from(self, conf, socketfile = None):
         """ creates a notify-socket for the (non-privileged) user """
-        notify_socket_folder = expand_path(_notify_socket_folder)
+        notify_socket_folder = expand_path(_notify_socket_folder, not conf.user_mode())
         notify_name = "notify." + str(conf.name() or "systemctl")
         notify_socket = os.path.join(notify_socket_folder, notify_name)
         socketfile = socketfile or notify_socket
@@ -2054,7 +2054,7 @@ class Systemctl:
             logg.debug("https://unix.stackexchange.com/questions/367008/%s",
                        "why-is-socket-path-length-limited-to-a-hundred-chars")
             logg.debug("old notify socketfile (%s) = %s", len(socketfile), socketfile)
-            notify_socket_folder = expand_path(_notify_socket_folder)
+            notify_socket_folder = expand_path(_notify_socket_folder, not conf.user_mode())
             notify_name = o99(notify_name, len(notify_socket_folder))
             socketfile = os.path.join(notify_socket_folder, notify_name)
             # occurs during testsuite.py for ~user/test.tmp/root path
