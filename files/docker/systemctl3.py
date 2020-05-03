@@ -350,6 +350,8 @@ def get_VARLIB_HOME(root = False):
     return CONFIG
 def expand_path(path, root = False):
     HOME = get_HOME(root)
+    RUN = get_RUN(root)
+    LOG = get_LOG_DIR(root)
     XDG_DATA_HOME=get_DATA_HOME(root)
     XDG_CONFIG_HOME=get_CONFIG_HOME(root)
     XDG_RUNTIME_DIR=get_RUNTIME_DIR(root)
