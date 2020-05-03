@@ -2070,6 +2070,8 @@ class Systemctl:
                 socketfile = os.path.join(get_TMP(), pref, notify_name77)
             if len(socketfile) > 100: # pragma: no cover
                 socketfile = os.path.join(get_TMP(), pref, notify_name44)
+            if len(socketfile) > 100: # pragma: no cover
+                socketfile = os.path.join(get_TMP(), notify_name44)
             if debug:
                 logg.info("new notify socketfile (%s) = %s", len(socketfile), socketfile)
         return socketfile
