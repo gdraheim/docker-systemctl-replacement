@@ -342,7 +342,12 @@ def get_VARLIB_HOME(root = False):
     if root: return VARLIB
     CONFIG = get_CONFIG_HOME(root)
     return CONFIG
-
+def expand_path(path, root = False):
+    HOME = get_HOME(root)
+    XDG_DATA_HOME=get_DATA_HOME(root)
+    XDG_CONFIG_HOME=get_CONFIG_HOME(root)
+    XDG_RUNTIME_DIR=get_RUNTIME_DIR(root)
+    return path.replace("~/", "{HOME}/").replace("${","{").format(**locals())
 
 def _var_path(path):
     """ assumes that the path starts with /var - when in 
