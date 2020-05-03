@@ -26,10 +26,10 @@ help:
 	sed -i -e "s|the.*identical but for|this is just a copy from systemctl.py but for|" files/docker/systemctl3.py
 	diff -U1 files/docker/systemctl.py files/docker/systemctl3.py || true
 2:
-	cp -v files/docker/systemctl.py files/docker/systemctl2.py
-	sed -i -e "s|/usr/bin/python|/usr/bin/python2|" files/docker/systemctl2.py
-	sed -i -e "s|the.*identical but for|this is just a copy from systemctl.py but for|" files/docker/systemctl2.py
-	diff -U1 files/docker/systemctl.py files/docker/systemctl2.py || true
+	cp -v files/docker/systemctl3.py files/docker/systemctl.py
+	sed -i -e "s|/usr/bin/python3|/usr/bin/python|" files/docker/systemctl.py
+	sed -i -e "s|this is just a copy.*|the systemctl*.py files are identical but for the default interpreter|" files/docker/systemctl.py
+	diff -U1 files/docker/systemctl3.py files/docker/systemctl.py || true
 
 alltests: CH CP UA DJ
 
