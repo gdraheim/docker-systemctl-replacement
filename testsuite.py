@@ -12805,7 +12805,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
         systemctl += " --{system}".format(**locals())
-        systemctl += " -c _notify_socket_folder=/var/run-using-special-notify-folder"
+        systemctl += " -c _notify_socket_folder=/var/run-using-notify-special-folder"
         testsleep = self.testname("sleep")
         logfile = os_path(root, "/var/log/"+testsleep+".log")
         bindir = os_path(root, "/usr/bin")
@@ -12889,7 +12889,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         log = reads(debug_log)
         logg.info("debug.log>>%s", i2(log))
         self.assertTrue(greps(log, "old notify socketfile [(]\\d\\d\\d[)]"))
-        self.assertTrue(greps(log, "new notify socketfile [(]\\d\\d[)].*run-using-special-notify-folder"))
+        self.assertTrue(greps(log, "new notify socketfile [(]\\d\\d[)].*special-folder"))
         #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
