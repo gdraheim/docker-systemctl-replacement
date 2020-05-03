@@ -127,10 +127,10 @@ RESTART_FAILED_UNITS = True
 
 # The systemd default is NOTIFY_SOCKET="/var/run/systemd/notify"
 _notify_socket_folder = "{RUN}/systemd" # alias /run/systemd
-_journal_log_folder = "/var/log/journal"
+_journal_log_folder = "{LOG}/journal"
 
-SYSTEMCTL_DEBUG_LOG = "/var/log/systemctl.debug.log"
-SYSTEMCTL_EXTRA_LOG = "/var/log/systemctl.log"
+SYSTEMCTL_DEBUG_LOG = "{LOG}/systemctl.debug.log"
+SYSTEMCTL_EXTRA_LOG = "{LOG}/systemctl.log"
 
 _default_targets = [ "poweroff.target", "rescue.target", "sysinit.target", "basic.target", "multi-user.target", "graphical.target", "reboot.target" ]
 _feature_targets = [ "network.target", "remote-fs.target", "local-fs.target", "timers.target", "nfs-client.target" ]
@@ -2006,7 +2006,7 @@ class Systemctl:
         filename = os.path.basename(strE(conf.filename()))
         unitname = (conf.name() or "default")+".unit"
         name = filename or unitname
-        log_folder = conf.os_path_var(self._journal_log_folder)
+        log_folder = expand_path(self._journal_log_folder, not conf.user_mode())
         log_file = name.replace(os.path.sep,".") + ".log"
         if log_file.startswith("."):
             log_file = "dot."+log_file
@@ -5585,12 +5585,8 @@ if __name__ == "__main__":
         else:
             logg.warning("(ignored) unknown target config -c '%s' : no such variable", nam)
     #
-    if _user_mode:
-        systemctl_debug_log = os_path(_root, _var_path(SYSTEMCTL_DEBUG_LOG))
-        systemctl_extra_log = os_path(_root, _var_path(SYSTEMCTL_EXTRA_LOG))
-    else:
-        systemctl_debug_log = os_path(_root, SYSTEMCTL_DEBUG_LOG)
-        systemctl_extra_log = os_path(_root, SYSTEMCTL_EXTRA_LOG)
+    systemctl_debug_log = os_path(_root, expand_path(SYSTEMCTL_DEBUG_LOG, not _user_mode))
+    systemctl_extra_log = os_path(_root, expand_path(SYSTEMCTL_EXTRA_LOG, not _user_mode))
     if os.access(systemctl_extra_log, os.W_OK):
         loggfile = logging.FileHandler(systemctl_extra_log)
         loggfile.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
