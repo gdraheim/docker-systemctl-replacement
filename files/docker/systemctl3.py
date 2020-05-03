@@ -60,8 +60,8 @@ _user_mode = False
 _system_folder1 = "/etc/systemd/system"
 _system_folder2 = "/run/systemd/system"
 _system_folder3 = "/usr/local/lib/systemd/system"
-_system_folder5 = "/usr/lib/systemd/system"
-_system_folder6 = "/lib/systemd/system"
+_system_folder4 = "/usr/lib/systemd/system"
+_system_folder5 = "/lib/systemd/system"
 _system_folder9 = None
 _user_folder1 = "{XDG_CONFIG_HOME}/systemd/user"
 _user_folder2 = "/etc/systemd/user"
@@ -1110,7 +1110,6 @@ class Systemctl:
             if _system_folder3: yield _system_folder3
             if _system_folder4: yield _system_folder4
             if _system_folder5: yield _system_folder5
-            if _system_folder6: yield _system_folder6
             if _system_folder9: yield _system_folder9
     def get_SYSTEMD_UNIT_PATH(self):
         if self._SYSTEMD_UNIT_PATH is None:
