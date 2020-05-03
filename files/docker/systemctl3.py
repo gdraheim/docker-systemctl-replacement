@@ -59,23 +59,27 @@ _user_mode = False
 # common default paths
 _system_folder1 = "/etc/systemd/system"
 _system_folder2 = "/var/run/systemd/system"
-_system_folder3 = "/usr/lib/systemd/system"
-_system_folder4 = "/lib/systemd/system"
+_system_folder3 = "/usr/local/lib/systemd/system"
+_system_folder5 = "/usr/lib/systemd/system"
+_system_folder6 = "/lib/systemd/system"
 _system_folder9 = None
 _user_folder1 = "{XDG_CONFIG_HOME}/systemd/user"
 _user_folder2 = "/etc/systemd/user"
 _user_folder3 = "{XDG_RUNTIME_DIR}/systemd/user"
 _user_folder4 = "/var/run/systemd/user"
 _user_folder5 = "{XDG_DATA_HOME}/systemd/user"
-_user_folder6 = "/usr/lib/systemd/user"
+_user_folder6 = "/usr/local/lib/systemd/user"
+_user_folder7 = "/usr/lib/systemd/user"
+_user_folder8 = "/lib/systemd/user"
 _user_folder9 = None
 _init_folder1 = "/etc/init.d"
 _init_folder2 = "/var/run/init.d"
 _init_folder9 = None
 _preset_folder1 = "/etc/systemd/system-preset"
 _preset_folder2 = "/var/run/systemd/system-preset"
-_preset_folder3 = "/usr/lib/systemd/system-preset"
-_preset_folder4 = "/lib/systemd/system-preset"
+_preset_folder3 = "/usr/local/lib/systemd/system-preset"
+_preset_folder4 = "/usr/lib/systemd/system-preset"
+_preset_folder5 = "/lib/systemd/system-preset"
 _preset_folder9 = None
 
 SystemCompatibilityVersion = 219
@@ -1087,6 +1091,7 @@ class Systemctl:
             if _preset_folder2: yield _preset_folder2
             if _preset_folder3: yield _preset_folder3
             if _preset_folder4: yield _preset_folder4
+            if _preset_folder5: yield _preset_folder5
             if _preset_folder9: yield _preset_folder9
     def init_folders(self):
         SYSTEMD_SYSVINIT_PATH = self.get_SYSTEMD_SYSVINIT_PATH()
@@ -1107,6 +1112,8 @@ class Systemctl:
             if _user_folder4: yield expand_path(_user_folder4)
             if _user_folder5: yield expand_path(_user_folder5)
             if _user_folder6: yield expand_path(_user_folder6)
+            if _user_folder7: yield expand_path(_user_folder7)
+            if _user_folder8: yield expand_path(_user_folder8)
             if _user_folder9: yield expand_path(_user_folder9)
     def system_folders(self):
         SYSTEMD_UNIT_PATH = self.get_SYSTEMD_UNIT_PATH()
@@ -1117,6 +1124,8 @@ class Systemctl:
             if _system_folder2: yield _system_folder2
             if _system_folder3: yield _system_folder3
             if _system_folder4: yield _system_folder4
+            if _system_folder5: yield _system_folder5
+            if _system_folder6: yield _system_folder6
             if _system_folder9: yield _system_folder9
     def get_SYSTEMD_UNIT_PATH(self):
         if self._SYSTEMD_UNIT_PATH is None:
