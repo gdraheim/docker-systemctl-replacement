@@ -2720,6 +2720,8 @@ class Systemctl:
     def get_SupplementaryGroups(self, conf):
         return self.expand_list(conf.getlist("Service", "SupplementaryGroups", []), conf)
     def skip_journal_log(self, conf):
+        if self.get_unit_type(conf.name()) not in [ "service" ]:
+           return True
         std_out = conf.get("Service", "StandardOutput", DefaultStandardOutput)
         std_err = conf.get("Service", "StandardError", DefaultStandardError)
         out, err = False, False
