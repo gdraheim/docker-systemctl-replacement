@@ -378,6 +378,34 @@ def get_runtime_dir():
     user = os_getlogin()
     return "/tmp/run-"+user
 
+SYSTEMCTL_DEBUG_LOG = "{LOG}/systemctl.debug.log"
+SYSTEMCTL_EXTRA_LOG = "{LOG}/systemctl.log"
+
+def get_home():
+    return os.path.expanduser("~")              # password directory. << from docs(os.path.expanduser)
+def get_HOME(root = False):
+    if root: return "/root"
+    return get_home()
+def get_RUNTIME_DIR(root = False):
+    RUN = "/run"
+    if root: return RUN
+    return os.environ.get("XDG_RUNTIME_DIR", get_runtime_dir())
+def get_CONFIG_HOME(root = False):
+    CONFIG = "/etc"
+    if root: return CONFIG
+    HOME = get_HOME(root)
+    return os.environ.get("XDG_CONFIG_HOME", HOME + "/.config")
+def get_LOG_DIR(root = False):
+    LOGDIR = "/var/log"
+    if root: return LOGDIR
+    CONFIG = get_CONFIG_HOME(root)
+    return os.path.join(CONFIG, "log")
+def expand_path(path, root = True):
+    LOG = get_LOG_DIR(root)
+    XDG_CONFIG_HOME=get_CONFIG_HOME(root)
+    XDG_RUNTIME_DIR=get_RUNTIME_DIR(root)
+    return os.path.expanduser(path.replace("${","{").format(**locals()))
+
 ############ local mirror helpers #############
 def ip_container(name):
     values = output("docker inspect "+name)
@@ -786,9 +814,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} daemon-reload"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
+        log = reads(logfile)
+        logg.info("systemctl.log>>\n%s", log)
         self.assertEqual(end, 0)
-        self.assertEqual(len(greps(open(logfile), " INFO ")), 1)
-        self.assertEqual(len(greps(open(logfile), " DEBUG ")), 0)
+        self.assertEqual(len(greps(log, " INFO ")), 1)
+        self.assertEqual(len(greps(log, " DEBUG ")), 0)
         self.rm_testdir()
         self.coverage()
     def test_1021_systemctl_with_systemctl_debug_log(self):
@@ -802,9 +832,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} daemon-reload"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
+        log = reads(logfile)
+        logg.info("systemctl.log>>\n%s", log)
         self.assertEqual(end, 0)
-        self.assertEqual(len(greps(open(logfile), " INFO ")), 1)
-        self.assertEqual(len(greps(open(logfile), " DEBUG ")), 3)
+        self.assertEqual(len(greps(log, " INFO ")), 1)
+        self.assertEqual(len(greps(log, " DEBUG ")), 3)
         self.rm_testdir()
         self.coverage()
     def test_1022_systemctl_with_systemctl_debug_level(self):
@@ -7653,7 +7685,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_tool(os_path(testdir, "zzz.sh"), os_path(root, "/usr/bin/zzz.sh"))
         # os.makedirs(os_path(root, workingdir)) <<<
         #
-        debug_log = os_path(root, "/var/log/systemctl.debug.log")
+        debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         text_file(debug_log, "")
         #
         cmd = "{systemctl} start zzz.service -vv"
@@ -7715,7 +7747,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_tool(os_path(testdir, "zzz.sh"), os_path(root, "/usr/bin/zzz.sh"))
         # os.makedirs(os_path(root, workingdir)) <<<
         #
-        debug_log = os_path(root, "/var/log/systemctl.debug.log")
+        debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         text_file(debug_log, "")
         #
         cmd = "{systemctl} start zzz.service -vv"
@@ -12685,10 +12717,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/usr/bin/zzz.init"))
         copy_file(os_path(testdir, zzz_service), os_path(root, zzz_service_path))
         #
-        if system in ["user"]:
-            debug_log = os_path(root, os_path(get_runtime_dir(), "/log/systemctl.debug.log"))
-        else:
-            debug_log = os_path(root, "/var/log/systemctl.debug.log")
+        debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG, system not in ["user"]))
         text_file(debug_log, "")
         logg.info("debug.log = %s", debug_log)
         #
@@ -12838,10 +12867,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/usr/bin/zzz.init"))
         copy_file(os_path(testdir, zzz_service), os_path(root, zzz_service_path))
         #
-        if system in ["user"]:
-            debug_log = os_path(root, os_path(get_runtime_dir(), "/log/systemctl.debug.log"))
-        else:
-            debug_log = os_path(root, "/var/log/systemctl.debug.log")
+        debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG, system not in ["user"]))
         text_file(debug_log, "")
         logg.info("debug.log = %s", debug_log)
         #
@@ -15526,7 +15552,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         #
-        debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
+        debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
         cmd = "{initsystemctl} -1"
@@ -15630,7 +15656,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         #
-        debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
+        debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
         cmd = "{initsystemctl} -1"
@@ -15740,7 +15766,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         #
-        debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
+        debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
         cmd = "{initsystemctl} -1"
@@ -15857,7 +15883,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         #
-        debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
+        debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
         cmd = "{initsystemctl} -1"
@@ -15975,7 +16001,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         #
-        debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
+        debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
         cmd = "{initsystemctl} -1"
@@ -16093,7 +16119,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         #
-        debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
+        debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
         cmd = "{initsystemctl} -1"
@@ -16197,7 +16223,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         #
-        debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
+        debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
         cmd = "{initsystemctl} -1"
@@ -16301,7 +16327,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         #
-        debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
+        debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
         cmd = "{initsystemctl} -1"
@@ -16423,7 +16449,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         #
-        debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
+        debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
         cmd = "{initsystemctl} -1"
@@ -16549,7 +16575,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         #
-        debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
+        debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
         cmd = "{initsystemctl} -1"
@@ -16676,7 +16702,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         #
-        debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
+        debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
         cmd = "{initsystemctl} -1"
@@ -16803,7 +16829,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         #
-        debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
+        debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
         cmd = "{initsystemctl} -1"
@@ -16934,7 +16960,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         #
-        debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
+        debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
         cmd = "{initsystemctl} -1"
@@ -17063,7 +17089,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         #
-        debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
+        debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
         cmd = "{initsystemctl} -1"
@@ -17190,7 +17216,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         #
-        debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
+        debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
         cmd = "{initsystemctl} -1"
@@ -17321,7 +17347,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         #
-        debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
+        debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
         cmd = "{initsystemctl} -1"
@@ -17449,7 +17475,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         #
-        debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
+        debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
         cmd = "{initsystemctl} -1"
@@ -17578,7 +17604,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         #
-        debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
+        debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
         cmd = "{initsystemctl} -1"
@@ -17711,7 +17737,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         #
-        debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
+        debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
         cmd = "{initsystemctl} -1"
@@ -17832,7 +17858,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         #
-        debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
+        debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
         cmd = "{initsystemctl} -1"
@@ -17945,7 +17971,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         #
-        debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
+        debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
         cmd = "{initsystemctl} -1"
@@ -18058,7 +18084,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         #
-        debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
+        debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
         cmd = "{initsystemctl} -1"
@@ -18163,7 +18189,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         #
-        debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
+        debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
         cmd = "{initsystemctl} -1"
@@ -18255,7 +18281,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         #
-        debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
+        debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
         cmd = "{systemctl} listen zza.socket"
@@ -18345,7 +18371,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         #
-        debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
+        debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
         cmd = "{systemctl} listen zza.socket -c TestListen -c TestAccept"
@@ -18438,7 +18464,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         #
-        debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
+        debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
         cmd = "{systemctl} listen zza.socket"
@@ -18530,7 +18556,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         #
-        debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
+        debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
         cmd = "{systemctl} listen zza.socket"
@@ -18622,7 +18648,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         #
-        debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
+        debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
         cmd = "{systemctl} listen zza.socket"
@@ -18713,7 +18739,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         #
-        debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
+        debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
         cmd = "{systemctl} listen zza.socket -c TestListen -c TestAccept"
@@ -18805,7 +18831,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         #
-        debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
+        debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
         cmd = "{systemctl} listen zza.socket -c TestListen -c TestAccept"
@@ -18897,7 +18923,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         #
-        debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
+        debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
         cmd = "{systemctl} listen zza.socket -c TestListen -c TestAccept"
@@ -18989,7 +19015,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         #
-        debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
+        debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
         cmd = "{systemctl} listen zza.socket -c TestListen -c TestAccept"
@@ -19081,7 +19107,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         #
-        debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
+        debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
         cmd = "{systemctl} listen zza.socket -c TestListen -c TestAccept"
@@ -19174,7 +19200,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         #
-        debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
+        debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
         cmd = "{systemctl} listen zza.socket -c TestListen"
@@ -19267,7 +19293,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         #
-        debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
+        debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
         cmd = "{systemctl} listen zza.socket -c TestListen"
@@ -19411,7 +19437,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         #
-        debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
+        debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
         cmd = "{initsystemctl} -1"
@@ -19576,7 +19602,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         InitLoopSleep = 1
         systemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         #
-        debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
+        debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
         cmd = "{systemctl} -1"
@@ -19691,7 +19717,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         kill_daemon = "{systemctl} __killall :9 '*systemctl.py' -vvvv"
         sx____(kill_daemon.format(**locals()))
         #
-        debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
+        debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
         cmd = "{systemctl} -1"
@@ -19797,7 +19823,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         kill_daemon = "{systemctl} __killall :9 '*systemctl.py' -vvvv"
         sx____(kill_daemon.format(**locals()))
         #
-        debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
+        debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
         cmd = "{systemctl} -1"
@@ -19905,7 +19931,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         kill_daemon = "{systemctl} __killall :9 '*systemctl.py' -vvvv"
         sx____(kill_daemon.format(**locals()))
         #
-        debug_log = "{root}/var/log/systemctl.debug.log".format(**locals())
+        debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
         cmd = "{systemctl} -1" # init
