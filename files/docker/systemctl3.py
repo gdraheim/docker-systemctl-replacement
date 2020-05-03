@@ -1571,8 +1571,8 @@ class Systemctl:
         """ get the specified pid file path (not a computed default) """
         pid_file = self.get_pid_file(conf) or default
         return os_path(self._root, self.expand_special(pid_file, conf))
-    def get_pid_file(self, conf):
-        return conf.get("Service", "PIDFile")
+    def get_pid_file(self, conf, default = None):
+        return conf.get("Service", "PIDFile", default)
     def read_mainpid_from(self, conf, default = None):
         """ MAINPID is either the PIDFile content written from the application
             or it is the value in the status file written by this systemctl.py code """
