@@ -1079,7 +1079,7 @@ class Systemctl:
     def preset_folders(self):
         SYSTEMD_PRESET_PATH = self.get_SYSTEMD_PRESET_PATH()
         for path in SYSTEMD_PRESET_PATH.split(":"):
-            if path.strip(): yield os.path.expanduser(path.strip())
+            if path.strip(): yield expand_path(path.strip())
         if SYSTEMD_PRESET_PATH.endswith(":"):
             if _preset_folder1: yield _preset_folder1
             if _preset_folder2: yield _preset_folder2
@@ -1089,7 +1089,7 @@ class Systemctl:
     def init_folders(self):
         SYSTEMD_SYSVINIT_PATH = self.get_SYSTEMD_SYSVINIT_PATH()
         for path in SYSTEMD_SYSVINIT_PATH.split(":"):
-            if path.strip(): yield os.path.expanduser(path.strip())
+            if path.strip(): yield expand_path(path.strip())
         if SYSTEMD_SYSVINIT_PATH.endswith(":"):
             if _init_folder1: yield _init_folder1
             if _init_folder2: yield _init_folder2
@@ -1097,17 +1097,17 @@ class Systemctl:
     def user_folders(self):
         SYSTEMD_UNIT_PATH = self.get_SYSTEMD_UNIT_PATH()
         for path in SYSTEMD_UNIT_PATH.split(":"):
-            if path.strip(): yield os.path.expanduser(path.strip())
+            if path.strip(): yield expand_path(path.strip())
         if SYSTEMD_UNIT_PATH.endswith(":"):
-            if _user_folder1: yield os.path.expanduser(_user_folder1)
-            if _user_folder2: yield os.path.expanduser(_user_folder2)
-            if _user_folder3: yield os.path.expanduser(_user_folder3)
-            if _user_folder4: yield os.path.expanduser(_user_folder4)
-            if _user_folder9: yield os.path.expanduser(_user_folder9)
+            if _user_folder1: yield expand_path(_user_folder1)
+            if _user_folder2: yield expand_path(_user_folder2)
+            if _user_folder3: yield expand_path(_user_folder3)
+            if _user_folder4: yield expand_path(_user_folder4)
+            if _user_folder9: yield expand_path(_user_folder9)
     def system_folders(self):
         SYSTEMD_UNIT_PATH = self.get_SYSTEMD_UNIT_PATH()
         for path in SYSTEMD_UNIT_PATH.split(":"):
-            if path.strip(): yield os.path.expanduser(path.strip())
+            if path.strip(): yield expand_path(path.strip())
         if SYSTEMD_UNIT_PATH.endswith(":"):
             if _system_folder1: yield _system_folder1
             if _system_folder2: yield _system_folder2
