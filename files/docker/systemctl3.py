@@ -1569,8 +1569,10 @@ class Systemctl:
         return self.pid_file_from(conf) or self.get_status_file_from(conf)
     def pid_file_from(self, conf, default = ""):
         """ get the specified pid file path (not a computed default) """
-        pid_file = conf.get("Service", "PIDFile", default)
+        pid_file = self.get_pid_file(conf) or default
         return os_path(self._root, self.expand_special(pid_file, conf))
+    def get_pid_file(self, conf):
+        return conf.get("Service", "PIDFile")
     def read_mainpid_from(self, conf, default = None):
         """ MAINPID is either the PIDFile content written from the application
             or it is the value in the status file written by this systemctl.py code """
@@ -4572,7 +4574,8 @@ class Systemctl:
         yield "Id", conf.name()
         yield "Names", " ".join(sorted(names.keys()))
         yield "Description", self.get_description_from(conf) # conf.get("Unit", "Description")
-        yield "PIDFile", self.pid_file_from(conf) # not self.pid_file_from w/o default location
+        yield "PIDFile", self.get_pid_file(conf) # not self.pid_file_from w/o default location
+        yield "PIDFilePath", self.pid_file_from(conf)
         yield "MainPID", strE(self.active_pid_from(conf))            # status["MainPID"] or PIDFile-read
         yield "SubState", self.get_substate_from(conf) or "unknown"  # status["SubState"] or notify-result
         yield "ActiveState", self.get_active_from(conf) or "unknown" # status["ActiveState"]
