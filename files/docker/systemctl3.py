@@ -219,13 +219,13 @@ def o22(part):
     if isinstance(part, basestring):
         if len(part) <= 22:
             return part
-        return part[:5] + ".." + part[-15:]
+        return part[:5] + "..." + part[-14:]
     return part
 def o77(part):
     if isinstance(part, basestring):
         if len(part) <= 77:
             return part
-        return part[:20] + ".." + part[-55:]
+        return part[:20] + "..." + part[-54:]
     return part
 
 def is_good_root(root):
