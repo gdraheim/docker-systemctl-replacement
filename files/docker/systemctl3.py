@@ -22,6 +22,7 @@ import socket
 import datetime
 import fcntl
 import select
+import hashlib
 
 if sys.version[0] == '3':
     basestring = str
@@ -218,13 +219,13 @@ def o22(part):
     if isinstance(part, basestring):
         if len(part) <= 22:
             return part
-        return part[:5] + "..." + part[-14:]
+        return part[:5] + ".." + part[-15:]
     return part
-def o99(part, shorter=0):
+def o77(part):
     if isinstance(part, basestring):
-        if len(part) <= 99:
+        if len(part) <= 77:
             return part
-        return part[:20] + "-.-" + part[-(75-shorter):]
+        return part[:20] + ".." + part[-55:]
     return part
 
 def is_good_root(root):
@@ -2038,24 +2039,31 @@ class Systemctl:
                    return None
         return None
     NotifySocket = collections.namedtuple("NotifySocket", ["socket", "socketfile" ])
-    def get_notify_socket_from(self, conf, socketfile = None):
+    def get_notify_socket_from(self, conf, socketfile = None, debug = False):
         """ creates a notify-socket for the (non-privileged) user """
         notify_socket_folder = expand_path(_notify_socket_folder, not conf._user_mode)
         notify_name = "notify." + str(conf.name() or "systemctl")
         notify_socket = os.path.join(notify_socket_folder, notify_name)
         socketfile = socketfile or notify_socket
         if len(socketfile) > 100:
-            logg.debug("https://unix.stackexchange.com/questions/367008/%s",
-                       "why-is-socket-path-length-limited-to-a-hundred-chars")
-            logg.debug("old notify socketfile (%s) = %s", len(socketfile), socketfile)
-            notify_socket_folder = expand_path(_notify_socket_folder, not conf._user_mode)
-            notify_name = o99(notify_name, len(notify_socket_folder))
-            socketfile = os.path.join(notify_socket_folder, notify_name)
             # occurs during testsuite.py for ~user/test.tmp/root path
-            logg.info("new notify socketfile (%s) = %s", len(socketfile), socketfile)
+            if debug:
+                logg.debug("https://unix.stackexchange.com/questions/367008/%s",
+                           "why-is-socket-path-length-limited-to-a-hundred-chars")
+                logg.debug("old notify socketfile (%s) = %s", len(socketfile), socketfile)
+            notify_socket_folder = expand_path(_notify_socket_folder, not conf._user_mode)
+            notify_name77 = o77(notify_name)
+            socketfile = os.path.join(notify_socket_folder, notify_name77)
+            pref = "zz.%i." % (get_USER_ID(),)
+            if len(socketfile) > 100:
+                socketfile = os.path.join(get_TMP(), pref + notify_name)
+            if len(socketfile) > 100:
+                socketfile = os.path.join(get_TMP(), pref + notify_name77)
+            if debug:
+                logg.info("new notify socketfile (%s) = %s", len(socketfile), socketfile)
         return socketfile
     def notify_socket_from(self, conf, socketfile = None):
-        socketfile = self.get_notify_socket_from(conf, socketfile)
+        socketfile = self.get_notify_socket_from(conf, socketfile, debug=True)
         try:
             if not os.path.isdir(os.path.dirname(socketfile)):
                 os.makedirs(os.path.dirname(socketfile))
