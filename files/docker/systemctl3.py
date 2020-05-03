@@ -2048,8 +2048,9 @@ class Systemctl:
     def get_notify_socket_from(self, conf, socketfile = None, debug = False):
         """ creates a notify-socket for the (non-privileged) user """
         notify_socket_folder = expand_path(_notify_socket_folder, not conf._user_mode)
+        notify_folder = os_path(self._root, notify_socket_folder)
         notify_name = "notify." + str(conf.name() or "systemctl")
-        notify_socket = os.path.join(notify_socket_folder, notify_name)
+        notify_socket = os.path.join(notify_folder, notify_name)
         socketfile = socketfile or notify_socket
         if len(socketfile) > 100:
             # occurs during testsuite.py for ~user/test.tmp/root path
@@ -2057,19 +2058,18 @@ class Systemctl:
                 logg.debug("https://unix.stackexchange.com/questions/367008/%s",
                            "why-is-socket-path-length-limited-to-a-hundred-chars")
                 logg.debug("old notify socketfile (%s) = %s", len(socketfile), socketfile)
-            notify_socket_folder = expand_path(_notify_socket_folder, not conf._user_mode)
             notify_name44 = o44(notify_name)
             notify_name77 = o77(notify_name)
-            socketfile = os.path.join(notify_socket_folder, notify_name77)
+            socketfile = os.path.join(notify_folder, notify_name77)
             if len(socketfile) > 100:
-                socketfile = os.path.join(notify_socket_folder, notify_name44)
-            pref = "zz.%i." % (get_USER_ID(),)
+                socketfile = os.path.join(notify_folder, notify_name44)
+            pref = "zz.%i.%s" % (get_USER_ID(),o22(os.path.basename(notify_socket_folder)))
             if len(socketfile) > 100:
-                socketfile = os.path.join(get_TMP(), pref + notify_name)
+                socketfile = os.path.join(get_TMP(), pref, notify_name)
             if len(socketfile) > 100:
-                socketfile = os.path.join(get_TMP(), pref + notify_name77)
+                socketfile = os.path.join(get_TMP(), pref, notify_name77)
             if len(socketfile) > 100: # pragma: no cover
-                socketfile = os.path.join(get_TMP(), pref + notify_name44)
+                socketfile = os.path.join(get_TMP(), pref, notify_name44)
             if debug:
                 logg.info("new notify socketfile (%s) = %s", len(socketfile), socketfile)
         return socketfile
