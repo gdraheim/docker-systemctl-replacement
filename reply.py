@@ -145,6 +145,10 @@ class ServerUNIX(socketserver.BaseRequestHandler):
 def serverUNIX():
     ppid = os.getpid()
     path = FILE.format(**locals())
+    dir_path = os.path.dirname(path)
+    if not os.path.isdir(dir_path):
+        print("mkdir", dir_path)
+        os.makedirs(dir_path)
     server = socketserver.UnixStreamServer(path, ServerUNIX)
     try:
         print("server UNIX", path)
@@ -171,6 +175,9 @@ class SocketUnixStreamServer(socketserver.UnixStreamServer):
 def socketUNIX():
     ppid = os.getpid()
     path = FILE.format(**locals())
+    if not os.path.isdir(dir_path):
+        print("mkdir", dir_path)
+        os.makedirs(dir_path)
     server = SocketUnixStreamServer(path, ServerUNIX)
     try:
         print("server", path)
