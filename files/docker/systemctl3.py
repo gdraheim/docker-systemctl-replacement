@@ -126,7 +126,7 @@ EXPAND_KEEP_VARS = True
 RESTART_FAILED_UNITS = True
 
 # The systemd default is NOTIFY_SOCKET="/var/run/systemd/notify"
-_notify_socket_folder = "/var/run/systemd" # alias /run/systemd
+_notify_socket_folder = "{RUN}/systemd" # alias /run/systemd
 _journal_log_folder = "/var/log/journal"
 
 SYSTEMCTL_DEBUG_LOG = "/var/log/systemctl.debug.log"
@@ -2044,7 +2044,7 @@ class Systemctl:
     NotifySocket = collections.namedtuple("NotifySocket", ["socket", "socketfile" ])
     def notify_socket_from(self, conf, socketfile = None):
         """ creates a notify-socket for the (non-privileged) user """
-        notify_socket_folder = conf.os_path_var(_notify_socket_folder)
+        notify_socket_folder = expand_path(_notify_socket_folder)
         notify_name = "notify." + str(conf.name() or "systemctl")
         notify_socket = os.path.join(notify_socket_folder, notify_name)
         socketfile = socketfile or notify_socket
@@ -2052,7 +2052,7 @@ class Systemctl:
             logg.debug("https://unix.stackexchange.com/questions/367008/%s",
                        "why-is-socket-path-length-limited-to-a-hundred-chars")
             logg.debug("old notify socketfile (%s) = %s", len(socketfile), socketfile)
-            notify_socket_folder = re.sub("^(/var)?", get_runtime_dir(), _notify_socket_folder)
+            notify_socket_folder = expand_path(_notify_socket_folder)
             notify_name = o99(notify_name, len(notify_socket_folder))
             socketfile = os.path.join(notify_socket_folder, notify_name)
             # occurs during testsuite.py for ~user/test.tmp/root path
