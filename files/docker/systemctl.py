@@ -154,13 +154,13 @@ def strINET(value):
         return "UDP"
     if value == socket.SOCK_STREAM:
         return "TCP"
-    if value == socket.SOCK_RAW:
+    if value == socket.SOCK_RAW: # pragma: no cover
         return "RAW"
-    if value == socket.SOCK_RDM:
+    if value == socket.SOCK_RDM: # pragma: no cover
         return "RDM"
-    if value == socket.SOCK_SEQPACKET:
+    if value == socket.SOCK_SEQPACKET: # pragma: no cover
         return "SEQ"
-    return "<?>"
+    return "<?>" # pragma: no cover
 
 def strYes(value):
     if value is True:
