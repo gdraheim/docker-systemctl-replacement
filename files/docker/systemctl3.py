@@ -4579,7 +4579,9 @@ class Systemctl:
         yield "LoadState", loaded
         yield "UnitFileState", self.enabled_from(conf)
         yield "StatusFile", self.get_StatusFile(conf)
+        yield "StatusFilePath", self.get_status_file_from(conf)
         yield "JournalFile", self.get_journal_log(conf)
+        yield "JournalFilePath", self.get_journal_log_from(conf)
         yield "User", self.get_User(conf) or ""
         yield "Group", self.get_Group(conf) or ""
         yield "SupplementaryGroups", " ".join(self.get_SupplementaryGroups(conf))
