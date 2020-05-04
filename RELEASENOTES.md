@@ -116,3 +116,19 @@ Other than that the testsuite was updated to check2019 with centos 7.7 and
 opensuse 15.1 as the defaults. As some distros have stopped shipping a
 default '/usr/bin/python' there is also a variant with '/usr/bin/python2'
 by now that can be downloaded directly = 'files/docker/systemctl2.py'.
+
+RELEASE 1.4.4181
+
+Some pull requests were merged, including "idle" service support, and
+adaption for cli option compatibility, and a stop simplification.
+
+The backports from 1.5.x include a new "--force" option for the testsuite
+which did allow to check python3 on Centos:8. The optional /etc/locale.conf
+allows for less false-positive error messages when the file is not available.
+
+Note that the "systemctl2.py" script was removed again. It did make the 
+actual maintenance more onerous and error-prone. The same happend on the 
+1.5.x develop branch but it does now have a "systemctl.py" which references 
+/usr/bin/python2 as the interpreter - that could be a breaking change when
+it goes to the master branch but the tests on centos, opensuse and ubuntu 
+did not reveal any problem.
