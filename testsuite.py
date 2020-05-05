@@ -6960,16 +6960,100 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
-    def test_3270_env_may_expand_special_variables(self):
+    def real_3270_env_may_expand_special_variables(self):
+        self.test_3270_env_may_expand_special_variables(True)
+    def test_3270_env_may_expand_special_variables(self, real = False):
         """ check that different flavours for special
             variables get expanded."""
         self.begin()
         testname = self.testname()
         testdir = self.testdir()
-        root = self.root(testdir)
+        root = self.root(testdir, real)
+        vv = "-vv"
         systemctl = cover() + _systemctl_py + " --root=" + root
-        print_sh = os_path(root, "/usr/bin/print.sh")
-        logfile = os_path(root, "/var/log/print_sh.log")
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
+        print_sh = os_path(root, "/usr/bin/zzprint.sh")
+        logfile = os_path(root, "/var/log/zzprint_sh.log")
+        service_file = os_path(root, "/etc/systemd/system/zzb_zzc.service")
+        text_file(service_file,"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            Environment=X=x1
+            Environment="Y=y2 y3"
+            ExecStart=/bin/sleep 3
+            ExecStartPost=%s A %%N $X ${Y}
+            ExecStartPost=%s B %%n $X ${Y}
+            ExecStartPost=%s C %%f $X ${Y}
+            ExecStartPost=%s D %%t $X ${Y}
+            ExecStartPost=%s E %%P $X ${Y}
+            ExecStartPost=%s F %%p $X ${Y}
+            ExecStartPost=%s G %%I $X ${Y}
+            ExecStartPost=%s H %%i $X ${Y} $FOO
+            ExecStartPost=%s T %%T $X ${Y} 
+            ExecStartPost=%s V %%V $X ${Y} 
+            ExecStartPost=%s Z %%Z $X ${Y} ${FOO}
+            [Install]
+            WantedBy=multi-user.target""" 
+            % (print_sh, print_sh, print_sh, print_sh,
+               print_sh, print_sh, print_sh, print_sh,
+               print_sh, print_sh, print_sh))
+        text_file(logfile, "")
+        shell_file(print_sh, """
+            #! /bin/sh
+            logfile='{logfile}'
+            echo "'$1' '$2' '$3' '$4' '$5'" >> "$logfile"
+            """.format(**locals()))
+        #
+        RUN = "/run" # for system-mode
+        cmd = "{systemctl} start 'zzb_zzc.service' {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        log = lines(open(logfile))
+        logg.info("LOG \n%s", log)
+        A="'A' 'zzb_zzc' 'x1' 'y2 y3' ''"  # A %%N
+        B="'B' 'zzb_zzc.service' 'x1' 'y2 y3' ''" # B %%n
+        C="'C' '/zzb_zzc' 'x1' 'y2 y3' ''" # C %%f
+        D="'D' '%s' 'x1' 'y2 y3' ''" % os_path(root, RUN)  # D %%t
+        E="'E' 'zzb_zzc' 'x1' 'y2 y3' ''"  # E %%P
+        F="'F' 'zzb_zzc' 'x1' 'y2 y3' ''" # F %%p
+        G="'G' '' 'x1' 'y2 y3' ''" # G %%I
+        H="'H' '' 'x1' 'y2 y3' ''" # H %%i
+        T="'T' '%s' 'x1' 'y2 y3' ''" % os_path(root, "/tmp")  # T %%T
+        V="'V' '%s' 'x1' 'y2 y3' ''" % os_path(root, "/var/tmp")  # V %%V
+        Z="'Z' '' 'x1' 'y2 y3' ''" # Z %%Z
+        self.assertIn(A, log)
+        self.assertIn(B, log)
+        self.assertIn(C, log)
+        self.assertIn(D, log)
+        self.assertIn(E, log)
+        self.assertIn(F, log)
+        self.assertIn(G, log)
+        self.assertIn(H, log)
+        if not real:
+            self.assertIn(T, log)
+            self.assertIn(V, log)
+            self.assertIn(Z, log)
+        #
+        self.rm_testdir()
+        self.rm_zzfiles(root)
+        self.coverage()
+        self.end()
+    def real_3275_env_may_expand_special_variables(self):
+        self.test_3275_env_may_expand_special_variables(True)
+    def test_3275_env_may_expand_special_variables(self, real = False):
+        """ check that different flavours for special
+            variables get expanded."""
+        self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir, real)
+        vv = "-vv"
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
+        print_sh = os_path(root, "/usr/bin/zzprint.sh")
+        logfile = os_path(root, "/var/log/zzprint_sh.log")
         service_file = os_path(root, "/etc/systemd/system/zzb zzc.service")
         text_file(service_file,"""
             [Unit]
@@ -7002,7 +7086,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             """.format(**locals()))
         #
         RUN = "/run" # for system-mode
-        cmd = "{systemctl} start 'zzb zzc.service' -vv"
+        cmd = "{systemctl} start 'zzb zzc.service' {vv}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
@@ -7032,6 +7116,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertIn(Z, log)
         #
         self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def test_3280_user_mode_env_may_expand_special_variables(self):
