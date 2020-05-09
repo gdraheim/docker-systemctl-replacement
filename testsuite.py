@@ -7054,7 +7054,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         print_sh = os_path(root, "/usr/bin/zzprint.sh")
         logfile = os_path(root, "/var/log/zzprint_sh.log")
-        service_file = os_path(root, "/etc/systemd/system/zzb zzc.service")
+        service_file = os_path(root, "/etc/systemd/system/zzb\\x20zzc.service")
         text_file(service_file,"""
             [Unit]
             Description=Testing B
@@ -7086,18 +7086,19 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             """.format(**locals()))
         #
         RUN = "/run" # for system-mode
-        cmd = "{systemctl} start 'zzb zzc.service' {vv}"
+        cmd = "{systemctl} start 'zzb\\x20zzc.service' {vv}"
+        if real: cmd = "{systemctl} start 'zzb zzc.service' {vv}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         log = lines(open(logfile))
         logg.info("LOG \n%s", log)
-        _N_="'_N_' 'zzb' 'zzc' 'x1' 'y2 y3'"
-        _n_="'_n_' 'zzb' 'zzc.service' 'x1' 'y2 y3'"
-        _f_="'_f_' '/zzb' 'zzc' 'x1' 'y2 y3'"
+        _N_="'_N_' 'zzb\\x20zzc' 'x1' 'y2 y3' ''"
+        _n_="'_n_' 'zzb\\x20zzc.service' 'x1' 'y2 y3' ''"
+        _f_="'_f_' '/zzb zzc' 'x1' 'y2 y3' ''"
         _t_="'_t_' '%s' 'x1' 'y2 y3' ''" % os_path(root, RUN)
-        _P_="'_P_' 'zzb' 'zzc' 'x1' 'y2 y3'"
-        _p_="'_p_' 'zzb zzc' 'x1' 'y2 y3' ''"
+        _P_="'_P_' 'zzb zzc' 'x1' 'y2 y3' ''"
+        _p_="'_p_' 'zzb\\x20zzc' 'x1' 'y2 y3' ''"
         _I_="'_I_' '' 'x1' 'y2 y3' ''"
         _i_="'_i_' '' 'x1' 'y2 y3' ''"
         _T_="'_T_' '%s' 'x1' 'y2 y3' ''" % os_path(root, "/tmp")
@@ -7169,11 +7170,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 0)
         log = lines(open(logfile))
         logg.info("LOG \n%s", log)
-        _N_="'_N_' 'zzb' 'zzc' 'x1' 'y2 y3'"
-        _n_="'_n_' 'zzb' 'zzc.service' 'x1' 'y2 y3'"
-        _f_="'_f_' '/zzb' 'zzc' 'x1' 'y2 y3'"
+        _N_="'_N_' 'zzb zzc' 'x1' 'y2 y3' ''"
+        _n_="'_n_' 'zzb zzc.service' 'x1' 'y2 y3' ''"
+        _f_="'_f_' '/zzb zzc' 'x1' 'y2 y3' ''"
         _t_="'_t_' '%s' 'x1' 'y2 y3' ''" % os_path(root, RUN)
-        _P_="'_P_' 'zzb' 'zzc' 'x1' 'y2 y3'"
+        _P_="'_P_' 'zzb zzc' 'x1' 'y2 y3' ''"
         _p_="'_p_' 'zzb zzc' 'x1' 'y2 y3' ''"
         _I_="'_I_' '' 'x1' 'y2 y3' ''"
         _i_="'_i_' '' 'x1' 'y2 y3' ''"
