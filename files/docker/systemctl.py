@@ -233,6 +233,13 @@ def o77(part):
             return part
         return part[:20] + "..." + part[-54:]
     return part
+def unit_name_escape(text):
+    # https://www.freedesktop.org/software/systemd/man/systemd.unit.html#id-1.6
+    esc = re.sub("([^a-z-AZ.-/])", lambda m: "\\x%02x" % ord(x.group(1)[0]), text)
+    return esc.replace("/", "-")
+def unit_name_unescape(text):
+    esc = text.replace("-", "/")
+    return re.sub("\\\\x(..)", lambda m: "%c" % chr(int(m.group(1), 16)), esc)
 
 def is_good_root(root):
     if not root:
@@ -1925,13 +1932,13 @@ class Systemctl:
         """ expand %i %t and similar special vars. They are being expanded
             before any other expand_env takes place which handles shell-style
             $HOME references. """
-        def sh_escape(value):
-            return "'" + value.replace("'","\\'") + "'"
         def get_confs(conf):
             confs={ "%": "%" }
             if not conf:
                 return confs
             unit = parse_unit(conf.name())
+            xx = unit_name_unescape
+            yy = lambda arg: arg
             #
             root = not self.is_user_conf(conf)
             VARTMP = get_VARTMP(root)     # $TMPDIR              # "/var/tmp"
@@ -1950,20 +1957,20 @@ class Systemctl:
             # confs["b"] = boot_ID
             confs["C"] = os_path(self._root, CACHE) # Cache directory root
             confs["E"] = os_path(self._root, ETC)   # Configuration directory root
-            confs["F"] = sh_escape(strE(conf.filename())) # EXTRA
-            confs["f"] = "/%s" % (unit.instance or unit.prefix)
+            confs["F"] = strE(conf.filename())      # EXTRA
+            confs["f"] = "/%s" % xx(unit.instance or unit.prefix)
             confs["h"] = HOME                       # User home directory
             # confs["H"] = host_NAME
-            confs["i"] = sh_escape(unit.instance)
-            confs["I"] = unit.instance or "''"      # same as %i but escaping undone
-            confs["j"] = sh_escape(unit.component)  # final component of the prefix
-            confs["J"] = unit.component             # unescaped final component
+            confs["i"] = yy(unit.instance)
+            confs["I"] = xx(unit.instance)       # same as %i but escaping undone
+            confs["j"] = yy(unit.component)      # final component of the prefix
+            confs["J"] = xx(unit.component)      # unescaped final component
             confs["L"] = os_path(self._root, LOG)
             # confs["m"] = machine_ID
-            confs["n"] = unit.fullname             # Full unit name
-            confs["N"] = unit.name                 # Same as "%n", but with the type suffix removed.
-            confs["p"] = sh_escape(unit.prefix)    # before the first "@" or same as %n
-            confs["P"] = unit.prefix               # same as %p but escaping undone
+            confs["n"] = yy(unit.fullname)         # Full unit name
+            confs["N"] = yy(unit.name)             # Same as "%n", but with the type suffix removed.
+            confs["p"] = yy(unit.prefix)           # before the first "@" or same as %n
+            confs["P"] = xx(unit.prefix)           # same as %p but escaping undone
             confs["s"] = SHELL
             confs["S"] = os_path(self._root, DAT)
             confs["t"] = os_path(self._root, RUN)
@@ -1979,16 +1986,13 @@ class Systemctl:
             if m.group(1) in confs:
                 return confs[m.group(1)]
             logg.warning("can not expand %%%s", m.group(1))
-            return "''" # empty escaped string
+            return ""
         result = re.sub("[%](.)", lambda m: get_conf1(m), cmd)
-        logg.info("expanded => %s", result)
+        #++# logg.info("expanded => %s", result)
         return result
     def exec_cmd(self, cmd, env, conf = None):
         """ expand ExecCmd statements including %i and $MAINPID """
-        cmd1 = cmd.replace("\\\n","")
-        # according to documentation the %n / %% need to be expanded where in
-        # most cases they are shell-escaped values. So we do it before shlex.
-        cmd2 = self.expand_special(cmd1, conf)
+        cmd2 = cmd.replace("\\\n","")
         # according to documentation, when bar="one two" then the expansion
         # of '$bar' is ["one","two"] and '${bar}' becomes ["one two"]. We
         # tackle that by expand $bar before shlex, and the rest thereafter.
@@ -2005,7 +2009,8 @@ class Systemctl:
         cmd3 = re.sub("[$](\w+)", lambda m: get_env1(m), cmd2)
         newcmd = []
         for part in shlex.split(cmd3):
-            newcmd += [ re.sub("[$][{](\w+)[}]", lambda m: get_env2(m), part) ]
+            # newcmd += [ re.sub("[$][{](\w+)[}]", lambda m: get_env2(m), part) ]
+            newcmd += [ re.sub("[$][{](\w+)[}]", lambda m: get_env2(m), self.expand_special(part, conf)) ]
         return newcmd
     def get_journal_log_from(self, conf):
         return os_path(self._root, self.get_journal_log(conf))
