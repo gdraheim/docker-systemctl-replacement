@@ -864,24 +864,24 @@ def subprocess_testpid(pid):
     else:
         return waitpid_result(pid, None, 0)
 
-parse_result = collections.namedtuple("UnitName", ["name", "prefix", "instance", "suffix", "component" ])
+parse_result = collections.namedtuple("UnitName", ["fullname", "name", "prefix", "instance", "suffix", "component" ])
 
-def parse_unit(name): # -> object(prefix, instance, suffix, ...., name, component)
-    unit_name, suffix = name, ""
-    has_suffix = name.rfind(".")
+def parse_unit(fullname): # -> object(prefix, instance, suffix, ...., name, component)
+    name, suffix = fullname, ""
+    has_suffix = fullname.rfind(".")
     if has_suffix > 0: 
-        unit_name = name[:has_suffix]
-        suffix = name[has_suffix+1:]
-    prefix, instance = unit_name, ""
-    has_instance = unit_name.find("@")
+        name = fullname[:has_suffix]
+        suffix = fullname[has_suffix+1:]
+    prefix, instance = name, ""
+    has_instance = name.find("@")
     if has_instance > 0:
-        prefix = unit_name[:has_instance]
-        instance = unit_name[has_instance+1:]
+        prefix = name[:has_instance]
+        instance = name[has_instance+1:]
     component = ""
     has_component = prefix.rfind("-")
     if has_component > 0: 
         component = prefix[has_component+1:]
-    return parse_result(name, prefix, instance, suffix, component)
+    return parse_result(fullname, name, prefix, instance, suffix, component)
 
 def time_to_seconds(text, maximum = None):
     if maximum is None:
@@ -1932,15 +1932,7 @@ class Systemctl:
             if not conf:
                 return confs
             unit = parse_unit(conf.name())
-            confs["N"] = unit.name
-            confs["n"] = sh_escape(unit.name)
-            confs["P"] = unit.prefix
-            confs["p"] = sh_escape(unit.prefix)
-            confs["I"] = unit.instance
-            confs["i"] = sh_escape(unit.instance)
-            confs["J"] = unit.component
-            confs["j"] = sh_escape(unit.component)
-            confs["f"] = sh_escape(strE(conf.filename()))
+            #
             root = not self.is_user_conf(conf)
             VARTMP = get_VARTMP(root)     # $TMPDIR              # "/var/tmp"
             TMP = get_TMP(root)           # $TMPDIR              # "/tmp"
@@ -1955,19 +1947,32 @@ class Systemctl:
             GROUP = get_GROUP(root)       # getegid().gr_name    # "root"
             GROUP_ID = get_GROUP_ID(root) # getegid()            # 0
             SHELL = get_SHELL(root)       # $SHELL               # "/bin/sh"
-            confs["V"] = os_path(self._root, VARTMP)
-            confs["T"] = os_path(self._root, TMP)
-            confs["t"] = os_path(self._root, RUN)
-            confs["S"] = os_path(self._root, DAT)
+            # confs["b"] = boot_ID
+            confs["C"] = os_path(self._root, CACHE) # Cache directory root
+            confs["E"] = os_path(self._root, ETC)   # Configuration directory root
+            confs["F"] = sh_escape(strE(conf.filename())) # EXTRA
+            confs["f"] = "/%s" % (unit.instance or unit.prefix)
+            confs["h"] = HOME                       # User home directory
+            # confs["H"] = host_NAME
+            confs["i"] = sh_escape(unit.instance)
+            confs["I"] = unit.instance or "''"      # same as %i but escaping undone
+            confs["j"] = sh_escape(unit.component)  # final component of the prefix
+            confs["J"] = unit.component             # unescaped final component
+            confs["L"] = os_path(self._root, LOG)
+            # confs["m"] = machine_ID
+            confs["n"] = unit.fullname             # Full unit name
+            confs["N"] = unit.name                 # Same as "%n", but with the type suffix removed.
+            confs["p"] = sh_escape(unit.prefix)    # before the first "@" or same as %n
+            confs["P"] = unit.prefix               # same as %p but escaping undone
             confs["s"] = SHELL
-            confs["h"] = HOME
-            confs["u"] = USER
-            confs["U"] = str(USER_ID)
+            confs["S"] = os_path(self._root, DAT)
+            confs["t"] = os_path(self._root, RUN)
+            confs["T"] = os_path(self._root, TMP)
             confs["g"] = GROUP
             confs["G"] = str(GROUP_ID)
-            confs["L"] = os_path(self._root, LOG)
-            confs["C"] = os_path(self._root, CACHE)
-            confs["E"] = os_path(self._root, ETC)
+            confs["u"] = USER
+            confs["U"] = str(USER_ID)
+            confs["V"] = os_path(self._root, VARTMP)
             return confs
         def get_conf1(m):
             confs = get_confs(conf)
@@ -1975,7 +1980,9 @@ class Systemctl:
                 return confs[m.group(1)]
             logg.warning("can not expand %%%s", m.group(1))
             return "''" # empty escaped string
-        return re.sub("[%](.)", lambda m: get_conf1(m), cmd)
+        result = re.sub("[%](.)", lambda m: get_conf1(m), cmd)
+        logg.info("expanded => %s", result)
+        return result
     def exec_cmd(self, cmd, env, conf = None):
         """ expand ExecCmd statements including %i and $MAINPID """
         cmd1 = cmd.replace("\\\n","")
