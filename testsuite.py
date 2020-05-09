@@ -6982,17 +6982,17 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Environment=X=x1
             Environment="Y=y2 y3"
             ExecStart=/bin/sleep 3
-            ExecStartPost=%s A %%N $X ${Y}
-            ExecStartPost=%s B %%n $X ${Y}
-            ExecStartPost=%s C %%f $X ${Y}
-            ExecStartPost=%s D %%t $X ${Y}
-            ExecStartPost=%s E %%P $X ${Y}
-            ExecStartPost=%s F %%p $X ${Y}
-            ExecStartPost=%s G %%I $X ${Y}
-            ExecStartPost=%s H %%i $X ${Y} $FOO
-            ExecStartPost=%s T %%T $X ${Y} 
-            ExecStartPost=%s V %%V $X ${Y} 
-            ExecStartPost=%s Z %%Z $X ${Y} ${FOO}
+            ExecStartPost=%s _N_ %%N $X ${Y}
+            ExecStartPost=%s _n_ %%n $X ${Y}
+            ExecStartPost=%s _f_ %%f $X ${Y}
+            ExecStartPost=%s _t_ %%t $X ${Y}
+            ExecStartPost=%s _P_ %%P $X ${Y}
+            ExecStartPost=%s _p_ %%p $X ${Y}
+            ExecStartPost=%s _I_ %%I $X ${Y}
+            ExecStartPost=%s _i_ %%i $X ${Y} $FOO
+            ExecStartPost=%s _T_ %%T $X ${Y} 
+            ExecStartPost=%s _V_ %%V $X ${Y} 
+            ExecStartPost=%s _Z_ %%Z $X ${Y} ${FOO}
             [Install]
             WantedBy=multi-user.target""" 
             % (print_sh, print_sh, print_sh, print_sh,
@@ -7012,29 +7012,29 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 0)
         log = lines(open(logfile))
         logg.info("LOG \n%s", log)
-        A="'A' 'zzb_zzc' 'x1' 'y2 y3' ''"  # A %%N
-        B="'B' 'zzb_zzc.service' 'x1' 'y2 y3' ''" # B %%n
-        C="'C' '/zzb_zzc' 'x1' 'y2 y3' ''" # C %%f
-        D="'D' '%s' 'x1' 'y2 y3' ''" % os_path(root, RUN)  # D %%t
-        E="'E' 'zzb_zzc' 'x1' 'y2 y3' ''"  # E %%P
-        F="'F' 'zzb_zzc' 'x1' 'y2 y3' ''" # F %%p
-        G="'G' '' 'x1' 'y2 y3' ''" # G %%I
-        H="'H' '' 'x1' 'y2 y3' ''" # H %%i
-        T="'T' '%s' 'x1' 'y2 y3' ''" % os_path(root, "/tmp")  # T %%T
-        V="'V' '%s' 'x1' 'y2 y3' ''" % os_path(root, "/var/tmp")  # V %%V
-        Z="'Z' '' 'x1' 'y2 y3' ''" # Z %%Z
-        self.assertIn(A, log)
-        self.assertIn(B, log)
-        self.assertIn(C, log)
-        self.assertIn(D, log)
-        self.assertIn(E, log)
-        self.assertIn(F, log)
-        self.assertIn(G, log)
-        self.assertIn(H, log)
+        _N_="'_N_' 'zzb_zzc' 'x1' 'y2 y3' ''"
+        _n_="'_n_' 'zzb_zzc.service' 'x1' 'y2 y3' ''"
+        _f_="'_f_' '/zzb_zzc' 'x1' 'y2 y3' ''"
+        _t_="'_t_' '%s' 'x1' 'y2 y3' ''" % os_path(root, RUN)
+        _P_="'_P_' 'zzb_zzc' 'x1' 'y2 y3' ''"
+        _p_="'_p_' 'zzb_zzc' 'x1' 'y2 y3' ''"
+        _I_="'_I_' '' 'x1' 'y2 y3' ''"
+        _i_="'_i_' '' 'x1' 'y2 y3' ''"
+        _T_="'_T_' '%s' 'x1' 'y2 y3' ''" % os_path(root, "/tmp")
+        _V_="'_V_' '%s' 'x1' 'y2 y3' ''" % os_path(root, "/var/tmp")
+        _Z_="'_Z_' '' 'x1' 'y2 y3' ''" 
+        self.assertIn(_N_, log)
+        self.assertIn(_n_, log)
+        self.assertIn(_f_, log)
+        self.assertIn(_t_, log)
+        self.assertIn(_P_, log)
+        self.assertIn(_p_, log)
+        self.assertIn(_I_, log)
+        self.assertIn(_i_, log)
         if not real:
-            self.assertIn(T, log)
-            self.assertIn(V, log)
-            self.assertIn(Z, log)
+            self.assertIn(_T_, log)
+            self.assertIn(_V_, log)
+            self.assertIn(_Z_, log)
         #
         self.rm_testdir()
         self.rm_zzfiles(root)
@@ -7062,17 +7062,17 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Environment=X=x1
             Environment="Y=y2 y3"
             ExecStart=/bin/sleep 3
-            ExecStartPost=%s A %%N $X ${Y}
-            ExecStartPost=%s B %%n $X ${Y}
-            ExecStartPost=%s C %%f $X ${Y}
-            ExecStartPost=%s D %%t $X ${Y}
-            ExecStartPost=%s E %%P $X ${Y}
-            ExecStartPost=%s F %%p $X ${Y}
-            ExecStartPost=%s G %%I $X ${Y}
-            ExecStartPost=%s H %%i $X ${Y} $FOO
-            ExecStartPost=%s T %%T $X ${Y} 
-            ExecStartPost=%s V %%V $X ${Y} 
-            ExecStartPost=%s Z %%Z $X ${Y} ${FOO}
+            ExecStartPost=%s _N_ %%N $X ${Y}
+            ExecStartPost=%s _n_ %%n $X ${Y}
+            ExecStartPost=%s _f_ %%f $X ${Y}
+            ExecStartPost=%s _t_ %%t $X ${Y}
+            ExecStartPost=%s _P_ %%P $X ${Y}
+            ExecStartPost=%s _p_ %%p $X ${Y}
+            ExecStartPost=%s _I_ %%I $X ${Y}
+            ExecStartPost=%s _i_ %%i $X ${Y} $FOO
+            ExecStartPost=%s _T_ %%T $X ${Y} 
+            ExecStartPost=%s _V_ %%V $X ${Y} 
+            ExecStartPost=%s _Z_ %%Z $X ${Y} ${FOO}
             [Install]
             WantedBy=multi-user.target""" 
             % (print_sh, print_sh, print_sh, print_sh,
@@ -7092,34 +7092,35 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 0)
         log = lines(open(logfile))
         logg.info("LOG \n%s", log)
-        A="'A' 'zzb' 'zzc.service' 'x1' 'y2 y3'"  # A %%N
-        B="'B' 'zzb zzc.service' 'x1' 'y2 y3' ''" # B %%n
-        C="'C' '%s' 'x1' 'y2 y3' ''" % service_file        # C %%f
-        D="'D' '%s' 'x1' 'y2 y3' ''" % os_path(root, RUN)  # D %%t
-        E="'E' 'zzb' 'zzc' 'x1' 'y2 y3'"  # E %%P
-        F="'F' 'zzb zzc' 'x1' 'y2 y3' ''" # F %%p
-        G="'G' 'x1' 'y2 y3' '' ''" # G %%I
-        H="'H' '' 'x1' 'y2 y3' ''" # H %%i
-        T="'T' '%s' 'x1' 'y2 y3' ''" % os_path(root, "/tmp")  # T %%T
-        V="'V' '%s' 'x1' 'y2 y3' ''" % os_path(root, "/var/tmp")  # V %%V
-        Z="'Z' '' 'x1' 'y2 y3' ''" # Z %%Z
-        self.assertIn(A, log)
-        self.assertIn(B, log)
-        self.assertIn(C, log)
-        self.assertIn(D, log)
-        self.assertIn(E, log)
-        self.assertIn(F, log)
-        self.assertIn(G, log)
-        self.assertIn(H, log)
-        self.assertIn(T, log)
-        self.assertIn(V, log)
-        self.assertIn(Z, log)
+        _N_="'_N_' 'zzb' 'zzc' 'x1' 'y2 y3'"
+        _n_="'_n_' 'zzb' 'zzc.service' 'x1' 'y2 y3'"
+        _f_="'_f_' '/zzb' 'zzc' 'x1' 'y2 y3'"
+        _t_="'_t_' '%s' 'x1' 'y2 y3' ''" % os_path(root, RUN)
+        _P_="'_P_' 'zzb' 'zzc' 'x1' 'y2 y3'"
+        _p_="'_p_' 'zzb zzc' 'x1' 'y2 y3' ''"
+        _I_="'_I_' '' 'x1' 'y2 y3' ''"
+        _i_="'_i_' '' 'x1' 'y2 y3' ''"
+        _T_="'_T_' '%s' 'x1' 'y2 y3' ''" % os_path(root, "/tmp")
+        _V_="'_V_' '%s' 'x1' 'y2 y3' ''" % os_path(root, "/var/tmp")
+        _Z_="'_Z_' '' 'x1' 'y2 y3' ''" 
+        self.assertIn(_N_, log)
+        self.assertIn(_n_, log)
+        self.assertIn(_f_, log)
+        self.assertIn(_t_, log)
+        self.assertIn(_P_, log)
+        self.assertIn(_p_, log)
+        self.assertIn(_I_, log)
+        self.assertIn(_i_, log)
+        if not real:
+            self.assertIn(_T_, log)
+            self.assertIn(_V_, log)
+            self.assertIn(_Z_, log)
         #
         self.rm_testdir()
         self.rm_zzfiles(root)
         self.coverage()
         self.end()
-    def test_3280_user_mode_env_may_expand_special_variables(self):
+    def test_3280_user_mode_env_may_expand_special_variables(self, real = False):
         """ check that different flavours for special
             variables get expanded. Differently in --user mode."""
         self.begin()
@@ -7137,17 +7138,17 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Environment=X=x1
             Environment="Y=y2 y3"
             ExecStart=/bin/sleep 3
-            ExecStartPost=%s A %%N $X ${Y}
-            ExecStartPost=%s B %%n $X ${Y}
-            ExecStartPost=%s C %%f $X ${Y}
-            ExecStartPost=%s D %%t $X ${Y}
-            ExecStartPost=%s E %%P $X ${Y}
-            ExecStartPost=%s F %%p $X ${Y}
-            ExecStartPost=%s G %%I $X ${Y}
-            ExecStartPost=%s H %%i $X ${Y} $FOO
-            ExecStartPost=%s T %%T $X ${Y} 
-            ExecStartPost=%s V %%V $X ${Y} 
-            ExecStartPost=%s Z %%Z $X ${Y} ${FOO}
+            ExecStartPost=%s _N_ %%N $X ${Y}
+            ExecStartPost=%s _n_ %%n $X ${Y}
+            ExecStartPost=%s _f_ %%f $X ${Y}
+            ExecStartPost=%s _t_ %%t $X ${Y}
+            ExecStartPost=%s _P_ %%P $X ${Y}
+            ExecStartPost=%s _p_ %%p $X ${Y}
+            ExecStartPost=%s _I_ %%I $X ${Y}
+            ExecStartPost=%s _i_ %%i $X ${Y} $FOO
+            ExecStartPost=%s _T_ %%T $X ${Y} 
+            ExecStartPost=%s _V_ %%V $X ${Y} 
+            ExecStartPost=%s _Z_ %%Z $X ${Y} ${FOO}
             [Install]
             WantedBy=multi-user.target""" 
             % (print_sh, print_sh, print_sh, print_sh,
@@ -7168,28 +7169,29 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 0)
         log = lines(open(logfile))
         logg.info("LOG \n%s", log)
-        A="'A' 'zzb' 'zzc.service' 'x1' 'y2 y3'"  # A %%N
-        B="'B' 'zzb zzc.service' 'x1' 'y2 y3' ''" # B %%n
-        C="'C' '%s' 'x1' 'y2 y3' ''" % service_file        # C %%f
-        D="'D' '%s' 'x1' 'y2 y3' ''" % os_path(root, RUN)  # D %%t
-        E="'E' 'zzb' 'zzc' 'x1' 'y2 y3'"  # E %%P
-        F="'F' 'zzb zzc' 'x1' 'y2 y3' ''" # F %%p
-        G="'G' 'x1' 'y2 y3' '' ''" # G %%I
-        H="'H' '' 'x1' 'y2 y3' ''" # H %%i
-        T="'T' '%s' 'x1' 'y2 y3' ''" % os_path(root, "/tmp")  # T %%T
-        V="'V' '%s' 'x1' 'y2 y3' ''" % os_path(root, "/var/tmp")  # V %%V
-        Z="'Z' '' 'x1' 'y2 y3' ''" # Z %%Z
-        self.assertIn(A, log)
-        self.assertIn(B, log)
-        self.assertIn(C, log)
-        self.assertIn(D, log)
-        self.assertIn(E, log)
-        self.assertIn(F, log)
-        self.assertIn(G, log)
-        self.assertIn(H, log)
-        self.assertIn(T, log)
-        self.assertIn(V, log)
-        self.assertIn(Z, log)
+        _N_="'_N_' 'zzb' 'zzc' 'x1' 'y2 y3'"
+        _n_="'_n_' 'zzb' 'zzc.service' 'x1' 'y2 y3'"
+        _f_="'_f_' '/zzb' 'zzc' 'x1' 'y2 y3'"
+        _t_="'_t_' '%s' 'x1' 'y2 y3' ''" % os_path(root, RUN)
+        _P_="'_P_' 'zzb' 'zzc' 'x1' 'y2 y3'"
+        _p_="'_p_' 'zzb zzc' 'x1' 'y2 y3' ''"
+        _I_="'_I_' '' 'x1' 'y2 y3' ''"
+        _i_="'_i_' '' 'x1' 'y2 y3' ''"
+        _T_="'_T_' '%s' 'x1' 'y2 y3' ''" % os_path(root, "/tmp")
+        _V_="'_V_' '%s' 'x1' 'y2 y3' ''" % os_path(root, "/var/tmp")
+        _Z_="'_Z_' '' 'x1' 'y2 y3' ''" 
+        self.assertIn(_N_, log)
+        self.assertIn(_n_, log)
+        self.assertIn(_f_, log)
+        self.assertIn(_t_, log)
+        self.assertIn(_P_, log)
+        self.assertIn(_p_, log)
+        self.assertIn(_I_, log)
+        self.assertIn(_i_, log)
+        if not real:
+            self.assertIn(_T_, log)
+            self.assertIn(_V_, log)
+            self.assertIn(_Z_, log)
         #
         self.rm_testdir()
         self.coverage()
