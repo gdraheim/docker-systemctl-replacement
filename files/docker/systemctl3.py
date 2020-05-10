@@ -98,7 +98,7 @@ _rc5_init_folder = "/etc/init.d/rc5.d"
 _proc_pid_stat   = "/proc/{pid}/stat"
 _proc_pid_status = "/proc/{pid}/status"
 _proc_pid_cmdline= "/proc/{pid}/cmdline"
-_proc_dir        = "/proc"
+_proc_pid_dir    = "/proc"
 _proc_sys_uptime = "/proc/uptime"
 _proc_sys_stat   = "/proc/stat"
 
@@ -1743,7 +1743,7 @@ class Systemctl:
         if DEBUG_BOOTTIME:
             logg.debug(" boottime from the oldest entry in /proc [nothing in %s..%s]", pid1, pid_max)
         booted = time.time()
-        for pid in os.listdir(_proc_dir):
+        for pid in os.listdir(_proc_pid_dir):
             proc = _proc_pid_stat.format(**locals())
             try:
                 if os.path.exists(proc):
@@ -5183,8 +5183,8 @@ class Systemctl:
         """ check to reap children """
         selfpid = os.getpid()
         running = 0
-        for pid_file in os.listdir(_proc_dir):
-            try: pid = int(pid_file)
+        for pid_entry in os.listdir(_proc_pid_dir):
+            try: pid = int(pid_entry)
             except: continue
             if pid == selfpid:
                 continue
@@ -5257,8 +5257,8 @@ class Systemctl:
         pidlist = [ pid ]
         pids = [ pid ]
         for depth in xrange(PROC_MAX_DEPTH):
-            for pid_file in os.listdir(_proc_dir):
-                try: pid = int(pid_file)
+            for pid_entry in os.listdir(_proc_pid_dir):
+                try: pid = int(pid_entry)
                 except: continue
                 proc_status = _proc_pid_status.format(**locals())
                 if os.path.isfile(proc_status):
@@ -5297,8 +5297,8 @@ class Systemctl:
                 else: # pragma: no cover
                     logg.error("unsupported %s", target)
                 continue
-            for pid_dir in os.listdir(_proc_dir):
-                pid = to_intN(pid_dir)
+            for pid_entry in os.listdir(_proc_pid_dir):
+                pid = to_intN(pid_entry)
                 if pid:
                     try:
                         cmdline = _proc_pid_cmdline.format(**locals())
