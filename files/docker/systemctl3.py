@@ -97,6 +97,7 @@ _rc5_boot_folder = "/etc/rc5.d"
 _rc5_init_folder = "/etc/init.d/rc5.d"
 _proc_pid_stat   = "/proc/{pid}/stat"
 _proc_pid_status = "/proc/{pid}/status"
+_proc_pid_cmdline= "/proc/{pid}/cmdline"
 _proc_dir        = "/proc"
 _proc_sys_uptime = "/proc/uptime"
 _proc_sys_stat   = "/proc/stat"
@@ -5182,12 +5183,12 @@ class Systemctl:
         """ check to reap children """
         selfpid = os.getpid()
         running = 0
-        for pid_file in os.listdir("/proc"):
+        for pid_file in os.listdir(_proc_dir):
             try: pid = int(pid_file)
             except: continue
             if pid == selfpid:
                 continue
-            proc_status = "/proc/%s/status" % pid
+            proc_status = _proc_pid_status.format(**locals())
             if os.path.isfile(proc_status):
                 zombie = False
                 ppid = -1
@@ -5256,10 +5257,10 @@ class Systemctl:
         pidlist = [ pid ]
         pids = [ pid ]
         for depth in xrange(PROC_MAX_DEPTH):
-            for pid_file in os.listdir("/proc"):
+            for pid_file in os.listdir(_proc_dir):
                 try: pid = int(pid_file)
                 except: continue
-                proc_status = "/proc/%s/status" % pid
+                proc_status = _proc_pid_status.format(**locals())
                 if os.path.isfile(proc_status):
                     try:
                         for line in open(proc_status):
@@ -5296,11 +5297,11 @@ class Systemctl:
                 else: # pragma: no cover
                     logg.error("unsupported %s", target)
                 continue
-            for pid_dir in os.listdir("/proc"):
-                pid_num = to_intN(pid_dir)
-                if pid_num:
+            for pid_dir in os.listdir(_proc_dir):
+                pid = to_intN(pid_dir)
+                if pid:
                     try:
-                        cmdline = "/proc/{pid_dir}/cmdline".format(**locals())
+                        cmdline = _proc_pid_cmdline.format(**locals())
                         cmd = open(cmdline).read().split("\0")
                         if DEBUG_KILLALL: logg.debug("cmdline %s", cmd)
                         found = None
@@ -5320,12 +5321,12 @@ class Systemctl:
                                     if DEBUG_KILLALL: logg.debug("cmd.run '%s'", cmd_run)
                                     if fnmatch.fnmatchcase(cmd_run, target): found = "run"
                         if found:
-                            if DEBUG_KILLALL: logg.debug("%s found %s %s", found, pid_num, [ c for c in cmd ])
-                            if pid_num != os.getpid():
-                                logg.debug(" kill -%s %s # %s", sig, pid_num, target)
-                                os.kill(pid_num, sig)
+                            if DEBUG_KILLALL: logg.debug("%s found %s %s", found, pid, [ c for c in cmd ])
+                            if pid != os.getpid():
+                                logg.debug(" kill -%s %s # %s", sig, pid, target)
+                                os.kill(pid, sig)
                     except Exception as e:
-                        logg.error("kill -%s %s : %s", sig, pid_num, e)
+                        logg.error("kill -%s %s : %s", sig, pid, e)
         return True
     def force_ipv4(self, *args):
         """ only ipv4 localhost in /etc/hosts """
