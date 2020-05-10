@@ -5184,8 +5184,9 @@ class Systemctl:
         selfpid = os.getpid()
         running = 0
         for pid_entry in os.listdir(_proc_pid_dir):
-            try: pid = int(pid_entry)
-            except: continue
+            pid = to_intN(pid_entry)
+            if pid is None:
+                continue
             if pid == selfpid:
                 continue
             proc_status = _proc_pid_status.format(**locals())
@@ -5258,8 +5259,9 @@ class Systemctl:
         pids = [ pid ]
         for depth in xrange(PROC_MAX_DEPTH):
             for pid_entry in os.listdir(_proc_pid_dir):
-                try: pid = int(pid_entry)
-                except: continue
+                pid = to_intN(pid_entry)
+                if pid is None:
+                    continue
                 proc_status = _proc_pid_status.format(**locals())
                 if os.path.isfile(proc_status):
                     try:
