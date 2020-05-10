@@ -251,7 +251,7 @@ def o77(part):
     return part
 def unit_name_escape(text):
     # https://www.freedesktop.org/software/systemd/man/systemd.unit.html#id-1.6
-    esc = re.sub("([^a-z-AZ.-/])", lambda m: "\\x%02x" % ord(x.group(1)[0]), text)
+    esc = re.sub("([^a-z-AZ.-/])", lambda m: "\\x%02x" % ord(m.group(1)[0]), text)
     return esc.replace("/", "-")
 def unit_name_unescape(text):
     esc = text.replace("-", "/")
@@ -1944,13 +1944,13 @@ class Systemctl:
         """ expand %i %t and similar special vars. They are being expanded
             before any other expand_env takes place which handles shell-style
             $HOME references. """
+        def xx(arg): return unit_name_unescape(arg)
+        def yy(arg): return arg
         def get_confs(conf):
             confs={ "%": "%" }
             if not conf:
                 return confs
             unit = parse_unit(conf.name())
-            xx = unit_name_unescape
-            yy = lambda arg: arg
             #
             root = not self.is_user_conf(conf)
             VARTMP = get_VARTMP(root)     # $TMPDIR              # "/var/tmp"
@@ -5253,8 +5253,8 @@ class Systemctl:
                 logg.info("system is %s", state)
             break
     def pidlist_of(self, pid):
-        try: pid = int(pid)
-        except: return []
+        if not pid:
+            return []
         pidlist = [ pid ]
         pids = [ pid ]
         for depth in xrange(PROC_MAX_DEPTH):
