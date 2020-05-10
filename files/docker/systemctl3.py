@@ -93,6 +93,9 @@ _rc3_boot_folder = "/etc/rc3.d"
 _rc3_init_folder = "/etc/init.d/rc3.d"
 _rc5_boot_folder = "/etc/rc5.d"
 _rc5_init_folder = "/etc/init.d/rc5.d"
+_proc_pid_stat   = "/proc/{pid}/stat"
+_proc_pid_status = "/proc/{pid}/status"
+_proc_dir        = "/proc"
 
 # default values
 SystemCompatibilityVersion = 219
@@ -470,7 +473,7 @@ def _pid_zombie(pid):
         # On certain systems 0 is a valid PID but we have no way
         # to know that in a portable fashion.
         raise ValueError('invalid PID 0')
-    check = "/proc/%s/status" % pid
+    check = _proc_pid_status.format(**locals())
     try:
         for line in open(check):
             if line.startswith("State:"):
@@ -1723,7 +1726,7 @@ class Systemctl:
         if pid_max < 0:
             pid_max = pid1 - pid_max
         for pid in xrange(pid1, pid_max):
-            proc = "/proc/%s/stat" % pid
+            proc = _proc_pid_stat.format(**locals())
             try:
                 if os.path.exists(proc):
                     # return os.path.getmtime(proc) # did sometimes change
@@ -1735,8 +1738,8 @@ class Systemctl:
         if DEBUG_BOOTTIME:
             logg.debug(" boottime from the oldest entry in /proc [nothing in %s..%s]", pid1, pid_max)
         booted = time.time()
-        for pid in os.listdir("/proc"):
-            proc = "/proc/%s/stat" % pid
+        for pid in os.listdir(_proc_dir):
+            proc = _proc_pid_stat.format(**locals())
             try:
                 if os.path.exists(proc):
                     # ctime = os.path.getmtime(proc)
@@ -1750,9 +1753,6 @@ class Systemctl:
     # Use uptime, time process running in ticks, and current time to determine process boot time
     # You can't use the modified timestamp of the status file because it isn't static.
     # ... using clock ticks it is known to be a linear time on Linux
-    def get_proc_started(self, pid):
-        proc = "/proc/%s/status" % pid
-        return self.path_proc_started(proc)
     def path_proc_started(self, proc):
         #get time process started after boot in clock ticks
         with open(proc) as file_stat:
