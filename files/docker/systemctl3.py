@@ -87,6 +87,10 @@ _preset_folder5 = "/usr/lib/systemd/system-preset"
 _preset_folder6 = "/lib/systemd/system-preset"
 _preset_folderX = None
 
+# standard paths
+_etc_hosts = "/etc/hosts"
+
+# default values
 SystemCompatibilityVersion = 219
 SysInitTarget = "sysinit.target"
 SysInitWait = 5 # max for target
@@ -5318,38 +5322,35 @@ class Systemctl:
                     except Exception as e:
                         logg.error("kill -%s %s : %s", sig, pid_num, e)
         return True
-    def etc_hosts(self):
-        path = "/etc/hosts"
-        if self._root:
-            return os_path(self._root, path)
-        return path
     def force_ipv4(self, *args):
         """ only ipv4 localhost in /etc/hosts """
-        logg.debug("checking /etc/hosts for '::1 localhost'")
+        logg.debug("checking hosts sysconf for '::1 localhost'")
         lines = []
-        for line in open(self.etc_hosts()):
+        sysconf_hosts = os_path(self._root, _etc_hosts)
+        for line in open(sysconf_hosts):
             if "::1" in line:
                 newline = re.sub("\\slocalhost\\s", " ", line)
                 if line != newline:
-                    logg.info("/etc/hosts: '%s' => '%s'", line.rstrip(), newline.rstrip())
+                    logg.info("%s: '%s' => '%s'", _etc_hosts, line.rstrip(), newline.rstrip())
                     line = newline
             lines.append(line)
-        f = open(self.etc_hosts(), "w")
+        f = open(sysconf_hosts, "w")
         for line in lines:
             f.write(line)
         f.close()
     def force_ipv6(self, *args):
         """ only ipv4 localhost in /etc/hosts """
-        logg.debug("checking /etc/hosts for '127.0.0.1 localhost'")
+        logg.debug("checking hosts sysconf for '127.0.0.1 localhost'")
         lines = []
-        for line in open(self.etc_hosts()):
+        sysconf_hosts = os_path(self._root, _etc_hosts)
+        for line in open(sysconf_hosts):
             if "127.0.0.1" in line:
                 newline = re.sub("\\slocalhost\\s", " ", line)
                 if line != newline:
-                    logg.info("/etc/hosts: '%s' => '%s'", line.rstrip(), newline.rstrip())
+                    logg.info("%s: '%s' => '%s'", _etc_hosts, line.rstrip(), newline.rstrip())
                     line = newline
             lines.append(line)
-        f = open(self.etc_hosts(), "w")
+        f = open(sysconf_hosts, "w")
         for line in lines:
             f.write(line)
         f.close()
