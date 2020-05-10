@@ -89,6 +89,10 @@ _preset_folderX = None
 
 # standard paths
 _etc_hosts = "/etc/hosts"
+_rc3_boot_folder = "/etc/rc3.d"
+_rc3_init_folder = "/etc/init.d/rc3.d"
+_rc5_boot_folder = "/etc/rc5.d"
+_rc5_init_folder = "/etc/init.d/rc5.d"
 
 # default values
 SystemCompatibilityVersion = 219
@@ -3928,21 +3932,15 @@ class Systemctl:
             os.symlink(unit_file, target)
         return True
     def rc3_root_folder(self):
-        old_folder = "/etc/rc3.d"
-        new_folder = "/etc/init.d/rc3.d"
-        if self._root:
-            old_folder = os_path(self._root, old_folder)
-            new_folder = os_path(self._root, new_folder)
-        if os.path.isdir(old_folder): 
+        old_folder = os_path(self._root, _rc3_boot_folder)
+        new_folder = os_path(self._root, _rc3_init_folder)
+        if os.path.isdir(old_folder): # pragma: no cover
             return old_folder
         return new_folder
     def rc5_root_folder(self):
-        old_folder = "/etc/rc5.d"
-        new_folder = "/etc/init.d/rc5.d"
-        if self._root:
-            old_folder = os_path(self._root, old_folder)
-            new_folder = os_path(self._root, new_folder)
-        if os.path.isdir(old_folder): 
+        old_folder = os_path(self._root, _rc5_boot_folder)
+        new_folder = os_path(self._root, _rc5_init_folder)
+        if os.path.isdir(old_folder): # pragma: no cover
             return old_folder
         return new_folder
     def enable_unit_sysv(self, unit_file):
