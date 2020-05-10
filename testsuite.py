@@ -821,7 +821,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("%s\n%s\n%s", cmd, out, err)
         self.assertEqual(end, 0)
         self.assertEqual(out.strip(), "")
-        self.assertTrue(greps(err, "Unknown result type <class 'float'>"))
+        self.assertTrue(greps(err, "Unknown result type <(class|type) 'float'>"))
         self.coverage()
     def test_1020_systemctl_with_systemctl_log(self):
         """ when /var/log/systemctl.log exists then print INFO messages into it"""
