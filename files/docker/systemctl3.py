@@ -5397,7 +5397,10 @@ class Systemctl:
             func2 = getattr(self.__class__, arg+"_of_unit", None)
             func3 = getattr(self.__class__, "show_"+arg, None)
             func4 = getattr(self.__class__, "system_"+arg, None)
-            func = func1 or func2 or func3 or func4
+            func5 = None
+            if arg.startswith("__"):
+                func5 = getattr(self.__class__, arg[2:], None)
+            func = func1 or func2 or func3 or func4 or func5
             if func is None:
                 print("error: no such command '%s'" % arg)
                 okay = False
@@ -5429,6 +5432,8 @@ class Systemctl:
         return features1+features2+features3
     def systems_version(self):
         return [ self.systemd_version(), self.systemd_features() ]
+    def test_float(self):
+        return 0. # "Unknown result type"
 
 def print_result(result):
     # logg_info = logg.info
