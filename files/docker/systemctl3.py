@@ -96,6 +96,8 @@ _rc5_init_folder = "/etc/init.d/rc5.d"
 _proc_pid_stat   = "/proc/{pid}/stat"
 _proc_pid_status = "/proc/{pid}/status"
 _proc_dir        = "/proc"
+_proc_sys_uptime = "/proc/uptime"
+_proc_sys_stat   = "/proc/stat"
 
 # default values
 SystemCompatibilityVersion = 219
@@ -1772,7 +1774,7 @@ class Systemctl:
         # this value is the start time from the host system
 
         # Variant 1:
-        system_uptime = "/proc/uptime"
+        system_uptime = _proc_sys_uptime
         with open(system_uptime,"rb") as file_uptime:
             data_uptime = file_uptime.readline()
         file_uptime.close()
@@ -1788,7 +1790,7 @@ class Systemctl:
             logg.debug("  BOOT 1. Proc has been running since: %s" % (datetime.datetime.fromtimestamp(started_time)))
 
         # Variant 2:
-        system_stat = "/proc/stat"
+        system_stat = _proc_sys_stat
         system_btime = 0.
         with open(system_stat,"rb") as f:
             for line in f:
