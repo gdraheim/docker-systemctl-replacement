@@ -771,6 +771,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(out, "reload-or-try-restart"))
         self.assertTrue(greps(out, "no such command"))
         self.coverage()
+    def test_1009_systemctl_help_command_without_doc(self):
+        """ for a command without doc, 'help command' is empty """
+        systemctl = cover() + _systemctl_py
+        cmd = "{systemctl} help __test_float -vvvv" 
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info("%s\n%s\n%s", cmd, out, err)
+        self.assertEqual(end, 0)
+        self.assertEqual(out.strip(), "")
+        self.assertTrue(greps(err, "__doc__ of __test_float is none"))
+        self.coverage()
     def test_1010_systemctl_daemon_reload(self):
         """ daemon-reload always succeeds (does nothing) """
         systemctl = cover() + _systemctl_py
@@ -802,6 +812,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 0)
         self.rm_testdir()
         self.rm_zzfiles(root)
+        self.coverage()
+    def test_1019_systemctl_test_commands_work(self):
+        """ some commands are internal for testing only """
+        systemctl = cover() + _systemctl_py
+        cmd = "{systemctl} __test_float -vvvv" 
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info("%s\n%s\n%s", cmd, out, err)
+        self.assertEqual(end, 0)
+        self.assertEqual(out.strip(), "")
+        self.assertTrue(greps(err, "Unknown result type <class 'float'>"))
         self.coverage()
     def test_1020_systemctl_with_systemctl_log(self):
         """ when /var/log/systemctl.log exists then print INFO messages into it"""
