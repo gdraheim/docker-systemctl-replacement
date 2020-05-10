@@ -87,6 +87,22 @@ _preset_folder5 = "/usr/lib/systemd/system-preset"
 _preset_folder6 = "/lib/systemd/system-preset"
 _preset_folderX = None
 
+# standard paths
+_dev_null = "/dev/null"
+_dev_zero = "/dev/zero"
+_etc_hosts = "/etc/hosts"
+_rc3_boot_folder = "/etc/rc3.d"
+_rc3_init_folder = "/etc/init.d/rc3.d"
+_rc5_boot_folder = "/etc/rc5.d"
+_rc5_init_folder = "/etc/init.d/rc5.d"
+_proc_pid_stat   = "/proc/{pid}/stat"
+_proc_pid_status = "/proc/{pid}/status"
+_proc_pid_cmdline= "/proc/{pid}/cmdline"
+_proc_pid_dir    = "/proc"
+_proc_sys_uptime = "/proc/uptime"
+_proc_sys_stat   = "/proc/stat"
+
+# default values
 SystemCompatibilityVersion = 219
 SysInitTarget = "sysinit.target"
 SysInitWait = 5 # max for target
@@ -462,7 +478,7 @@ def _pid_zombie(pid):
         # On certain systems 0 is a valid PID but we have no way
         # to know that in a portable fashion.
         raise ValueError('invalid PID 0')
-    check = "/proc/%s/status" % pid
+    check = _proc_pid_status.format(**locals())
     try:
         for line in open(check):
             if line.startswith("State:"):
@@ -1349,12 +1365,9 @@ class Systemctl:
             return conf
         return self.default_unit_conf(module)
     def get_unit_type(self, module):
-        if module.endswith(".service"):
-            return "service"
-        if module.endswith(".socket"):
-            return "socket"
-        if module.endswith(".target"):
-            return "target"
+        name, ext = os.path.splitext(module)
+        if ext in [".service", ".socket", ".target"]:
+            return ext[1:]
         return None
     def match_sysd_templates(self, modules = None, suffix=".service"): # -> generate[ unit ]
         """ make a file glob on all known template units (systemd areas).
@@ -1718,18 +1731,20 @@ class Systemctl:
         if pid_max < 0:
             pid_max = pid1 - pid_max
         for pid in xrange(pid1, pid_max):
-            proc = "/proc/%s/stat" % pid
+            proc = _proc_pid_stat.format(**locals())
             try:
                 if os.path.exists(proc):
                     # return os.path.getmtime(proc) # did sometimes change
                     return self.path_proc_started(proc)
             except Exception as e: # pragma: no cover
-                logg.warning("could not access %s: %s", proc, e)
+                logg.warning("boottime - could not access %s: %s", proc, e)
         if DEBUG_BOOTTIME:
             logg.debug(" boottime from the oldest entry in /proc [nothing in %s..%s]", pid1, pid_max)
+        return self.get_boottime_from_old_proc()
+    def get_boottime_from_old_proc(self):
         booted = time.time()
-        for name in os.listdir("/proc"):
-            proc = "/proc/%s/stat" % name
+        for pid in os.listdir(_proc_pid_dir):
+            proc = _proc_pid_stat.format(**locals())
             try:
                 if os.path.exists(proc):
                     # ctime = os.path.getmtime(proc)
@@ -1743,9 +1758,6 @@ class Systemctl:
     # Use uptime, time process running in ticks, and current time to determine process boot time
     # You can't use the modified timestamp of the status file because it isn't static.
     # ... using clock ticks it is known to be a linear time on Linux
-    def get_proc_started(self, pid):
-        proc = "/proc/%s/status" % pid
-        return self.path_proc_started(proc)
     def path_proc_started(self, proc):
         #get time process started after boot in clock ticks
         with open(proc) as file_stat:
@@ -1765,7 +1777,7 @@ class Systemctl:
         # this value is the start time from the host system
 
         # Variant 1:
-        system_uptime = "/proc/uptime"
+        system_uptime = _proc_sys_uptime
         with open(system_uptime,"rb") as file_uptime:
             data_uptime = file_uptime.readline()
         file_uptime.close()
@@ -1781,7 +1793,7 @@ class Systemctl:
             logg.debug("  BOOT 1. Proc has been running since: %s" % (datetime.datetime.fromtimestamp(started_time)))
 
         # Variant 2:
-        system_stat = "/proc/stat"
+        system_stat = _proc_sys_stat
         system_btime = 0.
         with open(system_stat,"rb") as f:
             for line in f:
@@ -2751,19 +2763,19 @@ class Systemctl:
         std_err = conf.get("Service", "StandardError", DefaultStandardError)
         inp, out, err = None, None, None
         if std_inp in ["null"]:
-            inp = open("/dev/null", "r")
+            inp = open(_dev_null, "r")
         elif std_inp.startswith("file:"):
             fname = std_inp[len("file:"):]
             if os.path.exists(fname):
                 inp = open(fname, "r")
             else:
-                inp = open("/dev/zero", "r")
+                inp = open(_dev_zero, "r")
         else:
-            inp = open("/dev/zero", "r")
+            inp = open(_dev_zero, "r")
         assert inp is not None
         try:
             if std_out in ["null"]:
-                out = open("/dev/null", "w")
+                out = open(_dev_null, "w")
             elif std_out.startswith("file:"):
                 fname = std_out[len("file:"):]
                 fdir = os.path.dirname(fname)
@@ -2786,7 +2798,7 @@ class Systemctl:
             if std_err in ["inherit"]:
                 err = out
             elif std_err in ["null"]:
-                err = open("/dev/null", "w")
+                err = open(_dev_null, "w")
             elif std_err.startswith("file:"):
                 fname = std_err[len("file:"):]
                 fdir = os.path.dirname(fname)
@@ -3927,21 +3939,15 @@ class Systemctl:
             os.symlink(unit_file, target)
         return True
     def rc3_root_folder(self):
-        old_folder = "/etc/rc3.d"
-        new_folder = "/etc/init.d/rc3.d"
-        if self._root:
-            old_folder = os_path(self._root, old_folder)
-            new_folder = os_path(self._root, new_folder)
-        if os.path.isdir(old_folder): 
+        old_folder = os_path(self._root, _rc3_boot_folder)
+        new_folder = os_path(self._root, _rc3_init_folder)
+        if os.path.isdir(old_folder): # pragma: no cover
             return old_folder
         return new_folder
     def rc5_root_folder(self):
-        old_folder = "/etc/rc5.d"
-        new_folder = "/etc/init.d/rc5.d"
-        if self._root:
-            old_folder = os_path(self._root, old_folder)
-            new_folder = os_path(self._root, new_folder)
-        if os.path.isdir(old_folder): 
+        old_folder = os_path(self._root, _rc5_boot_folder)
+        new_folder = os_path(self._root, _rc5_init_folder)
+        if os.path.isdir(old_folder): # pragma: no cover
             return old_folder
         return new_folder
     def enable_unit_sysv(self, unit_file):
@@ -4159,14 +4165,15 @@ class Systemctl:
         if not os.path.isdir(folder):
             os.makedirs(folder)
         target = os.path.join(folder, os.path.basename(unit_file))
+        dev_null = _dev_null
         if True:
             _f = self._force and "-f" or ""
-            logg.debug("ln -s {_f} /dev/null '{target}'".format(**locals()))
+            logg.debug("ln -s {_f} {dev_null} '{target}'".format(**locals()))
         if self._force and os.path.islink(target):
             os.remove(target)
         if not os.path.exists(target):
-            os.symlink("/dev/null", target)
-            logg.info("Created symlink {target} -> /dev/null".format(**locals()))
+            os.symlink(dev_null, target)
+            logg.info("Created symlink {target} -> {dev_null}".format(**locals()))
             return True
         elif os.path.islink(target):
             logg.debug("mask symlink does already exist: %s", target)
@@ -5176,12 +5183,13 @@ class Systemctl:
         """ check to reap children """
         selfpid = os.getpid()
         running = 0
-        for pid_file in os.listdir("/proc"):
-            try: pid = int(pid_file)
-            except: continue
+        for pid_entry in os.listdir(_proc_pid_dir):
+            pid = to_intN(pid_entry)
+            if pid is None:
+                continue
             if pid == selfpid:
                 continue
-            proc_status = "/proc/%s/status" % pid
+            proc_status = _proc_pid_status.format(**locals())
             if os.path.isfile(proc_status):
                 zombie = False
                 ppid = -1
@@ -5250,10 +5258,11 @@ class Systemctl:
         pidlist = [ pid ]
         pids = [ pid ]
         for depth in xrange(PROC_MAX_DEPTH):
-            for pid_file in os.listdir("/proc"):
-                try: pid = int(pid_file)
-                except: continue
-                proc_status = "/proc/%s/status" % pid
+            for pid_entry in os.listdir(_proc_pid_dir):
+                pid = to_intN(pid_entry)
+                if pid is None:
+                    continue
+                proc_status = _proc_pid_status.format(**locals())
                 if os.path.isfile(proc_status):
                     try:
                         for line in open(proc_status):
@@ -5290,11 +5299,11 @@ class Systemctl:
                 else: # pragma: no cover
                     logg.error("unsupported %s", target)
                 continue
-            for pid_dir in os.listdir("/proc"):
-                pid_num = to_intN(pid_dir)
-                if pid_num:
+            for pid_entry in os.listdir(_proc_pid_dir):
+                pid = to_intN(pid_entry)
+                if pid:
                     try:
-                        cmdline = "/proc/{pid_dir}/cmdline".format(**locals())
+                        cmdline = _proc_pid_cmdline.format(**locals())
                         cmd = open(cmdline).read().split("\0")
                         if DEBUG_KILLALL: logg.debug("cmdline %s", cmd)
                         found = None
@@ -5314,45 +5323,42 @@ class Systemctl:
                                     if DEBUG_KILLALL: logg.debug("cmd.run '%s'", cmd_run)
                                     if fnmatch.fnmatchcase(cmd_run, target): found = "run"
                         if found:
-                            if DEBUG_KILLALL: logg.debug("%s found %s %s", found, pid_num, [ c for c in cmd ])
-                            if pid_num != os.getpid():
-                                logg.debug(" kill -%s %s # %s", sig, pid_num, target)
-                                os.kill(pid_num, sig)
+                            if DEBUG_KILLALL: logg.debug("%s found %s %s", found, pid, [ c for c in cmd ])
+                            if pid != os.getpid():
+                                logg.debug(" kill -%s %s # %s", sig, pid, target)
+                                os.kill(pid, sig)
                     except Exception as e:
-                        logg.error("kill -%s %s : %s", sig, pid_num, e)
+                        logg.error("kill -%s %s : %s", sig, pid, e)
         return True
-    def etc_hosts(self):
-        path = "/etc/hosts"
-        if self._root:
-            return os_path(self._root, path)
-        return path
     def force_ipv4(self, *args):
         """ only ipv4 localhost in /etc/hosts """
-        logg.debug("checking /etc/hosts for '::1 localhost'")
+        logg.debug("checking hosts sysconf for '::1 localhost'")
         lines = []
-        for line in open(self.etc_hosts()):
+        sysconf_hosts = os_path(self._root, _etc_hosts)
+        for line in open(sysconf_hosts):
             if "::1" in line:
                 newline = re.sub("\\slocalhost\\s", " ", line)
                 if line != newline:
-                    logg.info("/etc/hosts: '%s' => '%s'", line.rstrip(), newline.rstrip())
+                    logg.info("%s: '%s' => '%s'", _etc_hosts, line.rstrip(), newline.rstrip())
                     line = newline
             lines.append(line)
-        f = open(self.etc_hosts(), "w")
+        f = open(sysconf_hosts, "w")
         for line in lines:
             f.write(line)
         f.close()
     def force_ipv6(self, *args):
         """ only ipv4 localhost in /etc/hosts """
-        logg.debug("checking /etc/hosts for '127.0.0.1 localhost'")
+        logg.debug("checking hosts sysconf for '127.0.0.1 localhost'")
         lines = []
-        for line in open(self.etc_hosts()):
+        sysconf_hosts = os_path(self._root, _etc_hosts)
+        for line in open(sysconf_hosts):
             if "127.0.0.1" in line:
                 newline = re.sub("\\slocalhost\\s", " ", line)
                 if line != newline:
-                    logg.info("/etc/hosts: '%s' => '%s'", line.rstrip(), newline.rstrip())
+                    logg.info("%s: '%s' => '%s'", _etc_hosts, line.rstrip(), newline.rstrip())
                     line = newline
             lines.append(line)
-        f = open(self.etc_hosts(), "w")
+        f = open(sysconf_hosts, "w")
         for line in lines:
             f.write(line)
         f.close()
@@ -5400,7 +5406,10 @@ class Systemctl:
             func2 = getattr(self.__class__, arg+"_of_unit", None)
             func3 = getattr(self.__class__, "show_"+arg, None)
             func4 = getattr(self.__class__, "system_"+arg, None)
-            func = func1 or func2 or func3 or func4
+            func5 = None
+            if arg.startswith("__"):
+                func5 = getattr(self.__class__, arg[2:], None)
+            func = func1 or func2 or func3 or func4 or func5
             if func is None:
                 print("error: no such command '%s'" % arg)
                 okay = False
@@ -5432,6 +5441,8 @@ class Systemctl:
         return features1+features2+features3
     def systems_version(self):
         return [ self.systemd_version(), self.systemd_features() ]
+    def test_float(self):
+        return 0. # "Unknown result type"
 
 def print_result(result):
     # logg_info = logg.info
