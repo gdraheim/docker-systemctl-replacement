@@ -88,6 +88,8 @@ _preset_folder6 = "/lib/systemd/system-preset"
 _preset_folderX = None
 
 # standard paths
+_dev_null = "/dev/null"
+_dev_zero = "/dev/zero"
 _etc_hosts = "/etc/hosts"
 _rc3_boot_folder = "/etc/rc3.d"
 _rc3_init_folder = "/etc/init.d/rc3.d"
@@ -2760,19 +2762,19 @@ class Systemctl:
         std_err = conf.get("Service", "StandardError", DefaultStandardError)
         inp, out, err = None, None, None
         if std_inp in ["null"]:
-            inp = open("/dev/null", "r")
+            inp = open(_dev_null, "r")
         elif std_inp.startswith("file:"):
             fname = std_inp[len("file:"):]
             if os.path.exists(fname):
                 inp = open(fname, "r")
             else:
-                inp = open("/dev/zero", "r")
+                inp = open(_dev_zero, "r")
         else:
-            inp = open("/dev/zero", "r")
+            inp = open(_dev_zero, "r")
         assert inp is not None
         try:
             if std_out in ["null"]:
-                out = open("/dev/null", "w")
+                out = open(_dev_null, "w")
             elif std_out.startswith("file:"):
                 fname = std_out[len("file:"):]
                 fdir = os.path.dirname(fname)
@@ -2795,7 +2797,7 @@ class Systemctl:
             if std_err in ["inherit"]:
                 err = out
             elif std_err in ["null"]:
-                err = open("/dev/null", "w")
+                err = open(_dev_null, "w")
             elif std_err.startswith("file:"):
                 fname = std_err[len("file:"):]
                 fdir = os.path.dirname(fname)
@@ -4162,14 +4164,15 @@ class Systemctl:
         if not os.path.isdir(folder):
             os.makedirs(folder)
         target = os.path.join(folder, os.path.basename(unit_file))
+        dev_null = _dev_null
         if True:
             _f = self._force and "-f" or ""
-            logg.debug("ln -s {_f} /dev/null '{target}'".format(**locals()))
+            logg.debug("ln -s {_f} {dev_null} '{target}'".format(**locals()))
         if self._force and os.path.islink(target):
             os.remove(target)
         if not os.path.exists(target):
-            os.symlink("/dev/null", target)
-            logg.info("Created symlink {target} -> /dev/null".format(**locals()))
+            os.symlink(dev_null, target)
+            logg.info("Created symlink {target} -> {dev_null}".format(**locals()))
             return True
         elif os.path.islink(target):
             logg.debug("mask symlink does already exist: %s", target)
