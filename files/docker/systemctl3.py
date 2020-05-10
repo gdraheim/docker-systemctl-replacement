@@ -1730,11 +1730,13 @@ class Systemctl:
                     return self.path_proc_started(proc)
             except Exception as e: # pragma: no cover
                 logg.warning("could not access %s: %s", proc, e)
+        return self.get_boottime_from_old_proc()
+    def get_boottime_from_old_proc(self):
         if DEBUG_BOOTTIME:
             logg.debug(" boottime from the oldest entry in /proc [nothing in %s..%s]", pid1, pid_max)
         booted = time.time()
-        for name in os.listdir("/proc"):
-            proc = "/proc/%s/stat" % name
+        for pid in os.listdir("/proc"):
+            proc = "/proc/%s/stat" % pid
             try:
                 if os.path.exists(proc):
                     # ctime = os.path.getmtime(proc)
