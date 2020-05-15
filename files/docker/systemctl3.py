@@ -137,6 +137,7 @@ DefaultStandardInput=os.environ.get("SYSTEMD_STANDARD_INPUT", "null")
 DefaultStandardOutput=os.environ.get("SYSTEMD_STANDARD_OUTPUT", "journal") # systemd.exe --default-standard-output
 DefaultStandardError=os.environ.get("SYSTEMD_STANDARD_ERROR", "inherit") # systemd.exe --default-standard-error
 
+EXEC_SETGROUPS = True
 EXEC_SPAWN = False
 REMOVE_LOCK_FILE = False
 BOOT_PID_MIN = 0
@@ -407,10 +408,12 @@ def shutil_setuid(user = None, group = None, xgroups = None):
         if not group:
             os.setgid(gid)
             logg.debug("setgid %s", gid)
+        groupnames = [g.gr_name for g in grp.getgrall() if user in g.gr_mem]
         groups = [g.gr_gid for g in grp.getgrall() if user in g.gr_mem]
         if xgroups:
             groups += [g.gr_gid for g in grp.getgrall() if g.gr_name in xgroups and g.gr_gid not in groups]
-        if groups:
+        if groups and EXEC_SETGROUPS:
+            logg.debug("setgroups %s > %s ", groups, groupnames)
             os.setgroups(groups)
         uid = pw.pw_uid
         os.setuid(uid)
@@ -2821,7 +2824,8 @@ class Systemctl:
         runs = conf.get("Service", "Type", "simple").lower()
         logg.debug("%s process for %s", runs, strQ(conf.filename()))
         #
-        self.dup2_journal_log(conf)
+        if not EXEC_SPAWN:
+            self.dup2_journal_log(conf)
         #
         runuser = self.get_User(conf)
         rungroup = self.get_Group(conf)
