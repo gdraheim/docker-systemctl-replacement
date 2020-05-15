@@ -1672,14 +1672,9 @@ class Systemctl:
         except IOError as e:
             logg.error("writing STATUS %s: %s\n\t to status file %s", status, e, status_file)
         return True
-    def read_status_from(self, conf, defaults = None):
+    def read_status_from(self, conf):
         status_file = self.get_status_file_from(conf)
         status = {}
-        if defaults is not None:
-           for key in defaults.keys():
-               status[key] = defaults[key]
-        elif isinstance(defaults, basestring):
-           status["ActiveState"] = defaults
         if not status_file:
             if DEBUG_STATUS: logg.debug("no status file. returning %s", status)
             return status
