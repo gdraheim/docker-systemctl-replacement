@@ -906,9 +906,7 @@ def parse_unit(fullname): # -> object(prefix, instance, suffix, ...., name, comp
         component = prefix[has_component+1:]
     return parse_result(fullname, name, prefix, instance, suffix, component)
 
-def time_to_seconds(text, maximum = None):
-    if maximum is None:
-        maximum = DefaultMaximumTimeout
+def time_to_seconds(text, maximum):
     value = 0.
     for part in str(text).split(" "):
         item = part.strip()
