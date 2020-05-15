@@ -9,6 +9,7 @@ __version__ = "1.5.4192"
 ## The testcases 5000...9999 will start a docker container to work.
 
 import subprocess
+import os
 import os.path
 import time
 import datetime
@@ -252,6 +253,26 @@ def only22(part, indent=""):
         skipped = len(part) - 22 + 3
         return part[:5] + ["...","... (%s lines skipped)" % skipped,"..."] + part[-14:]
     return part
+
+def get_USER_ID(root = False):
+    ID = 0
+    if root: return ID
+    return os.geteuid()
+def get_USER(root = False):
+    if root: return "root"
+    uid = os.geteuid()
+    import pwd
+    return pwd.getpwuid(uid).pw_name
+def get_GROUP_ID(root = False):
+    ID = 0
+    if root: return ID
+    return os.getegid()
+def get_GROUP(root = False):
+    if root: return "root"
+    import grp
+    gid = os.getegid()
+    import grp
+    return grp.getgrgid(gid).gr_name
 
 def beep():
     if os.name == "nt":
@@ -20121,6 +20142,220 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         log = reads(debug_log)
         logg.info("systemctl.debug.log>\n\t%s", oi22(log))
+        #
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def test_4881_set_user_to_same(self):
+        """ check that we can run a service with User= settings (for coverage) """
+        self.begin()
+        self.rm_testdir()
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        systemctl += " -c InitLoopSleep=2 -c EXEC_SPAWN=True -c EXEC_SETGROUPS=False"
+        logfile = os_path(root, "/var/log/"+testname+".log")
+        testsleepA = self.testname("sleepA")
+        bindir = os_path(root, "/usr/bin")
+        this_user=get_USER()
+        this_group=get_GROUP()
+        text_file(os_path(testdir, "zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            Type=simple
+            ExecStart={bindir}/{testsleepA} 1
+            User={this_user}
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        #
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleepA))
+        copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
+        kill_testsleep = "{systemctl} __killall {testsleepA} -vvvv"
+        sx____(kill_testsleep.format(**locals()))
+        #
+        cmd = "{systemctl} start zza.service -vvvv"
+        out, err, rc = output3(cmd.format(**locals()))
+        logg.info("\n>>>(%s)\n%s\n%s", rc, i2(err), out)
+        self.assertEqual(rc, 0)
+        #
+        kill_testsleep = "{systemctl} __killall {testsleepA}"
+        sx____(kill_testsleep.format(**locals()))
+        #
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def test_4882_set_user_and_group_to_same(self):
+        """ check that we can run a service with User= Group= settings (for coverage) """
+        self.begin()
+        self.rm_testdir()
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        systemctl += " -c InitLoopSleep=2 -c EXEC_SPAWN=True -c EXEC_SETGROUPS=False"
+        logfile = os_path(root, "/var/log/"+testname+".log")
+        testsleepA = self.testname("sleepA")
+        bindir = os_path(root, "/usr/bin")
+        this_user=get_USER()
+        this_group=get_GROUP()
+        text_file(os_path(testdir, "zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            Type=simple
+            ExecStart={bindir}/{testsleepA} 1
+            User={this_user}
+            Group={this_group}
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        #
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleepA))
+        copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
+        kill_testsleep = "{systemctl} __killall {testsleepA} -vvvv"
+        sx____(kill_testsleep.format(**locals()))
+        #
+        cmd = "{systemctl} start zza.service -vvvv"
+        out, err, rc = output3(cmd.format(**locals()))
+        logg.info("\n>>>(%s)\n%s\n%s", rc, i2(err), out)
+        self.assertEqual(rc, 0)
+        #
+        kill_testsleep = "{systemctl} __killall {testsleepA}"
+        sx____(kill_testsleep.format(**locals()))
+        #
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def test_4883_set_group_to_same(self):
+        """ check that we can run a service with Group= settings (for coverage) """
+        self.begin()
+        self.rm_testdir()
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        systemctl += " -c InitLoopSleep=2 -c EXEC_SPAWN=True -c EXEC_SETGROUPS=False"
+        logfile = os_path(root, "/var/log/"+testname+".log")
+        testsleepA = self.testname("sleepA")
+        bindir = os_path(root, "/usr/bin")
+        this_user=get_USER()
+        this_group=get_GROUP()
+        text_file(os_path(testdir, "zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            Type=simple
+            ExecStart={bindir}/{testsleepA} 1
+            Group={this_group}
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        #
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleepA))
+        copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
+        kill_testsleep = "{systemctl} __killall {testsleepA} -vvvv"
+        sx____(kill_testsleep.format(**locals()))
+        #
+        cmd = "{systemctl} start zza.service -vvvv"
+        out, err, rc = output3(cmd.format(**locals()))
+        logg.info("\n>>>(%s)\n%s\n%s", rc, i2(err), out)
+        self.assertEqual(rc, 0)
+        #
+        kill_testsleep = "{systemctl} __killall {testsleepA}"
+        sx____(kill_testsleep.format(**locals()))
+        #
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def test_4884_set_user_and_supp_group_to_same(self):
+        """ check that we can run a service with User= SupplementaryGroups= settings (for coverage) """
+        self.begin()
+        self.rm_testdir()
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        systemctl += " -c InitLoopSleep=2 -c EXEC_SPAWN=True -c EXEC_SETGROUPS=False"
+        logfile = os_path(root, "/var/log/"+testname+".log")
+        testsleepA = self.testname("sleepA")
+        bindir = os_path(root, "/usr/bin")
+        this_user=get_USER()
+        this_group=get_GROUP()
+        text_file(os_path(testdir, "zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            Type=simple
+            ExecStart={bindir}/{testsleepA} 1
+            User={this_user}
+            SupplementaryGroups={this_group}
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        #
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleepA))
+        copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
+        kill_testsleep = "{systemctl} __killall {testsleepA} -vvvv"
+        sx____(kill_testsleep.format(**locals()))
+        #
+        cmd = "{systemctl} start zza.service -vvvv"
+        out, err, rc = output3(cmd.format(**locals()))
+        logg.info("\n>>>(%s)\n%s\n%s", rc, i2(err), out)
+        self.assertEqual(rc, 0)
+        #
+        kill_testsleep = "{systemctl} __killall {testsleepA}"
+        sx____(kill_testsleep.format(**locals()))
+        #
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def test_4885_set_user_and_supp_group_to_same(self):
+        """ check that we can run a service with User= SupplementaryGroups= extra (for coverage) """
+        self.begin()
+        self.rm_testdir()
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        systemctl += " -c InitLoopSleep=2 -c EXEC_SPAWN=True" # " -c EXEC_SETGROUPS=False" # <<<<<<
+        logfile = os_path(root, "/var/log/"+testname+".log")
+        testsleepA = self.testname("sleepA")
+        bindir = os_path(root, "/usr/bin")
+        this_user=get_USER()
+        this_group=get_GROUP()
+        text_file(os_path(testdir, "zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            Type=simple
+            ExecStart={bindir}/{testsleepA} 1
+            User={this_user}
+            SupplementaryGroups={this_group}
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        #
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleepA))
+        copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
+        kill_testsleep = "{systemctl} __killall {testsleepA} -vvvv"
+        sx____(kill_testsleep.format(**locals()))
+        #
+        cmd = "{systemctl} start zza.service -vvvv"
+        out, err, rc = output3(cmd.format(**locals()))
+        logg.info("\n>>>(%s)\n%s\n%s", rc, i2(err), out)
+        # self.assertEqual(rc, 0) # <<<<<<<<
+        self.assertTrue(greps(err, "PermissionError:"))
+        #
+        kill_testsleep = "{systemctl} __killall {testsleepA}"
+        sx____(kill_testsleep.format(**locals()))
         #
         self.rm_testdir()
         self.coverage()
