@@ -4674,12 +4674,25 @@ class Systemctl:
             if fnmatch.fnmatchcase(unit, ignore+".service"):
                 return True # ignore
         return False
-    def system_default_services(self, sysv = "S", default_target = None):
+    def default_services_modules(self, *modules):
         """ show the default services 
-            This is used internally to know the list of service to be started in 'default'
-            runlevel when the container is started through default initialisation. It will
+            This is used internally to know the list of service to be started in the 'get-default'
+            target runlevel when the container is started through default initialisation. It will
             ignore a number of services - use '--all' to show a longer list of services and
             use '--all --force' if not even a minimal filter shall be used.
+        """
+        results = []
+        targets = modules or [ self.get_default_target() ]
+        for target in targets:
+            units = self.target_default_services(target)
+            logg.error("%s = %s", target, units)
+            for unit in units:
+                if unit not in results:
+                    results.append(unit)
+        return results
+    def target_default_services(self, target = None, sysv = "S"):
+        """ get the default services for a target - this will ignore a number of services,
+            use '--all' and --force' to get more services.
         """
         igno = self.igno_centos + self.igno_opensuse + self.igno_ubuntu + self.igno_always
         if self._show_all:
@@ -4687,10 +4700,8 @@ class Systemctl:
             if self._force:
                 igno = []
         logg.debug("ignored services filter for default.target:\n\t%s", igno)
-        return self.enabled_default_services(sysv, default_target, igno)
-    def enabled_default_services(self, sysv = "S", default_target = None, igno = []):
-        target = self.get_default_target(default_target)
-        return self.enabled_target_services(target)
+        default_target = self.get_default_target(target)
+        return self.enabled_target_services(default_target, sysv, igno)
     def enabled_target_services(self, target, sysv = "S", igno = []):
         sockets = "socket.target"
         if self.user_mode():
@@ -4796,11 +4807,13 @@ class Systemctl:
         """ detect the default.target services and start them.
             When --init is given then the init-loop is run and
             the services are stopped again by 'systemctl halt'."""
-        default_target = self._default_target
-        default_services = self.system_default_services("S", default_target)
+        default_target = self.get_default_target()
+        return self.start_target_system(default_target, init)
+    def start_target_system(self, target, init = False):
+        default_services = self.target_default_services(target, "S")
         self.sysinit_status(SubState = "starting")
         self.start_units(default_services)
-        logg.info(" -- system is up")
+        logg.info("%s system is up", target)
         if init:
             logg.info("init-loop start")
             sig = self.init_loop_until_stop(default_services)
@@ -4811,11 +4824,13 @@ class Systemctl:
         """ detect the default.target services and stop them.
             This is commonly run through 'systemctl halt' or
             at the end of a 'systemctl --init default' loop."""
-        default_target = self._default_target
-        default_services = self.system_default_services("K", default_target)
+        default_target = self.get_default_target()
+        return self.stop_target_system(default_target)
+    def stop_target_system(self, target):
+        default_services = self.target_default_services(target, "K")
         self.sysinit_status(SubState = "stopping")
         self.stop_units(default_services)
-        logg.info(" -- system is down")
+        logg.info("%s system is down", target)
         return True
     def system_halt(self, arg = True):
         """ stop units from default system level """
@@ -4829,13 +4844,17 @@ class Systemctl:
     def system_get_default(self):
         """ get current default run-level"""
         return self.get_default_target()
-    def get_default_target(self, target = None):
+    def get_targets_folder(self):
+        return os_path(self._root, self.mask_folder())
+    def get_default_target_file(self):
+        targets_folder = self.get_targets_folder()
+        return os.path.join(targets_folder, DefaultUnit)
+    def get_default_target(self, default_target = None):
         """ get current default run-level"""
-        current = target or self._default_target
-        folder = os_path(self._root, self.mask_folder())
-        target = os.path.join(folder, DefaultUnit)
-        if os.path.islink(target):
-            current = os.path.basename(os.readlink(target))
+        current = default_target or self._default_target
+        default_target_file = self.get_default_target_file()
+        if os.path.islink(default_target_file):
+            current = os.path.basename(os.readlink(default_target_file))
         return current
     def set_default_modules(self, *modules):
         """ set current default run-level"""
@@ -4843,11 +4862,8 @@ class Systemctl:
             logg.debug(".. no runlevel given")
             self.error |= NOT_OK
             return "Too few arguments"
-        current = self._default_target
-        folder = os_path(self._root, self.mask_folder())
-        target = os.path.join(folder, DefaultUnit)
-        if os.path.islink(target):
-            current = os.path.basename(os.readlink(target))
+        current = self.get_default_target()
+        default_target_file = self.get_default_target_file()
         msg = ""
         for module in modules:
             if module == current:
@@ -4861,12 +4877,12 @@ class Systemctl:
                 msg = "No such runlevel %s" % (module)
                 continue
             #
-            if os.path.islink(target):
-                os.unlink(target)
-            if not os.path.isdir(os.path.dirname(target)):
-                os.makedirs(os.path.dirname(target))
-            os.symlink(targetfile, target)
-            msg = "Created symlink from %s -> %s" % (target, targetfile)
+            if os.path.islink(default_target_file):
+                os.unlink(default_target_file)
+            if not os.path.isdir(os.path.dirname(default_target_file)):
+                os.makedirs(os.path.dirname(default_target_file))
+            os.symlink(targetfile, default_target_file)
+            msg = "Created symlink from %s -> %s" % (default_target_file, targetfile)
             logg.debug("%s", msg)
         return msg
     def init_modules(self, *modules):
