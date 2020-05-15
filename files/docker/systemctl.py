@@ -137,6 +137,7 @@ DefaultStandardInput=os.environ.get("SYSTEMD_STANDARD_INPUT", "null")
 DefaultStandardOutput=os.environ.get("SYSTEMD_STANDARD_OUTPUT", "journal") # systemd.exe --default-standard-output
 DefaultStandardError=os.environ.get("SYSTEMD_STANDARD_ERROR", "inherit") # systemd.exe --default-standard-error
 
+EXEC_SETGROUPS = True
 EXEC_SPAWN = False
 REMOVE_LOCK_FILE = False
 BOOT_PID_MIN = 0
@@ -407,10 +408,12 @@ def shutil_setuid(user = None, group = None, xgroups = None):
         if not group:
             os.setgid(gid)
             logg.debug("setgid %s", gid)
+        groupnames = [g.gr_name for g in grp.getgrall() if user in g.gr_mem]
         groups = [g.gr_gid for g in grp.getgrall() if user in g.gr_mem]
         if xgroups:
             groups += [g.gr_gid for g in grp.getgrall() if g.gr_name in xgroups and g.gr_gid not in groups]
-        if groups:
+        if groups and EXEC_SETGROUPS:
+            logg.debug("setgroups %s > %s ", groups, groupnames)
             os.setgroups(groups)
         uid = pw.pw_uid
         os.setuid(uid)
@@ -906,9 +909,7 @@ def parse_unit(fullname): # -> object(prefix, instance, suffix, ...., name, comp
         component = prefix[has_component+1:]
     return parse_result(fullname, name, prefix, instance, suffix, component)
 
-def time_to_seconds(text, maximum = None):
-    if maximum is None:
-        maximum = DefaultMaximumTimeout
+def time_to_seconds(text, maximum):
     value = 0.
     for part in str(text).split(" "):
         item = part.strip()
@@ -1674,14 +1675,9 @@ class Systemctl:
         except IOError as e:
             logg.error("writing STATUS %s: %s\n\t to status file %s", status, e, status_file)
         return True
-    def read_status_from(self, conf, defaults = None):
+    def read_status_from(self, conf):
         status_file = self.get_status_file_from(conf)
         status = {}
-        if defaults is not None:
-           for key in defaults.keys():
-               status[key] = defaults[key]
-        elif isinstance(defaults, basestring):
-           status["ActiveState"] = defaults
         if not status_file:
             if DEBUG_STATUS: logg.debug("no status file. returning %s", status)
             return status
@@ -2828,7 +2824,8 @@ class Systemctl:
         runs = conf.get("Service", "Type", "simple").lower()
         logg.debug("%s process for %s", runs, strQ(conf.filename()))
         #
-        self.dup2_journal_log(conf)
+        if not EXEC_SPAWN:
+            self.dup2_journal_log(conf)
         #
         runuser = self.get_User(conf)
         rungroup = self.get_Group(conf)
@@ -4677,12 +4674,25 @@ class Systemctl:
             if fnmatch.fnmatchcase(unit, ignore+".service"):
                 return True # ignore
         return False
-    def system_default_services(self, sysv = "S", default_target = None):
+    def default_services_modules(self, *modules):
         """ show the default services 
-            This is used internally to know the list of service to be started in 'default'
-            runlevel when the container is started through default initialisation. It will
+            This is used internally to know the list of service to be started in the 'get-default'
+            target runlevel when the container is started through default initialisation. It will
             ignore a number of services - use '--all' to show a longer list of services and
             use '--all --force' if not even a minimal filter shall be used.
+        """
+        results = []
+        targets = modules or [ self.get_default_target() ]
+        for target in targets:
+            units = self.target_default_services(target)
+            logg.error("%s = %s", target, units)
+            for unit in units:
+                if unit not in results:
+                    results.append(unit)
+        return results
+    def target_default_services(self, target = None, sysv = "S"):
+        """ get the default services for a target - this will ignore a number of services,
+            use '--all' and --force' to get more services.
         """
         igno = self.igno_centos + self.igno_opensuse + self.igno_ubuntu + self.igno_always
         if self._show_all:
@@ -4690,24 +4700,25 @@ class Systemctl:
             if self._force:
                 igno = []
         logg.debug("ignored services filter for default.target:\n\t%s", igno)
-        return self.enabled_default_services(sysv, default_target, igno)
-    def enabled_default_services(self, sysv = "S", default_target = None, igno = []):
+        default_target = self.get_default_target(target)
+        return self.enabled_target_services(default_target, sysv, igno)
+    def enabled_target_services(self, target, sysv = "S", igno = []):
+        sockets = "socket.target"
         if self.user_mode():
-            logg.debug("check for default user services")
-            units = self.enabled_default_user_local_units(".socket", "sockets.target", igno)
-            units += self.enabled_default_user_local_units(".socket", default_target, igno) #FIXME?
-            units += self.enabled_default_user_local_units(".service", default_target, igno)
-            units += self.enabled_default_user_system_units(".service", default_target, igno)
+            logg.debug("check for %s user services", target)
+            units = self.enabled_target_user_local_units(sockets, ".socket", igno)
+            units += self.enabled_target_user_local_units(target, ".socket", igno) #FIXME?
+            units += self.enabled_target_user_local_units(target, ".service", igno)
+            units += self.enabled_target_user_system_units(target, ".service", igno)
             return units
         else:
-            logg.debug("check for default system services")
-            units = self.enabled_default_system_units(".socket", "sockets.target", igno)
-            units += self.enabled_default_system_units(".socket", default_target, igno) #FIXME?
-            units += self.enabled_default_system_units(".service", default_target, igno)
-            units += self.enabled_default_sysv_units(sysv, default_target, igno)
+            logg.debug("check for %s system services", target)
+            units = self.enabled_target_system_units(sockets, ".socket", igno)
+            units += self.enabled_target_system_units(target, ".socket", igno) #FIXME?
+            units += self.enabled_target_system_units(target, ".service", igno)
+            units += self.enabled_target_sysv_units(target, sysv, igno)
             return units
-    def enabled_default_user_local_units(self, unit_kind = ".service", default_target = None, igno = []):
-        target = default_target or self._default_target
+    def enabled_target_user_local_units(self, target, unit_kind = ".service", igno = []):
         units = []
         for basefolder in self.user_folders():
             if not basefolder:
@@ -4724,13 +4735,12 @@ class Systemctl:
                     if unit.endswith(unit_kind):
                         units.append(unit)
         return units
-    def enabled_default_user_system_units(self, unit_kind = ".service", default_target = None, igno = []):
-        default_target = default_target or self._default_target
+    def enabled_target_user_system_units(self, target, unit_kind = ".service", igno = []):
         units = []
         for basefolder in self.system_folders():
             if not basefolder:
                 continue
-            folder = self.default_enablefolder(default_target, basefolder)
+            folder = self.default_enablefolder(target, basefolder)
             if self._root:
                 folder = os_path(self._root, folder)
             if os.path.isdir(folder):
@@ -4746,14 +4756,13 @@ class Systemctl:
                         else:
                             units.append(unit)
         return units
-    def enabled_default_system_units(self, unit_type = ".service", default_target = None, igno = []):
+    def enabled_target_system_units(self, target, unit_type = ".service", igno = []):
         logg.debug("check for default system services")
-        default_target = default_target or self._default_target
         units = []
         for basefolder in self.system_folders():
             if not basefolder:
                 continue
-            folder = self.default_enablefolder(default_target, basefolder)
+            folder = self.default_enablefolder(target, basefolder)
             if self._root:
                 folder = os_path(self._root, folder)
             if os.path.isdir(folder):
@@ -4765,7 +4774,7 @@ class Systemctl:
                     if unit.endswith(unit_type):
                         units.append(unit)
         return units
-    def enabled_default_sysv_units(self, sysv = "S", default_target = None, igno = []):
+    def enabled_target_sysv_units(self, target, sysv = "S", igno = []):
         units = []
         for folder in [ self.rc3_root_folder() ]:
             if not os.path.isdir(folder):
@@ -4798,11 +4807,13 @@ class Systemctl:
         """ detect the default.target services and start them.
             When --init is given then the init-loop is run and
             the services are stopped again by 'systemctl halt'."""
-        default_target = self._default_target
-        default_services = self.system_default_services("S", default_target)
+        default_target = self.get_default_target()
+        return self.start_target_system(default_target, init)
+    def start_target_system(self, target, init = False):
+        default_services = self.target_default_services(target, "S")
         self.sysinit_status(SubState = "starting")
         self.start_units(default_services)
-        logg.info(" -- system is up")
+        logg.info("%s system is up", target)
         if init:
             logg.info("init-loop start")
             sig = self.init_loop_until_stop(default_services)
@@ -4813,11 +4824,13 @@ class Systemctl:
         """ detect the default.target services and stop them.
             This is commonly run through 'systemctl halt' or
             at the end of a 'systemctl --init default' loop."""
-        default_target = self._default_target
-        default_services = self.system_default_services("K", default_target)
+        default_target = self.get_default_target()
+        return self.stop_target_system(default_target)
+    def stop_target_system(self, target):
+        default_services = self.target_default_services(target, "K")
         self.sysinit_status(SubState = "stopping")
         self.stop_units(default_services)
-        logg.info(" -- system is down")
+        logg.info("%s system is down", target)
         return True
     def system_halt(self, arg = True):
         """ stop units from default system level """
@@ -4830,11 +4843,18 @@ class Systemctl:
         return done
     def system_get_default(self):
         """ get current default run-level"""
-        current = self._default_target
-        folder = os_path(self._root, self.mask_folder())
-        target = os.path.join(folder, DefaultUnit)
-        if os.path.islink(target):
-            current = os.path.basename(os.readlink(target))
+        return self.get_default_target()
+    def get_targets_folder(self):
+        return os_path(self._root, self.mask_folder())
+    def get_default_target_file(self):
+        targets_folder = self.get_targets_folder()
+        return os.path.join(targets_folder, DefaultUnit)
+    def get_default_target(self, default_target = None):
+        """ get current default run-level"""
+        current = default_target or self._default_target
+        default_target_file = self.get_default_target_file()
+        if os.path.islink(default_target_file):
+            current = os.path.basename(os.readlink(default_target_file))
         return current
     def set_default_modules(self, *modules):
         """ set current default run-level"""
@@ -4842,11 +4862,8 @@ class Systemctl:
             logg.debug(".. no runlevel given")
             self.error |= NOT_OK
             return "Too few arguments"
-        current = self._default_target
-        folder = os_path(self._root, self.mask_folder())
-        target = os.path.join(folder, DefaultUnit)
-        if os.path.islink(target):
-            current = os.path.basename(os.readlink(target))
+        current = self.get_default_target()
+        default_target_file = self.get_default_target_file()
         msg = ""
         for module in modules:
             if module == current:
@@ -4860,12 +4877,12 @@ class Systemctl:
                 msg = "No such runlevel %s" % (module)
                 continue
             #
-            if os.path.islink(target):
-                os.unlink(target)
-            if not os.path.isdir(os.path.dirname(target)):
-                os.makedirs(os.path.dirname(target))
-            os.symlink(targetfile, target)
-            msg = "Created symlink from %s -> %s" % (target, targetfile)
+            if os.path.islink(default_target_file):
+                os.unlink(default_target_file)
+            if not os.path.isdir(os.path.dirname(default_target_file)):
+                os.makedirs(os.path.dirname(default_target_file))
+            os.symlink(targetfile, default_target_file)
+            msg = "Created symlink from %s -> %s" % (default_target_file, targetfile)
             logg.debug("%s", msg)
         return msg
     def init_modules(self, *modules):
