@@ -1642,12 +1642,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} get-default"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        if real: 
-            old = "graphical.target"
-            self.assertTrue(greps(out, old))
-        else: 
-            old = "multi-user.target"
-            self.assertTrue(greps(out, old))
+        old = out.strip()
+        self.assertIn(old, ["graphical.target", "multi-user.target"])
         runlevel = "basic.target"
         cmd = "{systemctl} set-default {runlevel}"
         out, end = output2(cmd.format(**locals()))
@@ -1662,12 +1658,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} get-default"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        if real: 
-            old = "graphical.target"
-            self.assertTrue(greps(out, old))
-        else: 
-            old = "multi-user.target"
-            self.assertTrue(greps(out, old))
+        self.assertEqual(out.strip(), old)
         self.rm_zzfiles(root)
         self.rm_testdir()
         self.coverage()
@@ -4718,6 +4709,91 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(out, "b.service"))
         self.assertTrue(greps(out, "c.service"))
         self.assertTrue(greps(out, "d.service"))
+        #
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def test_3027_default_services_for_different_target(self):
+        """ check that 'default-services' changes when modifing default-target """
+        self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
+            [Unit]
+            Description=Testing A""")
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            ExecStart=/bin/sleep 2
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/system/zzc.service"),"""
+            [Unit]
+            Description=Testing C
+            [Service]
+            ExecStart=/bin/sleep 2
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/system/zzd.service"),"""
+            [Unit]
+            Description=Testing D
+            [Service]
+            ExecStart=/bin/sleep 2
+            [Install]
+            WantedBy=graphical.target""")
+        #
+        cmd = "{systemctl} default-services"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 0)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} --no-legend enable zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} --no-legend enable zzc.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} default-services"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 2)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} get-default"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(out.strip(), "multi-user.target")
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} set-default graphical.target"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} get-default"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(out.strip(), "graphical.target")
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} --no-legend enable zzd.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} default-services"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 1)
+        self.assertEqual(end, 0)
         #
         self.rm_testdir()
         self.coverage()
