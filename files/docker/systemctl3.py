@@ -4813,43 +4813,49 @@ class Systemctl:
         """ detect the default.target services and start them.
             When --init is given then the init-loop is run and
             the services are stopped again by 'systemctl halt'."""
-        default_target = self.get_default_target()
-        return self.start_target_system(default_target, init)
-    def start_target_system(self, target, init = False):
-        default_services = self.target_default_services(target, "S")
-        self.sysinit_status(SubState = "starting")
-        self.start_units(default_services)
+        target = self.get_default_target()
+        services = self.start_target_system(target, init)
         logg.info("%s system is up", target)
         if init:
             logg.info("init-loop start")
-            sig = self.init_loop_until_stop(default_services)
+            sig = self.init_loop_until_stop(services)
             logg.info("init-loop %s", sig)
             self.stop_system_default()
-        return True
+        return not not services
+    def start_target_system(self, target, init = False):
+        services = self.target_default_services(target, "S")
+        self.sysinit_status(SubState = "starting")
+        self.start_units(services)
+        return services
     def do_start_target_from(self, conf):
         target = conf.name()
-        return self.start_target_system(target)
+        services = self.start_target_system(target)
+        return not not services
     def stop_system_default(self):
         """ detect the default.target services and stop them.
             This is commonly run through 'systemctl halt' or
             at the end of a 'systemctl --init default' loop."""
-        default_target = self.get_default_target()
-        return self.stop_target_system(default_target)
-    def stop_target_system(self, target):
-        default_services = self.target_default_services(target, "K")
-        self.sysinit_status(SubState = "stopping")
-        self.stop_units(default_services)
+        target = self.get_default_target()
+        services = self.stop_target_system(target)
         logg.info("%s system is down", target)
-        return True
+        return not not services
+    def stop_target_system(self, target):
+        services = self.target_default_services(target, "K")
+        self.sysinit_status(SubState = "stopping")
+        self.stop_units(services)
+        return services
     def do_stop_target_from(self, conf):
         target = conf.name()
-        return self.stop_target_system(target)
+        services = self.stop_target_system(target)
+        return not not services
     def do_reload_target_from(self, conf):
         target = conf.name()
-        return self.reload_target_system(target)
+        services = self.reload_target_system(target)
+        return not not services
     def reload_target_system(self, target):
-        default_services = self.target_default_services(target, "S")
-        return self.reload_units(default_services)
+        services = self.target_default_services(target, "S")
+        self.reload_units(services)
+        return services
     def system_halt(self, arg = True):
         """ stop units from default system level """
         logg.info("system halt requested - %s", arg)
