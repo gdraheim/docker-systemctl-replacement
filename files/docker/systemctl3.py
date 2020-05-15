@@ -2224,6 +2224,8 @@ class Systemctl:
             return self.do_start_service_from(conf)
         elif conf.name().endswith(".socket"):
             return self.do_start_socket_from(conf)
+        elif conf.name().endswith(".target"):
+            return self.do_start_target_from(conf)
         else:
             logg.error("start not implemented for unit type: %s", conf.name())
             return False
@@ -2904,6 +2906,8 @@ class Systemctl:
             return self.do_stop_service_from(conf)
         elif conf.name().endswith(".socket"):
             return self.do_stop_socket_from(conf)
+        elif conf.name().endswith(".target"):
+            return self.do_stop_target_from(conf)
         else:
             logg.error("stop not implemented for unit type: %s", conf.name())
             return False
@@ -3124,6 +3128,8 @@ class Systemctl:
             else:
                 logg.error("no %s found for unit type: %s", service_unit, conf.name())
                 return False
+        elif conf.name().endswith(".target"):
+            return self.do_reload_target_from(conf)
         else:
             logg.error("reload not implemented for unit type: %s", conf.name())
             return False
@@ -4820,6 +4826,9 @@ class Systemctl:
             logg.info("init-loop %s", sig)
             self.stop_system_default()
         return True
+    def do_start_target_from(self, conf):
+        target = conf.name()
+        return self.start_target_system(target)
     def stop_system_default(self):
         """ detect the default.target services and stop them.
             This is commonly run through 'systemctl halt' or
@@ -4832,6 +4841,15 @@ class Systemctl:
         self.stop_units(default_services)
         logg.info("%s system is down", target)
         return True
+    def do_stop_target_from(self, conf):
+        target = conf.name()
+        return self.stop_target_system(target)
+    def do_reload_target_from(self, conf):
+        target = conf.name()
+        return self.reload_target_system(target)
+    def reload_target_system(self, target):
+        default_services = self.target_default_services(target, "S")
+        return self.reload_units(default_services)
     def system_halt(self, arg = True):
         """ stop units from default system level """
         logg.info("system halt requested - %s", arg)
