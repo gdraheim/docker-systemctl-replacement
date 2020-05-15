@@ -4689,22 +4689,25 @@ class Systemctl:
         logg.debug("ignored services filter for default.target:\n\t%s", igno)
         return self.enabled_default_services(sysv, default_target, igno)
     def enabled_default_services(self, sysv = "S", default_target = None, igno = []):
+        target = self.get_default_target(default_target)
+        return self.enabled_target_services(target)
+    def enabled_target_services(self, target, sysv = "S", igno = []):
+        sockets = "socket.target"
         if self.user_mode():
-            logg.debug("check for default user services")
-            units = self.enabled_default_user_local_units(".socket", "sockets.target", igno)
-            units += self.enabled_default_user_local_units(".socket", default_target, igno) #FIXME?
-            units += self.enabled_default_user_local_units(".service", default_target, igno)
-            units += self.enabled_default_user_system_units(".service", default_target, igno)
+            logg.debug("check for %s user services", target)
+            units = self.enabled_target_user_local_units(sockets, ".socket", igno)
+            units += self.enabled_target_user_local_units(target, ".socket", igno) #FIXME?
+            units += self.enabled_target_user_local_units(target, ".service", igno)
+            units += self.enabled_target_user_system_units(target, ".service", igno)
             return units
         else:
-            logg.debug("check for default system services")
-            units = self.enabled_default_system_units(".socket", "sockets.target", igno)
-            units += self.enabled_default_system_units(".socket", default_target, igno) #FIXME?
-            units += self.enabled_default_system_units(".service", default_target, igno)
-            units += self.enabled_default_sysv_units(sysv, default_target, igno)
+            logg.debug("check for %s system services", target)
+            units = self.enabled_target_system_units(sockets, ".socket", igno)
+            units += self.enabled_target_system_units(target, ".socket", igno) #FIXME?
+            units += self.enabled_target_system_units(target, ".service", igno)
+            units += self.enabled_target_sysv_units(target, sysv, igno)
             return units
-    def enabled_default_user_local_units(self, unit_kind = ".service", default_target = None, igno = []):
-        target = default_target or self._default_target
+    def enabled_target_user_local_units(self, target, unit_kind = ".service", igno = []):
         units = []
         for basefolder in self.user_folders():
             if not basefolder:
@@ -4721,13 +4724,12 @@ class Systemctl:
                     if unit.endswith(unit_kind):
                         units.append(unit)
         return units
-    def enabled_default_user_system_units(self, unit_kind = ".service", default_target = None, igno = []):
-        default_target = default_target or self._default_target
+    def enabled_target_user_system_units(self, target, unit_kind = ".service", igno = []):
         units = []
         for basefolder in self.system_folders():
             if not basefolder:
                 continue
-            folder = self.default_enablefolder(default_target, basefolder)
+            folder = self.default_enablefolder(target, basefolder)
             if self._root:
                 folder = os_path(self._root, folder)
             if os.path.isdir(folder):
@@ -4743,14 +4745,13 @@ class Systemctl:
                         else:
                             units.append(unit)
         return units
-    def enabled_default_system_units(self, unit_type = ".service", default_target = None, igno = []):
+    def enabled_target_system_units(self, target, unit_type = ".service", igno = []):
         logg.debug("check for default system services")
-        default_target = default_target or self._default_target
         units = []
         for basefolder in self.system_folders():
             if not basefolder:
                 continue
-            folder = self.default_enablefolder(default_target, basefolder)
+            folder = self.default_enablefolder(target, basefolder)
             if self._root:
                 folder = os_path(self._root, folder)
             if os.path.isdir(folder):
@@ -4762,7 +4763,7 @@ class Systemctl:
                     if unit.endswith(unit_type):
                         units.append(unit)
         return units
-    def enabled_default_sysv_units(self, sysv = "S", default_target = None, igno = []):
+    def enabled_target_sysv_units(self, target, sysv = "S", igno = []):
         units = []
         for folder in [ self.rc3_root_folder() ]:
             if not os.path.isdir(folder):
