@@ -4827,7 +4827,10 @@ class Systemctl:
         return done
     def system_get_default(self):
         """ get current default run-level"""
-        current = self._default_target
+        return self.get_default_target()
+    def get_default_target(self, target = None):
+        """ get current default run-level"""
+        current = target or self._default_target
         folder = os_path(self._root, self.mask_folder())
         target = os.path.join(folder, DefaultUnit)
         if os.path.islink(target):
