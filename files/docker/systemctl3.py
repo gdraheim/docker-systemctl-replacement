@@ -4786,7 +4786,6 @@ class Systemctl:
                             units.append(unit)
         return units
     def enabled_target_system_units(self, target, unit_type = ".service", igno = []):
-        logg.debug("check for default system services")
         units = []
         for basefolder in self.system_folders():
             if not basefolder:
