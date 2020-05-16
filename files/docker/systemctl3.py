@@ -1503,7 +1503,8 @@ class Systemctl:
         folders = self.system_folders()
         if self.user_mode():
             folders = self.user_folders()
-        for folder in folders:
+        for folder1 in folders:
+            folder = os_path(self._root, folder1)
             if not os.path.isdir(folder):
                 continue
             for filename in os.listdir(folder):
