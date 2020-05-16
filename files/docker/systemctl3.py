@@ -4713,7 +4713,7 @@ class Systemctl:
             if self._force:
                 igno = []
         logg.debug("ignored services filter for default.target:\n\t%s", igno)
-        default_target = self.get_default_target(target)
+        default_target = target or self.get_default_target()
         return self.enabled_target_services(default_target, sysv, igno)
     def enabled_target_services(self, target, sysv = "S", igno = []):
         units = []
@@ -4882,6 +4882,7 @@ class Systemctl:
         # services = self.start_target_system(target)
         services = self.target_default_services(target, "S")
         units = [service for service in services if not self.is_running_unit(service)]
+        logg.debug("start %s is starting %s from %s", target, units, services)
         return self.start_units(units)
     def stop_system_default(self):
         """ detect the default.target services and stop them.
@@ -4901,6 +4902,7 @@ class Systemctl:
         # services = self.stop_target_system(target)
         services = self.target_default_services(target, "K")
         units = [service for service in services if self.is_running_unit(service)]
+        logg.debug("stop %s is stopping %s from %s", target, units, services)
         return self.stop_units(units)
     def do_reload_target_from(self, conf):
         target = conf.name()
