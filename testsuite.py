@@ -9101,6 +9101,90 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_zzfiles(root)
         self.coverage()
         self.end()
+    def real_3660_start_timer_unit(self):
+        self.test_3660_start_timer_unit(True)
+    def test_3660_start_timer_unit(self, real = False):
+        """ check that we get a warning when a timer is started"""
+        self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir, real)
+        vv = "-vv"
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
+        testsleep = self.testname("sleep")
+        bindir = os_path(root, "/usr/bin")
+        text_file(os_path(testdir, "zzt.timer"),"""
+            [Unit]
+            Description=Timer T
+            [Timer]
+            OnCalendar=daily
+            AccuracySec=12h
+            Persistent=true
+            [Install]
+            WantedBy=timers.target
+            """.format(**locals()))
+        text_file(os_path(testdir, "zzt.service"),"""
+            [Unit]
+            Description=Testing T
+            [Service]
+            Type=simple
+            ExecStart={bindir}/{testsleep} 11
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_file(os_path(testdir, "zzt.timer"), os_path(root, "/etc/systemd/system/zzt.timer"))
+        copy_file(os_path(testdir, "zzt.service"), os_path(root, "/etc/systemd/system/zzt.service"))
+        sx____("{systemctl} daemon-reload".format(**locals()))
+        #
+        cmd = "{systemctl} enable zzt.timer {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertTrue(os.path.exists(os_path(root, "/etc/systemd/system/timers.target.wants/zzt.timer")))
+        #
+        cmd = "{systemctl} start zzt.timer {vv}"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\%s", cmd, end, out, err)
+        if real:
+            self.assertEqual(end, 0)
+        else:
+            self.assertEqual(end, 1)
+            self.assertTrue(greps(err, "not implemented"))
+        #
+        cmd = "{systemctl} reload zzt.timer {vv}"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertTrue(greps(err, "not implemented"))
+        #
+        cmd = "{systemctl} is-active zzt.timer {vv}"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(out.strip(), "unknown")
+        #
+        cmd = "{systemctl} stop zzt.timer {vv}"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertTrue(greps(err, "not implemented"))
+        #
+        cmd = "{systemctl} restart zzt.timer {vv}"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertTrue(greps(err, "not implemented"))
+        #
+        cmd = "{systemctl} listen zzt.timer {vv}"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertTrue(greps(err, "not implemented"))
+        #
+        kill_testsleep = "{systemctl} __killall {testsleep}"
+        sx____(kill_testsleep.format(**locals()))
+        self.rm_testdir()
+        self.rm_zzfiles(root)
+        self.coverage()
+        self.end()
     def test_3700_systemctl_py_default_init_loop_in_testenv(self):
         """ check that we can enable services in a test env to be run by an init-loop.
             We expect here that the init-loop ends when all services are dead. """
