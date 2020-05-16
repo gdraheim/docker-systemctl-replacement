@@ -4709,7 +4709,7 @@ class Systemctl:
         default_target = self.get_default_target(target)
         return self.enabled_target_services(default_target, sysv, igno)
     def enabled_target_services(self, target, sysv = "S", igno = []):
-        sockets = "socket.target"
+        sockets = "sockets.target"
         if self.user_mode():
             logg.debug("check for %s user services", target)
             units = self.enabled_target_user_local_units(sockets, ".socket", igno)
