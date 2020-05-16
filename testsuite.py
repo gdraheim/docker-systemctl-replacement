@@ -20478,7 +20478,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(debug_log, "")
         cmd = "{initsystemctl} -1"
         init = background(cmd.format(**locals()))
-        time.sleep(InitLoopSleep+1)
+        time.sleep(InitLoopSleep+2)
         #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
