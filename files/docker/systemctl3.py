@@ -2462,13 +2462,17 @@ class Systemctl:
         self.wait_system()
         done = True
         started_units = []
+        active_units = []
         for unit in self.sortedAfter(units):
             started_units.append(unit)
             if not self.listen_unit(unit):
                 done = False
-        logg.info("init-loop start")
-        sig = self.init_loop_until_stop(started_units)
-        logg.info("init-loop %s", sig)
+            else:
+                active_units.append(unit)
+        if active_units:
+            logg.info("init-loop start")
+            sig = self.init_loop_until_stop(started_units)
+            logg.info("init-loop %s", sig)
         for unit in reversed(started_units):
             pass # self.stop_unit(unit)
         return done
