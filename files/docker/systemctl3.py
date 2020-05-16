@@ -4879,8 +4879,10 @@ class Systemctl:
         return services
     def do_start_target_from(self, conf):
         target = conf.name()
-        services = self.start_target_system(target)
-        return not not services
+        # services = self.start_target_system(target)
+        services = self.target_default_services(target, "S")
+        units = [service for service in services if not self.is_running_unit(service)]
+        return self.start_units(units)
     def stop_system_default(self):
         """ detect the default.target services and stop them.
             This is commonly run through 'systemctl halt' or
@@ -4896,16 +4898,17 @@ class Systemctl:
         return services
     def do_stop_target_from(self, conf):
         target = conf.name()
-        services = self.stop_target_system(target)
-        return not not services
+        # services = self.stop_target_system(target)
+        services = self.target_default_services(target, "K")
+        units = [service for service in services if self.is_running_unit(service)]
+        return self.stop_units(units)
     def do_reload_target_from(self, conf):
         target = conf.name()
-        services = self.reload_target_system(target)
-        return not not services
+        return self.reload_target_system(target)
     def reload_target_system(self, target):
         services = self.target_default_services(target, "S")
-        self.reload_units(services)
-        return services
+        units = [service for service in services if self.is_running_unit(service)]
+        return self.reload_units(units)
     def system_halt(self, arg = True):
         """ stop units from default system level """
         logg.info("system halt requested - %s", arg)
