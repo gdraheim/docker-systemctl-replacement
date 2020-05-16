@@ -1638,6 +1638,19 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         self.rm_zzfiles(root)
+        if not real:
+            text_file(os_path(root, "/etc/systemd/system/basic.target"),"""
+            [Unit]
+            Description=Basic Runlevel
+            Requires=sockets.target""")
+            text_file(os_path(root, "/etc/systemd/system/multi-user.target"),"""
+            [Unit]
+            Description=Basic Runlevel
+            Requires=basic.target""")
+            text_file(os_path(root, "/etc/systemd/system/graphical.target"),"""
+            [Unit]
+            Description=Basic Runlevel
+            Requires=multi-user.target""")
         #
         cmd = "{systemctl} get-default"
         out, end = output2(cmd.format(**locals()))
@@ -6274,7 +6287,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 {bindir}/{testsleep} 111 0<&- &>/dev/null &
                 echo $! > {root}/var/run/zzz.init.pid
                 echo `date +%M:%S` started pid >>{logfile}
-                sleep 1
+                sleep 2
                 echo `date +%M:%S` starting zza >>{logfile}
                 {systemctl} start zza.service {vv} >>{logfile} 2>&1 
                 echo `date +%M:%S` started zza >>{logfile}
