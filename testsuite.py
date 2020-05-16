@@ -20450,7 +20450,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, err, rc = output3(cmd.format(**locals()))
         logg.info("\n>>>(%s)\n%s\n%s", rc, i2(err), out)
         # self.assertEqual(rc, 0) # <<<<<<<<
-        self.assertTrue(greps(err, "PermissionError:"))
+        self.assertTrue(greps(err, "Operation not permitted"))
         #
         kill_testsleep = "{systemctl} __killall {testsleepA}"
         sx____(kill_testsleep.format(**locals()))
