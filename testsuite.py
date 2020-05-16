@@ -7487,6 +7487,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
+        time.sleep(1)
         #
         top = greps(_recent(output(_top_list)), "sleep")
         logg.info("top>>>\n| %s", "\n| ".join(top))
