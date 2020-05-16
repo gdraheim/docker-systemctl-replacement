@@ -1,4 +1,4 @@
-#! /usr/bin/python3
+#! /usr/bin/python
 ## type hints are provided in 'types/systemctl3.pyi'
 
 from __future__ import print_function
@@ -4782,7 +4782,12 @@ class Systemctl:
         return units
     def enabled_target_sysv_units(self, target, sysv = "S", igno = []):
         units = []
-        for folder in [ self.rc3_root_folder() ]:
+        folders = []
+        if target in [ "multi-user.target", DefaultUnit ]:
+            folders += [ self.rc3_root_folder() ]
+        if target in [ "graphical.target" ]:
+            folders += [ self.rc5_root_folder() ]
+        for folder in folders:
             if not os.path.isdir(folder):
                 logg.warning("non-existant %s", folder)
                 continue
