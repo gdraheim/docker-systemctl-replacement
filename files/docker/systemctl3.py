@@ -162,6 +162,8 @@ _all_common_targets = [ "default.target" ] + _default_targets + _feature_targets
 _all_common_enabled = [ "default.target", "multi-user.target", "remote-fs.target" ]
 _all_common_disabled = [ "graphical.target", "resue.target", "nfs-client.target" ]
 
+target_requires = { "graphical.target": "multi-user.target", "multi-user.target": "basic.target", "basic.target": "sockets.target" }
+
 _runlevel_mappings = {} # the official list
 _runlevel_mappings["0"] = "poweroff.target"
 _runlevel_mappings["1"] = "rescue.target"
@@ -4709,21 +4711,38 @@ class Systemctl:
         default_target = self.get_default_target(target)
         return self.enabled_target_services(default_target, sysv, igno)
     def enabled_target_services(self, target, sysv = "S", igno = []):
-        sockets = "sockets.target"
+        units = []
         if self.user_mode():
-            logg.debug("check for %s user services", target)
-            units = self.enabled_target_user_local_units(sockets, ".socket", igno)
-            units += self.enabled_target_user_local_units(target, ".socket", igno) #FIXME?
-            units += self.enabled_target_user_local_units(target, ".service", igno)
-            units += self.enabled_target_user_system_units(target, ".service", igno)
-            return units
+            targetlist = self.get_target_list(target)
+            logg.debug("check for %s user services : %s", target, targetlist)
+            for targets in targetlist:
+                for unit in self.enabled_target_user_local_units(targets, ".socket", igno):
+                    if unit not in units:
+                        units.append(unit)
+            for targets in targetlist:
+                for unit in self.enabled_target_user_local_units(targets, ".service", igno):
+                    if unit not in units:
+                        units.append(unit)
+            for targets in targetlist:
+                for unit in self.enabled_target_user_system_units(targets, ".service", igno):
+                    if unit not in units:
+                        units.append(unit)
         else:
-            logg.debug("check for %s system services", target)
-            units = self.enabled_target_system_units(sockets, ".socket", igno)
-            units += self.enabled_target_system_units(target, ".socket", igno) #FIXME?
-            units += self.enabled_target_system_units(target, ".service", igno)
-            units += self.enabled_target_sysv_units(target, sysv, igno)
-            return units
+            targetlist = self.get_target_list(target)
+            logg.debug("check for %s system services: %s", target, targetlist)
+            for targets in targetlist:
+                for unit in self.enabled_target_system_units(targets, ".socket", igno):
+                    if unit not in units:
+                        units.append(unit)
+            for targets in targetlist:
+                for unit in self.enabled_target_system_units(targets, ".service", igno):
+                    if unit not in units:
+                        units.append(unit)
+            for targets in targetlist:
+                for unit in self.enabled_target_sysv_units(targets, sysv, igno):
+                    if unit not in units:
+                        units.append(unit)
+        return units
     def enabled_target_user_local_units(self, target, unit_kind = ".service", igno = []):
         units = []
         for basefolder in self.user_folders():
@@ -4802,6 +4821,27 @@ class Systemctl:
                         continue # ignore
                     units.append(unit)
         return units
+    def get_target_conf(self, module): # -> conf (conf | default-conf)
+        """ accept that a unit does not exist 
+            and return a unit conf that says 'not-loaded' """
+        conf = self.load_unit_conf(module)
+        if conf is not None:
+            return conf
+        target_conf = self.default_unit_conf(module)
+        if module in target_requires:
+            target_conf.set("Unit", "Requires", target_requires[module])
+        return target_conf
+    def get_target_list(self, module):
+        target = module
+        if "." not in target: target += ".target"
+        targets = [ target ]
+        conf = self.get_target_conf(module)
+        requires = conf.get("Unit", "Requires", "")
+        while requires in target_requires:
+             targets = [ requires ] + targets
+             requires = target_requires[requires]
+        logg.debug("the %s requires %s", module, targets)
+        return targets
     def system_default(self, arg = True):
         """ start units for default system level
             This will go through the enabled services in the default 'multi-user.target'.
