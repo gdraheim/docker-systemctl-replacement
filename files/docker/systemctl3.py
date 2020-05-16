@@ -4832,6 +4832,7 @@ class Systemctl:
             target_conf.set("Unit", "Requires", target_requires[module])
         return target_conf
     def get_target_list(self, module):
+        """ the Requires= in target units are only accepted if known """
         target = module
         if "." not in target: target += ".target"
         targets = [ target ]
