@@ -3576,13 +3576,17 @@ class Systemctl:
             return "inactive"
     def get_active_target_from(self, conf):
         """ returns 'active' 'inactive' 'failed' 'unknown' """
-        default_target = DefaultTarget
-        sysinit_target = SysInitTarget
-        if conf.name() in [ sysinit_target, "default.target", default_target ]:
+        if conf.name() in self.get_active_target_list():
             status = self.is_system_running()
             if status in [ "running" ]:
                 return "active"
         return "inactive"
+    def get_active_target_list(self):
+        current_target = self.get_default_target()
+        target_list = self.get_target_list(current_target)
+        target_list += [ DefaultUnit ] # upper end
+        target_list += [ SysInitTarget ] # lower end
+        return target_list
     def get_substate_from(self, conf):
         """ returns 'running' 'exited' 'dead' 'failed' 'plugged' 'mounted' """
         if not conf: return None
