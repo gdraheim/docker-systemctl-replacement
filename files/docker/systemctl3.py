@@ -5312,10 +5312,9 @@ class Systemctl:
         return self._sysinit_target
     def is_system_running(self):
         conf = self.sysinit_target()
-        status_file = self.get_status_file_from(conf)
-        if not os.path.isfile(status_file):
+        if self.is_running_unit_from(conf):
             time.sleep(MinimumYield)
-        if not os.path.isfile(status_file):
+        if self.is_running_unit_from(conf):
             return "offline"
         status = self.read_status_from(conf)
         return status.get("SubState", "unknown")
@@ -5343,6 +5342,12 @@ class Systemctl:
             if "running" not in state:
                 logg.info("system is %s", state)
             break
+    def is_running_unit_from(self, conf):
+        status_file = self.get_status_file_from(conf)
+        return self.getsize(status_file) > 0
+    def is_running_unit(self, unit):
+        conf = self.get_unit_conf(unit)
+        return self.is_running_unit_from(conf)
     def pidlist_of(self, pid):
         if not pid:
             return []
