@@ -3059,7 +3059,7 @@ class Systemctl:
         # POST sequence
         if not self.is_active_from(conf):
             env["SERVICE_RESULT"] = service_result
-            for cmd in conf.getlist("Service", "ExecStopPost", []):
+            for cmd in conf.getlist("Socket", "ExecStopPost", []):
                 check, cmd = checkstatus(cmd)
                 newcmd = self.exec_cmd(cmd, env, conf)
                 logg.info("post-stop %s", shell_cmd(newcmd))
