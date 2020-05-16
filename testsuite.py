@@ -7229,35 +7229,35 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Testing B
             [Service]
-            ExecStart=/bin/sleep 2
+            ExecStart=/bin/sleep 4
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(root, "/etc/systemd/system/zzc.service"),"""
             [Unit]
             Description=Testing C
             [Service]
-            ExecStart=/bin/sleep 2
+            ExecStart=/bin/sleep 4
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(root, "/etc/systemd/system/zzd.service"),"""
             [Unit]
             Description=Testing D
             [Service]
-            ExecStart=/bin/sleep 2
+            ExecStart=/bin/sleep 4
             [Install]
             WantedBy=graphical.target""")
         text_file(os_path(root, "/etc/systemd/system/zze.service"),"""
             [Unit]
             Description=Testing E
             [Service]
-            ExecStart=/bin/sleep 2
+            ExecStart=/bin/sleep 4
             [Install]
             WantedBy=invented.target""")
         text_file(os_path(root, "/etc/systemd/system/zzi.service"),"""
             [Unit]
             Description=Testing E
             [Service]
-            ExecStart=/bin/sleep 2
+            ExecStart=/bin/sleep 4
             [Install]
             WantedBy=isolated.target""")
         text_file(os_path(root, "/etc/systemd/system/invented.target"),"""
