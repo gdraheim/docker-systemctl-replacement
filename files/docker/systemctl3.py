@@ -5317,9 +5317,9 @@ class Systemctl:
         return self._sysinit_target
     def is_system_running(self):
         conf = self.sysinit_target()
-        if self.is_running_unit_from(conf):
+        if not self.is_running_unit_from(conf):
             time.sleep(MinimumYield)
-        if self.is_running_unit_from(conf):
+        if not self.is_running_unit_from(conf):
             return "offline"
         status = self.read_status_from(conf)
         return status.get("SubState", "unknown")
