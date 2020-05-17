@@ -7483,7 +7483,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("top>>>\n| %s", "\n| ".join(top))
         self.assertEqual(len(greps(top, "sleep")), 1)
         #
-        cmd = "{systemctl} restart isolated.target"
+        cmd = "{systemctl} restart isolated.target -vvvv"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
