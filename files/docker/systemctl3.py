@@ -2929,15 +2929,13 @@ class Systemctl:
                 logg.warning("the service is already down once")
                 return True
             for cmd in conf.getlist("Service", "ExecStop", []):
-                check, cmd = checkstatus(cmd)
-                logg.debug("{env} %s", env)
-                newcmd = self.exec_cmd(cmd, env, conf)
+                exe, newcmd = self.exec_newcmd(cmd, env, conf)
                 logg.info("%s stop %s", runs, shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
                     self.execve_from(conf, newcmd, env) # pragma: no cover
                 run = subprocess_waitpid(forkpid)
-                if run.returncode and check: 
+                if run.returncode and exe.check: 
                     returncode = run.returncode
                     service_result = "failed"
                     break
@@ -2960,9 +2958,8 @@ class Systemctl:
             logg.info("STATUS %s %s", status_file, size)
             pid = 0
             for cmd in conf.getlist("Service", "ExecStop", []):
-                check, cmd = checkstatus(cmd)
                 env["MAINPID"] = strE(self.read_mainpid_from(conf))
-                newcmd = self.exec_cmd(cmd, env, conf)
+                exe, newcmd = self.exec_newcmd(cmd, env, conf)
                 logg.info("%s stop %s", runs, shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
@@ -2970,7 +2967,7 @@ class Systemctl:
                 run = subprocess_waitpid(forkpid)
                 run = must_have_failed(run, newcmd) # TODO: a workaround
                 # self.write_status_from(conf, MainPID=run.pid) # no ExecStop
-                if run.returncode and check:
+                if run.returncode and exe.check:
                     returncode = run.returncode
                     service_result = "failed"
                     break
@@ -2995,15 +2992,13 @@ class Systemctl:
                     new_pid = self.read_mainpid_from(conf)
                     if new_pid:
                         env["MAINPID"] = strE(new_pid)
-                check, cmd = checkstatus(cmd)
-                logg.debug("{env} %s", env)
-                newcmd = self.exec_cmd(cmd, env, conf)
+                exe, newcmd = self.exec_newcmd(cmd, env, conf)
                 logg.info("fork stop %s", shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
                     self.execve_from(conf, newcmd, env) # pragma: no cover
                 run = subprocess_waitpid(forkpid)
-                if run.returncode and check:
+                if run.returncode and exe.check:
                     returncode = run.returncode
                     service_result = "failed"
                     break
@@ -3030,8 +3025,7 @@ class Systemctl:
         if not self.is_active_from(conf):
             env["SERVICE_RESULT"] = service_result
             for cmd in conf.getlist("Service", "ExecStopPost", []):
-                check, cmd = checkstatus(cmd)
-                newcmd = self.exec_cmd(cmd, env, conf)
+                exe, newcmd = self.exec_newcmd(cmd, env, conf)
                 logg.info("post-stop %s", shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
