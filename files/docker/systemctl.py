@@ -1,10 +1,10 @@
-#! /usr/bin/python2
+#! /usr/bin/python
 ## generated from systemctl3.py - do not change
 
 from __future__ import print_function
 
 __copyright__ = "(C) 2016-2020 Guido U. Draheim, licensed under the EUPL"
-__version__ = "1.5.4192"
+__version__ = "1.5.4196"
 
 import logging
 logg = logging.getLogger("systemctl")
@@ -161,6 +161,8 @@ _all_common_targets = [ "default.target" ] + _default_targets + _feature_targets
 # inside a docker we pretend the following
 _all_common_enabled = [ "default.target", "multi-user.target", "remote-fs.target" ]
 _all_common_disabled = [ "graphical.target", "resue.target", "nfs-client.target" ]
+
+target_requires = { "graphical.target": "multi-user.target", "multi-user.target": "basic.target", "basic.target": "sockets.target" }
 
 _runlevel_mappings = {} # the official list
 _runlevel_mappings["0"] = "poweroff.target"
@@ -1501,7 +1503,8 @@ class Systemctl:
         folders = self.system_folders()
         if self.user_mode():
             folders = self.user_folders()
-        for folder in folders:
+        for folder1 in folders:
+            folder = os_path(self._root, folder1)
             if not os.path.isdir(folder):
                 continue
             for filename in os.listdir(folder):
@@ -2224,6 +2227,8 @@ class Systemctl:
             return self.do_start_service_from(conf)
         elif conf.name().endswith(".socket"):
             return self.do_start_socket_from(conf)
+        elif conf.name().endswith(".target"):
+            return self.do_start_target_from(conf)
         else:
             logg.error("start not implemented for unit type: %s", conf.name())
             return False
@@ -2904,6 +2909,8 @@ class Systemctl:
             return self.do_stop_service_from(conf)
         elif conf.name().endswith(".socket"):
             return self.do_stop_socket_from(conf)
+        elif conf.name().endswith(".target"):
+            return self.do_stop_target_from(conf)
         else:
             logg.error("stop not implemented for unit type: %s", conf.name())
             return False
@@ -3052,7 +3059,7 @@ class Systemctl:
         # POST sequence
         if not self.is_active_from(conf):
             env["SERVICE_RESULT"] = service_result
-            for cmd in conf.getlist("Service", "ExecStopPost", []):
+            for cmd in conf.getlist("Socket", "ExecStopPost", []):
                 check, cmd = checkstatus(cmd)
                 newcmd = self.exec_cmd(cmd, env, conf)
                 logg.info("post-stop %s", shell_cmd(newcmd))
@@ -3124,6 +3131,8 @@ class Systemctl:
             else:
                 logg.error("no %s found for unit type: %s", service_unit, conf.name())
                 return False
+        elif conf.name().endswith(".target"):
+            return self.do_reload_target_from(conf)
         else:
             logg.error("reload not implemented for unit type: %s", conf.name())
             return False
@@ -3568,13 +3577,17 @@ class Systemctl:
             return "inactive"
     def get_active_target_from(self, conf):
         """ returns 'active' 'inactive' 'failed' 'unknown' """
-        default_target = DefaultTarget
-        sysinit_target = SysInitTarget
-        if conf.name() in [ sysinit_target, "default.target", default_target ]:
+        if conf.name() in self.get_active_target_list():
             status = self.is_system_running()
             if status in [ "running" ]:
                 return "active"
         return "inactive"
+    def get_active_target_list(self):
+        current_target = self.get_default_target()
+        target_list = self.get_target_list(current_target)
+        target_list += [ DefaultUnit ] # upper end
+        target_list += [ SysInitTarget ] # lower end
+        return target_list
     def get_substate_from(self, conf):
         """ returns 'running' 'exited' 'dead' 'failed' 'plugged' 'mounted' """
         if not conf: return None
@@ -4700,24 +4713,41 @@ class Systemctl:
             if self._force:
                 igno = []
         logg.debug("ignored services filter for default.target:\n\t%s", igno)
-        default_target = self.get_default_target(target)
+        default_target = target or self.get_default_target()
         return self.enabled_target_services(default_target, sysv, igno)
     def enabled_target_services(self, target, sysv = "S", igno = []):
-        sockets = "socket.target"
+        units = []
         if self.user_mode():
-            logg.debug("check for %s user services", target)
-            units = self.enabled_target_user_local_units(sockets, ".socket", igno)
-            units += self.enabled_target_user_local_units(target, ".socket", igno) #FIXME?
-            units += self.enabled_target_user_local_units(target, ".service", igno)
-            units += self.enabled_target_user_system_units(target, ".service", igno)
-            return units
+            targetlist = self.get_target_list(target)
+            logg.debug("check for %s user services : %s", target, targetlist)
+            for targets in targetlist:
+                for unit in self.enabled_target_user_local_units(targets, ".socket", igno):
+                    if unit not in units:
+                        units.append(unit)
+            for targets in targetlist:
+                for unit in self.enabled_target_user_local_units(targets, ".service", igno):
+                    if unit not in units:
+                        units.append(unit)
+            for targets in targetlist:
+                for unit in self.enabled_target_user_system_units(targets, ".service", igno):
+                    if unit not in units:
+                        units.append(unit)
         else:
-            logg.debug("check for %s system services", target)
-            units = self.enabled_target_system_units(sockets, ".socket", igno)
-            units += self.enabled_target_system_units(target, ".socket", igno) #FIXME?
-            units += self.enabled_target_system_units(target, ".service", igno)
-            units += self.enabled_target_sysv_units(target, sysv, igno)
-            return units
+            targetlist = self.get_target_list(target)
+            logg.debug("check for %s system services: %s", target, targetlist)
+            for targets in targetlist:
+                for unit in self.enabled_target_system_units(targets, ".socket", igno):
+                    if unit not in units:
+                        units.append(unit)
+            for targets in targetlist:
+                for unit in self.enabled_target_system_units(targets, ".service", igno):
+                    if unit not in units:
+                        units.append(unit)
+            for targets in targetlist:
+                for unit in self.enabled_target_sysv_units(targets, sysv, igno):
+                    if unit not in units:
+                        units.append(unit)
+        return units
     def enabled_target_user_local_units(self, target, unit_kind = ".service", igno = []):
         units = []
         for basefolder in self.user_folders():
@@ -4757,7 +4787,6 @@ class Systemctl:
                             units.append(unit)
         return units
     def enabled_target_system_units(self, target, unit_type = ".service", igno = []):
-        logg.debug("check for default system services")
         units = []
         for basefolder in self.system_folders():
             if not basefolder:
@@ -4776,7 +4805,12 @@ class Systemctl:
         return units
     def enabled_target_sysv_units(self, target, sysv = "S", igno = []):
         units = []
-        for folder in [ self.rc3_root_folder() ]:
+        folders = []
+        if target in [ "multi-user.target", DefaultUnit ]:
+            folders += [ self.rc3_root_folder() ]
+        if target in [ "graphical.target" ]:
+            folders += [ self.rc5_root_folder() ]
+        for folder in folders:
             if not os.path.isdir(folder):
                 logg.warning("non-existant %s", folder)
                 continue
@@ -4791,6 +4825,28 @@ class Systemctl:
                         continue # ignore
                     units.append(unit)
         return units
+    def get_target_conf(self, module): # -> conf (conf | default-conf)
+        """ accept that a unit does not exist 
+            and return a unit conf that says 'not-loaded' """
+        conf = self.load_unit_conf(module)
+        if conf is not None:
+            return conf
+        target_conf = self.default_unit_conf(module)
+        if module in target_requires:
+            target_conf.set("Unit", "Requires", target_requires[module])
+        return target_conf
+    def get_target_list(self, module):
+        """ the Requires= in target units are only accepted if known """
+        target = module
+        if "." not in target: target += ".target"
+        targets = [ target ]
+        conf = self.get_target_conf(module)
+        requires = conf.get("Unit", "Requires", "")
+        while requires in target_requires:
+             targets = [ requires ] + targets
+             requires = target_requires[requires]
+        logg.debug("the %s requires %s", module, targets)
+        return targets
     def system_default(self, arg = True):
         """ start units for default system level
             This will go through the enabled services in the default 'multi-user.target'.
@@ -4807,31 +4863,54 @@ class Systemctl:
         """ detect the default.target services and start them.
             When --init is given then the init-loop is run and
             the services are stopped again by 'systemctl halt'."""
-        default_target = self.get_default_target()
-        return self.start_target_system(default_target, init)
-    def start_target_system(self, target, init = False):
-        default_services = self.target_default_services(target, "S")
-        self.sysinit_status(SubState = "starting")
-        self.start_units(default_services)
+        target = self.get_default_target()
+        services = self.start_target_system(target, init)
         logg.info("%s system is up", target)
         if init:
             logg.info("init-loop start")
-            sig = self.init_loop_until_stop(default_services)
+            sig = self.init_loop_until_stop(services)
             logg.info("init-loop %s", sig)
             self.stop_system_default()
-        return True
+        return not not services
+    def start_target_system(self, target, init = False):
+        services = self.target_default_services(target, "S")
+        self.sysinit_status(SubState = "starting")
+        self.start_units(services)
+        return services
+    def do_start_target_from(self, conf):
+        target = conf.name()
+        # services = self.start_target_system(target)
+        services = self.target_default_services(target, "S")
+        units = [service for service in services if not self.is_running_unit(service)]
+        logg.debug("start %s is starting %s from %s", target, units, services)
+        return self.start_units(units)
     def stop_system_default(self):
         """ detect the default.target services and stop them.
             This is commonly run through 'systemctl halt' or
             at the end of a 'systemctl --init default' loop."""
-        default_target = self.get_default_target()
-        return self.stop_target_system(default_target)
-    def stop_target_system(self, target):
-        default_services = self.target_default_services(target, "K")
-        self.sysinit_status(SubState = "stopping")
-        self.stop_units(default_services)
+        target = self.get_default_target()
+        services = self.stop_target_system(target)
         logg.info("%s system is down", target)
-        return True
+        return not not services
+    def stop_target_system(self, target):
+        services = self.target_default_services(target, "K")
+        self.sysinit_status(SubState = "stopping")
+        self.stop_units(services)
+        return services
+    def do_stop_target_from(self, conf):
+        target = conf.name()
+        # services = self.stop_target_system(target)
+        services = self.target_default_services(target, "K")
+        units = [service for service in services if self.is_running_unit(service)]
+        logg.debug("stop %s is stopping %s from %s", target, units, services)
+        return self.stop_units(units)
+    def do_reload_target_from(self, conf):
+        target = conf.name()
+        return self.reload_target_system(target)
+    def reload_target_system(self, target):
+        services = self.target_default_services(target, "S")
+        units = [service for service in services if self.is_running_unit(service)]
+        return self.reload_units(units)
     def system_halt(self, arg = True):
         """ stop units from default system level """
         logg.info("system halt requested - %s", arg)
@@ -5238,10 +5317,9 @@ class Systemctl:
         return self._sysinit_target
     def is_system_running(self):
         conf = self.sysinit_target()
-        status_file = self.get_status_file_from(conf)
-        if not os.path.isfile(status_file):
+        if not self.is_running_unit_from(conf):
             time.sleep(MinimumYield)
-        if not os.path.isfile(status_file):
+        if not self.is_running_unit_from(conf):
             return "offline"
         status = self.read_status_from(conf)
         return status.get("SubState", "unknown")
@@ -5269,6 +5347,12 @@ class Systemctl:
             if "running" not in state:
                 logg.info("system is %s", state)
             break
+    def is_running_unit_from(self, conf):
+        status_file = self.get_status_file_from(conf)
+        return self.getsize(status_file) > 0
+    def is_running_unit(self, unit):
+        conf = self.get_unit_conf(unit)
+        return self.is_running_unit_from(conf)
     def pidlist_of(self, pid):
         if not pid:
             return []
