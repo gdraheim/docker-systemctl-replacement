@@ -2251,8 +2251,7 @@ class Systemctl:
             if runs in [ "simple", "forking", "notify", "idle" ]:
                 env["MAINPID"] = strE(self.read_mainpid_from(conf))
             for cmd in conf.getlist("Service", "ExecStartPre", []):
-                check, cmd = checkstatus(cmd)
-                newcmd = self.exec_cmd(cmd, env, conf)
+                exe, newcmd = self.exec_newcmd(cmd, env, conf)
                 logg.info(" pre-start %s", shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid: 
@@ -2260,7 +2259,7 @@ class Systemctl:
                 run = subprocess_waitpid(forkpid)
                 logg.debug(" pre-start done (%s) <-%s>",
                     run.returncode or "OK", run.signal or "")
-                if run.returncode and check:
+                if run.returncode and exe.check:
                     logg.error("the ExecStartPre control process exited with error code")
                     active = "failed"
                     self.write_status_from(conf, AS=active )
@@ -2271,15 +2270,14 @@ class Systemctl:
                 logg.warning("the service was already up once")
                 return True
             for cmd in conf.getlist("Service", "ExecStart", []):
-                check, cmd = checkstatus(cmd)
-                newcmd = self.exec_cmd(cmd, env, conf)
+                exe, newcmd = self.exec_newcmd(cmd, env, conf)
                 logg.info("%s start %s", runs, shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid: # pragma: no cover
                     os.setsid() # detach child process from parent
                     self.execve_from(conf, newcmd, env)
                 run = subprocess_waitpid(forkpid)
-                if run.returncode and check: 
+                if run.returncode and exe.check: 
                     returncode = run.returncode
                     service_result = "failed"
                     logg.error("%s start %s (%s) <-%s>", runs, service_result, 
@@ -2306,7 +2304,7 @@ class Systemctl:
             for cmd in cmdlist:
                 pid = self.read_mainpid_from(conf)
                 env["MAINPID"] = strE(pid)
-                newcmd = self.exec_cmd(cmd, env, conf)
+                exe, newcmd = self.exec_newcmd(cmd, env, conf)
                 logg.info("%s start %s", runs, shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid: # pragma: no cover
@@ -2324,7 +2322,7 @@ class Systemctl:
                         self.set_status_from(conf, "ExecMainCode", strE(run.returncode))
                         active = run.returncode and "failed" or "active"
                         self.write_status_from(conf, AS=active)
-                    if run.returncode:
+                    if run.returncode and exe.check:
                         service_result = "failed"
                         break
         elif runs in [ "notify" ]:
@@ -2348,7 +2346,7 @@ class Systemctl:
             for cmd in cmdlist:
                 mainpid = self.read_mainpid_from(conf)
                 env["MAINPID"] = strE(mainpid)
-                newcmd = self.exec_cmd(cmd, env, conf)
+                exe, newcmd = self.exec_newcmd(cmd, env, conf)
                 logg.info("%s start %s", runs, shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid: # pragma: no cover
@@ -2368,7 +2366,7 @@ class Systemctl:
                         self.set_status_from(conf, "ExecMainCode", strE(run.returncode))
                         active = run.returncode and "failed" or "active"
                         self.write_status_from(conf, AS=active)
-                    if run.returncode:
+                    if run.returncode and exe.check:
                         service_result = "failed"
                         break
             if service_result in [ "success" ] and mainpid:
@@ -2389,8 +2387,7 @@ class Systemctl:
         elif runs in [ "forking" ]:
             pid_file = self.pid_file_from(conf)
             for cmd in conf.getlist("Service", "ExecStart", []):
-                check, cmd = checkstatus(cmd)
-                newcmd = self.exec_cmd(cmd, env, conf)
+                exe, newcmd = self.exec_newcmd(cmd, env, conf)
                 if not newcmd: continue
                 logg.info("%s start %s", runs, shell_cmd(newcmd))
                 forkpid = os.fork()
@@ -2399,7 +2396,7 @@ class Systemctl:
                     self.execve_from(conf, newcmd, env)
                 logg.info("%s started PID %s", runs, forkpid)
                 run = subprocess_waitpid(forkpid)
-                if run.returncode and check:
+                if run.returncode and exe.check:
                     returncode = run.returncode
                     service_result = "failed"
                 logg.info("%s stopped PID %s (%s) <-%s>", runs, run.pid, 
@@ -2426,8 +2423,7 @@ class Systemctl:
             # should execute the ExecStopPost sequence allowing some cleanup.
             env["SERVICE_RESULT"] = service_result
             for cmd in conf.getlist("Service", "ExecStopPost", []):
-                check, cmd = checkstatus(cmd)
-                newcmd = self.exec_cmd(cmd, env, conf)
+                exe, newcmd = self.exec_newcmd(cmd, env, conf)
                 logg.info("post-fail %s", shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
@@ -2438,8 +2434,7 @@ class Systemctl:
             return False
         else:
             for cmd in conf.getlist("Service", "ExecStartPost", []):
-                check, cmd = checkstatus(cmd)
-                newcmd = self.exec_cmd(cmd, env, conf)
+                exe, newcmd = self.exec_newcmd(cmd, env, conf)
                 logg.info("post-start %s", shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
