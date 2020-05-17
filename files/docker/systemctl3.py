@@ -3214,13 +3214,16 @@ class Systemctl:
         if not conf: return False
         if self.syntax_check(conf) > 100: return False
         with waitlock(conf):
-            logg.info(" restart unit %s => %s", conf.name(), strQ(conf.filename()))
-            if not self.is_active_from(conf):
-                return self.do_start_unit_from(conf)
+            if conf.name().endswith(".service"):
+                logg.info(" restart service %s => %s", conf.name(), strQ(conf.filename()))
+                if not self.is_active_from(conf):
+                    return self.do_start_unit_from(conf)
+                else:
+                    return self.do_restart_unit_from(conf)
             else:
                 return self.do_restart_unit_from(conf)
     def do_restart_unit_from(self, conf):
-        logg.info("(restart) => stop/start")
+        logg.info("(restart) => stop/start %s", conf.name())
         self.do_stop_unit_from(conf)
         return self.do_start_unit_from(conf)
     def try_restart_modules(self, *modules):
