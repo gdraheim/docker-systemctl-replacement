@@ -4524,8 +4524,7 @@ class Systemctl:
             if not execs.startswith(exectype):
                 continue
             for cmd in conf.getlist("Service", execs, []):
-                check, cmd = checkstatus(cmd)
-                newcmd = self.exec_cmd(cmd, env, conf)
+                mode, newcmd = self.exec_newcmd(cmd, env, conf)
                 if not newcmd:
                     continue
                 exe = newcmd[0]
