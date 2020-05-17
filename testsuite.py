@@ -19518,9 +19518,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Accept=yes
             ListenStream={sockfile}
             Service=zza.service
-            ExecStartPre=/usr/bin/touch {root}/var/run/zza.pre.txt
-            ExecStartPost=/usr/bin/touch {root}/var/run/zza.post.txt
-            ExecStopPost=/usr/bin/touch {root}/var/run/zza.end.txt
+            ExecStartPre=/usr/bin/touch {root}/var/run/zza.socket.pre.txt
+            ExecStartPost=/usr/bin/touch {root}/var/run/zza.socket.post.txt
+            ExecStopPost=/usr/bin/touch {root}/var/run/zza.socket.end.txt
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
@@ -19576,9 +19576,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "request: foo"))
         self.assertFalse(greps(out, "replied: FOO"))
         #
-        zza_pre = os_path(root, "/var/run/zza.pre.txt")
-        zza_post = os_path(root, "/var/run/zza.post.txt")
-        zza_end = os_path(root, "/var/run/zza.end.txt")
+        zza_pre = os_path(root, "/var/run/zza.socket.pre.txt")
+        zza_post = os_path(root, "/var/run/zza.socket.post.txt")
+        zza_end = os_path(root, "/var/run/zza.socket.end.txt")
         self.assertFalse(os.path.exists(zza_pre))
         self.assertFalse(os.path.exists(zza_post))
         self.assertFalse(os.path.exists(zza_end))
@@ -19669,9 +19669,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Accept=yes
             ListenStream={sockfile}
             Service=zza.service
-            ExecStartPre=/usr/bin/touch {root}/var/run/zza.pre.txt
-            ExecStartPost=/usr/bin/touch {root}/var/run/zza.post.txt
-            ExecStopPost=/usr/bin/touch {root}/var/run/zza.end.txt
+            ExecStartPre=/usr/bin/touch {root}/var/run/zza.socket.pre.txt
+            ExecStartPost=/usr/bin/touch {root}/var/run/zza.socket.post.txt
+            ExecStopPost=/usr/bin/touch {root}/var/run/zza.socket.end.txt
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
@@ -19727,9 +19727,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "request: foo"))
         self.assertFalse(greps(out, "replied: FOO"))
         #
-        zza_pre = os_path(root, "/var/run/zza.pre.txt")
-        zza_post = os_path(root, "/var/run/zza.post.txt")
-        zza_end = os_path(root, "/var/run/zza.end.txt")
+        zza_pre = os_path(root, "/var/run/zza.socket.pre.txt")
+        zza_post = os_path(root, "/var/run/zza.socket.post.txt")
+        zza_end = os_path(root, "/var/run/zza.socket.end.txt")
         self.assertFalse(os.path.exists(zza_pre))
         self.assertFalse(os.path.exists(zza_post))
         self.assertFalse(os.path.exists(zza_end))
@@ -19753,6 +19753,449 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         self.assertTrue(os.path.exists(zza_pre))
         self.assertFalse(os.path.exists(zza_post))
+        self.assertTrue(os.path.exists(zza_end))
+        #
+        ##################################################
+        #
+        logg.info("kill daemon at %s", init.pid)
+        os.kill(init.pid, signal.SIGTERM)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        time.sleep(4)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
+        sx____(kill_daemon.format(**locals()))
+        kill_daemon = "{systemctl} __killall '*{replyA}*'"
+        sx____(kill_daemon.format(**locals()))
+        kill_daemon = "{systemctl} __killall '*{replyB}*'"
+        sx____(kill_daemon.format(**locals()))
+        time.sleep(InitLoopSleep+1)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        #
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def test_4421_chown_user_socket_accept(self):
+        self.begin()
+        self.rm_testdir()
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        logfile = os_path(root, "/var/log/"+testname+".log")
+        sockfile = os_path(root, "/var/run/"+testname+".sock")
+        replyA = self.testname("replyA")
+        replyB = self.testname("replyB")
+        testsleep = self.testname("sleep")
+        bindir = os_path(root, "/usr/bin")
+        this_user=get_USER()
+        this_group=get_GROUP()
+        text_file(os_path(root, "/var/run/zz.txt"), "zz")
+        text_file(os_path(testdir, "zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            Type=simple
+            ExecStart={bindir}/{replyA} serverUNIX -f {sockfile}
+            StandardOutput=file:{root}/var/log/zza.log
+            # ExecStartPre=/usr/bin/touch {root}/var/run/zza.service.pre.txt
+            # ExecStartPost=/usr/bin/touch {root}/var/run/zza.service.post.txt
+            # ExecStopPost=/usr/bin/touch {root}/var/run/zza.service.end.txt
+            # User={this_user}
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        text_file(os_path(testdir, "zza.socket"),"""
+            [Unit]
+            Description=Testing B
+            [Socket]
+            Accept=yes
+            ListenStream={sockfile}
+            User={this_user}
+            Service=zza.service
+            ExecStartPre=/usr/bin/touch {root}/var/run/zza.socket.pre.txt
+            ExecStartPost=/usr/bin/touch {root}/var/run/zza.socket.post.txt
+            ExecStopPost=/usr/bin/touch {root}/var/run/zza.socket.end.txt
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        text_file(os_path(testdir, "zzc.service"),"""
+            [Unit]
+            Description=Testing C
+            [Service]
+            Accept=yes
+            ExecStart={root}/usr/bin/{testsleep} 5
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        copy_tool("reply.py", os_path(bindir, replyA))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
+        copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
+        copy_file(os_path(testdir, "zzc.service"), os_path(root, "/etc/systemd/system/zzc.service"))
+        cmd = "{systemctl} enable zzc.service"
+        sh____(cmd.format(**locals()))
+        #
+        systemctl_py = os.path.basename(_systemctl_py)
+        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
+        sx____(kill_daemon.format(**locals()))
+        kill_testsleep = "{systemctl} __killall {replyA} -vvvv"
+        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = "{systemctl} __killall {replyB} -vvvv"
+        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = "{systemctl} __killall {testsleep} -vvvv"
+        sx____(kill_testsleep.format(**locals()))
+        #
+        InitLoopSleep = 1
+        initsystemctl = systemctl
+        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        #
+        debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
+        os_remove(debug_log)
+        text_file(debug_log, "")
+        cmd = "{initsystemctl} -1"
+        init = background(cmd.format(**locals()))
+        time.sleep(InitLoopSleep+1)
+        #
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
+        #
+        oo = reads(debug_log.format(**locals()))
+        logg.info("debug.log>>\%s", oo)
+        #
+        cmd = "./reply.py sendUNIX -d foo -f {sockfile}"
+        out, end = output2(cmd.format(**locals()))
+        self.assertEqual(end, 0)
+        logg.info("send.log>>\n%s", out)
+        self.assertTrue(greps(out, "request: foo"))
+        self.assertFalse(greps(out, "replied: FOO"))
+        #
+        zza_pre = os_path(root, "/var/run/zza.socket.pre.txt")
+        zza_post = os_path(root, "/var/run/zza.socket.post.txt")
+        zza_end = os_path(root, "/var/run/zza.socket.end.txt")
+        self.assertFalse(os.path.exists(zza_pre))
+        self.assertFalse(os.path.exists(zza_post))
+        self.assertFalse(os.path.exists(zza_end))
+        #
+        cmd = "{systemctl} start zza.socket -vvvv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertTrue(os.path.exists(zza_pre))
+        self.assertTrue(os.path.exists(zza_post))
+        self.assertFalse(os.path.exists(zza_end))
+        #
+        cmd = "./reply.py sendUNIX -d foo -f {sockfile}"
+        out, end = output2(cmd.format(**locals()))
+        self.assertEqual(end, 0)
+        logg.info("send.log>>\n%s", out)
+        self.assertTrue(greps(out, "request: foo"))
+        self.assertTrue(greps(out, "replied: FOO"))
+        #
+        cmd = "{systemctl} stop zza.socket -vvvv"
+        sh____(cmd.format(**locals()))
+        self.assertTrue(os.path.exists(zza_pre))
+        self.assertTrue(os.path.exists(zza_post))
+        self.assertTrue(os.path.exists(zza_end))
+        #
+        ##################################################
+        #
+        logg.info("kill daemon at %s", init.pid)
+        os.kill(init.pid, signal.SIGTERM)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        time.sleep(4)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
+        sx____(kill_daemon.format(**locals()))
+        kill_daemon = "{systemctl} __killall '*{replyA}*'"
+        sx____(kill_daemon.format(**locals()))
+        kill_daemon = "{systemctl} __killall '*{replyB}*'"
+        sx____(kill_daemon.format(**locals()))
+        time.sleep(InitLoopSleep+1)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        #
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def test_4422_chown_user_group_socket_accept(self):
+        self.begin()
+        self.rm_testdir()
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        logfile = os_path(root, "/var/log/"+testname+".log")
+        sockfile = os_path(root, "/var/run/"+testname+".sock")
+        replyA = self.testname("replyA")
+        replyB = self.testname("replyB")
+        testsleep = self.testname("sleep")
+        bindir = os_path(root, "/usr/bin")
+        this_user=get_USER()
+        this_group=get_GROUP()
+        text_file(os_path(root, "/var/run/zz.txt"), "zz")
+        text_file(os_path(testdir, "zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            Type=simple
+            ExecStart={bindir}/{replyA} serverUNIX -f {sockfile}
+            StandardOutput=file:{root}/var/log/zza.log
+            # ExecStartPre=/usr/bin/touch {root}/var/run/zza.service.pre.txt
+            # ExecStartPost=/usr/bin/touch {root}/var/run/zza.service.post.txt
+            # ExecStopPost=/usr/bin/touch {root}/var/run/zza.service.end.txt
+            # User={this_user}
+            # Group={this_group}
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        text_file(os_path(testdir, "zza.socket"),"""
+            [Unit]
+            Description=Testing B
+            [Socket]
+            Accept=yes
+            ListenStream={sockfile}
+            User={this_user}
+            Group={this_user}
+            Service=zza.service
+            ExecStartPre=/usr/bin/touch {root}/var/run/zza.socket.pre.txt
+            ExecStartPost=/usr/bin/touch {root}/var/run/zza.socket.post.txt
+            ExecStopPost=/usr/bin/touch {root}/var/run/zza.socket.end.txt
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        text_file(os_path(testdir, "zzc.service"),"""
+            [Unit]
+            Description=Testing C
+            [Service]
+            Accept=yes
+            ExecStart={root}/usr/bin/{testsleep} 5
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        copy_tool("reply.py", os_path(bindir, replyA))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
+        copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
+        copy_file(os_path(testdir, "zzc.service"), os_path(root, "/etc/systemd/system/zzc.service"))
+        cmd = "{systemctl} enable zzc.service"
+        sh____(cmd.format(**locals()))
+        #
+        systemctl_py = os.path.basename(_systemctl_py)
+        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
+        sx____(kill_daemon.format(**locals()))
+        kill_testsleep = "{systemctl} __killall {replyA} -vvvv"
+        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = "{systemctl} __killall {replyB} -vvvv"
+        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = "{systemctl} __killall {testsleep} -vvvv"
+        sx____(kill_testsleep.format(**locals()))
+        #
+        InitLoopSleep = 1
+        initsystemctl = systemctl
+        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        #
+        debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
+        os_remove(debug_log)
+        text_file(debug_log, "")
+        cmd = "{initsystemctl} -1"
+        init = background(cmd.format(**locals()))
+        time.sleep(InitLoopSleep+1)
+        #
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
+        #
+        oo = reads(debug_log.format(**locals()))
+        logg.info("debug.log>>\%s", oo)
+        #
+        cmd = "./reply.py sendUNIX -d foo -f {sockfile}"
+        out, end = output2(cmd.format(**locals()))
+        self.assertEqual(end, 0)
+        logg.info("send.log>>\n%s", out)
+        self.assertTrue(greps(out, "request: foo"))
+        self.assertFalse(greps(out, "replied: FOO"))
+        #
+        zza_pre = os_path(root, "/var/run/zza.socket.pre.txt")
+        zza_post = os_path(root, "/var/run/zza.socket.post.txt")
+        zza_end = os_path(root, "/var/run/zza.socket.end.txt")
+        self.assertFalse(os.path.exists(zza_pre))
+        self.assertFalse(os.path.exists(zza_post))
+        self.assertFalse(os.path.exists(zza_end))
+        #
+        cmd = "{systemctl} start zza.socket -vvvv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertTrue(os.path.exists(zza_pre))
+        self.assertTrue(os.path.exists(zza_post))
+        self.assertFalse(os.path.exists(zza_end))
+        #
+        cmd = "./reply.py sendUNIX -d foo -f {sockfile}"
+        out, end = output2(cmd.format(**locals()))
+        self.assertEqual(end, 0)
+        logg.info("send.log>>\n%s", out)
+        self.assertTrue(greps(out, "request: foo"))
+        self.assertTrue(greps(out, "replied: FOO"))
+        #
+        cmd = "{systemctl} stop zza.socket -vvvv"
+        sh____(cmd.format(**locals()))
+        self.assertTrue(os.path.exists(zza_pre))
+        self.assertTrue(os.path.exists(zza_post))
+        self.assertTrue(os.path.exists(zza_end))
+        #
+        ##################################################
+        #
+        logg.info("kill daemon at %s", init.pid)
+        os.kill(init.pid, signal.SIGTERM)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        time.sleep(4)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
+        sx____(kill_daemon.format(**locals()))
+        kill_daemon = "{systemctl} __killall '*{replyA}*'"
+        sx____(kill_daemon.format(**locals()))
+        kill_daemon = "{systemctl} __killall '*{replyB}*'"
+        sx____(kill_daemon.format(**locals()))
+        time.sleep(InitLoopSleep+1)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        #
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def test_4423_chown_group_socket_accept(self):
+        self.begin()
+        self.rm_testdir()
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        logfile = os_path(root, "/var/log/"+testname+".log")
+        sockfile = os_path(root, "/var/run/"+testname+".sock")
+        replyA = self.testname("replyA")
+        replyB = self.testname("replyB")
+        testsleep = self.testname("sleep")
+        bindir = os_path(root, "/usr/bin")
+        this_user=get_USER()
+        this_group=get_GROUP()
+        text_file(os_path(root, "/var/run/zz.txt"), "zz")
+        text_file(os_path(testdir, "zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            Type=simple
+            ExecStart={bindir}/{replyA} serverUNIX -f {sockfile}
+            StandardOutput=file:{root}/var/log/zza.log
+            # ExecStartPre=/usr/bin/touch {root}/var/run/zza.service.pre.txt
+            # ExecStartPost=/usr/bin/touch {root}/var/run/zza.service.post.txt
+            # ExecStopPost=/usr/bin/touch {root}/var/run/zza.service.end.txt
+            Group={this_group}
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        text_file(os_path(testdir, "zza.socket"),"""
+            [Unit]
+            Description=Testing B
+            [Socket]
+            Accept=yes
+            ListenStream={sockfile}
+            Group={this_user}
+            Service=zza.service
+            ExecStartPre=/usr/bin/touch {root}/var/run/zza.socket.pre.txt
+            ExecStartPost=/usr/bin/touch {root}/var/run/zza.socket.post.txt
+            ExecStopPost=/usr/bin/touch {root}/var/run/zza.socket.end.txt
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        text_file(os_path(testdir, "zzc.service"),"""
+            [Unit]
+            Description=Testing C
+            [Service]
+            Accept=yes
+            ExecStart={root}/usr/bin/{testsleep} 5
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        copy_tool("reply.py", os_path(bindir, replyA))
+        copy_tool("/usr/bin/sleep", os_path(bindir, testsleep))
+        copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
+        copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
+        copy_file(os_path(testdir, "zzc.service"), os_path(root, "/etc/systemd/system/zzc.service"))
+        cmd = "{systemctl} enable zzc.service"
+        sh____(cmd.format(**locals()))
+        #
+        systemctl_py = os.path.basename(_systemctl_py)
+        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
+        sx____(kill_daemon.format(**locals()))
+        kill_testsleep = "{systemctl} __killall {replyA} -vvvv"
+        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = "{systemctl} __killall {replyB} -vvvv"
+        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = "{systemctl} __killall {testsleep} -vvvv"
+        sx____(kill_testsleep.format(**locals()))
+        #
+        InitLoopSleep = 1
+        initsystemctl = systemctl
+        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        #
+        debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
+        os_remove(debug_log)
+        text_file(debug_log, "")
+        cmd = "{initsystemctl} -1"
+        init = background(cmd.format(**locals()))
+        time.sleep(InitLoopSleep+1)
+        #
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
+        #
+        oo = reads(debug_log.format(**locals()))
+        logg.info("debug.log>>\%s", oo)
+        #
+        cmd = "./reply.py sendUNIX -d foo -f {sockfile}"
+        out, end = output2(cmd.format(**locals()))
+        self.assertEqual(end, 0)
+        logg.info("send.log>>\n%s", out)
+        self.assertTrue(greps(out, "request: foo"))
+        self.assertFalse(greps(out, "replied: FOO"))
+        #
+        zza_pre = os_path(root, "/var/run/zza.socket.pre.txt")
+        zza_post = os_path(root, "/var/run/zza.socket.post.txt")
+        zza_end = os_path(root, "/var/run/zza.socket.end.txt")
+        self.assertFalse(os.path.exists(zza_pre))
+        self.assertFalse(os.path.exists(zza_post))
+        self.assertFalse(os.path.exists(zza_end))
+        #
+        cmd = "{systemctl} start zza.socket -vvvv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertTrue(os.path.exists(zza_pre))
+        self.assertTrue(os.path.exists(zza_post))
+        self.assertFalse(os.path.exists(zza_end))
+        #
+        cmd = "./reply.py sendUNIX -d foo -f {sockfile}"
+        out, end = output2(cmd.format(**locals()))
+        self.assertEqual(end, 0)
+        logg.info("send.log>>\n%s", out)
+        self.assertTrue(greps(out, "request: foo"))
+        self.assertTrue(greps(out, "replied: FOO"))
+        #
+        cmd = "{systemctl} stop zza.socket -vvvv"
+        sh____(cmd.format(**locals()))
+        self.assertTrue(os.path.exists(zza_pre))
+        self.assertTrue(os.path.exists(zza_post))
         self.assertTrue(os.path.exists(zza_end))
         #
         ##################################################
