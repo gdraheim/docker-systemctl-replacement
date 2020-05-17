@@ -2860,7 +2860,7 @@ class Systemctl:
         if not conf: return None
         env = self.get_env(conf)
         for cmd in conf.getlist("Service", "ExecStart", []):
-            newcmd = self.exec_cmd(cmd, env, conf)
+            exe, newcmd = self.exec_newcmd(cmd, env, conf)
             self.execve_from(conf, newcmd, env)
         return None
     def stop_modules(self, *modules):
