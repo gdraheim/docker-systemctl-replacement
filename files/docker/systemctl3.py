@@ -3137,11 +3137,10 @@ class Systemctl:
         self.exec_check_service(conf, env, "ExecReload")
         if runs in [ "sysv" ]:
             status_file = self.get_status_file_from(conf)
-            if True:
-                exe = conf.filename()
-                cmd = "'%s' reload" % exe
+            initscript = conf.filename()
+            if initscript:
+                newcmd = [initscript, "reload"]
                 env["SYSTEMCTL_SKIP_REDIRECT"] = "yes"
-                newcmd = self.exec_cmd(cmd, env, conf)
                 logg.info("%s reload %s", runs, shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
@@ -3154,20 +3153,20 @@ class Systemctl:
                 else:
                     self.write_status_from(conf, AS="active")
                     return True
+            return False
         elif runs in [ "simple", "notify", "forking", "idle" ]:
             if not self.is_active_from(conf):
                 logg.info("no reload on inactive service %s", conf.name())
                 return True
             for cmd in conf.getlist("Service", "ExecReload", []):
                 env["MAINPID"] = strE(self.read_mainpid_from(conf))
-                check, cmd = checkstatus(cmd)
-                newcmd = self.exec_cmd(cmd, env, conf)
+                exe, newcmd = self.exec_newcmd(cmd, env, conf)
                 logg.info("%s reload %s", runs, shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
                     self.execve_from(conf, newcmd, env) # pragma: no cover
                 run = subprocess_waitpid(forkpid)
-                if check and run.returncode: 
+                if run.returncode and exe.check: 
                     logg.error("Job for %s failed because the control process exited with error code. (%s)", 
                         conf.name(), run.returncode)
                     return False
