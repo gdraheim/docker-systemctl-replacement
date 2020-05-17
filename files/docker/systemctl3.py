@@ -2540,8 +2540,7 @@ class Systemctl:
         env = self.get_env(conf)
         if True:
             for cmd in conf.getlist("Socket", "ExecStartPre", []):
-                check, cmd = checkstatus(cmd)
-                newcmd = self.exec_cmd(cmd, env, conf)
+                exe, newcmd = self.exec_newcmd(cmd, env, conf)
                 logg.info(" pre-start %s", shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid: 
@@ -2549,7 +2548,7 @@ class Systemctl:
                 run = subprocess_waitpid(forkpid)
                 logg.debug(" pre-start done (%s) <-%s>",
                     run.returncode or "OK", run.signal or "")
-                if run.returncode and check:
+                if run.returncode and exe.check:
                     logg.error("the ExecStartPre control process exited with error code")
                     active = "failed"
                     self.write_status_from(conf, AS=active )
@@ -2579,8 +2578,7 @@ class Systemctl:
             # should execute the ExecStopPost sequence allowing some cleanup.
             env["SERVICE_RESULT"] = service_result
             for cmd in conf.getlist("Socket", "ExecStopPost", []):
-                check, cmd = checkstatus(cmd)
-                newcmd = self.exec_cmd(cmd, env, conf)
+                exe, newcmd = self.exec_newcmd(cmd, env, conf)
                 logg.info("post-fail %s", shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
@@ -2591,8 +2589,7 @@ class Systemctl:
             return False
         else:
             for cmd in conf.getlist("Socket", "ExecStartPost", []):
-                check, cmd = checkstatus(cmd)
-                newcmd = self.exec_cmd(cmd, env, conf)
+                exe, newcmd = self.exec_newcmd(cmd, env, conf)
                 logg.info("post-start %s", shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
