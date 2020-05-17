@@ -2001,6 +2001,12 @@ class Systemctl:
         result = re.sub("[%](.)", lambda m: get_conf1(m), cmd)
         #++# logg.info("expanded => %s", result)
         return result
+    ExecMode = collections.namedtuple("ExecMode", ["check"])
+    def exec_newcmd(self, cmd, env, conf = None):
+        check, cmd = checkstatus(cmd)
+        mode = Systemctl.ExecMode(check)
+        newcmd = self.exec_cmd(cmd, env, conf)
+        return mode, newcmd
     def exec_cmd(self, cmd, env, conf = None):
         """ expand ExecCmd statements including %i and $MAINPID """
         cmd2 = cmd.replace("\\\n","")
