@@ -221,22 +221,22 @@ mypy:
 	cd .. && git clone git@github.com:ambv/retype.git
 	cd ../retype && git checkout 17.12.0
 stub:
-	stubgen -o types/tmp.out --include-private files/docker/systemctl3.py
+	stubgen -o tmp.types --include-private files/docker/systemctl3.py
 stub.:
-	stubgen -o types/tmp.out --include-private types/tmp.src/systemctl3.py
-	sed -i -e "/^basestring = str/d" -e "/xrange = range/d" types/tmp.out/systemctl3.pyi
-	sed -i -e "/^EXEC_SPAWN/d" -e "/^_notify_socket_folder/d" types/tmp.out/systemctl3.pyi
-	diff -U1 types/systemctl3.pyi types/tmp.out/systemctl3.pyi | head -20
+	stubgen -o tmp.types --include-private files/docker/systemctl3.py
+	sed -i -e "/^basestring = str/d" -e "/xrange = range/d" tmp.types/systemctl3.pyi
+	sed -i -e "/^EXEC_SPAWN/d" -e "/^_notify_socket_folder/d" tmp.types/systemctl3.pyi
+	diff -U1 types/systemctl3.pyi tmp.types/systemctl3.pyi | head -20
 type.:
-	python3 ../retype/retype.py files/docker/systemctl3.py -t types/tmp.src
-	stubgen -o types/tmp.out --include-private types/tmp.src/systemctl3.py
-	sed -i -e "/^basestring = str/d" -e "/xrange = range/d" types/tmp.out/systemctl3.pyi
-	sed -i -e "/^EXEC_SPAWN/d" -e "/^_notify_socket_folder/d" types/tmp.out/systemctl3.pyi
-	diff -U1 types/systemctl3.pyi types/tmp.out/systemctl3.pyi | head -20
-	mypy --strict types/tmp.src/systemctl3.py 2>&1 | head -20
+	python3 ../retype/retype.py files/docker/systemctl3.py -t tmp.files/docker
+	stubgen -o tmp.types --include-private tmp.files/docker/systemctl3.py
+	sed -i -e "/^basestring = str/d" -e "/xrange = range/d" tmp.types/systemctl3.pyi
+	sed -i -e "/^EXEC_SPAWN/d" -e "/^_notify_socket_folder/d" tmp.types/systemctl3.pyi
+	diff -U1 types/systemctl3.pyi tmp.types/systemctl3.pyi | head -20
+	mypy --strict tmp.files/docker/systemctl3.py 2>&1 | head -20
 type:
-	python3 ../retype/retype.py files/docker/systemctl3.py -t types/tmp.src
-	mypy --strict types/tmp.src/systemctl3.py
+	python3 ../retype/retype.py files/docker/systemctl3.py -t tmp.files/docker
+	mypy --strict tmp.files/docker/systemctl3.py
 
 ####### box test
 box:
