@@ -30066,7 +30066,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = clean(output(cmd.format(**locals())))
         logg.info("\n>>>\n%s", top)
         if not COVERAGE:
-            self.assertTrue(greps(top, "somebody *nobody *nobody .*"+testsleepA))
+            self.assertTrue(greps(top, "somebody *nobody *.null. .*"+testsleepA))
         #
         cmd = "docker exec {testname} find /tmp/ -name '.coverage*'"
         sh____(cmd.format(**locals()))
@@ -30152,7 +30152,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec -u somebody {testname} ps -eo pid,ppid,euser,egroup,supgrp,args"
         top = clean(output(cmd.format(**locals())))
         logg.info("\n>>>\n%s", top)
-        self.assertTrue(greps(top, "somebody *nobody *nobody .*"+testsleepA))
+        if not COVERAGE:
+            self.assertTrue(greps(top, "somebody *nobody *.null. .*"+testsleepA))
         #
         cmd = "docker stop {testname}"
         sh____(cmd.format(**locals()))
@@ -30235,7 +30236,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec -u somebody {testname} ps -eo pid,ppid,euser,egroup,supgrp,args"
         top = clean(output(cmd.format(**locals())))
         logg.info("\n>>>\n%s", top)
-        self.assertTrue(greps(top, "root *nobody .*"+testsleepA))
+        if not COVERAGE:
+            self.assertTrue(greps(top, "root *nobody *.null. .*"+testsleepA))
         #
         cmd = "docker stop {testname}"
         sh____(cmd.format(**locals()))
@@ -30246,8 +30248,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_docker(testname)
         self.rm_testdir()
         self.end()
-    def test_5884_set_user_and_supp_group(self):
-        """ check that we can run a service with User= SupplementaryGroups= settings (for coverage) """
+    def test_5884_set_user_and_group_and_supp_group(self):
+        """ check that we can run a service with User= Group= SupplementaryGroups= settings (for coverage) """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
         image = self.local_image(COVERAGE or IMAGE or CENTOS)
@@ -30278,6 +30280,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Type=simple
             ExecStart={bindir}/{testsleepA} 1
             User={this_user}
+            Group={this_group}
             SupplementaryGroups={this_group}
             [Install]
             WantedBy=multi-user.target
@@ -30319,7 +30322,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec -u somebody {testname} ps -eo pid,ppid,euser,egroup,supgrp,args"
         top = clean(output(cmd.format(**locals())))
         logg.info("\n>>>\n%s", top)
-        self.assertTrue(greps(top, "somebody *nobody *nobody .*"+testsleepA))
+        if not COVERAGE:
+            self.assertTrue(greps(top, "somebody *nobody *nobody .*"+testsleepA))
         #
         cmd = "docker stop {testname}"
         sh____(cmd.format(**locals()))
@@ -30399,12 +30403,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, err, rc = output3(cmd.format(**locals()))
         logg.info("\n>>>(%s)\n%s\n%s", rc, i2(err), out)
         self.assertEqual(rc, 0)
-        # self.assertTrue(greps(err, "Operation not permitted"))
         #
         cmd = "docker exec -u somebody {testname} ps -eo pid,ppid,euser,egroup,supgrp,args"
         top = clean(output(cmd.format(**locals())))
         logg.info("\n>>>\n%s", top)
-        self.assertTrue(greps(top, "somebody *nobody *nobody .*"+testsleepA))
+        if not COVERAGE:
+            self.assertTrue(greps(top, "somebody *nobody *nobody .*"+testsleepA))
         #
         cmd = "docker stop {testname}"
         sh____(cmd.format(**locals()))
