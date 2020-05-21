@@ -555,7 +555,7 @@ class Systemctl:
         usedExecStart: List[str]
         usedExecStop: List[str]
         usedExecReload: List[str]
-    def exec_check_service(self, conf: SystemctlConf, env: Dict[str,str], exectype: str = "") -> bool: ...
+    def exec_check_unit(self, conf: SystemctlConf, env: Dict[str,str], section: str = "Service", exectype: str = "") -> bool: ...
     def show_modules(self, *modules: str) -> List[str]:
         notfound: List[str]
         units: List[str]
