@@ -29991,6 +29991,430 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         self.rm_docker(testname)
         self.rm_testdir()
+    def test_5881_set_user(self):
+        """ check that we can run a service with User= settings (for coverage) """
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        images = IMAGES
+        image = self.local_image(COVERAGE or IMAGE or CENTOS)
+        if _python.endswith("python3") and "centos:7" in image: 
+            if SKIP: self.skipTest("no python3 on centos:7")
+        self.begin()
+        self.rm_testdir()
+        testname = self.testname()
+        testdir = self.testdir()
+        package = package_tool(image)
+        refresh = refresh_tool(image)
+        python = os.path.basename(_python)
+        python_x = python_package(_python, image)
+        python_coverage = coverage_package(image)
+        systemctl_py = _systemctl_py
+        sometime = SOMETIME or 188
+        cov_option = "--system"
+        if COVERAGE:
+            cov_option = "-c EXEC_SPAWN=True -c EXEC_COVERAGE=True"
+        testsleepA = self.testname("sleepA")
+        bindir="/usr/bin"
+        this_user="somebody"
+        this_group="nobody"
+        text_file(os_path(testdir, "zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            Type=simple
+            ExecStart={bindir}/{testsleepA} 1
+            User={this_user}
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        #
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} {refresh}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+        sx____(cmd.format(**locals()))
+        if COVERAGE:
+             cmd = "docker exec {testname} {package} install -y {python_coverage}"
+             sx____(cmd.format(**locals()))
+             cmd = "docker exec {testname} sed -i 's/raise *$/pass/' /usr/lib64/python3.6/site-packages/coverage/misc.py"
+             sx____(cmd.format(**locals()))
+        self.prep_coverage(testname, cov_option)
+        #
+        cmd = "docker exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
+        sx____(cmd.format(**locals()))
+        cmd = "docker exec {testname} cp /usr/bin/sleep /usr/bin/{testsleepA}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zza.service {testname}:/etc/systemd/system/zza.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl --version"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd nobody'"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} useradd -u 1001 somebody -g nobody -m"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} touch /var/log/systemctl.debug.log"
+        sh____(cmd.format(**locals()))
+        #
+        cmd = "docker exec {testname} systemctl start zza.service -vvvv"
+        out, err, rc = output3(cmd.format(**locals()))
+        logg.info("\n>>>(%s)\n%s\n%s", rc, i2(err), out)
+        self.assertEqual(rc, 0)
+        #
+        cmd = "docker exec -u somebody {testname} ps -eo pid,ppid,euser,egroup,supgrp,args"
+        top = clean(output(cmd.format(**locals())))
+        logg.info("\n>>>\n%s", top)
+        if not COVERAGE:
+            self.assertTrue(greps(top, "somebody *nobody *nobody .*"+testsleepA))
+        #
+        cmd = "docker exec {testname} find /tmp/ -name '.coverage*'"
+        sh____(cmd.format(**locals()))
+        cmd = "docker stop {testname}"
+        sh____(cmd.format(**locals()))
+        self.save_coverage(testname)
+        #
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
+        self.rm_testdir()
+        self.end()
+    def test_5882_set_user_and_group(self):
+        """ check that we can run a service with User= Group= settings (for coverage) """
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        images = IMAGES
+        image = self.local_image(COVERAGE or IMAGE or CENTOS)
+        if _python.endswith("python3") and "centos:7" in image: 
+            if SKIP: self.skipTest("no python3 on centos:7")
+        self.begin()
+        self.rm_testdir()
+        testname = self.testname()
+        testdir = self.testdir()
+        package = package_tool(image)
+        refresh = refresh_tool(image)
+        python = os.path.basename(_python)
+        python_x = python_package(_python, image)
+        python_coverage = coverage_package(image)
+        systemctl_py = _systemctl_py
+        sometime = SOMETIME or 188
+        cov_option = "--system"
+        if COVERAGE:
+            cov_option = "-c EXEC_SPAWN=True"
+        testsleepA = self.testname("sleepA")
+        bindir="/usr/bin"
+        this_user="somebody"
+        this_group="nobody"
+        text_file(os_path(testdir, "zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            Type=simple
+            ExecStart={bindir}/{testsleepA} 1
+            User={this_user}
+            Group={this_group}
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        #
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} {refresh}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+        sx____(cmd.format(**locals()))
+        if COVERAGE:
+             cmd = "docker exec {testname} {package} install -y {python_coverage}"
+             sx____(cmd.format(**locals()))
+        self.prep_coverage(testname)
+        #
+        cmd = "docker exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
+        sx____(cmd.format(**locals()))
+        cmd = "docker exec {testname} cp /usr/bin/sleep /usr/bin/{testsleepA}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zza.service {testname}:/etc/systemd/system/zza.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl --version"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd nobody'"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} useradd -u 1001 somebody -g nobody -m"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} touch /var/log/systemctl.debug.log"
+        sh____(cmd.format(**locals()))
+        #
+        cmd = "docker exec {testname} systemctl  start zza.service -vvvv"
+        out, err, rc = output3(cmd.format(**locals()))
+        logg.info("\n>>>(%s)\n%s\n%s", rc, i2(err), out)
+        self.assertEqual(rc, 0)
+        #
+        cmd = "docker exec -u somebody {testname} ps -eo pid,ppid,euser,egroup,supgrp,args"
+        top = clean(output(cmd.format(**locals())))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, "somebody *nobody *nobody .*"+testsleepA))
+        #
+        cmd = "docker stop {testname}"
+        sh____(cmd.format(**locals()))
+        self.save_coverage(testname)
+        #
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
+        self.rm_testdir()
+        self.end()
+    def test_5883_set_group(self):
+        """ check that we can run a service with Group= settings (for coverage) """
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        images = IMAGES
+        image = self.local_image(COVERAGE or IMAGE or CENTOS)
+        if _python.endswith("python3") and "centos:7" in image: 
+            if SKIP: self.skipTest("no python3 on centos:7")
+        self.begin()
+        self.rm_testdir()
+        testname = self.testname()
+        testdir = self.testdir()
+        package = package_tool(image)
+        refresh = refresh_tool(image)
+        python = os.path.basename(_python)
+        python_x = python_package(_python, image)
+        python_coverage = coverage_package(image)
+        systemctl_py = _systemctl_py
+        sometime = SOMETIME or 188
+        cov_option = "--system"
+        if COVERAGE:
+            cov_option = "-c EXEC_SPAWN=True"
+        testsleepA = self.testname("sleepA")
+        bindir="/usr/bin"
+        this_user="somebody"
+        this_group="nobody"
+        text_file(os_path(testdir, "zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            Type=simple
+            ExecStart={bindir}/{testsleepA} 1
+            Group={this_group}
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        #
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} {refresh}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+        sx____(cmd.format(**locals()))
+        if COVERAGE:
+             cmd = "docker exec {testname} {package} install -y {python_coverage}"
+             sx____(cmd.format(**locals()))
+        self.prep_coverage(testname)
+        #
+        cmd = "docker exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
+        sx____(cmd.format(**locals()))
+        cmd = "docker exec {testname} cp /usr/bin/sleep /usr/bin/{testsleepA}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zza.service {testname}:/etc/systemd/system/zza.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl --version"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd nobody'"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} useradd -u 1001 somebody -g nobody -m"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} touch /var/log/systemctl.debug.log"
+        sh____(cmd.format(**locals()))
+        #
+        cmd = "docker exec {testname} systemctl  start zza.service -vvvv"
+        out, err, rc = output3(cmd.format(**locals()))
+        logg.info("\n>>>(%s)\n%s\n%s", rc, i2(err), out)
+        self.assertEqual(rc, 0)
+        #
+        cmd = "docker exec -u somebody {testname} ps -eo pid,ppid,euser,egroup,supgrp,args"
+        top = clean(output(cmd.format(**locals())))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, "root *nobody .*"+testsleepA))
+        #
+        cmd = "docker stop {testname}"
+        sh____(cmd.format(**locals()))
+        self.save_coverage(testname)
+        #
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
+        self.rm_testdir()
+        self.end()
+    def test_5884_set_user_and_supp_group(self):
+        """ check that we can run a service with User= SupplementaryGroups= settings (for coverage) """
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        images = IMAGES
+        image = self.local_image(COVERAGE or IMAGE or CENTOS)
+        if _python.endswith("python3") and "centos:7" in image: 
+            if SKIP: self.skipTest("no python3 on centos:7")
+        self.begin()
+        self.rm_testdir()
+        testname = self.testname()
+        testdir = self.testdir()
+        package = package_tool(image)
+        refresh = refresh_tool(image)
+        python = os.path.basename(_python)
+        python_x = python_package(_python, image)
+        python_coverage = coverage_package(image)
+        systemctl_py = _systemctl_py
+        sometime = SOMETIME or 188
+        cov_option = "--system"
+        if COVERAGE:
+            cov_option = "-c EXEC_SPAWN=True"
+        testsleepA = self.testname("sleepA")
+        bindir="/usr/bin"
+        this_user="somebody"
+        this_group="nobody"
+        text_file(os_path(testdir, "zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            Type=simple
+            ExecStart={bindir}/{testsleepA} 1
+            User={this_user}
+            SupplementaryGroups={this_group}
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        #
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} {refresh}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+        sx____(cmd.format(**locals()))
+        if COVERAGE:
+             cmd = "docker exec {testname} {package} install -y {python_coverage}"
+             sx____(cmd.format(**locals()))
+        self.prep_coverage(testname)
+        #
+        cmd = "docker exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
+        sx____(cmd.format(**locals()))
+        cmd = "docker exec {testname} cp /usr/bin/sleep /usr/bin/{testsleepA}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zza.service {testname}:/etc/systemd/system/zza.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl --version"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd nobody'"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} useradd -u 1001 somebody -g nobody -m"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} touch /var/log/systemctl.debug.log"
+        sh____(cmd.format(**locals()))
+        #
+        cmd = "docker exec {testname} systemctl start zza.service -vvvv"
+        out, err, rc = output3(cmd.format(**locals()))
+        logg.info("\n>>>(%s)\n%s\n%s", rc, i2(err), out)
+        self.assertEqual(rc, 0)
+        #
+        cmd = "docker exec -u somebody {testname} ps -eo pid,ppid,euser,egroup,supgrp,args"
+        top = clean(output(cmd.format(**locals())))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, "somebody *nobody *nobody .*"+testsleepA))
+        #
+        cmd = "docker stop {testname}"
+        sh____(cmd.format(**locals()))
+        self.save_coverage(testname)
+        #
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
+        self.rm_testdir()
+        self.end()
+    def test_5885_set_user_and_supp_group(self):
+        """ check that we can run a service with User= SupplementaryGroups= extra (for coverage) """
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        images = IMAGES
+        image = self.local_image(COVERAGE or IMAGE or CENTOS)
+        if _python.endswith("python3") and "centos:7" in image: 
+            if SKIP: self.skipTest("no python3 on centos:7")
+        self.begin()
+        self.rm_testdir()
+        testname = self.testname()
+        testdir = self.testdir()
+        package = package_tool(image)
+        refresh = refresh_tool(image)
+        python = os.path.basename(_python)
+        python_x = python_package(_python, image)
+        python_coverage = coverage_package(image)
+        systemctl_py = _systemctl_py
+        sometime = SOMETIME or 188
+        cov_option = "--system"
+        if COVERAGE:
+            cov_option = "-c EXEC_SPAWN=True"
+        testsleepA = self.testname("sleepA")
+        bindir="/usr/bin"
+        this_user="somebody"
+        this_group="nobody"
+        text_file(os_path(testdir, "zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            Type=simple
+            ExecStart={bindir}/{testsleepA} 1
+            User={this_user}
+            SupplementaryGroups={this_group}
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        #
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} {refresh}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+        sx____(cmd.format(**locals()))
+        if COVERAGE:
+             cmd = "docker exec {testname} {package} install -y {python_coverage}"
+             sx____(cmd.format(**locals()))
+        self.prep_coverage(testname, cov_option)
+        #
+        cmd = "docker exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
+        sx____(cmd.format(**locals()))
+        cmd = "docker exec {testname} cp /usr/bin/sleep /usr/bin/{testsleepA}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zza.service {testname}:/etc/systemd/system/zza.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl --version"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd nobody'"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} useradd -u 1001 somebody -g nobody -m"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} touch /var/log/systemctl.debug.log"
+        sh____(cmd.format(**locals()))
+        #
+        cmd = "docker exec {testname} systemctl start zza.service -vvvv"
+        out, err, rc = output3(cmd.format(**locals()))
+        logg.info("\n>>>(%s)\n%s\n%s", rc, i2(err), out)
+        self.assertEqual(rc, 0)
+        # self.assertTrue(greps(err, "Operation not permitted"))
+        #
+        cmd = "docker exec -u somebody {testname} ps -eo pid,ppid,euser,egroup,supgrp,args"
+        top = clean(output(cmd.format(**locals())))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, "somebody *nobody *nobody .*"+testsleepA))
+        #
+        cmd = "docker stop {testname}"
+        sh____(cmd.format(**locals()))
+        self.save_coverage(testname)
+        #
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
+        self.rm_testdir()
+        self.end()
 
     def test_6130_run_default_services_from_simple_saved_container(self):
         """ check that we can enable services in a docker container to be run as default-services
