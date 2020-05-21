@@ -46,6 +46,7 @@ _extra_vars = []
 _force = False
 _full = False
 _now = False
+_no_reload = False
 _no_legend = False
 _no_ask_password = False
 _preset_mode = "all"
@@ -2246,7 +2247,9 @@ class Systemctl:
         doRemainAfterExit = self.get_RemainAfterExit(conf)
         runs = conf.get("Service", "Type", "simple").lower()
         env = self.get_env(conf)
-        self.exec_check_unit(conf, env, "Service", "Exec") # all...
+        if not self._quiet:
+            okee = self.exec_check_unit(conf, env, "Service", "Exec") # all...
+            if not okee and _no_reload: return False
         # for StopPost on failure:
         returncode = 0
         service_result = "success"
@@ -2541,7 +2544,9 @@ class Systemctl:
             logg.error("Unit %s not found.", service_unit)
             return False
         env = self.get_env(conf)
-        self.exec_check_unit(conf, env, "Socket", "Exec") # all...
+        if not self._quiet:
+            okee = self.exec_check_unit(conf, env, "Socket", "Exec") # all...
+            if not okee and _no_reload: return False
         if True:
             for cmd in conf.getlist("Socket", "ExecStartPre", []):
                 exe, newcmd = self.exec_newcmd(cmd, env, conf)
@@ -2924,7 +2929,9 @@ class Systemctl:
         timeout = self.get_TimeoutStopSec(conf)
         runs = conf.get("Service", "Type", "simple").lower()
         env = self.get_env(conf)
-        self.exec_check_unit(conf, env, "Service", "ExecStop")
+        if not self._quiet:
+            okee = self.exec_check_unit(conf, env, "Service", "ExecStop")
+            if not okee and _no_reload: return False
         returncode = 0
         service_result = "success"
         if runs in [ "oneshot" ]:
@@ -3049,7 +3056,9 @@ class Systemctl:
             logg.error("Unit %s not found.", service_unit)
             return False
         env = self.get_env(conf)
-        self.exec_check_unit(conf, env, "Socket", "ExecStop")
+        if not self._quiet:
+            okee = self.exec_check_unit(conf, env, "Socket", "ExecStop")
+            if not okee and _no_reload: return False
         if not accept:
             # we do not listen but have the service started right away
             done = self.do_stop_service_from(service_conf)
@@ -3139,7 +3148,9 @@ class Systemctl:
     def do_reload_service_from(self, conf):
         runs = conf.get("Service", "Type", "simple").lower()
         env = self.get_env(conf)
-        self.exec_check_unit(conf, env, "Service", "ExecReload")
+        if not self._quiet:
+            okee = self.exec_check_unit(conf, env, "Service", "ExecReload")
+            if not okee and _no_reload: return False
         if runs in [ "sysv" ]:
             status_file = self.get_status_file_from(conf)
             initscript = conf.filename()
@@ -4526,6 +4537,7 @@ class Systemctl:
         haveType = conf.get(section, "Type", "simple")
         if self.is_sysv_file(conf.filename()):
             return True # we don't care about that
+        unit = conf.name()
         abspath = 0
         notexists = 0
         for execs in [ "ExecStartPre", "ExecStart", "ExecStartPost", "ExecStop", "ExecStopPost", "ExecReload" ]:
@@ -4539,36 +4551,29 @@ class Systemctl:
                 if not exe:
                     continue
                 if exe[0] != "/":
-                    logg.error(" Exec is not an absolute path:  %s=%s", execs, cmd)
+                    logg.error(" %s: Exec is not an absolute path:  %s=%s", unit, execs, cmd)
                     abspath += 1
                 if not os.path.isfile(exe):
-                    logg.error(" Exec command does not exist: (%s) %s", execs, exe)
-                    notexists += 1
+                    logg.error(" %s: Exec command does not exist: (%s) %s", unit, execs, exe)
+                    if mode.check:
+                        notexists += 1
                     newexe1 = os.path.join("/usr/bin", exe)
                     newexe2 = os.path.join("/bin", exe)
                     if os.path.exists(newexe1):
-                        logg.error(" but this does exist: %s  %s", " " * len(execs), newexe1)
+                        logg.error(" %s: but this does exist: %s  %s", unit, " " * len(execs), newexe1)
                     elif os.path.exists(newexe2):
-                        logg.error(" but this does exist: %s      %s", " " * len(execs), newexe2)
+                        logg.error(" %s: but this does exist: %s      %s", unit, " " * len(execs), newexe2)
         if not abspath and not notexists:
             return True
         if True:
             filename = strE(conf.filename())
-            if len(filename) > 45: filename = "..." + filename[-42:]
+            if len(filename) > 44: filename = o44(filename)
             logg.error(" !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-            logg.error(" Found %s problems in %s", abspath + notexists, filename)
-            time.sleep(1)
             if abspath:
-                logg.error(" The SystemD commands must always be absolute paths by definition.")
-                time.sleep(1)
-                logg.error(" Earlier versions of systemctl.py did use a subshell thus using $PATH")
-                time.sleep(1)
-                logg.error(" however newer versions use execve just like the real SystemD daemon")
-                time.sleep(1)
-                logg.error(" so that your docker-only service scripts may start to fail suddenly.")
+                logg.error(" The SystemD ExecXY commands must always be absolute paths by definition.")
                 time.sleep(1)
             if notexists:
-                logg.error(" Now %s executable paths were not found in the current environment.", notexists)
+                logg.error(" Oops, %s executable paths were not found in the current environment. Refusing.", notexists)
                 time.sleep(1)
             logg.error(" !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         return False
@@ -5642,8 +5647,8 @@ if __name__ == "__main__":
         help="Do not print a legend (column headers and hints)")
     _o.add_option("--no-wall", action="store_true", default=False,
         help="Don't send wall message before halt/power-off/reboot (ignored)")
-    _o.add_option("--no-reload", action="store_true",
-        help="Don't reload daemon after en-/dis-abling unit files (ignored)")
+    _o.add_option("--no-reload", action="store_true", default=_no_reload,
+        help="Don't reload daemon after en-/dis-abling unit files")
     _o.add_option("--no-ask-password", action="store_true", default=_no_ask_password,
         help="Do not ask for system passwords")
     # _o.add_option("--global", action="store_true", dest="globally", default=_globally,
@@ -5684,6 +5689,7 @@ if __name__ == "__main__":
     _extra_vars = opt.extra_vars
     _force = opt.force
     _full = opt.full
+    _no_reload = opt.no_reload
     _no_legend = opt.no_legend
     _no_ask_password = opt.no_ask_password
     _now = opt.now
