@@ -1405,8 +1405,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(lines(out)), 1)
         self.rm_testdir()
         self.coverage()
-    def test_1090_syntax_errors_are_shown_on_daemon_reload(self):
-        """ check that preset files do work internally"""
+    def test_1090_check_syntax_errors_are_shown_on_daemon_reload(self):
+        """ check that syntax errors are shown"""
         self.begin()
         testname = self.testname()
         testdir = self.testdir()
@@ -1470,7 +1470,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.coverage()
         self.end()
     def real_1090_syntax_errors_are_shown_in_journal_after_try_start(self):
-        """ check that preset files do work internally"""
+        """ check the real syntax errors"""
         testname = self.testname()
         root = ""
         systemctl = "/usr/bin/systemctl"
@@ -1552,6 +1552,324 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(out, r"g.service:.* there may be only one ExecReload statement")) # systemctl.py special
         self.assertFalse(greps(out, r"c.service:.* the use of /bin/kill is not recommended")) # systemctl.py special
         sh____("rm /etc/systemd/system/zz*")
+    def test_1091_check_syntax_errors_on_start_service(self):
+        """ check that checks are done before a start of a service"""
+        self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
+            [Unit]
+            Description=Testing A""")
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            Type=foo
+            ExecStart=runA
+            ExecReload=runB
+            ExecStop=runC
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/system/zzc.service"),"""
+            [Unit]
+            Description=Testing C
+            [Service]
+            Type=simple
+            ExecReload=/bin/kill -SIGHUP $MAINPID
+            ExecStop=/bin/kill $MAINPID
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/system/zzd.service"),"""
+            [Unit]
+            Description=Testing D
+            [Service]
+            Type=forking
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/system/zzg.service"),"""
+            [Unit]
+            Description=Testing G
+            [Service]
+            Type=foo
+            ExecStart=runA
+            ExecStart=runA2
+            ExecReload=runB
+            ExecReload=runB2
+            ExecStop=runC
+            ExecStop=runC2
+            [Install]
+            WantedBy=multi-user.target""")
+        #
+        cmd = "{systemctl} daemon-reload -vv 2>&1"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertTrue(greps(out, r"a.service:.* file without .Service. section"))
+        self.assertTrue(greps(out, r"Failed to parse service type, ignoring: foo"))
+        self.assertTrue(greps(out, r"b.service:.* Executable path is not absolute"))
+        self.assertTrue(greps(out, r"c.service: Service has no ExecStart"))
+        self.assertTrue(greps(out, r"d.service: Service lacks both ExecStart and ExecStop"))
+        self.assertTrue(greps(out, r"g.service: there may be only one ExecStart statement"))
+        self.assertTrue(greps(out, r"c.service: the use of /bin/kill is not recommended"))
+        #
+        cmd = "{systemctl} start --no-reload zza zzb zzc zzd zzg -vv 2>&1"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 1)
+        self.assertTrue(greps(out, r"a.service:.* file without .Service. section"))
+        self.assertTrue(greps(out, r"Failed to parse service type, ignoring: foo"))
+        self.assertTrue(greps(out, r"b.service:.* Executable path is not absolute"))
+        self.assertTrue(greps(out, r"c.service: Service has no ExecStart"))
+        self.assertTrue(greps(out, r"d.service: Service lacks both ExecStart and ExecStop"))
+        self.assertTrue(greps(out, r"g.service: there may be only one ExecStart statement"))
+        self.assertTrue(greps(out, r"c.service: the use of /bin/kill is not recommended"))
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def test_1092_check_exec_errors_on_start_service(self):
+        """ check that executable checks are done before a start of a service"""
+        self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            Type=foo
+            ExecStart=/usr/bin/zza
+            ExecReload=/usr/bin/zzb""")
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            Type=foo
+            ExecStart=-/usr/bin/zza
+            ExecReload=-/usr/bin/zzb
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/system/zzc.service"),"""
+            [Unit]
+            Description=Testing C
+            [Service]
+            Type=simple
+            ExecStart=/usr/bin/zza
+            ExecReload=/usr/bin/zzb
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/system/zzd.service"),"""
+            [Unit]
+            Description=Testing D
+            [Service]
+            Type=simple
+            ExecStartPre=/usr/bin/zza
+            ExecStart=/usr/bin/false
+            ExecStopPost=/usr/bin/zza
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/system/zzg.socket"),"""
+            [Unit]
+            Description=Testing G
+            [Socket]
+            ExecStartPre=/usr/bin/zza
+            ExecStopPost=/usr/bin/zzb
+            Service=zzd.service
+            [Install]
+            WantedBy=multi-user.target""")
+        #
+        cmd = "{systemctl} daemon-reload -vv 2>&1"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertTrue(greps(out, r"Failed to parse service type, ignoring: foo"))
+        #
+        logg.info("========================= zza ========")
+        cmd = "{systemctl} start --no-reload zza -vv 2>&1"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 1)
+        self.assertTrue(greps(out, r"Failed to parse service type, ignoring: foo"))
+        self.assertTrue(greps(out, r"a.service: Exec command does not exist.*ExecStart"))
+        self.assertTrue(greps(out, r"a.service: Exec command does not exist.*ExecReload"))
+        self.assertTrue(greps(out, r"Oops"))
+        #
+        logg.info("========================= zzb ========")
+        cmd = "{systemctl} start --no-reload zzb -vv 2>&1"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 1)
+        self.assertTrue(greps(out, r"Failed to parse service type, ignoring: foo"))
+        self.assertTrue(greps(out, r"b.service: Exec command does not exist.*ExecStart"))
+        self.assertTrue(greps(out, r"b.service: Exec command does not exist.*ExecReload"))
+        self.assertFalse(greps(out, r"Oops"))
+        #
+        logg.info("========================= zzc ========")
+        cmd = "{systemctl} start --no-reload zzc -vv 2>&1"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 1)
+        self.assertFalse(greps(out, r"Failed to parse service type, ignoring: foo"))
+        self.assertTrue(greps(out, r"c.service: Exec command does not exist.*ExecStart"))
+        self.assertTrue(greps(out, r"c.service: Exec command does not exist.*ExecReload"))
+        self.assertTrue(greps(out, r"Oops"))
+        #
+        logg.info("========================= zzd ========")
+        cmd = "{systemctl} start --no-reload zzd -vv 2>&1"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 1)
+        self.assertFalse(greps(out, r"Failed to parse service type, ignoring: foo"))
+        self.assertTrue(greps(out, r"d.service: Exec command does not exist.*ExecStartPre"))
+        self.assertTrue(greps(out, r"d.service: Exec command does not exist.*ExecStopPost"))
+        self.assertTrue(greps(out, r"Oops"))
+        #
+        logg.info("========================= zzg ========")
+        cmd = "{systemctl} start --no-reload zzg.socket -vv 2>&1"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 1)
+        self.assertFalse(greps(out, r"Failed to parse service type, ignoring: foo"))
+        self.assertTrue(greps(out, r"g.socket: Exec command does not exist.*ExecStartPre"))
+        self.assertTrue(greps(out, r"g.socket: Exec command does not exist.*ExecStopPost"))
+        self.assertTrue(greps(out, r"Oops"))
+        #
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def test_1093_check_user_group_errors_on_start_service(self):
+        """ check that user and groups are checks are done before a start of a service"""
+        self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            Type=foo
+            ExecStart=/usr/bin/false
+            User=god""")
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            Type=foo
+            ExecStart=-/usr/bin/false
+            User=god
+            Group=bar
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/system/zzc.service"),"""
+            [Unit]
+            Description=Testing C
+            [Service]
+            Type=foo
+            ExecStart=/usr/bin/false
+            Group=bar
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/system/zzd.service"),"""
+            [Unit]
+            Description=Testing D
+            [Service]
+            Type=foo
+            ExecStart=/usr/bin/false
+            User=god
+            Group=bar
+            SupplementaryGroups=zap
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/system/zzg.socket"),"""
+            [Unit]
+            Description=Testing G
+            [Socket]
+            Service=zzd.service
+            SocketUser=devil
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/system/zzf.socket"),"""
+            [Unit]
+            Description=Testing F
+            [Socket]
+            Service=zzd.service
+            SocketUser=devil
+            SocketGroup=hell
+            [Install]
+            WantedBy=multi-user.target""")
+        #
+        cmd = "{systemctl} daemon-reload -vv 2>&1"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertTrue(greps(out, r"Failed to parse service type, ignoring: foo"))
+        #
+        logg.info("========================= zza ========")
+        cmd = "{systemctl} start --no-reload zza -vv 2>&1"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 1)
+        self.assertTrue(greps(out, r"Failed to parse service type, ignoring: foo"))
+        self.assertTrue(greps(out, r"a.service: User does not exist: god"))
+        self.assertFalse(greps(out, r"b.service: Group does not exist: bar"))
+        self.assertTrue(greps(out, r"Oops"))
+        #
+        logg.info("========================= zzb ========")
+        cmd = "{systemctl} start --no-reload zzb -vv 2>&1"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 1)
+        self.assertTrue(greps(out, r"Failed to parse service type, ignoring: foo"))
+        self.assertTrue(greps(out, r"b.service: User does not exist: god"))
+        self.assertTrue(greps(out, r"b.service: Group does not exist: bar"))
+        self.assertTrue(greps(out, r"Oops"))
+        #
+        logg.info("========================= zzc ========")
+        cmd = "{systemctl} start --no-reload zzc -vv 2>&1"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 1)
+        self.assertTrue(greps(out, r"Failed to parse service type, ignoring: foo"))
+        self.assertFalse(greps(out, r"c.service: User does not exist: god"))
+        self.assertTrue(greps(out, r"c.service: Group does not exist: bar"))
+        self.assertTrue(greps(out, r"Oops"))
+        #
+        logg.info("========================= zzd ========")
+        cmd = "{systemctl} start --no-reload zzd -vv 2>&1"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 1)
+        self.assertTrue(greps(out, r"Failed to parse service type, ignoring: foo"))
+        self.assertTrue(greps(out, r"d.service: User does not exist: god"))
+        self.assertTrue(greps(out, r"d.service: Group does not exist: bar"))
+        self.assertTrue(greps(out, r"Oops"))
+        #
+        logg.info("========================= zzg ========")
+        cmd = "{systemctl} start --no-reload zzg.socket -vv 2>&1"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 1)
+        self.assertFalse(greps(out, r"Failed to parse service type, ignoring: foo"))
+        self.assertTrue(greps(out, r"g.socket: User does not exist: devil"))
+        self.assertFalse(greps(out, r"g.socket: Group does not exist: hell"))
+        self.assertTrue(greps(out, r"Oops"))
+        #
+        logg.info("========================= zzf ========")
+        cmd = "{systemctl} start --no-reload zzf.socket -vv 2>&1"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 1)
+        self.assertFalse(greps(out, r"Failed to parse service type, ignoring: foo"))
+        self.assertTrue(greps(out, r"f.socket: User does not exist: devil"))
+        self.assertTrue(greps(out, r"f.socket: Group does not exist: hell"))
+        self.assertTrue(greps(out, r"Oops"))
+        #
+        self.rm_testdir()
+        self.coverage()
+        self.end()
     def test_1099_errors_message_on_dot_include(self):
         """ check that '.include' is accepted but marked deprecated"""
         self.begin()
