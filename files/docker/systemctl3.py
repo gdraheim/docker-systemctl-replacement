@@ -4533,6 +4533,8 @@ class Systemctl:
         unit = conf.name()
         abspath = 0
         notexists = 0
+        badusers = 0
+        badgroups = 0
         for execs in [ "ExecStartPre", "ExecStart", "ExecStartPost", "ExecStop", "ExecStopPost", "ExecReload" ]:
             if not execs.startswith(exectype):
                 continue
@@ -4556,7 +4558,21 @@ class Systemctl:
                         logg.error(" %s: but this does exist: %s  %s", unit, " " * len(execs), newexe1)
                     elif os.path.exists(newexe2):
                         logg.error(" %s: but this does exist: %s      %s", unit, " " * len(execs), newexe2)
-        if not abspath and not notexists:
+        users = [ conf.get(section, "User", ""), conf.get(section, "SocketUser", "") ]
+        groups = [ conf.get(section, "Group", ""), conf.get(section, "SocketGroup", "") ] + conf.getlist(section, "SupplementaryGroups")
+        for user in users:
+            if user:
+                try: pwd.getpwnam(user)
+                except Exception as e:
+                    logg.error(" %s: User does not exist: %s (%s)", unit, user, getattr(e, "__doc__", ""))
+                    badusers += 1
+        for group in groups:
+            if group: 
+                try: grp.getgrnam(group)
+                except Exception as e:
+                    logg.error(" %s: Group does not exist: %s (%s)", unit, group, getattr(e, "__doc__", ""))
+                    badgroups += 1
+        if not abspath and not notexists and not badusers and not badgroups:
             return True
         if True:
             filename = strE(conf.filename())
@@ -4567,6 +4583,9 @@ class Systemctl:
                 time.sleep(1)
             if notexists:
                 logg.error(" Oops, %s executable paths were not found in the current environment. Refusing.", notexists)
+                time.sleep(1)
+            if badusers or badgroups:
+                logg.error(" Oops, %s user names and %s group names were not found. Refusing.", badusers, badgroups)
                 time.sleep(1)
             logg.error(" !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         return False
