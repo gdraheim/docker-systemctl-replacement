@@ -213,6 +213,8 @@ clean:
 	- rm .coverage*
 	- rm -rf tmp/tmp.test_*
 	- rm -rf tmp/systemctl.py
+	- rm -rf tmp.* types/tmp.*
+	- rm -rf .mypy_cache files/docker/.mypy_cache
 
 ####### retype + stubgen
 mypy:
