@@ -2246,7 +2246,7 @@ class Systemctl:
         doRemainAfterExit = self.get_RemainAfterExit(conf)
         runs = conf.get("Service", "Type", "simple").lower()
         env = self.get_env(conf)
-        self.exec_check_service(conf, env, "Exec") # all...
+        self.exec_check_unit(conf, env, "Service", "Exec") # all...
         # for StopPost on failure:
         returncode = 0
         service_result = "success"
@@ -2541,6 +2541,7 @@ class Systemctl:
             logg.error("Unit %s not found.", service_unit)
             return False
         env = self.get_env(conf)
+        self.exec_check_unit(conf, env, "Socket", "Exec") # all...
         if True:
             for cmd in conf.getlist("Socket", "ExecStartPre", []):
                 exe, newcmd = self.exec_newcmd(cmd, env, conf)
@@ -2923,7 +2924,7 @@ class Systemctl:
         timeout = self.get_TimeoutStopSec(conf)
         runs = conf.get("Service", "Type", "simple").lower()
         env = self.get_env(conf)
-        self.exec_check_service(conf, env, "ExecStop")
+        self.exec_check_unit(conf, env, "Service", "ExecStop")
         returncode = 0
         service_result = "success"
         if runs in [ "oneshot" ]:
@@ -3048,6 +3049,7 @@ class Systemctl:
             logg.error("Unit %s not found.", service_unit)
             return False
         env = self.get_env(conf)
+        self.exec_check_unit(conf, env, "Socket", "ExecStop")
         if not accept:
             # we do not listen but have the service started right away
             done = self.do_stop_service_from(service_conf)
@@ -3137,7 +3139,7 @@ class Systemctl:
     def do_reload_service_from(self, conf):
         runs = conf.get("Service", "Type", "simple").lower()
         env = self.get_env(conf)
-        self.exec_check_service(conf, env, "ExecReload")
+        self.exec_check_unit(conf, env, "Service", "ExecReload")
         if runs in [ "sysv" ]:
             status_file = self.get_status_file_from(conf)
             initscript = conf.filename()
@@ -4516,12 +4518,12 @@ class Systemctl:
                 logg.error(" %s: Failed to load environment files: %s", unit, env_file)
                 errors += 101
         return errors
-    def exec_check_service(self, conf, env, exectype = ""):
+    def exec_check_unit(self, conf, env, section = "Service", exectype = ""):
         if not conf:
             return True
-        if not conf.data.has_section("Service"):
+        if not conf.data.has_section(section):
             return True #pragma: no cover
-        haveType = conf.get("Service", "Type", "simple")
+        haveType = conf.get(section, "Type", "simple")
         if self.is_sysv_file(conf.filename()):
             return True # we don't care about that
         abspath = 0
@@ -4529,7 +4531,7 @@ class Systemctl:
         for execs in [ "ExecStartPre", "ExecStart", "ExecStartPost", "ExecStop", "ExecStopPost", "ExecReload" ]:
             if not execs.startswith(exectype):
                 continue
-            for cmd in conf.getlist("Service", execs, []):
+            for cmd in conf.getlist(section, execs, []):
                 mode, newcmd = self.exec_newcmd(cmd, env, conf)
                 if not newcmd:
                     continue
