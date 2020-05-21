@@ -22142,7 +22142,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.coverage()
         self.end()
     def test_4884_set_user_and_supp_group_to_same(self):
-        """ check that we can run a service with User= SupplementaryGroups= settings (for coverage) """
+        """ check that we can run a service with User= Group= SupplementaryGroups= settings (for coverage) """
         self.begin()
         self.rm_testdir()
         testname = self.testname()
@@ -22163,6 +22163,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Type=simple
             ExecStart={bindir}/{testsleepA} 1
             User={this_user}
+            Group={this_group}
             SupplementaryGroups={this_group}
             [Install]
             WantedBy=multi-user.target
@@ -22219,8 +22220,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} start zza.service -vvvv"
         out, err, rc = output3(cmd.format(**locals()))
         logg.info("\n>>>(%s)\n%s\n%s", rc, i2(err), out)
-        # self.assertEqual(rc, 0) # <<<<<<<<
-        self.assertTrue(greps(err, "Operation not permitted"))
+        self.assertEqual(rc, 0)
         #
         kill_testsleep = "{systemctl} __killall {testsleepA}"
         sx____(kill_testsleep.format(**locals()))
