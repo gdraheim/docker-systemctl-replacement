@@ -22902,9 +22902,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
-        list_units_systemctl = "docker exec {testname} systemctl list-unit-files"
-        # sh____(list_units_systemctl.format(**locals()))
-        out = output(list_units_systemctl.format(**locals()))
+        cmd = "docker exec {testname} systemctl list-unit-files"
+        # sh____(cmd.format(**locals()))
+        out = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out)
         #
         self.save_coverage(testname)
