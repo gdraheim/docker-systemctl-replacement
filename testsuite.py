@@ -22416,7 +22416,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             We take the realpath of our develop systemctl.py on purpose here.
         """
         testdir = self.testdir(testname, keep = True)
-        cov_run = cover()
+        cov_run = cover(append = "--parallel-mode")
         cov_option = cov_option or ""
         systemctl_py = realpath(_systemctl_py)
         systemctl_sh = os_path(testdir, "systemctl.sh")
@@ -22444,11 +22444,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl_py = realpath(_systemctl_py)
         systemctl_py_run = systemctl_py.replace("/","_")[1:]
         for testname in testnames:
-            coverage_file = ".coverage." + testname
-            cmd = "docker cp {testname}:/tmp/.coverage .coverage.{testname}"
-            sh____(cmd.format(**locals()))
-            cmd = "sed -i -e 's:/{systemctl_py_run}:{systemctl_py}:' .coverage.{testname}"
-            sh____(cmd.format(**locals()))
+            cmd = "docker export {testname} | tar tf - | grep tmp/.coverage"
+            files = output(cmd.format(**locals()))
+            for tmp_coverage in lines(files):
+                suffix = tmp_coverage.replace("tmp/.coverage", "")
+                cmd = "docker cp {testname}:/{tmp_coverage} .coverage.{testname}{suffix}"
+                sh____(cmd.format(**locals()))
+                cmd = "sed -i -e 's:/{systemctl_py_run}:{systemctl_py}:' .coverage.{testname}{suffix}"
+                sh____(cmd.format(**locals()))
+
     #
     def test_5000_systemctl_py_inside_container(self):
         """ check that we can run systemctl.py inside a docker container """
