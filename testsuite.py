@@ -29192,15 +29192,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "docker exec {testname} systemctl start zzz.service -vv"
         sh____(cmd.format(**locals()))
-        top_container = "docker exec {testname} ps -eo pid,ppid,user,args"
-        top = output(top_container.format(**locals()))
+        cmd = "docker exec {testname} ps -eo pid,ppid,user,args"
+        top = output(cmd.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "testsleep"))
         #
         cmd = "docker exec {testname} systemctl stop zzz.service -vv"
         sh____(cmd.format(**locals()))
-        top_container = "docker exec {testname} ps -eo pid,ppid,user,args"
-        top = output(top_container.format(**locals()))
+        cmd = "docker exec {testname} ps -eo pid,ppid,user,args"
+        top = output(cmd.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(running(greps(top, "testsleep")))
         #
@@ -29266,15 +29266,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "docker exec {testname} systemctl start zzz.service -vv"
         sh____(cmd.format(**locals()))
-        top_container = "docker exec {testname} ps -eo pid,ppid,user,args"
-        top = output(top_container.format(**locals()))
+        cmd = "docker exec {testname} ps -eo pid,ppid,user,args"
+        top = output(cmd.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "testsleep"))
         #
         cmd = "docker exec {testname} systemctl stop zzz.service -vv"
         sh____(cmd.format(**locals()))
-        top_container = "docker exec {testname} ps -eo pid,ppid,user,args"
-        top = output(top_container.format(**locals()))
+        cmd = "docker exec {testname} ps -eo pid,ppid,user,args"
+        top = output(cmd.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(running(greps(top, "testsleep")))
         #
@@ -29366,15 +29366,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "docker exec {testname} systemctl start zzz.service -vv"
         sx____(cmd.format(**locals()))
-        top_container = "docker exec {testname} ps -eo pid,ppid,user,args"
-        top = output(top_container.format(**locals()))
+        cmd = "docker exec {testname} ps -eo pid,ppid,user,args"
+        top = output(cmd.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "testsleep"))
         #
         cmd = "docker exec {testname} systemctl stop zzz.service -vv"
         sh____(cmd.format(**locals()))
-        top_container = "docker exec {testname} ps -eo pid,ppid,user,args"
-        top = output(top_container.format(**locals()))
+        cmd = "docker exec {testname} ps -eo pid,ppid,user,args"
+        top = output(cmd.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(running(greps(top, "testsleep")))
         #
@@ -29463,15 +29463,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "docker exec {testname} systemctl start zzz.service -vv"
         sx____(cmd.format(**locals()))
-        top_container = "docker exec {testname} ps -eo pid,ppid,user,args"
-        top = output(top_container.format(**locals()))
+        cmd = "docker exec {testname} ps -eo pid,ppid,user,args"
+        top = output(cmd.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "testsleep"))
         #
         cmd = "docker exec {testname} systemctl stop zzz.service -vv"
         sh____(cmd.format(**locals()))
-        top_container = "docker exec {testname} ps -eo pid,ppid,user,args"
-        top = output(top_container.format(**locals()))
+        cmd = "docker exec {testname} ps -eo pid,ppid,user,args"
+        top = output(cmd.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(running(greps(top, "testsleep")))
         #
@@ -29546,15 +29546,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "docker exec {testname} systemctl start zzz.service -vvvv"
         sx____(cmd.format(**locals())) # returncode = 1
-        top_container = "docker exec {testname} ps -eo pid,ppid,user,args"
-        top = output(top_container.format(**locals()))
+        cmd = "docker exec {testname} ps -eo pid,ppid,user,args"
+        top = output(cmd.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "testsleep"))
         #
         cmd = "docker exec {testname} systemctl stop zzz.service -vv"
         sh____(cmd.format(**locals()))
-        top_container = "docker exec {testname} ps -eo pid,ppid,user,args"
-        top = output(top_container.format(**locals()))
+        cmd = "docker exec {testname} ps -eo pid,ppid,user,args"
+        top = output(cmd.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(running(greps(top, "testsleep")))
         #
@@ -29635,8 +29635,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out3 = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out3)
         #
-        top_container = "docker exec {testname} ps -eo pid,ppid,user,args"
-        top = output(top_container.format(**locals()))
+        cmd = "docker exec {testname} ps -eo pid,ppid,user,args"
+        top = output(cmd.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "testsleep 99"))
         self.assertTrue(greps(top, "testsleep 111"))
@@ -29646,8 +29646,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out3 = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out3)
         #
-        top_container = "docker exec {testname} ps -eo pid,ppid,user,args"
-        top = output(top_container.format(**locals()))
+        cmd = "docker exec {testname} ps -eo pid,ppid,user,args"
+        top = output(cmd.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, "testsleep 99"))
         self.assertFalse(greps(top, "testsleep 111"))
@@ -29738,8 +29738,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(3)
         #
         #
-        top_container2 = "docker exec {testname} ps -eo pid,ppid,user,args"
-        top = output(top_container2.format(**locals()))
+        cmd = "docker exec {testname} ps -eo pid,ppid,user,args"
+        top = output(cmd.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "testsleep 99"))
         self.assertTrue(greps(top, "testsleep 111"))
@@ -29761,8 +29761,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out3 = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out3)
         #
-        top_container = "docker exec {testname} ps -eo pid,ppid,user,args"
-        top = output(top_container.format(**locals()))
+        cmd = "docker exec {testname} ps -eo pid,ppid,user,args"
+        top = output(cmd.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, "testsleep 99"))
         self.assertFalse(greps(top, "testsleep 111"))
@@ -29857,8 +29857,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(3)
         #
         #
-        top_container2 = "docker exec {testname} ps -eo pid,ppid,user,args"
-        top = output(top_container2.format(**locals()))
+        cmd = "docker exec {testname} ps -eo pid,ppid,user,args"
+        top = output(cmd.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "testsleep 99"))
         self.assertTrue(greps(top, "testsleep 111"))
@@ -29868,8 +29868,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out3 = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out3)
         #
-        top_container = "docker exec {testname} ps -eo pid,ppid,user,args"
-        top = output(top_container.format(**locals()))
+        cmd = "docker exec {testname} ps -eo pid,ppid,user,args"
+        top = output(cmd.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, "testsleep 99"))
         self.assertFalse(greps(top, "testsleep 111"))
@@ -29960,8 +29960,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(3)
         #
         #
-        top_container2 = "docker exec {testname} ps -eo pid,ppid,user,args"
-        top = output(top_container2.format(**locals()))
+        cmd = "docker exec {testname} ps -eo pid,ppid,user,args"
+        top = output(cmd.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, "testsleep 99")) # <<<<<<<<<< difference to 5033
         self.assertTrue(greps(top, "testsleep 111"))
@@ -29971,8 +29971,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out3 = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out3)
         #
-        top_container = "docker exec {testname} ps -eo pid,ppid,user,args"
-        top = output(top_container.format(**locals()))
+        cmd = "docker exec {testname} ps -eo pid,ppid,user,args"
+        top = output(cmd.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, "testsleep 99"))
         self.assertFalse(greps(top, "testsleep 111"))
@@ -30068,8 +30068,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(3)
         #
         #
-        top_container2 = "docker exec -u somebody {testname} ps -eo pid,ppid,user,args"
-        top = output(top_container2.format(**locals()))
+        cmd = "docker exec -u somebody {testname} ps -eo pid,ppid,user,args"
+        top = output(cmd.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "testsleep 99"))
         self.assertTrue(greps(top, "testsleep 111"))
@@ -30220,8 +30220,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(3)
         #
         #
-        top_container2 = "docker exec -u somebody {testname} ps -eo pid,ppid,user,args"
-        top = output(top_container2.format(**locals()))
+        cmd = "docker exec -u somebody {testname} ps -eo pid,ppid,user,args"
+        top = output(cmd.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "testsleepA"))
         self.assertTrue(greps(top, "testsleepB"))
@@ -31946,8 +31946,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         time.sleep(3)
         #
-        top_container2 = "docker exec {testname} ps -eo pid,ppid,user,args"
-        top = output(top_container2.format(**locals()))
+        cmd = "docker exec {testname} ps -eo pid,ppid,user,args"
+        top = output(cmd.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "testsleep 99"))
         self.assertTrue(greps(top, "testsleep 111"))
@@ -31957,8 +31957,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out3 = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out3)
         #
-        top_container = "docker exec {testname} ps -eo pid,ppid,user,args"
-        top = output(top_container.format(**locals()))
+        cmd = "docker exec {testname} ps -eo pid,ppid,user,args"
+        top = output(cmd.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, "testsleep 99"))
         self.assertFalse(greps(top, "testsleep 111"))
@@ -32052,8 +32052,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(3)
         #
         #
-        top_container2 = "docker exec {testname} ps -eo pid,ppid,user,args"
-        top = output(top_container2.format(**locals()))
+        cmd = "docker exec {testname} ps -eo pid,ppid,user,args"
+        top = output(cmd.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, "testsleep 99")) # <<<<<<<<<< difference to 5033
         self.assertTrue(greps(top, "testsleep 111"))
@@ -32063,8 +32063,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out3 = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out3)
         #
-        top_container = "docker exec {testname} ps -eo pid,ppid,user,args"
-        top = output(top_container.format(**locals()))
+        cmd = "docker exec {testname} ps -eo pid,ppid,user,args"
+        top = output(cmd.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, "testsleep 99"))
         self.assertFalse(greps(top, "testsleep 111"))
@@ -32154,8 +32154,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         time.sleep(2)
         #
-        top_container2 = "docker exec {testname} ps -eo pid,ppid,user,args"
-        top = output(top_container2.format(**locals()))
+        cmd = "docker exec {testname} ps -eo pid,ppid,user,args"
+        top = output(cmd.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "testsleep 111"))
         #
@@ -32181,8 +32181,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             logg.info("ExitCode = %s", state["ExitCode"])
             if state["Status"] in ["exited"]:
                 break
-            top_container = "docker exec {testname} ps -eo pid,ppid,user,args"
-            top = output(top_container.format(**locals()))
+            cmd = "docker exec {testname} ps -eo pid,ppid,user,args"
+            top = output(cmd.format(**locals()))
             logg.info("\n>>>\n%s", top)
         cmd = "docker cp {testname}:/var/log/systemctl.debug.log {testdir}/systemctl.debug.log"
         sh____(cmd.format(**locals()))
@@ -32203,8 +32203,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("systemctl.debug.log>\n\t%s", "\n\t".join(log))
         self.assertTrue(greps(log, "no more procs - exit init-loop"))
         #
-        top_container = "docker exec {testname} ps -eo pid,ppid,user,args"
-        top = output(top_container.format(**locals()))
+        cmd = "docker exec {testname} ps -eo pid,ppid,user,args"
+        top = output(cmd.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, "testsleep 99"))
         self.assertFalse(greps(top, "testsleep 111"))
@@ -32294,8 +32294,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         time.sleep(2)
         #
-        top_container2 = "docker exec {testname} ps -eo pid,ppid,user,args"
-        top = output(top_container2.format(**locals()))
+        cmd = "docker exec {testname} ps -eo pid,ppid,user,args"
+        top = output(cmd.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "testsleep 111"))
         #
@@ -32322,8 +32322,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             logg.info("ExitCode = %s", state["ExitCode"])
             if state["Status"] in ["exited"]:
                 break
-            top_container = "docker exec {testname} ps -eo pid,ppid,user,args"
-            top = output(top_container.format(**locals()))
+            cmd = "docker exec {testname} ps -eo pid,ppid,user,args"
+            top = output(cmd.format(**locals()))
             logg.info("\n>>>\n%s", top)
         cmd = "docker cp {testname}:/var/log/systemctl.debug.log {testdir}/systemctl.debug.log"
         sh____(cmd.format(**locals()))
@@ -32348,8 +32348,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("systemctl.debug.log>\n\t%s", "\n\t".join(log))
         self.assertTrue(greps(log, "no more procs - exit init-loop"))
         #
-        top_container = "docker exec {testname} ps -eo pid,ppid,user,args"
-        top = output(top_container.format(**locals()))
+        cmd = "docker exec {testname} ps -eo pid,ppid,user,args"
+        top = output(cmd.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, "testsleep 99"))
         self.assertFalse(greps(top, "testsleep 111"))
@@ -32439,8 +32439,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         time.sleep(2)
         #
-        top_container2 = "docker exec {testname} ps -eo pid,ppid,user,args"
-        top = output(top_container2.format(**locals()))
+        cmd = "docker exec {testname} ps -eo pid,ppid,user,args"
+        top = output(cmd.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "testsleep 111"))
         #
@@ -32466,8 +32466,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             logg.info("ExitCode = %s", state["ExitCode"])
             if state["Status"] in ["exited"]:
                 break
-            top_container = "docker exec {testname} ps -eo pid,ppid,user,args"
-            top = output(top_container.format(**locals()))
+            cmd = "docker exec {testname} ps -eo pid,ppid,user,args"
+            top = output(cmd.format(**locals()))
             logg.info("\n>>>\n%s", top)
         self.assertFalse(state["Running"])
         self.assertEqual(state["Status"], "exited")
@@ -32483,8 +32483,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("systemctl.debug.log>\n\t%s", "\n\t".join(log))
         self.assertTrue(greps(log, "no more services - exit init-loop"))
         #
-        top_container = "docker exec {testname} ps -eo pid,ppid,user,args"
-        top = output(top_container.format(**locals()))
+        cmd = "docker exec {testname} ps -eo pid,ppid,user,args"
+        top = output(cmd.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, "testsleep 99"))
         self.assertFalse(greps(top, "testsleep 111"))
@@ -32572,8 +32572,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         time.sleep(2)
         #
-        top_container2 = "docker exec {testname} ps -eo pid,ppid,user,args"
-        top = output(top_container2.format(**locals()))
+        cmd = "docker exec {testname} ps -eo pid,ppid,user,args"
+        top = output(cmd.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "testsleep 111"))
         #
@@ -32598,8 +32598,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             logg.info("ExitCode = %s", state["ExitCode"])
             if state["Status"] in ["exited"]:
                 break
-            top_container = "docker exec {testname} ps -eo pid,ppid,user,args"
-            top = output(top_container.format(**locals()))
+            cmd = "docker exec {testname} ps -eo pid,ppid,user,args"
+            top = output(cmd.format(**locals()))
             logg.info("\n>>>\n%s", top)
         self.assertFalse(state["Running"])
         self.assertEqual(state["Status"], "exited")
@@ -32619,8 +32619,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("systemctl.debug.log>\n\t%s", "\n\t".join(log))
         self.assertTrue(greps(log, "no more services - exit init-loop"))
         #
-        top_container = "docker exec {testname} ps -eo pid,ppid,user,args"
-        top = output(top_container.format(**locals()))
+        cmd = "docker exec {testname} ps -eo pid,ppid,user,args"
+        top = output(cmd.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, "testsleep 99"))
         self.assertFalse(greps(top, "testsleep 111"))
@@ -32722,14 +32722,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         #
         # first of all, it starts commands like the service specs without user/group
-        top_container = "docker exec {testname} ps -eo pid,ppid,user,args"
-        top = output(top_container.format(**locals()))
+        cmd = "docker exec {testname} ps -eo pid,ppid,user,args"
+        top = output(cmd.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "testsleep 99"))
         self.assertTrue(greps(top, "testsleep 111"))
         # but really it has some user/group changed
-        top_container = "docker exec {testname} ps -eo user,group,args"
-        top = output(top_container.format(**locals()))
+        cmd = "docker exec {testname} ps -eo user,group,args"
+        top = output(cmd.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "user1 .*root .*testsleep 99"))
         self.assertTrue(greps(top, "user1 .*group2 .*testsleep 111"))
@@ -32851,15 +32851,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(5)
         #
         # first of all, it starts commands like the service specs without user/group
-        top_container2 = "docker exec {testname} ps -eo pid,ppid,user,args"
-        top = output(top_container2.format(**locals()))
+        cmd = "docker exec {testname} ps -eo pid,ppid,user,args"
+        top = output(cmd.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "testsleep 99"))
         self.assertTrue(greps(top, "testsleep 111"))
         self.assertTrue(greps(top, "testsleep 122"))
         # but really it has some user/group changed
-        top_container2 = "docker exec {testname} ps -eo user,group,args"
-        top = output(top_container2.format(**locals()))
+        cmd = "docker exec {testname} ps -eo user,group,args"
+        top = output(cmd.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "user1 .*root .*testsleep 99"))
         self.assertTrue(greps(top, "user1 .*group2 .*testsleep 111"))
@@ -32882,8 +32882,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out3 = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out3)
         #
-        top_container = "docker exec {testname} ps -eo pid,ppid,user,args"
-        top = output(top_container.format(**locals()))
+        cmd = "docker exec {testname} ps -eo pid,ppid,user,args"
+        top = output(cmd.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, "testsleep 99"))
         self.assertFalse(greps(top, "testsleep 111"))
@@ -33422,12 +33422,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} bash -c 'echo TEST_OK > /var/www/html/index.html'"
         sh____(cmd.format(**locals()))
         #
-        ## commit_container = "docker commit -c 'CMD [\"/usr/bin/systemctl\",\"init\",\"-vv\"]'  {testname} {images}:{testname}"
-        ## sh____(commit_container.format(**locals()))
-        ## stop_container = "docker rm --force {testname}"
-        ## sx____(stop_container.format(**locals()))
-        ## start_container = "docker run --detach --name {testname} {images}:{testname} sleep 200"
-        ## sh____(start_container.format(**locals()))
+        ## cmd = "docker commit -c 'CMD [\"/usr/bin/systemctl\",\"init\",\"-vv\"]'  {testname} {images}:{testname}"
+        ## sh____(cmd.format(**locals()))
+        ## cmd = "docker rm --force {testname}"
+        ## sx____(cmd.format(**locals()))
+        ## cmd = "docker run --detach --name {testname} {images}:{testname} sleep 200"
+        ## sh____(cmd.format(**locals()))
         ## time.sleep(3)
         #
         container = ip_container(testname)
@@ -33673,8 +33673,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} systemctl start mariadb -vv"
         sh____(cmd.format(**locals()))
         #
-        top_container = "docker exec {testname} ps -eo pid,ppid,user,args"
-        top = output(top_container.format(**locals()))
+        cmd = "docker exec {testname} ps -eo pid,ppid,user,args"
+        top = output(cmd.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "mysqld "))
         had_mysqld_safe = greps(top, "mysqld_safe ")
@@ -33684,8 +33684,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # which leaves the mysqld to be still running -> this is an upstream error.
         cmd = "docker exec {testname} systemctl stop mariadb -vv"
         sh____(cmd.format(**locals()))
-        top_container = "docker exec {testname} ps -eo pid,ppid,user,args"
-        top = output(top_container.format(**locals()))
+        cmd = "docker exec {testname} ps -eo pid,ppid,user,args"
+        top = output(cmd.format(**locals()))
         logg.info("\n>>>\n%s", top)
         # self.assertFalse(greps(top, "mysqld "))
         if greps(top, "mysqld ") and had_mysqld_safe:
@@ -33734,15 +33734,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} systemctl start rsyslog -vv"
         sh____(cmd.format(**locals()))
         #
-        top_container = "docker exec {testname} ps -eo pid,ppid,user,args"
-        top = output(top_container.format(**locals()))
+        cmd = "docker exec {testname} ps -eo pid,ppid,user,args"
+        top = output(cmd.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "/usr/sbin/rsyslog"))
         #
         cmd = "docker exec {testname} systemctl stop rsyslog -vv"
         sh____(cmd.format(**locals()))
-        top_container = "docker exec {testname} ps -eo pid,ppid,user,args"
-        top = output(top_container.format(**locals()))
+        cmd = "docker exec {testname} ps -eo pid,ppid,user,args"
+        top = output(cmd.format(**locals()))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, "/usr/sbin/rsyslog"))
         #
