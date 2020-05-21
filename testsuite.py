@@ -44,7 +44,7 @@ TESTED_OS += [ "ubuntu:14.04", "ubuntu:16.04", "ubuntu:18.04" ]
 
 IMAGES = "localhost:5000/systemctl/testing"
 IMAGE = ""
-CENTOS = "centos:7.5.1804"
+CENTOS = "centos:8.0.1905"
 UBUNTU = "ubuntu:18.04"
 OPENSUSE = "opensuse/leap:15.0"
 SOMETIME = ""
