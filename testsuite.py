@@ -32647,8 +32647,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         package = package_tool(image)
         refresh = refresh_tool(image)
         cov_option = "--system"
-        if COVERAGE:
-            cov_option = "-c EXEC_SPAWN=True"
         sometime = SOMETIME or 288
         text_file(os_path(testdir, "zzb.service"),"""
             [Unit]
@@ -32692,7 +32690,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
             cmd = "docker exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
-        self.prep_coverage(testname, cov_option) 
+        self.prep_coverage(testname)
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
         #
@@ -32815,7 +32813,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
             cmd = "docker exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
-        self.prep_coverage(testname, cov_option) 
+        self.prep_coverage(testname)
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
         #
