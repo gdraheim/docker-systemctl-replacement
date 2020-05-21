@@ -22023,7 +22023,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
-        systemctl += " -c InitLoopSleep=2 -c EXEC_SPAWN=True -c EXEC_SETGROUPS=False"
+        systemctl += " -c InitLoopSleep=2 -c EXEC_SPAWN=True"
         logfile = os_path(root, "/var/log/"+testname+".log")
         testsleepA = self.testname("sleepA")
         bindir = os_path(root, "/usr/bin")
@@ -22065,7 +22065,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
-        systemctl += " -c InitLoopSleep=2 -c EXEC_SPAWN=True -c EXEC_SETGROUPS=False"
+        systemctl += " -c InitLoopSleep=2 -c EXEC_SPAWN=True"
         logfile = os_path(root, "/var/log/"+testname+".log")
         testsleepA = self.testname("sleepA")
         bindir = os_path(root, "/usr/bin")
@@ -22108,7 +22108,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
-        systemctl += " -c InitLoopSleep=2 -c EXEC_SPAWN=True -c EXEC_SETGROUPS=False"
+        systemctl += " -c InitLoopSleep=2 -c EXEC_SPAWN=True"
         logfile = os_path(root, "/var/log/"+testname+".log")
         testsleepA = self.testname("sleepA")
         bindir = os_path(root, "/usr/bin")
@@ -22150,7 +22150,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
-        systemctl += " -c InitLoopSleep=2 -c EXEC_SPAWN=True -c EXEC_SETGROUPS=False"
+        systemctl += " -c InitLoopSleep=2 -c EXEC_SPAWN=True"
         logfile = os_path(root, "/var/log/"+testname+".log")
         testsleepA = self.testname("sleepA")
         bindir = os_path(root, "/usr/bin")
@@ -22193,7 +22193,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
-        systemctl += " -c InitLoopSleep=2 -c EXEC_SPAWN=True" # " -c EXEC_SETGROUPS=False" # <<<<<<
+        systemctl += " -c InitLoopSleep=2 -c EXEC_SPAWN=True"
         logfile = os_path(root, "/var/log/"+testname+".log")
         testsleepA = self.testname("sleepA")
         bindir = os_path(root, "/usr/bin")
