@@ -111,9 +111,10 @@ def coverage_tool(image = None, python = None):
     if python.endswith("3"):
         return "coverage3"
     return "coverage2"
-def coverage_run(image = None, python = None):
-    options = " run '--omit=*/six.py,*/extern/*.py,*/unitconfparser.py' --append -- "
-    return coverage_tool(image, python) + options
+def coverage_run(image = None, python = None, append = None):
+    append = append or "--append"
+    options = " run '--omit=*/six.py,*/extern/*.py,*/unitconfparser.py' " + append
+    return coverage_tool(image, python) + options + " -- "
 def coverage_package(image = None, python = None):
     python = python or _python
     package = "python-coverage"
@@ -121,9 +122,9 @@ def coverage_package(image = None, python = None):
         package = "python3-coverage"
     logg.info("detect coverage_package for %s => %s", python, package)
     return package
-def cover(image = None, python = None):
+def cover(image = None, python = None, append = None):
     if not COVERAGE: return ""
-    return coverage_run(image, python)
+    return coverage_run(image, python, append)
 
 def decodes(text):
     if text is None: return None
