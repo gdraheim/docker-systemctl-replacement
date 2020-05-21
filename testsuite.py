@@ -25601,7 +25601,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         self.usermode_simple_service_functions("system", testname, testdir)
         self.rm_testdir()
-        self.end()
+        self.end(122)
     def test_5131_simple_service_functions_user(self):
         """ check that we manage simple services in a root env
             with commands like start, restart, stop, etc"""
@@ -25610,7 +25610,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         self.usermode_simple_service_functions("user", testname, testdir)
         self.rm_testdir()
-        self.end()
+        self.end(122)
     def usermode_simple_service_functions(self, system, testname, testdir):
         """ check that we manage simple services in a root env
             with commands like start, restart, stop, etc"""
