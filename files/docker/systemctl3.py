@@ -23,6 +23,8 @@ import datetime
 import fcntl
 import select
 import hashlib
+import pwd
+import grp
 
 if sys.version[0] == '3':
     basestring = str
@@ -282,7 +284,6 @@ def path_replace_extension(path, old, new):
 
 def os_getlogin():
     """ NOT using os.getlogin() """
-    import pwd
     return pwd.getpwuid(os.geteuid()).pw_name
 
 def get_runtime_dir():
@@ -320,7 +321,7 @@ def get_home():
         explicit = os.environ.get("HOME", "")   # >> On Unix, an initial ~ (tilde) is replaced by the
         if explicit: return explicit            # environment variable HOME if it is set; otherwise
         uid = os.geteuid()                      # the current users home directory is looked up in the
-        import pwd                              # password directory through the built-in module pwd.
+        #                                       # password directory through the built-in module pwd.
         return pwd.getpwuid(uid).pw_name        # An initial ~user i looked up directly in the
     return os.path.expanduser("~")              # password directory. << from docs(os.path.expanduser)
 def get_HOME(root = False):
@@ -333,7 +334,6 @@ def get_USER_ID(root = False):
 def get_USER(root = False):
     if root: return "root"
     uid = os.geteuid()
-    import pwd
     return pwd.getpwuid(uid).pw_name
 def get_GROUP_ID(root = False):
     ID = 0
@@ -341,9 +341,7 @@ def get_GROUP_ID(root = False):
     return os.getegid()
 def get_GROUP(root = False):
     if root: return "root"
-    import grp
     gid = os.getegid()
-    import grp
     return grp.getgrgid(gid).gr_name
 def get_TMP(root = False):
     TMP = "/tmp"
@@ -398,13 +396,10 @@ def expand_path(path, root = False):
 def shutil_setuid(user = None, group = None, xgroups = None):
     """ set fork-child uid/gid (returns pw-info env-settings)"""
     if group:
-        import grp
         gid = grp.getgrnam(group).gr_gid
         os.setgid(gid)
         logg.debug("setgid %s for %s", gid, strQ(group))
     if user:
-        import pwd
-        import grp
         pw = pwd.getpwnam(user)
         gid = pw.pw_gid
         gname = grp.getgrgid(gid).gr_name
@@ -2671,11 +2666,9 @@ class Systemctl:
             if user or group:
                 uid, gid = -1, -1
                 if user:
-                    import pwd
                     uid = pwd.getpwnam(user).pw_uid
                     gid = pwd.getpwnam(user).pw_gid
                 if group:
-                    import grp
                     gid = grp.getgrnam(group).gr_gid
                 os.fchown(sock.fileno(), uid, gid)
             if symlinks:
