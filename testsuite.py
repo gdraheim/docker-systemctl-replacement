@@ -23111,7 +23111,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} chmod 666 {logfile}"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd nobody'"
+        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd -g 65533 nobody'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd -u 1001 somebody -g nobody -m"
         sh____(cmd.format(**locals()))
@@ -23527,7 +23527,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} chmod 666 {logfile}"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd nobody'"
+        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd -g 65533 nobody'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd -u 1001 somebody -g nobody -m"
         sh____(cmd.format(**locals()))
@@ -23898,7 +23898,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} chmod 666 {logfile}"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd nobody'"
+        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd -g 65533 nobody'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd -u 1001 somebody -g nobody -m"
         sh____(cmd.format(**locals()))
@@ -24283,7 +24283,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} chmod 666 {logfile}"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd nobody'"
+        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd -g 65533 nobody'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd -u 1001 somebody -g nobody -m"
         sh____(cmd.format(**locals()))
@@ -24623,7 +24623,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} chmod 666 {logfile}"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd nobody'"
+        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd -g 65533 nobody'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd -u 1001 somebody -g nobody -m"
         sh____(cmd.format(**locals()))
@@ -24891,7 +24891,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} chmod 666 {logfile}"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd nobody'"
+        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd -g 65533 nobody'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd -u 1001 somebody -g nobody -m"
         sh____(cmd.format(**locals()))
@@ -25178,7 +25178,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} chmod 666 {logfile}"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd nobody'"
+        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd -g 65533 nobody'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd -u 1001 somebody -g nobody -m"
         sh____(cmd.format(**locals()))
@@ -25504,7 +25504,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} chmod 666 {logfile}"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd nobody'"
+        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd -g 65533 nobody'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd -u 1001 somebody -g nobody -m"
         sh____(cmd.format(**locals()))
@@ -25708,7 +25708,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} chmod 666 {logfile}"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd nobody'"
+        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd -g 65533 nobody'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd -u 1001 somebody -g nobody -m"
         sh____(cmd.format(**locals()))
@@ -26140,7 +26140,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} chmod 666 {logfile}"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd nobody'"
+        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd -g 65533 nobody'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd -u 1001 somebody -g nobody -m"
         sh____(cmd.format(**locals()))
@@ -26528,7 +26528,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} chmod 666 {logfile}"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd nobody'"
+        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd -g 65533 nobody'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd -u 1001 somebody -g nobody -m"
         sh____(cmd.format(**locals()))
@@ -26932,7 +26932,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} chmod 666 {logfile}"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd nobody'"
+        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd -g 65533 nobody'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd -u 1001 somebody -g nobody -m"
         sh____(cmd.format(**locals()))
@@ -27288,7 +27288,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} chmod 666 {logfile}"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd nobody'"
+        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd -g 65533 nobody'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd -u 1001 somebody -g nobody -m"
         sh____(cmd.format(**locals()))
@@ -27573,7 +27573,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} chmod 666 {logfile}"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd nobody'"
+        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd -g 65533 nobody'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd -u 1001 somebody -g nobody -m"
         sh____(cmd.format(**locals()))
@@ -27877,7 +27877,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} chmod 666 {logfile}"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd nobody'"
+        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd -g 65533 nobody'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd -u 1001 somebody -g nobody -m"
         sh____(cmd.format(**locals()))
@@ -28029,7 +28029,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} chmod 666 {logfile}"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd nobody'"
+        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd -g 65533 nobody'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd -u 1001 somebody -g nobody -m"
         sh____(cmd.format(**locals()))
@@ -28240,7 +28240,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} chmod 666 {logfile}"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd nobody'"
+        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd -g 65533 nobody'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd -u 1001 somebody -g nobody -m"
         sh____(cmd.format(**locals()))
@@ -28461,7 +28461,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} chmod 666 {logfile}"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd nobody'"
+        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd -g 65533 nobody'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd -u 1001 somebody -g nobody -m"
         sh____(cmd.format(**locals()))
@@ -28691,7 +28691,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} chmod 666 {logfile}"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd nobody'"
+        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd -g 65533 nobody'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd -u 1001 somebody -g nobody -m"
         sh____(cmd.format(**locals()))
@@ -28873,7 +28873,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} chmod 666 {logfile}"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd nobody'"
+        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd -g 65533 nobody'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd -u 1001 somebody -g nobody -m"
         sh____(cmd.format(**locals()))
@@ -29046,7 +29046,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testdir}/zzz.service {testname}:{zzz_service}"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd nobody'"
+        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd -g 65533 nobody'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd -u 1001 somebody -g nobody -m"
         sh____(cmd.format(**locals()))
@@ -30054,7 +30054,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # sh____(cmd.format(**locals()))
         out2 = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out2)
-        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd nobody'"
+        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd -g 65533 nobody'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd -u 1001 somebody -g nobody -m"
         sh____(cmd.format(**locals()))
@@ -30204,7 +30204,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # sh____(cmd.format(**locals()))
         out2 = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out2)
-        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd nobody'"
+        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd -g 65533 nobody'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd -u 1001 somebody -g nobody -m"
         sh____(cmd.format(**locals()))
@@ -30368,7 +30368,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd nobody'"
+        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd -g 65533 nobody'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd -u 1001 somebody -g nobody -m"
         sh____(cmd.format(**locals()))
@@ -30455,7 +30455,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd nobody'"
+        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd -g 65533 nobody'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd -u 1001 somebody -g nobody -m"
         sh____(cmd.format(**locals()))
@@ -30539,7 +30539,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd nobody'"
+        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd -g 65533 nobody'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd -u 1001 somebody -g nobody -m"
         sh____(cmd.format(**locals()))
@@ -30625,7 +30625,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd nobody'"
+        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd -g 65533 nobody'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd -u 1001 somebody -g nobody -m"
         sh____(cmd.format(**locals()))
@@ -30710,7 +30710,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd nobody'"
+        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd -g 65533 nobody'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd -u 1001 somebody -g nobody -m"
         sh____(cmd.format(**locals()))
@@ -30795,7 +30795,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd nobody'"
+        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd -g 65533 nobody'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd -u 1001 somebody -g nobody -m"
         sh____(cmd.format(**locals()))
@@ -30879,7 +30879,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd nobody'"
+        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd -g 65533 nobody'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd -u 1001 somebody -g nobody -m"
         sh____(cmd.format(**locals()))
@@ -30965,7 +30965,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd nobody'"
+        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd -g 65533 nobody'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd -u 1001 somebody -g nobody -m"
         sh____(cmd.format(**locals()))
@@ -31050,7 +31050,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd nobody'"
+        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd -g 65533 nobody'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd -u 1001 somebody -g nobody -m"
         sh____(cmd.format(**locals()))
@@ -31136,9 +31136,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd nobody'"
+        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd -g 65533 nobody'"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'grep trusted /etc/group || groupadd trusted'"
+        cmd = "docker exec {testname} bash -c 'grep trusted /etc/group || groupadd -g 42 trusted'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd -u 1001 somebody -g nobody -G trusted -m"
         sh____(cmd.format(**locals()))
@@ -31225,9 +31225,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd nobody'"
+        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd -g 65533 nobody'"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'grep trusted /etc/group || groupadd trusted'"
+        cmd = "docker exec {testname} bash -c 'grep trusted /etc/group || groupadd -g 42 trusted'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd -u 1001 somebody -g nobody -G trusted -m"
         sh____(cmd.format(**locals()))
@@ -31311,9 +31311,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd nobody'"
+        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd -g 65533 nobody'"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'grep trusted /etc/group || groupadd trusted'"
+        cmd = "docker exec {testname} bash -c 'grep trusted /etc/group || groupadd -g 42 trusted'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd -u 1001 somebody -g nobody -G trusted -m"
         sh____(cmd.format(**locals()))
@@ -31399,9 +31399,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd nobody'"
+        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd -g 65533 nobody'"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'grep trusted /etc/group || groupadd trusted'"
+        cmd = "docker exec {testname} bash -c 'grep trusted /etc/group || groupadd -g 42 trusted'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd -u 1001 somebody -g nobody -G trusted -m"
         sh____(cmd.format(**locals()))
@@ -31486,9 +31486,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd nobody'"
+        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd -g 65533 nobody'"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'grep trusted /etc/group || groupadd trusted'"
+        cmd = "docker exec {testname} bash -c 'grep trusted /etc/group || groupadd -g 42 trusted'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd -u 1001 somebody -g nobody -G trusted -m"
         sh____(cmd.format(**locals()))
@@ -31573,9 +31573,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd nobody'"
+        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd -g 65533 nobody'"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'grep trusted /etc/group || groupadd trusted'"
+        cmd = "docker exec {testname} bash -c 'grep trusted /etc/group || groupadd -g 42 trusted'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd -u 1001 somebody -g nobody -G trusted -m"
         sh____(cmd.format(**locals()))
@@ -31659,9 +31659,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd nobody'"
+        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd -g 65533 nobody'"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'grep trusted /etc/group || groupadd trusted'"
+        cmd = "docker exec {testname} bash -c 'grep trusted /etc/group || groupadd -g 42 trusted'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd -u 1001 somebody -g nobody -G trusted -m"
         sh____(cmd.format(**locals()))
@@ -31747,9 +31747,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd nobody'"
+        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd -g 65533 nobody'"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'grep trusted /etc/group || groupadd trusted'"
+        cmd = "docker exec {testname} bash -c 'grep trusted /etc/group || groupadd -g 42 trusted'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd -u 1001 somebody -g nobody -G trusted -m"
         sh____(cmd.format(**locals()))
@@ -31834,9 +31834,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd nobody'"
+        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd -g 65533 nobody'"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'grep trusted /etc/group || groupadd trusted'"
+        cmd = "docker exec {testname} bash -c 'grep trusted /etc/group || groupadd -g 42 trusted'"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd -u 1001 somebody -g nobody -G trusted -m"
         sh____(cmd.format(**locals()))
@@ -32702,7 +32702,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             cmd = "docker exec {testname} chmod 777 /tmp/.coverage"
             sh____(cmd.format(**locals()))
         #
-        cmd = "docker exec {testname} groupadd group2"
+        cmd = "docker exec {testname} groupadd -g 65533 group2"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd -u 1001 user1 -g group2"
         sh____(cmd.format(**locals()))
@@ -32819,7 +32819,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
         #
-        cmd = "docker exec {testname} groupadd group2"
+        cmd = "docker exec {testname} groupadd -g 65533 group2"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd -u 1001 user1 -g group2"
         sh____(cmd.format(**locals()))
@@ -32974,7 +32974,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             cmd = "docker exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
         self.prep_coverage(testname, cov_option) 
-        cmd = "docker exec {testname} groupadd group2"
+        cmd = "docker exec {testname} groupadd -g 65533 group2"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} useradd -u 1001 user1 -g group2"
         sh____(cmd.format(**locals()))
