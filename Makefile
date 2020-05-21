@@ -185,8 +185,12 @@ checks2_coverage:
 	$(MAKE) tmp_systemctl_py_2
 	./testsuite.py -vv --coverage \
 	   '--with=tmp/systemctl.py' --python=/usr/bin/python2
+	coverage combine && coverage report && coverage annotate
+	ls -l tmp/systemctl.py,cover
 checks3: 
 	rm .coverage* ; $(MAKE) checks3_coverage
+	coverage3 combine && coverage3 report && coverage3 annotate
+	ls -l tmp/systemctl.py,cover
 checks3_coverage: 
 	$(MAKE) tmp_systemctl_py_3
 	./testsuite.py -vv --coverage \
