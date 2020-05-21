@@ -137,7 +137,7 @@ DefaultStandardInput=os.environ.get("SYSTEMD_STANDARD_INPUT", "null")
 DefaultStandardOutput=os.environ.get("SYSTEMD_STANDARD_OUTPUT", "journal") # systemd.exe --default-standard-output
 DefaultStandardError=os.environ.get("SYSTEMD_STANDARD_ERROR", "inherit") # systemd.exe --default-standard-error
 
-EXEC_SETGROUPS = True
+EXEC_SETGROUPS = (os.geteuid() == 0)
 EXEC_SPAWN = False
 REMOVE_LOCK_FILE = False
 BOOT_PID_MIN = 0
@@ -400,7 +400,7 @@ def shutil_setuid(user = None, group = None, xgroups = None):
         import grp
         gid = grp.getgrnam(group).gr_gid
         os.setgid(gid)
-        logg.debug("setgid %s '%s'", gid, group)
+        logg.debug("setgid %s for %s", gid, strQ(group))
     if user:
         import pwd
         import grp
@@ -409,17 +409,20 @@ def shutil_setuid(user = None, group = None, xgroups = None):
         gname = grp.getgrgid(gid).gr_name
         if not group:
             os.setgid(gid)
-            logg.debug("setgid %s", gid)
+            logg.debug("setgid %s for user %s", gid, strQ(user))
         groupnames = [g.gr_name for g in grp.getgrall() if user in g.gr_mem]
         groups = [g.gr_gid for g in grp.getgrall() if user in g.gr_mem]
         if xgroups:
             groups += [g.gr_gid for g in grp.getgrall() if g.gr_name in xgroups and g.gr_gid not in groups]
-        if groups and EXEC_SETGROUPS:
-            logg.debug("setgroups %s > %s ", groups, groupnames)
-            os.setgroups(groups)
+        if groups:
+            if EXEC_SETGROUPS:
+                logg.debug("setgroups (%s) > %s ", ",".join(groups), groupnames)
+                os.setgroups(groups)
+            else:
+                logg.warning("setgroups skipped > %s", groupnames)
         uid = pw.pw_uid
         os.setuid(uid)
-        logg.debug("setuid %s '%s'", uid, user)
+        logg.debug("setuid %s for user %s", uid, strQ(user))
         home = pw.pw_dir
         shell = pw.pw_shell
         logname = pw.pw_name
