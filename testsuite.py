@@ -33455,9 +33455,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(open(testdir+"/systemctl.debug.log"), "use NOTIFY_SOCKET="))
         self.assertTrue(greps(open(testdir+"/systemctl.debug.log"), "read_notify.*READY=1.*MAINPID="))
         self.assertTrue(greps(open(testdir+"/systemctl.debug.log"), "notify start done"))
-        self.assertTrue(greps(open(testdir+"/systemctl.debug.log"), "stop '/bin/kill' '-WINCH'"))
+        if "centos:7" in IMAGE:
+            self.assertTrue(greps(open(testdir+"/systemctl.debug.log"), "stop '/bin/kill' '-WINCH'"))
+            self.assertTrue(greps(open(testdir+"/systemctl.debug.log"), "wait for PID .* is done"))
+        else:
+            self.assertTrue(greps(open(testdir+"/systemctl.debug.log"), "no ExecStop => systemctl kill"))
+            self.assertTrue(greps(open(testdir+"/systemctl.debug.log"), "done kill PID"))
         self.assertTrue(greps(open(testdir+"/systemctl.debug.log"), "wait [$]NOTIFY_SOCKET"))
-        self.assertTrue(greps(open(testdir+"/systemctl.debug.log"), "wait for PID .* is done"))
         self.rm_docker(testname)
         self.rm_testdir()
     def test_7020_ubuntu_apache2_with_saved_container(self):
