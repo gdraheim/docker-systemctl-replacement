@@ -214,6 +214,17 @@ def each_non_runuser(lines):
         if 'runuser -u' in line:
             continue
         yield line
+def each_clean(lines):
+    for line in _lines(lines):
+        if '<defunct>' in line:
+            continue
+        if 'runuser -u' in line:
+            continue
+        if 'ps -eo pid,' in line:
+            continue
+        yield line
+def clean(lines):
+    return " " + "\n ".join(each_clean(lines))
 
 def i2(part, indent="  "):
     if isinstance(part, string_types):
