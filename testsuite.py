@@ -73,9 +73,6 @@ def _recent(top_list):
         if " ELAPSED " in line:
             result.append(" "+line)
     return "\n".join(result)
-def _image(image):
-    image = image or ""
-    return image.split(" ")[-1]
 
 def package_tool(image):
     if "opensuse" in image:
@@ -123,7 +120,7 @@ def coverage_package(image = None, python = None):
     package = "python-coverage"
     if python.endswith("3"):
         package = "python3-coverage"
-        if _image(image).startswith("centos:8"):
+        if "centos:8" in image:
             package = "platform-python-coverage"
     logg.info("detect coverage_package for %s => %s (%s)", python, package, image)
     return package
