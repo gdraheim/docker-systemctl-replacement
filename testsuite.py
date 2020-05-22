@@ -30335,7 +30335,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sometime = SOMETIME or 188
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "-c EXEC_SPAWN=True"
+            cov_option = "-c EXEC_SPAWN=True -c EXEC_DUP2=False"
         testsleepA = self.testname("sleepA")
         bindir="/usr/bin"
         this_user="somebody"
@@ -30424,7 +30424,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sometime = SOMETIME or 188
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "-c EXEC_SPAWN=True"
+            cov_option = "-c EXEC_SPAWN=True -c EXEC_DUP2=False"
         testsleepA = self.testname("sleepA")
         bindir="/usr/bin"
         this_user="somebody"
@@ -30510,7 +30510,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sometime = SOMETIME or 188
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "-c EXEC_SPAWN=True"
+            cov_option = "-c EXEC_SPAWN=True -c EXEC_DUP2=False"
         testsleepA = self.testname("sleepA")
         bindir="/usr/bin"
         this_user="somebody"
@@ -30595,7 +30595,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sometime = SOMETIME or 188
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "-c EXEC_SPAWN=True"
+            cov_option = "-c EXEC_SPAWN=True -c EXEC_DUP2=False"
         testsleepA = self.testname("sleepA")
         bindir="/usr/bin"
         this_user="somebody"
@@ -30682,7 +30682,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sometime = SOMETIME or 188
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "-c EXEC_SPAWN=True"
+            cov_option = "-c EXEC_SPAWN=True -c EXEC_DUP2=False"
         testsleepA = self.testname("sleepA")
         bindir="/usr/bin"
         this_user="somebody"
@@ -30768,7 +30768,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sometime = SOMETIME or 188
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "-c EXEC_SPAWN=True"
+            cov_option = "-c EXEC_SPAWN=True -c EXEC_DUP2=False"
         testsleepA = self.testname("sleepA")
         bindir="/usr/bin"
         this_user="somebody"
@@ -30854,7 +30854,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sometime = SOMETIME or 188
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "-c EXEC_SPAWN=True"
+            cov_option = "-c EXEC_SPAWN=True -c EXEC_DUP2=False"
         testsleepA = self.testname("sleepA")
         bindir="/usr/bin"
         this_user="somebody"
@@ -30939,7 +30939,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sometime = SOMETIME or 188
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "-c EXEC_SPAWN=True"
+            cov_option = "-c EXEC_SPAWN=True -c EXEC_DUP2=False"
         testsleepA = self.testname("sleepA")
         bindir="/usr/bin"
         this_user="somebody"
@@ -31026,7 +31026,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sometime = SOMETIME or 188
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "-c EXEC_SPAWN=True"
+            cov_option = "-c EXEC_SPAWN=True -c EXEC_DUP2=False"
         testsleepA = self.testname("sleepA")
         bindir="/usr/bin"
         this_user="somebody"
@@ -31112,7 +31112,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sometime = SOMETIME or 188
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "-c EXEC_SPAWN=True"
+            cov_option = "-c EXEC_SPAWN=True -c EXEC_DUP2=False"
         testsleepA = self.testname("sleepA")
         bindir="/usr/bin"
         this_user="somebody"
@@ -31203,7 +31203,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sometime = SOMETIME or 188
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "-c EXEC_SPAWN=True"
+            cov_option = "-c EXEC_SPAWN=True -c EXEC_DUP2=False"
         testsleepA = self.testname("sleepA")
         bindir="/usr/bin"
         this_user="somebody"
@@ -31291,7 +31291,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sometime = SOMETIME or 188
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "-c EXEC_SPAWN=True"
+            cov_option = "-c EXEC_SPAWN=True -c EXEC_DUP2=False"
         testsleepA = self.testname("sleepA")
         bindir="/usr/bin"
         this_user="somebody"
@@ -31378,7 +31378,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sometime = SOMETIME or 188
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "-c EXEC_SPAWN=True"
+            cov_option = "-c EXEC_SPAWN=True -c EXEC_DUP2=False"
         testsleepA = self.testname("sleepA")
         bindir="/usr/bin"
         this_user="somebody"
@@ -31467,7 +31467,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sometime = SOMETIME or 188
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "-c EXEC_SPAWN=True"
+            cov_option = "-c EXEC_SPAWN=True -c EXEC_DUP2=False"
         testsleepA = self.testname("sleepA")
         bindir="/usr/bin"
         this_user="somebody"
@@ -31555,7 +31555,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sometime = SOMETIME or 188
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "-c EXEC_SPAWN=True"
+            cov_option = "-c EXEC_SPAWN=True -c EXEC_DUP2=False"
         testsleepA = self.testname("sleepA")
         bindir="/usr/bin"
         this_user="somebody"
@@ -31643,7 +31643,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sometime = SOMETIME or 188
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "-c EXEC_SPAWN=True"
+            cov_option = "-c EXEC_SPAWN=True -c EXEC_DUP2=False"
         testsleepA = self.testname("sleepA")
         bindir="/usr/bin"
         this_user="somebody"
@@ -31730,7 +31730,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sometime = SOMETIME or 188
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "-c EXEC_SPAWN=True"
+            cov_option = "-c EXEC_SPAWN=True -c EXEC_DUP2=False"
         testsleepA = self.testname("sleepA")
         bindir="/usr/bin"
         this_user="somebody"
@@ -31819,7 +31819,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sometime = SOMETIME or 188
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "-c EXEC_SPAWN=True"
+            cov_option = "-c EXEC_SPAWN=True -c EXEC_DUP2=False"
         testsleepA = self.testname("sleepA")
         bindir="/usr/bin"
         this_user="somebody"
