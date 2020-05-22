@@ -18921,7 +18921,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing A
             [Service]
             Type=simple
-            ExecStart={bindir}/{testsleepA}.bin 44
+            ExecStart={bindir}/{testsleepA}.bin 4
             StandardOutput=file:{root}/var/log/zza.log
             [Install]
             WantedBy=multi-user.target
@@ -18931,7 +18931,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing B
             [Service]
             Type=simple
-            ExecStart={bindir}/{testsleepB}.bin 55
+            ExecStart={bindir}/{testsleepB}.bin 5
             StandardOutput=file:{root}/var/log/zzb.log
             [Install]
             WantedBy=multi-user.target
@@ -18960,6 +18960,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        if COVERAGE:
+            initsystemctl += " -c EXEC_SPAWN=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -19050,7 +19052,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing A
             [Service]
             Type=simple
-            ExecStart={bindir}/{testsleepA}.bin 44
+            ExecStart={bindir}/{testsleepA}.bin 4
             StandardError=file:{root}/var/log/zza.log
             [Install]
             WantedBy=multi-user.target
@@ -19060,7 +19062,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing B
             [Service]
             Type=simple
-            ExecStart={bindir}/{testsleepB}.bin 55
+            ExecStart={bindir}/{testsleepB}.bin 5
             StandardError=file:{root}/var/log/zzb.log
             [Install]
             WantedBy=multi-user.target
@@ -19089,6 +19091,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        if COVERAGE:
+            initsystemctl += " -c EXEC_SPAWN=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -19181,7 +19185,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing A
             [Service]
             Type=simple
-            ExecStart={bindir}/{testsleepA}.bin 44
+            ExecStart={bindir}/{testsleepA}.bin 4
             StandardOutput=file:{root}/var/log/zza.log
             StandardError=journal
             [Install]
@@ -19192,7 +19196,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing B
             [Service]
             Type=simple
-            ExecStart={bindir}/{testsleepB}.bin 55
+            ExecStart={bindir}/{testsleepB}.bin 5
             StandardOutput=file:{root}/var/log/zzb.log
             StandardError=journal
             [Install]
@@ -19222,6 +19226,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        if COVERAGE:
+            initsystemctl += " -c EXEC_SPAWN=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
