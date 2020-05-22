@@ -20662,11 +20662,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(kill_testsleep.format(**locals()))
         #
         InitLoopSleep = 1
+        initsystemctl = systemctl
+        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        if COVERAGE:
+            initsystemctl += " -c EXEC_SPAWN=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
-        cmd = "{systemctl} listen zza.socket"
+        cmd = "{initsystemctl} listen zza.socket"
         init = background(cmd.format(**locals()))
         time.sleep(InitLoopSleep+1)
         #
@@ -20752,11 +20756,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(kill_testsleep.format(**locals()))
         #
         InitLoopSleep = 1
+        initsystemctl = systemctl
+        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        if COVERAGE:
+            initsystemctl += " -c EXEC_SPAWN=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
-        cmd = "{systemctl} listen zza.socket -c TestListen -c TestAccept"
+        cmd = "{initsystemctl} listen zza.socket -c TestListen -c TestAccept"
         init = background(cmd.format(**locals()))
         time.sleep(InitLoopSleep+1)
         #
