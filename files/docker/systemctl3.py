@@ -142,6 +142,7 @@ DefaultStandardError=os.environ.get("SYSTEMD_STANDARD_ERROR", "inherit") # syste
 
 EXEC_SETGROUPS = (os.geteuid() == 0)
 EXEC_SPAWN = False
+EXEC_DUP2 = True
 REMOVE_LOCK_FILE = False
 BOOT_PID_MIN = 0
 BOOT_PID_MAX = -9
@@ -2825,16 +2826,16 @@ class Systemctl:
             err.write("ERROR:")
             err.write(msg.strip())
             err.write("\n")
-        os.dup2(inp.fileno(), sys.stdin.fileno())
-        os.dup2(out.fileno(), sys.stdout.fileno())
-        os.dup2(err.fileno(), sys.stderr.fileno())
+        if EXEC_DUP2:
+            os.dup2(inp.fileno(), sys.stdin.fileno())
+            os.dup2(out.fileno(), sys.stdout.fileno())
+            os.dup2(err.fileno(), sys.stderr.fileno())
     def execve_from(self, conf, cmd, env):
         """ this code is commonly run in a child process // returns exit-code"""
         runs = conf.get("Service", "Type", "simple").lower()
         logg.debug("%s process for %s", runs, strQ(conf.filename()))
         #
-        if not EXEC_SPAWN:
-            self.dup2_journal_log(conf)
+        self.dup2_journal_log(conf)
         #
         runuser = self.get_User(conf)
         rungroup = self.get_Group(conf)
