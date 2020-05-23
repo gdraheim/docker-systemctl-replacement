@@ -243,19 +243,19 @@ def o22(part):
         if len(part) <= 22:
             return part
         return part[:5] + "..." + part[-14:]
-    return part
+    return part # pragma: no cover (is always str)
 def o44(part):
     if isinstance(part, basestring):
         if len(part) <= 44:
             return part
         return part[:10] + "..." + part[-31:]
-    return part
+    return part # pragma: no cover (is always str)
 def o77(part):
     if isinstance(part, basestring):
         if len(part) <= 77:
             return part
         return part[:20] + "..." + part[-54:]
-    return part
+    return part # pragma: no cover (is always str)
 def unit_name_escape(text):
     # https://www.freedesktop.org/software/systemd/man/systemd.unit.html#id-1.6
     esc = re.sub("([^a-z-AZ.-/])", lambda m: "\\x%02x" % ord(m.group(1)[0]), text)
