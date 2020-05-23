@@ -21513,7 +21513,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
-    def test_4515_unix_socket_listen(self):
+    def test_4512_unix_socket_listen(self):
         self.begin()
         self.rm_testdir()
         testname = self.testname()
@@ -21608,7 +21608,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
-    def test_4516_unix_socket_listen_user_group(self):
+    def test_4513_unix_socket_listen_user_group(self):
         self.begin()
         self.rm_testdir()
         testname = self.testname()
@@ -21707,7 +21707,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
-    def test_4517_unix_socket_listen_group(self):
+    def test_4514_unix_socket_listen_group(self):
         self.begin()
         self.rm_testdir()
         testname = self.testname()
@@ -21806,7 +21806,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
-    def test_4518_unix_socket_listen_user(self):
+    def test_4515_unix_socket_listen_user(self):
         self.begin()
         self.rm_testdir()
         testname = self.testname()
