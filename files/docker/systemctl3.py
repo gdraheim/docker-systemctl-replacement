@@ -1942,7 +1942,7 @@ class Systemctl:
             expanded = new_text
         logg.error("shell variable expansion exceeded maxdepth %s", maxdepth)
         return expanded
-    def expand_special(self, cmd, conf = None):
+    def expand_special(self, cmd, conf):
         """ expand %i %t and similar special vars. They are being expanded
             before any other expand_env takes place which handles shell-style
             $HOME references. """
@@ -2005,12 +2005,12 @@ class Systemctl:
         #++# logg.info("expanded => %s", result)
         return result
     ExecMode = collections.namedtuple("ExecMode", ["check"])
-    def exec_newcmd(self, cmd, env, conf = None):
+    def exec_newcmd(self, cmd, env, conf):
         check, cmd = checkstatus(cmd)
         mode = Systemctl.ExecMode(check)
         newcmd = self.exec_cmd(cmd, env, conf)
         return mode, newcmd
-    def exec_cmd(self, cmd, env, conf = None):
+    def exec_cmd(self, cmd, env, conf):
         """ expand ExecCmd statements including %i and $MAINPID """
         cmd2 = cmd.replace("\\\n","")
         # according to documentation, when bar="one two" then the expansion
