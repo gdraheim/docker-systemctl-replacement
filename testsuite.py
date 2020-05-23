@@ -21905,6 +21905,381 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
+    def test_4516_unix_socket_listen_bad_pre(self):
+        self.begin()
+        self.rm_testdir()
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        logfile = os_path(root, "/var/log/"+testname+".log")
+        sockfile = os_path(root, "/var/run/"+testname+".sock")
+        replyA = self.testname("replyA")
+        replyB = self.testname("replyB")
+        bindir = os_path(root, "/usr/bin")
+        text_file(os_path(testdir, "zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            Type=simple
+            ExecStart={bindir}/{replyA} serverUNIX -f {sockfile}
+            StandardOutput=file:{root}/var/log/zza.log
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        text_file(os_path(testdir, "zza.socket"),"""
+            [Unit]
+            Description=Testing B
+            [Socket]
+            ExecStartPre=/bin/false
+            ListenStream={sockfile}
+            Service=zza.service
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        copy_tool("reply.py", os_path(bindir, replyA))
+        copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
+        copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
+        cmd = "{systemctl} enable zza.socket"
+        sh____(cmd.format(**locals()))
+        #
+        debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
+        text_file(debug_log, "")
+        #
+        systemctl_py = os.path.basename(_systemctl_py)
+        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
+        sx____(kill_daemon.format(**locals()))
+        kill_testsleep = "{systemctl} __killall {replyA} -vvvv"
+        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = "{systemctl} __killall {replyB} -vvvv"
+        sx____(kill_testsleep.format(**locals()))
+        #
+        InitLoopSleep = 1
+        initsystemctl = systemctl
+        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        if COVERAGE:
+            initsystemctl += " -c EXEC_SPAWN=True"
+        #
+        debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
+        os_remove(debug_log)
+        text_file(debug_log, "")
+        cmd = "{initsystemctl} listen zza.socket -c TestListen -c TestAccept"
+        init = background(cmd.format(**locals()))
+        time.sleep(InitLoopSleep+1)
+        #
+        log = reads(debug_log)
+        logg.info("systemctl.debug.log:\n%s", i2(log))
+        #
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, "systemctl.*listen"))
+        #
+        # no reply
+        #
+        logg.info("kill daemon at %s", init.pid)
+        os.kill(init.pid, signal.SIGTERM)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        time.sleep(4)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
+        sx____(kill_daemon.format(**locals()))
+        kill_daemon = "{systemctl} __killall '{replyA}'"
+        sx____(kill_daemon.format(**locals()))
+        kill_daemon = "{systemctl} __killall '{replyB}'"
+        sx____(kill_daemon.format(**locals()))
+        time.sleep(InitLoopSleep+1)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        #
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def test_4517_unix_socket_listen_bad_post(self):
+        self.begin()
+        self.rm_testdir()
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        logfile = os_path(root, "/var/log/"+testname+".log")
+        sockfile = os_path(root, "/var/run/"+testname+".sock")
+        replyA = self.testname("replyA")
+        replyB = self.testname("replyB")
+        bindir = os_path(root, "/usr/bin")
+        text_file(os_path(testdir, "zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            Type=simple
+            ExecStart={bindir}/{replyA} serverUNIX -f {sockfile}
+            StandardOutput=file:{root}/var/log/zza.log
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        text_file(os_path(testdir, "zza.socket"),"""
+            [Unit]
+            Description=Testing B
+            [Socket]
+            ExecStartPost=/bin/false
+            ListenStream={sockfile}
+            Service=zza.service
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        copy_tool("reply.py", os_path(bindir, replyA))
+        copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
+        copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
+        cmd = "{systemctl} enable zza.socket"
+        sh____(cmd.format(**locals()))
+        #
+        debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
+        text_file(debug_log, "")
+        #
+        systemctl_py = os.path.basename(_systemctl_py)
+        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
+        sx____(kill_daemon.format(**locals()))
+        kill_testsleep = "{systemctl} __killall {replyA} -vvvv"
+        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = "{systemctl} __killall {replyB} -vvvv"
+        sx____(kill_testsleep.format(**locals()))
+        #
+        InitLoopSleep = 1
+        initsystemctl = systemctl
+        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        if COVERAGE:
+            initsystemctl += " -c EXEC_SPAWN=True"
+        #
+        debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
+        os_remove(debug_log)
+        text_file(debug_log, "")
+        cmd = "{initsystemctl} listen zza.socket -c TestListen -c TestAccept"
+        init = background(cmd.format(**locals()))
+        time.sleep(InitLoopSleep+1)
+        #
+        log = reads(debug_log)
+        logg.info("systemctl.debug.log:\n%s", i2(log))
+        #
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, "systemctl.*listen"))
+        #
+        cmd = "./reply.py sendUNIX -d foo -f {sockfile}"
+        out, end = output2(cmd.format(**locals()))
+        self.assertEqual(end, 0) # FIXME
+        logg.info("send.log>>\n%s", out)
+        self.assertTrue(greps(out, "request: foo"))
+        self.assertTrue(greps(out, "replied: ERROR: FOO"))
+        #
+        logg.info("kill daemon at %s", init.pid)
+        os.kill(init.pid, signal.SIGTERM)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        time.sleep(4)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
+        sx____(kill_daemon.format(**locals()))
+        kill_daemon = "{systemctl} __killall '{replyA}'"
+        sx____(kill_daemon.format(**locals()))
+        kill_daemon = "{systemctl} __killall '{replyB}'"
+        sx____(kill_daemon.format(**locals()))
+        time.sleep(InitLoopSleep+1)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        #
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def test_4518_unix_socket_listen_bad_start(self):
+        self.begin()
+        self.rm_testdir()
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        logfile = os_path(root, "/var/log/"+testname+".log")
+        sockfile = os_path(root, "/var/run/"+testname+".sock")
+        replyA = self.testname("replyA")
+        replyB = self.testname("replyB")
+        bindir = os_path(root, "/usr/bin")
+        text_file(os_path(testdir, "zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            Type=simple
+            ExecStart=/bin/false
+            StandardOutput=file:{root}/var/log/zza.log
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        text_file(os_path(testdir, "zza.socket"),"""
+            [Unit]
+            Description=Testing B
+            [Socket]
+            ExecStartPre=/bin/false
+            ExecStopPost=/bin/true
+            ListenStream={sockfile}
+            Service=zza.service
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        copy_tool("reply.py", os_path(bindir, replyA))
+        copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
+        copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
+        cmd = "{systemctl} enable zza.socket"
+        sh____(cmd.format(**locals()))
+        #
+        debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
+        text_file(debug_log, "")
+        #
+        systemctl_py = os.path.basename(_systemctl_py)
+        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
+        sx____(kill_daemon.format(**locals()))
+        kill_testsleep = "{systemctl} __killall {replyA} -vvvv"
+        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = "{systemctl} __killall {replyB} -vvvv"
+        sx____(kill_testsleep.format(**locals()))
+        #
+        InitLoopSleep = 1
+        initsystemctl = systemctl
+        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        if COVERAGE:
+            initsystemctl += " -c EXEC_SPAWN=True"
+        #
+        debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
+        os_remove(debug_log)
+        text_file(debug_log, "")
+        cmd = "{initsystemctl} listen zza.socket -c TestListen -c TestAccept"
+        init = background(cmd.format(**locals()))
+        time.sleep(InitLoopSleep+1)
+        #
+        log = reads(debug_log)
+        logg.info("systemctl.debug.log:\n%s", i2(log))
+        #
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, "systemctl.*listen"))
+        #
+        # no reply
+        #
+        logg.info("kill daemon at %s", init.pid)
+        os.kill(init.pid, signal.SIGTERM)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        time.sleep(4)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
+        sx____(kill_daemon.format(**locals()))
+        kill_daemon = "{systemctl} __killall '{replyA}'"
+        sx____(kill_daemon.format(**locals()))
+        kill_daemon = "{systemctl} __killall '{replyB}'"
+        sx____(kill_daemon.format(**locals()))
+        time.sleep(InitLoopSleep+1)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        #
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def test_4519_unix_socket_listen_bad_start_bad_post(self):
+        self.begin()
+        self.rm_testdir()
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        logfile = os_path(root, "/var/log/"+testname+".log")
+        sockfile = os_path(root, "/var/run/"+testname+".sock")
+        replyA = self.testname("replyA")
+        replyB = self.testname("replyB")
+        bindir = os_path(root, "/usr/bin")
+        text_file(os_path(testdir, "zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            Type=simple
+            ExecStart=/bin/false
+            StandardOutput=file:{root}/var/log/zza.log
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        text_file(os_path(testdir, "zza.socket"),"""
+            [Unit]
+            Description=Testing B
+            [Socket]
+            ExecStartPre=/bin/false
+            ExecStopPost=/bin/false
+            ListenStream={sockfile}
+            Service=zza.service
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        copy_tool("reply.py", os_path(bindir, replyA))
+        copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
+        copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
+        cmd = "{systemctl} enable zza.socket"
+        sh____(cmd.format(**locals()))
+        #
+        debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
+        text_file(debug_log, "")
+        #
+        systemctl_py = os.path.basename(_systemctl_py)
+        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
+        sx____(kill_daemon.format(**locals()))
+        kill_testsleep = "{systemctl} __killall {replyA} -vvvv"
+        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = "{systemctl} __killall {replyB} -vvvv"
+        sx____(kill_testsleep.format(**locals()))
+        #
+        InitLoopSleep = 1
+        initsystemctl = systemctl
+        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        if COVERAGE:
+            initsystemctl += " -c EXEC_SPAWN=True"
+        #
+        debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
+        os_remove(debug_log)
+        text_file(debug_log, "")
+        cmd = "{initsystemctl} listen zza.socket -c TestListen -c TestAccept"
+        init = background(cmd.format(**locals()))
+        time.sleep(InitLoopSleep+1)
+        #
+        log = reads(debug_log)
+        logg.info("systemctl.debug.log:\n%s", i2(log))
+        #
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, "systemctl.*listen"))
+        #
+        # no reply
+        #
+        logg.info("kill daemon at %s", init.pid)
+        os.kill(init.pid, signal.SIGTERM)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        time.sleep(4)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
+        sx____(kill_daemon.format(**locals()))
+        kill_daemon = "{systemctl} __killall '{replyA}'"
+        sx____(kill_daemon.format(**locals()))
+        kill_daemon = "{systemctl} __killall '{replyB}'"
+        sx____(kill_daemon.format(**locals()))
+        time.sleep(InitLoopSleep+1)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        #
+        self.rm_testdir()
+        self.coverage()
+        self.end()
     def test_4520_udp_socket_accept(self):
         self.begin()
         self.rm_testdir()
