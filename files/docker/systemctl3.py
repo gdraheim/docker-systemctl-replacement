@@ -1950,8 +1950,6 @@ class Systemctl:
         def yy(arg): return arg
         def get_confs(conf):
             confs={ "%": "%" }
-            if not conf:
-                return confs
             unit = parse_unit(conf.name())
             #
             root = not self.is_user_conf(conf)
