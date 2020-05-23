@@ -1656,9 +1656,7 @@ class Systemctl:
         """ if a status_file is known then path is created and the
             give status is written as the only content. """
         status_file = self.get_status_file_from(conf)
-        if not status_file: 
-            logg.debug("status %s but no status_file", conf.name())
-            return False
+        # if not status_file: return False
         dirpath = os.path.dirname(os.path.abspath(status_file))
         if not os.path.isdir(dirpath):
             os.makedirs(dirpath)
