@@ -1688,9 +1688,7 @@ class Systemctl:
     def read_status_from(self, conf):
         status_file = self.get_status_file_from(conf)
         status = {}
-        if not status_file:
-            if DEBUG_STATUS: logg.debug("no status file. returning %s", status)
-            return status
+        # if not status_file: return status
         if not os.path.isfile(status_file):
             if DEBUG_STATUS: logg.debug("no status file: %s\n returning %s", status_file, status)
             return status
