@@ -9119,6 +9119,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         text_file(debug_log, "")
+        if COVERAGE:
+            systemctl += " -c EXEC_SPAWN=True"
         #
         cmd = "{systemctl} start zzz.service -vv"
         out, end = output2(cmd.format(**locals()))
