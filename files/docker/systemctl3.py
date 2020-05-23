@@ -447,7 +447,7 @@ def shutil_truncate(filename):
 # http://stackoverflow.com/questions/568271/how-to-check-if-there-exists-a-process-with-a-given-pid
 def pid_exists(pid):
     """Check whether pid exists in the current process table."""
-    if pid is None:
+    if pid is None: # pragma: no cover (is never null)
         return False
     return _pid_exists(int(pid))
 def _pid_exists(pid):
@@ -2608,7 +2608,6 @@ class Systemctl:
                 logg.debug("post-start done (%s) <-%s>", 
                     run.returncode or "OK", run.signal or "")
             return True
-        return False
     def create_socket(self, conf):
         unsupported = ["ListenUSBFunction", "ListenMessageQueue", "ListenNetlink"]
         unsupported += [ "ListenSpecial", "ListenFIFO", "ListenSequentialPacket"]
