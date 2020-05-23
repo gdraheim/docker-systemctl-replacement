@@ -142,6 +142,7 @@ DefaultStandardError=os.environ.get("SYSTEMD_STANDARD_ERROR", "inherit") # syste
 
 EXEC_SETGROUPS = (os.geteuid() == 0)
 EXEC_SPAWN = False
+EXEC_DUP2 = True
 REMOVE_LOCK_FILE = False
 BOOT_PID_MIN = 0
 BOOT_PID_MAX = -9
@@ -393,6 +394,15 @@ def expand_path(path, root = False):
     XDG_RUNTIME_DIR=get_RUNTIME_DIR(root)
     return os.path.expanduser(path.replace("${","{").format(**locals()))
 
+def shutil_fchown(fileno, user, group):
+    if user or group:
+        uid, gid = -1, -1
+        if user:
+            uid = pwd.getpwnam(user).pw_uid
+            gid = pwd.getpwnam(user).pw_gid
+        if group:
+            gid = grp.getgrnam(group).gr_gid
+        os.fchown(fileno, uid, gid)
 def shutil_setuid(user = None, group = None, xgroups = None):
     """ set fork-child uid/gid (returns pw-info env-settings)"""
     if group:
@@ -2663,14 +2673,7 @@ class Systemctl:
                 os.unlink(path)
             sock.bind(path)
             os.fchmod(sock.fileno(), int(mode, 8))
-            if user or group:
-                uid, gid = -1, -1
-                if user:
-                    uid = pwd.getpwnam(user).pw_uid
-                    gid = pwd.getpwnam(user).pw_gid
-                if group:
-                    gid = grp.getgrnam(group).gr_gid
-                os.fchown(sock.fileno(), uid, gid)
+            shutil_fchown(sock.fileno(), user, group)
             if symlinks:
                 logg.warning("%s: symlinks for socket not implemented (%s)", conf.name(), path)
         except Exception as e:
@@ -2825,16 +2828,16 @@ class Systemctl:
             err.write("ERROR:")
             err.write(msg.strip())
             err.write("\n")
-        os.dup2(inp.fileno(), sys.stdin.fileno())
-        os.dup2(out.fileno(), sys.stdout.fileno())
-        os.dup2(err.fileno(), sys.stderr.fileno())
+        if EXEC_DUP2:
+            os.dup2(inp.fileno(), sys.stdin.fileno())
+            os.dup2(out.fileno(), sys.stdout.fileno())
+            os.dup2(err.fileno(), sys.stderr.fileno())
     def execve_from(self, conf, cmd, env):
         """ this code is commonly run in a child process // returns exit-code"""
         runs = conf.get("Service", "Type", "simple").lower()
         logg.debug("%s process for %s", runs, strQ(conf.filename()))
         #
-        if not EXEC_SPAWN:
-            self.dup2_journal_log(conf)
+        self.dup2_journal_log(conf)
         #
         runuser = self.get_User(conf)
         rungroup = self.get_Group(conf)
