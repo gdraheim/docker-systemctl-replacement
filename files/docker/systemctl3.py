@@ -2844,8 +2844,8 @@ class Systemctl:
         try:
             if EXEC_SPAWN:
                 cmd_args = [ arg for arg in cmd ] # satisfy mypy
-                os.spawnvpe(os.P_WAIT, cmd[0], cmd_args, env)
-                sys.exit(0)
+                exitcode = os.spawnvpe(os.P_WAIT, cmd[0], cmd_args, env)
+                sys.exit(exitcode)
             else: # pragma: no cover
                 os.execve(cmd[0], cmd, env)
         except Exception as e:
