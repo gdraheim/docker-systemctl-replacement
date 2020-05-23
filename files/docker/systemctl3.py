@@ -1834,8 +1834,6 @@ class Systemctl:
             logg.warning("while truncating: %s", e)
         return True # truncated
     def getsize(self, filename):
-        if not filename:
-            return 0
         if not os.path.isfile(filename):
             return 0
         if self.truncate_old(filename):
