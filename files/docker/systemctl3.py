@@ -1257,16 +1257,16 @@ class Systemctl:
         if filename in self._file_for_unit_sysv.values(): return True
         return None # not True
     def is_user_conf(self, conf):
-        if not conf:
-            return False # no such conf >> ignored
+        if not conf: # pragma: no cover (is never null)
+            return False
         filename = conf.nonloaded_path or conf.filename()
         if filename and "/user/" in filename:
             return True
         return False
     def not_user_conf(self, conf):
         """ conf can not be started as user service (when --user)"""
-        if not conf:
-            return True # no such conf >> ignored
+        if conf is None: # pragma: no cover (is never null)
+            return True
         if not self.user_mode():
             logg.debug("%s no --user mode >> accept", strQ(conf.filename()))
             return False
@@ -1834,6 +1834,8 @@ class Systemctl:
             logg.warning("while truncating: %s", e)
         return True # truncated
     def getsize(self, filename):
+        if filename is None: # pragma: no cover (is never null)
+            return 0
         if not os.path.isfile(filename):
             return 0
         if self.truncate_old(filename):
@@ -1950,6 +1952,8 @@ class Systemctl:
         def yy(arg): return arg
         def get_confs(conf):
             confs={ "%": "%" }
+            if conf is None: # pragma: no cover (is never null)
+               return confs
             unit = parse_unit(conf.name())
             #
             root = not self.is_user_conf(conf)
@@ -4518,7 +4522,7 @@ class Systemctl:
                 errors += 101
         return errors
     def exec_check_unit(self, conf, env, section = "Service", exectype = ""):
-        if not conf:
+        if conf is None: # pragma: no cover (is never null)
             return True
         if not conf.data.has_section(section):
             return True #pragma: no cover
@@ -4794,7 +4798,9 @@ class Systemctl:
                         continue # ignore
                     if unit.endswith(unit_kind):
                         conf = self.load_unit_conf(unit)
-                        if self.not_user_conf(conf):
+                        if conf is None:
+                            pass
+                        elif self.not_user_conf(conf):
                             pass 
                         else:
                             units.append(unit)
