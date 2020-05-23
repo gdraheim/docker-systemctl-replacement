@@ -20600,7 +20600,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Socket]
             Accept=yes
             ListenStream={sockfile}
-            User={this_user}
+            SocketUser={this_user}
             Service=zza.service
             ExecStartPre=/usr/bin/touch {root}/var/run/zza.socket.pre.txt
             ExecStartPost=/usr/bin/touch {root}/var/run/zza.socket.post.txt
@@ -20750,8 +20750,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Socket]
             Accept=yes
             ListenStream={sockfile}
-            User={this_user}
-            Group={this_user}
+            SocketUser={this_user}
+            SocketGroup={this_group}
             Service=zza.service
             ExecStartPre=/usr/bin/touch {root}/var/run/zza.socket.pre.txt
             ExecStartPost=/usr/bin/touch {root}/var/run/zza.socket.post.txt
@@ -20900,7 +20900,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Socket]
             Accept=yes
             ListenStream={sockfile}
-            Group={this_user}
+            SocketGroup={this_group}
             Service=zza.service
             ExecStartPre=/usr/bin/touch {root}/var/run/zza.socket.pre.txt
             ExecStartPost=/usr/bin/touch {root}/var/run/zza.socket.post.txt
