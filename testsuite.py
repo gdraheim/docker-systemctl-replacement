@@ -49,6 +49,10 @@ CENTOS = "centos:8.0.1905"
 UBUNTU = "ubuntu:18.04"
 OPENSUSE = "opensuse/leap:15.0"
 SOMETIME = ""
+def rootsupgroups(image):
+    if "ubuntu:18.04" in image:
+        return True
+    return False
 
 QUICK = "-c DefaultMaximumTimeout=9"
 DOCKER_SOCKET = "/var/run/docker.sock"
@@ -31794,6 +31798,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cov_option = "--system"
         if COVERAGE:
             cov_option = "-c EXEC_SPAWN=True -c EXEC_DUP2=False"
+        null=".null."
+        if rootsupgroups(image):
+            null="root"
         testsleepA = self.testname("sleepA")
         bindir="/usr/bin"
         this_user="somebody"
@@ -31849,7 +31856,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = clean(output(cmd.format(**locals())))
         logg.info("\n>>>\n%s", top)
         if not COVERAGE:
-            self.assertTrue(greps(top, "somebody *nobody *.null. .*"+testsleepA))
+            self.assertTrue(greps(top, "somebody *nobody *{null} .*{testsleepA}".format(**locals())))
         #
         cmd = "docker exec {testname} find /tmp/ -name '.coverage*'"
         sh____(cmd.format(**locals()))
@@ -31883,6 +31890,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cov_option = "--system"
         if COVERAGE:
             cov_option = "-c EXEC_SPAWN=True -c EXEC_DUP2=False"
+        null=".null."
+        if rootsupgroups(image):
+            null="root"
         testsleepA = self.testname("sleepA")
         bindir="/usr/bin"
         this_user="somebody"
@@ -31937,7 +31947,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = clean(output(cmd.format(**locals())))
         logg.info("\n>>>\n%s", top)
         if not COVERAGE:
-            self.assertTrue(greps(top, "somebody *nobody *.null. .*"+testsleepA))
+            self.assertTrue(greps(top, "somebody *nobody *{null} .*{testsleepA}".format(**locals())))
         #
         cmd = "docker stop {testname}"
         sh____(cmd.format(**locals()))
@@ -31969,6 +31979,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cov_option = "--system"
         if COVERAGE:
             cov_option = "-c EXEC_SPAWN=True -c EXEC_DUP2=False"
+        null=".null."
+        if rootsupgroups(image):
+            null="root"
         testsleepA = self.testname("sleepA")
         bindir="/usr/bin"
         this_user="somebody"
@@ -32022,7 +32035,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = clean(output(cmd.format(**locals())))
         logg.info("\n>>>\n%s", top)
         if not COVERAGE:
-            self.assertTrue(greps(top, "root *nobody *.null. .*"+testsleepA))
+            self.assertTrue(greps(top, "root *nobody *{null} .*{testsleepA}".format(**locals())))
         #
         cmd = "docker stop {testname}"
         sh____(cmd.format(**locals()))
@@ -32054,6 +32067,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cov_option = "--system"
         if COVERAGE:
             cov_option = "-c EXEC_SPAWN=True -c EXEC_DUP2=False"
+        null=".null."
+        if rootsupgroups(image):
+            null="root"
         testsleepA = self.testname("sleepA")
         bindir="/usr/bin"
         this_user="somebody"
@@ -32109,7 +32125,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = clean(output(cmd.format(**locals())))
         logg.info("\n>>>\n%s", top)
         if not COVERAGE:
-            self.assertTrue(greps(top, "somebody *nobody *nobody .*"+testsleepA))
+            self.assertTrue(greps(top, "somebody *nobody *nobody .*{testsleepA}".format(**locals())))
         #
         cmd = "docker stop {testname}"
         sh____(cmd.format(**locals()))
@@ -32141,6 +32157,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cov_option = "--system"
         if COVERAGE:
             cov_option = "-c EXEC_SPAWN=True -c EXEC_DUP2=False"
+        null=".null."
+        if rootsupgroups(image):
+            null="root"
         testsleepA = self.testname("sleepA")
         bindir="/usr/bin"
         this_user="somebody"
@@ -32195,7 +32214,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = clean(output(cmd.format(**locals())))
         logg.info("\n>>>\n%s", top)
         if not COVERAGE:
-            self.assertTrue(greps(top, "somebody *nobody *nobody .*"+testsleepA))
+            self.assertTrue(greps(top, "somebody *nobody *nobody .*{testsleepA}".format(**locals())))
         #
         cmd = "docker stop {testname}"
         sh____(cmd.format(**locals()))
@@ -32227,6 +32246,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cov_option = "--system"
         if COVERAGE:
             cov_option = "-c EXEC_SPAWN=True -c EXEC_DUP2=False"
+        null=".null."
+        if rootsupgroups(image):
+            null="root"
+        logg.info("null=%s image=%s", null, image)
         testsleepA = self.testname("sleepA")
         bindir="/usr/bin"
         this_user="somebody"
@@ -32283,7 +32306,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = clean(output(cmd.format(**locals())))
         logg.info("\n>>>\n%s", top)
         if not COVERAGE:
-            self.assertTrue(greps(top, "somebody *wheel *.null. .*"+testsleepA))
+            self.assertTrue(greps(top, "somebody *wheel *{null} .*{testsleepA}".format(**locals())))
         #
         cmd = "docker stop {testname}"
         sh____(cmd.format(**locals()))
@@ -32315,6 +32338,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cov_option = "--system"
         if COVERAGE:
             cov_option = "-c EXEC_SPAWN=True -c EXEC_DUP2=False"
+        null=".null."
+        if rootsupgroups(image):
+            null="root"
         testsleepA = self.testname("sleepA")
         bindir="/usr/bin"
         this_user="somebody"
@@ -32370,7 +32396,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = clean(output(cmd.format(**locals())))
         logg.info("\n>>>\n%s", top)
         if not COVERAGE:
-            self.assertTrue(greps(top, "root *wheel *.null. .*"+testsleepA))
+            self.assertTrue(greps(top, "root *wheel *{null} .*{testsleepA}".format(**locals())))
         #
         cmd = "docker stop {testname}"
         sh____(cmd.format(**locals()))
@@ -32402,6 +32428,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cov_option = "--system"
         if COVERAGE:
             cov_option = "-c EXEC_SPAWN=True -c EXEC_DUP2=False"
+        null=".null."
+        if rootsupgroups(image):
+            null="root"
         testsleepA = self.testname("sleepA")
         bindir="/usr/bin"
         this_user="somebody"
@@ -32459,7 +32488,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = clean(output(cmd.format(**locals())))
         logg.info("\n>>>\n%s", top)
         if not COVERAGE:
-            self.assertTrue(greps(top, "somebody *wheel *nobody .*"+testsleepA))
+            self.assertTrue(greps(top, "somebody *wheel *nobody .*{testsleepA}".format(**locals())))
         #
         cmd = "docker stop {testname}"
         sh____(cmd.format(**locals()))
@@ -32518,6 +32547,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
              cmd = "docker exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
+        null=".null."
+        if rootsupgroups(image):
+            null="root"
         self.prep_coverage(testname, cov_option)
         #
         cmd = "docker exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
@@ -32547,7 +32579,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = clean(output(cmd.format(**locals())))
         logg.info("\n>>>\n%s", top)
         if not COVERAGE:
-            self.assertTrue(greps(top, "somebody *nobody *wheel .*"+testsleepA))
+            self.assertTrue(greps(top, "somebody *nobody *wheel .*{testsleepA}".format(**locals())))
         #
         cmd = "docker stop {testname}"
         sh____(cmd.format(**locals()))
@@ -32579,6 +32611,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cov_option = "--system"
         if COVERAGE:
             cov_option = "-c EXEC_SPAWN=True -c EXEC_DUP2=False"
+        null=".null."
+        if rootsupgroups(image):
+            null="root"
         testsleepA = self.testname("sleepA")
         bindir="/usr/bin"
         this_user="somebody"
@@ -32636,7 +32671,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = clean(output(cmd.format(**locals())))
         logg.info("\n>>>\n%s", top)
         if not COVERAGE:
-            self.assertTrue(greps(top, "somebody *nobody *trusted .*"+testsleepA))
+            self.assertTrue(greps(top, "somebody *nobody *trusted .*{testsleepA}".format(**locals())))
         #
         cmd = "docker exec {testname} find /tmp/ -name '.coverage*'"
         sh____(cmd.format(**locals()))
@@ -32670,6 +32705,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cov_option = "--system"
         if COVERAGE:
             cov_option = "-c EXEC_SPAWN=True -c EXEC_DUP2=False"
+        null=".null."
+        if rootsupgroups(image):
+            null="root"
         testsleepA = self.testname("sleepA")
         bindir="/usr/bin"
         this_user="somebody"
@@ -32726,7 +32764,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = clean(output(cmd.format(**locals())))
         logg.info("\n>>>\n%s", top)
         if not COVERAGE:
-            self.assertTrue(greps(top, "somebody *nobody *trusted .*"+testsleepA))
+            self.assertTrue(greps(top, "somebody *nobody *trusted .*{testsleepA}".format(**locals())))
         #
         cmd = "docker stop {testname}"
         sh____(cmd.format(**locals()))
@@ -32758,6 +32796,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cov_option = "--system"
         if COVERAGE:
             cov_option = "-c EXEC_SPAWN=True -c EXEC_DUP2=False"
+        null=".null."
+        if rootsupgroups(image):
+            null="root"
         testsleepA = self.testname("sleepA")
         bindir="/usr/bin"
         this_user="somebody"
@@ -32813,7 +32854,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = clean(output(cmd.format(**locals())))
         logg.info("\n>>>\n%s", top)
         if not COVERAGE:
-            self.assertTrue(greps(top, "root *nobody *.null. .*"+testsleepA))
+            self.assertTrue(greps(top, "root *nobody *{null} .*{testsleepA}".format(**locals())))
         #
         cmd = "docker stop {testname}"
         sh____(cmd.format(**locals()))
@@ -32845,6 +32886,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cov_option = "--system"
         if COVERAGE:
             cov_option = "-c EXEC_SPAWN=True -c EXEC_DUP2=False"
+        null=".null."
+        if rootsupgroups(image):
+            null="root"
         testsleepA = self.testname("sleepA")
         bindir="/usr/bin"
         this_user="somebody"
@@ -32902,7 +32946,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = clean(output(cmd.format(**locals())))
         logg.info("\n>>>\n%s", top)
         if not COVERAGE:
-            self.assertTrue(greps(top, "somebody *nobody *trusted .*"+testsleepA))
+            self.assertTrue(greps(top, "somebody *nobody *trusted .*{testsleepA}".format(**locals())))
         #
         cmd = "docker stop {testname}"
         sh____(cmd.format(**locals()))
@@ -32934,6 +32978,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cov_option = "--system"
         if COVERAGE:
             cov_option = "-c EXEC_SPAWN=True -c EXEC_DUP2=False"
+        null=".null."
+        if rootsupgroups(image):
+            null="root"
         testsleepA = self.testname("sleepA")
         bindir="/usr/bin"
         this_user="somebody"
@@ -32990,7 +33037,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = clean(output(cmd.format(**locals())))
         logg.info("\n>>>\n%s", top)
         if not COVERAGE:
-            self.assertTrue(greps(top, "somebody *nobody *trusted .*"+testsleepA))
+            self.assertTrue(greps(top, "somebody *nobody *trusted .*{testsleepA}".format(**locals())))
         #
         cmd = "docker stop {testname}"
         sh____(cmd.format(**locals()))
@@ -33022,6 +33069,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cov_option = "--system"
         if COVERAGE:
             cov_option = "-c EXEC_SPAWN=True -c EXEC_DUP2=False"
+        null=".null."
+        if rootsupgroups(image):
+            null="root"
         testsleepA = self.testname("sleepA")
         bindir="/usr/bin"
         this_user="somebody"
@@ -33080,7 +33130,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = clean(output(cmd.format(**locals())))
         logg.info("\n>>>\n%s", top)
         if not COVERAGE:
-            self.assertTrue(greps(top, "somebody *wheel *trusted .*"+testsleepA))
+            self.assertTrue(greps(top, "somebody *wheel *trusted .*{testsleepA}".format(**locals())))
         #
         cmd = "docker stop {testname}"
         sh____(cmd.format(**locals()))
@@ -33112,6 +33162,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cov_option = "--system"
         if COVERAGE:
             cov_option = "-c EXEC_SPAWN=True -c EXEC_DUP2=False"
+        null=".null."
+        if rootsupgroups(image):
+            null="root"
         testsleepA = self.testname("sleepA")
         bindir="/usr/bin"
         this_user="somebody"
@@ -33169,7 +33222,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = clean(output(cmd.format(**locals())))
         logg.info("\n>>>\n%s", top)
         if not COVERAGE:
-            self.assertTrue(greps(top, "root *wheel *.null. .*"+testsleepA))
+            self.assertTrue(greps(top, "root *wheel *{null} .*{testsleepA}".format(**locals())))
         #
         cmd = "docker stop {testname}"
         sh____(cmd.format(**locals()))
@@ -33201,6 +33254,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cov_option = "--system"
         if COVERAGE:
             cov_option = "-c EXEC_SPAWN=True -c EXEC_DUP2=False"
+        null=".null."
+        if rootsupgroups(image):
+            null="root"
         testsleepA = self.testname("sleepA")
         bindir="/usr/bin"
         this_user="somebody"
@@ -33260,7 +33316,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = clean(output(cmd.format(**locals())))
         logg.info("\n>>>\n%s", top)
         if not COVERAGE:
-            self.assertTrue(greps(top, "somebody *wheel *trusted,nobody .*"+testsleepA))
+            self.assertTrue(greps(top, "somebody *wheel *trusted,nobody .*{testsleepA}".format(**locals())))
         #
         cmd = "docker stop {testname}"
         sh____(cmd.format(**locals()))
@@ -33292,6 +33348,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cov_option = "--system"
         if COVERAGE:
             cov_option = "-c EXEC_SPAWN=True -c EXEC_DUP2=False"
+        null=".null."
+        if rootsupgroups(image):
+            null="root"
         testsleepA = self.testname("sleepA")
         bindir="/usr/bin"
         this_user="somebody"
@@ -33350,7 +33409,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = clean(output(cmd.format(**locals())))
         logg.info("\n>>>\n%s", top)
         if not COVERAGE:
-            self.assertTrue(greps(top, "somebody *nobody *wheel,trusted .*"+testsleepA))
+            self.assertTrue(greps(top, "somebody *nobody *wheel,trusted .*{testsleepA}".format(**locals())))
         #
         cmd = "docker stop {testname}"
         sh____(cmd.format(**locals()))
