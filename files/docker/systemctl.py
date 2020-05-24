@@ -243,19 +243,19 @@ def o22(part):
         if len(part) <= 22:
             return part
         return part[:5] + "..." + part[-14:]
-    return part
+    return part # pragma: no cover (is always str)
 def o44(part):
     if isinstance(part, basestring):
         if len(part) <= 44:
             return part
         return part[:10] + "..." + part[-31:]
-    return part
+    return part # pragma: no cover (is always str)
 def o77(part):
     if isinstance(part, basestring):
         if len(part) <= 77:
             return part
         return part[:20] + "..." + part[-54:]
-    return part
+    return part # pragma: no cover (is always str)
 def unit_name_escape(text):
     # https://www.freedesktop.org/software/systemd/man/systemd.unit.html#id-1.6
     esc = re.sub("([^a-z-AZ.-/])", lambda m: "\\x%02x" % ord(m.group(1)[0]), text)
@@ -447,7 +447,7 @@ def shutil_truncate(filename):
 # http://stackoverflow.com/questions/568271/how-to-check-if-there-exists-a-process-with-a-given-pid
 def pid_exists(pid):
     """Check whether pid exists in the current process table."""
-    if pid is None:
+    if pid is None: # pragma: no cover (is never null)
         return False
     return _pid_exists(int(pid))
 def _pid_exists(pid):
@@ -1257,16 +1257,16 @@ class Systemctl:
         if filename in self._file_for_unit_sysv.values(): return True
         return None # not True
     def is_user_conf(self, conf):
-        if not conf:
-            return False # no such conf >> ignored
+        if not conf: # pragma: no cover (is never null)
+            return False
         filename = conf.nonloaded_path or conf.filename()
         if filename and "/user/" in filename:
             return True
         return False
     def not_user_conf(self, conf):
         """ conf can not be started as user service (when --user)"""
-        if not conf:
-            return True # no such conf >> ignored
+        if conf is None: # pragma: no cover (is never null)
+            return True
         if not self.user_mode():
             logg.debug("%s no --user mode >> accept", strQ(conf.filename()))
             return False
@@ -1656,9 +1656,7 @@ class Systemctl:
         """ if a status_file is known then path is created and the
             give status is written as the only content. """
         status_file = self.get_status_file_from(conf)
-        if not status_file: 
-            logg.debug("status %s but no status_file", conf.name())
-            return False
+        # if not status_file: return False
         dirpath = os.path.dirname(os.path.abspath(status_file))
         if not os.path.isdir(dirpath):
             os.makedirs(dirpath)
@@ -1690,9 +1688,7 @@ class Systemctl:
     def read_status_from(self, conf):
         status_file = self.get_status_file_from(conf)
         status = {}
-        if not status_file:
-            if DEBUG_STATUS: logg.debug("no status file. returning %s", status)
-            return status
+        # if not status_file: return status
         if not os.path.isfile(status_file):
             if DEBUG_STATUS: logg.debug("no status file: %s\n returning %s", status_file, status)
             return status
@@ -1838,7 +1834,7 @@ class Systemctl:
             logg.warning("while truncating: %s", e)
         return True # truncated
     def getsize(self, filename):
-        if not filename:
+        if filename is None: # pragma: no cover (is never null)
             return 0
         if not os.path.isfile(filename):
             return 0
@@ -1948,7 +1944,7 @@ class Systemctl:
             expanded = new_text
         logg.error("shell variable expansion exceeded maxdepth %s", maxdepth)
         return expanded
-    def expand_special(self, cmd, conf = None):
+    def expand_special(self, cmd, conf):
         """ expand %i %t and similar special vars. They are being expanded
             before any other expand_env takes place which handles shell-style
             $HOME references. """
@@ -1956,8 +1952,8 @@ class Systemctl:
         def yy(arg): return arg
         def get_confs(conf):
             confs={ "%": "%" }
-            if not conf:
-                return confs
+            if conf is None: # pragma: no cover (is never null)
+               return confs
             unit = parse_unit(conf.name())
             #
             root = not self.is_user_conf(conf)
@@ -2011,12 +2007,12 @@ class Systemctl:
         #++# logg.info("expanded => %s", result)
         return result
     ExecMode = collections.namedtuple("ExecMode", ["check"])
-    def exec_newcmd(self, cmd, env, conf = None):
+    def exec_newcmd(self, cmd, env, conf):
         check, cmd = checkstatus(cmd)
         mode = Systemctl.ExecMode(check)
         newcmd = self.exec_cmd(cmd, env, conf)
         return mode, newcmd
-    def exec_cmd(self, cmd, env, conf = None):
+    def exec_cmd(self, cmd, env, conf):
         """ expand ExecCmd statements including %i and $MAINPID """
         cmd2 = cmd.replace("\\\n","")
         # according to documentation, when bar="one two" then the expansion
@@ -2612,7 +2608,6 @@ class Systemctl:
                 logg.debug("post-start done (%s) <-%s>", 
                     run.returncode or "OK", run.signal or "")
             return True
-        return False
     def create_socket(self, conf):
         unsupported = ["ListenUSBFunction", "ListenMessageQueue", "ListenNetlink"]
         unsupported += [ "ListenSpecial", "ListenFIFO", "ListenSequentialPacket"]
@@ -2852,8 +2847,8 @@ class Systemctl:
         try:
             if EXEC_SPAWN:
                 cmd_args = [ arg for arg in cmd ] # satisfy mypy
-                os.spawnvpe(os.P_WAIT, cmd[0], cmd_args, env)
-                sys.exit(0)
+                exitcode = os.spawnvpe(os.P_WAIT, cmd[0], cmd_args, env)
+                sys.exit(exitcode)
             else: # pragma: no cover
                 os.execve(cmd[0], cmd, env)
         except Exception as e:
@@ -4526,7 +4521,7 @@ class Systemctl:
                 errors += 101
         return errors
     def exec_check_unit(self, conf, env, section = "Service", exectype = ""):
-        if not conf:
+        if conf is None: # pragma: no cover (is never null)
             return True
         if not conf.data.has_section(section):
             return True #pragma: no cover
@@ -4802,7 +4797,9 @@ class Systemctl:
                         continue # ignore
                     if unit.endswith(unit_kind):
                         conf = self.load_unit_conf(unit)
-                        if self.not_user_conf(conf):
+                        if conf is None:
+                            pass
+                        elif self.not_user_conf(conf):
                             pass 
                         else:
                             units.append(unit)
