@@ -420,12 +420,15 @@ def shutil_setuid(user = None, group = None, xgroups = None):
         groups = [g.gr_gid for g in grp.getgrall() if user in g.gr_mem]
         if xgroups:
             groups += [g.gr_gid for g in grp.getgrall() if g.gr_name in xgroups and g.gr_gid not in groups]
-        if groups:
-            if EXEC_SETGROUPS:
-                logg.debug("setgroups %s > %s ", groups, groupnames)
-                os.setgroups(groups)
-            else:
-                logg.warning("setgroups skipped > %s", groupnames)
+        if not groups:
+            if group:
+                gid = grp.getgrnam(group).gr_gid
+            groups = [ gid ]
+        if EXEC_SETGROUPS:
+            logg.debug("setgroups %s > %s ", groups, groupnames)
+            os.setgroups(groups)
+        else:
+            logg.warning("setgroups skipped > %s", groupnames)
         uid = pw.pw_uid
         os.setuid(uid)
         logg.debug("setuid %s for user %s", uid, strQ(user))
