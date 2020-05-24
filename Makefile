@@ -44,8 +44,9 @@ COVERAGE=--coverage
 est_%: ; rm .coverage*; rm -rf tmp/tmp.t$@ ; ./testsuite.py "t$@" -vv --coverage --keep
 test_%: ; ./testsuite.py "$@" -vv
 real_%: ; ./testsuite.py "$@" -vv
-test: ; $(MAKE) "test_[1234]"
 st_%: ; $(MAKE) 2 && ./testsuite.py "te$@" -vv $(WITH2)
+
+test: ; $(MAKE) type && $(MAKE) tests && $(MAKE) coverage
 
 WITH2 = --python=/usr/bin/python2 --with=files/docker/systemctl.py
 WITH3 = --python=/usr/bin/python3 --with=files/docker/systemctl3.py
@@ -78,9 +79,10 @@ todo/test_%:             ; ./testsuite.py   "$(notdir $@)" -vv --todo
 7.4/st_%:   ; $(MAKE) 2 && ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=centos:7.4.1708    $(WITH2)
 7.3/st_%:   ; $(MAKE) 2 && ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=centos:7.3.1611    $(WITH2)
 
+basetests = test_[1234]
 test2list = st_[567]
 testslist = test_[567]
-tests: ; $(MAKE) "test_[1234]"
+tests: ; $(MAKE) "{basetests}"
 .PHONY: tests
 15.2/tests:  ; $(MAKE) "15.2/$(testslist)"
 15.1/tests:  ; $(MAKE) "15.1/$(testslist)"
@@ -196,14 +198,16 @@ checks3_coverage:
 	./testsuite.py -vv --coverage \
 	  '--with=tmp/systemctl.py' --python=/usr/bin/python3
 
-coverage: coverage2
+coverage: coverage3
+	coverage combine && coverage report && coverage annotate
+	ls -l tmp/systemctl.py,cover
 coverage2: 
 	$(MAKE) tmp_systemctl_py_2
-	rm .coverage* ; ./testsuite.py -vv --coverage test_1 test_2 test_3 test_4 test_6 \
+	rm .coverage* ; ./testsuite.py -vv --coverage ${basetests} \
 	  '--with=tmp/systemctl.py' --python=/usr/bin/python2
 coverage3:
 	$(MAKE) tmp_systemctl_py_3
-	rm .coverage* ; ./testsuite.py -vv --coverage test_1 test_2 test_3 test_4 test_6 \
+	rm .coverage* ; ./testsuite.py -vv --coverage ${basetests} \
 	  '--with=tmp/systemctl.py' --python=/usr/bin/python3
 
 tmp_systemctl_py_2:
