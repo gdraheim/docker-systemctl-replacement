@@ -409,6 +409,12 @@ def shutil_setuid(user = None, group = None, xgroups = None):
         gid = grp.getgrnam(group).gr_gid
         os.setgid(gid)
         logg.debug("setgid %s for %s", gid, strQ(group))
+        groups = [ gid ]
+        if EXEC_SETGROUPS:
+            logg.debug("setgid setgroups %s", groups)
+            os.setgroups(groups)
+        else:
+            logg.warning("setgid setgroups %s", groups)
     if user:
         pw = pwd.getpwnam(user)
         gid = pw.pw_gid
