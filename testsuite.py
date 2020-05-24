@@ -20095,6 +20095,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
+        sx____("ls -l {root}/var/run/zz*".format(**locals()))
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
@@ -20102,20 +20103,21 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         init = background(cmd.format(**locals()))
         time.sleep(InitLoopSleep+1)
         #
+        sx____("ls -l {root}/var/run/zz*".format(**locals()))
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
         #
         oo = reads(debug_log.format(**locals()))
-        logg.info("debug.log>>\%s", oo)
+        logg.info("debug.log>>\%s", i2(oo))
         #
+        sx____("ls -l {root}/var/run/zz*".format(**locals()))
         zza_pre = os_path(root, "/var/run/zza.socket.pre.txt")
         zza_post = os_path(root, "/var/run/zza.socket.post.txt")
         zza_end = os_path(root, "/var/run/zza.socket.end.txt")
         self.assertTrue(os.path.exists(zza_pre))
         self.assertTrue(os.path.exists(zza_post))
-        if not COVERAGE:
-            self.assertTrue(os.path.exists(zza_end))
+        self.assertFalse(os.path.exists(zza_end))
         #
         cmd = "./reply.py sendUNIX -d foo -f {sockfile}"
         out, end = output2(cmd.format(**locals()))
