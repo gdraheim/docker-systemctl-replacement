@@ -20,6 +20,9 @@ steps:
     sudo apt-get update --fix-missing
   displayName: 'refresh install'
 - script: |
+    sudo apt-get install --fix-broken --ignore-missing python3-typed-ast
+  displayName: 'install python3 typed ast'
+- script: |
     sudo apt-get install --fix-broken --ignore-missing python3-coverage
   displayName: 'install python3 coverage'
 - script: |
