@@ -105,6 +105,8 @@ def refresh_tool(image):
 def python_package(python, image = None):
     package = os.path.basename(python)
     if package.endswith("2"):
+        if "centos:8" in image:
+            return package
         return package[:-1]
     return package
 def coverage_tool(image = None, python = None):
