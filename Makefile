@@ -4,6 +4,7 @@ FOR=today
 DAY=%u
 # 'make version FOR=yesterday' or 'make version DAY=0'
 
+PYTHON=python3
 GIT=git
 VERFILES = files/docker/systemctl.py files/docker/systemctl3.py testsuite.py
 
@@ -199,7 +200,11 @@ checks3_coverage:
 	  '--with=tmp/systemctl.py' --python=/usr/bin/python3
 
 coverage: coverage3
-	coverage combine && coverage report && coverage annotate
+	$(PYTHON) -m coverage combine && \
+	$(PYTHON) -m coverage report && \
+	$(PYTHON) -m coverage annotate
+	- $(PYTHON) -m coverage xml -o tmp/coverage.xml
+	- $(PYTHON) -m coverage html -o tmp/htmlcov
 	ls -l tmp/systemctl.py,cover
 coverage2: 
 	$(MAKE) tmp_systemctl_py_2
