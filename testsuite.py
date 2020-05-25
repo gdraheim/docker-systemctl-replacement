@@ -7273,6 +7273,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
+        testsleep = self.testname("sleep")
         text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A""")
@@ -7280,16 +7281,18 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Testing B
             [Service]
-            ExecStart=/bin/sleep 2
+            ExecStart={root}/bin/{testsleep} 2
             [Install]
-            WantedBy=multi-user.target""")
+            WantedBy=multi-user.target
+            """.format(**locals()))
         text_file(os_path(root, "/etc/systemd/system/zzc.service"),"""
             [Unit]
             Description=Testing C
             [Service]
-            ExecStart=/bin/sleep 2
+            ExecStart={root}/bin/{testsleep} 2
             [Install]
-            WantedBy=multi-user.target""")
+            WantedBy=multi-user.target
+            """.format(**locals()))
         if not real:
             text_file(os_path(root, "/etc/systemd/system/basic.target"),"""
             [Unit]
@@ -7303,6 +7306,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Basic Runlevel
             Requires=multi-user.target""")
+        copy_tool(_bin_sleep, "{root}/bin/{testsleep}".format(**locals()))
         #
         cmd = "{systemctl} default-services"
         out, end = output2(cmd.format(**locals()))
@@ -7341,18 +7345,18 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         #
-        top = greps(_recent(output(_top_list)), "sleep")
+        top = greps(_recent(output(_top_list)), testsleep)
         logg.info("top>>>\n| %s", "\n| ".join(top))
-        self.assertEqual(len(greps(top, "sleep")), 2)
+        self.assertEqual(len(greps(top, testsleep)), 2)
         #
         cmd = "{systemctl} stop multi-user.target"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         #
-        top = greps(_recent(output(_top_list)), "sleep")
+        top = greps(_recent(output(_top_list)), testsleep)
         logg.info("top>>>\n| %s", "\n| ".join(top))
-        self.assertEqual(len(greps(top, "sleep")), 0)
+        self.assertEqual(len(greps(top, testsleep)), 0)
         #
         self.rm_testdir()
         self.coverage()
@@ -7364,7 +7368,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
-        sleep=self.testname("sleep")
+        testsleep=self.testname("sleep")
         text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A""".format(**locals()))
@@ -7372,23 +7376,26 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Testing B
             [Service]
-            ExecStart={root}/bin/{sleep} 2
+            ExecStart={root}/bin/{testsleep} 2
             [Install]
-            WantedBy=multi-user.target""".format(**locals()))
+            WantedBy=multi-user.target
+            """.format(**locals()))
         text_file(os_path(root, "/etc/systemd/system/zzc.service"),"""
             [Unit]
             Description=Testing C
             [Service]
-            ExecStart={root}/bin/{sleep} 2
+            ExecStart={root}/bin/{testsleep} 2
             [Install]
-            WantedBy=multi-user.target""".format(**locals()))
+            WantedBy=multi-user.target
+            """.format(**locals()))
         text_file(os_path(root, "/etc/systemd/system/zzd.service"),"""
             [Unit]
             Description=Testing D
             [Service]
-            ExecStart={root}/bin/{sleep} 2
+            ExecStart={root}/bin/{testsleep} 2
             [Install]
-            WantedBy=graphical.target""".format(**locals()))
+            WantedBy=graphical.target
+            """.format(**locals()))
         if not real:
             text_file(os_path(root, "/etc/systemd/system/basic.target"),"""
             [Unit]
@@ -7402,9 +7409,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Basic Runlevel
             Requires=multi-user.target""")
-        #
-        cmd = "mkdir {root}/bin ; cp -v /bin/sleep {root}/bin/{sleep}"
-        sh____(cmd.format(**locals()))
+        copy_tool(_bin_sleep, "{root}/bin/{testsleep}".format(**locals()))
         #
         cmd = "{systemctl} default-services"
         out, end = output2(cmd.format(**locals()))
@@ -7491,63 +7496,63 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         #
-        top = greps(_recent(output(_top_list)), "sleep")
+        top = greps(_recent(output(_top_list)), testsleep)
         logg.info("top>>>\n| %s", "\n| ".join(top))
-        self.assertEqual(len(greps(top, sleep)), 2)
+        self.assertEqual(len(greps(top, testsleep)), 2)
         #
         cmd = "{systemctl} stop multi-user.target"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         #
-        top = greps(_recent(output(_top_list)), "sleep")
+        top = greps(_recent(output(_top_list)), testsleep)
         logg.info("top>>>\n| %s", "\n| ".join(top))
-        self.assertEqual(len(greps(top, sleep)), 0)
+        self.assertEqual(len(greps(top, testsleep)), 0)
         #
         cmd = "{systemctl} start graphical.target"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         #
-        top = greps(_recent(output(_top_list)), "sleep")
+        top = greps(_recent(output(_top_list)), testsleep)
         logg.info("top>>>\n| %s", "\n| ".join(top))
-        self.assertEqual(len(greps(top, sleep)), 3)
+        self.assertEqual(len(greps(top, testsleep)), 3)
         #
         cmd = "{systemctl} stop graphical.target"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         #
-        top = greps(_recent(output(_top_list)), "sleep")
+        top = greps(_recent(output(_top_list)), testsleep)
         logg.info("top>>>\n| %s", "\n| ".join(top))
-        self.assertEqual(len(greps(top, sleep)), 0)
+        self.assertEqual(len(greps(top, testsleep)), 0)
         #
         cmd = "{systemctl} start graphical.target"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         #
-        top = greps(_recent(output(_top_list)), "sleep")
+        top = greps(_recent(output(_top_list)), testsleep)
         logg.info("top>>>\n| %s", "\n| ".join(top))
-        self.assertEqual(len(greps(top, sleep)), 3)
+        self.assertEqual(len(greps(top, testsleep)), 3)
         #
         cmd = "{systemctl} stop multi-user.target"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         #
-        top = greps(_recent(output(_top_list)), "sleep")
+        top = greps(_recent(output(_top_list)), testsleep)
         logg.info("top>>>\n| %s", "\n| ".join(top))
-        self.assertEqual(len(greps(top, sleep)), 1)
+        self.assertEqual(len(greps(top, testsleep)), 1)
         #
         cmd = "{systemctl} stop graphical.target"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         #
-        top = greps(_recent(output(_top_list)), "sleep")
+        top = greps(_recent(output(_top_list)), testsleep)
         logg.info("top>>>\n| %s", "\n| ".join(top))
-        self.assertEqual(len(greps(top, sleep)), 0)
+        self.assertEqual(len(greps(top, testsleep)), 0)
         #
         self.rm_testdir()
         self.coverage()
@@ -7559,6 +7564,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
+        testsleep=self.testname("sleep")
         text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
             [Unit]
             Description=Testing A""")
@@ -7566,37 +7572,42 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Testing B
             [Service]
-            ExecStart=/bin/sleep 4
+            ExecStart={root}/bin/{testsleep} 4
             [Install]
-            WantedBy=multi-user.target""")
+            WantedBy=multi-user.target
+            """.format(**locals()))
         text_file(os_path(root, "/etc/systemd/system/zzc.service"),"""
             [Unit]
             Description=Testing C
             [Service]
-            ExecStart=/bin/sleep 4
+            ExecStart={root}/bin/{testsleep} 4
             [Install]
-            WantedBy=multi-user.target""")
+            WantedBy=multi-user.target
+            """.format(**locals()))
         text_file(os_path(root, "/etc/systemd/system/zzd.service"),"""
             [Unit]
             Description=Testing D
             [Service]
-            ExecStart=/bin/sleep 4
+            ExecStart={root}/bin/{testsleep} 4
             [Install]
-            WantedBy=graphical.target""")
+            WantedBy=graphical.target
+            """.format(**locals()))
         text_file(os_path(root, "/etc/systemd/system/zze.service"),"""
             [Unit]
             Description=Testing E
             [Service]
-            ExecStart=/bin/sleep 4
+            ExecStart={root}/bin/{testsleep} 4
             [Install]
-            WantedBy=invented.target""")
+            WantedBy=invented.target
+            """.format(**locals()))
         text_file(os_path(root, "/etc/systemd/system/zzi.service"),"""
             [Unit]
             Description=Testing E
             [Service]
-            ExecStart=/bin/sleep 4
+            ExecStart={root}/bin/{testsleep} 4
             [Install]
-            WantedBy=isolated.target""")
+            WantedBy=isolated.target"""
+            .format(**locals()))
         text_file(os_path(root, "/etc/systemd/system/invented.target"),"""
             [Unit]
             Description=Invented Runlevel
@@ -7617,6 +7628,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Basic Runlevel
             Requires=multi-user.target""")
+        copy_tool(_bin_sleep, "{root}/bin/{testsleep}".format(**locals()))
         #
         cmd = "{systemctl} list-unit-files --type=target"
         out, end = output2(cmd.format(**locals()))
@@ -7771,54 +7783,54 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         #
-        top = greps(_recent(output(_top_list)), "sleep")
+        top = greps(_recent(output(_top_list)), testsleep)
         logg.info("top>>>\n| %s", "\n| ".join(top))
-        self.assertEqual(len(greps(top, "sleep")), 1)
+        self.assertEqual(len(greps(top, testsleep)), 1)
         #
         cmd = "{systemctl} stop multi-user.target"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         #
-        top = greps(_recent(output(_top_list)), "sleep")
+        top = greps(_recent(output(_top_list)), testsleep)
         logg.info("top>>>\n| %s", "\n| ".join(top))
-        self.assertEqual(len(greps(top, "sleep")), 0)
+        self.assertEqual(len(greps(top, testsleep)), 0)
         #
         cmd = "{systemctl} start invented.target"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         #
-        top = greps(_recent(output(_top_list)), "sleep")
+        top = greps(_recent(output(_top_list)), testsleep)
         logg.info("top>>>\n| %s", "\n| ".join(top))
-        self.assertEqual(len(greps(top, "sleep")), 2)
+        self.assertEqual(len(greps(top, testsleep)), 2)
         #
         cmd = "{systemctl} stop invented.target"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         #
-        top = greps(_recent(output(_top_list)), "sleep")
+        top = greps(_recent(output(_top_list)), testsleep)
         logg.info("top>>>\n| %s", "\n| ".join(top))
-        self.assertEqual(len(greps(top, "sleep")), 0)
+        self.assertEqual(len(greps(top, testsleep)), 0)
         #
         cmd = "{systemctl} start isolated.target"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         #
-        top = greps(_recent(output(_top_list)), "sleep")
+        top = greps(_recent(output(_top_list)), testsleep)
         logg.info("top>>>\n| %s", "\n| ".join(top))
-        self.assertEqual(len(greps(top, "sleep")), 1)
+        self.assertEqual(len(greps(top, testsleep)), 1)
         #
         cmd = "{systemctl} reload isolated.target"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         #
-        top = greps(_recent(output(_top_list)), "sleep")
+        top = greps(_recent(output(_top_list)), testsleep)
         logg.info("top>>>\n| %s", "\n| ".join(top))
-        self.assertEqual(len(greps(top, "sleep")), 1)
+        self.assertEqual(len(greps(top, testsleep)), 1)
         #
         cmd = "{systemctl} restart isolated.target -vvvv"
         out, end = output2(cmd.format(**locals()))
@@ -7826,18 +7838,18 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 0)
         time.sleep(1)
         #
-        top = greps(_recent(output(_top_list)), "sleep")
+        top = greps(_recent(output(_top_list)), testsleep)
         logg.info("top>>>\n| %s", "\n| ".join(top))
-        self.assertEqual(len(greps(top, "sleep")), 1)
+        self.assertEqual(len(greps(top, testsleep)), 1)
         #
         cmd = "{systemctl} stop isolated.target"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         #
-        top = greps(_recent(output(_top_list)), "sleep")
+        top = greps(_recent(output(_top_list)), testsleep)
         logg.info("top>>>\n| %s", "\n| ".join(top))
-        self.assertEqual(len(greps(top, "sleep")), 0)
+        self.assertEqual(len(greps(top, testsleep)), 0)
         #
         self.rm_testdir()
         self.coverage()
