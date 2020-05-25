@@ -6713,7 +6713,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(top, testsleep+"now"))
         log3 = lines(open(logfile))
         logg.info("zzz.log>\n\t%s", "\n\t".join(log3))
-        time.sleep(2)
+        time.sleep(3)
         logg.info("===== [4] even more later")
         cmd = "{systemctl} is-active zza.service zzz.service {vv}"
         out, err, end = output3(cmd.format(**locals()))
@@ -6724,7 +6724,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(top, testsleep+"now"))
         log4 = lines(open(logfile))
         logg.info("zzz.log>\n\t%s", "\n\t".join(log4))
-        time.sleep(2)
         #
         kill_testsleep = "{systemctl} __killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
