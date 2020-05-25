@@ -140,7 +140,6 @@ DefaultStandardInput=os.environ.get("SYSTEMD_STANDARD_INPUT", "null")
 DefaultStandardOutput=os.environ.get("SYSTEMD_STANDARD_OUTPUT", "journal") # systemd.exe --default-standard-output
 DefaultStandardError=os.environ.get("SYSTEMD_STANDARD_ERROR", "inherit") # systemd.exe --default-standard-error
 
-EXEC_SETGROUPS = (os.geteuid() == 0)
 EXEC_SPAWN = False
 EXEC_DUP2 = True
 REMOVE_LOCK_FILE = False
@@ -410,11 +409,11 @@ def shutil_setuid(user = None, group = None, xgroups = None):
         os.setgid(gid)
         logg.debug("setgid %s for %s", gid, strQ(group))
         groups = [ gid ]
-        if EXEC_SETGROUPS:
-            logg.debug("setgid setgroups %s", groups)
+        try:
             os.setgroups(groups)
-        else:
-            logg.warning("setgid setgroups %s", groups)
+            logg.debug("setgroups %s < (%s)", groups, group)
+        except OSError as e: # pragma: no cover (it will occur in non-root mode anyway)
+            logg.debug("setgroups %s < (%s) : %s", groups, group, e)
     if user:
         pw = pwd.getpwnam(user)
         gid = pw.pw_gid
@@ -430,11 +429,11 @@ def shutil_setuid(user = None, group = None, xgroups = None):
             if group:
                 gid = grp.getgrnam(group).gr_gid
             groups = [ gid ]
-        if EXEC_SETGROUPS:
-            logg.debug("setgroups %s > %s ", groups, groupnames)
+        try:
             os.setgroups(groups)
-        else:
-            logg.warning("setgroups skipped > %s", groupnames)
+            logg.debug("setgroups %s > %s ", groups, groupnames)
+        except OSError as e: # pragma: no cover (it will occur in non-root mode anyway)
+            logg.debug("setgroups %s > %s : %s", groups, groupnames, e)
         uid = pw.pw_uid
         os.setuid(uid)
         logg.debug("setuid %s for user %s", uid, strQ(user))
