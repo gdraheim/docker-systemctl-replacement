@@ -2,7 +2,7 @@ resources:
   repositories:
   - repository: retype
     type: gibhub
-    endpoint: MyGitHubServiceConnection
+    endpoint: gdraheim
     name: ambv/retype
     ref: 17.12.0
 
