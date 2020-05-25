@@ -22,6 +22,7 @@ import re
 import sys
 import collections
 import signal
+import shlex
 from fnmatch import fnmatchcase as fnmatch
 from glob import glob
 import json
@@ -179,7 +180,8 @@ def output3(cmd, shell=True):
 def background(cmd, shell=True):
     BackgroundProcess = collections.namedtuple("BackgroundProcess", ["pid", "run", "log" ])
     log = open(os.devnull, "wb")
-    run = subprocess.Popen(cmd, shell=shell, stdout=log, stderr=log)
+    exe = list(shlex.split(cmd))
+    run = subprocess.Popen(exe, stdout=log, stderr=log)
     pid = run.pid
     logg.info("PID %s = %s", pid, cmd)
     return BackgroundProcess(pid, run, log)
@@ -23768,6 +23770,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         os.kill(bg.pid, signal.SIGTERM)
         #
         time.sleep(1)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        #
         log = reads(debug_log)
         logg.info("systemctl.debug.log>\n\t%s", oi22(log))
         self.assertTrue(greps(log, "interrupted - exit init-loop"))
