@@ -35141,8 +35141,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_docker(testname)
         self.rm_testdir()
     # @unittest.expectedFailure
-    def test_8001_issue_1_start_mariadb_centos_7_0(self):
-        """ issue 1: mariadb on centos 7.0 does not start"""
+    def test_8001_issue_1_start_mariadb_centos(self):
+        """ issue 1: mariadb on centos does not start"""
         # this was based on the expectation that "yum install mariadb" would allow
         # for a "systemctl start mysql" which in fact it doesn't. Double-checking
         # with "yum install mariadb-server" and "systemctl start mariadb" shows
@@ -35219,8 +35219,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.rm_docker(testname)
         self.rm_testdir()
-    def test_8002_issue_2_start_rsyslog_centos7(self):
-        """ issue 2: rsyslog on centos 7 does not start"""
+    def test_8002_issue_2_start_rsyslog_centos(self):
+        """ issue 2: rsyslog on centos does not start"""
         # this was based on a ";Requires=xy" line in the unit file
         # but our unit parser did not regard ";" as starting a comment
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
