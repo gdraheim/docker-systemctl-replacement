@@ -203,11 +203,11 @@ coverage: coverage3
 	ls -l tmp/systemctl.py,cover
 coverage2: 
 	$(MAKE) tmp_systemctl_py_2
-	rm .coverage* ; ./testsuite.py -vv --coverage ${basetests} \
+	rm .coverage* ; ./testsuite.py -vv --coverage ${basetests} --xmlresults=TEST-systemctl-python2.xml \
 	  '--with=tmp/systemctl.py' --python=/usr/bin/python2
 coverage3:
 	$(MAKE) tmp_systemctl_py_3
-	rm .coverage* ; ./testsuite.py -vv --coverage ${basetests} \
+	rm .coverage* ; ./testsuite.py -vv --coverage ${basetests} --xmlresults=TEST-systemctl-python3.xml \
 	  '--with=tmp/systemctl.py' --python=/usr/bin/python3
 
 tmp_systemctl_py_2:
