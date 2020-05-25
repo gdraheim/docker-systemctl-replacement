@@ -140,7 +140,6 @@ DefaultStandardInput=os.environ.get("SYSTEMD_STANDARD_INPUT", "null")
 DefaultStandardOutput=os.environ.get("SYSTEMD_STANDARD_OUTPUT", "journal") # systemd.exe --default-standard-output
 DefaultStandardError=os.environ.get("SYSTEMD_STANDARD_ERROR", "inherit") # systemd.exe --default-standard-error
 
-EXEC_SETGROUPS = (os.geteuid() == 0)
 EXEC_SPAWN = False
 EXEC_DUP2 = True
 REMOVE_LOCK_FILE = False
@@ -409,6 +408,12 @@ def shutil_setuid(user = None, group = None, xgroups = None):
         gid = grp.getgrnam(group).gr_gid
         os.setgid(gid)
         logg.debug("setgid %s for %s", gid, strQ(group))
+        groups = [ gid ]
+        try:
+            os.setgroups(groups)
+            logg.debug("setgroups %s < (%s)", groups, group)
+        except OSError as e: # pragma: no cover (it will occur in non-root mode anyway)
+            logg.debug("setgroups %s < (%s) : %s", groups, group, e)
     if user:
         pw = pwd.getpwnam(user)
         gid = pw.pw_gid
@@ -420,12 +425,15 @@ def shutil_setuid(user = None, group = None, xgroups = None):
         groups = [g.gr_gid for g in grp.getgrall() if user in g.gr_mem]
         if xgroups:
             groups += [g.gr_gid for g in grp.getgrall() if g.gr_name in xgroups and g.gr_gid not in groups]
-        if groups:
-            if EXEC_SETGROUPS:
-                logg.debug("setgroups %s > %s ", groups, groupnames)
-                os.setgroups(groups)
-            else:
-                logg.warning("setgroups skipped > %s", groupnames)
+        if not groups:
+            if group:
+                gid = grp.getgrnam(group).gr_gid
+            groups = [ gid ]
+        try:
+            os.setgroups(groups)
+            logg.debug("setgroups %s > %s ", groups, groupnames)
+        except OSError as e: # pragma: no cover (it will occur in non-root mode anyway)
+            logg.debug("setgroups %s > %s : %s", groups, groupnames, e)
         uid = pw.pw_uid
         os.setuid(uid)
         logg.debug("setuid %s for user %s", uid, strQ(user))
@@ -2851,6 +2859,7 @@ class Systemctl:
                 sys.exit(exitcode)
             else: # pragma: no cover
                 os.execve(cmd[0], cmd, env)
+                sys.exit(11) # pragma: no cover (can not be reached / bug like mypy#8401)
         except Exception as e:
             logg.error("(%s): %s", shell_cmd(cmd), e)
             sys.exit(1)
