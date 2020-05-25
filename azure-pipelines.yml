@@ -1,0 +1,29 @@
+trigger:
+- develop
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+- script: |
+    sudo apt-get update --fix-missing
+  displayName: 'refresh install'
+- script: |
+    sudo apt-get install --fix-broken --ignore-missing python3-coverage
+  displayName: 'install python3 coverage'
+- script: |
+    sudo apt-get install --fix-broken --ignore-missing python3-pip
+  displayName: 'install python3 pip'
+- script: |
+    pip3 install unittest-xml-reporting
+  displayName: 'install unittest-xml-reporting'
+- script: |
+    make type
+  displayName: 'make type (mypy strict type checking)'
+- script: |
+    make coverage
+  displayName: 'make coverage (testsuite.py with coverage)'
+- script: |
+    find . -name '*.xml'
+  displayName: 'find xml'
+- task: PublishTestResults@2
