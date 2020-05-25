@@ -32,8 +32,8 @@ steps:
     pip3 install unittest-xml-reporting
   displayName: 'install unittest-xml-reporting'
 - script: |
-    sed -i -e "s:test_runner.output.write(xml_content):test_runner.output.write(xml_content.decode('utf-8')):"  ../.local/lib/python3.6/site-packages/xmlrunner/result.py
-    true
+    pwd
+    sed -i -e "s:test_runner.output.write(xml_content):test_runner.output.write(xml_content.decode('utf-8')):"  $HOME/.local/lib/python3.6/site-packages/xmlrunner/result.py
   displayName: 'patch unittest-xml-reporting'
 - script: |
     find . -type d
