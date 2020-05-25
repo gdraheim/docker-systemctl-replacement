@@ -550,6 +550,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         yield "/etc/sysconfig"
         yield "/etc/systemd/system/multi-user.target.wants"
         yield "/usr/bin"
+        yield "/bin"
     def rm_zzfiles(self, root):
         for folder in self.real_folders():
             for item in glob(os_path(root, folder + "/zz*")):
