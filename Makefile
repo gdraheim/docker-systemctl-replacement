@@ -4,6 +4,7 @@ FOR=today
 DAY=%u
 # 'make version FOR=yesterday' or 'make version DAY=0'
 
+UBUNTU=ubuntu:18.04
 PYTHON=python3
 GIT=git
 VERFILES = files/docker/systemctl.py files/docker/systemctl3.py testsuite.py
@@ -221,6 +222,22 @@ tmp_systemctl_py_2:
 tmp_systemctl_py_3:
 	@ test -d tmp || mkdir tmp
 	@ cp files/docker/systemctl3.py tmp/systemctl.py
+tmp_ubuntu:
+	if docker inspect $(UBUNTU) >/dev/null 2>&1; then : \
+	else docker run --name $(UBU) -d $(UBUNTU) sleep 3333 \
+	; docker exec $(UBU) apt-get update -y --fix-missing \
+	; docker exec $(UBU) apt-get install -y --fix-broken --ignore-missing python3-coverage mypy \
+	; fi
+	docker cp files $(UBU):/root/
+	docker cp testsuite.py $(UBU):/root/ 
+	docker cp reply.py $(UBU):/root/ 
+UBU=test_ubuntu
+ubu/test_%:
+	$(MAKE) tmp_ubuntu
+	docker exec $(UBU) python3 /root/testsuite.py -C /root -vv $(notdir $@)
+ubu/st_%:
+	$(MAKE) tmp_ubuntu
+	docker exec $(UBU) python3 /root/testsuite.py -C /root -vv te$(notdir $@)
 
 clean:
 	- rm .coverage*
