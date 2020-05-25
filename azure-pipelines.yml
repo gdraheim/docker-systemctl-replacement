@@ -1,7 +1,7 @@
 resources:
   repositories:
   - repository: retype
-    type: gibhub
+    type: github
     endpoint: gdraheim
     name: ambv/retype
     ref: 17.12.0
