@@ -730,7 +730,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     #
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     #
-    def test_1000(self):
+    def test_0999(self):
         logg.info("\n  CENTOS = '%s'", CENTOS)
         self.with_local_centos_mirror()
     def test_1001_systemctl_testfile(self):
@@ -35619,6 +35619,8 @@ if __name__ == "__main__":
        help="enable TODO outtakes [%default])")
     _o.add_option("-f", "--force", action="store_true", default=False,
        help="enable the skipped IMAGE and PYTHON versions [%default])")
+    _o.add_option("-C", "--chdir", metavar="PATH", default="",
+       help="change directory before running tests {%default}")
     _o.add_option("--opensuse", metavar="NAME", default=OPENSUSE,
        help="OPENSUSE=%default")
     _o.add_option("--ubuntu", metavar="NAME", default=UBUNTU,
@@ -35662,6 +35664,9 @@ if __name__ == "__main__":
     #
     _systemctl_py = opt.systemctl_py
     _python = opt.python
+    #
+    if opt.chdir:
+        os.chdir(opt.chdir)
     #
     logfile = None
     if opt.logfile:
