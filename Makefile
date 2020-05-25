@@ -223,8 +223,8 @@ tmp_systemctl_py_3:
 	@ test -d tmp || mkdir tmp
 	@ cp files/docker/systemctl3.py tmp/systemctl.py
 tmp_ubuntu:
-	if docker inspect $(UBUNTU) >/dev/null 2>&1; then : \
-	else docker run --name $(UBU) -d $(UBUNTU) sleep 3333 \
+	if docker ps | grep $(UBU); then : ; else : \
+	; docker run --name $(UBU) -d $(UBUNTU) sleep 3333 \
 	; docker exec $(UBU) apt-get update -y --fix-missing \
 	; docker exec $(UBU) apt-get install -y --fix-broken --ignore-missing python3-coverage mypy \
 	; fi
