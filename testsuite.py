@@ -24028,6 +24028,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.begin()
         testname = self.testname()
         testdir = self.testdir()
+        testsleep = self.testname("sleep")
         user = self.user()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
@@ -24038,7 +24039,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Requires=zzb.service
             [Service]
             Type=simple
-            ExecStart=/bin/sleep 10
+            ExecStart={root}/bin/{testsleep} 10
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
@@ -24047,6 +24048,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             disable zzb.service""")
         os.makedirs(os_path(root, "/var/run"))
         os.makedirs(os_path(root, "/var/log"))
+        copy_tool(_bin_sleep, "{root}/bin/{testsleep}".format(**locals()))
         #
         os.chmod(os_path(root, "/etc/systemd/system/zza.service"), 0o222)
         #
@@ -24155,6 +24157,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.begin()
         testname = self.testname()
         testdir = self.testdir()
+        testsleep = self.testname("sleep")
         user = self.user()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
@@ -24165,11 +24168,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Requires=zzb.service
             [Service]
             Type=foo
-            ExecStart=/bin/sleep 10
+            ExecStart={root}/bin/{testsleep} 10
             ExecStop=/bin/kill $MAINPID
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
+        copy_tool(_bin_sleep, "{root}/bin/{testsleep}".format(**locals()))
         #
         cmd = "{systemctl} start zza"
         out, end = output2(cmd.format(**locals()))
