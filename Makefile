@@ -75,16 +75,18 @@ todo/test_%:             ; ./testsuite.py   "$(notdir $@)" -vv --todo
 42.2/st_%:  ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv $(FORCE) --image=opensuse:42.2      $(WITH2)
 18.04/st_%: ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv $(FORCE) --image=ubuntu:18.04       $(WITH2)
 16.04/st_%: ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv $(FORCE) --image=ubuntu:16.04       $(WITH2)
-7.7/st_%:   ; $(MAKE) 2 && ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=centos:7.7.1908    $(WITH2)
-7.6/st_%:   ; $(MAKE) 2 && ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=centos:7.6.1810    $(WITH2)
-7.5/st_%:   ; $(MAKE) 2 && ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=centos:7.5.1804    $(WITH2)
-7.4/st_%:   ; $(MAKE) 2 && ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=centos:7.4.1708    $(WITH2)
-7.3/st_%:   ; $(MAKE) 2 && ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=centos:7.3.1611    $(WITH2)
+8.1/st_%:   ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv $(FORCE) --image=centos:8.1.1911    $(WITH2)
+8.0/st_%:   ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv $(FORCE) --image=centos:8.0.1905    $(WITH2)
+7.7/st_%:   ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv $(FORCE) --image=centos:7.7.1908    $(WITH2)
+7.6/st_%:   ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv $(FORCE) --image=centos:7.6.1810    $(WITH2)
+7.5/st_%:   ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv $(FORCE) --image=centos:7.5.1804    $(WITH2)
+7.4/st_%:   ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv $(FORCE) --image=centos:7.4.1708    $(WITH2)
+7.3/st_%:   ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv $(FORCE) --image=centos:7.3.1611    $(WITH2)
 
 basetests = test_[1234]
 test2list = st_[567]
 testslist = test_[567]
-tests: ; $(MAKE) "{basetests}"
+tests: ; $(MAKE) "${basetests}"
 .PHONY: tests
 15.2/tests:  ; $(MAKE) "15.2/$(testslist)"
 15.1/tests:  ; $(MAKE) "15.1/$(testslist)"
@@ -108,6 +110,8 @@ tests: ; $(MAKE) "{basetests}"
 42.2/test2:  ; $(MAKE) "42.2/$(test2list)"
 18.04/test2: ; $(MAKE) "18.04/$(test2list)"
 16.04/test2: ; $(MAKE) "16.04/$(test2list)"
+8.1/test2:   ; $(MAKE) "8.1/$(test2list)"
+8.0/test2:   ; $(MAKE) "8.0/$(test2list)"
 7.7/test2:   ; $(MAKE) "7.7/$(test2list)"
 7.6/test2:   ; $(MAKE) "7.6/$(test2list)"
 7.5/test2:   ; $(MAKE) "7.5/$(test2list)"
