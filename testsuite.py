@@ -33376,7 +33376,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = clean(output(cmd.format(**locals())))
         logg.info("\n>>>\n%s", top)
         if not COVERAGE:
-            self.assertTrue(greps(top, "somebody *nobody *wheel,trusted .*{testsleepA}".format(**locals())))
+            self.assertTrue(greps(top, "somebody *nobody *(wheel|trusted),(trusted|wheel) .*{testsleepA}".format(**locals())))
         #
         cmd = "docker stop {testname}"
         sh____(cmd.format(**locals()))
