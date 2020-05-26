@@ -34177,7 +34177,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing B
             [Service]
             Type=simple
-            User=user1
+            User=somebody
             Group=root
             ExecStart=/usr/bin/testsleep 99
             [Install]
@@ -34187,7 +34187,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing C
             [Service]
             Type=simple
-            User=user1
+            User=somebody
             ExecStart=/usr/bin/testsleep 111
             [Install]
             WantedBy=multi-user.target""")
@@ -34196,7 +34196,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing D
             [Service]
             Type=simple
-            Group=group2
+            Group=nobody
             ExecStart=/usr/bin/testsleep 122
             [Install]
             WantedBy=multi-user.target""")
@@ -34224,9 +34224,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             cmd = "docker exec {testname} chmod 777 /tmp/.coverage"
             sh____(cmd.format(**locals()))
         #
-        cmd = "docker exec {testname} groupadd -g 65533 group2"
+        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd -g 65533 nobody'"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} useradd -u 1001 user1 -g group2"
+        cmd = "docker exec {testname} useradd -u 1001 somebody -g nobody"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} mkdir -p /etc/systemd/system"
         sx____(cmd.format(**locals()))
@@ -34253,22 +34253,22 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} ps -eo user,group,args"
         top = output(cmd.format(**locals()))
         logg.info("\n>>>\n%s", top)
-        self.assertTrue(greps(top, "user1 .*root .*testsleep 99"))
-        self.assertTrue(greps(top, "user1 .*group2 .*testsleep 111"))
-        self.assertTrue(greps(top, "root .*group2 .*testsleep 122"))
+        self.assertTrue(greps(top, "somebody .*root .*testsleep 99"))
+        self.assertTrue(greps(top, "somebody .*nobody .*testsleep 111"))
+        self.assertTrue(greps(top, "root .*nobody .*testsleep 122"))
         # and the pid file has changed as well
         cmd = "docker exec {testname} ls -l /var/run/zzb.service.pid"
         out = output(cmd.format(**locals()))
         logg.info("found %s", out.strip())
-        if TODO: self.assertTrue(greps(out, "user1 .*root .*zzb.service.pid"))
+        if TODO: self.assertTrue(greps(out, "somebody .*root .*zzb.service.pid"))
         cmd = "docker exec {testname} ls -l /var/run/zzc.service.pid"
         out = output(cmd.format(**locals()))
         logg.info("found %s", out.strip())
-        if TODO: self.assertTrue(greps(out, "user1 .*group2 .*zzc.service.pid"))
+        if TODO: self.assertTrue(greps(out, "somebody .*nobody .*zzc.service.pid"))
         cmd = "docker exec {testname} ls -l /var/run/zzd.service.pid"
         out = output(cmd.format(**locals()))
         logg.info("found %s", out.strip())
-        if TODO: self.assertTrue(greps(out, "root .*group2 .*zzd.service.pid"))
+        if TODO: self.assertTrue(greps(out, "root .*nobody .*zzd.service.pid"))
         #
         self.save_coverage(testname)
         #
@@ -34300,7 +34300,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing B
             [Service]
             Type=simple
-            User=user1
+            User=somebody
             Group=root
             ExecStart=/usr/bin/testsleep 99
             [Install]
@@ -34310,7 +34310,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing C
             [Service]
             Type=simple
-            User=user1
+            User=somebody
             ExecStart=/usr/bin/testsleep 111
             [Install]
             WantedBy=multi-user.target""")
@@ -34319,7 +34319,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing D
             [Service]
             Type=simple
-            Group=group2
+            Group=nobody
             ExecStart=/usr/bin/testsleep 122
             [Install]
             WantedBy=multi-user.target""")
@@ -34341,9 +34341,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
         #
-        cmd = "docker exec {testname} groupadd -g 65533 group2"
+        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd -g 65533 nobody'"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} useradd -u 1001 user1 -g group2"
+        cmd = "docker exec {testname} useradd -u 1001 somebody -g nobody"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} mkdir -p /etc/systemd/system"
         sx____(cmd.format(**locals()))
@@ -34383,22 +34383,22 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} ps -eo user,group,args"
         top = output(cmd.format(**locals()))
         logg.info("\n>>>\n%s", top)
-        self.assertTrue(greps(top, "user1 .*root .*testsleep 99"))
-        self.assertTrue(greps(top, "user1 .*group2 .*testsleep 111"))
-        self.assertTrue(greps(top, "root .*group2 .*testsleep 122"))
+        self.assertTrue(greps(top, "somebody .*root .*testsleep 99"))
+        self.assertTrue(greps(top, "somebody .*nobody .*testsleep 111"))
+        self.assertTrue(greps(top, "root .*nobody .*testsleep 122"))
         # and the pid file has changed as well
         cmd = "docker exec {testname} ls -l /var/run/zzb.service.pid"
         out = output(cmd.format(**locals()))
         logg.info("found %s", out.strip())
-        if TODO: self.assertTrue(greps(out, "user1 .*root .*zzb.service.pid"))
+        if TODO: self.assertTrue(greps(out, "somebody .*root .*zzb.service.pid"))
         cmd = "docker exec {testname} ls -l /var/run/zzc.service.pid"
         out = output(cmd.format(**locals()))
         logg.info("found %s", out.strip())
-        if TODO: self.assertTrue(greps(out, "user1 .*group2 .*zzc.service.pid"))
+        if TODO: self.assertTrue(greps(out, "somebody .*nobody .*zzc.service.pid"))
         cmd = "docker exec {testname} ls -l /var/run/zzd.service.pid"
         out = output(cmd.format(**locals()))
         logg.info("found %s", out.strip())
-        if TODO: self.assertTrue(greps(out, "root .*group2 .*zzd.service.pid"))
+        if TODO: self.assertTrue(greps(out, "root .*nobody .*zzd.service.pid"))
         #
         cmd = "docker stop {testname}" # <<<
         out3 = output(cmd.format(**locals()))
@@ -34451,7 +34451,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing 4
             [Service]
             Type=simple
-            User=user1
+            User=somebody
             Group=root
             WorkingDirectory=/srv
             ExecStart=/usr/bin/testsleep.sh 4
@@ -34462,7 +34462,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing 5
             [Service]
             Type=simple
-            User=user1
+            User=somebody
             WorkingDirectory=/srv
             ExecStart=/usr/bin/testsleep.sh 5
             [Install]
@@ -34472,7 +34472,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing 6
             [Service]
             Type=simple
-            Group=group2
+            Group=nobody
             WorkingDirectory=/srv
             ExecStart=/usr/bin/testsleep.sh 6
             [Install]
@@ -34496,9 +34496,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             cmd = "docker exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
         self.prep_coverage(testname, cov_option) 
-        cmd = "docker exec {testname} groupadd -g 65533 group2"
+        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd -g 65533 nobody'"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} useradd -u 1001 user1 -g group2"
+        cmd = "docker exec {testname} useradd -u 1001 somebody -g nobody"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
@@ -34540,10 +34540,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(log5, "pwd: /srv"))
         self.assertTrue(greps(log6, "pwd: /srv"))
         self.assertTrue(greps(log4, "group: root"))
-        self.assertTrue(greps(log4, "user: user1"))
-        self.assertTrue(greps(log5, "user: user1"))
-        self.assertTrue(greps(log5, "group: group2"))
-        self.assertTrue(greps(log6, "group: group2"))
+        self.assertTrue(greps(log4, "user: somebody"))
+        self.assertTrue(greps(log5, "user: somebody"))
+        self.assertTrue(greps(log5, "group: nobody"))
+        self.assertTrue(greps(log6, "group: nobody"))
         self.assertTrue(greps(log6, "user: root"))
         #
         self.save_coverage(testname)
