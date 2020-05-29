@@ -23509,6 +23509,406 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
+    def test_4551_ListenUSB_not_implemented(self):
+        self.begin()
+        self.rm_testdir()
+        testname = self.testname()
+        testdir = self.testdir()
+        testport = self.testport()
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        logfile = os_path(root, "/var/log/"+testname+".log")
+        sockfile = os_path(root, "/var/run/"+testname+".sock")
+        replyA = self.testname("replyA")
+        replyB = self.testname("replyB")
+        bindir = os_path(root, "/usr/bin")
+        text_file(os_path(testdir, "zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            Type=simple
+            ExecStart={bindir}/{replyA} socketTCP -p {testport}
+            StandardOutput=file:{root}/var/log/zza.log
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        text_file(os_path(testdir, "zza.socket"),"""
+            [Unit]
+            Description=Testing B
+            [Socket]
+            ListenUSBFunction=foo
+            Service=zza.service
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        copy_tool("reply.py", os_path(bindir, replyA))
+        copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
+        copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
+        #
+        cmd = "{systemctl} start zza.socket -c TestListen -vvvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        self.assertTrue(greps(err, "ListenUSBFunction sockets are not implemented"))
+        #
+        kill_daemon = "{systemctl} __killall '{replyA}'"
+        sx____(kill_daemon.format(**locals()))
+        kill_daemon = "{systemctl} __killall '{replyB}'"
+        sx____(kill_daemon.format(**locals()))
+        #
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def test_4552_ListenSpecial_not_implemented(self):
+        self.begin()
+        self.rm_testdir()
+        testname = self.testname()
+        testdir = self.testdir()
+        testport = self.testport()
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        logfile = os_path(root, "/var/log/"+testname+".log")
+        sockfile = os_path(root, "/var/run/"+testname+".sock")
+        replyA = self.testname("replyA")
+        replyB = self.testname("replyB")
+        bindir = os_path(root, "/usr/bin")
+        text_file(os_path(testdir, "zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            Type=simple
+            ExecStart={bindir}/{replyA} socketTCP -p {testport}
+            StandardOutput=file:{root}/var/log/zza.log
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        text_file(os_path(testdir, "zza.socket"),"""
+            [Unit]
+            Description=Testing B
+            [Socket]
+            ListenSpecial=foo
+            Service=zza.service
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        copy_tool("reply.py", os_path(bindir, replyA))
+        copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
+        copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
+        #
+        cmd = "{systemctl} start zza.socket -c TestListen -vvvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        self.assertTrue(greps(err, "ListenSpecial sockets are not implemented"))
+        #
+        kill_daemon = "{systemctl} __killall '{replyA}'"
+        sx____(kill_daemon.format(**locals()))
+        kill_daemon = "{systemctl} __killall '{replyB}'"
+        sx____(kill_daemon.format(**locals()))
+        #
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def test_4553_ListenFIFO_not_implemented(self):
+        self.begin()
+        self.rm_testdir()
+        testname = self.testname()
+        testdir = self.testdir()
+        testport = self.testport()
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        logfile = os_path(root, "/var/log/"+testname+".log")
+        sockfile = os_path(root, "/var/run/"+testname+".sock")
+        replyA = self.testname("replyA")
+        replyB = self.testname("replyB")
+        bindir = os_path(root, "/usr/bin")
+        text_file(os_path(testdir, "zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            Type=simple
+            ExecStart={bindir}/{replyA} socketTCP -p {testport}
+            StandardOutput=file:{root}/var/log/zza.log
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        text_file(os_path(testdir, "zza.socket"),"""
+            [Unit]
+            Description=Testing B
+            [Socket]
+            ListenFIFO=foo
+            Service=zza.service
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        copy_tool("reply.py", os_path(bindir, replyA))
+        copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
+        copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
+        #
+        cmd = "{systemctl} start zza.socket -c TestListen -vvvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        self.assertTrue(greps(err, "ListenFIFO sockets are not implemented"))
+        #
+        kill_daemon = "{systemctl} __killall '{replyA}'"
+        sx____(kill_daemon.format(**locals()))
+        kill_daemon = "{systemctl} __killall '{replyB}'"
+        sx____(kill_daemon.format(**locals()))
+        #
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def test_4554_ListenSequentialPacket_not_implemented(self):
+        self.begin()
+        self.rm_testdir()
+        testname = self.testname()
+        testdir = self.testdir()
+        testport = self.testport()
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        logfile = os_path(root, "/var/log/"+testname+".log")
+        sockfile = os_path(root, "/var/run/"+testname+".sock")
+        replyA = self.testname("replyA")
+        replyB = self.testname("replyB")
+        bindir = os_path(root, "/usr/bin")
+        text_file(os_path(testdir, "zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            Type=simple
+            ExecStart={bindir}/{replyA} socketTCP -p {testport}
+            StandardOutput=file:{root}/var/log/zza.log
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        text_file(os_path(testdir, "zza.socket"),"""
+            [Unit]
+            Description=Testing B
+            [Socket]
+            ListenSequentialPacket=foo
+            Service=zza.service
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        copy_tool("reply.py", os_path(bindir, replyA))
+        copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
+        copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
+        #
+        cmd = "{systemctl} start zza.socket -c TestListen -vvvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        self.assertTrue(greps(err, "ListenSequentialPacket sockets are not implemented"))
+        #
+        kill_daemon = "{systemctl} __killall '{replyA}'"
+        sx____(kill_daemon.format(**locals()))
+        kill_daemon = "{systemctl} __killall '{replyB}'"
+        sx____(kill_daemon.format(**locals()))
+        #
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def test_4555_ListenMessageQueue_not_implemented(self):
+        self.begin()
+        self.rm_testdir()
+        testname = self.testname()
+        testdir = self.testdir()
+        testport = self.testport()
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        logfile = os_path(root, "/var/log/"+testname+".log")
+        sockfile = os_path(root, "/var/run/"+testname+".sock")
+        replyA = self.testname("replyA")
+        replyB = self.testname("replyB")
+        bindir = os_path(root, "/usr/bin")
+        text_file(os_path(testdir, "zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            Type=simple
+            ExecStart={bindir}/{replyA} socketTCP -p {testport}
+            StandardOutput=file:{root}/var/log/zza.log
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        text_file(os_path(testdir, "zza.socket"),"""
+            [Unit]
+            Description=Testing B
+            [Socket]
+            ListenMessageQueue=foo
+            Service=zza.service
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        copy_tool("reply.py", os_path(bindir, replyA))
+        copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
+        copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
+        #
+        cmd = "{systemctl} start zza.socket -c TestListen -vvvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        self.assertTrue(greps(err, "ListenMessageQueue sockets are not implemented"))
+        #
+        kill_daemon = "{systemctl} __killall '{replyA}'"
+        sx____(kill_daemon.format(**locals()))
+        kill_daemon = "{systemctl} __killall '{replyB}'"
+        sx____(kill_daemon.format(**locals()))
+        #
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def test_4561_vsock_not_implemented(self):
+        self.begin()
+        self.rm_testdir()
+        testname = self.testname()
+        testdir = self.testdir()
+        testport = self.testport()
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        logfile = os_path(root, "/var/log/"+testname+".log")
+        sockfile = os_path(root, "/var/run/"+testname+".sock")
+        replyA = self.testname("replyA")
+        replyB = self.testname("replyB")
+        bindir = os_path(root, "/usr/bin")
+        text_file(os_path(testdir, "zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            Type=simple
+            ExecStart={bindir}/{replyA} socketTCP -p {testport}
+            StandardOutput=file:{root}/var/log/zza.log
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        text_file(os_path(testdir, "zza.socket"),"""
+            [Unit]
+            Description=Testing B
+            [Socket]
+            ListenStream=vsock:foo
+            Service=zza.service
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        copy_tool("reply.py", os_path(bindir, replyA))
+        copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
+        copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
+        #
+        cmd = "{systemctl} start zza.socket -c TestListen -vvvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        self.assertTrue(greps(err, "virtual machine socket not implemented"))
+        #
+        kill_daemon = "{systemctl} __killall '{replyA}'"
+        sx____(kill_daemon.format(**locals()))
+        kill_daemon = "{systemctl} __killall '{replyB}'"
+        sx____(kill_daemon.format(**locals()))
+        #
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def test_4562_abstract_not_implemented(self):
+        self.begin()
+        self.rm_testdir()
+        testname = self.testname()
+        testdir = self.testdir()
+        testport = self.testport()
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        logfile = os_path(root, "/var/log/"+testname+".log")
+        sockfile = os_path(root, "/var/run/"+testname+".sock")
+        replyA = self.testname("replyA")
+        replyB = self.testname("replyB")
+        bindir = os_path(root, "/usr/bin")
+        text_file(os_path(testdir, "zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            Type=simple
+            ExecStart={bindir}/{replyA} socketTCP -p {testport}
+            StandardOutput=file:{root}/var/log/zza.log
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        text_file(os_path(testdir, "zza.socket"),"""
+            [Unit]
+            Description=Testing B
+            [Socket]
+            ListenStream=@/foo
+            Service=zza.service
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        copy_tool("reply.py", os_path(bindir, replyA))
+        copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
+        copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
+        #
+        cmd = "{systemctl} start zza.socket -c TestListen -vvvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        self.assertTrue(greps(err, "abstract namespace socket not implemented"))
+        #
+        kill_daemon = "{systemctl} __killall '{replyA}'"
+        sx____(kill_daemon.format(**locals()))
+        kill_daemon = "{systemctl} __killall '{replyB}'"
+        sx____(kill_daemon.format(**locals()))
+        #
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def test_4566_unknown_type_not_implemented(self):
+        self.begin()
+        self.rm_testdir()
+        testname = self.testname()
+        testdir = self.testdir()
+        testport = self.testport()
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        logfile = os_path(root, "/var/log/"+testname+".log")
+        sockfile = os_path(root, "/var/run/"+testname+".sock")
+        replyA = self.testname("replyA")
+        replyB = self.testname("replyB")
+        bindir = os_path(root, "/usr/bin")
+        text_file(os_path(testdir, "zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            Type=simple
+            ExecStart={bindir}/{replyA} socketTCP -p {testport}
+            StandardOutput=file:{root}/var/log/zza.log
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        text_file(os_path(testdir, "zza.socket"),"""
+            [Unit]
+            Description=Testing B
+            [Socket]
+            ListenStream=&append
+            Service=zza.service
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        copy_tool("reply.py", os_path(bindir, replyA))
+        copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
+        copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
+        #
+        cmd = "{systemctl} start zza.socket -c TestListen -vvvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        self.assertTrue(greps(err, "unknown socket address type"))
+        #
+        kill_daemon = "{systemctl} __killall '{replyA}'"
+        sx____(kill_daemon.format(**locals()))
+        kill_daemon = "{systemctl} __killall '{replyB}'"
+        sx____(kill_daemon.format(**locals()))
+        #
+        self.rm_testdir()
+        self.coverage()
+        self.end()
     def test_4700_systemctl_py_restart_failed_units(self):
         """ check that we can enable services in a docker container to be run as default-services
             and failed units are going to be restarted"""
