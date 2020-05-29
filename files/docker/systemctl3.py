@@ -4260,7 +4260,7 @@ class Systemctl:
             os.remove(target)
             return True
         elif not os.path.exists(target):
-            logg.debug("Symlink did exist anymore: %s", target)
+            logg.debug("Symlink did not exist anymore: %s", target)
             return True
         else:
             logg.warning("target is not a symlink: %s", target)
