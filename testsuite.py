@@ -2013,6 +2013,42 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_zzfiles(root)
         self.rm_testdir()
         self.coverage()
+    def test_1218_set_default_empty(self, real = False):
+        """ check that set-default works with no runleven given"""
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir, real)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
+        self.rm_zzfiles(root)
+        #
+        cmd = "{systemctl} set-default "
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(out.strip(), "Too few arguments")
+        self.assertEqual(end, 1)
+        #
+        self.rm_zzfiles(root)
+        self.rm_testdir()
+        self.coverage()
+    def test_1219_set_default_bad(self, real = False):
+        """ check that set-default works with a bad runlevel"""
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir, real)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
+        self.rm_zzfiles(root)
+        #
+        cmd = "{systemctl} set-default wrong"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(out.strip(), "No such runlevel wrong")
+        self.assertEqual(end, 3)
+        #
+        self.rm_zzfiles(root)
+        self.rm_testdir()
+        self.coverage()
     def test_2001_can_create_test_services(self):
         """ check that two unit files can be created for testing """
         testname = self.testname()
