@@ -14167,7 +14167,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 3)
         self.assertEqual(out.strip(), "inactive")
         #
-        logg.info("== 'reload-or-try-restart' will not start a not-active service")        
+        logg.info("== 'reload-or-try-restart' will start a not-active service")        
         cmd = "{systemctl} reload-or-try-restart zzz.service -vv"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
@@ -14178,8 +14178,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} is-active zzz.service -vv"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s", cmd, end, out)
-        self.assertEqual(end, 3)
-        self.assertEqual(out.strip(), "inactive")
+        self.assertEqual(end, 0)
+        self.assertEqual(out.strip(), "active")
+        #
+        cmd = "{systemctl} stop zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         #
         logg.info("== 'try-restart' will not start a not-active service")        
         cmd = "{systemctl} try-restart zzz.service -vv"
@@ -14247,6 +14251,221 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(len(ps6), 1)
         self.assertTrue(len(ps7), 1)
         self.assertNotEqual(ps6[0], ps7[0])
+        #
+        logg.info("LOG\n%s", " "+reads(logfile).replace("\n","\n "))
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def test_4046_sysv_service_extras(self):
+        """ check that we manage SysV services in a root env"""
+        self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        testsleep = self.testname("sleep")
+        logfile = os_path(root, "/var/log/"+testsleep+".log")
+        bindir = os_path(root, "/usr/bin")
+        os.makedirs(os_path(root, "/var/run"))
+        text_file(logfile, "created\n")
+        begin = "{" ; end = "}"
+        shell_file(os_path(testdir, "zzz.init"), """
+            #! /bin/bash
+            ### BEGIN INIT INFO
+            # Required-Start: $local_fs $remote_fs $syslog $network 
+            # Required-Stop:  $local_fs $remote_fs $syslog $network
+            # Default-Start:  3 5
+            # Default-Stop:   0 1 2 6
+            # Short-Description: Testing Z
+            # Description:    Allows for SysV testing
+            ### END INIT INFO
+            logfile={logfile}
+            sleeptime=111
+            start() {begin} 
+               [ -d /var/run ] || mkdir -p /var/run
+               ({bindir}/{testsleep} $sleeptime 0<&- &>/dev/null &
+                echo $! > {root}/var/run/zzz.init.pid
+               ) &
+               wait %1
+               # ps -o pid,ppid,args
+               cat "RUNNING `cat {root}/var/run/zzz.init.pid`"
+            {end}
+            stop() {begin}
+               killall {testsleep}
+            {end}
+            case "$1" in start)
+               date "+START.%T" >> $logfile
+               start >> $logfile 2>&1
+               date "+start.%T" >> $logfile
+            ;; stop)
+               date "+STOP.%T" >> $logfile
+               stop >> $logfile 2>&1
+               date "+stop.%T" >> $logfile
+            ;; restart)
+               date "+RESTART.%T" >> $logfile
+               stop >> $logfile 2>&1
+               start >> $logfile 2>&1
+               date "+.%T" >> $logfile
+            ;; reload)
+               date "+RELOAD.%T" >> $logfile
+               echo "...." >> $logfile 2>&1
+               date "+reload.%T" >> $logfile
+            ;; esac 
+            echo "done$1" >&2
+            exit 0
+            """.format(**locals()))
+        copy_tool(_bin_sleep, os_path(bindir, testsleep))
+        copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/etc/init.d/zzz"))
+        #
+        cmd = "{systemctl} enable zzz.service -vv"
+        sh____(cmd.format(**locals()))
+        #
+        cmd = "{systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        #
+        logg.info("== 'reload' will not start a not-active service")        
+        cmd = "{systemctl} reload zzz.service -vv -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, testsleep))
+        #
+        logg.info("== 'start' will not start a not-active service")        
+        cmd = "{systemctl} start zzz.service -vv -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        #
+        logg.info("== 'reload' will not start a not-active service")        
+        cmd = "{systemctl} reload zzz.service -vv -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        cmd = "{systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(out.strip(), "active")
+        top5 = top
+        #
+        logg.info("LOG\n%s", " "+reads(logfile).replace("\n","\n "))
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def test_4047_sysv_service_extras(self):
+        """ check that we manage SysV services in a root env"""
+        self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        testsleep = self.testname("sleep")
+        logfile = os_path(root, "/var/log/"+testsleep+".log")
+        bindir = os_path(root, "/usr/bin")
+        os.makedirs(os_path(root, "/var/run"))
+        text_file(logfile, "created\n")
+        begin = "{" ; end = "}"
+        shell_file(os_path(testdir, "zzz.init"), """
+            #! /bin/bash
+            ### BEGIN INIT INFO
+            # Required-Start: $local_fs $remote_fs $syslog $network 
+            # Required-Stop:  $local_fs $remote_fs $syslog $network
+            # Default-Start:  3 5
+            # Default-Stop:   0 1 2 6
+            # Short-Description: Testing Z
+            # Description:    Allows for SysV testing
+            ### END INIT INFO
+            logfile={logfile}
+            sleeptime=111
+            start() {begin} 
+               [ -d /var/run ] || mkdir -p /var/run
+               ({bindir}/{testsleep} $sleeptime 0<&- &>/dev/null &
+                echo $! > {root}/var/run/zzz.init.pid
+               ) &
+               wait %1
+               # ps -o pid,ppid,args
+               cat "RUNNING `cat {root}/var/run/zzz.init.pid`"
+            {end}
+            stop() {begin}
+               killall {testsleep}
+            {end}
+            case "$1" in start)
+               date "+START.%T" >> $logfile
+               start >> $logfile 2>&1
+               date "+start.%T" >> $logfile
+            ;; stop)
+               date "+STOP.%T" >> $logfile
+               stop >> $logfile 2>&1
+               date "+stop.%T" >> $logfile
+            ;; restart)
+               date "+RESTART.%T" >> $logfile
+               stop >> $logfile 2>&1
+               start >> $logfile 2>&1
+               date "+.%T" >> $logfile
+            ;; reload)
+               date "+RELOAD.%T" >> $logfile
+               echo "...." >> $logfile 2>&1
+               date "+reload.%T" >> $logfile
+               exit 1
+            ;; esac 
+            echo "done$1" >&2
+            exit 0
+            """.format(**locals()))
+        copy_tool(_bin_sleep, os_path(bindir, testsleep))
+        copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/etc/init.d/zzz"))
+        #
+        cmd = "{systemctl} enable zzz.service -vv"
+        sh____(cmd.format(**locals()))
+        #
+        cmd = "{systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        #
+        logg.info("== 'reload' will not start a not-active service")        
+        cmd = "{systemctl} reload zzz.service -vv -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 1)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertFalse(greps(top, testsleep))
+        #
+        logg.info("== 'reload-or-restart' will not start a not-active service")        
+        cmd = "{systemctl} reload-or-restart zzz.service -vv -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        #
+        logg.info("== 'reload' will not start a not-active service")        
+        cmd = "{systemctl} reload zzz.service -vv -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 1)
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, testsleep))
+        cmd = "{systemctl} is-active zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        self.assertEqual(out.strip(), "failed")
+        top5 = top
         #
         logg.info("LOG\n%s", " "+reads(logfile).replace("\n","\n "))
         self.rm_testdir()
