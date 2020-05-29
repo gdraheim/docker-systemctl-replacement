@@ -7309,6 +7309,48 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
+    def test_3106_can_not_mask_sysv_services(self):
+        """ check that mask/unmask reports correctly for sysv services """
+        self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/init.d/zzz"),"""
+            #! /bin/bash
+            ### BEGIN INIT INFO
+            # Required-Start: $local_fs $remote_fs $syslog $network 
+            # Required-Stop:  $local_fs $remote_fs $syslog $network
+            # Default-Start:  3 5
+            # Default-Stop:   0 1 2 6
+            # Short-Description: Testing Z
+            # Description:    Allows for SysV testing
+            ### END INIT INFO
+            echo OK
+            """)
+        #
+        cmd = "{systemctl} is-enabled zzz.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 1)
+        self.assertFalse(greps(out, r"^static"))
+        self.assertEqual(len(lines(out)), 1)
+        #
+        cmd = "{systemctl} --no-legend mask zzz"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 1)
+        self.assertTrue(greps(err, "Initscript zzz.service can not be masked"))
+        #
+        cmd = "{systemctl} --no-legend unmask zzz.service -vv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 1)
+        self.assertTrue(greps(err, "Initscript zzz.service can not be un/masked"))
+        #
+        self.rm_testdir()
+        self.coverage()
+        self.end()
     def test_3120_start_default_target(self, real = False):
         """ check the 'default-services' to know the enabled services """
         self.begin()
