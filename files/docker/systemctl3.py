@@ -2622,6 +2622,7 @@ class Systemctl:
         for item in unsupported:
             if conf.get("Socket", item, ""):
                 logg.warning("%s: %s sockets are not implemented", conf.name(), item)
+                self.error |= NOT_OK
                 return None
         vListenDatagram = conf.get("Socket", "ListenDatagram", "")
         vListenStream = conf.get("Socket", "ListenStream", "")
