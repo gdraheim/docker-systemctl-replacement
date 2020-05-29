@@ -5234,7 +5234,7 @@ class Systemctl:
         result = None
         while True:
             try:
-                if DEBUG_INITLOOP:
+                if DEBUG_INITLOOP: # pragma: no cover
                     logg.debug("DONE InitLoop (sleep %ss)", InitLoopSleep)
                 sleep_sec = InitLoopSleep - (time.time() - timestamp)
                 if sleep_sec < MinimumYield:
@@ -5251,13 +5251,13 @@ class Systemctl:
                 else:
                     time.sleep(sleep_sec)
                 timestamp = time.time()
-                if DEBUG_INITLOOP:
+                if DEBUG_INITLOOP: # pragma: no cover
                     logg.debug("NEXT InitLoop (after %ss)", sleep_sec)
                 self.read_log_files(units)
-                if DEBUG_INITLOOP:
+                if DEBUG_INITLOOP: # pragma: no cover
                     logg.debug("reap zombies - check current processes")
                 running = self.system_reap_zombies()
-                if DEBUG_INITLOOP:
+                if DEBUG_INITLOOP: # pragma: no cover
                     logg.debug("reap zombies - init-loop found %s running procs", running)
                 if self.doExitWhenNoMoreServices:
                     active = False
