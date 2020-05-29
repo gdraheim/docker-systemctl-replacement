@@ -7010,9 +7010,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_zzfiles(root)
         self.coverage()
         self.end()
-    def real_3102_mask_service_creates_empty_file(self):
-        self.test_3102_mask_service_creates_empty_file(True)
-    def test_3102_mask_service_creates_empty_file(self, real = False):
+    def real_3100_mask_service_creates_empty_file(self):
+        self.test_3100_mask_service_creates_empty_file(True)
+    def test_3100_mask_service_creates_empty_file(self, real = False):
         """ check that a service can be masked """
         self.begin()
         testname = self.testname()
@@ -7097,9 +7097,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
-    def real_3104_unmask_service_removes_empty_file(self):
-        self.test_3104_unmask_service_removes_empty_file(True)
-    def test_3104_unmask_service_removes_empty_file(self, real = False):
+    def real_3101_unmask_service_removes_empty_file(self):
+        self.test_3101_unmask_service_removes_empty_file(True)
+    def test_3101_unmask_service_removes_empty_file(self, real = False):
         """ check that a service can be unmasked """
         self.begin()
         testname = self.testname()
@@ -7182,9 +7182,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
-    def real_3106_testing_user_mask_unmask_service(self):
-        self.test_3106_testing_user_mask_unmask_service(True)
-    def test_3106_testing_user_mask_unmask_service(self, real = False):
+    def real_3102_testing_user_mask_unmask_service(self):
+        self.test_3102_testing_user_mask_unmask_service(True)
+    def test_3102_testing_user_mask_unmask_service(self, real = False):
         """ check that a service can be unmasked """
         self.begin()
         testname = self.testname()
@@ -7264,7 +7264,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
-    def test_3108_is_masked_for_nonexistant_service(self):
+    def test_3105_is_masked_for_nonexistant_service(self):
         """ check that mask/unmask reports correctly for non-existant services """
         self.begin()
         testname = self.testname()
