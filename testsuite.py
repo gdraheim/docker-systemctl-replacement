@@ -7351,6 +7351,81 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
+    def test_3107_unusual_operations_for__mask_folder(self):
+        """ check that mask/unmask folder is working correctly """
+        self.begin()
+        real, vv = False, "-vv"
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/usr/lib/systemd/system/zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            ExecStart=/bin/sleep 2
+            [Install]
+            WantedBy=multi-user.target""")
+        #
+        cmd = "{systemctl} is-enabled zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 1)
+        self.assertEqual(out.strip(), "disabled")
+        #
+        # .........................................
+        cmd = "{systemctl} mask zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        cmd = "{systemctl} status zzb.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertFalse(greps(out, "enabled"))
+        self.assertTrue(greps(out, "masked"))
+        if real: self.assertTrue(greps(out, "/dev/null"))
+        else: self.assertTrue(greps(out, "None, "))
+        mask_file = os_path(root, "/etc/systemd/system/zzb.service")
+        self.assertTrue(os.path.islink(mask_file))
+        target = os.readlink(mask_file)
+        self.assertEqual(target, "/dev/null")
+        # .........................................
+        cmd = "{systemctl} mask zzb.service {vv} {vv}"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\%s", cmd, end, out, err)
+        self.assertEqual(end, 0)
+        self.assertTrue(greps(err, "mask symlink does already exist"))
+        cmd = "{systemctl} mask -f zzb.service {vv} {vv}"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\%s", cmd, end, out, err)
+        self.assertEqual(end, 0)
+        self.assertFalse(greps(err, "mask symlink does already exist"))
+        #
+        cmd = "{systemctl} unmask zzb.service {vv} {vv}"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\%s", cmd, end, out, err)
+        self.assertEqual(end, 0)
+        cmd = "{systemctl} unmask zzb.service {vv} {vv}"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\%s", cmd, end, out, err)
+        self.assertEqual(end, 0)
+        self.assertTrue(greps(err, "Symlink did not exist anymore"))
+        #
+        text_file(mask_file, "#")
+        cmd = "{systemctl} mask zzb.service {vv} {vv}"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\%s", cmd, end, out, err)
+        self.assertEqual(end, 1)
+        self.assertTrue(greps(err, "mask target does already exist"))
+        cmd = "{systemctl} unmask zzb.service {vv} {vv}"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\%s", cmd, end, out, err)
+        self.assertEqual(end, 0)
+        self.assertTrue(greps(err, "target is not a symlink"))
+        #
+        self.rm_testdir()
+        self.coverage()
+        self.end()
     def test_3120_start_default_target(self, real = False):
         """ check the 'default-services' to know the enabled services """
         self.begin()
