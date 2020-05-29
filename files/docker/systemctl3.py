@@ -3151,10 +3151,10 @@ class Systemctl:
         if not self._quiet:
             okee = self.exec_check_unit(conf, env, "Service", "ExecReload")
             if not okee and _no_reload: return False
-        if runs in [ "sysv" ]:
+        initscript = conf.filename()
+        if self.is_sysv_file(initscript):
             status_file = self.get_status_file_from(conf)
-            initscript = conf.filename()
-            if initscript:
+            if True:
                 newcmd = [initscript, "reload"]
                 env["SYSTEMCTL_SKIP_REDIRECT"] = "yes"
                 logg.info("%s reload %s", runs, shell_cmd(newcmd))
@@ -3169,8 +3169,7 @@ class Systemctl:
                 else:
                     self.write_status_from(conf, AS="active")
                     return True
-            return False
-        elif runs in [ "simple", "notify", "forking", "idle" ]:
+        if runs in [ "simple", "notify", "forking", "idle" ]:
             if not self.is_active_from(conf):
                 logg.info("no reload on inactive service %s", conf.name())
                 return True
