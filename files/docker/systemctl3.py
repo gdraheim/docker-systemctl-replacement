@@ -3155,7 +3155,7 @@ class Systemctl:
         initscript = conf.filename()
         if self.is_sysv_file(initscript):
             status_file = self.get_status_file_from(conf)
-            if True:
+            if initscript:
                 newcmd = [initscript, "reload"]
                 env["SYSTEMCTL_SKIP_REDIRECT"] = "yes"
                 logg.info("%s reload %s", runs, shell_cmd(newcmd))
