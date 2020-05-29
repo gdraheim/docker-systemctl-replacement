@@ -2622,6 +2622,7 @@ class Systemctl:
         for item in unsupported:
             if conf.get("Socket", item, ""):
                 logg.warning("%s: %s sockets are not implemented", conf.name(), item)
+                self.error |= NOT_OK
                 return None
         vListenDatagram = conf.get("Socket", "ListenDatagram", "")
         vListenStream = conf.get("Socket", "ListenStream", "")
@@ -3151,10 +3152,10 @@ class Systemctl:
         if not self._quiet:
             okee = self.exec_check_unit(conf, env, "Service", "ExecReload")
             if not okee and _no_reload: return False
-        if runs in [ "sysv" ]:
+        initscript = conf.filename()
+        if self.is_sysv_file(initscript):
             status_file = self.get_status_file_from(conf)
-            initscript = conf.filename()
-            if initscript:
+            if True:
                 newcmd = [initscript, "reload"]
                 env["SYSTEMCTL_SKIP_REDIRECT"] = "yes"
                 logg.info("%s reload %s", runs, shell_cmd(newcmd))
@@ -3169,8 +3170,7 @@ class Systemctl:
                 else:
                     self.write_status_from(conf, AS="active")
                     return True
-            return False
-        elif runs in [ "simple", "notify", "forking", "idle" ]:
+        if runs in [ "simple", "notify", "forking", "idle" ]:
             if not self.is_active_from(conf):
                 logg.info("no reload on inactive service %s", conf.name())
                 return True
@@ -4260,7 +4260,7 @@ class Systemctl:
             os.remove(target)
             return True
         elif not os.path.exists(target):
-            logg.debug("Symlink did exist anymore: %s", target)
+            logg.debug("Symlink did not exist anymore: %s", target)
             return True
         else:
             logg.warning("target is not a symlink: %s", target)
@@ -5234,7 +5234,7 @@ class Systemctl:
         result = None
         while True:
             try:
-                if DEBUG_INITLOOP:
+                if DEBUG_INITLOOP: # pragma: no cover
                     logg.debug("DONE InitLoop (sleep %ss)", InitLoopSleep)
                 sleep_sec = InitLoopSleep - (time.time() - timestamp)
                 if sleep_sec < MinimumYield:
@@ -5251,13 +5251,13 @@ class Systemctl:
                 else:
                     time.sleep(sleep_sec)
                 timestamp = time.time()
-                if DEBUG_INITLOOP:
+                if DEBUG_INITLOOP: # pragma: no cover
                     logg.debug("NEXT InitLoop (after %ss)", sleep_sec)
                 self.read_log_files(units)
-                if DEBUG_INITLOOP:
+                if DEBUG_INITLOOP: # pragma: no cover
                     logg.debug("reap zombies - check current processes")
                 running = self.system_reap_zombies()
-                if DEBUG_INITLOOP:
+                if DEBUG_INITLOOP: # pragma: no cover
                     logg.debug("reap zombies - init-loop found %s running procs", running)
                 if self.doExitWhenNoMoreServices:
                     active = False
