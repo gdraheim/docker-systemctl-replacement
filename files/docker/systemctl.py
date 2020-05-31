@@ -1313,7 +1313,8 @@ class Systemctl:
             unit = parse_unit(module)
             service = "%s@.service" % unit.prefix
             conf = self.load_sysd_unit_conf(service)
-            conf.module = module
+            if conf:
+                conf.module = module
             return conf
         return None
     def load_sysd_unit_conf(self, module): # -> conf?
@@ -3938,6 +3939,9 @@ class Systemctl:
             logg.error("Unit %s not found.", unit)
             return False
         unit_file = conf.filename()
+        if unit_file is None:
+            logg.error("Unit file %s not found.", unit)
+            return False
         if self.is_sysv_file(unit_file):
             if self.user_mode():
                 logg.error("Initscript %s not for --user mode", unit)
@@ -3958,6 +3962,9 @@ class Systemctl:
         if not os.path.isdir(folder):
             os.makedirs(folder)
         source = conf.filename()
+        if not source: # pragma: no cover (was checked before)
+            logg.debug("%s has no real file", conf.name())
+            return False
         target = os.path.join(folder, conf.name())
         if True:
             _f = self._force and "-f" or ""
@@ -4033,6 +4040,9 @@ class Systemctl:
             logg.error("Unit %s not found.", unit)
             return False
         unit_file = conf.filename()
+        if unit_file is None:
+            logg.error("Unit file %s not found.", unit)
+            return False
         if self.is_sysv_file(unit_file):
             if self.user_mode():
                 logg.error("Initscript %s not for --user mode", unit)
