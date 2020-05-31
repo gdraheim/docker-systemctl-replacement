@@ -4129,22 +4129,20 @@ class Systemctl:
             self.error |= NOT_OK
         return infos
     def is_enabled(self, unit):
-        unit_file = self.unit_file(unit)
+        conf = self.load_unit_conf(unit)
+        if conf is None:
+            logg.error("Unit %s not found.", unit)
+            return False
+        unit_file = conf.filename()
         if not unit_file:
             logg.error("Unit %s not found.", unit)
             return False
         if self.is_sysv_file(unit_file):
             return self.is_enabled_sysv(unit_file)
-        wanted = self.wanted_from(self.get_unit_conf(unit))
-        if not wanted:
-            return True # "static"
-        for folder in self.enablefolders(wanted):
-            if self._root:
-                folder = os_path(self._root, folder)
-            target = os.path.join(folder, os.path.basename(unit_file))
-            if os.path.isfile(target):
-                return True
-        return False
+        state = self.get_enabled_from(conf)
+        if state in ["enabled", "static"]:
+            return True
+        return False # ["disabled", "masked"]
     def enabled_unit(self, unit):
         conf = self.get_unit_conf(unit)
         return self.enabled_from(conf)
@@ -4155,6 +4153,8 @@ class Systemctl:
             if state: 
                 return "enabled"
             return "disabled"
+        return self.get_enabled_from(conf)
+    def get_enabled_from(self, conf):
         if conf.masked:
             return "masked"
         wanted = self.wanted_from(conf)
@@ -4163,7 +4163,7 @@ class Systemctl:
         for folder in self.enablefolders(wanted):
             if self._root:
                 folder = os_path(self._root, folder)
-            target = os.path.join(folder, os.path.basename(unit_file))
+            target = os.path.join(folder, conf.name())
             if os.path.isfile(target):
                 return "enabled"
         return "disabled"
