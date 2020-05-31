@@ -1312,7 +1312,9 @@ class Systemctl:
         if module and "@" in module:
             unit = parse_unit(module)
             service = "%s@.service" % unit.prefix
-            return self.load_sysd_unit_conf(service)
+            conf = self.load_sysd_unit_conf(service)
+            conf.module = module
+            return conf
         return None
     def load_sysd_unit_conf(self, module): # -> conf?
         """ read the unit file with a UnitConfParser (systemd) """
@@ -2839,7 +2841,7 @@ class Systemctl:
     def execve_from(self, conf, cmd, env):
         """ this code is commonly run in a child process // returns exit-code"""
         runs = conf.get("Service", "Type", "simple").lower()
-        logg.debug("%s process for %s", runs, strQ(conf.filename()))
+        logg.debug("%s process for %s => %s", runs, strE(conf.name()), strQ(conf.filename()))
         #
         self.dup2_journal_log(conf)
         #
