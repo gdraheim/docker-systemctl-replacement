@@ -1313,7 +1313,8 @@ class Systemctl:
             unit = parse_unit(module)
             service = "%s@.service" % unit.prefix
             conf = self.load_sysd_unit_conf(service)
-            conf.module = module
+            if conf:
+                conf.module = module
             return conf
         return None
     def load_sysd_unit_conf(self, module): # -> conf?
