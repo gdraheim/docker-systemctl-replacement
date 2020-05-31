@@ -27593,8 +27593,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} {systemctl} is-active zzz.service -vv"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s", cmd, end, out)
-        self.assertEqual(end, 3)
-        self.assertEqual(out.strip(), "inactive")
+        self.assertEqual(end, 0)
+        self.assertEqual(out.strip(), "active")
+        #
+        cmd = "docker exec {testname} {systemctl} stop zzz.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
         #
         logg.info("== 'try-restart' will not start a not-active service")        
         cmd = "docker exec {testname} {systemctl} try-restart zzz.service -vv"
