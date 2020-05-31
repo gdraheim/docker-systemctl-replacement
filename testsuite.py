@@ -13967,7 +13967,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
-    def test_4044_sysv_service_functions(self):
+    def test_4045_sysv_service_functions(self):
         """ check that we manage SysV services in a root env
             with basic run-service commands: start, stop, restart,
             reload, try-restart, reload-or-restart, kill and
@@ -27342,7 +27342,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_docker(testname)
         self.rm_testdir()
         self.end()
-    def test_5044_runuser_sysv_service_functions(self):
+    def test_5045_runuser_sysv_service_functions(self):
         """ check that we manage SysV services in a root env
             with basic run-service commands: start, stop, restart,
             reload, try-restart, reload-or-restart, kill and
