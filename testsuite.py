@@ -25142,7 +25142,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} is-enabled zza.service"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(end, 0) # ok
+        self.assertEqual(end, 1)
         #
         cmd = "{systemctl} preset zza.service"
         out, end = output2(cmd.format(**locals()))
