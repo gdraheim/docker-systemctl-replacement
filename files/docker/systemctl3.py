@@ -4,7 +4,7 @@
 from __future__ import print_function
 
 __copyright__ = "(C) 2016-2020 Guido U. Draheim, licensed under the EUPL"
-__version__ = "1.5.4216"
+__version__ = "1.5.4212"
 
 import logging
 logg = logging.getLogger("systemctl")
@@ -3933,35 +3933,39 @@ class Systemctl:
                self.start_unit(unit)
         return done
     def enable_unit(self, unit):
-        unit_file = self.unit_file(unit)
-        if not unit_file:
+        conf = self.load_unit_conf(unit)
+        if conf is None:
             logg.error("Unit %s not found.", unit)
             return False
+        unit_file = conf.filename()
         if self.is_sysv_file(unit_file):
             if self.user_mode():
                 logg.error("Initscript %s not for --user mode", unit)
                 return False
             return self.enable_unit_sysv(unit_file)
-        conf = self.get_unit_conf(unit)
         if self.not_user_conf(conf):
             logg.error("Unit %s not for --user mode", unit)
             return False
-        wanted = self.wanted_from(self.get_unit_conf(unit))
+        return self.enable_unit_from(conf)
+    def enable_unit_from(self, conf):
+        wanted = self.wanted_from(conf)
         if not wanted: 
+            logg.debug("%s has no target", conf.name())
             return False # "static" is-enabled
         folder = self.enablefolder(wanted)
         if self._root:
             folder = os_path(self._root, folder)
         if not os.path.isdir(folder):
             os.makedirs(folder)
-        target = os.path.join(folder, os.path.basename(unit_file))
+        source = conf.filename()
+        target = os.path.join(folder, conf.name())
         if True:
             _f = self._force and "-f" or ""
-            logg.info("ln -s {_f} '{unit_file}' '{target}'".format(**locals()))
+            logg.info("ln -s {_f} '{source}' '{target}'".format(**locals()))
         if self._force and os.path.islink(target):
             os.remove(target)
         if not os.path.islink(target):
-            os.symlink(unit_file, target)
+            os.symlink(source, target)
         return True
     def rc3_root_folder(self):
         old_folder = os_path(self._root, _rc3_boot_folder)
@@ -4024,26 +4028,29 @@ class Systemctl:
                done = False
         return done
     def disable_unit(self, unit):
-        unit_file = self.unit_file(unit)
-        if not unit_file:
+        conf = self.load_unit_conf(unit)
+        if conf is None:
             logg.error("Unit %s not found.", unit)
             return False
+        unit_file = conf.filename()
         if self.is_sysv_file(unit_file):
             if self.user_mode():
                 logg.error("Initscript %s not for --user mode", unit)
                 return False
             return self.disable_unit_sysv(unit_file)
-        conf = self.get_unit_conf(unit)
         if self.not_user_conf(conf):
             logg.error("Unit %s not for --user mode", unit)
             return False
-        wanted = self.wanted_from(self.get_unit_conf(unit))
+        return self.disable_unit_from(conf)
+    def disable_unit_from(self, conf):
+        wanted = self.wanted_from(conf)
         if not wanted:
+            logg.debug("%s has no target", conf.name())
             return False # "static" is-enabled
         for folder in self.enablefolders(wanted):
             if self._root:
                 folder = os_path(self._root, folder)
-            target = os.path.join(folder, os.path.basename(unit_file))
+            target = os.path.join(folder, conf.name())
             if os.path.isfile(target):
                 try:
                     _f = self._force and "-f" or ""
