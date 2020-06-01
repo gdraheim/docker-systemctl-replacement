@@ -5257,19 +5257,19 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Service]
             ExecStart=/bin/sleep 2
             [Install]
-            WantedBy=invented.target""")
+            WantedBy=zz-invented.target""")
         text_file(os_path(root, "/etc/systemd/system/zzi.service"),"""
             [Unit]
             Description=Testing E
             [Service]
             ExecStart=/bin/sleep 2
             [Install]
-            WantedBy=isolated.target""")
-        text_file(os_path(root, "/etc/systemd/system/invented.target"),"""
+            WantedBy=zz-isolated.target""")
+        text_file(os_path(root, "/etc/systemd/system/zz-invented.target"),"""
             [Unit]
             Description=Invented Runlevel
             Requires=multi-user.target""")
-        text_file(os_path(root, "/etc/systemd/system/isolated.target"),"""
+        text_file(os_path(root, "/etc/systemd/system/zz-isolated.target"),"""
             [Unit]
             Description=Isolated Runlevel""")
         if not real:
@@ -5291,7 +5291,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertGreater(len(lines(out)), 6)
         self.assertEqual(end, 0)
-        self.assertTrue(greps(out, "invented.target"))
+        self.assertTrue(greps(out, "zz-invented.target"))
         #
         cmd = "{systemctl} default-services"
         out, end = output2(cmd.format(**locals()))
@@ -5354,13 +5354,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(lines(out)), 2)
         self.assertEqual(end, 0)
         #
-        cmd = "{systemctl} set-default nonexistant.target"
+        cmd = "{systemctl} set-default zz-nonexistant.target"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 3)
         self.assertTrue(greps(out, "No such runlevel"))
         #
-        cmd = "{systemctl} set-default invented.target"
+        cmd = "{systemctl} set-default zz-invented.target"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
@@ -5382,7 +5382,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(lines(out)), 3)
         self.assertEqual(end, 0)
         #
-        cmd = "{systemctl} set-default isolated.target"
+        cmd = "{systemctl} set-default zz-isolated.target"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
@@ -5404,7 +5404,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(lines(out)), 1)
         self.assertEqual(end, 0)
         #
-        cmd = "{systemctl} set-default invented.target"
+        cmd = "{systemctl} set-default zz-invented.target"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
