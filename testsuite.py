@@ -24265,6 +24265,116 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
+    def test_4600_systemctl_py_start_target_units(self):
+        """ check that we can enable template services in a target"""
+        vv = self.begin()
+        self.rm_testdir()
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        logfile = os_path(root, "/var/log/"+testname+".log")
+        bindir = os_path(root, "/usr/bin")
+        text_file(os_path(testdir, "zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            Type=oneshot
+            ExecStart=/bin/touch {root}/tmp/zz.a.txt
+            ExecStop=/bin/rm {root}/tmp/zz.a.txt
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        text_file(os_path(testdir, "zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            Type=oneshot
+            ExecStart=/bin/touch {root}/tmp/zz.b.txt
+            ExecStop=/bin/rm {root}/tmp/zz.b.txt
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        text_file(os_path(testdir, "zz@.service"),"""
+            [Unit]
+            Description=Testing Z.%i
+            [Service]
+            Type=oneshot
+            ExecStart=/bin/touch {root}/tmp/zz.%i.txt
+            ExecStop=/bin/rm {root}/tmp/zz.%i.txt
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        text_file(os_path(testdir, "zzxx.target"),"""
+            [Unit]
+            Description=Testing D
+            Requires= zza.service zz@rsa.service
+            """.format(**locals()))
+        #
+        copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
+        copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
+        copy_file(os_path(testdir, "zz@.service"), os_path(root, "/etc/systemd/system/zz@.service"))
+        copy_file(os_path(testdir, "zzxx.target"), os_path(root, "/etc/systemd/system/zzxx.target"))
+        text_file(os_path(root, "/tmp/zz.tmp"), "")
+        cmd = "{systemctl} enable zza.service"
+        sh____(cmd.format(**locals()))
+        cmd = "{systemctl} enable zzb.service"
+        sh____(cmd.format(**locals()))
+        cmd = "{systemctl} default-services | sort"
+        out = output(cmd.format(**locals()))
+        logg.info("\n>\n%s", out)
+        self.assertEqual(out.strip(), "zza.service\nzzb.service")
+        cmd = "{systemctl} default-services zzxx.target | sort"
+        out = output(cmd.format(**locals()))
+        logg.info("\n>\n%s", out)
+        self.assertEqual(out.strip(), "zza.service\nzz@rsa.service")
+        #
+        cmd = "{systemctl} is-active zzxx.target"
+        out = output(cmd.format(**locals()))
+        logg.info("\n>\n%s", out)
+        self.assertEqual(out.strip(), "inactive")
+        cmd = "{systemctl} is-active zza.service"
+        out = output(cmd.format(**locals()))
+        logg.info("\n>\n%s", out)
+        self.assertEqual(out.strip(), "inactive")
+        #
+        cmd = "{systemctl} start zza.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} is-active zzxx.target"
+        out = output(cmd.format(**locals()))
+        logg.info("\n>\n%s", out)
+        self.assertEqual(out.strip(), "inactive")
+        cmd = "{systemctl} is-active zza.service"
+        out = output(cmd.format(**locals()))
+        logg.info("\n>\n%s", out)
+        self.assertEqual(out.strip(), "active")
+        #
+        cmd = "{systemctl} start zzxx.target {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} is-active zzxx.target {vv}"
+        out = output(cmd.format(**locals()))
+        logg.info("\n>\n%s", out)
+        self.assertEqual(out.strip(), "active")
+        cmd = "{systemctl} is-active zza.service"
+        out = output(cmd.format(**locals()))
+        logg.info("\n>\n%s", out)
+        self.assertEqual(out.strip(), "active")
+        cmd = "{systemctl} is-active zz@rsa.service"
+        out = output(cmd.format(**locals()))
+        logg.info("\n>\n%s", out)
+        self.assertEqual(out.strip(), "active")
+        #
+        self.rm_zzfiles(root)
+        self.rm_testdir()
+        self.coverage()
+        self.end()
     def test_4700_systemctl_py_restart_failed_units(self):
         """ check that we can enable services in a docker container to be run as default-services
             and failed units are going to be restarted"""
