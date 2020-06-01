@@ -3953,10 +3953,11 @@ class Systemctl:
         return self.enable_unit_from(conf)
     def enable_unit_from(self, conf):
         wanted = self.wanted_from(conf)
-        if not wanted: 
+        if not wanted and not self._force: 
             logg.debug("%s has no target", conf.name())
             return False # "static" is-enabled
-        folder = self.enablefolder(wanted)
+        target = wanted or self.get_default_target()
+        folder = self.enablefolder(target)
         if self._root:
             folder = os_path(self._root, folder)
         if not os.path.isdir(folder):
@@ -3965,14 +3966,14 @@ class Systemctl:
         if not source: # pragma: no cover (was checked before)
             logg.debug("%s has no real file", conf.name())
             return False
-        target = os.path.join(folder, conf.name())
+        symlink = os.path.join(folder, conf.name())
         if True:
             _f = self._force and "-f" or ""
-            logg.info("ln -s {_f} '{source}' '{target}'".format(**locals()))
-        if self._force and os.path.islink(target):
+            logg.info("ln -s {_f} '{source}' '{symlink}'".format(**locals()))
+        if self._force and os.path.islink(symlink):
             os.remove(target)
-        if not os.path.islink(target):
-            os.symlink(source, target)
+        if not os.path.islink(symlink):
+            os.symlink(source, symlink)
         return True
     def rc3_root_folder(self):
         old_folder = os_path(self._root, _rc3_boot_folder)
@@ -4054,22 +4055,24 @@ class Systemctl:
         return self.disable_unit_from(conf)
     def disable_unit_from(self, conf):
         wanted = self.wanted_from(conf)
-        if not wanted:
+        if not wanted and not self._force:
             logg.debug("%s has no target", conf.name())
             return False # "static" is-enabled
-        for folder in self.enablefolders(wanted):
+        target = wanted or self.get_default_target()
+        for folder in self.enablefolders(target):
             if self._root:
                 folder = os_path(self._root, folder)
-            target = os.path.join(folder, conf.name())
-            if os.path.isfile(target):
+            symlink = os.path.join(folder, conf.name())
+            if os.path.exists(symlink):
                 try:
                     _f = self._force and "-f" or ""
-                    logg.info("rm {_f} '{target}'".format(**locals()))
-                    os.remove(target)
+                    logg.info("rm {_f} '{symlink}'".format(**locals()))
+                    if os.path.islink(symlink) or self._force:
+                        os.remove(symlink)
                 except IOError as e:
-                    logg.error("disable %s: %s", target, e)
+                    logg.error("disable %s: %s", symlink, e)
                 except OSError as e:
-                    logg.error("disable %s: %s", target, e)
+                    logg.error("disable %s: %s", symlink, e)
         return True
     def disable_unit_sysv(self, unit_file):
         rc3 = self._disable_unit_sysv(unit_file, self.rc3_root_folder())
@@ -4158,14 +4161,15 @@ class Systemctl:
         if conf.masked:
             return "masked"
         wanted = self.wanted_from(conf)
-        if not wanted:
-            return "static"
-        for folder in self.enablefolders(wanted):
+        target = wanted or self.get_default_target()
+        for folder in self.enablefolders(target):
             if self._root:
                 folder = os_path(self._root, folder)
             target = os.path.join(folder, conf.name())
             if os.path.isfile(target):
                 return "enabled"
+        if not wanted:
+            return "static"
         return "disabled"
     def mask_modules(self, *modules):
         """ [UNIT]... -- mask non-startable units """
@@ -4742,7 +4746,7 @@ class Systemctl:
         targets = modules or [ self.get_default_target() ]
         for target in targets:
             units = self.target_default_services(target)
-            logg.error("%s = %s", target, units)
+            logg.debug(" %s # %s", " ".join(units), target)
             for unit in units:
                 if unit not in results:
                     results.append(unit)
@@ -4765,6 +4769,10 @@ class Systemctl:
             targetlist = self.get_target_list(target)
             logg.debug("check for %s user services : %s", target, targetlist)
             for targets in targetlist:
+                for unit in self.enabled_target_user_local_units(targets, ".target", igno):
+                    if unit not in units:
+                        units.append(unit)
+            for targets in targetlist:
                 for unit in self.enabled_target_user_local_units(targets, ".socket", igno):
                     if unit not in units:
                         units.append(unit)
@@ -4779,6 +4787,10 @@ class Systemctl:
         else:
             targetlist = self.get_target_list(target)
             logg.debug("check for %s system services: %s", target, targetlist)
+            for targets in targetlist:
+                for unit in self.enabled_target_system_units(targets, ".target", igno):
+                    if unit not in units:
+                        units.append(unit)
             for targets in targetlist:
                 for unit in self.enabled_target_system_units(targets, ".socket", igno):
                     if unit not in units:
