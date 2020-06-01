@@ -3593,11 +3593,26 @@ class Systemctl:
             return "inactive"
     def get_active_target_from(self, conf):
         """ returns 'active' 'inactive' 'failed' 'unknown' """
-        if conf.name() in self.get_active_target_list():
+        return self.get_active_target(conf.name())
+    def get_active_target(self, target):
+        """ returns 'active' 'inactive' 'failed' 'unknown' """
+        if target in self.get_active_target_list():
             status = self.is_system_running()
             if status in [ "running" ]:
                 return "active"
-        return "inactive"
+            return "inactive"
+        else:
+            services = self.target_default_services(target)
+            result = "active"
+            for service in services:
+                conf = self.load_unit_conf(service)
+                if conf:
+                    state = self.get_active_from(conf)
+                    if state in ["failed"]:
+                        result = state
+                    elif state not in ["active"]:
+                        result = state
+            return result
     def get_active_target_list(self):
         current_target = self.get_default_target()
         target_list = self.get_target_list(current_target)
@@ -4773,7 +4788,15 @@ class Systemctl:
                     if unit not in units:
                         units.append(unit)
             for targets in targetlist:
+                for unit in self.required_target_units(targets, ".socket", igno):
+                    if unit not in units:
+                        units.append(unit)
+            for targets in targetlist:
                 for unit in self.enabled_target_user_local_units(targets, ".socket", igno):
+                    if unit not in units:
+                        units.append(unit)
+            for targets in targetlist:
+                for unit in self.required_target_units(targets, ".service", igno):
                     if unit not in units:
                         units.append(unit)
             for targets in targetlist:
@@ -4792,7 +4815,15 @@ class Systemctl:
                     if unit not in units:
                         units.append(unit)
             for targets in targetlist:
+                for unit in self.required_target_units(targets, ".socket", igno):
+                    if unit not in units:
+                        units.append(unit)
+            for targets in targetlist:
                 for unit in self.enabled_target_system_units(targets, ".socket", igno):
+                    if unit not in units:
+                        units.append(unit)
+            for targets in targetlist:
+                for unit in self.required_target_units(targets, ".service", igno):
                     if unit not in units:
                         units.append(unit)
             for targets in targetlist:
@@ -4881,6 +4912,16 @@ class Systemctl:
                     unit = service + ".service"
                     if self._ignored_unit(unit, igno):
                         continue # ignore
+                    units.append(unit)
+        return units
+    def required_target_units(self, target, unit_type, igno):
+        units = []
+        deps = self.get_dependencies_unit(target)
+        for unit in deps:
+            if self._ignored_unit(unit, igno):
+                continue # ignore
+            if unit.endswith(unit_type):
+                if unit not in units:
                     units.append(unit)
         return units
     def get_target_conf(self, module): # -> conf (conf | default-conf)
