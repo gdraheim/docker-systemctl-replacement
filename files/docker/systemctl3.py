@@ -149,6 +149,7 @@ PROC_MAX_DEPTH = 100
 EXPAND_VARS_MAXDEPTH = 20
 EXPAND_KEEP_VARS = True
 RESTART_FAILED_UNITS = True
+ACTIVE_IF_ENABLED=False
 
 # The systemd default was NOTIFY_SOCKET="/var/run/systemd/notify"
 _notify_socket_folder = "{RUN}/systemd" # alias /run/systemd
@@ -3519,7 +3520,7 @@ class Systemctl:
             for unit in units:
                 active = self.get_active_unit(unit) 
                 enabled = self.enabled_unit(unit)
-                if enabled != "enabled": 
+                if enabled != "enabled" and ACTIVE_IF_ENABLED:
                     active = "inactive" # "unknown"
                 results += [ active ]
                 break
