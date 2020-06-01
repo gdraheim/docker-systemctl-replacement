@@ -5100,6 +5100,19 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(len(lines(out)), 2)
         self.assertEqual(end, 0)
+        ####
+        cmd = "{systemctl} is-enabled zza.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(out.strip(), "static")
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} is-enabled zzx.target"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(out.strip(), "static")
+        self.assertEqual(end, 0)
+        ####
         #
         cmd = "{systemctl} --no-legend enable zza.service --force"
         out, end = output2(cmd.format(**locals()))
@@ -5126,13 +5139,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} is-enabled zza.service"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(len(lines(out)), 1)
+        self.assertEqual(out.strip(), "enabled")
         self.assertEqual(end, 0)
         #
         cmd = "{systemctl} is-enabled zzx.target"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(len(lines(out)), 1)
+        self.assertEqual(out.strip(), "enabled")
         self.assertEqual(end, 0)
         #
         self.rm_testdir()
