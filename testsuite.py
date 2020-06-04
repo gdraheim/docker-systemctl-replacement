@@ -9376,7 +9376,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 3)
-        self.assertEqual(out, "inactive\n")
+        self.assertEqual(out, "failed\n")
         #
         kill_testsleep = "{systemctl} __killall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
@@ -24861,6 +24861,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(kill_testsleep.format(**locals()))
         kill_daemon = "{systemctl} __killall :9 '*systemctl.py' -vvvv"
         sx____(kill_daemon.format(**locals()))
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
