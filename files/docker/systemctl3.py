@@ -35,8 +35,16 @@ DEBUG_STATUS = False
 DEBUG_BOOTTIME = False
 DEBUG_INITLOOP = False
 DEBUG_KILLALL = False
+DEBUG_FLOCK = False
 TestListen = False
 TestAccept = False
+
+def logg_debug_flock(*args):
+    if DEBUG_FLOCK:
+        logg.debug(*args) # pragma: no cover
+def logg_debug_after(*args):
+    if DEBUG_AFTER:
+        logg.debug(*args) # pragma: no cover
 
 NOT_A_PROBLEM = 0   # FOUND_OK
 NOT_OK = 1          # FOUND_ERROR
@@ -843,17 +851,17 @@ class waitlock:
             self.opened = os.open(lockfile, os.O_RDWR | os.O_CREAT, 0o600)
             for attempt in xrange(int(MaxLockWait or DefaultMaximumTimeout)):
                 try:
-                    logg.debug("[%s] %s. trying %s _______ ", os.getpid(), attempt, lockname)
+                    logg_debug_flock("[%s] %s. trying %s _______ ", os.getpid(), attempt, lockname)
                     fcntl.flock(self.opened, fcntl.LOCK_EX | fcntl.LOCK_NB)
                     st = os.fstat(self.opened)
                     if not st.st_nlink:
-                        logg.debug("[%s] %s. %s got deleted, trying again", os.getpid(), attempt, lockname)
+                        logg_debug_flock("[%s] %s. %s got deleted, trying again", os.getpid(), attempt, lockname)
                         os.close(self.opened)
                         self.opened = os.open(lockfile, os.O_RDWR | os.O_CREAT, 0o600)
                         continue
                     content = "{ 'systemctl': %s, 'lock': '%s' }\n" % (os.getpid(), lockname)
                     os.write(self.opened, content.encode("utf-8"))
-                    logg.debug("[%s] %s. holding lock on %s", os.getpid(), attempt, lockname)
+                    logg_debug_flock("[%s] %s. holding lock on %s", os.getpid(), attempt, lockname)
                     return True
                 except IOError as e:
                     whom = os.read(self.opened, 4096)
@@ -1041,31 +1049,25 @@ def conf_sortedAfter(conflist, cmp = compareAfter):
                     itemB = sortlist[B]
                     before = compareAfter(itemA.conf, itemB.conf)
                     if before > 0 and itemA.rank <= itemB.rank:
-                        if DEBUG_AFTER: # pragma: no cover
-                            logg.info("  %-30s before %s", itemA.conf.name(), itemB.conf.name())
+                        logg_debug_after("  %-30s before %s", itemA.conf.name(), itemB.conf.name())
                         itemA.rank = itemB.rank + 1
                         changed += 1
                     if before < 0 and itemB.rank <= itemA.rank:
-                        if DEBUG_AFTER: # pragma: no cover
-                            logg.info("  %-30s before %s", itemB.conf.name(), itemA.conf.name())
+                        logg_debug_after("  %-30s before %s", itemB.conf.name(), itemA.conf.name())
                         itemB.rank = itemA.rank + 1
                         changed += 1
         if not changed:
-            if DEBUG_AFTER: # pragma: no cover
-                logg.info("done in check %s of %s", check, len(sortlist))
+            logg_debug_after("done in check %s of %s", check, len(sortlist))
             break
             # because Requires is almost always the same as the After clauses
             # we are mostly done in round 1 as the list is in required order
     for conf in conflist:
-        if DEBUG_AFTER: # pragma: no cover
-            logg.debug(".. %s", conf.name())
+        logg_debug_after(".. %s", conf.name())
     for item in sortlist:
-        if DEBUG_AFTER: # pragma: no cover
-            logg.info("(%s) %s", item.rank, item.conf.name())
+        logg_debug_after("(%s) %s", item.rank, item.conf.name())
     sortedlist = sorted(sortlist, key = lambda item: -item.rank)
     for item in sortedlist:
-        if DEBUG_AFTER: # pragma: no cover
-            logg.info("[%s] %s", item.rank, item.conf.name())
+        logg_debug_after("[%s] %s", item.rank, item.conf.name())
     return [ item.conf for item in sortedlist ]
 
 class Systemctl:
@@ -2843,8 +2845,7 @@ class Systemctl:
     def execve_from(self, conf, cmd, env):
         """ this code is commonly run in a child process // returns exit-code"""
         runs = conf.get("Service", "Type", "simple").lower()
-        logg.debug("%s process for %s => %s", runs, strE(conf.name()), strQ(conf.filename()))
-        #
+        # logg.debug("%s process for %s => %s", runs, strE(conf.name()), strQ(conf.filename()))
         self.dup2_journal_log(conf)
         #
         runuser = self.get_User(conf)
@@ -5191,6 +5192,7 @@ class Systemctl:
                     logg.debug("[%s] [%s] Current NoCheck (Restart=%s)", me, unit, restartPolicy)
                     continue
                 restartSec = self.get_RestartSec(conf)
+                logg.info("!! [%s] restartSec=%s (InitLoopSleep=%s)", unit, restartSec, InitLoopSleep)
                 if restartSec == 0:
                     if InitLoopSleep > 1:
                         logg.warning("[%s] set InitLoopSleep from %ss to 1 (caused by RestartSec=0!)", 
