@@ -4919,7 +4919,7 @@ class Systemctl:
     def required_target_units(self, target, unit_type, igno):
         units = []
         deps = self.get_dependencies_unit(target)
-        for unit in deps:
+        for unit in sorted(deps):
             if self._ignored_unit(unit, igno):
                 continue # ignore
             if unit.endswith(unit_type):
