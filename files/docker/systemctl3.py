@@ -5192,7 +5192,6 @@ class Systemctl:
                     logg.debug("[%s] [%s] Current NoCheck (Restart=%s)", me, unit, restartPolicy)
                     continue
                 restartSec = self.get_RestartSec(conf)
-                logg.info("!! [%s] restartSec=%s (InitLoopSleep=%s)", unit, restartSec, InitLoopSleep)
                 if restartSec == 0:
                     if InitLoopSleep > 1:
                         logg.warning("[%s] set InitLoopSleep from %ss to 1 (caused by RestartSec=0!)", 
