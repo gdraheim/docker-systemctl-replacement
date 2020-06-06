@@ -3660,7 +3660,7 @@ class Systemctl:
             for unit in units:
                 active = self.get_active_unit(unit) 
                 enabled = self.enabled_unit(unit)
-                if enabled != "enabled": 
+                if enabled != "enabled" and ACTIVE_IF_ENABLED: 
                     active = "inactive"
                 results += [ active ]
                 break
