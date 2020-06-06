@@ -3505,7 +3505,7 @@ class Systemctl:
         #   0 when "active"
         #   1 when unit is not found
         #   3 when any "inactive" or "unknown"
-        # However: # TODO!!!!! BUG in original systemctl!!
+        # However: # TODO! BUG in original systemctl!
         #   documentation says " exit code 0 if at least one is active"
         #   and "Unless --quiet is specified, print the unit state"
         units = []
