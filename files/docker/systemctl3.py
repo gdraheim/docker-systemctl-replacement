@@ -4786,6 +4786,8 @@ class Systemctl:
             targetlist = self.get_target_list(target)
             logg.debug("check for %s user services : %s", target, targetlist)
             for targets in targetlist:
+                if targets.endswith(".target"):
+                    continue
                 for unit in self.enabled_target_user_local_units(targets, ".target", igno):
                     if unit not in units:
                         units.append(unit)
@@ -4813,6 +4815,8 @@ class Systemctl:
             targetlist = self.get_target_list(target)
             logg.debug("check for %s system services: %s", target, targetlist)
             for targets in targetlist:
+                if targets.endswith(".target"):
+                    continue
                 for unit in self.enabled_target_system_units(targets, ".target", igno):
                     if unit not in units:
                         units.append(unit)
