@@ -594,7 +594,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 except Exception as e:
                     logg.info(" killing %s", e)
     def rm_killall(self, testname = None):
-        self.killall("*systemctl*", 10)
+        self.killall("*systemctl*.py *", 10)
         testname = testname or self.caller_testname()
         self.killall("/{testname}_*".format(**locals()))
     def kill(self, pid, wait = None, sig = None):
@@ -603,7 +603,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if True:
             try:
                 if os.path.exists(cmdline):
-                    cmd = open(cmdline).read().replace("\0", " ")
+                    cmd = open(cmdline).read().replace("\0", " ").strip()
                     logg.info(" kill {pid} # {cmd}".format(**locals()))
                     os.kill(pid, sig or signal.SIGINT)
             except IOError as e:
