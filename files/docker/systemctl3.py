@@ -4372,15 +4372,16 @@ class Systemctl:
                         continue
                 if new_mark in mapping:
                     new_mark = mapping[new_mark]
-                restrict = ["Requires", "Requisite", "ConsistsOf", "Wants", 
-                    "BindsTo", ".requires", ".wants"]
+                restrict = ["Requires", "Wants", "Requisite", "BindsTo", "PartOf", "ConsistsOf", 
+                    ".requires", ".wants"]
                 for line in self.list_dependencies(dep, new_indent, new_mark, new_loop):
                     yield line
-    def get_dependencies_unit(self, unit):
+    def get_dependencies_unit(self, unit, styles = None):
+        styles = styles or [ "Requires", "Wants", "Requisite", "BindsTo", "PartOf", "ConsistsOf",
+            ".requires", ".wants", "PropagateReloadTo", "Conflicts",  ]
         conf = self.get_unit_conf(unit)
         deps = {}
-        for style in [ "Requires", "Wants", "Requisite", "BindsTo", "PartOf",
-            ".requires", ".wants", "PropagateReloadTo", "Conflicts",  ]:
+        for style in styles:
             if style.startswith("."):
                 for folder in self.sysd_folders():
                     if not folder: 
@@ -4397,14 +4398,18 @@ class Systemctl:
                     for required in requirelist.strip().split(" "):
                         deps[required.strip()] = style
         return deps
-    def get_start_dependencies(self, unit): # pragma: no cover
+    def get_required_dependencies(self, unit, styles = None):
+        styles = styles or [ "Requires", "Wants", "Requisite", "BindsTo",
+            ".requires", ".wants"  ]
+        return self.get_dependencies_unit(unit, styles)
+    def get_start_dependencies(self, unit, styles = None): # pragma: no cover
         """ the list of services to be started as well / TODO: unused """
+        styles = styles or ["Requires", "Wants", "Requisite", "BindsTo", "PartOf", "ConsistsOf",
+            ".requires", ".wants"]
         deps = {}
         unit_deps = self.get_dependencies_unit(unit)
         for dep_unit, dep_style in unit_deps.items():
-            restrict = ["Requires", "Requisite", "ConsistsOf", "Wants", 
-                "BindsTo", ".requires", ".wants"]
-            if dep_style in restrict:
+            if dep_style in styles:
                 if dep_unit in deps:
                     if dep_style not in deps[dep_unit]:
                         deps[dep_unit].append( dep_style)
@@ -4922,7 +4927,7 @@ class Systemctl:
         return units
     def required_target_units(self, target, unit_type, igno):
         units = []
-        deps = self.get_dependencies_unit(target)
+        deps = self.get_required_dependencies(target)
         for unit in sorted(deps):
             if self._ignored_unit(unit, igno):
                 continue # ignore
