@@ -597,6 +597,40 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.killall("*systemctl*", 10)
         testname = testname or self.caller_testname()
         self.killall("/{testname}_*".format(**locals()))
+    def kill(self, pid, wait = None, sig = None):
+        pid = int(pid)
+        cmdline = "/proc/{pid}/cmdline".format(**locals())
+        if True:
+            try:
+                if os.path.exists(cmdline):
+                    cmd = open(cmdline).read().replace("\0", " ")
+                    logg.info(" kill {pid} # {cmd}".format(**locals()))
+                    os.kill(pid, sig or signal.SIGINT)
+            except IOError as e:
+                if e.errno != errno.ENOENT:
+                    logg.info(" killing %s", e)
+            except Exception as e:
+                logg.info(" killing %s", e)
+        status = "/proc/{pid}/status".format(**locals())
+        for checking in xrange(int(wait or 10)):
+            if not os.path.exists(cmdline):
+                return True
+            try:
+                if os.path.exists(status):
+                    for line in open(status):
+                        if line.startswith("State:"):
+                            if "(zombie)" in line:
+                                return True
+                            if checking % 2 == 0:
+                                logg.info(" wait %s - %s", pid, line.strip())
+            except IOError as e:
+                if e.errno != errno.ENOENT:
+                    logg.info(" killing %s", e)
+            except Exception as e:
+                logg.info(" killing %s", e)
+            time.sleep(1)
+        logg.warning("not killed %s", pid)
+        return False
     def makedirs(self, path):
         if not os.path.isdir(path):
             os.makedirs(path)
@@ -17834,12 +17868,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(os.path.exists(journal_b))
         #
         logg.info("kill daemon at %s", init.pid)
-        os.kill(init.pid, signal.SIGTERM)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        time.sleep(4)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
+        self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
         self.rm_testdir()
@@ -17933,12 +17962,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(out_b, "running testsleepA"))
         #
         logg.info("kill daemon at %s", init.pid)
-        os.kill(init.pid, signal.SIGTERM)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        time.sleep(4)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
+        self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
         self.rm_testdir()
@@ -18039,12 +18063,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
 
         #
         logg.info("kill daemon at %s", init.pid)
-        os.kill(init.pid, signal.SIGTERM)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        time.sleep(4)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
+        self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
         self.rm_testdir()
@@ -18146,12 +18165,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(out_b, "starts testsleepA"))
         #
         logg.info("kill daemon at %s", init.pid)
-        os.kill(init.pid, signal.SIGTERM)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        time.sleep(4)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
+        self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
         self.rm_testdir()
@@ -18255,12 +18269,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(out_b, "starts testsleepA"))
         #
         logg.info("kill daemon at %s", init.pid)
-        os.kill(init.pid, signal.SIGTERM)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        time.sleep(4)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
+        self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
         self.rm_testdir()
@@ -18352,12 +18361,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(os.path.exists(journal_b))
         #
         logg.info("kill daemon at %s", init.pid)
-        os.kill(init.pid, signal.SIGTERM)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        time.sleep(4)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
+        self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
         self.rm_testdir()
@@ -18447,12 +18451,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(os.path.exists(journal_b))
         #
         logg.info("kill daemon at %s", init.pid)
-        os.kill(init.pid, signal.SIGTERM)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        time.sleep(4)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
+        self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
         self.rm_testdir()
@@ -18560,12 +18559,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(out_b, "starts testsleepA"))
         #
         logg.info("kill daemon at %s", init.pid)
-        os.kill(init.pid, signal.SIGTERM)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        time.sleep(4)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
         #
         self.rm_killall()
         self.rm_testdir()
@@ -18675,12 +18668,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(out_b, "starts testsleepA"))
         #
         logg.info("kill daemon at %s", init.pid)
-        os.kill(init.pid, signal.SIGTERM)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        time.sleep(4)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
         #
         self.rm_killall()
         self.rm_testdir()
@@ -18792,12 +18779,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(out_b, "running testsleepA"))
         #
         logg.info("kill daemon at %s", init.pid)
-        os.kill(init.pid, signal.SIGTERM)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        time.sleep(4)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
+        self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
         self.rm_testdir()
@@ -18910,12 +18892,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(out_b, "append"))
         #
         logg.info("kill daemon at %s", init.pid)
-        os.kill(init.pid, signal.SIGTERM)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        time.sleep(4)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
+        self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
         self.rm_testdir()
@@ -19030,12 +19007,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(out_b, "append"))
         #
         logg.info("kill daemon at %s", init.pid)
-        os.kill(init.pid, signal.SIGTERM)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        time.sleep(4)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
+        self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
         self.rm_testdir()
@@ -19152,12 +19124,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(out_b, "append"))
         #
         logg.info("kill daemon at %s", init.pid)
-        os.kill(init.pid, signal.SIGTERM)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        time.sleep(4)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
+        self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
         self.rm_testdir()
@@ -19270,12 +19237,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out_b, "append"))
         #
         logg.info("kill daemon at %s", init.pid)
-        os.kill(init.pid, signal.SIGTERM)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        time.sleep(4)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
+        self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
         self.rm_testdir()
@@ -19390,12 +19352,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out_b, "append"))
         #
         logg.info("kill daemon at %s", init.pid)
-        os.kill(init.pid, signal.SIGTERM)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        time.sleep(4)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
+        self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
         self.rm_testdir()
@@ -19512,12 +19469,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out_b, "append"))
         #
         logg.info("kill daemon at %s", init.pid)
-        os.kill(init.pid, signal.SIGTERM)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        time.sleep(4)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
+        self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
         self.rm_testdir()
@@ -19632,12 +19584,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out_b, "Is a directory"))
         #
         logg.info("kill daemon at %s", init.pid)
-        os.kill(init.pid, signal.SIGTERM)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        time.sleep(4)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
+        self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
         self.rm_testdir()
@@ -19754,12 +19701,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out_b, "Is a directory"))
         #
         logg.info("kill daemon at %s", init.pid)
-        os.kill(init.pid, signal.SIGTERM)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        time.sleep(4)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
+        self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
         self.rm_testdir()
@@ -19878,12 +19820,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out_b, "Is a directory"))
         #
         logg.info("kill daemon at %s", init.pid)
-        os.kill(init.pid, signal.SIGTERM)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        time.sleep(4)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
+        self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
         self.rm_testdir()
@@ -19978,12 +19915,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(out_b, "TESTING ZZA"))
         #
         logg.info("kill daemon at %s", init.pid)
-        os.kill(init.pid, signal.SIGTERM)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        time.sleep(4)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
+        self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
         self.rm_testdir()
@@ -20078,12 +20010,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(out_b, "TESTING ZZA"))
         #
         logg.info("kill daemon at %s", init.pid)
-        os.kill(init.pid, signal.SIGTERM)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        time.sleep(4)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
+        self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
         self.rm_testdir()
@@ -20178,12 +20105,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(out_b, "TESTING ZZA"))
         #
         logg.info("kill daemon at %s", init.pid)
-        os.kill(init.pid, signal.SIGTERM)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        time.sleep(4)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
+        self.assertTrue(self.kill(init.pid))
         #
         self.rm_testdir()
         self.rm_killall()
@@ -20262,12 +20184,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "received:.*foo"))
         #
         logg.info("kill daemon at %s", init.pid)
-        os.kill(init.pid, signal.SIGTERM)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        time.sleep(4)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
+        self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
         self.rm_testdir()
@@ -20380,12 +20297,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         ##################################################
         #
         logg.info("kill daemon at %s", init.pid)
-        os.kill(init.pid, signal.SIGTERM)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        time.sleep(4)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
+        self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
         self.rm_testdir()
@@ -20515,12 +20427,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         ##################################################
         #
         logg.info("kill daemon at %s", init.pid)
-        os.kill(init.pid, signal.SIGTERM)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        time.sleep(4)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
+        self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
         self.rm_testdir()
@@ -20640,12 +20547,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         ##################################################
         #
         logg.info("kill daemon at %s", init.pid)
-        os.kill(init.pid, signal.SIGTERM)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        time.sleep(4)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
+        self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
         self.rm_testdir()
@@ -20766,12 +20668,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         ##################################################
         #
         logg.info("kill daemon at %s", init.pid)
-        os.kill(init.pid, signal.SIGTERM)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        time.sleep(4)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
+        self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
         self.rm_testdir()
@@ -20880,12 +20777,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         ##################################################
         #
         logg.info("kill daemon at %s", init.pid)
-        os.kill(init.pid, signal.SIGTERM)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        time.sleep(4)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
+        self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
         self.rm_testdir()
@@ -21012,12 +20904,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         ##################################################
         #
         logg.info("kill daemon at %s", init.pid)
-        os.kill(init.pid, signal.SIGTERM)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        time.sleep(4)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
+        self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
         self.rm_testdir()
@@ -21146,12 +21033,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         ##################################################
         #
         logg.info("kill daemon at %s", init.pid)
-        os.kill(init.pid, signal.SIGTERM)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        time.sleep(4)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
+        self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
         self.rm_testdir()
@@ -21278,12 +21160,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         ##################################################
         #
         logg.info("kill daemon at %s", init.pid)
-        os.kill(init.pid, signal.SIGTERM)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        time.sleep(4)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
+        self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
         self.rm_testdir()
@@ -21395,12 +21272,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         ##################################################
         #
         logg.info("kill daemon at %s", init.pid)
-        os.kill(init.pid, signal.SIGTERM)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        time.sleep(4)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
+        self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
         self.rm_testdir()
@@ -21514,12 +21386,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         ##################################################
         #
         logg.info("kill daemon at %s", init.pid)
-        os.kill(init.pid, signal.SIGTERM)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        time.sleep(4)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
+        self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
         self.rm_testdir()
@@ -21631,12 +21498,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         ##################################################
         #
         logg.info("kill daemon at %s", init.pid)
-        os.kill(init.pid, signal.SIGTERM)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        time.sleep(4)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
+        self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
         self.rm_testdir()
@@ -21711,12 +21573,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "received:.*foo"))
         #
         logg.info("kill daemon at %s", init.pid)
-        os.kill(init.pid, signal.SIGTERM)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        time.sleep(4)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
         #
         self.rm_killall()
         self.rm_testdir()
@@ -21791,12 +21647,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         ### self.assertTrue(greps(out, "received:.*foo")) # FIXME
         #
         logg.info("kill daemon at %s", init.pid)
-        os.kill(init.pid, signal.SIGTERM)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        time.sleep(4)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
+        self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
         self.rm_testdir()
@@ -21875,12 +21726,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         ### self.assertTrue(greps(out, "received:.*foo")) # FIXME
         #
         logg.info("kill daemon at %s", init.pid)
-        os.kill(init.pid, signal.SIGTERM)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        time.sleep(4)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
+        self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
         self.rm_testdir()
@@ -21959,12 +21805,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         ### self.assertTrue(greps(out, "received:.*foo")) # FIXME
         #
         logg.info("kill daemon at %s", init.pid)
-        os.kill(init.pid, signal.SIGTERM)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        time.sleep(4)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
+        self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
         self.rm_testdir()
@@ -22043,12 +21884,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         ### self.assertTrue(greps(out, "received:.*foo")) # FIXME
         #
         logg.info("kill daemon at %s", init.pid)
-        os.kill(init.pid, signal.SIGTERM)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        time.sleep(4)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
+        self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
         self.rm_testdir()
@@ -22120,12 +21956,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # no reply
         #
         logg.info("kill daemon at %s", init.pid)
-        os.kill(init.pid, signal.SIGTERM)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        time.sleep(4)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
+        self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
         self.rm_testdir()
@@ -22202,12 +22033,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "replied: ERROR: FOO"))
         #
         logg.info("kill daemon at %s", init.pid)
-        os.kill(init.pid, signal.SIGTERM)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        time.sleep(4)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
+        self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
         self.rm_testdir()
@@ -22280,12 +22106,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # no reply
         #
         logg.info("kill daemon at %s", init.pid)
-        os.kill(init.pid, signal.SIGTERM)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        time.sleep(4)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
+        self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
         self.rm_testdir()
@@ -22358,12 +22179,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # no reply
         #
         logg.info("kill daemon at %s", init.pid)
-        os.kill(init.pid, signal.SIGTERM)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        time.sleep(4)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
+        self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
         self.rm_testdir()
@@ -22439,12 +22255,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "received:.*foo"))
         #
         logg.info("kill daemon at %s", init.pid)
-        os.kill(init.pid, signal.SIGTERM)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        time.sleep(4)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
+        self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
         self.rm_testdir()
@@ -22520,12 +22331,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "received:.*foo"))
         #
         logg.info("kill daemon at %s", init.pid)
-        os.kill(init.pid, signal.SIGTERM)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        time.sleep(4)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
+        self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
         self.rm_testdir()
@@ -22601,12 +22407,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "received:.*foo"))
         #
         logg.info("kill daemon at %s", init.pid)
-        os.kill(init.pid, signal.SIGTERM)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        time.sleep(4)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
+        self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
         self.rm_testdir()
@@ -22682,12 +22483,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         ### self.assertTrue(greps(out, "received:.*foo"))
         #
         logg.info("kill daemon at %s", init.pid)
-        os.kill(init.pid, signal.SIGTERM)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        time.sleep(4)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
+        self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
         self.rm_testdir()
@@ -22763,12 +22559,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         ### self.assertTrue(greps(out, "received:.*foo"))
         #
         logg.info("kill daemon at %s", init.pid)
-        os.kill(init.pid, signal.SIGTERM)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        time.sleep(4)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
+        self.assertTrue(self.kill(init.pid))
         #
         self.rm_testdir()
         self.coverage()
@@ -22843,12 +22634,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         ### self.assertTrue(greps(out, "received:.*foo"))
         #
         logg.info("kill daemon at %s", init.pid)
-        os.kill(init.pid, signal.SIGTERM)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        time.sleep(4)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
+        self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
         self.rm_testdir()
@@ -22924,12 +22710,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         ### self.assertTrue(greps(out, "received:.*foo"))
         #
         logg.info("kill daemon at %s", init.pid)
-        os.kill(init.pid, signal.SIGTERM)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        time.sleep(4)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
+        self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
         self.rm_testdir()
@@ -23005,12 +22786,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         ### self.assertTrue(greps(out, "received:.*foo"))
         #
         logg.info("kill daemon at %s", init.pid)
-        os.kill(init.pid, signal.SIGTERM)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        time.sleep(4)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
+        self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
         self.rm_testdir()
@@ -23087,12 +22863,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         ### self.assertTrue(greps(out, "received:.*foo"))
         #
         logg.info("kill daemon at %s", init.pid)
-        os.kill(init.pid, signal.SIGTERM)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        time.sleep(4)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
+        self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
         self.rm_testdir()
@@ -23169,12 +22940,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         ### self.assertTrue(greps(out, "received:.*foo"))
         #
         logg.info("kill daemon at %s", init.pid)
-        os.kill(init.pid, signal.SIGTERM)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        time.sleep(4)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
+        self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
         self.rm_testdir()
@@ -23671,6 +23437,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             and failed units are going to be restarted"""
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -23746,22 +23513,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # sh____(cmd.format(**locals()))
         out2 = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out2)
-        #
-        systemctl_py = os.path.basename(_systemctl_py)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepC} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepD} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_daemon = "{systemctl} __killall :9 '*systemctl.py' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
@@ -23842,28 +23593,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(log, ".zzc.service. --- restarting failed unit"))
         self.assertTrue(greps(log, ".zzd.service. Current NoCheck .Restart=no."))
         #
-        kill_testsleep = "{systemctl} __killall {testsleepA}"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepB}"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepC}"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepD}"
-        sx____(kill_testsleep.format(**locals()))
-        #
         logg.info("kill daemon at %s", init.pid)
-        os.kill(init.pid, signal.SIGTERM)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        time.sleep(4)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(InitLoopSleep+1)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
+        self.assertTrue(self.kill(init.pid))
         #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -23872,6 +23605,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             and failed units are going to be restarted"""
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -23920,15 +23654,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out2 = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out2)
         #
-        kill_daemon = "{systemctl} __killall '*systemctl.py' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_daemon = "{systemctl} __killall :9 '*systemctl.py' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        #
         InitLoopSleep = 1
         systemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         #
@@ -23936,7 +23661,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         os_remove(debug_log)
         text_file(debug_log, "")
         cmd = "{systemctl} -1"
-        bg = background(cmd.format(**locals()))
+        init = background(cmd.format(**locals()))
         time.sleep(1)
         #
         top = _recent(output(_top_list))
@@ -23966,24 +23691,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(log, "zza.service.*Blocking Restart"))
         self.assertTrue(greps(log, "zza.service.*Status: error"))
         #
-        kill_testsleep = "{systemctl} __killall {testsleepA}"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepB}"
-        sx____(kill_testsleep.format(**locals()))
+        logg.info("kill daemon at %s", init.pid)
+        self.assertTrue(self.kill(init.pid))
         #
-        logg.info("kill daemon at %s", bg.pid)
-        os.kill(bg.pid, signal.SIGTERM)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        time.sleep(2)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*systemctl.py' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(InitLoopSleep+1)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -23992,6 +23703,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             and RestartSec shortes the InitLoop interval"""
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -24038,20 +23750,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out2 = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out2)
         #
-        kill_daemon = "{systemctl} __killall '*systemctl.py' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_daemon = "{systemctl} __killall :9 '*systemctl.py' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
         cmd = "{systemctl} -1"
-        bg = background(cmd.format(**locals()))
+        init = background(cmd.format(**locals()))
         time.sleep(2)
         #
         top = _recent(output(_top_list))
@@ -24072,24 +23775,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(log, ".zzb.service. set InitLoopSleep from 5s to 2 .caused by RestartSec=2.000s"))
         self.assertFalse(greps(log, "zza.service.*set InitLoopSleep"))
         #
-        kill_testsleep = "{systemctl} __killall {testsleepA}"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepB}"
-        sx____(kill_testsleep.format(**locals()))
+        logg.info("kill daemon at %s", init.pid)
+        self.assertTrue(self.kill(init.pid))
         #
-        logg.info("kill daemon at %s", bg.pid)
-        os.kill(bg.pid, signal.SIGTERM)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        time.sleep(2)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*systemctl.py' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(1)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -24098,6 +23787,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             and RestartSec shortes the InitLoop interval"""
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -24144,22 +23834,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out2 = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out2)
         #
-        kill_daemon = "{systemctl} __killall '*systemctl.py' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_daemon = "{systemctl} __killall :9 '*systemctl.py' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
         cmd = "{systemctl} -1"
-        bg = background(cmd.format(**locals()))
+        init = background(cmd.format(**locals()))
         time.sleep(2)
         #
         top = _recent(output(_top_list))
@@ -24180,24 +23859,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(log, ".zza.service. set InitLoopSleep from 5s to 2"))
         self.assertTrue(greps(log, ".zzb.service. set InitLoopSleep from 2s to 1 .caused by RestartSec=0!"))
         #
-        kill_testsleep = "{systemctl} __killall {testsleepA}"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepB}"
-        sx____(kill_testsleep.format(**locals()))
+        logg.info("kill daemon at %s", init.pid)
+        self.assertTrue(self.kill(init.pid))
         #
-        logg.info("kill daemon at %s", bg.pid)
-        os.kill(bg.pid, signal.SIGTERM)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        time.sleep(2)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*systemctl.py' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(1)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
-        #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -24207,6 +23872,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             they are up and running"""
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -24254,20 +23920,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out2 = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out2)
         #
-        kill_daemon = "{systemctl} __killall '*systemctl.py' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_daemon = "{systemctl} __killall :9 '*systemctl*.py' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
         cmd = "{systemctl} -1" # init
-        bg = background(cmd.format(**locals()))
+        init = background(cmd.format(**locals()))
         #
         time.sleep(1)
         cmd = "{systemctl} is-system-running"
@@ -24302,10 +23959,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         ## self.assertTrue(greps(top, "sleepB"))
         #
         logg.info("trying to send a 'halt'")
-        logg.info("kill daemon at %s", bg.pid)
-        os.kill(bg.pid, signal.SIGTERM)
-        #
-        time.sleep(1)
+        logg.info("kill daemon at %s", init.pid)
+        result = self.kill(init.pid)
+        logg.info("kill daemon %s", result)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         #
@@ -24333,13 +23989,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(top, "sleepA")) 
         self.assertFalse(greps(top, "sleepB"))
         #
-        kill_testsleep = "{systemctl} __killall {testsleepA}"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepB}"
-        sx____(kill_testsleep.format(**locals()))
-        kill_daemon = "{systemctl} __killall '*systemctl.py' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(1)
+        self.rm_killall()
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         #
