@@ -4750,6 +4750,7 @@ class Systemctl:
     igno_ubuntu = [ "mount*", "umount*", "ondemand", "*.local" ]
     igno_always = [ "network*", "dbus*", "systemd-*", "kdump*" ]
     igno_always += [ "purge-kernels.service", "after-local.service", "dm-event.*" ] # as on opensuse
+    igno_targets = [ "remote-fs.target" ]
     def _ignored_unit(self, unit, ignore_list):
         for ignore in ignore_list:
             if fnmatch.fnmatchcase(unit, ignore):
@@ -4791,8 +4792,6 @@ class Systemctl:
             targetlist = self.get_target_list(target)
             logg.debug("check for %s user services : %s", target, targetlist)
             for targets in targetlist:
-                if targets.endswith(".target"):
-                    continue
                 for unit in self.enabled_target_user_local_units(targets, ".target", igno):
                     if unit not in units:
                         units.append(unit)
@@ -4820,9 +4819,7 @@ class Systemctl:
             targetlist = self.get_target_list(target)
             logg.debug("check for %s system services: %s", target, targetlist)
             for targets in targetlist:
-                if targets.endswith(".target"):
-                    continue
-                for unit in self.enabled_target_system_units(targets, ".target", igno):
+                for unit in self.enabled_target_configured_system_units(targets, ".target", igno + self.igno_targets):
                     if unit not in units:
                         units.append(unit)
             for targets in targetlist:
@@ -4830,7 +4827,7 @@ class Systemctl:
                     if unit not in units:
                         units.append(unit)
             for targets in targetlist:
-                for unit in self.enabled_target_system_units(targets, ".socket", igno):
+                for unit in self.enabled_target_installed_system_units(targets, ".socket", igno):
                     if unit not in units:
                         units.append(unit)
             for targets in targetlist:
@@ -4838,7 +4835,7 @@ class Systemctl:
                     if unit not in units:
                         units.append(unit)
             for targets in targetlist:
-                for unit in self.enabled_target_system_units(targets, ".service", igno):
+                for unit in self.enabled_target_installed_system_units(targets, ".service", igno):
                     if unit not in units:
                         units.append(unit)
             for targets in targetlist:
@@ -4886,12 +4883,27 @@ class Systemctl:
                         else:
                             units.append(unit)
         return units
-    def enabled_target_system_units(self, target, unit_type = ".service", igno = []):
+    def enabled_target_installed_system_units(self, target, unit_type = ".service", igno = []):
         units = []
         for basefolder in self.system_folders():
             if not basefolder:
                 continue
             folder = self.default_enablefolder(target, basefolder)
+            if self._root:
+                folder = os_path(self._root, folder)
+            if os.path.isdir(folder):
+                for unit in sorted(os.listdir(folder)):
+                    path = os.path.join(folder, unit)
+                    if os.path.isdir(path): continue
+                    if self._ignored_unit(unit, igno):
+                        continue # ignore
+                    if unit.endswith(unit_type):
+                        units.append(unit)
+        return units
+    def enabled_target_configured_system_units(self, target, unit_type = ".service", igno = []):
+        units = []
+        if True:
+            folder = self.default_enablefolder(target)
             if self._root:
                 folder = os_path(self._root, folder)
             if os.path.isdir(folder):
