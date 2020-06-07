@@ -5327,6 +5327,10 @@ class Systemctl:
                                 logg.debug("%s: accepting %s", sock.name(), sock_fileno)
                                 self.do_accept_socket_from(sock.conf, sock.sock)
                 else:
+                    sleeping = sleep_sec
+                    while sleeping > 2:
+                        time.sleep(1)
+                        sleeping -= 1
                     time.sleep(sleep_sec)
                 timestamp = time.time()
                 if DEBUG_INITLOOP: # pragma: no cover
