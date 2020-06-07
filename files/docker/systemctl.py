@@ -5347,8 +5347,11 @@ class Systemctl:
                     sleeping = sleep_sec
                     while sleeping > 2:
                         time.sleep(1)
-                        sleeping -= 1
-                    time.sleep(sleep_sec)
+                        sleeping = InitLoopSleep - (time.time() - timestamp)
+                        if sleeping < MinimumYield:
+                           sleeping = MinimumYield
+                           break
+                    time.sleep(sleeping)
                 timestamp = time.time()
                 if DEBUG_INITLOOP: # pragma: no cover
                     logg.debug("NEXT InitLoop (after %ss)", sleep_sec)
