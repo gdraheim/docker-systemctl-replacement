@@ -23594,7 +23594,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(log, ".zzd.service. Current NoCheck .Restart=no."))
         #
         logg.info("kill daemon at %s", init.pid)
-        self.assertTrue(self.kill(init.pid))
+        self.assertTrue(self.kill(init.pid, 20))
         #
         self.rm_killall()
         self.rm_testdir()
