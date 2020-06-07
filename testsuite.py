@@ -12,6 +12,7 @@ import subprocess
 import os
 import os.path
 import time
+import errno
 import datetime
 import unittest
 import shutil
@@ -540,6 +541,62 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not KEEP:
             sx____("docker stop -t 6 " + testname)
             sx____("docker rm -f " + testname)
+    def killall(self, what, wait = None, sig = None):
+        killed = 0
+        if True:
+            for pid in os.listdir("/proc"):
+                try: pid = int(pid)
+                except: continue
+                cmdline = "/proc/{pid}/cmdline".format(**locals())
+                try:
+                    cmd = open(cmdline).read().replace("\0", " ")
+                    if fnmatch(cmd, what):
+                        logg.info(" kill {pid} # {cmd}".format(**locals()))
+                        os.kill(pid, sig or signal.SIGINT)
+                        killed += 1
+                except IOError as e:
+                    if e.errno != errno.ENOENT:
+                       logg.info(" killing %s", e)
+                except Exception as e:
+                    logg.info(" killing %s", e)
+        for checking in xrange(int(wait or 1)):
+            remaining = 0
+            for pid in os.listdir("/proc"):
+                try: pid = int(pid)
+                except: continue
+                cmdline = "/proc/{pid}/cmdline".format(**locals())
+                try:
+                    cmd = open(cmdline).read().replace("\0", " ")
+                    if fnmatch(cmd, what):
+                        remaining += 1
+                except IOError as e:
+                    if e.errno != errno.ENOENT:
+                       logg.info(" killing %s", e)
+                except Exception as e:
+                    logg.info(" killing %s", e)
+            if not remaining:
+                return
+            time.sleep(1)
+        if True:
+            for pid in os.listdir("/proc"):
+                try: pid = int(pid)
+                except: continue
+                cmdline = "/proc/{pid}/cmdline".format(**locals())
+                try:
+                    cmd = open(cmdline).read().replace("\0", " ")
+                    if fnmatch(cmd, what):
+                        logg.info(" kill {pid} # {cmd}".format(**locals()))
+                        os.kill(pid, sig or signal.SIGKILL)
+                        killed += 1
+                except IOError as e:
+                    if e.errno != errno.ENOENT:
+                       logg.info(" killing %s", e)
+                except Exception as e:
+                    logg.info(" killing %s", e)
+    def rm_killall(self, testname = None):
+        self.killall("*systemctl*", 10)
+        testname = testname or self.caller_testname()
+        self.killall("/{testname}_*".format(**locals()))
     def makedirs(self, path):
         if not os.path.isdir(path):
             os.makedirs(path)
@@ -17708,6 +17765,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_4300_background_default_journal(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -17743,14 +17801,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{systemctl} enable zzb.service"
         sh____(cmd.format(**locals()))
-        #
-        systemctl_py = os.path.basename(_systemctl_py)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
@@ -17790,18 +17840,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(4)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(InitLoopSleep+1)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
         #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
     def test_4301_background_default_journal_written(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -17850,14 +17897,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} enable zzb.service"
         sh____(cmd.format(**locals()))
         #
-        systemctl_py = os.path.basename(_systemctl_py)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        #
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
@@ -17900,18 +17939,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(4)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(InitLoopSleep+1)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
         #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
     def test_4302_background_default_journal_written_error(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -17961,14 +17997,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{systemctl} enable zzb.service"
         sh____(cmd.format(**locals()))
-        #
-        systemctl_py = os.path.basename(_systemctl_py)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
@@ -18017,18 +18045,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(4)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(InitLoopSleep+1)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
         #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
     def test_4303_background_default_journal_null_stderr(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -18080,14 +18105,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{systemctl} enable zzb.service"
         sh____(cmd.format(**locals()))
-        #
-        systemctl_py = os.path.basename(_systemctl_py)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
@@ -18135,18 +18152,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(4)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(InitLoopSleep+1)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
         #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
     def test_4304_background_default_journal_null_stdout(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -18200,14 +18214,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{systemctl} enable zzb.service"
         sh____(cmd.format(**locals()))
-        #
-        systemctl_py = os.path.basename(_systemctl_py)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
@@ -18255,18 +18261,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(4)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(InitLoopSleep+1)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
         #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
     def test_4308_background_default_journal_null_stdout_stderr(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -18321,14 +18324,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} enable zzb.service"
         sh____(cmd.format(**locals()))
         #
-        systemctl_py = os.path.basename(_systemctl_py)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        #
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
@@ -18363,18 +18358,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(4)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(InitLoopSleep+1)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
         #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
     def test_4309_background_default_journal_null_stdout_inherit(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -18427,14 +18419,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} enable zzb.service"
         sh____(cmd.format(**locals()))
         #
-        systemctl_py = os.path.basename(_systemctl_py)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        #
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
@@ -18469,18 +18453,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(4)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(InitLoopSleep+1)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
         #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
     def test_4311_background_logfile_journal(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -18532,14 +18513,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{systemctl} enable zzb.service"
         sh____(cmd.format(**locals()))
-        #
-        systemctl_py = os.path.basename(_systemctl_py)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
@@ -18593,18 +18566,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(4)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(InitLoopSleep+1)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
         #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
     def test_4312_background_logfile_journal(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -18656,14 +18626,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{systemctl} enable zzb.service"
         sh____(cmd.format(**locals()))
-        #
-        systemctl_py = os.path.basename(_systemctl_py)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
@@ -18719,18 +18681,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(4)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(InitLoopSleep+1)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
         #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
     def test_4313_background_logfile_journal(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -18785,14 +18744,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} enable zzb.service"
         sh____(cmd.format(**locals()))
         #
-        systemctl_py = os.path.basename(_systemctl_py)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        #
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
@@ -18847,18 +18798,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(4)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(InitLoopSleep+1)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
         #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
     def test_4321_background_logfile_journal(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -18913,14 +18861,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{systemctl} enable zzb.service"
         sh____(cmd.format(**locals()))
-        #
-        systemctl_py = os.path.basename(_systemctl_py)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
@@ -18976,18 +18916,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(4)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(InitLoopSleep+1)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
         #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
     def test_4322_background_logfile_journal(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -19042,14 +18979,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{systemctl} enable zzb.service"
         sh____(cmd.format(**locals()))
-        #
-        systemctl_py = os.path.basename(_systemctl_py)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
@@ -19107,18 +19036,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(4)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(InitLoopSleep+1)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
         #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
     def test_4323_background_logfile_journal(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -19176,14 +19102,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} enable zzb.service"
         sh____(cmd.format(**locals()))
         #
-        systemctl_py = os.path.basename(_systemctl_py)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        #
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
@@ -19240,18 +19158,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(4)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(InitLoopSleep+1)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
         #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
     def test_4331_background_logfile_journal(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -19307,14 +19222,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} enable zzb.service"
         sh____(cmd.format(**locals()))
         #
-        systemctl_py = os.path.basename(_systemctl_py)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        #
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
@@ -19369,18 +19276,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(4)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(InitLoopSleep+1)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
         #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
     def test_4332_background_logfile_journal(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -19436,14 +19340,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} enable zzb.service"
         sh____(cmd.format(**locals()))
         #
-        systemctl_py = os.path.basename(_systemctl_py)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        #
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
@@ -19500,18 +19396,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(4)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(InitLoopSleep+1)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
         #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
     def test_4333_background_logfile_journal(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -19569,14 +19462,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} enable zzb.service"
         sh____(cmd.format(**locals()))
         #
-        systemctl_py = os.path.basename(_systemctl_py)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        #
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
@@ -19633,18 +19518,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(4)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(InitLoopSleep+1)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
         #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
     def test_4351_background_logfile_journal(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -19698,14 +19580,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{systemctl} enable zzb.service"
         sh____(cmd.format(**locals()))
-        #
-        systemctl_py = os.path.basename(_systemctl_py)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
@@ -19764,18 +19638,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(4)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(InitLoopSleep+1)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
         #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
     def test_4352_background_logfile_journal(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -19830,14 +19701,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} enable zzb.service"
         sh____(cmd.format(**locals()))
         #
-        systemctl_py = os.path.basename(_systemctl_py)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        #
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
@@ -19897,18 +19760,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(4)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(InitLoopSleep+1)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
         #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
     def test_4353_background_logfile_journal(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -19965,14 +19825,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} enable zzb.service"
         sh____(cmd.format(**locals()))
         #
-        systemctl_py = os.path.basename(_systemctl_py)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleepB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        #
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
@@ -20032,18 +19884,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(4)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(InitLoopSleep+1)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
         #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
     def test_4401_background_logfile_input(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -20087,14 +19936,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{systemctl} enable zzb.service"
         sh____(cmd.format(**locals()))
-        #
-        systemctl_py = os.path.basename(_systemctl_py)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
@@ -20143,22 +19984,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(4)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '*{replyA}*'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '*{replyB}*'"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(InitLoopSleep+1)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
         #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
     def test_4408_background_logfile_input_noexistant(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -20203,14 +20037,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} enable zzb.service"
         sh____(cmd.format(**locals()))
         #
-        systemctl_py = os.path.basename(_systemctl_py)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        #
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
@@ -20258,22 +20084,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(4)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '*{replyA}*'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '*{replyB}*'"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(InitLoopSleep+1)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
         #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
     def test_4409_background_logfile_input_noexistant(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -20318,14 +20137,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} enable zzb.service"
         sh____(cmd.format(**locals()))
         #
-        systemctl_py = os.path.basename(_systemctl_py)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        #
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
@@ -20373,22 +20184,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(4)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '*{replyA}*'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '*{replyB}*'"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(InitLoopSleep+1)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
         #
         self.rm_testdir()
+        self.rm_killall()
         self.coverage()
         self.end()
     def test_4411_socket_accept(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -20424,14 +20228,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         cmd = "{systemctl} enable zza.socket"
         sh____(cmd.format(**locals()))
-        #
-        systemctl_py = os.path.basename(_systemctl_py)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
@@ -20472,22 +20268,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(4)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '*{replyA}*'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '*{replyB}*'"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(InitLoopSleep+1)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
         #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
     def test_4412_start_socket_accept(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -20535,16 +20324,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_file(os_path(testdir, "zzc.service"), os_path(root, "/etc/systemd/system/zzc.service"))
         cmd = "{systemctl} enable zzc.service"
         sh____(cmd.format(**locals()))
-        #
-        systemctl_py = os.path.basename(_systemctl_py)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleep} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
@@ -20607,22 +20386,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(4)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '*{replyA}*'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '*{replyB}*'"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(InitLoopSleep+1)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
         #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
     def test_4413_start_pre_socket_accept(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -20674,16 +20446,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_file(os_path(testdir, "zzc.service"), os_path(root, "/etc/systemd/system/zzc.service"))
         cmd = "{systemctl} enable zzc.service"
         sh____(cmd.format(**locals()))
-        #
-        systemctl_py = os.path.basename(_systemctl_py)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleep} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
@@ -20759,22 +20521,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(4)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '*{replyA}*'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '*{replyB}*'"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(InitLoopSleep+1)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
         #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
     def test_4414_start_pre_enabled_socket_accept(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -20826,16 +20581,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_file(os_path(testdir, "zzc.service"), os_path(root, "/etc/systemd/system/zzc.service"))
         cmd = "{systemctl} enable zza.socket"
         sh____(cmd.format(**locals()))
-        #
-        systemctl_py = os.path.basename(_systemctl_py)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleep} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
@@ -20901,22 +20646,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(4)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '*{replyA}*'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '*{replyB}*'"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(InitLoopSleep+1)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
         #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
     def test_4417_stop_post_socket_accept(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -20969,16 +20707,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_file(os_path(testdir, "zzc.service"), os_path(root, "/etc/systemd/system/zzc.service"))
         cmd = "{systemctl} enable zzc.service"
         sh____(cmd.format(**locals()))
-        #
-        systemctl_py = os.path.basename(_systemctl_py)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleep} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
@@ -21044,22 +20772,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(4)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '*{replyA}*'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '*{replyB}*'"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(InitLoopSleep+1)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
         #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
     def test_4418_stop_post_enabled_socket_accept(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -21112,16 +20833,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_file(os_path(testdir, "zzc.service"), os_path(root, "/etc/systemd/system/zzc.service"))
         cmd = "{systemctl} enable zza.socket"
         sh____(cmd.format(**locals()))
-        #
-        systemctl_py = os.path.basename(_systemctl_py)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleep} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
@@ -21175,22 +20886,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(4)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '*{replyA}*'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '*{replyB}*'"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(InitLoopSleep+1)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
         #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
     def test_4421_chown_user_socket_accept(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -21249,16 +20953,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_file(os_path(testdir, "zzc.service"), os_path(root, "/etc/systemd/system/zzc.service"))
         cmd = "{systemctl} enable zzc.service"
         sh____(cmd.format(**locals()))
-        #
-        systemctl_py = os.path.basename(_systemctl_py)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleep} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
@@ -21324,22 +21018,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(4)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '*{replyA}*'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '*{replyB}*'"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(InitLoopSleep+1)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
         #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
     def test_4422_chown_user_group_socket_accept(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -21400,16 +21087,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_file(os_path(testdir, "zzc.service"), os_path(root, "/etc/systemd/system/zzc.service"))
         cmd = "{systemctl} enable zzc.service"
         sh____(cmd.format(**locals()))
-        #
-        systemctl_py = os.path.basename(_systemctl_py)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleep} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
@@ -21475,22 +21152,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(4)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '*{replyA}*'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '*{replyB}*'"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(InitLoopSleep+1)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
         #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
     def test_4423_chown_group_socket_accept(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -21549,16 +21219,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_file(os_path(testdir, "zzc.service"), os_path(root, "/etc/systemd/system/zzc.service"))
         cmd = "{systemctl} enable zzc.service"
         sh____(cmd.format(**locals()))
-        #
-        systemctl_py = os.path.basename(_systemctl_py)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleep} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
@@ -21624,22 +21284,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(4)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '*{replyA}*'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '*{replyB}*'"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(InitLoopSleep+1)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
         #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
     def test_4426_chown_user_enabled_socket_accept(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -21699,16 +21352,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} enable zza.socket"
         sh____(cmd.format(**locals()))
         #
-        systemctl_py = os.path.basename(_systemctl_py)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleep} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        #
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
@@ -21758,22 +21401,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(4)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '*{replyA}*'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '*{replyB}*'"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(InitLoopSleep+1)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
         #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
     def test_4427_chown_user_group_enabled_socket_accept(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -21835,16 +21471,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} enable zza.socket"
         sh____(cmd.format(**locals()))
         #
-        systemctl_py = os.path.basename(_systemctl_py)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleep} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        #
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
@@ -21894,22 +21520,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(4)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '*{replyA}*'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '*{replyB}*'"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(InitLoopSleep+1)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
         #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
     def test_4428_chown_group_enabled_socket_accept(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -21969,16 +21588,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} enable zza.socket"
         sh____(cmd.format(**locals()))
         #
-        systemctl_py = os.path.basename(_systemctl_py)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {testsleep} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        #
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
@@ -22028,22 +21637,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(4)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '*{replyA}*'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '*{replyB}*'"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(InitLoopSleep+1)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
         #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
     def test_4511_unix_socket_accept(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -22079,14 +21681,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         cmd = "{systemctl} enable zza.socket"
         sh____(cmd.format(**locals()))
-        #
-        systemctl_py = os.path.basename(_systemctl_py)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
@@ -22123,22 +21717,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(4)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '{replyA}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '{replyB}'"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(InitLoopSleep+1)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
         #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
     def test_4512_unix_socket_listen(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -22173,14 +21760,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         cmd = "{systemctl} enable zza.socket"
         sh____(cmd.format(**locals()))
-        #
-        systemctl_py = os.path.basename(_systemctl_py)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
@@ -22218,22 +21797,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(4)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '{replyA}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '{replyB}'"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(InitLoopSleep+1)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
         #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
     def test_4513_unix_socket_listen_user_group(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -22273,14 +21845,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} enable zza.socket"
         sh____(cmd.format(**locals()))
         #
-        systemctl_py = os.path.basename(_systemctl_py)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        #
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
@@ -22317,22 +21881,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(4)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '{replyA}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '{replyB}'"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(InitLoopSleep+1)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
         #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
     def test_4514_unix_socket_listen_group(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -22372,14 +21929,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} enable zza.socket"
         sh____(cmd.format(**locals()))
         #
-        systemctl_py = os.path.basename(_systemctl_py)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        #
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
@@ -22416,22 +21965,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(4)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '{replyA}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '{replyB}'"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(InitLoopSleep+1)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
         #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
     def test_4515_unix_socket_listen_user(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -22471,14 +22013,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} enable zza.socket"
         sh____(cmd.format(**locals()))
         #
-        systemctl_py = os.path.basename(_systemctl_py)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        #
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
@@ -22515,22 +22049,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(4)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '{replyA}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '{replyB}'"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(InitLoopSleep+1)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
         #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
     def test_4516_unix_socket_listen_bad_pre(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -22570,14 +22097,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         text_file(debug_log, "")
         #
-        systemctl_py = os.path.basename(_systemctl_py)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        #
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
@@ -22607,22 +22126,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(4)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '{replyA}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '{replyB}'"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(InitLoopSleep+1)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
         #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
     def test_4517_unix_socket_listen_bad_post(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -22662,14 +22174,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         text_file(debug_log, "")
         #
-        systemctl_py = os.path.basename(_systemctl_py)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        #
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
@@ -22704,22 +22208,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(4)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '{replyA}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '{replyB}'"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(InitLoopSleep+1)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
         #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
     def test_4518_unix_socket_listen_bad_start(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -22760,14 +22257,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         text_file(debug_log, "")
         #
-        systemctl_py = os.path.basename(_systemctl_py)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        #
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
@@ -22797,22 +22286,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(4)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '{replyA}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '{replyB}'"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(InitLoopSleep+1)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
         #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
     def test_4519_unix_socket_listen_bad_start_bad_post(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         user = self.user()
@@ -22853,14 +22335,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         text_file(debug_log, "")
         #
-        systemctl_py = os.path.basename(_systemctl_py)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        #
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
@@ -22890,22 +22364,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(4)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '{replyA}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '{replyB}'"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(InitLoopSleep+1)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
         #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
     def test_4520_udp_socket_accept(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         testport = self.testport()
@@ -22943,14 +22410,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} enable zza.socket"
         sh____(cmd.format(**locals()))
         #
-        systemctl_py = os.path.basename(_systemctl_py)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        #
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
@@ -22986,22 +22445,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(4)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '{replyA}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '{replyB}'"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(InitLoopSleep+1)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
         #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
     def test_4521_tcp_socket_accept(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         testport = self.testport()
@@ -23039,14 +22491,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} enable zza.socket"
         sh____(cmd.format(**locals()))
         #
-        systemctl_py = os.path.basename(_systemctl_py)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        #
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
@@ -23082,22 +22526,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(4)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '{replyA}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '{replyB}'"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(InitLoopSleep+1)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
         #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
     def test_4522_inet_socket_accept(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         testport = self.testport()
@@ -23135,14 +22572,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} enable zza.socket"
         sh____(cmd.format(**locals()))
         #
-        systemctl_py = os.path.basename(_systemctl_py)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        #
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
@@ -23178,22 +22607,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(4)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '{replyA}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '{replyB}'"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(InitLoopSleep+1)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
         #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
     def test_4530_udp_socket_listen(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         testport = self.testport()
@@ -23229,14 +22651,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         cmd = "{systemctl} enable zza.socket"
         sh____(cmd.format(**locals()))
-        #
-        systemctl_py = os.path.basename(_systemctl_py)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
@@ -23274,22 +22688,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(4)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '{replyA}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '{replyB}'"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(InitLoopSleep+1)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
         #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
     def test_4531_tcp_socket_listen(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         testport = self.testport()
@@ -23325,14 +22732,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         cmd = "{systemctl} enable zza.socket"
         sh____(cmd.format(**locals()))
-        #
-        systemctl_py = os.path.basename(_systemctl_py)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
@@ -23370,15 +22769,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(4)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '{replyA}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '{replyB}'"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(InitLoopSleep+1)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
         #
         self.rm_testdir()
         self.coverage()
@@ -23386,6 +22776,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_4532_tcp4_socket_listen(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         testport = self.testport()
@@ -23421,14 +22812,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         cmd = "{systemctl} enable zza.socket"
         sh____(cmd.format(**locals()))
-        #
-        systemctl_py = os.path.basename(_systemctl_py)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
@@ -23466,22 +22849,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(4)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '{replyA}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '{replyB}'"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(InitLoopSleep+1)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
         #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
     def test_4534_inet4_socket_listen(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         testport = self.testport()
@@ -23517,14 +22893,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         cmd = "{systemctl} enable zza.socket"
         sh____(cmd.format(**locals()))
-        #
-        systemctl_py = os.path.basename(_systemctl_py)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
@@ -23562,22 +22930,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(4)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '{replyA}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '{replyB}'"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(InitLoopSleep+1)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
         #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
     def test_4536_tcp6_socket_listen(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         testport = self.testport()
@@ -23613,14 +22974,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         cmd = "{systemctl} enable zza.socket"
         sh____(cmd.format(**locals()))
-        #
-        systemctl_py = os.path.basename(_systemctl_py)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
@@ -23658,16 +23011,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(4)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '{replyA}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '{replyB}'"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(InitLoopSleep+1)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
         #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -23675,6 +23020,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.skipTest("LISTEN_FDS not implemented yet")
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         testport = self.testport()
@@ -23710,14 +23056,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         cmd = "{systemctl} enable zza.socket"
         sh____(cmd.format(**locals()))
-        #
-        systemctl_py = os.path.basename(_systemctl_py)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
@@ -23755,16 +23093,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(4)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '{replyA}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '{replyB}'"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(InitLoopSleep+1)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
         #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -23772,6 +23102,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.skipTest("LISTEN_FDS not implemented yet")
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         testport = self.testport()
@@ -23807,14 +23138,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         cmd = "{systemctl} enable zza.socket"
         sh____(cmd.format(**locals()))
-        #
-        systemctl_py = os.path.basename(_systemctl_py)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}' -vvvv"
-        sx____(kill_daemon.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
-        kill_testsleep = "{systemctl} __killall {replyB} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
@@ -23852,22 +23175,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(4)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        kill_daemon = "{systemctl} __killall '*{systemctl_py}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '{replyA}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '{replyB}'"
-        sx____(kill_daemon.format(**locals()))
-        time.sleep(InitLoopSleep+1)
-        top = _recent(output(_top_list))
-        logg.info("\n>>>\n%s", top)
         #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
     def test_4551_ListenUSB_not_implemented(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         testport = self.testport()
@@ -23907,17 +23223,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
         self.assertTrue(greps(err, "ListenUSBFunction sockets are not implemented"))
         #
-        kill_daemon = "{systemctl} __killall '{replyA}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '{replyB}'"
-        sx____(kill_daemon.format(**locals()))
-        #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
     def test_4552_ListenSpecial_not_implemented(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         testport = self.testport()
@@ -23957,17 +23270,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
         self.assertTrue(greps(err, "ListenSpecial sockets are not implemented"))
         #
-        kill_daemon = "{systemctl} __killall '{replyA}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '{replyB}'"
-        sx____(kill_daemon.format(**locals()))
-        #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
     def test_4553_ListenFIFO_not_implemented(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         testport = self.testport()
@@ -24007,17 +23317,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
         self.assertTrue(greps(err, "ListenFIFO sockets are not implemented"))
         #
-        kill_daemon = "{systemctl} __killall '{replyA}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '{replyB}'"
-        sx____(kill_daemon.format(**locals()))
-        #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
     def test_4554_ListenSequentialPacket_not_implemented(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         testport = self.testport()
@@ -24057,17 +23364,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
         self.assertTrue(greps(err, "ListenSequentialPacket sockets are not implemented"))
         #
-        kill_daemon = "{systemctl} __killall '{replyA}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '{replyB}'"
-        sx____(kill_daemon.format(**locals()))
-        #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
     def test_4555_ListenMessageQueue_not_implemented(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         testport = self.testport()
@@ -24107,17 +23411,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
         self.assertTrue(greps(err, "ListenMessageQueue sockets are not implemented"))
         #
-        kill_daemon = "{systemctl} __killall '{replyA}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '{replyB}'"
-        sx____(kill_daemon.format(**locals()))
-        #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
     def test_4561_vsock_not_implemented(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         testport = self.testport()
@@ -24157,17 +23458,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
         self.assertTrue(greps(err, "virtual machine socket not implemented"))
         #
-        kill_daemon = "{systemctl} __killall '{replyA}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '{replyB}'"
-        sx____(kill_daemon.format(**locals()))
-        #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
     def test_4562_abstract_not_implemented(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         testport = self.testport()
@@ -24207,17 +23505,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
         self.assertTrue(greps(err, "abstract namespace socket not implemented"))
         #
-        kill_daemon = "{systemctl} __killall '{replyA}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '{replyB}'"
-        sx____(kill_daemon.format(**locals()))
-        #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
     def test_4566_unknown_type_not_implemented(self):
         self.begin()
         self.rm_testdir()
+        self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
         testport = self.testport()
@@ -24257,11 +23552,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
         self.assertTrue(greps(err, "unknown socket address type"))
         #
-        kill_daemon = "{systemctl} __killall '{replyA}'"
-        sx____(kill_daemon.format(**locals()))
-        kill_daemon = "{systemctl} __killall '{replyB}'"
-        sx____(kill_daemon.format(**locals()))
-        #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -25341,12 +24632,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertNotEqual(end, 0) 
-        self.assertTrue(greps(out, "inactive"))
+        self.assertTrue(greps(out, "unknown"))
         cmd = "{systemctl} is-failed zza.service"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 1)
-        self.assertTrue(greps(out, "inactive"))
+        self.assertTrue(greps(out, "unknown"))
         #
         cmd = "{systemctl} status zza.service"
         out, end = output2(cmd.format(**locals()))
