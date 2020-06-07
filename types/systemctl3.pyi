@@ -20,6 +20,8 @@ DEBUG_STATUS: bool
 DEBUG_BOOTTIME: bool
 DEBUG_INITLOOP: bool
 DEBUG_KILLALL: bool
+def logg_debug_flock(*args: Union[str,int]) -> None: ...
+def logg_debug_after(*args: Union[str,int]) -> None: ...
 NOT_A_PROBLEM: int
 NOT_OK: int
 NOT_ACTIVE: int
@@ -471,6 +473,7 @@ class Systemctl:
     def get_active_from(self, conf: SystemctlConf) -> str: ...
     def get_active_service_from(self, conf: Optional[SystemctlConf]) -> str: ...
     def get_active_target_from(self, conf: SystemctlConf) -> str: ...
+    def get_active_target(self, target: str) -> str: ...
     def get_active_target_list(self) -> List[str]: ...
     def get_substate_from(self, conf: SystemctlConf) -> Optional[str]: ...
     def is_failed_modules(self, *modules: str) -> List[str]:
@@ -542,9 +545,11 @@ class Systemctl:
         result: List[str]
     def list_dependencies(self, unit: str, indent: Optional[str] = None, mark: Optional[str] = None, loop: List[str] = []) -> Iterable[str]:
         mapping: Dict[str,str]
-    def get_dependencies_unit(self, unit: str) -> Dict[str,str]:
+    def get_dependencies_unit(self, unit: str, styles: Optional[List[str]] = None) -> Dict[str,str]:
         deps: Dict[str,str]
-    def get_start_dependencies(self, unit: str) -> Dict[str,List[str]]: # pragma: no cover
+    def get_required_dependencies(self, unit: str, styles: Optional[List[str]] = None) -> Dict[str,str]:
+        deps: Dict[str,str]
+    def get_start_dependencies(self, unit: str, styles: Optional[List[str]] = None) -> Dict[str,List[str]]: # pragma: no cover
         deps: Dict[str,List[str]]
     def list_start_dependencies_units(self, units: List[str]) -> List[Tuple[str,str]]:
         unit_order: List[str]
@@ -586,6 +591,8 @@ class Systemctl:
     def enabled_target_sysv_units(self, target: str, sysv: str = "S", igno: List[str] = []) -> List[str]:
         units: List[str]
         folders: List[str]
+    def required_target_units(self, target: str, unit_type: str, igno: List[str]) -> List[str]:
+        units: List[str]
     def get_target_conf(self, module: str) -> SystemctlConf: ...
     def get_target_list(self, module: str) -> List[str]: ...
     def system_default(self, arg: bool = True) -> bool: ...
