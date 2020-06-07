@@ -541,7 +541,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not KEEP:
             sx____("docker stop -t 6 " + testname)
             sx____("docker rm -f " + testname)
-    def killall(self, what, wait = None, sig = None):
+    def killall(self, what, wait = None, sig = None, but = None):
         killed = 0
         if True:
             for pid in os.listdir("/proc"):
@@ -551,6 +551,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 try:
                     cmd = open(cmdline).read().replace("\0", " ")
                     if fnmatch(cmd, what):
+                        found = [ name for name in (but or []) if name in cmd]
+                        if found: continue
                         logg.info(" kill {pid} # {cmd}".format(**locals()))
                         os.kill(pid, sig or signal.SIGINT)
                         killed += 1
@@ -568,6 +570,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 try:
                     cmd = open(cmdline).read().replace("\0", " ")
                     if fnmatch(cmd, what):
+                        found = [ name for name in (but or []) if name in cmd]
+                        if found: continue
                         remaining += 1
                 except IOError as e:
                     if e.errno != errno.ENOENT:
@@ -585,6 +589,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 try:
                     cmd = open(cmdline).read().replace("\0", " ")
                     if fnmatch(cmd, what):
+                        found = [ name for name in (but or []) if name in cmd]
+                        if found: continue
                         logg.info(" kill {pid} # {cmd}".format(**locals()))
                         os.kill(pid, sig or signal.SIGKILL)
                         killed += 1
@@ -594,7 +600,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 except Exception as e:
                     logg.info(" killing %s", e)
     def rm_killall(self, testname = None):
-        self.killall("*systemctl*.py *", 10)
+        self.killall("*systemctl*.py *", 10, but = ["edit ", "testsuite.py "])
         testname = testname or self.caller_testname()
         self.killall("/{testname}_*".format(**locals()))
     def kill(self, pid, wait = None, sig = None):
