@@ -3505,7 +3505,7 @@ class Systemctl:
         #   0 when "active"
         #   1 when unit is not found
         #   3 when any "inactive" or "unknown"
-        # However: # TODO!!!!! BUG in original systemctl!!
+        # However: # TODO! BUG in original systemctl!
         #   documentation says " exit code 0 if at least one is active"
         #   and "Unless --quiet is specified, print the unit state"
         units = []
@@ -3660,7 +3660,7 @@ class Systemctl:
             for unit in units:
                 active = self.get_active_unit(unit) 
                 enabled = self.enabled_unit(unit)
-                if enabled != "enabled": 
+                if enabled != "enabled" and ACTIVE_IF_ENABLED: 
                     active = "inactive"
                 results += [ active ]
                 break
@@ -4372,15 +4372,16 @@ class Systemctl:
                         continue
                 if new_mark in mapping:
                     new_mark = mapping[new_mark]
-                restrict = ["Requires", "Requisite", "ConsistsOf", "Wants", 
-                    "BindsTo", ".requires", ".wants"]
+                restrict = ["Requires", "Wants", "Requisite", "BindsTo", "PartOf", "ConsistsOf", 
+                    ".requires", ".wants"]
                 for line in self.list_dependencies(dep, new_indent, new_mark, new_loop):
                     yield line
-    def get_dependencies_unit(self, unit):
+    def get_dependencies_unit(self, unit, styles = None):
+        styles = styles or [ "Requires", "Wants", "Requisite", "BindsTo", "PartOf", "ConsistsOf",
+            ".requires", ".wants", "PropagateReloadTo", "Conflicts",  ]
         conf = self.get_unit_conf(unit)
         deps = {}
-        for style in [ "Requires", "Wants", "Requisite", "BindsTo", "PartOf",
-            ".requires", ".wants", "PropagateReloadTo", "Conflicts",  ]:
+        for style in styles:
             if style.startswith("."):
                 for folder in self.sysd_folders():
                     if not folder: 
@@ -4397,14 +4398,18 @@ class Systemctl:
                     for required in requirelist.strip().split(" "):
                         deps[required.strip()] = style
         return deps
-    def get_start_dependencies(self, unit): # pragma: no cover
+    def get_required_dependencies(self, unit, styles = None):
+        styles = styles or [ "Requires", "Wants", "Requisite", "BindsTo",
+            ".requires", ".wants"  ]
+        return self.get_dependencies_unit(unit, styles)
+    def get_start_dependencies(self, unit, styles = None): # pragma: no cover
         """ the list of services to be started as well / TODO: unused """
+        styles = styles or ["Requires", "Wants", "Requisite", "BindsTo", "PartOf", "ConsistsOf",
+            ".requires", ".wants"]
         deps = {}
         unit_deps = self.get_dependencies_unit(unit)
         for dep_unit, dep_style in unit_deps.items():
-            restrict = ["Requires", "Requisite", "ConsistsOf", "Wants", 
-                "BindsTo", ".requires", ".wants"]
-            if dep_style in restrict:
+            if dep_style in styles:
                 if dep_unit in deps:
                     if dep_style not in deps[dep_unit]:
                         deps[dep_unit].append( dep_style)
@@ -4786,6 +4791,8 @@ class Systemctl:
             targetlist = self.get_target_list(target)
             logg.debug("check for %s user services : %s", target, targetlist)
             for targets in targetlist:
+                if targets.endswith(".target"):
+                    continue
                 for unit in self.enabled_target_user_local_units(targets, ".target", igno):
                     if unit not in units:
                         units.append(unit)
@@ -4813,6 +4820,8 @@ class Systemctl:
             targetlist = self.get_target_list(target)
             logg.debug("check for %s system services: %s", target, targetlist)
             for targets in targetlist:
+                if targets.endswith(".target"):
+                    continue
                 for unit in self.enabled_target_system_units(targets, ".target", igno):
                     if unit not in units:
                         units.append(unit)
@@ -4918,7 +4927,7 @@ class Systemctl:
         return units
     def required_target_units(self, target, unit_type, igno):
         units = []
-        deps = self.get_dependencies_unit(target)
+        deps = self.get_required_dependencies(target)
         for unit in sorted(deps):
             if self._ignored_unit(unit, igno):
                 continue # ignore
@@ -5192,7 +5201,6 @@ class Systemctl:
                     logg.debug("[%s] [%s] Current NoCheck (Restart=%s)", me, unit, restartPolicy)
                     continue
                 restartSec = self.get_RestartSec(conf)
-                logg.info("!! [%s] restartSec=%s (InitLoopSleep=%s)", unit, restartSec, InitLoopSleep)
                 if restartSec == 0:
                     if InitLoopSleep > 1:
                         logg.warning("[%s] set InitLoopSleep from %ss to 1 (caused by RestartSec=0!)", 
@@ -5324,6 +5332,10 @@ class Systemctl:
                                 logg.debug("%s: accepting %s", sock.name(), sock_fileno)
                                 self.do_accept_socket_from(sock.conf, sock.sock)
                 else:
+                    sleeping = sleep_sec
+                    while sleeping > 2:
+                        time.sleep(1)
+                        sleeping -= 1
                     time.sleep(sleep_sec)
                 timestamp = time.time()
                 if DEBUG_INITLOOP: # pragma: no cover
