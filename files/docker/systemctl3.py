@@ -5316,12 +5316,15 @@ class Systemctl:
         signal.signal(signal.SIGQUIT, lambda signum, frame: ignore_signals_and_raise_keyboard_interrupt("SIGQUIT"))
         signal.signal(signal.SIGINT, lambda signum, frame: ignore_signals_and_raise_keyboard_interrupt("SIGINT"))
         signal.signal(signal.SIGTERM, lambda signum, frame: ignore_signals_and_raise_keyboard_interrupt("SIGTERM"))
+        READ_ONLY = select.POLLIN | select.POLLPRI | select.POLLHUP | select.POLLERR
+        READ_WRITE = READ_ONLY | select.POLLOUT
+        #
         self.start_log_files(units)
         listen = None
         if self._sockets:
             listen = select.poll()
             for sock in self._sockets.values():
-                listen.register(sock)
+                listen.register(sock, READ_ONLY)
                 sock.listen()
                 logg.debug("%s: listen %s", sock.name(), sock.addr())
         self.sysinit_status(ActiveState = "active", SubState = "running")
