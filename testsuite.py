@@ -40,6 +40,8 @@ SKIP = True
 TODO = False
 KEEP = 0
 
+TestListen = False
+
 CENTOSVER = { "7.3": "7.3.1611", "7.4": "7.4.1708", "7.5": "7.5.1804", "7.6": "7.6.1810", "7.7": "7.7.1908", "8.0": "8.0.1905", "8.1": "8.1.1911" }
 TESTED_OS = [ "centos:7.3.1611", "centos:7.4.1708", "centos:7.5.1804", "centos:7.6.1810", "centos:7.7.1908", "centos:8.0.1905" ]
 TESTED_OS += [ "opensuse:42.2", "opensuse:42.3", "opensuse/leap:15.0", "opensuse/leap:15.1" ]
@@ -21653,7 +21655,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         ### self.assertTrue(greps(out, "received:.*foo")) # FIXME
         #
         logg.info("kill daemon at %s", init.pid)
-        self.assertTrue(self.kill(init.pid))
+        if TestListen:
+            self.assertTrue(self.kill(init.pid))
+        elif not self.kill(init.pid):
+            self.kill(init.pid, sig = signal.SIGKILL)
         #
         self.rm_killall()
         self.rm_testdir()
@@ -21732,6 +21737,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         ### self.assertTrue(greps(out, "received:.*foo")) # FIXME
         #
         logg.info("kill daemon at %s", init.pid)
+        if TestListen:
+            self.assertTrue(self.kill(init.pid))
+        elif not self.kill(init.pid):
+            self.kill(init.pid, sig = signal.SIGKILL)
+
         self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
@@ -21811,6 +21821,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         ### self.assertTrue(greps(out, "received:.*foo")) # FIXME
         #
         logg.info("kill daemon at %s", init.pid)
+        if TestListen:
+            self.assertTrue(self.kill(init.pid))
+        elif not self.kill(init.pid):
+            self.kill(init.pid, sig = signal.SIGKILL)
+
+
         self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
@@ -21890,6 +21906,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         ### self.assertTrue(greps(out, "received:.*foo")) # FIXME
         #
         logg.info("kill daemon at %s", init.pid)
+        if TestListen:
+            self.assertTrue(self.kill(init.pid))
+        elif not self.kill(init.pid):
+            self.kill(init.pid, sig = signal.SIGKILL)
+
+
         self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
@@ -21962,6 +21984,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # no reply
         #
         logg.info("kill daemon at %s", init.pid)
+        if TestListen:
+            self.assertTrue(self.kill(init.pid))
+        elif not self.kill(init.pid):
+            self.kill(init.pid, sig = signal.SIGKILL)
+
+
         self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
@@ -22039,6 +22067,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "replied: ERROR: FOO"))
         #
         logg.info("kill daemon at %s", init.pid)
+        if TestListen:
+            self.assertTrue(self.kill(init.pid))
+        elif not self.kill(init.pid):
+            self.kill(init.pid, sig = signal.SIGKILL)
+
+
         self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
@@ -22112,6 +22146,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # no reply
         #
         logg.info("kill daemon at %s", init.pid)
+        if TestListen:
+            self.assertTrue(self.kill(init.pid))
+        elif not self.kill(init.pid):
+            self.kill(init.pid, sig = signal.SIGKILL)
+
+
         self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
@@ -22185,6 +22225,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # no reply
         #
         logg.info("kill daemon at %s", init.pid)
+        if TestListen:
+            self.assertTrue(self.kill(init.pid))
+        elif not self.kill(init.pid):
+            self.kill(init.pid, sig = signal.SIGKILL)
+
+
         self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
@@ -22489,6 +22535,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         ### self.assertTrue(greps(out, "received:.*foo"))
         #
         logg.info("kill daemon at %s", init.pid)
+        if TestListen:
+            self.assertTrue(self.kill(init.pid))
+        elif not self.kill(init.pid):
+            self.kill(init.pid, sig = signal.SIGKILL)
+
+
         self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
@@ -22565,6 +22617,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         ### self.assertTrue(greps(out, "received:.*foo"))
         #
         logg.info("kill daemon at %s", init.pid)
+        if TestListen:
+            self.assertTrue(self.kill(init.pid))
+        elif not self.kill(init.pid):
+            self.kill(init.pid, sig = signal.SIGKILL)
+
+
+
         self.assertTrue(self.kill(init.pid))
         #
         self.rm_testdir()
@@ -22640,6 +22699,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         ### self.assertTrue(greps(out, "received:.*foo"))
         #
         logg.info("kill daemon at %s", init.pid)
+        if TestListen:
+            self.assertTrue(self.kill(init.pid))
+        elif not self.kill(init.pid):
+            self.kill(init.pid, sig = signal.SIGKILL)
+
+
         self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
@@ -22716,6 +22781,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         ### self.assertTrue(greps(out, "received:.*foo"))
         #
         logg.info("kill daemon at %s", init.pid)
+        if TestListen:
+            self.assertTrue(self.kill(init.pid))
+        elif not self.kill(init.pid):
+            self.kill(init.pid, sig = signal.SIGKILL)
+
+
         self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
@@ -22792,6 +22863,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         ### self.assertTrue(greps(out, "received:.*foo"))
         #
         logg.info("kill daemon at %s", init.pid)
+        if TestListen:
+            self.assertTrue(self.kill(init.pid))
+        elif not self.kill(init.pid):
+            self.kill(init.pid, sig = signal.SIGKILL)
+
+
         self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
@@ -22869,6 +22946,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         ### self.assertTrue(greps(out, "received:.*foo"))
         #
         logg.info("kill daemon at %s", init.pid)
+        if TestListen:
+            self.assertTrue(self.kill(init.pid))
+        elif not self.kill(init.pid):
+            self.kill(init.pid, sig = signal.SIGKILL)
+
+
         self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
@@ -22946,6 +23029,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         ### self.assertTrue(greps(out, "received:.*foo"))
         #
         logg.info("kill daemon at %s", init.pid)
+        if TestListen:
+            self.assertTrue(self.kill(init.pid))
+        elif not self.kill(init.pid):
+            self.kill(init.pid, sig = signal.SIGKILL)
+
+
         self.assertTrue(self.kill(init.pid))
         #
         self.rm_killall()
