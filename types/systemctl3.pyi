@@ -586,7 +586,9 @@ class Systemctl:
         units: List[str]
     def enabled_target_user_system_units(self, target: str, unit_kind: str = ".service", igno: List[str] = []) -> List[str]:
         units: List[str]
-    def enabled_target_system_units(self, target: str, unit_type: str = ".service", igno: List[str] = []) -> List[str]:
+    def enabled_target_installed_system_units(self, target: str, unit_type: str = ".service", igno: List[str] = []) -> List[str]:
+        units: List[str]
+    def enabled_target_configured_system_units(self, target: str, unit_type: str = ".service", igno: List[str] = []) -> List[str]:
         units: List[str]
     def enabled_target_sysv_units(self, target: str, sysv: str = "S", igno: List[str] = []) -> List[str]:
         units: List[str]
