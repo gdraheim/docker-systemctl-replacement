@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#! /usr/bin/env python
 ## the systemctl*.py files are identical but for the default interpreter
 
 from __future__ import print_function

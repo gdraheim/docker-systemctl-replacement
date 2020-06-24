@@ -1,4 +1,4 @@
-#! /usr/bin/python3
+#! /usr/bin/env python3
 ## this is just a copy from systemctl.py but for the default interpreter
 
 from __future__ import print_function
