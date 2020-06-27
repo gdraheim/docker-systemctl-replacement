@@ -1,4 +1,10 @@
 #! /usr/bin/python
+
+__copyright__ = "(C) 2020 Guido Draheim"
+__contact__ = "https://github.com/gdraheim/docker-mirror-packages-repo"
+__license__ = "CC0 Creative Commons Zero (Public Domain)"
+__version__ = "1.5.2256"
+
 from collections import OrderedDict, namedtuple
 import os.path
 import sys
