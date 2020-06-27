@@ -767,6 +767,8 @@ class SystemctlConf:
         self.drop_in_files = {}
         self._root = _root
         self._user_mode = _user_mode
+    def root_mode(self):
+        return not self._user_mode
     def loaded(self):
         files = self.data.filenames()
         if self.masked:
@@ -832,7 +834,7 @@ class waitlock:
     def __init__(self, conf):
         self.conf = conf # currently unused
         self.opened = -1
-        self.lockfolder = expand_path(_notify_socket_folder, not conf._user_mode)
+        self.lockfolder = expand_path(_notify_socket_folder, conf.root_mode())
         try:
             folder = self.lockfolder
             if not os.path.isdir(folder):
@@ -1657,7 +1659,7 @@ class Systemctl:
         status_file = conf.get("Service", "StatusFile", default)
         if status_file:
             return status_file
-        root = not self.is_user_conf(conf)
+        root = conf.root_mode()
         folder = get_PID_DIR(root)
         name = "%s.status" % conf.name()
         return os.path.join(folder, name)
@@ -1970,7 +1972,7 @@ class Systemctl:
                return confs
             unit = parse_unit(conf.name())
             #
-            root = not self.is_user_conf(conf)
+            root = conf.root_mode()
             VARTMP = get_VARTMP(root)     # $TMPDIR              # "/var/tmp"
             TMP = get_TMP(root)           # $TMPDIR              # "/tmp"
             RUN = get_RUNTIME_DIR(root)   # $XDG_RUNTIME_DIR     # "/run"
@@ -2055,7 +2057,7 @@ class Systemctl:
         filename = os.path.basename(strE(conf.filename()))
         unitname = (conf.name() or "default")+".unit"
         name = filename or unitname
-        log_folder = expand_path(self._journal_log_folder, not conf._user_mode)
+        log_folder = expand_path(self._journal_log_folder, conf.root_mode())
         log_file = name.replace(os.path.sep,".") + ".log"
         if log_file.startswith("."):
             log_file = "dot."+log_file
@@ -2095,7 +2097,7 @@ class Systemctl:
     NotifySocket = collections.namedtuple("NotifySocket", ["socket", "socketfile" ])
     def get_notify_socket_from(self, conf, socketfile = None, debug = False):
         """ creates a notify-socket for the (non-privileged) user """
-        notify_socket_folder = expand_path(_notify_socket_folder, not conf._user_mode)
+        notify_socket_folder = expand_path(_notify_socket_folder, conf.root_mode())
         notify_folder = os_path(self._root, notify_socket_folder)
         notify_name = "notify." + str(conf.name() or "systemctl")
         notify_socket = os.path.join(notify_folder, notify_name)
