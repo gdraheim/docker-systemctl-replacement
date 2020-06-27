@@ -313,7 +313,7 @@ def get_RUN(root = False):
         return path
     else:
         uid = get_USER_ID(root)
-        for p in ("/run/user/{uid}", "/var/run/user/{uid}", "{tmp_var}/run/user/{uid}"):
+        for p in ("/run/user/{uid}", "/var/run/user/{uid}", "{tmp_var}/run-{uid}"):
             path = p.format(**locals())
             if os.path.isdir(path) and os.access(path, os.W_OK):
                 return path
