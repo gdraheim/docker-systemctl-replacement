@@ -75,7 +75,22 @@ def _recent(top_list):
         if " chrome " in line: continue
         if "/chrome" in line: continue
         if "/testsuite" in line: continue
+        if "/xfce4" in line: continue
+        if "/pulse" in line: continue
+        if "/gvfs/" in line: continue
+        if "/dbus-daemon" in line: continue
+        if "/ibus/" in line: continue
+        if "/lib/tracker" in line: continue
+        if "/lib/gnome" in line: continue
+        if "/lib/gdm" in line: continue
+        if "signal-desktop/signal-desktop" in line: continue
+        if "teams/teams" in line: continue
+        if "slack/slack" in line: continue
+        if "bin/telegram" in line: continue
+        if "bin/nextcloud" in line: continue
         if _top_list in line: continue
+        if " 1 [" in line: continue
+        if " 2 [" in line: continue
         # matching on ELAPSED TIME up to 4 minutes
         if re.search("^\\s*[0]*[0123]:[0-9]*\\s", line):
             result.append(" "+line)
