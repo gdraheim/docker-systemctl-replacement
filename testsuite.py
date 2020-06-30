@@ -528,6 +528,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             sx____("docker stop -t 6 " + testname)
             sx____("docker rm -f " + testname)
     def killall(self, what, wait = None, sig = None, but = None):
+        # logg.info("killall %s (but %s)", what, but)
         killed = 0
         if True:
             for pid in os.listdir("/proc"):
@@ -588,7 +589,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def rm_killall(self, testname = None):
         self.killall("*systemctl*.py *", 10, but = ["edit ", "testsuite.py "])
         testname = testname or self.caller_testname()
-        self.killall("/{testname}_*".format(**locals()))
+        self.killall("*/{testname}_*".format(**locals()))
     def kill(self, pid, wait = None, sig = None):
         pid = int(pid)
         cmdline = "/proc/{pid}/cmdline".format(**locals())
