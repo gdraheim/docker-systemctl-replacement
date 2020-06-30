@@ -1087,7 +1087,7 @@ class SystemctlListenThread(threading.Thread):
         if DEBUG_INITLOOP: # pragma: no cover
             logg.info("[%s] listen: new thread", me)
         if not self.systemctl._sockets:
-            return True
+            return
         if DEBUG_INITLOOP: # pragma: no cover
             logg.info("[%s] listen: start thread", me)
         listen = select.poll()
@@ -1130,7 +1130,7 @@ class SystemctlListenThread(threading.Thread):
                 sock.close()
             except Exception as e:
                 logg.warning("[%s] listen: close socket: %s", me, e)
-        return False
+        return
 
 class Systemctl:
     def __init__(self):
