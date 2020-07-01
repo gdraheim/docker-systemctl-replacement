@@ -35487,17 +35487,23 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker cp {testname}:/var/log/systemctl.debug.log {testdir}/systemctl.debug.log"
         sh____(cmd.format(**locals()))
         # CHECK
-        self.assertEqual(len(greps(open(testdir+"/systemctl.debug.log"), " ERROR ")), 0)
-        self.assertTrue(greps(open(testdir+"/systemctl.debug.log"), "use NOTIFY_SOCKET="))
-        self.assertTrue(greps(open(testdir+"/systemctl.debug.log"), "read_notify.*READY=1.*MAINPID="))
-        self.assertTrue(greps(open(testdir+"/systemctl.debug.log"), "notify start done"))
-        if "centos:7" in IMAGE:
-            self.assertTrue(greps(open(testdir+"/systemctl.debug.log"), "stop '/bin/kill' '-WINCH'"))
-            self.assertTrue(greps(open(testdir+"/systemctl.debug.log"), "wait for PID .* is done"))
+        debug_log = lines(open(testdir+"/systemctl.debug.log"))
+        if len(greps(debug_log, "Oops, ")):
+             self.assertTrue(greps(debug_log, "Service directory option not supported: PrivateTmp=yes"))
+             self.assertTrue(greps(debug_log, "unsupported directory settings. You need to create those before using the service."))
+             self.assertGreater(len(greps(debug_log, " ERROR ")), 2)
         else:
-            self.assertTrue(greps(open(testdir+"/systemctl.debug.log"), "no ExecStop => systemctl kill"))
-            self.assertTrue(greps(open(testdir+"/systemctl.debug.log"), "done kill PID"))
-        self.assertTrue(greps(open(testdir+"/systemctl.debug.log"), "wait [$]NOTIFY_SOCKET"))
+             self.assertEqual(len(greps(debug_log, " ERROR ")), 0)
+        self.assertTrue(greps(debug_log, "use NOTIFY_SOCKET="))
+        self.assertTrue(greps(debug_log, "read_notify.*READY=1.*MAINPID="))
+        self.assertTrue(greps(debug_log, "notify start done"))
+        if "centos:7" in IMAGE:
+            self.assertTrue(greps(debug_log, "stop '/bin/kill' '-WINCH'"))
+            self.assertTrue(greps(debug_log, "wait for PID .* is done"))
+        else:
+            self.assertTrue(greps(debug_log, "no ExecStop => systemctl kill"))
+            self.assertTrue(greps(debug_log, "done kill PID"))
+        self.assertTrue(greps(debug_log, "wait [$]NOTIFY_SOCKET"))
         self.rm_docker(testname)
         self.rm_testdir()
     def test_7020_ubuntu_apache2_with_saved_container(self):
