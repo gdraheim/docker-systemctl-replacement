@@ -40,12 +40,12 @@ DEBUG_FLOCK = False
 TestListen = False
 TestAccept = False
 
-def logg_debug_flock(*args):
+def logg_debug_flock(format, *args):
     if DEBUG_FLOCK:
-        logg.debug(*args) # pragma: no cover
-def logg_debug_after(*args):
+        logg.debug(format, *args) # pragma: no cover
+def logg_debug_after(format, *args):
     if DEBUG_AFTER:
-        logg.debug(*args) # pragma: no cover
+        logg.debug(format, *args) # pragma: no cover
 
 NOT_A_PROBLEM = 0   # FOUND_OK
 NOT_OK = 1          # FOUND_ERROR
