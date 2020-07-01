@@ -1696,6 +1696,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Service=zzd.service
             [Install]
             WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/system/zzp.service"),"""
+            [Unit]
+            Description=Testing P
+            [Service]
+            ExecStart=/usr/bin/false
+            PrivateTmp=yes
+            RuntimeDirectory=foo
+            [Install]
+            WantedBy=multi-user.target""")
         #
         cmd = "{systemctl} daemon-reload -vv 2>&1"
         out, end = output2(cmd.format(**locals()))
@@ -1752,6 +1761,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, r"g.socket: Exec command does not exist.*ExecStartPre"))
         self.assertTrue(greps(out, r"g.socket: Exec command does not exist.*ExecStopPost"))
         self.assertTrue(greps(out, r"Oops"))
+        #
+        logg.info("========================= zzp ========")
+        cmd = "{systemctl} start --no-reload zzp.service -vv 2>&1"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 1)
+        self.assertTrue(greps(out, r"zzp.service: Service directory path not implemented: RuntimeDirectory=foo"))
+        self.assertTrue(greps(out, r"zzp.service: Service directory option not supported: PrivateTmp=yes"))
+        self.assertTrue(greps(out, r"Oops, 2 unsupported directory settings"))
         #
         self.rm_testdir()
         self.coverage()
