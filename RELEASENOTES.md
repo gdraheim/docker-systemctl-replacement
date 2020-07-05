@@ -1,79 +1,62 @@
-RELEASE 1.4
+RELEASE 1.5
 
-Additional features have been put into the 1.4 series of systemctl.py. The
-commands of "mask"/"unmask"/"set-default"/"get-default" have been implemented
-where the "default" runlevel is only modified by not checked by systemctl.py.
-The PID-1 will now assemble all journal logs of services and print them from
-the init_loop to stdout so that "docker logs" shows the status logs of all
-the services currently running.
+The release branch 1.4 has been stable for a long time. Nethertheless there
+is still much room for improvement which is also shown by the hundreds of
+commits that went into this release.
 
-Changes include that /var/run/systemd/notify is not the default notify_socket
-anymore but instead each service has its own ../notify.A.service channel.
-Along with the A.service.lock behaviour one may safely run many systemctl.py
-in parallel that will not overlap in getting text. 
+Most prominently, Python 3 is the default variant now. Just as in the previous
+release branch there is only one code basis for python2 and python3 but the
+primary test target has changed. If you run "make test_1000" then you see
+the result from systemctl3.py now, and "make 2" will derive systemctl.py
+from it. The testsuite.py itself is also run by a python3 interpreter now.
 
-The switch to fork/execve in 1.3 had been allowing some process to leave zombies 
-or even block the  master systemctl.py which has been resolved now. After all, 
-the service.pid parts are completely gone with the MainPID register in the
-service.status files now. Checking the (non)active status has been stabilized
-from these changes.
+The systemctl3.py script is accompanied by a systemctl3.pyi script with type 
+hints to allow for strict type checking. Static code analysis is a big
+advantage. Not only for nullable types but also for mere typos that can not 
+be missed anymore when the testsuite does not touch that line. Still the 
+testsuite has a line code coverage of 94% for this release.
 
-The support for usermode containers had been already present in the 1.3 series
-but is now tested and documented. The docker-systemctl-images sister project
-will show a number of examples of it where the PID-1 of a container is not
-run as root but as a specific user - only allowing to start services with the
-same user association.
+There are some breaking changes though. Especially the variable expansion 
+has changed which was wrong in 1.4 but some scripts may already rely on the
+way it worked. Some of the root/user directories have changed in their real
+locations as well. And the computation for the default-services and starting
+order has been improved as well.
 
-The testsuite has been expanded a lot to support testing usermode containers
-which can not be done just by running systemctl --root=path. Additionally the
-testing times do increase from testing various pairs of python version and
-linux distributions and their versions. Thus --python and --image can be used
-to get to the details of compatibility. After all, the coverage is now at 92%.
+The new socket support may be a reason for problems in old code as well.
+Actually, the release 1.5 does only implement non-accept units where the
+xy.service is directly started when the xy.socket is started. The
+accept-listeners code can be tested with "-c TestAccept=yes" as seen in
+the testsuite, and the listeners themselves have a "systemctl listen"
+command. But it is incomplete beyond repair. In the real world however
+it was all sufficient to support sshd and cvsd in containers.
 
-The question of how to let a PID-1 systemctl.py exit the container has been
-put into a new state. When running "systemctl.py init A B" then PID-1 will
-end when both A and B have turned to a non-active status. When running a plain
-"systemctl.py" then it is the same as "systemctl.py init" which is the same as 
-"systemctl.py --init default", all of which will never stop. So this PID-1 is
-identical with /sbin/init that keeps it up.
+As a consequence, the support for xy.target units was improved as well,
+and multi instance template services have much wider support in their
+features. The logging features implement a number of redirects for the
+service stdout/stderr as well. Because of that, check the JournalFilePath
+property when looking for the place where the logs from the service go.
 
-However PID-1 will not run forever in that "init" mode. You can always send a
-SIGQUIT, SIGINT, SIGTERM to PID-1. Upon SIGQUIT the PID-1 systemctl.py will wait 
-for all processed in the container to have ended. The other signals will make
-it leave.
+As mentioned already, there is a new commandline feature in the 1.5 
+release branch which did not exist in 1.4: you can enable/disable internal
+options and defaults via "--config Feature=xy" on the commandline. Some of
+the environment variables are still supported (atleast when the 
+original systemd does as well) but a "-c DefaultUnit=your.target" 
+will override them. Any global variable in the systemctl3.py code is 
+generically accessible through that commandline option.
 
-Last not least there are some minor adjustement like adding to the list of
-expanded special vars like "%t" runtime. And it was interesting to see how
-"postgresql-setup initdb" runs "systemctl show -p Environment" expecting to
-get a list of settings in one line. Also when using "User=" then the started
-services should also get the default group of that system user.
+You will need those when you like to finetune the support for service
+that can automatically restart themselves when they fail. The timeout
+variables have a default so that it is not enabled by default - but 
+some services have explicit values in their unit file which will promptly
+enable that feature now. Note however that only very simple strategies
+are supported here and we ask you to use the HealthCheck features of 
+your docker environment to get things right.
 
-RELEASE 1.4.2456
-
-There a couple of bugfixes and little enhancements asking for an intermediate
-patch release. Be sure to update any 1.4 script to this version soon.
-
-Some of the `%x` special vars were not expanded, and some of the environment
-variables like `$HOME` were not present or incorrect. Functionality of the
-`mask` command has been improved as well.
-
-The release does also include the extension of the testsuite that was otherwise
-intended for RELEASE 1.5 where different versions of common distro images are
-included in the nighrun tests. It did uncover a bug in ubuntu `kill` by the
-way that may got unnoticed by some application packages so far.
-
-RELEASE 1.4.3000
-
-There are a couple of bugfixes. The most prominent one is the proper support
-of drop-in overide configs. This can be very useful in scenarios where one
-wants to install a `*.rpm` from an upstream distributor adding some additional
-parts only in the case of a docker container image. That has been described
-more prominently in [EXTRA-CONFIGS.md].
-
-The general README itself contains an easier introduction with a hint on how
-a multi-service container looks like from the inside. That should make some
-visual impression on everyone who has already worked with containers so far.
-
-
-
-
+Internally, there are a number of changes as well. One important thing
+was the original start of the 1.5 branch where the exit-code of the
+program is not derived from just the return value of a function but
+it also checks for the ".error" bitmask. That's in preperation of some
+C99 implementation in the feature/cplusplus branch of this project. It 
+will not be merged soon but the foundation is there where the Python code
+and C/C++ code represent the same logic with the same variables and
+the same function names and types.
