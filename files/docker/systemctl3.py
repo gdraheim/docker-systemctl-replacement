@@ -56,6 +56,8 @@ NOT_FOUND = 4       # FOUND_UNKNOWN
 _extra_vars = []
 _force = False
 _full = False
+_log_lines = 0
+_no_pager = False
 _now = False
 _no_reload = False
 _no_legend = False
@@ -159,6 +161,10 @@ EXPAND_VARS_MAXDEPTH = 20
 EXPAND_KEEP_VARS = True
 RESTART_FAILED_UNITS = True
 ACTIVE_IF_ENABLED=False
+
+TAIL_CMD = "/usr/bin/tail"
+LESS_CMD = "/usr/bin/less"
+CAT_CMD = "/usr/bin/cat"
 
 # The systemd default was NOTIFY_SOCKET="/var/run/systemd/notify"
 _notify_socket_folder = "{RUN}/systemd" # alias /run/systemd
@@ -2111,6 +2117,60 @@ class Systemctl:
             # newcmd += [ re.sub("[$][{](\w+)[}]", lambda m: get_env2(m), part) ]
             newcmd += [ re.sub("[$][{](\w+)[}]", lambda m: get_env2(m), self.expand_special(part, conf)) ]
         return newcmd
+    def log_modules(self, *modules):
+        """ [UNIT]... -- start 'less' on the log files for the services
+        /// use '-f' to follow and '-n lines' to limit output using 'tail',
+            using '--no-pager' just does a full 'cat'"""
+        found_all = True
+        units = []
+        for module in modules:
+            matched = self.match_units(to_list(module))
+            if not matched:
+                logg.error("Unit %s not found.", unit_of(module))
+                self.error |= NOT_FOUND
+                found_all = False
+                continue
+            for unit in matched:
+                if unit not in units:
+                    units += [ unit ]
+        lines = _log_lines
+        follow = _force
+        result = self.log_units(units, lines, follow)
+        if result:
+            self.error = result
+            return False
+        return found_all
+    def log_units(self, units, lines = None, follow = False):
+        result = 0
+        for unit in self.sortedAfter(units):
+            exitcode = self.log_unit(unit, lines, follow)
+            if exitcode < 0:
+                return exitcode
+            if exitcode > result:
+                result = exitcode
+        return result
+    def log_unit(self, unit, lines = None, follow = False):
+        conf = self.load_unit_conf(unit)
+        if not conf: return -1
+        return self.log_unit_from(conf, lines, follow)
+    def log_unit_from(self, conf, lines = None, follow = False):
+        log_path = self.get_journal_log_from(conf)
+        if follow:
+            cmd = [ TAIL_CMD, "-n", str(lines or 10), "-F", log_path ]
+            logg.debug("journalctl %s -> %s", conf.name(), cmd)
+            return os.spawnvp(os.P_WAIT, cmd[0], cmd) # type: ignore
+        elif lines:
+            cmd = [ TAIL_CMD, "-n", str(lines or 10), log_path ]
+            logg.debug("journalctl %s -> %s", conf.name(), cmd)
+            return os.spawnvp(os.P_WAIT, cmd[0], cmd) # type: ignore
+        elif _no_pager:
+            cmd = [ CAT_CMD, log_path ]
+            logg.debug("journalctl %s -> %s", conf.name(), cmd)
+            return os.spawnvp(os.P_WAIT, cmd[0], cmd) # type: ignore
+        else:
+            cmd = [ LESS_CMD, log_path ]
+            logg.debug("journalctl %s -> %s", conf.name(), cmd)
+            return os.spawnvp(os.P_WAIT, cmd[0], cmd) # type: ignore
     def get_journal_log_from(self, conf):
         return os_path(self._root, self.get_journal_log(conf))
     def get_journal_log(self, conf):
@@ -5854,13 +5914,13 @@ if __name__ == "__main__":
     _o.add_option("--root", metavar="PATH", default=_root,
         help="Enable unit files in the specified root directory (used for alternative root prefix)")
     _o.add_option("-n","--lines", metavar="NUM",
-        help="Number of journal entries to show (ignored)")
+        help="Number of journal entries to show")
     _o.add_option("-o","--output", metavar="CAT",
         help="change journal output mode [short, ..., cat] (ignored)")
     _o.add_option("--plain", action="store_true",
         help="Print unit dependencies as a list instead of a tree (ignored)")
     _o.add_option("--no-pager", action="store_true",
-        help="Do not pipe output into pager (ignored)")
+        help="Do not pipe output into pager (mostly ignored)")
     #
     _o.add_option("-c","--config", metavar="NAME=VAL", action="append", default=[],
         help="..override internal variables (InitLoopSleep,SysInitTarget) {%default}")
@@ -5881,6 +5941,8 @@ if __name__ == "__main__":
     _extra_vars = opt.extra_vars
     _force = opt.force
     _full = opt.full
+    _log_lines = opt.lines
+    _no_pager = opt.no_pager
     _no_reload = opt.no_reload
     _no_legend = opt.no_legend
     _no_ask_password = opt.no_ask_password
