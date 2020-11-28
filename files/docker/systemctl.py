@@ -2158,6 +2158,12 @@ class Systemctl:
                 path = os.path.join(RUN, name)
                 dirpath = os_path(self._root, path)
                 ok = self.do_rm_tree(dirpath) and ok
+                if RUN == "/run":
+                    for var_run in ("/var/run", "/tmp/run"):
+                        if os.path.isdir(var_run):
+                            var_path = os.path.join(var_run, name)
+                            var_dirpath = os_path(self._root, var_path)
+                            self.do_rm_tree(var_dirpath)
         if not ok:
             logg.debug("could not fully remove service directory %s", path)
         return ok
@@ -2224,6 +2230,11 @@ class Systemctl:
             if which in ["all", "runtime", ""]:
                 dirpath = os_path(self._root, path)
                 ok = self.do_rm_tree(dirpath) and ok
+                if RUN == "/run":
+                    for var_run in ("/var/run", "/tmp/run"):
+                        var_path = os.path.join(var_run, name)
+                        var_dirpath = os_path(self._root, var_path)
+                        self.do_rm_tree(var_dirpath)
         for name in nameStateDirectory.split(" "):
             if not name.strip(): continue
             DAT = get_VARLIB_HOME(root)
@@ -2312,6 +2323,23 @@ class Systemctl:
             self.make_service_directory(path, modeRuntimeDirectory)
             self.chown_service_directory(path, user, group)
             envs["RUNTIME_DIRECTORY"] = path
+            if RUN == "/run":
+                for var_run in ("/var/run", "/tmp/run"):
+                    if os.path.isdir(var_run):
+                        var_path = os.path.join(var_run, name)
+                        var_dirpath = os_path(self._root, var_path)
+                        if os.path.isdir(var_dirpath):
+                            if not os.path.islink(var_dirpath):
+                                logg.debug("not a symlink: %s", var_dirpath)
+                            continue
+                        dirpath = os_path(self._root, path)
+                        basepath = os.path.dirname(var_dirpath)
+                        if not os.path.isdir(basepath):
+                            os.makedirs(basepath)
+                        try:
+                            os.symlink(dirpath, var_dirpath)
+                        except Exception as e:
+                            logg.debug("var symlink %s\n\t%s", var_dirpath, e)
         for name in nameStateDirectory.split(" "):
             if not name.strip(): continue
             DAT = get_VARLIB_HOME(root)
