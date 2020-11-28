@@ -2762,6 +2762,8 @@ class Systemctl:
         if not self._quiet:
             okee = self.exec_check_unit(conf, env, "Service", "Exec") # all...
             if not okee and _no_reload: return False
+        service_directories = self.create_service_directories(conf)
+        env.update(service_directories) # atleast sshd did check for /run/sshd
         # for StopPost on failure:
         returncode = 0
         service_result = "success"
@@ -2781,9 +2783,9 @@ class Systemctl:
                     logg.error("the ExecStartPre control process exited with error code")
                     active = "failed"
                     self.write_status_from(conf, AS=active )
+                    if _what_kind not in ["none", "keep"]:
+                        self.remove_service_directories(conf) # cleanup that /run/sshd
                     return False
-        service_directories = self.create_service_directories(conf)
-        env.update(service_directories)
         if runs in [ "oneshot" ]:
             status_file = self.get_status_file_from(conf)
             if self.get_status_from(conf, "ActiveState", "unknown") == "active":
