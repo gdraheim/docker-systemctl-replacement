@@ -423,6 +423,15 @@ def expand_path(path, root = False):
     XDG_RUNTIME_DIR=get_RUNTIME_DIR(root)
     return os.path.expanduser(path.replace("${","{").format(**locals()))
 
+def shutil_chown(path, user, group):
+    if user or group:
+        uid, gid = -1, -1
+        if user:
+            uid = pwd.getpwnam(user).pw_uid
+            gid = pwd.getpwnam(user).pw_gid
+        if group:
+            gid = grp.getgrnam(group).gr_gid
+        os.chown(path, uid, gid)
 def shutil_fchown(fileno, user, group):
     if user or group:
         uid, gid = -1, -1
@@ -2139,7 +2148,6 @@ class Systemctl:
         return newcmd
     def remove_service_directories(self, conf, section = "Service"):
         ok = True
-        envs = {}
         nameRuntimeDirectory = self.get_RuntimeDirectory(conf, section)
         keepRuntimeDirectory = self.get_RuntimeDirectoryPreserve(conf, section)
         if not keepRuntimeDirectory:
@@ -2328,15 +2336,16 @@ class Systemctl:
         dirpath = os_path(self._root, path)
         if (user or group) and os.path.isdir(dirpath):
             st = os.stat(dirpath)
-            st_user = getpwuid(st.st_uid).pw_name
-            st_group = getgrgid(st.st_gid).gr_name
+            st_user = pwd.getpwuid(st.st_uid).pw_name
+            st_group = grp.getgrgid(st.st_gid).gr_name
             change = False
             if user and (user.strip() != st_user and user.strip() != str(st.st_uid)):
                 change = True
             if group and (group.strip() != st_group and group.strip() != str(st.st_gid)):
                 change = True
             if change:
-                self.do_chown_tree(dirpath, user, group)
+                return self.do_chown_tree(dirpath, user, group)
+        return False
     def do_chown_tree(self, path, user, group):
         ok = True
         for dirpath, dirnames, filenames in os.walk(path, topdown=False):
@@ -2378,7 +2387,7 @@ class Systemctl:
         return ok
     def clean_unit(self, unit, what = ""):
         conf = self.load_unit_conf(unit)
-        if not conf: return -1
+        if not conf: return False
         return self.clean_unit_from(conf, what)
     def clean_unit_from(self, conf, what):
         if self.is_active_from(conf):
@@ -2676,7 +2685,8 @@ class Systemctl:
                     active = "failed"
                     self.write_status_from(conf, AS=active )
                     return False
-        self.create_service_directories(conf)
+        path_envs = self.create_service_directories(conf)
+        env.update(path_envs)
         if runs in [ "oneshot" ]:
             status_file = self.get_status_file_from(conf)
             if self.get_status_from(conf, "ActiveState", "unknown") == "active":
