@@ -298,6 +298,15 @@ def path_replace_extension(path, old, new):
         path = path[:-len(old)]
     return path + new
 
+def get_PAGER():
+    PAGER = os.environ.get("PAGER", "less")
+    pager = os.environ.get("SYSTEMD_PAGER", "{PAGER}").format(**locals())
+    options = os.environ.get("SYSTEMD_LESS", "FRSXMK") # see 'man timedatectl'
+    if not pager: pager = "cat"
+    if "less" in pager and options:
+        return [ pager, "-" + options ]
+    return [ pager ]
+
 def os_getlogin():
     """ NOT using os.getlogin() """
     return pwd.getpwuid(os.geteuid()).pw_name
