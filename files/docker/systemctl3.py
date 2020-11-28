@@ -2251,6 +2251,41 @@ class Systemctl:
                 dirpath = os_path(self._root, path)
                 ok = self.do_rm_tree(dirpath) and ok
         return ok
+    def env_service_directories(self, conf):
+        envs = {}
+        section = self.get_unit_section_from(conf)
+        nameRuntimeDirectory = self.get_RuntimeDirectory(conf, section)
+        nameStateDirectory = self.get_StateDirectory(conf, section)
+        nameCacheDirectory = self.get_CacheDirectory(conf, section)
+        nameLogsDirectory = self.get_LogsDirectory(conf, section)
+        nameConfigurationDirectory = self.get_ConfigurationDirectory(conf, section)
+        root = conf.root_mode()
+        for name in nameRuntimeDirectory.split(" "):
+            if not name.strip(): continue
+            RUN = get_RUNTIME_DIR(root)
+            path = os.path.join(RUN, name)
+            envs["RUNTIME_DIRECTORY"] = path
+        for name in nameStateDirectory.split(" "):
+            if not name.strip(): continue
+            DAT = get_VARLIB_HOME(root)
+            path = os.path.join(DAT, name)
+            envs["STATE_DIRECTORY"] = path
+        for name in nameCacheDirectory.split(" "):
+            if not name.strip(): continue
+            CACHE = get_CACHE_HOME(root)
+            path = os.path.join(CACHE, name)
+            envs["CACHE_DIRECTORY"] = path
+        for name in nameLogsDirectory.split(" "):
+            if not name.strip(): continue
+            LOGS = get_LOG_DIR(root)
+            path = os.path.join(LOGS, name)
+            envs["LOGS_DIRECTORY"] = path
+        for name in nameConfigurationDirectory.split(" "):
+            if not name.strip(): continue
+            CONFIG = get_CONFIG_HOME(root)
+            path = os.path.join(CONFIG, name)
+            envs["CONFIGURATION_DIRECTORY"] = path
+        return envs
     def create_service_directories(self, conf):
         envs = {}
         section = self.get_unit_section_from(conf)
@@ -2685,8 +2720,8 @@ class Systemctl:
                     active = "failed"
                     self.write_status_from(conf, AS=active )
                     return False
-        path_envs = self.create_service_directories(conf)
-        env.update(path_envs)
+        service_directories = self.create_service_directories(conf)
+        env.update(service_directories)
         if runs in [ "oneshot" ]:
             status_file = self.get_status_file_from(conf)
             if self.get_status_from(conf, "ActiveState", "unknown") == "active":
@@ -2981,6 +3016,8 @@ class Systemctl:
                     active = "failed"
                     self.write_status_from(conf, AS=active )
                     return False
+        # service_directories = self.create_service_directories(conf)
+        # env.update(service_directories)
         listening=False
         if not accept:
             sock = self.create_socket(conf)
@@ -3342,6 +3379,8 @@ class Systemctl:
         if not self._quiet:
             okee = self.exec_check_unit(conf, env, "Service", "ExecStop")
             if not okee and _no_reload: return False
+        service_directories = self.env_service_directories(conf)
+        env.update(service_directories)
         returncode = 0
         service_result = "success"
         if runs in [ "oneshot" ]:
@@ -3478,6 +3517,8 @@ class Systemctl:
         else:
             done = self.do_stop_service_from(service_conf)
             service_result = done and "success" or "failed"
+        # service_directories = self.env_service_directories(conf)
+        # env.update(service_directories)
         # POST sequence
         if not self.is_active_from(conf):
             env["SERVICE_RESULT"] = service_result
@@ -3581,6 +3622,8 @@ class Systemctl:
                 else:
                     self.write_status_from(conf, AS="active")
                     return True
+        service_directories = self.env_service_directories(conf)
+        env.update(service_directories)
         if runs in [ "simple", "notify", "forking", "idle" ]:
             if not self.is_active_from(conf):
                 logg.info("no reload on inactive service %s", conf.name())
