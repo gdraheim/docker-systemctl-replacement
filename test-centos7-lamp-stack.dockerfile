@@ -17,7 +17,7 @@ ARG LISTEN=172.0.0.0/8
 EXPOSE 80
 
 COPY files/docker/systemctl.py /usr/bin/systemctl
-RUN yum install -y epel-release
+RUN yum install -y epel-release           psmisc
 RUN yum repolist
 RUN yum install -y httpd httpd-tools mariadb-server mariadb php phpmyadmin
 RUN echo "<?php phpinfo(); ?>" > ${INDEX_PHP}
