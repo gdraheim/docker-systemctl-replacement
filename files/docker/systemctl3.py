@@ -5073,14 +5073,7 @@ class Systemctl:
                 except Exception as e:
                     logg.error(" %s: Group does not exist: %s (%s)", unit, group, getattr(e, "__doc__", ""))
                     badgroups += 1
-        dirproblems = 0
         tmpproblems = 0
-        for setting in ("RuntimeDirectory", "StateDirectory", "CacheDirectory", "LogsDirectory", "ConfigurationDirectory",
-            "RuntimeDirectoryMode", "StateDirectoryMode", "CacheDirectoryMode", "LogsDirectoryMode", "ConfigurationDirectoryMode"):
-            setting_value = conf.get(section, setting, "")
-            if setting_value:
-                logg.warning("%s: %s directory path not implemented: %s=%s", unit, section, setting, setting_value)
-                dirproblems += 1
         for setting in ("RootDirectory", "RootImage", "BindPaths", "BindReadOnlyPaths",
             "ReadWritePaths", "ReadOnlyPaths", "TemporaryFileSystem"):
             setting_value = conf.get(section, setting, "")
@@ -5093,7 +5086,7 @@ class Systemctl:
             if setting_yes:
                 logg.info("%s: %s private directory option is ignored: %s=yes", unit, section, setting)
                 tmpproblems += 1
-        if not abspath and not notexists and not badusers and not badgroups and not dirproblems:
+        if not abspath and not notexists and not badusers and not badgroups:
             return True
         if True:
             filename = strE(conf.filename())
@@ -5107,9 +5100,6 @@ class Systemctl:
                 time.sleep(1)
             if badusers or badgroups:
                 logg.error(" Oops, %s user names and %s group names were not found. Refusing.", badusers, badgroups)
-                time.sleep(1)
-            if dirproblems:
-                logg.error(" Oops, %s unsupported directory settings. You need to create those before using the service.", dirproblems)
                 time.sleep(1)
             if tmpproblems:
                 logg.info("  Note, %s private directory settings are ignored. The application should not depend on it.", tmpproblems)
