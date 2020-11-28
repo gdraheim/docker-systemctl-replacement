@@ -2158,6 +2158,8 @@ class Systemctl:
                 path = os.path.join(RUN, name)
                 dirpath = os_path(self._root, path)
                 ok = self.do_rm_tree(dirpath) and ok
+        if not ok:
+            logg.debug("could not fully remove service directory %s", path)
         return ok
     def do_rm_tree(self, path):
         ok = True
@@ -2363,13 +2365,18 @@ class Systemctl:
                     ok = False
         else:
             logg.debug("path did already exist: %s", dirpath)
+        if not ok:
+            logg.debug("could not fully create service directory %s", path)
         return ok
     def chown_service_directory(self, path, user, group):
         # the standard defines an optimization so that if the parent
         # directory does have the correct user and group then there
         # is no other chown on files and subdirectories to be done.
         dirpath = os_path(self._root, path)
-        if (user or group) and os.path.isdir(dirpath):
+        if not os.path.isdir(dirpath):
+            logg.debug("chown did not find %s", dirpath)
+            return True
+        if user or group:
             st = os.stat(dirpath)
             st_user = pwd.getpwuid(st.st_uid).pw_name
             st_group = grp.getgrgid(st.st_gid).gr_name
@@ -2379,19 +2386,46 @@ class Systemctl:
             if group and (group.strip() != st_group and group.strip() != str(st.st_gid)):
                 change = True
             if change:
-                return self.do_chown_tree(dirpath, user, group)
-        return False
+                logg.debug("do chown %s", dirpath)
+                try:
+                    ok = self.do_chown_tree(dirpath, user, group)
+                    logg.info("changed %s:%s %s", user, group, ok)
+                    return ok
+                except Exception as e:
+                    logg.info("oops %s\n\t%s", dirpath, e)
+            else:
+                logg.debug("untouched %s", dirpath)
+        return True
     def do_chown_tree(self, path, user, group):
         ok = True
+        uid, gid = -1, -1
+        if user:
+            uid = pwd.getpwnam(user).pw_uid
+            gid = pwd.getpwnam(user).pw_gid
+        if group:
+            gid = grp.getgrnam(group).gr_gid
         for dirpath, dirnames, filenames in os.walk(path, topdown=False):
             for item in filenames:
                 filepath = os.path.join(dirpath, item)
-                try: shutil_chown(filepath, user, group)
-                except: ok = False # pragma: no cover
+                try: 
+                    os.chown(filepath, uid, gid)
+                except Exception as e: # pragma: no cover
+                    logg.debug("could not set %s:%s on %s\n\t%s", user, group, filepath, e)
+                    ok = False
             for item in dirnames:
                 dir_path = os.path.join(dirpath, item)
-                try: shutil_chown(dir_path, user, group)
-                except: ok = False # pragma: no cover
+                try: 
+                    os.chown(dir_path, uid, gid)
+                except Exception as e: # pragma: no cover
+                    logg.debug("could not set %s:%s on %s\n\t%s", user, group, dir_path, e)
+                    ok = False
+        try: 
+            os.chown(path, uid, gid)
+        except Exception as e: # pragma: no cover
+            logg.debug("could not set %s:%s on %s\n\t%s", user, group, path, e)
+            ok = False
+        if not ok:
+            logg.debug("could not chown %s:%s service directory %s", user, group, path)
         return ok
     def clean_modules(self, *modules):
         """ [UNIT]... -- remove the state directories
