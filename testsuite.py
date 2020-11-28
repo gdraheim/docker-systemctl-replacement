@@ -1794,8 +1794,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 1)
         self.assertTrue(greps(out, r"zzp.service: Service directory path not implemented: RuntimeDirectory=foo"))
-        self.assertTrue(greps(out, r"zzp.service: Service directory option not supported: PrivateTmp=yes"))
-        self.assertTrue(greps(out, r"Oops, 2 unsupported directory settings"))
+        self.assertTrue(greps(out, r"zzp.service: Service private directory option is ignored: PrivateTmp=yes"))
+        self.assertTrue(greps(out, r"Oops, 1 unsupported directory settings"))
+        self.assertTrue(greps(out, r"Note, 1 private directory settings"))
         #
         self.rm_testdir()
         self.coverage()
@@ -25515,7 +25516,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         self.runuser_notify_service_functions("system", testname, testdir)
         self.rm_testdir()
-        self.end()
+        self.end(188)
     def test_5035_runuser_notify_service_functions_user(self):
         """ check that we manage notify services in a root env
             with basic run-service commands: start, stop, restart,
@@ -27452,7 +27453,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.rm_docker(testname)
         self.rm_testdir()
-        self.end(122)
+        self.end(188)
     #
     #
     #  compare the following with the test_5030 series
