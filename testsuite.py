@@ -3684,6 +3684,567 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         ##
+    def test_2701_create_runtime(self):
+        """ check when create and clean RuntimeDirectory  """
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            TimeoutStartSec=29
+            TimeoutStopSec=60
+            RuntimeDirectory=foo/bar aaa
+            ExecStart=/bin/sleep 3
+            """)
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            TimeoutStartSec=29
+            TimeoutStopSec=60
+            RuntimeDirectory=foo/bar bbb
+            RuntimeDirectoryPreserve=yes
+            ExecStart=/bin/sleep 3
+            """)
+        path1 = os_path(root, "/run/foo/bar")
+        path2 = os_path(root, "/run/aaa")
+        self.assertFalse(os.path.isdir(path1))
+        self.assertFalse(os.path.isdir(path2))
+        cmd = "{systemctl} start zza.service -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertTrue(os.path.isdir(path1))
+        self.assertTrue(os.path.isdir(path2))
+        #
+        cmd = "{systemctl} stop zza.service -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertFalse(os.path.isdir(path1))
+        self.assertFalse(os.path.isdir(path2))
+        #
+        path1 = os_path(root, "/run/foo/bar")
+        path2 = os_path(root, "/run/bbb")
+        self.assertFalse(os.path.isdir(path1))
+        self.assertFalse(os.path.isdir(path2))
+        cmd = "{systemctl} start zzb.service -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertTrue(os.path.isdir(path1))
+        self.assertTrue(os.path.isdir(path2))
+        #
+        cmd = "{systemctl} stop zzb.service -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertTrue(os.path.isdir(path1))
+        self.assertTrue(os.path.isdir(path2))
+        #
+        cmd = "{systemctl} clean zzb.service -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertFalse(os.path.isdir(path1))
+        self.assertFalse(os.path.isdir(path2))
+        #
+        path1 = os_path(root, "/run/foo/bar")
+        path2 = os_path(root, "/run/bbb")
+        self.assertFalse(os.path.isdir(path1))
+        self.assertFalse(os.path.isdir(path2))
+        cmd = "{systemctl} start zzb.service -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertTrue(os.path.isdir(path1))
+        self.assertTrue(os.path.isdir(path2))
+        #
+        cmd = "{systemctl} clean zzb.service -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 1)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertTrue(os.path.isdir(path1))
+        self.assertTrue(os.path.isdir(path2))
+        #
+        cmd = "{systemctl} stop zzb.service -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertTrue(os.path.isdir(path1))
+        self.assertTrue(os.path.isdir(path2))
+        #
+        cmd = "{systemctl} clean zzb.service --what=state -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertTrue(os.path.isdir(path1))
+        self.assertTrue(os.path.isdir(path2))
+        #
+        cmd = "{systemctl} clean zzb.service --what=runtime -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertFalse(os.path.isdir(path1))
+        self.assertFalse(os.path.isdir(path2))
+        #
+        self.rm_testdir()
+        self.coverage()
+        ##
+    def test_2702_create_state(self):
+        """ check when create and clean StateDirectory  """
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            TimeoutStartSec=29
+            TimeoutStopSec=60
+            StateDirectory=foo/bar aaa
+            ExecStart=/bin/sleep 3
+            """)
+        path1 = os_path(root, "/var/lib/foo/bar")
+        path2 = os_path(root, "/var/lib/aaa")
+        self.assertFalse(os.path.isdir(path1))
+        self.assertFalse(os.path.isdir(path2))
+        #
+        cmd = "{systemctl} start zza.service -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertTrue(os.path.isdir(path1))
+        self.assertTrue(os.path.isdir(path2))
+        #
+        cmd = "{systemctl} stop zza.service -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertTrue(os.path.isdir(path1))
+        self.assertTrue(os.path.isdir(path2))
+        #
+        cmd = "{systemctl} clean zza.service --what=all -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertFalse(os.path.isdir(path1))
+        self.assertFalse(os.path.isdir(path2))
+        #
+        cmd = "{systemctl} start zza.service -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertTrue(os.path.isdir(path1))
+        self.assertTrue(os.path.isdir(path2))
+        #
+        cmd = "{systemctl} clean zza.service -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 1)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertTrue(os.path.isdir(path1))
+        self.assertTrue(os.path.isdir(path2))
+        #
+        cmd = "{systemctl} stop zza.service -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertTrue(os.path.isdir(path1))
+        self.assertTrue(os.path.isdir(path2))
+        #
+        cmd = "{systemctl} clean zza.service --what=runtime -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertTrue(os.path.isdir(path1))
+        self.assertTrue(os.path.isdir(path2))
+        #
+        cmd = "{systemctl} clean zza.service --what=state -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertFalse(os.path.isdir(path1))
+        self.assertFalse(os.path.isdir(path2))
+        #
+        self.rm_testdir()
+        self.coverage()
+        ##
+    def test_2703_create_cache(self):
+        """ check when create and clean CacheDirectory  """
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            TimeoutStartSec=29
+            TimeoutStopSec=60
+            CacheDirectory=foo/bar aaa
+            ExecStart=/bin/sleep 3
+            """)
+        path1 = os_path(root, "/var/cache/foo/bar")
+        path2 = os_path(root, "/var/cache/aaa")
+        self.assertFalse(os.path.isdir(path1))
+        self.assertFalse(os.path.isdir(path2))
+        cmd = "{systemctl} start zza.service -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertTrue(os.path.isdir(path1))
+        self.assertTrue(os.path.isdir(path2))
+        #
+        cmd = "{systemctl} stop zza.service -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertTrue(os.path.isdir(path1))
+        self.assertTrue(os.path.isdir(path2))
+        #
+        cmd = "{systemctl} clean zza.service --what=all -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertFalse(os.path.isdir(path1))
+        self.assertFalse(os.path.isdir(path2))
+        #
+        cmd = "{systemctl} start zza.service -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertTrue(os.path.isdir(path1))
+        self.assertTrue(os.path.isdir(path2))
+        #
+        cmd = "{systemctl} clean zza.service -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 1)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertTrue(os.path.isdir(path1))
+        self.assertTrue(os.path.isdir(path2))
+        #
+        cmd = "{systemctl} stop zza.service -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertTrue(os.path.isdir(path1))
+        self.assertTrue(os.path.isdir(path2))
+        #
+        cmd = "{systemctl} clean zza.service --what=state -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertTrue(os.path.isdir(path1))
+        self.assertTrue(os.path.isdir(path2))
+        #
+        cmd = "{systemctl} clean zza.service --what=cache -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertFalse(os.path.isdir(path1))
+        self.assertFalse(os.path.isdir(path2))
+        #
+        self.rm_testdir()
+        self.coverage()
+    def test_2704_create_logs(self):
+        """ check when create and clean LogsDirectory  """
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            TimeoutStartSec=29
+            TimeoutStopSec=60
+            LogsDirectory=foo/bar aaa
+            ExecStart=/bin/sleep 3
+            """)
+        path1 = os_path(root, "/var/log/foo/bar")
+        path2 = os_path(root, "/var/log/aaa")
+        self.assertFalse(os.path.isdir(path1))
+        self.assertFalse(os.path.isdir(path2))
+        #
+        cmd = "{systemctl} start zza.service -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertTrue(os.path.isdir(path1))
+        self.assertTrue(os.path.isdir(path2))
+        #
+        cmd = "{systemctl} stop zza.service -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertTrue(os.path.isdir(path1))
+        self.assertTrue(os.path.isdir(path2))
+        #
+        cmd = "{systemctl} clean zza.service --what=all -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertFalse(os.path.isdir(path1))
+        self.assertFalse(os.path.isdir(path2))
+        #
+        cmd = "{systemctl} start zza.service -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertTrue(os.path.isdir(path1))
+        self.assertTrue(os.path.isdir(path2))
+        #
+        cmd = "{systemctl} clean zza.service -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 1)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertTrue(os.path.isdir(path1))
+        self.assertTrue(os.path.isdir(path2))
+        #
+        cmd = "{systemctl} stop zza.service -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertTrue(os.path.isdir(path1))
+        self.assertTrue(os.path.isdir(path2))
+        #
+        cmd = "{systemctl} clean zza.service --what=runtime -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertTrue(os.path.isdir(path1))
+        self.assertTrue(os.path.isdir(path2))
+        #
+        cmd = "{systemctl} clean zza.service --what=logs -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertFalse(os.path.isdir(path1))
+        self.assertFalse(os.path.isdir(path2))
+        #
+        self.rm_testdir()
+        self.coverage()
+        ##
+    def test_2705_create_configuraiton(self):
+        """ check when create and clean ConfigurationDirectory  """
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            TimeoutStartSec=29
+            TimeoutStopSec=60
+            ConfigurationDirectory=foo/bar aaa
+            ExecStart=/bin/sleep 3
+            """)
+        path1 = os_path(root, "/etc/foo/bar")
+        path2 = os_path(root, "/etc/aaa")
+        self.assertFalse(os.path.isdir(path1))
+        self.assertFalse(os.path.isdir(path2))
+        #
+        cmd = "{systemctl} start zza.service -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertTrue(os.path.isdir(path1))
+        self.assertTrue(os.path.isdir(path2))
+        #
+        cmd = "{systemctl} stop zza.service -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertTrue(os.path.isdir(path1))
+        self.assertTrue(os.path.isdir(path2))
+        #
+        cmd = "{systemctl} clean zza.service --what=all -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertFalse(os.path.isdir(path1))
+        self.assertFalse(os.path.isdir(path2))
+        #
+        cmd = "{systemctl} start zza.service -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertTrue(os.path.isdir(path1))
+        self.assertTrue(os.path.isdir(path2))
+        #
+        cmd = "{systemctl} clean zza.service -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 1)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertTrue(os.path.isdir(path1))
+        self.assertTrue(os.path.isdir(path2))
+        #
+        cmd = "{systemctl} stop zza.service -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertTrue(os.path.isdir(path1))
+        self.assertTrue(os.path.isdir(path2))
+        #
+        cmd = "{systemctl} clean zza.service --what=runtime -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertTrue(os.path.isdir(path1))
+        self.assertTrue(os.path.isdir(path2))
+        #
+        cmd = "{systemctl} clean zza.service --what=configuration -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertFalse(os.path.isdir(path1))
+        self.assertFalse(os.path.isdir(path2))
+        #
+        self.rm_testdir()
+        self.coverage()
+        ##
+    def test_2709_create_mode_configuraiton(self):
+        """ check when create and clean ConfigurationDirectory  """
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            TimeoutStartSec=29
+            TimeoutStopSec=60
+            ConfigurationDirectory=foo/bar aaa
+            ExecStart=/bin/sleep 3
+            """)
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            TimeoutStartSec=29
+            TimeoutStopSec=60
+            ConfigurationDirectory=foo/bar aaa
+            ConfigurationDirectoryMode=0700
+            ExecStart=/bin/sleep 3
+            """)
+        path1 = os_path(root, "/etc/foo/bar")
+        path2 = os_path(root, "/etc/aaa")
+        self.assertFalse(os.path.isdir(path1))
+        self.assertFalse(os.path.isdir(path2))
+        #
+        cmd = "{systemctl} start zza.service -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertTrue(os.path.isdir(path1))
+        self.assertTrue(os.path.isdir(path2))
+        #
+        cmd = "ls -ld {path1}"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertIn("drwxr-x", out)
+        out_a = out
+        #
+        cmd = "{systemctl} stop zza.service -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertTrue(os.path.isdir(path1))
+        self.assertTrue(os.path.isdir(path2))
+        #
+        cmd = "{systemctl} clean zza.service --what=all -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertFalse(os.path.isdir(path1))
+        self.assertFalse(os.path.isdir(path2))
+        #
+        cmd = "{systemctl} start zzb.service -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertTrue(os.path.isdir(path1))
+        self.assertTrue(os.path.isdir(path2))
+        #
+        cmd = "ls -ld {path1}"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertIn("drwx---", out)
+        out_b = out
+        #
+        cmd = "{systemctl} stop zzb.service -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertTrue(os.path.isdir(path1))
+        self.assertTrue(os.path.isdir(path2))
+        #
+        cmd = "{systemctl} clean zzb.service --what=all -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertFalse(os.path.isdir(path1))
+        self.assertFalse(os.path.isdir(path2))
+        #
+        self.rm_testdir()
+        self.coverage()
+        ##
     def test_2900_class_UnitConfParser(self):
         """ using systemctl.py as a helper library for 
             the UnitConfParser functions."""
