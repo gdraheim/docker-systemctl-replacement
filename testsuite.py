@@ -1727,6 +1727,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing P
             [Service]
             ExecStart=/usr/bin/false
+            ExecStartPre=foo
             PrivateTmp=yes
             RuntimeDirectory=foo
             [Install]
@@ -1793,9 +1794,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 1)
-        self.assertTrue(greps(out, r"zzp.service: Service directory path not implemented: RuntimeDirectory=foo"))
+        self.assertFalse(greps(out, r"zzp.service: Service directory path not implemented: RuntimeDirectory=foo"))
         self.assertTrue(greps(out, r"zzp.service: Service private directory option is ignored: PrivateTmp=yes"))
-        self.assertTrue(greps(out, r"Oops, 1 unsupported directory settings"))
+        self.assertFalse(greps(out, r"unsupported directory settings"))
         self.assertTrue(greps(out, r"Note, 1 private directory settings"))
         #
         self.rm_testdir()
