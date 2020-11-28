@@ -250,6 +250,17 @@ clean:
 	- rm -rf tmp.* types/tmp.*
 	- rm -rf .mypy_cache files/docker/.mypy_cache
 
+dockerfiles:
+	for dockerfile in centos7-lamp-stack.dockerfile opensuse15-lamp-stack.dockerfile \
+	; do test -f ../docker-systemctl-images/$$dockerfile || continue \
+	; echo "###################################################################################################" > test-$$dockerfile \
+	; echo "## this file is a copy from gdraheim/docker-systemctl-images where more real world examples are :)"  >> test-$$dockerfile \
+	; echo "## https://github.com/gdraheim/docker-systemctl-images/blob/develop/$$dockerfile" >> test-$$dockerfile \
+	; echo "###################################################################################################" >> test-$$dockerfile \
+	; cat ../docker-systemctl-images/$$dockerfile >> test-$$dockerfile \
+	; wc -l test-$$dockerfile \
+	; done
+
 ####### retype + stubgen
 mypy:
 	zypper install -y mypy
