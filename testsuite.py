@@ -318,6 +318,19 @@ def get_GROUP(root = False):
     gid = os.getegid()
     import grp
     return grp.getgrgid(gid).gr_name
+def get_LASTGROUP_ID(root = False):
+    if root: return 0 # only there is
+    current = os.getegid()
+    lastgid = current
+    for gid in os.getgroups():
+        if gid != current:
+            lastgid = gid
+    return gid
+def get_LASTGROUP(root = False):
+    if root: return "root" # only there is
+    gid = get_LASTGROUP_ID(root)
+    import grp
+    return grp.getgrgid(gid).gr_name
 
 def beep():
     if os.name == "nt":
@@ -4151,8 +4164,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         ##
-    def test_2709_create_mode_configuraiton(self):
-        """ check when create and clean ConfigurationDirectory  """
+    def test_2715_create_mode_configuration(self):
+        """ check when create and clean ConfigurationDirectory with Mode settings """
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
@@ -4242,6 +4255,312 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(out.strip()), 0)
         self.assertFalse(os.path.isdir(path1))
         self.assertFalse(os.path.isdir(path2))
+        #
+        self.rm_testdir()
+        self.coverage()
+        ##
+    def test_2716_create_same_user_state(self):
+        """ check when create and clean StateDirectory with User= settings """
+        # actually it should not try to change any uid/gid bits on the file
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        this_user = get_USER()
+        this_group = get_GROUP()
+        text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            TimeoutStartSec=29
+            TimeoutStopSec=60
+            StateDirectory=foo/bar aaa
+            User={this_user}
+            ExecStart=/bin/sleep 3
+            """.format(**locals()))
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            TimeoutStartSec=29
+            TimeoutStopSec=60
+            StateDirectory=foo/bar aaa
+            Group={this_group}
+            ExecStart=/bin/sleep 3
+            """.format(**locals()))
+        path1 = os_path(root, "/var/lib/foo/bar")
+        path2 = os_path(root, "/var/lib/aaa")
+        self.assertFalse(os.path.isdir(path1))
+        self.assertFalse(os.path.isdir(path2))
+        #
+        cmd = "{systemctl} start zza.service -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertTrue(os.path.isdir(path1))
+        self.assertTrue(os.path.isdir(path2))
+        #
+        cmd = "ls -ld {path1}"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        out_a = out
+        #
+        cmd = "{systemctl} stop zza.service -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertTrue(os.path.isdir(path1))
+        self.assertTrue(os.path.isdir(path2))
+        #
+        cmd = "{systemctl} clean zza.service --what=all -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertFalse(os.path.isdir(path1))
+        self.assertFalse(os.path.isdir(path2))
+        #
+        cmd = "{systemctl} start zzb.service -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertTrue(os.path.isdir(path1))
+        self.assertTrue(os.path.isdir(path2))
+        #
+        cmd = "ls -ld {path1}"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        out_b = out
+        #
+        cmd = "{systemctl} stop zzb.service -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertTrue(os.path.isdir(path1))
+        self.assertTrue(os.path.isdir(path2))
+        #
+        cmd = "{systemctl} clean zzb.service --what=all -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertFalse(os.path.isdir(path1))
+        self.assertFalse(os.path.isdir(path2))
+        #
+        A = re.sub("\\d+:\\d*", "XX:XX", out_a.strip())
+        B = re.sub("\\d+:\\d*", "XX:XX", out_b.strip())
+        logg.info("A = %s", A)
+        logg.info("B = %s", B)
+        self.assertEqual(A, B)
+        #
+        self.rm_testdir()
+        self.coverage()
+        ##
+    def test_2717_create_other_group_state(self):
+        """ check when create and clean StateDirectory with Group= settings """
+        # if not running as 'root' then it may actually change the directory group
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        this_group = get_GROUP()
+        last_group = get_LASTGROUP()
+        text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            StateDirectory=foo/bar aaa
+            Group={this_group}
+            ExecStart=/bin/sleep 3
+            """.format(**locals()))
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            StateDirectory=foo/bar aaa
+            Group={last_group}
+            ExecStart=/bin/sleep 4
+            """.format(**locals()))
+        path1 = os_path(root, "/var/lib/foo/bar")
+        path2 = os_path(root, "/var/lib/aaa")
+        self.assertFalse(os.path.isdir(path1))
+        self.assertFalse(os.path.isdir(path2))
+        #
+        cmd = "{systemctl} start zza.service -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertTrue(os.path.isdir(path1))
+        self.assertTrue(os.path.isdir(path2))
+        #
+        cmd = "ls -ld {path1}"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        out_a = out
+        #
+        cmd = "{systemctl} stop zza.service -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertTrue(os.path.isdir(path1))
+        self.assertTrue(os.path.isdir(path2))
+        #
+        cmd = "{systemctl} clean zza.service --what=all -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertFalse(os.path.isdir(path1))
+        self.assertFalse(os.path.isdir(path2))
+        #
+        cmd = "{systemctl} start zzb.service -vvvvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        #mayfail# self.assertEqual(end, 0)
+        #mayfail# self.assertEqual(len(out.strip()), 0)
+        self.assertTrue(os.path.isdir(path1))
+        self.assertTrue(os.path.isdir(path2))
+        #
+        cmd = "ls -ld {path1}"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        out_b = out
+        #
+        cmd = "{systemctl} stop zzb.service -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertTrue(os.path.isdir(path1))
+        self.assertTrue(os.path.isdir(path2))
+        #
+        cmd = "{systemctl} clean zzb.service --what=all -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertFalse(os.path.isdir(path1))
+        self.assertFalse(os.path.isdir(path2))
+        #
+        logg.info("this group '%s' vs '%s' last group", this_group, last_group) 
+        A = re.sub("\\d+:\\d*", "XX:XX", out_a.strip())
+        B = re.sub("\\d+:\\d*", "XX:XX", out_b.strip())
+        logg.info("A = %s", A)
+        logg.info("B = %s", B)
+        if os.geteuid():
+            self.assertNotEqual(A, B)
+        else:
+            self.assertEqual(A, B) # when "root"
+        #
+        self.rm_testdir()
+        self.coverage()
+        ##
+    def test_2718_create_other_group_configuration(self):
+        """ check when create and clean ConfigurationDirectory with Group= settings """
+        # if not running as 'root' then it may actually change the directory group
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        this_group = get_GROUP()
+        last_group = get_LASTGROUP()
+        text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            ConfigurationDirectory=foo/bar aaa
+            Group={this_group}
+            ExecStart=/bin/sleep 3
+            """.format(**locals()))
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            ConfigurationDirectory=foo/bar aaa
+            Group={last_group}
+            ExecStart=/bin/sleep 4
+            """.format(**locals()))
+        path1 = os_path(root, "/etc/foo/bar")
+        path2 = os_path(root, "/etc/aaa")
+        self.assertFalse(os.path.isdir(path1))
+        self.assertFalse(os.path.isdir(path2))
+        #
+        cmd = "{systemctl} start zza.service -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertTrue(os.path.isdir(path1))
+        self.assertTrue(os.path.isdir(path2))
+        #
+        cmd = "ls -ld {path1}"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        out_a = out
+        #
+        cmd = "{systemctl} stop zza.service -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertTrue(os.path.isdir(path1))
+        self.assertTrue(os.path.isdir(path2))
+        #
+        cmd = "{systemctl} clean zza.service --what=all -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertFalse(os.path.isdir(path1))
+        self.assertFalse(os.path.isdir(path2))
+        #
+        cmd = "{systemctl} start zzb.service -vvvvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        #mayfail# self.assertEqual(end, 0)
+        #mayfail# self.assertEqual(len(out.strip()), 0)
+        self.assertTrue(os.path.isdir(path1))
+        self.assertTrue(os.path.isdir(path2))
+        #
+        cmd = "ls -ld {path1}"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        out_b = out
+        #
+        cmd = "{systemctl} stop zzb.service -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertTrue(os.path.isdir(path1))
+        self.assertTrue(os.path.isdir(path2))
+        #
+        cmd = "{systemctl} clean zzb.service --what=all -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(out.strip()), 0)
+        self.assertFalse(os.path.isdir(path1))
+        self.assertFalse(os.path.isdir(path2))
+        #
+        logg.info("this group '%s' vs '%s' last group", this_group, last_group) 
+        A = re.sub("\\d+:\\d*", "XX:XX", out_a.strip())
+        B = re.sub("\\d+:\\d*", "XX:XX", out_b.strip())
+        logg.info("A = %s", A)
+        logg.info("B = %s", B)
+        self.assertEqual(A, B) # no chown if directory did exist
         #
         self.rm_testdir()
         self.coverage()
