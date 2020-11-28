@@ -4757,20 +4757,25 @@ class Systemctl:
                     logg.error(" %s: Group does not exist: %s (%s)", unit, group, getattr(e, "__doc__", ""))
                     badgroups += 1
         dirproblems = 0
-        for setting in ("RootDirectory", "RootImage", "BindPaths", "BindReadOnlyPaths",
-            "RuntimeDirectory", "StateDirectory", "CacheDirectory", "LogsDirectory", "ConfigurationDirectory",
-            "RuntimeDirectoryMode", "StateDirectoryMode", "CacheDirectoryMode", "LogsDirectoryMode", "ConfigurationDirectoryMode",
-            "ReadWritePaths", "ReadOnlyPaths", "TemporaryFileSystem"):
+        tmpproblems = 0
+        for setting in ("RuntimeDirectory", "StateDirectory", "CacheDirectory", "LogsDirectory", "ConfigurationDirectory",
+            "RuntimeDirectoryMode", "StateDirectoryMode", "CacheDirectoryMode", "LogsDirectoryMode", "ConfigurationDirectoryMode"):
             setting_value = conf.get(section, setting, "")
             if setting_value:
                 logg.warning("%s: %s directory path not implemented: %s=%s", unit, section, setting, setting_value)
                 dirproblems += 1
+        for setting in ("RootDirectory", "RootImage", "BindPaths", "BindReadOnlyPaths",
+            "ReadWritePaths", "ReadOnlyPaths", "TemporaryFileSystem"):
+            setting_value = conf.get(section, setting, "")
+            if setting_value:
+                logg.info("%s: %s private directory remounts ignored: %s=%s", unit, section, setting, setting_value)
+                tmpproblems += 1
         for setting in ("PrivateTmp", "PrivateDevices", "PrivateNetwork", "PrivateUsers", "DynamicUser", 
             "ProtectSystem", "ProjectHome", "ProtectHostname", "PrivateMounts", "MountAPIVFS"):
             setting_yes = conf.getbool(section, setting, "no")
             if setting_yes:
-                logg.warning("%s: %s directory option not supported: %s=yes", unit, section, setting)
-                dirproblems += 1
+                logg.info("%s: %s private directory option is ignored: %s=yes", unit, section, setting)
+                tmpproblems += 1
         if not abspath and not notexists and not badusers and not badgroups and not dirproblems:
             return True
         if True:
@@ -4788,6 +4793,9 @@ class Systemctl:
                 time.sleep(1)
             if dirproblems:
                 logg.error(" Oops, %s unsupported directory settings. You need to create those before using the service.", dirproblems)
+                time.sleep(1)
+            if tmpproblems:
+                logg.info("  Note, %s private directory settings are ignored. The application should not depend on it.", tmpproblems)
                 time.sleep(1)
             logg.error(" !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         return False
