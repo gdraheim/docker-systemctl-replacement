@@ -193,8 +193,6 @@ checks2_coverage:
 	$(MAKE) tmp_systemctl_py_2
 	./testsuite.py -vv --coverage \
 	   '--with=tmp/systemctl.py' --python=/usr/bin/python2
-	coverage combine && coverage report && coverage annotate
-	ls -l tmp/systemctl.py,cover
 checks3: 
 	rm .coverage* ; $(MAKE) checks3_coverage
 	coverage3 combine && coverage3 report && coverage3 annotate
@@ -202,6 +200,16 @@ checks3:
 checks3_coverage: 
 	$(MAKE) tmp_systemctl_py_3
 	./testsuite.py -vv --coverage \
+	  '--with=tmp/systemctl.py' --python=/usr/bin/python3
+
+2/test_%:
+	$(MAKE) tmp_systemctl_py_2
+	./testsuite.py -vv --coverage $(notdir $@) \
+	   '--with=tmp/systemctl.py' --python=/usr/bin/python2
+
+3/test_%: 
+	$(MAKE) tmp_systemctl_py_3
+	./testsuite.py -vv --coverage $(notdir $@) \
 	  '--with=tmp/systemctl.py' --python=/usr/bin/python3
 
 coverage: coverage3
@@ -249,6 +257,10 @@ clean:
 	- rm -rf tmp/systemctl.py
 	- rm -rf tmp.* types/tmp.*
 	- rm -rf .mypy_cache files/docker/.mypy_cache
+
+copy:
+	cp -v ../docker-mirror-packages-repo/docker_mirror.py .
+	cp -v ../docker-mirror-packages-repo/docker_mirror.pyi .
 
 dockerfiles:
 	for dockerfile in centos7-lamp-stack.dockerfile opensuse15-lamp-stack.dockerfile \
