@@ -6,7 +6,7 @@ import collections
 import logging
 from collections import namedtuple
 from typing import Callable, Dict, Iterable, List, NoReturn, Optional, TextIO, Tuple, Type, Union
-from typing import NamedTuple, Match, TextIO, BinaryIO, Sequence, overload
+from typing import NamedTuple, Match, TextIO, BinaryIO, Sequence, overload, Generator
 from types import TracebackType
 
 _extra_vars: List[str]
@@ -688,7 +688,7 @@ class Systemctl:
     def systems_version(self) -> List[str]: ...
     def test_float(self) -> float: ...
 
-def print_result(result: Union[None,bool,int,str,List[str],Dict[str,str]]) -> int:
-    def logg_info(*msg: Union[None,bool,int,str,List[str],Dict[str,str]]) -> None: ...
-    def logg_debug(*msg: Union[None,bool,int,str,List[str],Dict[str,str]]) -> None: ...
+def print_result(result: Union[None,bool,int,str,List[str],Dict[str,str],Generator[str,None,None]]) -> int:
+    def logg_info(*msg: Union[None,bool,int,str,List[str],Dict[str,str],Generator[str,None,None]]) -> None: ...
+    def logg_debug(*msg: Union[None,bool,int,str,List[str],Dict[str,str],Generator[str,None,None]]) -> None: ...
 
