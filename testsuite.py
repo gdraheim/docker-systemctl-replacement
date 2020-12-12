@@ -525,7 +525,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         x2 = name.find("_", x1+1)
         if x2 < 0: return name
         return name[:x2]
-    def testname(self, suffix = None) -> str:
+    def testname(self, suffix: Optional[str] = None) -> str:
         name = self.caller_testname()
         if suffix:
             return name + "_" + suffix
@@ -539,7 +539,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 return port
         seconds = int(str(int(time.time()))[-4:])
         return 6000 + (seconds % 2000)
-    def testdir(self, testname:str = None, keep = False) -> str:
+    def testdir(self, testname: Optional[str] = None, keep: bool = False) -> str:
         testname = testname or self.caller_testname()
         newdir = "tmp/tmp."+testname
         if os.path.isdir(newdir) and not keep:
@@ -547,7 +547,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not os.path.isdir(newdir):
             os.makedirs(newdir)
         return newdir
-    def rm_testdir(self, testname:str = None) -> str:
+    def rm_testdir(self, testname: Optional[str] = None) -> str:
         testname = testname or self.caller_testname()
         newdir = "tmp/tmp."+testname
         if os.path.isdir(newdir):
@@ -618,11 +618,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                        logg.info(" killing %s", e)
                 except Exception as e:
                     logg.info(" killing %s", e)
-    def rm_killall(self, testname:str = None) -> None:
+    def rm_killall(self, testname: Optional[str] = None) -> None:
         self.killall("*systemctl*.py *", 10, but = ["edit ", "testsuite.py "])
         testname = testname or self.caller_testname()
         self.killall("*/{testname}_*".format(**locals()))
-    def kill(self, pid, wait = None, sig = None):
+    def kill(self, pid: Union[str, int], wait: Optional[int] = None, sig: Optional[int] = None) -> bool:
         pid = int(pid)
         cmdline = "/proc/{pid}/cmdline".format(**locals())
         if True:
@@ -656,7 +656,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             time.sleep(1)
         logg.warning("not killed %s", pid)
         return False
-    def makedirs(self, path):
+    def makedirs(self, path: str) -> None:
         if not os.path.isdir(path):
             os.makedirs(path)
     def real_folders(self) -> Generator[str, None, None]:
@@ -790,7 +790,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self._started = time.time()
         logg.info("[[%s]]", datetime.datetime.fromtimestamp(self._started).strftime("%H:%M:%S"))
         return "-vv"
-    def end(self, maximum = 99):
+    def end(self, maximum: int = 99) -> None:
         runtime = time.time() - self._started
         self.assertLess(runtime, maximum)
     #
@@ -25354,7 +25354,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} cp {systemctl_sh} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
-    def save_coverage(self, *testnames):
+    def save_coverage(self, *testnames: str) -> None:
         """ Copying the image's /tmp/.coverage to our local ./.coverage.image file.
             Since the path of systemctl.py inside the container is different
             than our develop systemctl.py we have to patch the .coverage file.
