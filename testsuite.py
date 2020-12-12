@@ -17062,6 +17062,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleep = self.testname("sleep")
         testsleepB = testsleep+"B"
         testsleepC = testsleep+"C"
+        begin = "{"; ends = "}"
         bindir = os_path(root, "/usr/bin")
         rundir = os_path(root, "/var/run")
         text_file(os_path(testdir, "zzb.service"),"""
