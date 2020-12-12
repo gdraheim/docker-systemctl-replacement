@@ -9,6 +9,7 @@ __version__ = "1.5.4476"
 import logging
 logg = logging.getLogger("systemctl")
 
+from types import GeneratorType
 import re
 import fnmatch
 import shlex
@@ -6216,7 +6217,7 @@ def print_result(result):
         else:
             logg_info("EXEC END '%s...'", result1)
             logg_debug("    END '%s'", result)
-    elif isinstance(result, list):
+    elif isinstance(result, list) or isinstance(result, GeneratorType):
         shown = 0
         for element in result:
             if isinstance(element, tuple):
