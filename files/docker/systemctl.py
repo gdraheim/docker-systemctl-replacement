@@ -6216,7 +6216,7 @@ def print_result(result):
         else:
             logg_info("EXEC END '%s...'", result1)
             logg_debug("    END '%s'", result)
-    elif isinstance(result, list) or hasattr(result, "next") or hasattr(result, "__next__"):
+    elif isinstance(result, list):
         shown = 0
         for element in result:
             if isinstance(element, tuple):
@@ -6226,7 +6226,7 @@ def print_result(result):
             shown += 1
         logg_info("EXEC END %s items", shown)
         logg_debug("    END %s", result)
-    elif hasattr(result, "keys"):
+    elif isinstance(result, dict):
         shown = 0
         for key in sorted(result.keys()):
             element = result[key]
