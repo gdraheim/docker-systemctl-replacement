@@ -39,6 +39,7 @@ logg = logging.getLogger("TESTING")
 _sed = "sed"
 _docker = "docker"
 _python = "/usr/bin/python3"
+_python2 = "/usr/bin/python"
 _systemctl_py = "files/docker/systemctl3.py"
 _bin_sleep="/bin/sleep"
 COVERAGE = "" # make it an image name = detect_local_system()
@@ -72,7 +73,7 @@ realpath = os.path.realpath
 
 _top_list = "ps -eo etime,pid,ppid,args --sort etime,pid"
 
-def _recent(top_list: str) -> str:
+def _recent(top_list: Union[str, List[str]]) -> str:
     result = []
     for line in lines(top_list):
         if "[kworker" in line: continue
@@ -17063,8 +17064,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleepC = testsleep+"C"
         bindir = os_path(root, "/usr/bin")
         rundir = os_path(root, "/var/run")
-        begin="{"
-        end="}"
         text_file(os_path(testdir, "zzb.service"),"""
             [Unit]
             Description=Testing B
@@ -37332,7 +37331,7 @@ if __name__ == "__main__":
     # select runner
     if not logfile:
         if xmlresults:
-            import xmlrunner
+            import xmlrunner # type: ignore
             Runner = xmlrunner.XMLTestRunner
             result = Runner(xmlresults).run(suite)
         else:
@@ -37343,7 +37342,7 @@ if __name__ == "__main__":
         if xmlresults:
             import xmlrunner
             Runner = xmlrunner.XMLTestRunner
-        result = Runner(logfile.stream, verbosity=opt.verbose).run(suite)
+        result = Runner(logfile.stream, verbosity=opt.verbose).run(suite) # type: ignore
     if opt.coverage:
         print(" " + coverage_tool() + " combine")
         print(" " + coverage_tool() + " report " + _systemctl_py)
