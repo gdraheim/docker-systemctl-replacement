@@ -7707,7 +7707,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.coverage()
         self.end()
     def real_3070_check_prestart_is_activating(self) -> None:
-        self.test_3063_check_prestart_is_activating(True)
+        self.test_3070_check_prestart_is_activating(True)
     def test_3070_check_prestart_is_activating(self, real:bool = False) -> None:
         """ consider a situation where a 'systemctl start <service>' is
             taking a bit longer to start. Especially some pre-start
@@ -7848,7 +7848,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.coverage()
         self.end()
     def real_3080_two_service_starts_in_parallel(self) -> None:
-        self.test_3063_two_service_starts_in_parallel(True)
+        self.test_3080_two_service_starts_in_parallel(True)
     def test_3080_two_service_starts_in_parallel(self, real:bool = False) -> None:
         """ consider a situation where a 'systemctl start <service>' is
             done from two programs at the same time. Ensure that there
@@ -10381,8 +10381,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(log, "DEBUG chdir workingdir.*such file or directory"))
         self.assertFalse(greps(log, "bad workingdir"))
         #
-        log = lines(reads(logfile))
-        logg.info("LOG %s\n| %s", logfile, "\n| ".join(log))
+        log = reads(logfile)
+        logg.info("LOG %s\n %s", logfile, i2(log))
         self.assertNotIn(os_path(root,workingdir), log) # <<<<<<<<<< CHECK
         self.assertIn(root, log)
         #
@@ -12712,8 +12712,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("LOG\n%s", " "+reads(logfile).replace("\n","\n "))
         self.rm_testdir()
         self.end()
-    def real_3938_start_slowe_exec_notify(self) -> None:
-        self.test_3938_slow_false_exec_notify(True)
+    def real_3938_start_slow_exec_notify(self) -> None:
+        self.test_3938_start_slow_exec_notify(True)
     def test_3938_start_slow_exec_notify(self, real:bool = False) -> None:
         """ check that we manage notify services in a root env
             and slow handling."""
@@ -12803,7 +12803,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.end()
     def real_3939_start_slowe_exec_forking(self) -> None:
-        self.test_3939_slow_false_exec_forking(True)
+        self.test_3939_start_slow_exec_forking(True)
     def test_3939_start_slow_exec_forking(self, real:bool = False) -> None:
         """ check that we manage forking services in a root env
             and slow handling."""
@@ -13301,11 +13301,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top2 = top
         #
         logg.info("-- and we check that there is a new PID for the service process")
-        def find_pids(ps_output: str, command: str) -> List[str]:
+        def find_pids(ps_output: Union[str, List[str]], command: str) -> List[str]:
             pids = []
             for line in _lines(ps_output):
                 if command not in line: continue
                 m = re.match(r"\s*[\d:]*\s+(\S+)\s+(\S+)\s+(.*)", line)
+                if not m: continue
                 pid, ppid, args = m.groups()
                 # logg.info("  %s | %s | %s", pid, ppid, args)
                 pids.append(pid)
@@ -13651,11 +13652,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top2 = top
         #
         logg.info("-- and we check that there is a new PID for the service process")
-        def find_pids(ps_output: str, command: str) -> List[str]:
+        def find_pids(ps_output: Union[str, List[str]], command: str) -> List[str]:
             pids = []
             for line in _lines(ps_output):
                 if command not in line: continue
                 m = re.match(r"\s*[\d:]*\s+(\S+)\s+(\S+)\s+(.*)", line)
+                if not m: continue
                 pid, ppid, args = m.groups()
                 # logg.info("  %s | %s | %s", pid, ppid, args)
                 pids.append(pid)
@@ -13986,11 +13988,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top2 = top
         #
         logg.info("-- and we check that there is a new PID for the service process")
-        def find_pids(ps_output: str, command: str) -> List[str]:
+        def find_pids(ps_output: Union[str, List[str]], command: str) -> List[str]:
             pids = []
             for line in _lines(ps_output):
                 if command not in line: continue
                 m = re.match(r"\s*[\d:]*\s+(\S+)\s+(\S+)\s+(.*)", line)
+                if not m: continue
                 pid, ppid, args = m.groups()
                 # logg.info("  %s | %s | %s", pid, ppid, args)
                 pids.append(pid)
@@ -14325,11 +14328,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top2 = top
         #
         logg.info("-- and we check that there is a new PID for the service process")
-        def find_pids(ps_output: str, command: str) -> List[str]:
+        def find_pids(ps_output: Union[str, List[str]], command: str) -> List[str]:
             pids = []
             for line in _lines(ps_output):
                 if command not in line: continue
                 m = re.match(r"\s*[\d:]*\s+(\S+)\s+(\S+)\s+(.*)", line)
+                if not m: continue
                 pid, ppid, args = m.groups()
                 # logg.info("  %s | %s | %s", pid, ppid, args)
                 pids.append(pid)
@@ -15402,11 +15406,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top2 = top
         #
         logg.info("-- and we check that there is a new PID for the service process")
-        def find_pids(ps_output: str, command: str) -> List[str]:
+        def find_pids(ps_output: Union[str, List[str]], command: str) -> List[str]:
             pids = []
             for line in _lines(ps_output):
                 if command not in line: continue
                 m = re.match(r"\s*[\d:]*\s+(\S+)\s+(\S+)\s+(.*)", line)
+                if not m: continue
                 pid, ppid, args = m.groups()
                 # logg.info("  %s | %s | %s", pid, ppid, args)
                 pids.append(pid)
@@ -25817,11 +25822,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top2 = top
         #
         logg.info("-- and we check that there is a new PID for the service process")
-        def find_pids(ps_output: str, command: str) -> List[str]:
+        def find_pids(ps_output: Union[str, List[str]], command: str) -> List[str]:
             pids = []
             for line in _lines(ps_output):
                 if command not in line: continue
                 m = re.match(r"\s*[\d:]*\s+(\S+)\s+(\S+)\s+(.*)", line)
+                if not m: continue
                 pid, ppid, args = m.groups()
                 # logg.info("  %s | %s | %s", pid, ppid, args)
                 pids.append(pid)
@@ -26208,11 +26214,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top2 = top
         #
         logg.info("-- and we check that there is a new PID for the service process")
-        def find_pids(ps_output: str, command: str) -> List[str]:
+        def find_pids(ps_output: Union[str, List[str]], command: str) -> List[str]:
             pids = []
             for line in _lines(ps_output):
                 if command not in line: continue
                 m = re.match(r"\s*[\d:]*\s+(\S+)\s+(\S+)\s+(.*)", line)
+                if not m: continue
                 pid, ppid, args = m.groups()
                 # logg.info("  %s | %s | %s", pid, ppid, args)
                 pids.append(pid)
@@ -26588,11 +26595,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top2 = top
         #
         logg.info("-- and we check that there is a new PID for the service process")
-        def find_pids(ps_output: str, command: str) -> List[str]:
+        def find_pids(ps_output: Union[str, List[str]], command: str) -> List[str]:
             pids = []
             for line in _lines(ps_output):
                 if command not in line: continue
                 m = re.match(r"\s*[\d:]*\s+(\S+)\s+(\S+)\s+(.*)", line)
+                if not m: continue
                 pid, ppid, args = m.groups()
                 # logg.info("  %s | %s | %s", pid, ppid, args)
                 pids.append(pid)
@@ -26967,11 +26975,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top2 = top
         #
         logg.info("-- and we check that there is a new PID for the service process")
-        def find_pids(ps_output: str, command: str) -> List[str]:
+        def find_pids(ps_output: Union[str, List[str]], command: str) -> List[str]:
             pids = []
             for line in _lines(ps_output):
                 if command not in line: continue
                 m = re.match(r"\s*[\d:]*\s+(\S+)\s+(\S+)\s+(.*)", line)
+                if not m: continue
                 pid, ppid, args = m.groups()
                 # logg.info("  %s | %s | %s", pid, ppid, args)
                 pids.append(pid)
@@ -28175,11 +28184,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top2 = top
         #
         logg.info("-- and we check that there is a new PID for the service process")
-        def find_pids(ps_output: str, command: str) -> List[str]:
+        def find_pids(ps_output: Union[str, List[str]], command: str) -> List[str]:
             pids = []
             for line in _lines(ps_output):
                 if command not in line: continue
                 m = re.match(r"\s*[\d:]*\s+(\S+)\s+(\S+)\s+(.*)", line)
+                if not m: continue
                 pid, ppid, args = m.groups()
                 # logg.info("  %s | %s | %s", pid, ppid, args)
                 pids.append(pid)
@@ -28738,11 +28748,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top2 = top
         #
         logg.info("-- and we check that there is a new PID for the service process")
-        def find_pids(ps_output: str, command: str) -> List[str]:
+        def find_pids(ps_output: Union[str, List[str]], command: str) -> List[str]:
             pids = []
             for line in _lines(ps_output):
                 if command not in line: continue
                 m = re.match(r"\s*[\d:]*\s+(\S+)\s+(\S+)\s+(.*)", line)
+                if not m: continue
                 pid, ppid, args = m.groups()
                 # logg.info("  %s | %s | %s", pid, ppid, args)
                 pids.append(pid)
@@ -29145,11 +29156,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top2 = top
         #
         logg.info("-- and we check that there is a new PID for the service process")
-        def find_pids(ps_output: str, command: str) -> List[str]:
+        def find_pids(ps_output: Union[str, List[str]], command: str) -> List[str]:
             pids = []
             for line in _lines(ps_output):
                 if command not in line: continue
                 m = re.match(r"\s*[\d:]*\s+(\S+)\s+(\S+)\s+(.*)", line)
+                if not m: continue
                 pid, ppid, args = m.groups()
                 # logg.info("  %s | %s | %s", pid, ppid, args)
                 pids.append(pid)
@@ -29542,11 +29554,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top2 = top
         #
         logg.info("-- and we check that there is a new PID for the service process")
-        def find_pids(ps_output: str, command: str) -> List[str]:
+        def find_pids(ps_output: Union[str, List[str]], command: str) -> List[str]:
             pids = []
             for line in _lines(ps_output):
                 if command not in line: continue
                 m = re.match(r"\s*[\d:]*\s+(\S+)\s+(\S+)\s+(.*)", line)
+                if not m: continue
                 pid, ppid, args = m.groups()
                 # logg.info("  %s | %s | %s", pid, ppid, args)
                 pids.append(pid)
@@ -29940,11 +29953,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top2 = top
         #
         logg.info("-- and we check that there is a new PID for the service process")
-        def find_pids(ps_output: str, command: str) -> List[str]:
+        def find_pids(ps_output: Union[str, List[str]], command: str) -> List[str]:
             pids = []
             for line in _lines(ps_output):
                 if command not in line: continue
                 m = re.match(r"\s*[\d:]*\s+(\S+)\s+(\S+)\s+(.*)", line)
+                if not m: continue
                 pid, ppid, args = m.groups()
                 # logg.info("  %s | %s | %s", pid, ppid, args)
                 pids.append(pid)
