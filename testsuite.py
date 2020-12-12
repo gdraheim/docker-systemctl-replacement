@@ -8,6 +8,8 @@ __version__ = "1.5.4476"
 ## The testcases 1000...4999 are using a --root=subdir environment
 ## The testcases 5000...9999 will start a docker container to work.
 
+from typing import List, Dict, Tuple, Generator, Union, Optional, TextIO
+
 import subprocess
 import os
 import os.path
@@ -128,38 +130,38 @@ def refresh_tool(image: str) -> str:
     if "ubuntu" in image:
         return "apt-get update"
     return "true"
-def python_package(python : str, image : Optional[str] = None):
+def python_package(python : str, image : Optional[str] = None) -> str:
     package = os.path.basename(python)
     if package.endswith("2"):
-        if "centos:8" in image:
+        if image and "centos:8" in image:
             return package
         return package[:-1]
     return package
-def coverage_tool(image: Optional[str] = None, python : Optional[str] = None):
+def coverage_tool(image: Optional[str] = None, python : Optional[str] = None) -> str:
     image = image or IMAGE
     python = python or _python
     if python.endswith("3"):
         return python + " -m coverage"
     return "coverage2"
-def coverage_run(image: Optional[str] = None, python : Optional[str] = None, append: Optional[str] = None):
+def coverage_run(image: Optional[str] = None, python : Optional[str] = None, append: Optional[str] = None) -> str:
     append = append or "--append"
     options = " run '--omit=*/six.py,*/extern/*.py,*/unitconfparser.py' " + append
     return coverage_tool(image, python) + options + " -- "
-def coverage_package(image: Optional[str] = None, python: Optional[str] = None):
+def coverage_package(image: Optional[str] = None, python: Optional[str] = None) -> str:
     python = python or _python
     package = "python-coverage"
     if python.endswith("3"):
         package = "python3-coverage"
-        if "centos:8" in image:
+        if image and "centos:8" in image:
             package = "platform-python-coverage"
     logg.info("detect coverage_package for %s => %s (%s)", python, package, image)
     return package
-def cover(image: Optional[str] = None, python: Optional[str] = None, append: Optional[str] = None):
+def cover(image: Optional[str] = None, python: Optional[str] = None, append: Optional[str] = None) -> str:
     if not COVERAGE: return ""
     return coverage_run(image, python, append)
 
-def decodes(text: Union[str,bytes,None]):
-    if text is None: return None
+def decodes(text: Union[str,bytes,None]) -> str:
+    if text is None: return ""
     if isinstance(text, bytes):
         encoded = sys.getdefaultencoding()
         if encoded in ["ascii"]:
@@ -169,19 +171,19 @@ def decodes(text: Union[str,bytes,None]):
         except:
             return text.decode("latin-1")
     return text
-def sh____(cmd: Union[str, List[str]], shell:bool = True):
+def sh____(cmd: Union[str, List[str]], shell:bool = True) -> int:
     if isinstance(cmd, string_types):
         logg.info(": %s", cmd)
     else:
         logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
     return subprocess.check_call(cmd, shell=shell)
-def sx____(cmd: Union[str, List[str]], shell:bool = True):
+def sx____(cmd: Union[str, List[str]], shell:bool = True) -> int:
     if isinstance(cmd, string_types):
         logg.info(": %s", cmd)
     else:
         logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
     return subprocess.call(cmd, shell=shell)
-def output(cmd: Union[str, List[str]], shell:bool = True):
+def output(cmd: Union[str, List[str]], shell:bool = True) -> str:
     if isinstance(cmd, string_types):
         logg.info(": %s", cmd)
     else:
@@ -189,7 +191,7 @@ def output(cmd: Union[str, List[str]], shell:bool = True):
     run = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE)
     out, err = run.communicate()
     return decodes(out)
-def output2(cmd: Union[str, List[str]], shell:bool = True):
+def output2(cmd: Union[str, List[str]], shell:bool = True) -> Tuple[str, int]:
     if isinstance(cmd, string_types):
         logg.info(": %s", cmd)
     else:
@@ -197,7 +199,7 @@ def output2(cmd: Union[str, List[str]], shell:bool = True):
     run = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE)
     out, err = run.communicate()
     return decodes(out), run.returncode
-def output3(cmd: Union[str, List[str]], shell:bool = True):
+def output3(cmd: Union[str, List[str]], shell:bool = True) -> Tuple[str, str, int]:
     if isinstance(cmd, string_types):
         logg.info(": %s", cmd)
     else:
@@ -205,8 +207,9 @@ def output3(cmd: Union[str, List[str]], shell:bool = True):
     run = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out, err = run.communicate()
     return decodes(out), decodes(err), run.returncode
-def background(cmd: Union[str, List[str]], shell:bool = True):
-    BackgroundProcess = collections.namedtuple("BackgroundProcess", ["pid", "run", "log" ])
+
+BackgroundProcess = collections.namedtuple("BackgroundProcess", ["pid", "run", "log" ])
+def background(cmd: str, shell:bool = True) -> BackgroundProcess:
     log = open(os.devnull, "wb")
     exe = list(shlex.split(cmd))
     run = subprocess.Popen(exe, stdout=log, stderr=log)
@@ -216,38 +219,38 @@ def background(cmd: Union[str, List[str]], shell:bool = True):
 
 def reads(filename: str) -> str:
     return decodes(open(filename, "rb").read())
-def _lines(lines: Union[str, List[str]]) -> List[str]:
+def _lines(lines: Union[str, List[str], Generator[str, None, None], TextIO]) -> List[str]:
     if isinstance(lines, string_types):
         lines = decodes(lines).split("\n")
         if len(lines) and lines[-1] == "":
             lines = lines[:-1]
-    return lines
-def lines(text: Union[str, List[str]]):
+    return list(lines)
+def lines(text: Union[str, List[str], Generator[str, None, None], TextIO]) -> List[str]:
     lines = []
     for line in _lines(text):
         lines.append(line.rstrip())
     return lines
-def each_grep(pattern: str, lines: Union[str, List[str]]):
+def each_grep(pattern: str, lines: Union[str, List[str], TextIO]) -> Generator[str, None, None]:
     for line in _lines(lines):
        if re.search(pattern, line.rstrip()):
            yield line.rstrip()
-def grep(pattern: str, lines: Union[str, List[str]]):
+def grep(pattern: str, lines: Union[str, List[str], TextIO]) -> List[str]:
     return list(each_grep(pattern, lines))
-def greps(lines: Union[str, List[str]], pattern: str):
+def greps(lines: Union[str, List[str], TextIO], pattern: str) -> List[str]:
     return list(each_grep(pattern, lines))
-def running(lines: Union[str, List[str]]):
+def running(lines: Union[str, List[str]]) -> List[str]:
     return list(each_non_runuser(each_non_defunct(lines)))
-def each_non_defunct(lines: Union[str, List[str]]):
+def each_non_defunct(lines: Union[str, List[str], Generator[str, None, None]]) -> Generator[str, None, None]:
     for line in _lines(lines):
         if '<defunct>' in line:
             continue
         yield line
-def each_non_runuser(lines: Union[str, List[str]]):
+def each_non_runuser(lines: Union[str, List[str], Generator[str, None, None]]) -> Generator[str, None, None]:
     for line in _lines(lines):
         if 'runuser -u' in line:
             continue
         yield line
-def each_clean(lines: Union[str, List[str]]):
+def each_clean(lines: Union[str, List[str]]) -> Generator[str, None, None]:
     for line in _lines(lines):
         if '<defunct>' in line:
             continue
@@ -259,7 +262,7 @@ def each_clean(lines: Union[str, List[str]]):
 def clean(lines: Union[str, List[str]]) -> str:
     return " " + "\n ".join(each_clean(lines))
 
-def i2(part: str, indent: str="  ") -> List[str]:
+def i2(part: str, indent: str="  ") -> str:
     if isinstance(part, string_types):
         if "\n" in part.strip():
             lines = part.strip().split("\n")
@@ -270,11 +273,11 @@ def i2(part: str, indent: str="  ") -> List[str]:
                 text += "\n"
             return text
     return part
-def o22(part: str) -> List[str]:
+def o22(part: str) -> str:
     return only22(part)
-def oi22(part: str) -> List[str]:
+def oi22(part: str) -> str:
     return only22(part, indent="  ")
-def only22(part: str, indent:str ="") -> List[str]:
+def only22(part: str, indent:str ="") -> str:
     if isinstance(part, string_types):
         if "\n" in part.strip():
             lines = part.strip().split("\n")
@@ -299,16 +302,16 @@ def only22(part: str, indent:str ="") -> List[str]:
         return part[:5] + ["...","... (%s lines skipped)" % skipped,"..."] + part[-14:]
     return part
 
-def get_USER_ID(root:bool = False) -> str:
+def get_USER_ID(root:bool = False) -> int:
     ID = 0
     if root: return ID
     return os.geteuid()
-def get_USER(root:bool = False) -> None:
+def get_USER(root:bool = False) -> str:
     if root: return "root"
     uid = os.geteuid()
     import pwd
     return pwd.getpwuid(uid).pw_name
-def get_GROUP_ID(root:bool = False) -> str:
+def get_GROUP_ID(root:bool = False) -> int:
     ID = 0
     if root: return ID
     return os.getegid()
@@ -318,7 +321,7 @@ def get_GROUP(root:bool = False) -> str:
     gid = os.getegid()
     import grp
     return grp.getgrgid(gid).gr_name
-def get_LASTGROUP_ID(root:bool = False) -> str:
+def get_LASTGROUP_ID(root:bool = False) -> int:
     if root: return 0 # only there is
     current = os.getegid()
     lastgid = current
@@ -333,8 +336,8 @@ def get_LASTGROUP(root:bool = False) -> str:
     return grp.getgrgid(gid).gr_name
 
 def beep() -> None:
-    if os.name == "nt":
-        import winsound
+    if os.name == "nt": 
+        import winsound # type: ignore
         frequency = 2500
         duration = 1000
         winsound.Beep(frequency, duration)
@@ -343,16 +346,17 @@ def beep() -> None:
         # sx___("play -n synth 0.1 tri  1000.0")
         sx____("play -V1 -q -n -c1 synth 0.1 sine 500")
 
-def get_proc_started(pid):
+def get_proc_started(pid: int) -> float:
+    """ get time process started after boot in clock ticks"""
     proc = "/proc/%s/stat" % pid
     return path_proc_started(proc)
-def path_proc_started(proc):
-    #get time process started after boot in clock ticks
+def path_proc_started(proc: str) -> float:
+    """ get time process started after boot in clock ticks"""
     if not os.path.exists(proc):
         logg.error("no such file %s", proc)
         return 0
     else:
-        with open(proc) as f:
+        with open(proc, "rb") as f:
             data = f.readline()
         f.closed
         stat_data = data.split()
@@ -383,7 +387,7 @@ def path_proc_started(proc):
 
         # Variant 2:
         system_stat = "/proc/stat"
-        system_btime = 0
+        system_btime = 0.
         with open(system_stat,"rb") as f:
             for line in f:
                 if line.startswith(b"btime"):
@@ -397,18 +401,19 @@ def path_proc_started(proc):
         # return started_time
         return started_btime
 
-def download(base_url, filename: str, into: str) -> None:
+def download(base_url: str, filename: str, into: str) -> None:
     if not os.path.isdir(into):
         os.makedirs(into)
     if not os.path.exists(os.path.join(into, filename)):
         sh____("cd {into} && wget {base_url}/{filename}".format(**locals()))
-def text_file(filename: str, content) -> None:
+def text_file(filename: str, content: str) -> None:
     filedir = os.path.dirname(filename)
     if not os.path.isdir(filedir):
         os.makedirs(filedir)
     f = open(filename, "w")
     if content.startswith("\n"):
         x = re.match("(?s)\n( *)", content)
+        assert x is not None
         indent = x.group(1)
         for line in content[1:].split("\n"):
             if line.startswith(indent):
@@ -418,25 +423,30 @@ def text_file(filename: str, content) -> None:
         f.write(content)
     f.close()
     logg.info("::: made %s", filename)
-def shell_file(filename: str, content) -> None:
+def shell_file(filename: str, content: str) -> None:
     text_file(filename, content)
     os.chmod(filename, 0o775)
-def copy_file(filename: str, target) -> None:
+def copy_file(filename: str, target: str) -> None:
     targetdir = os.path.dirname(target)
     if not os.path.isdir(targetdir):
         os.makedirs(targetdir)
     shutil.copyfile(filename, target)
-def copy_tool(filename: str, target) -> None:
+def copy_tool(filename: str, target: str) -> None:
     copy_file(filename, target)
     os.chmod(target, 0o755)
 
-def get_caller_name():
-    frame = inspect.currentframe().f_back.f_back
+def get_caller_name() -> str:
+    currentframe = inspect.currentframe()
+    if not currentframe: return "global"
+    frame = currentframe.f_back.f_back
     return frame.f_code.co_name
-def get_caller_caller_name():
-    frame = inspect.currentframe().f_back.f_back.f_back
+def get_caller_caller_name() -> str:
+    currentframe = inspect.currentframe()
+    if not currentframe: return "global"
+    frame = currentframe.f_back.f_back.f_back
     return frame.f_code.co_name
-def os_path(root, path):
+# def os_path(root: Optional[str], path: Optional[str]) -> Optional[str]:
+def os_path(root: Optional[str], path: str) -> str:
     if not root:
         return path
     if not path:
@@ -444,58 +454,58 @@ def os_path(root, path):
     while path.startswith(os.path.sep):
        path = path[1:]
     return os.path.join(root, path)
-def os_getlogin():
+def os_getlogin() -> str:
     """ NOT using os.getlogin() """
     import pwd
     return pwd.getpwuid(os.geteuid()).pw_name
-def os_remove(path):
+def os_remove(path: str) -> None:
     if os.path.exists(path):
         os.remove(path)
-def get_runtime_dir():
+def get_runtime_dir() -> str:
     explicit = os.environ.get("XDG_RUNTIME_DIR", "")
     if explicit: return explicit
     user = os_getlogin()
     return "/tmp/run-"+user
-def docname(path):
+def docname(path: str) -> str:
     return os.path.splitext(os.path.basename(path))[0]
 
 SYSTEMCTL_DEBUG_LOG = "{LOG}/systemctl.debug.log"
 SYSTEMCTL_EXTRA_LOG = "{LOG}/systemctl.log"
 
-def get_home():
+def get_home() -> str:
     return os.path.expanduser("~")              # password directory. << from docs(os.path.expanduser)
-def get_HOME(root:bool = False) -> None:
+def get_HOME(root:bool = False) -> str:
     if root: return "/root"
     return get_home()
-def get_RUNTIME_DIR(root:bool = False) -> None:
+def get_RUNTIME_DIR(root:bool = False) -> str:
     RUN = "/run"
     if root: return RUN
     return os.environ.get("XDG_RUNTIME_DIR", get_runtime_dir())
-def get_CONFIG_HOME(root:bool = False) -> None:
+def get_CONFIG_HOME(root:bool = False) -> str:
     CONFIG = "/etc"
     if root: return CONFIG
     HOME = get_HOME(root)
     return os.environ.get("XDG_CONFIG_HOME", HOME + "/.config")
-def get_LOG_DIR(root:bool = False) -> None:
+def get_LOG_DIR(root:bool = False) -> str:
     LOGDIR = "/var/log"
     if root: return LOGDIR
     CONFIG = get_CONFIG_HOME(root)
     return os.path.join(CONFIG, "log")
-def expand_path(path, root = True):
+def expand_path(path: str, root:bool = True) -> str:
     LOG = get_LOG_DIR(root)
     XDG_CONFIG_HOME=get_CONFIG_HOME(root)
     XDG_RUNTIME_DIR=get_RUNTIME_DIR(root)
     return os.path.expanduser(path.replace("${","{").format(**locals()))
 
 ############ local mirror helpers #############
-def ip_container(name: str) -> None:
+def ip_container(name: str) -> str:
     docker = _docker
     values = output("{docker} inspect {name}".format(**locals()))
     values = json.loads(values)
     if not values or "NetworkSettings" not in values[0]:
         logg.critical(" %s inspect %s => %s ", docker, name, values)
-    return values[0]["NetworkSettings"]["IPAddress"]
-def detect_local_system():
+    return values[0]["NetworkSettings"]["IPAddress"] # type: ignore
+def detect_local_system() -> str:
     """ checks the controller host (a real machine / your laptop)
         and returns a matching image name for it (docker style) """
     docker = _docker
@@ -507,19 +517,19 @@ def detect_local_system():
 ############ the real testsuite ##############
 
 class DockerSystemctlReplacementTest(unittest.TestCase):
-    def caller_testname(self) -> None:
+    def caller_testname(self) -> str:
         name = get_caller_caller_name()
         x1 = name.find("_")
         if x1 < 0: return name
         x2 = name.find("_", x1+1)
         if x2 < 0: return name
         return name[:x2]
-    def testname(self, suffix = None):
+    def testname(self, suffix = None) -> str:
         name = self.caller_testname()
         if suffix:
             return name + "_" + suffix
         return name
-    def testport(self) -> None:
+    def testport(self) -> int:
         testname = self.caller_testname()
         m = re.match("test_([0123456789]+)", testname)
         if m:
@@ -528,7 +538,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 return port
         seconds = int(str(int(time.time()))[-4:])
         return 6000 + (seconds % 2000)
-    def testdir(self, testname:str = None, keep = False) -> None:
+    def testdir(self, testname:str = None, keep = False) -> str:
         testname = testname or self.caller_testname()
         newdir = "tmp/tmp."+testname
         if os.path.isdir(newdir) and not keep:
@@ -536,7 +546,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not os.path.isdir(newdir):
             os.makedirs(newdir)
         return newdir
-    def rm_testdir(self, testname:str = None) -> None:
+    def rm_testdir(self, testname:str = None) -> str:
         testname = testname or self.caller_testname()
         newdir = "tmp/tmp."+testname
         if os.path.isdir(newdir):
@@ -548,12 +558,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not KEEP:
             sx____("{docker} stop -t 6 {testname}".format(**locals()))
             sx____("{docker} rm -f {testname}".format(**locals()))
-    def killall(self, what, wait = None, sig = None, but = None):
+    def killall(self, what: str, wait: Optional[int] = None, sig: Optional[int] = None, but: Optional[List[str]] = None) -> None:
         # logg.info("killall %s (but %s)", what, but)
         killed = 0
         if True:
-            for pid in os.listdir("/proc"):
-                try: pid = int(pid)
+            for nextpid in os.listdir("/proc"):
+                try: pid = int(nextpid)
                 except: continue
                 cmdline = "/proc/{pid}/cmdline".format(**locals())
                 try:
@@ -571,8 +581,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                     logg.info(" killing %s", e)
         for checking in xrange(int(wait or 1)):
             remaining = 0
-            for pid in os.listdir("/proc"):
-                try: pid = int(pid)
+            for nextpid in os.listdir("/proc"):
+                try: pid = int(nextpid)
                 except: continue
                 cmdline = "/proc/{pid}/cmdline".format(**locals())
                 try:
@@ -590,8 +600,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 return
             time.sleep(1)
         if True:
-            for pid in os.listdir("/proc"):
-                try: pid = int(pid)
+            for nextpid in os.listdir("/proc"):
+                try: pid = int(nextpid)
                 except: continue
                 cmdline = "/proc/{pid}/cmdline".format(**locals())
                 try:
@@ -648,7 +658,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def makedirs(self, path):
         if not os.path.isdir(path):
             os.makedirs(path)
-    def real_folders(self) -> None:
+    def real_folders(self) -> Generator[str, None, None]:
         yield "/etc/systemd/system"
         yield "/var/run/systemd/system"
         yield "/usr/lib/systemd/system"
@@ -660,7 +670,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         yield "/etc/systemd/system/multi-user.target.wants"
         yield "/usr/bin"
         yield "/bin"
-    def rm_zzfiles(self, root):
+    def rm_zzfiles(self, root: Optional[str]) -> None:
         for folder in self.real_folders():
             for item in glob(os_path(root, folder + "/zz*")):
                 if os.path.isdir(item):
@@ -676,7 +686,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 else:
                    logg.info("rm %s", item)
                    os.remove(item)
-    def coverage(self, testname:str = None) -> None:
+    def coverage(self, testname:Optional[str] = None) -> None:
         testname = testname or self.caller_testname()
         newcoverage = ".coverage."+testname
         time.sleep(1)
@@ -689,19 +699,19 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             f = open(newcoverage, "wb")
             f.write(text2)
             f.close()
-    def root(self, testdir: str, real:bool = False) -> None:
+    def root(self, testdir: str, real:bool = False) -> str:
         if real: return "/"
         root_folder = os.path.join(testdir, "root")
         if not os.path.isdir(root_folder):
             os.makedirs(root_folder)
         return os.path.abspath(root_folder)
-    def socat(self) -> None:
+    def socat(self) -> str:
         if False and os.path.exists("/usr/bin/socat"):
             return "/usr/bin/socat"
         else:
             here = os.path.abspath(os.path.dirname(sys.argv[0]))
             return os.path.join(here, "reply.py")
-    def newpassword(self) -> None:
+    def newpassword(self) -> str:
         out = "Password."
         out += random.choice(string.ascii_uppercase)
         out += random.choice(string.ascii_lowercase)
@@ -712,15 +722,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out += random.choice("0123456789")
         out += random.choice("0123456789")
         return out
-    def user(self) -> None:
+    def user(self) -> str:
         return os_getlogin()
-    def ip_container(self, name: str) -> None:
+    def ip_container(self, name: str) -> str:
         values = output("docker inspect "+name)
         values = json.loads(values)
         if not values or "NetworkSettings" not in values[0]:
             logg.critical(" docker inspect %s => %s ", name, values)
-        return values[0]["NetworkSettings"]["IPAddress"]
-    def local_image(self, image: str) -> None:
+        return values[0]["NetworkSettings"]["IPAddress"] # type: ignore
+    def local_image(self, image: str) -> str:
         """ attach local centos-repo / opensuse-repo to docker-start enviroment.
             Effectivly when it is required to 'docker start centos:x.y' then do
             'docker start centos-repo:x.y' before and extend the original to
@@ -731,7 +741,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if add_hosts:
             return "{add_hosts} {image}".format(**locals())
         return image
-    def local_addhosts(self, dockerfile):
+    def local_addhosts(self, dockerfile: str) -> str:
         image = ""
         for line in open(dockerfile):
             m = re.match('[Ff][Rr][Oo][Mm] *"([^"]*)"', line)
@@ -746,7 +756,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if image:
             return self.start_mirror(image)
         return ""
-    def start_mirror(self, image: str) -> None:
+    def start_mirror(self, image: str) -> str:
         docker = _docker
         mirror = _mirror
         cmd = "{mirror} start {image} --add-hosts"
@@ -775,7 +785,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         print("                 # {local_image}".format(**locals()))
         print("  {docker} exec -it {name} bash".format(**locals()))
-    def begin(self) -> None:
+    def begin(self) -> str:
         self._started = time.time()
         logg.info("[[%s]]", datetime.datetime.fromtimestamp(self._started).strftime("%H:%M:%S"))
         return "-vv"
@@ -5073,7 +5083,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir = os_path(root, "/usr/bin")
         os.makedirs(os_path(root, "/var/run"))
         text_file(logfile, "created\n")
-        begin = "{" ; end = "}"
+        begin = "{" ; ends = "}"
         shell_file(os_path(testdir, "xxx.init"), """
             #! /bin/bash
             ### BEGIN INIT INFO
@@ -5105,10 +5115,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                wait %1
                # ps -o pid,ppid,args
                cat "RUNNING `cat {root}/var/run/zzz.init.pid`"
-            {end}
+            {ends}
             stop() {begin}
                killall {testsleep}
-            {end}
+            {ends}
             case "$1" in start)
                date "+START.%T" >> $logfile
                start >> $logfile 2>&1
@@ -13156,7 +13166,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logfile = os_path(root, "/var/log/test.log")
         bindir = os_path(root, "/usr/bin")
         begin = "{"
-        end = "}"
+        ends = "}"
         text_file(logfile, "")
         text_file(os_path(testdir, "zzz.service"),"""
             [Unit]
@@ -13181,11 +13191,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
               date +%T,stopping >> {logfile}
               killall {testsleep}
               date +%T,stopped >> {logfile}
-            {end}
+            {ends}
             reload () {begin}
               date +%T,reloading >> {logfile}
               date +%T,reloaded >> {logfile}
-            {end}
+            {ends}
             trap "stops" 3   # SIGQUIT
             trap "reload" 10 # SIGUSR1
             date +%T,starting >> {logfile}
@@ -13291,7 +13301,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top2 = top
         #
         logg.info("-- and we check that there is a new PID for the service process")
-        def find_pids(ps_output: str, command: str) -> None:
+        def find_pids(ps_output: str, command: str) -> List[str]:
             pids = []
             for line in _lines(ps_output):
                 if command not in line: continue
@@ -13522,7 +13532,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir = os_path(root, "/usr/bin")
         os.makedirs(os_path(root, "/var/run"))
         text_file(logfile, "created\n")
-        begin = "{" ; end = "}"
+        begin = "{" ; ends = "}"
         shell_file(os_path(testdir, "zzz.init"), """
             #! /bin/bash
             logfile={logfile}
@@ -13533,10 +13543,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                ) &
                wait %1
                # ps -o pid,ppid,args
-            {end}
+            {ends}
             stop() {begin}
                killall {testsleep}
-            {end}
+            {ends}
             case "$1" in start)
                date "+START.%T" >> $logfile
                start >> $logfile 2>&1
@@ -13641,7 +13651,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top2 = top
         #
         logg.info("-- and we check that there is a new PID for the service process")
-        def find_pids(ps_output: str, command: str) -> None:
+        def find_pids(ps_output: str, command: str) -> List[str]:
             pids = []
             for line in _lines(ps_output):
                 if command not in line: continue
@@ -13856,7 +13866,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir = os_path(root, "/usr/bin")
         os.makedirs(os_path(root, "/var/run"))
         text_file(logfile, "created\n")
-        begin = "{" ; end = "}"
+        begin = "{" ; ends = "}"
         shell_file(os_path(testdir, "zzz.init"), """
             #! /bin/bash
             logfile={logfile}
@@ -13867,10 +13877,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 echo "READY=1" | {socat} -v -d - UNIX-CLIENT:$NOTIFY_SOCKET
                 wait %1
                 # ps -o pid,ppid,args
-            {end}
+            {ends}
             stop() {begin}
                 killall {testsleep}
-            {end}
+            {ends}
             case "$1" in start)
                date "+START.%T" >> $logfile
                start >> $logfile 2>&1
@@ -13976,7 +13986,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top2 = top
         #
         logg.info("-- and we check that there is a new PID for the service process")
-        def find_pids(ps_output: str, command: str) -> None:
+        def find_pids(ps_output: str, command: str) -> List[str]:
             pids = []
             for line in _lines(ps_output):
                 if command not in line: continue
@@ -14192,7 +14202,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir = os_path(root, "/usr/bin")
         os.makedirs(os_path(root, "/var/run"))
         text_file(logfile, "created\n")
-        begin = "{" ; end = "}"
+        begin = "{" ; ends = "}"
         shell_file(os_path(testdir, "zzz.init"), """
             #! /bin/bash
             logfile={logfile}
@@ -14203,10 +14213,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 echo "READY=1" | {socat} -v -d - UNIX-CLIENT:$NOTIFY_SOCKET
                 wait %1
                 # ps -o pid,ppid,args
-            {end}
+            {ends}
             stop() {begin}
                 killall {testsleep}
-            {end}
+            {ends}
             case "$1" in start)
                date "+START.%T" >> $logfile
                start >> $logfile 2>&1
@@ -14315,7 +14325,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top2 = top
         #
         logg.info("-- and we check that there is a new PID for the service process")
-        def find_pids(ps_output: str, command: str) -> None:
+        def find_pids(ps_output: str, command: str) -> List[str]:
             pids = []
             for line in _lines(ps_output):
                 if command not in line: continue
@@ -14531,7 +14541,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir = os_path(root, "/usr/bin")
         os.makedirs(os_path(root, "/var/run"))
         text_file(logfile, "created\n")
-        begin = "{" ; end = "}"
+        begin = "{" ; ends = "}"
         shell_file(os_path(testdir, "zzz.init"), """
             #! /bin/bash
             logfile={logfile}
@@ -14542,10 +14552,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 echo "READY=1" | {socat} -v -d - UNIX-CLIENT:$NOTIFY_SOCKET
                 wait %1
                 # ps -o pid,ppid,args
-            {end}
+            {ends}
             stop() {begin}
                 killall {testsleep}
-            {end}
+            {ends}
             case "$1" in start)
                date "+START.%T" >> $logfile
                start >> $logfile 2>&1
@@ -14663,7 +14673,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir = os_path(root, "/usr/bin")
         os.makedirs(os_path(root, "/var/run"))
         text_file(logfile, "created\n")
-        begin = "{" ; end = "}"
         text_file(os_path(testdir, "zzz.service"),"""
             [Unit]
             Description=Testing Z
@@ -14854,7 +14863,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir = os_path(root, "/usr/bin")
         os.makedirs(os_path(root, "/var/run"))
         text_file(logfile, "created\n")
-        begin = "{" ; end = "}"
         text_file(os_path(testdir, "zzz.service"),"""
             [Unit]
             Description=Testing Z
@@ -15062,7 +15070,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir = os_path(root, "/usr/bin")
         os.makedirs(os_path(root, "/var/run"))
         text_file(logfile, "created\n")
-        begin = "{" ; end = "}"
         text_file(os_path(testdir, "zzz@.service"),"""
             [Unit]
             Description=Testing Z.%i
@@ -15274,7 +15281,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir = os_path(root, "/usr/bin")
         os.makedirs(os_path(root, "/var/run"))
         text_file(logfile, "created\n")
-        begin = "{" ; end = "}"
+        begin = "{" ; ends = "}"
         shell_file(os_path(testdir, "zzz.init"), """
             #! /bin/bash
             ### BEGIN INIT INFO
@@ -15295,10 +15302,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                wait %1
                # ps -o pid,ppid,args
                cat "RUNNING `cat {root}/var/run/zzz.init.pid`"
-            {end}
+            {ends}
             stop() {begin}
                killall {testsleep}
-            {end}
+            {ends}
             case "$1" in start)
                date "+START.%T" >> $logfile
                start >> $logfile 2>&1
@@ -15395,7 +15402,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top2 = top
         #
         logg.info("-- and we check that there is a new PID for the service process")
-        def find_pids(ps_output: str, command: str) -> None:
+        def find_pids(ps_output: str, command: str) -> List[str]:
             pids = []
             for line in _lines(ps_output):
                 if command not in line: continue
@@ -15560,7 +15567,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir = os_path(root, "/usr/bin")
         os.makedirs(os_path(root, "/var/run"))
         text_file(logfile, "created\n")
-        begin = "{" ; end = "}"
+        begin = "{" ; ends = "}"
         shell_file(os_path(testdir, "zzz.init"), """
             #! /bin/bash
             ### BEGIN INIT INFO
@@ -15581,10 +15588,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                wait %1
                # ps -o pid,ppid,args
                cat "RUNNING `cat {root}/var/run/zzz.init.pid`"
-            {end}
+            {ends}
             stop() {begin}
                killall {testsleep}
-            {end}
+            {ends}
             case "$1" in start)
                date "+START.%T" >> $logfile
                start >> $logfile 2>&1
@@ -15667,7 +15674,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir = os_path(root, "/usr/bin")
         os.makedirs(os_path(root, "/var/run"))
         text_file(logfile, "created\n")
-        begin = "{" ; end = "}"
+        begin = "{" ; ends = "}"
         shell_file(os_path(testdir, "zzz.init"), """
             #! /bin/bash
             ### BEGIN INIT INFO
@@ -15688,10 +15695,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                wait %1
                # ps -o pid,ppid,args
                cat "RUNNING `cat {root}/var/run/zzz.init.pid`"
-            {end}
+            {ends}
             stop() {begin}
                killall {testsleep}
-            {end}
+            {ends}
             case "$1" in start)
                date "+START.%T" >> $logfile
                start >> $logfile 2>&1
@@ -15800,7 +15807,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir = os_path(root, "/usr/bin")
         os.makedirs(os_path(root, "/var/run"))
         text_file(logfile, "created\n")
-        begin = "{" ; end = "}"
+        begin = "{" ; ends = "}"
         shell_file(os_path(testdir, "zzz.init"), """
             #! /bin/bash
             logfile={logfile}
@@ -15811,10 +15818,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 echo "READY=1" | {socat} -v -d - UNIX-CLIENT:$NOTIFY_SOCKET
                 wait %1
                 # ps -o pid,ppid,args
-            {end}
+            {ends}
             stop() {begin}
                 killall {testsleep}
-            {end}
+            {ends}
             case "$1" in start)
                date "+START.%T" >> $logfile
                start >> $logfile 2>&1
@@ -15950,7 +15957,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir = os_path(root, "/usr/bin")
         os.makedirs(os_path(root, "/var/run"))
         text_file(logfile, "created\n")
-        begin = "{" ; end = "}"
+        begin = "{" ; ends = "}"
         shell_file(os_path(testdir, "zzz.init"), """
             #! /bin/bash
             logfile={logfile}
@@ -15961,10 +15968,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 echo "READY=1" | {socat} -v -d - UNIX-CLIENT:$NOTIFY_SOCKET
                 wait %1
                 # ps -o pid,ppid,args
-            {end}
+            {ends}
             stop() {begin}
                 killall {testsleep}
-            {end}
+            {ends}
             case "$1" in start)
                date "+START.%T" >> $logfile
                start >> $logfile 2>&1
@@ -16079,7 +16086,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         fail = os_path(root, "/tmp/fail")
         os.makedirs(os_path(root, "/var/run"))
         text_file(logfile, "created\n")
-        begin = "{" ; end = "}"
+        begin = "{" ; ends = "}"
         shell_file(os_path(testdir, "zzz.init"), """
             #! /bin/bash
             logfile={logfile}
@@ -16090,10 +16097,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                ) &
                wait %1
                # ps -o pid,ppid,args
-            {end}
+            {ends}
             stop() {begin}
                killall {testsleep}
-            {end}
+            {ends}
             echo "run-$1" >> $logfile
             if test -f {fail}$1; then
                echo "fail-$1" >> $logfile
@@ -16360,7 +16367,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir = os_path(root, "/usr/bin")
         os.makedirs(os_path(root, "/var/run"))
         text_file(logfile, "created\n")
-        begin = "{" ; end = "}"
         text_file(os_path(testdir, "zzz.service"),"""
             [Unit]
             Description=Testing Z
@@ -16645,8 +16651,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleep = self.testname("testsleep")
         testfail = self.testname("testfail.sh")
         bindir = os_path(root, "/usr/bin")
-        begin = "{"
-        end = "}"
         text_file(os_path(testdir, "zzz.service"),"""
             [Unit]
             Description=Testing Z
@@ -17071,7 +17075,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Service]
             Type=simple
             ExecStart={bindir}/{testsleepC} 111
-            ExecStop=/bin/kill ${begin}MAINPID{end}
+            ExecStop=/bin/kill ${begin}MAINPID{ends}
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
@@ -17204,8 +17208,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testscriptC = self.testname("testscriptC.sh")
         logfile = os_path(root, "/var/log/test.log")
         bindir = os_path(root, "/usr/bin")
-        begin = "{"
-        end = "}"
+        begin = "{"  ; ends = "}"
         text_file(logfile, "")
         text_file(os_path(testdir, "zzb.service"),"""
             [Unit]
@@ -17230,17 +17233,17 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
               date +%T,stopping >> {logfile}
               killall {testsleep}
               date +%T,stopped >> {logfile}
-            {end}
+            {ends}
             reload () {begin}
               date +%T,reloading >> {logfile}
               date +%T,reloaded >> {logfile}
-            {end}
+            {ends}
             ignored () {begin}
               date +%T,ignored >> {logfile}
-            {end}
+            {ends}
             sighup () {begin}
               date +%T,sighup >> {logfile}
-            {end}
+            {ends}
             trap "stops" 3     # SIGQUIT
             trap "reload" 10   # SIGUSR1
             trap "ignored" 15  # SIGTERM
@@ -17321,8 +17324,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testscriptC = self.testname("testscriptC.sh")
         logfile = os_path(root, "/var/log/test.log")
         bindir = os_path(root, "/usr/bin")
-        begin = "{"
-        end = "}"
+        begin = "{" ; ends = "}"
         text_file(logfile, "")
         text_file(os_path(testdir, "zzb.service"),"""
             [Unit]
@@ -17348,17 +17350,17 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
               date +%T,stopping >> {logfile}
               killall {testsleep}
               date +%T,stopped >> {logfile}
-            {end}
+            {ends}
             reload () {begin}
               date +%T,reloading >> {logfile}
               date +%T,reloaded >> {logfile}
-            {end}
+            {ends}
             ignored () {begin}
               date +%T,ignored >> {logfile}
-            {end}
+            {ends}
             sighup () {begin}
               date +%T,sighup >> {logfile}
-            {end}
+            {ends}
             trap "stops" 3    # SIGQUIT
             trap "reload" 10  # SIGUSR1
             trap "ignored" 15 # SIGTERM
@@ -17441,8 +17443,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testscriptC = self.testname("testscriptC.sh")
         logfile = os_path(root, "/var/log/test.log")
         bindir = os_path(root, "/usr/bin")
-        begin = "{"
-        end = "}"
+        begin = "{" ; ends = "}"
         text_file(logfile, "")
         text_file(os_path(testdir, "zzb.service"),"""
             [Unit]
@@ -17468,17 +17469,17 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
               date +%T,stopping >> {logfile}
               killall {testsleep}
               date +%T,stopped >> {logfile}
-            {end}
+            {ends}
             reload () {begin}
               date +%T,reloading >> {logfile}
               date +%T,reloaded >> {logfile}
-            {end}
+            {ends}
             ignored () {begin}
               date +%T,ignored >> {logfile}
-            {end}
+            {ends}
             sighup () {begin}
               date +%T,sighup >> {logfile}
-            {end}
+            {ends}
             trap "stops" 3      # SIGQUIT
             trap "reload" 10    # SIGUSR1
             trap "ignored" 15   # SIGTERM
@@ -17561,8 +17562,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testscriptC = self.testname("testscriptC.sh")
         logfile = os_path(root, "/var/log/test.log")
         bindir = os_path(root, "/usr/bin")
-        begin = "{"
-        end = "}"
+        begin = "{" ; ends = "}"
         text_file(logfile, "")
         text_file(os_path(testdir, "zzb.service"),"""
             [Unit]
@@ -17588,17 +17588,17 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             stops () {begin}
               date +%T,stopfails >> {logfile}
               # killall {testsleep} ############## kill ignored
-            {end}
+            {ends}
             reload () {begin}
               date +%T,reloading >> {logfile}
               date +%T,reloaded >> {logfile}
-            {end}
+            {ends}
             ignored () {begin}
               date +%T,ignored >> {logfile}
-            {end}
+            {ends}
             sighup () {begin}
               date +%T,sighup >> {logfile}
-            {end}
+            {ends}
             trap "stops" 3      # SIGQUIT
             trap "reload" 10    # SIGUSR1
             trap "ignored" 15   # SIGTERM
@@ -17681,8 +17681,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testscriptC = self.testname("testscriptC.sh")
         logfile = os_path(root, "/var/log/test.log")
         bindir = os_path(root, "/usr/bin")
-        begin = "{"
-        end = "}"
+        begin = "{" ; ends = "}"
         text_file(logfile, "")
         text_file(os_path(testdir, "zzb.service"),"""
             [Unit]
@@ -17708,17 +17707,17 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             stops () {begin}
               date +%T,stopfails >> {logfile}
               # killall {testsleep} ############## kill ignored
-            {end}
+            {ends}
             reload () {begin}
               date +%T,reloading >> {logfile}
               date +%T,reloaded >> {logfile}
-            {end}
+            {ends}
             ignored () {begin}
               date +%T,ignored >> {logfile}
-            {end}
+            {ends}
             sighup () {begin}
               date +%T,sighup >> {logfile}
-            {end}
+            {ends}
             trap "stops" 3      # SIGQUIT
             trap "reload" 10    # SIGUSR1
             trap "ignored" 15   # SIGTERM
@@ -25647,8 +25646,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testscript = testname+"_testscript.sh"
         logfile = os_path(root, "/var/log/test.log")
         bindir = os_path(root, "/usr/bin")
-        begin = "{"
-        end = "}"
+        begin = "{" ; ends = "}"
         text_file(os_path(testdir, "zzz.service"),"""
             [Unit]
             Description=Testing Z
@@ -25673,11 +25671,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
               date +%T,stopping >> {logfile}
               killall {testsleep} >> {logfile} 2>&1
               date +%T,stopped >> {logfile}
-            {end}
+            {ends}
             reload () {begin}
               date +%T,reloading >> {logfile}
               date +%T,reloaded >> {logfile}
-            {end}
+            {ends}
             trap "stops" 3   # SIGQUIT
             trap "reload" 10 # SIGUSR1
             date +%T,starting >> {logfile}
@@ -25819,7 +25817,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top2 = top
         #
         logg.info("-- and we check that there is a new PID for the service process")
-        def find_pids(ps_output: str, command: str) -> None:
+        def find_pids(ps_output: str, command: str) -> List[str]:
             pids = []
             for line in _lines(ps_output):
                 if command not in line: continue
@@ -26062,7 +26060,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleep = testname+"_sleep"
         logfile = os_path(root, "/var/log/"+testsleep+".log")
         bindir = os_path(root, "/usr/bin")
-        begin = "{" ; end = "}"
+        begin = "{" ; ends = "}"
         shell_file(os_path(testdir, "zzz.init"), """
             #! /bin/bash
             logfile={logfile}
@@ -26073,10 +26071,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                ) &
                wait %1
                # ps -o pid,ppid,user,args
-            {end}
+            {ends}
             stop() {begin}
                killall {testsleep}
-            {end}
+            {ends}
             case "$1" in start)
                date "+START.%T" >> $logfile
                start >> $logfile 2>&1
@@ -26210,7 +26208,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top2 = top
         #
         logg.info("-- and we check that there is a new PID for the service process")
-        def find_pids(ps_output: str, command: str) -> None:
+        def find_pids(ps_output: str, command: str) -> List[str]:
             pids = []
             for line in _lines(ps_output):
                 if command not in line: continue
@@ -26432,7 +26430,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleep = testname+"_sleep"
         logfile = os_path(root, "/var/log/"+testsleep+".log")
         bindir = os_path(root, "/usr/bin")
-        begin = "{" ; end = "}"
+        begin = "{" ; ends = "}"
         shell_file(os_path(testdir, "zzz.init"), """
             #! /bin/bash
             logfile={logfile}
@@ -26443,10 +26441,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 echo "READY=1" | socat -v -d - UNIX-CLIENT:$NOTIFY_SOCKET
                 wait %1
                 # ps -o pid,ppid,user,args
-            {end}
+            {ends}
             stop() {begin}
                 killall {testsleep}
-            {end}
+            {ends}
             case "$1" in start)
                date "+START.%T" >> $logfile
                start >> $logfile 2>&1
@@ -26590,7 +26588,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top2 = top
         #
         logg.info("-- and we check that there is a new PID for the service process")
-        def find_pids(ps_output: str, command: str) -> None:
+        def find_pids(ps_output: str, command: str) -> List[str]:
             pids = []
             for line in _lines(ps_output):
                 if command not in line: continue
@@ -26815,7 +26813,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleep = self.testname("sleep")
         logfile = os_path(root, "/var/log/"+testsleep+".log")
         bindir = os_path(root, "/usr/bin")
-        begin = "{" ; end = "}"
+        begin = "{" ; ends = "}"
         shell_file(os_path(testdir, "zzz.init"), """
             #! /bin/bash
             logfile={logfile}
@@ -26826,10 +26824,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 echo "READY=1" | socat -v -d - UNIX-CLIENT:$NOTIFY_SOCKET
                 wait %1
                 # ps -o pid,ppid,user,args
-            {end}
+            {ends}
             stop() {begin}
                 killall {testsleep}
-            {end}
+            {ends}
             case "$1" in start)
                date "+START.%T" >> $logfile
                start >> $logfile 2>&1
@@ -26969,7 +26967,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top2 = top
         #
         logg.info("-- and we check that there is a new PID for the service process")
-        def find_pids(ps_output: str, command: str) -> None:
+        def find_pids(ps_output: str, command: str) -> List[str]:
             pids = []
             for line in _lines(ps_output):
                 if command not in line: continue
@@ -27192,7 +27190,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleep = self.testname("sleep")
         logfile = os_path(root, "/var/log/"+testsleep+".log")
         bindir = os_path(root, "/usr/bin")
-        begin = "{" ; end = "}"
         text_file(os_path(testdir, "zzz.service"),"""
             [Unit]
             Description=Testing Z
@@ -27458,7 +27455,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleep = self.testname("sleep")
         logfile = os_path(root, "/var/log/"+testsleep+".log")
         bindir = os_path(root, "/usr/bin")
-        begin = "{" ; end = "}"
         text_file(os_path(testdir, "zzz.service"),"""
             [Unit]
             Description=Testing Z
@@ -27740,7 +27736,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleep = self.testname("sleep")
         logfile = os_path(root, "/var/log/"+testsleep+".log")
         bindir = os_path(root, "/usr/bin")
-        begin = "{" ; end = "}"
         text_file(os_path(testdir, "zzz@.service"),"""
             [Unit]
             Description=Testing Z.%i
@@ -28031,7 +28026,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleep = self.testname("sleep")
         logfile = os_path(root, "/var/log/"+testsleep+".log")
         bindir = os_path(root, "/usr/bin")
-        begin = "{" ; end = "}"
+        begin = "{" ; ends = "}"
         shell_file(os_path(testdir, "zzz.init"), """
             #! /bin/bash
             ### BEGIN INIT INFO
@@ -28052,11 +28047,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                wait %1
                # ps -o pid,ppid,user,args
                cat "RUNNING `cat {root}/var/run/zzz.init.pid`"
-            {end}
+            {ends}
             stop() {begin}
                kill `cat {root}/var/run/zzz.init.pid` >>$logfile 2>&1
                killall {testsleep} >> $logfile 2>&1
-            {end}
+            {ends}
             case "$1" in start)
                date "+START.%T" >> $logfile
                start >> $logfile 2>&1
@@ -28180,7 +28175,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top2 = top
         #
         logg.info("-- and we check that there is a new PID for the service process")
-        def find_pids(ps_output: str, command: str) -> None:
+        def find_pids(ps_output: str, command: str) -> List[str]:
             pids = []
             for line in _lines(ps_output):
                 if command not in line: continue
@@ -28385,8 +28380,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleep = testname+"_testsleep"
         logfile = os_path(root, "/var/log/test.log")
         bindir = os_path(root, "/usr/bin")
-        begin = "{"
-        end = "}"
         text_file(os_path(testdir, "zzz.service"),"""
             [Unit]
             Description=Testing Z
@@ -28561,8 +28554,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testscript = testname+"_testscript.sh"
         logfile = os_path(root, "/var/log/test.log")
         bindir = os_path(root, "/usr/bin")
-        begin = "{"
-        end = "}"
+        begin = "{" ; ends = "}"
         text_file(os_path(testdir, "zzz.service"),"""
             [Unit]
             Description=Testing Z
@@ -28587,11 +28579,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
               date +%T,stopping >> {logfile}
               killall {testsleep} >> {logfile} 2>&1
               date +%T,stopped >> {logfile}
-            {end}
+            {ends}
             reload () {begin}
               date +%T,reloading >> {logfile}
               date +%T,reloaded >> {logfile}
-            {end}
+            {ends}
             trap "stops" 3   # SIGQUIT
             trap "reload" 10 # SIGUSR1
             date +%T,starting >> {logfile}
@@ -28746,7 +28738,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top2 = top
         #
         logg.info("-- and we check that there is a new PID for the service process")
-        def find_pids(ps_output: str, command: str) -> None:
+        def find_pids(ps_output: str, command: str) -> List[str]:
             pids = []
             for line in _lines(ps_output):
                 if command not in line: continue
@@ -28992,7 +28984,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleep = testname+"_sleep"
         logfile = os_path(root, "/var/log/"+testsleep+".log")
         bindir = os_path(root, "/usr/bin")
-        begin = "{" ; end = "}"
+        begin = "{" ; ends = "}"
         shell_file(os_path(testdir, "zzz.init"), """
             #! /bin/bash
             logfile={logfile}
@@ -29003,10 +28995,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                ) &
                wait %1
                # ps -o pid,ppid,user,args
-            {end}
+            {ends}
             stop() {begin}
                killall {testsleep}
-            {end}
+            {ends}
             case "$1" in start)
                date "+START.%T" >> $logfile
                start >> $logfile 2>&1
@@ -29153,7 +29145,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top2 = top
         #
         logg.info("-- and we check that there is a new PID for the service process")
-        def find_pids(ps_output: str, command: str) -> None:
+        def find_pids(ps_output: str, command: str) -> List[str]:
             pids = []
             for line in _lines(ps_output):
                 if command not in line: continue
@@ -29379,7 +29371,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleep = testname+"_sleep"
         logfile = os_path(root, "/var/log/"+testsleep+".log")
         bindir = os_path(root, "/usr/bin")
-        begin = "{" ; end = "}"
+        begin = "{" ; ends = "}"
         shell_file(os_path(testdir, "zzz.init"), """
             #! /bin/bash
             logfile={logfile}
@@ -29390,10 +29382,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 echo "READY=1" | socat -v -d - UNIX-CLIENT:$NOTIFY_SOCKET
                 wait %1
                 # ps -o pid,ppid,user,args
-            {end}
+            {ends}
             stop() {begin}
                 killall {testsleep}
-            {end}
+            {ends}
             case "$1" in start)
                date "+START.%T" >> $logfile
                start >> $logfile 2>&1
@@ -29550,7 +29542,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top2 = top
         #
         logg.info("-- and we check that there is a new PID for the service process")
-        def find_pids(ps_output: str, command: str) -> None:
+        def find_pids(ps_output: str, command: str) -> List[str]:
             pids = []
             for line in _lines(ps_output):
                 if command not in line: continue
@@ -29781,7 +29773,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleep = self.testname("sleep")
         logfile = os_path(root, "/var/log/"+testsleep+".log")
         bindir = os_path(root, "/usr/bin")
-        begin = "{" ; end = "}"
+        begin = "{" ; ends = "}"
         shell_file(os_path(testdir, "zzz.init"), """
             #! /bin/bash
             logfile={logfile}
@@ -29792,10 +29784,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 echo "READY=1" | socat -v -d - UNIX-CLIENT:$NOTIFY_SOCKET
                 wait %1
                 # ps -o pid,ppid,user,args
-            {end}
+            {ends}
             stop() {begin}
                 killall {testsleep}
-            {end}
+            {ends}
             case "$1" in start)
                date "+START.%T" >> $logfile
                start >> $logfile 2>&1
@@ -29948,7 +29940,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top2 = top
         #
         logg.info("-- and we check that there is a new PID for the service process")
-        def find_pids(ps_output: str, command: str) -> None:
+        def find_pids(ps_output: str, command: str) -> List[str]:
             pids = []
             for line in _lines(ps_output):
                 if command not in line: continue
@@ -30174,7 +30166,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleep = self.testname("sleep")
         logfile = os_path(root, "/var/log/"+testsleep+".log")
         bindir = os_path(root, "/usr/bin")
-        begin = "{" ; end = "}"
         text_file(os_path(testdir, "zzz.service"),"""
             [Unit]
             Description=Testing Z
@@ -30457,7 +30448,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleep = self.testname("sleep")
         logfile = os_path(root, "/var/log/"+testsleep+".log")
         bindir = os_path(root, "/usr/bin")
-        begin = "{" ; end = "}"
         text_file(os_path(testdir, "zzz.service"),"""
             [Unit]
             Description=Testing Z
@@ -30740,7 +30730,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleep = self.testname("sleep")
         logfile = os_path(root, "/var/log/"+testsleep+".log")
         bindir = os_path(root, "/usr/bin")
-        begin = "{" ; end = "}"
+        begin = "{" ; ends = "}"
         shell_file(os_path(testdir, "zzz.init"), """
             #! /bin/bash
             ### BEGIN INIT INFO
@@ -30761,11 +30751,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                wait %1
                # ps -o pid,ppid,user,args
                cat "RUNNING `cat {root}/var/run/zzz.init.pid`"
-            {end}
+            {ends}
             stop() {begin}
                kill `cat {root}/var/run/zzz.init.pid` >>$logfile 2>&1
                killall {testsleep} >>$logfile 2>&1
-            {end}
+            {ends}
             case "$1" in start)
                date "+START.%T" >> $logfile
                start >> $logfile 2>&1
@@ -30889,8 +30879,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testscript = testname+"_testscript.sh"
         logfile = os_path(root, "/var/log/test.log")
         bindir = os_path(root, "/usr/bin")
-        begin = "{"
-        end = "}"
+        begin = "{" ; ends = "}"
         text_file(os_path(testdir, "zzz.service"),"""
             [Unit]
             Description=Testing Z
@@ -30915,11 +30904,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
               date +%T,stopping >> {logfile}
               killall {testsleep} >> {logfile} 2>&1
               date +%T,stopped >> {logfile}
-            {end}
+            {ends}
             reload () {begin}
               date +%T,reloading >> {logfile}
               date +%T,reloaded >> {logfile}
-            {end}
+            {ends}
             trap "stops" 3   # SIGQUIT
             trap "reload" 10 # SIGUSR1
             date +%T,starting >> {logfile}
@@ -31099,7 +31088,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleep = testname+"_sleep"
         logfile = os_path(root, "/var/log/"+testsleep+".log")
         bindir = os_path(root, "/usr/bin")
-        begin = "{" ; end = "}"
+        begin = "{" ; ends = "}"
         shell_file(os_path(testdir, "zzz.init"), """
             #! /bin/bash
             logfile={logfile}
@@ -31110,10 +31099,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                ) &
                wait %1
                # ps -o pid,ppid,user,args
-            {end}
+            {ends}
             stop() {begin}
                killall {testsleep}
-            {end}
+            {ends}
             case "$1" in start)
                date "+START.%T" >> $logfile
                start >> $logfile 2>&1
@@ -31319,7 +31308,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleep = testname+"_sleep"
         logfile = os_path(root, "/var/log/"+testsleep+".log")
         bindir = os_path(root, "/usr/bin")
-        begin = "{" ; end = "}"
+        begin = "{" ; ends = "}"
         shell_file(os_path(testdir, "zzz.init"), """
             #! /bin/bash
             logfile={logfile}
@@ -31330,10 +31319,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 echo "READY=1" | socat -v -d - UNIX-CLIENT:$NOTIFY_SOCKET
                 wait %1
                 # ps -o pid,ppid,user,args
-            {end}
+            {ends}
             stop() {begin}
                 killall {testsleep}
-            {end}
+            {ends}
             case "$1" in start)
                date "+START.%T" >> $logfile
                start >> $logfile 2>&1
@@ -31547,7 +31536,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleep = self.testname("sleep")
         logfile = os_path(root, "/var/log/"+testsleep+".log")
         bindir = os_path(root, "/usr/bin")
-        begin = "{" ; end = "}"
+        begin = "{" ; ends = "}"
         shell_file(os_path(testdir, "zzz.init"), """
             #! /bin/bash
             logfile={logfile}
@@ -31558,10 +31547,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 echo "READY=1" | socat -v -d - UNIX-CLIENT:$NOTIFY_SOCKET
                 wait %1
                 # ps -o pid,ppid,user,args
-            {end}
+            {ends}
             stop() {begin}
                 killall {testsleep}
-            {end}
+            {ends}
             case "$1" in start)
                date "+START.%T" >> $logfile
                start >> $logfile 2>&1
@@ -31766,7 +31755,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleep = self.testname("sleep")
         logfile = os_path(root, "/var/log/"+testsleep+".log")
         bindir = os_path(root, "/usr/bin")
-        begin = "{" ; end = "}"
+        begin = "{" ; ends = "}"
         text_file(os_path(testdir, "zzz.service"),"""
             [Unit]
             Description=Testing Z
@@ -31947,7 +31936,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleep = self.testname("sleep")
         logfile = os_path(root, "/var/log/"+testsleep+".log")
         bindir = os_path(root, "/usr/bin")
-        begin = "{" ; end = "}"
+        begin = "{" ; ends = "}"
         text_file(os_path(testdir, "zzz.service"),"""
             [Unit]
             Description=Testing Z
