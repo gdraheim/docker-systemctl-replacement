@@ -46,6 +46,7 @@ COVERAGE = "" # make it an image name = detect_local_system()
 SKIP = True
 TODO = False
 KEEP = 0
+LONGER = 2
 
 TestListen = False
 
@@ -143,6 +144,9 @@ def coverage_tool(image: Optional[str] = None, python : Optional[str] = None) ->
     python = python or _python
     if python.endswith("3"):
         return python + " -m coverage"
+    else:
+        if image and "centos:8" in image:
+            return "coverage-2"
     return "coverage2"
 def coverage_run(image: Optional[str] = None, python : Optional[str] = None, append: Optional[str] = None) -> str:
     append = append or "--append"
@@ -155,6 +159,9 @@ def coverage_package(image: Optional[str] = None, python: Optional[str] = None) 
         package = "python3-coverage"
         if image and "centos:8" in image:
             package = "platform-python-coverage"
+    else:
+        if image and "centos:8" in image:
+            package = "python2-coverage"
     logg.info("detect coverage_package for %s => %s (%s)", python, package, image)
     return package
 def cover(image: Optional[str] = None, python: Optional[str] = None, append: Optional[str] = None) -> str:
@@ -792,7 +799,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         return "-vv"
     def end(self, maximum: int = 99) -> None:
         runtime = time.time() - self._started
-        self.assertLess(runtime, maximum)
+        self.assertLess(runtime, maximum * LONGER)
     #
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     #
@@ -25332,7 +25339,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     ###########################################################################
     #
     #
-    def prep_coverage(self, testname: str, cov_option: Optional[str] = None) -> None:
+    def prep_coverage(self, image: Optional[str], testname: str, cov_option: Optional[str] = None) -> None:
         """ install a shell-wrapper /usr/bin/systemctl (testdir/systemctl.sh)
             which calls the develop systemctl.py prefixed by our coverage tool.
             .
@@ -25341,7 +25348,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """
         docker = _docker
         testdir = self.testdir(testname, keep = True)
-        cov_run = cover(append = "--parallel-mode")
+        cov_run = cover(image, append = "--parallel-mode")
         cov_option = cov_option or ""
         systemctl_py = realpath(_systemctl_py)
         systemctl_sh = os_path(testdir, "systemctl.sh")
@@ -25447,7 +25454,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
              cmd = "{docker} exec {testname} {package} install -y {python_coverage}" # <<<< like here
              sx____(cmd.format(**locals()))
-        self.prep_coverage(testname)     ### setup a shell-wrapper /usr/bin/systemctl calling systemctl.py
+        self.prep_coverage(image, testname)     ### setup a shell-wrapper /usr/bin/systemctl calling systemctl.py
         cmd = "{docker} exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
         out = output(cmd.format(**locals()))
@@ -25501,7 +25508,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
              cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
-        self.prep_coverage(testname)
+        self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system"
         sx____(cmd.format(**locals()))
         cmd = "{docker} cp {testdir}/zza.service {testname}:/etc/systemd/system/zza.service"
@@ -25569,7 +25576,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
              cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
-        self.prep_coverage(testname)
+        self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system"
         sx____(cmd.format(**locals()))
         cmd = "{docker} cp {testdir}/zza.service {testname}:/etc/systemd/system/zza.service"
@@ -25710,7 +25717,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
              cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
-        self.prep_coverage(testname)
+        self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} cp /bin/sleep {bindir}/{testsleep}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} cp {testdir}/{testscript} {testname}:{bindir}/{testscript}"
@@ -26128,7 +26135,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
              cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
-        self.prep_coverage(testname)
+        self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
         zzz_service = "/etc/systemd/{system}/zzz.service".format(**locals())
@@ -26501,7 +26508,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
              cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
-        self.prep_coverage(testname)
+        self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
         zzz_service = "/etc/systemd/{system}/zzz.service".format(**locals())
@@ -26888,7 +26895,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
              cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
-        self.prep_coverage(testname)
+        self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
         zzz_service = "/etc/systemd/{system}/zzz.service".format(**locals())
@@ -27231,7 +27238,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
              cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
-        self.prep_coverage(testname)
+        self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
         zzz_service = "/etc/systemd/{system}/zzz.service".format(**locals())
@@ -27496,7 +27503,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
              cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
-        self.prep_coverage(testname)
+        self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} cp /bin/sleep {bindir}/{testsleep}"
@@ -27777,7 +27784,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
              cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
-        self.prep_coverage(testname)
+        self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
         zzz_service = "/etc/systemd/{system}/zzz@.service".format(**locals())
@@ -28096,7 +28103,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
              cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
-        self.prep_coverage(testname)
+        self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} cp /bin/sleep {bindir}/{testsleep}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} cp {testdir}/zzz.init {testname}:/etc/init.d/zzz"
@@ -28423,7 +28430,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
              cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
-        self.prep_coverage(testname)
+        self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} cp /bin/sleep {bindir}/{testsleep}"
@@ -28625,7 +28632,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
              cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
-        self.prep_coverage(testname)
+        self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} cp /bin/sleep {bindir}/{testsleep}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} cp {testdir}/{testscript} {testname}:{bindir}/{testscript}"
@@ -29059,7 +29066,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
              cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
-        self.prep_coverage(testname)
+        self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
         zzz_service = "/etc/systemd/{system}/zzz.service".format(**locals())
@@ -29449,7 +29456,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
              cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
-        self.prep_coverage(testname)
+        self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
         zzz_service = "/etc/systemd/{system}/zzz.service".format(**locals())
@@ -29855,7 +29862,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
              cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
-        self.prep_coverage(testname)
+        self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
         zzz_service = "/etc/systemd/{system}/zzz.service".format(**locals())
@@ -30214,7 +30221,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
              cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
-        self.prep_coverage(testname)
+        self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
         zzz_service = "/etc/systemd/{system}/zzz.service".format(**locals())
@@ -30496,7 +30503,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
              cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
-        self.prep_coverage(testname)
+        self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} cp /bin/sleep {bindir}/{testsleep}"
@@ -30807,7 +30814,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
              cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
-        self.prep_coverage(testname)
+        self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} cp /bin/sleep {bindir}/{testsleep}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} cp {testdir}/zzz.init {testname}:/etc/init.d/zzz"
@@ -30954,7 +30961,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
              cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
-        self.prep_coverage(testname)
+        self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} cp /bin/sleep {bindir}/{testsleep}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} cp {testdir}/{testscript} {testname}:{bindir}/{testscript}"
@@ -31166,7 +31173,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
              cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
-        self.prep_coverage(testname)
+        self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
         zzz_service = "/etc/systemd/system/zzz.service".format(**locals())
@@ -31388,7 +31395,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
              cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
-        self.prep_coverage(testname)
+        self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
         zzz_service = "/etc/systemd/system/zzz.service".format(**locals())
@@ -31619,7 +31626,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
              cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
-        self.prep_coverage(testname)
+        self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
         zzz_service = "/etc/systemd/system/zzz.service".format(**locals())
@@ -31804,7 +31811,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
              cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
-        self.prep_coverage(testname)
+        self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
         zzz_service = "/etc/systemd/system/zzz.service".format(**locals())
@@ -31982,7 +31989,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
              cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
-        self.prep_coverage(testname)
+        self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
         zzz_service = "/etc/systemd/system/zzz.service".format(**locals())
@@ -32115,7 +32122,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
              cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
-        self.prep_coverage(testname)
+        self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} cp /bin/sleep /usr/bin/testsleep"
@@ -32192,7 +32199,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
              cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
-        self.prep_coverage(testname)
+        self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} cp /bin/sleep /usr/bin/testsleep"
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
@@ -32289,7 +32296,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
              cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
-        self.prep_coverage(testname)
+        self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} cp /bin/sleep /usr/bin/testsleep"
@@ -32387,7 +32394,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
              cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
-        self.prep_coverage(testname)
+        self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} cp /bin/sleep /usr/bin/testsleep"
@@ -32473,7 +32480,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
              cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
-        self.prep_coverage(testname)
+        self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} cp /bin/sleep /usr/bin/testsleep"
@@ -32559,7 +32566,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
              cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
-        self.prep_coverage(testname)
+        self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} cp /bin/sleep /usr/bin/testsleep"
@@ -32658,7 +32665,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
              cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
-        self.prep_coverage(testname)
+        self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} cp /bin/sleep /usr/bin/testsleep"
@@ -32778,7 +32785,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
              cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
-        self.prep_coverage(testname)
+        self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} cp /bin/sleep /usr/bin/testsleep"
@@ -32882,7 +32889,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
              cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
-        self.prep_coverage(testname)
+        self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} cp /bin/sleep /usr/bin/testsleep"
@@ -32987,7 +32994,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
              cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
-        self.prep_coverage(testname)
+        self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} cp /bin/sleep /usr/bin/testsleep"
@@ -33124,7 +33131,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
              cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
-        self.prep_coverage(testname)
+        self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} cp /bin/sleep /usr/bin/testsleepA"
@@ -33314,7 +33321,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
              sx____(cmd.format(**locals()))
              cmd = "{docker} exec {testname} sed -i 's/raise *$/pass/' /usr/lib64/python3.6/site-packages/coverage/misc.py"
              sx____(cmd.format(**locals()))
-        self.prep_coverage(testname, cov_option)
+        self.prep_coverage(image, testname, cov_option)
         #
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
@@ -33403,7 +33410,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
              cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
-        self.prep_coverage(testname)
+        self.prep_coverage(image, testname)
         #
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
@@ -33489,7 +33496,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
              cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
-        self.prep_coverage(testname)
+        self.prep_coverage(image, testname)
         #
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
@@ -33577,7 +33584,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
              cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
-        self.prep_coverage(testname)
+        self.prep_coverage(image, testname)
         #
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
@@ -33664,7 +33671,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
              cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
-        self.prep_coverage(testname, cov_option)
+        self.prep_coverage(image, testname, cov_option)
         #
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
@@ -33751,7 +33758,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
              cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
-        self.prep_coverage(testname)
+        self.prep_coverage(image, testname)
         #
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
@@ -33839,7 +33846,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
              cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
-        self.prep_coverage(testname)
+        self.prep_coverage(image, testname)
         #
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
@@ -33929,7 +33936,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
              cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
-        self.prep_coverage(testname)
+        self.prep_coverage(image, testname)
         #
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
@@ -34018,7 +34025,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
              cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
-        self.prep_coverage(testname, cov_option)
+        self.prep_coverage(image, testname, cov_option)
         #
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
@@ -34108,7 +34115,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
              sx____(cmd.format(**locals()))
              cmd = "{docker} exec {testname} sed -i 's/raise *$/pass/' /usr/lib64/python3.6/site-packages/coverage/misc.py"
              sx____(cmd.format(**locals()))
-        self.prep_coverage(testname, cov_option)
+        self.prep_coverage(image, testname, cov_option)
         #
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
@@ -34199,7 +34206,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
              cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
-        self.prep_coverage(testname)
+        self.prep_coverage(image, testname)
         #
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
@@ -34287,7 +34294,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
              cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
-        self.prep_coverage(testname)
+        self.prep_coverage(image, testname)
         #
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
@@ -34377,7 +34384,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
              cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
-        self.prep_coverage(testname)
+        self.prep_coverage(image, testname)
         #
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
@@ -34466,7 +34473,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
              cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
-        self.prep_coverage(testname, cov_option)
+        self.prep_coverage(image, testname, cov_option)
         #
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
@@ -34555,7 +34562,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
              cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
-        self.prep_coverage(testname)
+        self.prep_coverage(image, testname)
         #
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
@@ -34645,7 +34652,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
              cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
-        self.prep_coverage(testname)
+        self.prep_coverage(image, testname)
         #
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
@@ -34737,7 +34744,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
              cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
-        self.prep_coverage(testname)
+        self.prep_coverage(image, testname)
         #
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
@@ -34828,7 +34835,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
              cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
              sx____(cmd.format(**locals()))
-        self.prep_coverage(testname, cov_option)
+        self.prep_coverage(image, testname, cov_option)
         #
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd.format(**locals()))
@@ -34925,7 +34932,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
-        self.prep_coverage(testname)
+        self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
         #
@@ -35031,7 +35038,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
-        self.prep_coverage(testname)
+        self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
         #
@@ -35134,7 +35141,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
-        self.prep_coverage(testname, cov_option)
+        self.prep_coverage(image, testname, cov_option)
         cmd = "{docker} exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} touch /var/log/systemctl.debug.log"
@@ -35275,7 +35282,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
-        self.prep_coverage(testname, cov_option)
+        self.prep_coverage(image, testname, cov_option)
         cmd = "{docker} exec {testname} bash -c 'test -f /etc/init.d/ondemand && systemctl disable ondemand'" # ubuntu:16.04
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} systemctl --version"
@@ -35421,7 +35428,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
-        self.prep_coverage(testname, cov_option)
+        self.prep_coverage(image, testname, cov_option)
         cmd = "{docker} exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} touch /var/log/systemctl.debug.log"
@@ -35557,7 +35564,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
-        self.prep_coverage(testname, cov_option)
+        self.prep_coverage(image, testname, cov_option)
         cmd = "{docker} exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} touch /var/log/systemctl.debug.log"
@@ -35704,7 +35711,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
-        self.prep_coverage(testname)
+        self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
         #
@@ -35828,7 +35835,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
-        self.prep_coverage(testname)
+        self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
         #
@@ -35987,7 +35994,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
-        self.prep_coverage(testname, cov_option)
+        self.prep_coverage(image, testname, cov_option)
         cmd = "{docker} exec {testname} bash -c 'grep nobody /etc/group || groupadd -g 65533 nobody'"
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} useradd -u 1001 somebody -g nobody"
@@ -36105,7 +36112,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
-        self.prep_coverage(testname, cov_option)
+        self.prep_coverage(image, testname, cov_option)
         cmd = "{docker} exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
         #
