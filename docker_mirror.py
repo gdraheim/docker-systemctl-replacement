@@ -4,7 +4,7 @@
 __copyright__ = "(C) 2020 Guido Draheim"
 __contact__ = "https://github.com/gdraheim/docker-mirror-packages-repo"
 __license__ = "CC0 Creative Commons Zero (Public Domain)"
-__version__ = "1.6.2495"
+__version__ = "1.6.2501"
 
 from collections import OrderedDict, namedtuple
 import os.path
@@ -174,6 +174,37 @@ class DockerMirrorPackagesRepo:
         else:
             logg.debug("get: /etc/centos-release: %s", err.strip().replace(cname, "{cname}"))
         return self.detect_etc_image(tempdir)
+    def get_docker_latest_image(self, image):
+        """ converts a shorthand version into the version string used on an image name. """
+        if image.startswith("centos:"):
+            distro = "centos"
+            version = image[len("centos:"):]
+            latest = self.get_centos_latest_version(version)
+            if latest: 
+                return "{distro}:{latest}".format(**locals())
+        if image.startswith("opensuse/leap:"):
+            distro = "opensuse/leap"
+            version = image[len("opensuse/leap:"):]
+            latest = self.get_opensuse_latest_version(version)
+            if latest: 
+                if latest in OPENSUSE_VERSIONS:
+                    distro = OPENSUSE_VERSIONS[latest]
+                return "{distro}:{latest}".format(**locals())
+        if image.startswith("opensuse:"):
+            distro = "opensuse"
+            version = image[len("opensuse:"):]
+            latest = self.get_opensuse_latest_version(version)
+            if latest: 
+                if latest in OPENSUSE_VERSIONS:
+                    distro = OPENSUSE_VERSIONS[latest]
+                return "{distro}:{latest}".format(**locals())
+        if image.startswith("ubuntu:"):
+            distro = "ubuntu"
+            version = image[len("ubuntu:"):]
+            latest = self.get_ubuntu_latest_version(version)
+            if latest:
+                return "{distro}:{latest}".format(**locals())
+        return ""
     def get_docker_latest_version(self, image):
         """ converts a shorthand version into the version string used on an image name. """
         if image.startswith("centos:"):
@@ -484,7 +515,7 @@ class DockerMirrorPackagesRepo:
             image = self._image
         if not image or image in ["host", "system"]:
             return self.host_system_image()
-        latest = self.get_docker_latest_version(image)
+        latest = self.get_docker_latest_image(image)
         if latest:
             return latest
         else:
