@@ -2654,9 +2654,10 @@ class Systemctl:
             logg.info("no $NOTIFY_SOCKET exists")
             return {}
         #
-        logg.info("wait $NOTIFY_SOCKET, timeout %s", timeout)
+        mainpidTimeout = int(timeout / 10) # Apache sends READY before MAINPID
+        logg.info("wait $NOTIFY_SOCKET, timeout %s (mainpid %s)", timeout, mainpidTimeout)
+        waiting = " ---"
         results = {}
-        seenREADY = None
         for attempt in xrange(int(timeout)+1):
             if pid and not self.is_active_pid(pid):
                 logg.info("dead PID %s", pid)
@@ -2665,19 +2666,29 @@ class Systemctl:
                 time.sleep(1) # until TimeoutStartSec
                 continue
             result = self.read_notify_socket(notify, 1) # sleep max 1 second
-            if not result: # timeout
-                time.sleep(1) # until TimeoutStartSec
-                continue
-            for name, value in self.read_env_part(result):
+            for line in result.splitlines():
+                # for name, value in self.read_env_part(line)
+                if "=" not in line:
+                    continue
+                name, value = line.split("=", 1)
                 results[name] = value
-                if name == "READY":
-                    seenREADY = value
-                if name in ["STATUS", "ACTIVESTATE"]:
-                    logg.debug("%s: %s", name, value) # TODO: update STATUS -> SubState
-            if seenREADY:
-                break
-        if not seenREADY:
+                if name in ["STATUS", "ACTIVESTATE", "MAINPID", "READY"]:
+                    hint="seen notify %s     " % (waiting)
+                    logg.debug("%s :%s=%s", hint, name, value)
+            if "READY" not in results:
+                time.sleep(1) # until TimeoutStart
+                continue
+            if "MAINPID" not in results:
+                mainpidTimeout -= 1
+                if mainpidTimeout > 0:
+                    waiting = "%4i" % (-mainpidTimeout)
+                    time.sleep(1) # until TimeoutStart
+                    continue
+            break # READY and MAINPID
+        if "READY" not in results:
             logg.info(".... timeout while waiting for 'READY=1' status on $NOTIFY_SOCKET")
+        elif "MAINPID" not in results:
+            logg.info(".... seen 'READY=1' but no MAINPID update status on $NOTIFY_SOCKET")
         logg.debug("notify = %s", results)
         try:
             notify.socket.close()
