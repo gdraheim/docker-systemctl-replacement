@@ -2649,7 +2649,7 @@ class Systemctl:
             if timeout > 2:
                 logg.debug("socket.timeout %s", e)
         return result
-    def wait_notify_socket(self, notify, timeout, pid = None):
+    def wait_notify_socket(self, notify, timeout, pid = None, pid_file = None):
         if not os.path.exists(notify.socketfile):
             logg.info("no $NOTIFY_SOCKET exists")
             return {}
@@ -2660,7 +2660,7 @@ class Systemctl:
         results = {}
         for attempt in xrange(int(timeout)+1):
             if pid and not self.is_active_pid(pid):
-                logg.info("dead PID %s", pid)
+                logg.info("seen dead PID %s", pid)
                 return results
             if not attempt: # first one
                 time.sleep(1) # until TimeoutStartSec
@@ -2678,7 +2678,7 @@ class Systemctl:
             if "READY" not in results:
                 time.sleep(1) # until TimeoutStart
                 continue
-            if "MAINPID" not in results:
+            if "MAINPID" not in results and not pid_file:
                 mainpidTimeout -= 1
                 if mainpidTimeout > 0:
                     waiting = "%4i" % (-mainpidTimeout)
@@ -2862,6 +2862,7 @@ class Systemctl:
         elif runs in [ "notify" ]:
             # "notify" is the same as "simple" but we create a $NOTIFY_SOCKET 
             # and wait for startup completion by checking the socket messages
+            pid_file = self.pid_file_from(conf)
             pid = self.read_mainpid_from(conf)
             if self.is_active_pid(pid):
                 logg.error("the service is already running on PID %s", pid)
@@ -2905,7 +2906,7 @@ class Systemctl:
                         break
             if service_result in [ "success" ] and mainpid:
                 logg.debug("okay, wating on socket for %ss", timeout)
-                results = self.wait_notify_socket(notify, timeout, mainpid)
+                results = self.wait_notify_socket(notify, timeout, mainpid, pid_file)
                 if "MAINPID" in results:
                     new_pid = to_intN(results["MAINPID"])
                     if new_pid and new_pid != mainpid:
