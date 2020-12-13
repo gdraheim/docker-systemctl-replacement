@@ -50,17 +50,17 @@ LONGER = 2
 
 TestListen = False
 
-CENTOSVER = { "7.3": "7.3.1611", "7.4": "7.4.1708", "7.5": "7.5.1804", "7.6": "7.6.1810", "7.7": "7.7.1908", "8.0": "8.0.1905", "8.1": "8.1.1911" }
-TESTED_OS = [ "centos:7.3.1611", "centos:7.4.1708", "centos:7.5.1804", "centos:7.6.1810", "centos:7.7.1908", "centos:8.0.1905" ]
-TESTED_OS += [ "opensuse:42.2", "opensuse:42.3", "opensuse/leap:15.0", "opensuse/leap:15.1" ]
+CENTOSVER = { "7.3": "7.3.1611", "7.4": "7.4.1708", "7.5": "7.5.1804", "7.6": "7.6.1810", "7.7": "7.7.1908", "7.9": "7.9.2009", "8.0": "8.0.1905", "8.1": "8.1.1911", "8.3": "8.3.2011" }
+TESTED_OS = [ "centos:7.3.1611", "centos:7.4.1708", "centos:7.5.1804", "centos:7.6.1810", "centos:7.7.1908", "centos:7.9.2009", "centos:8.0.1905", "centos:8.1.1911", "centos:8.3.2011" ]
+TESTED_OS += [ "opensuse:42.2", "opensuse:42.3", "opensuse/leap:15.0", "opensuse/leap:15.1", "opensuse/leap:15.2" ]
 TESTED_OS += [ "ubuntu:14.04", "ubuntu:16.04", "ubuntu:18.04" ]
 
 SAVETO = "localhost:5000/systemctl"
 IMAGES = "localhost:5000/systemctl/testing"
 IMAGE = ""
-CENTOS = "centos:8.0.1905"
+CENTOS = "centos:8.3.2011"
 UBUNTU = "ubuntu:18.04"
-OPENSUSE = "opensuse/leap:15.0"
+OPENSUSE = "opensuse/leap:15.2"
 SOMETIME = ""
 
 QUICK = "-c DefaultMaximumTimeout=9"
