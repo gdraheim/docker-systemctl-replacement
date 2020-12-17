@@ -4,7 +4,7 @@
 __copyright__ = "(C) 2020 Guido Draheim"
 __contact__ = "https://github.com/gdraheim/docker-mirror-packages-repo"
 __license__ = "CC0 Creative Commons Zero (Public Domain)"
-__version__ = "1.6.2501"
+__version__ = "1.6.2504"
 
 from collections import OrderedDict, namedtuple
 import os.path
@@ -23,11 +23,12 @@ if sys.version[0] != '2':
 logg = logging.getLogger("mirror")
 DOCKER = "docker"
 ADDHOSTS = False
+ADDEPEL = False
 
 LEAP = "opensuse/leap"
 SUSE = "opensuse"
 OPENSUSE_VERSIONS = {"42.2": SUSE, "42.3": SUSE, "15.0": LEAP, "15.1": LEAP, "15.2": LEAP, "15.3": LEAP}
-UBUNTU_LTS = {"16": "16.04", "18": "18.04", "20": "20.04" }
+UBUNTU_LTS = {"16": "16.04", "18": "18.04", "20": "20.04"}
 UBUNTU_VERSIONS = {"12.04": "precise", "14.04": "trusty", "16.04": "xenial", "17.10": "artful",
                    "18.04": "bionic", "18.10": "cosmic", "19.04": "disco", "19.10": "eoan",
                    "20.04": "focal", "20.10": "groovy"}
@@ -62,6 +63,10 @@ def major(version):
     if version:
         return version[0]
     return version
+def onlyversion(image):
+    if ":" in image:
+        return image.split(":")[-1]
+    return image
 
 class DockerMirror:
     def __init__(self, cname, image, hosts):
@@ -83,7 +88,7 @@ class DockerMirrorPackagesRepo:
         return ""
     def detect_etc_image(self, etc):
         distro, version = "", ""
-        os_release = os.path.join(etc,"os-release")
+        os_release = os.path.join(etc, "os-release")
         if os.path.exists(os_release):
             # rhel:7.4 # VERSION="7.4 (Maipo)" ID="rhel" VERSION_ID="7.4"
             # centos:7.3  # VERSION="7 (Core)" ID="centos" VERSION_ID="7"
@@ -106,7 +111,7 @@ class DockerMirrorPackagesRepo:
                     distro = value.replace("-", "/")
                 if key in ["VERSION_ID"]:
                     version = value
-        redhat_release= os.path.join(etc, "redhat-release")
+        redhat_release = os.path.join(etc, "redhat-release")
         if os.path.exists(redhat_release):
             for line in open(redhat_release):
                 m = re.search("release (\\d+[.]\\d+).*", line)
@@ -128,7 +133,7 @@ class DockerMirrorPackagesRepo:
             image name is the key for the other mirror functions. """
         docker = DOCKER
         distro, version = "", ""
-        cname = "docker_mirror_detect." + os.path.basename(image).replace(":",".")
+        cname = "docker_mirror_detect." + os.path.basename(image).replace(":", ".")
         cmd = "{docker} rm -f {cname}"
         out, err, end = output3(cmd.format(**locals()))
         cmd = "{docker} create --name={cname} {image}"
@@ -177,33 +182,13 @@ class DockerMirrorPackagesRepo:
     def get_docker_latest_image(self, image):
         """ converts a shorthand version into the version string used on an image name. """
         if image.startswith("centos:"):
-            distro = "centos"
-            version = image[len("centos:"):]
-            latest = self.get_centos_latest_version(version)
-            if latest: 
-                return "{distro}:{latest}".format(**locals())
+            return self.get_centos_latest(image)
         if image.startswith("opensuse/leap:"):
-            distro = "opensuse/leap"
-            version = image[len("opensuse/leap:"):]
-            latest = self.get_opensuse_latest_version(version)
-            if latest: 
-                if latest in OPENSUSE_VERSIONS:
-                    distro = OPENSUSE_VERSIONS[latest]
-                return "{distro}:{latest}".format(**locals())
+            return self.get_opensuse_latest(image)
         if image.startswith("opensuse:"):
-            distro = "opensuse"
-            version = image[len("opensuse:"):]
-            latest = self.get_opensuse_latest_version(version)
-            if latest: 
-                if latest in OPENSUSE_VERSIONS:
-                    distro = OPENSUSE_VERSIONS[latest]
-                return "{distro}:{latest}".format(**locals())
+            return self.get_opensuse_latest(image)
         if image.startswith("ubuntu:"):
-            distro = "ubuntu"
-            version = image[len("ubuntu:"):]
-            latest = self.get_ubuntu_latest_version(version)
-            if latest:
-                return "{distro}:{latest}".format(**locals())
+            return self.get_ubuntu_latest(image)
         return ""
     def get_docker_latest_version(self, image):
         """ converts a shorthand version into the version string used on an image name. """
@@ -226,17 +211,13 @@ class DockerMirrorPackagesRepo:
             'docker start centos-repo:x.y' before and extend the original to 
             'docker start --add-host mirror...:centos-repo centos:x.y'. """
         if image.startswith("centos:"):
-            version = image[len("centos:"):]
-            return self.get_centos_docker_mirror(version)
+            return self.get_centos_docker_mirror(image)
         if image.startswith("opensuse/leap:"):
-            version = image[len("opensuse/leap:"):]
-            return self.get_opensuse_docker_mirror(version)
+            return self.get_opensuse_docker_mirror(image)
         if image.startswith("opensuse:"):
-            version = image[len("opensuse:"):]
-            return self.get_opensuse_docker_mirror(version)
+            return self.get_opensuse_docker_mirror(image)
         if image.startswith("ubuntu:"):
-            version = image[len("ubuntu:"):]
-            return self.get_ubuntu_docker_mirror(version)
+            return self.get_ubuntu_docker_mirror(image)
         return None
     def get_docker_mirrors(self, image):
         """ attach local centos-repo / opensuse-repo to docker-start enviroment.
@@ -245,19 +226,28 @@ class DockerMirrorPackagesRepo:
             'docker start --add-host mirror...:centos-repo centos:x.y'. """
         mirrors = []
         if image.startswith("centos:"):
-            version = image[len("centos:"):]
-            mirrors = self.get_centos_docker_mirrors(version)
+            mirrors = self.get_centos_docker_mirrors(image)
+            if ADDEPEL:
+                if "centos" in image:
+                    mirrors += self.get_epel_docker_mirrors(image)
         if image.startswith("opensuse/leap:"):
-            version = image[len("opensuse/leap:"):]
-            mirrors = self.get_opensuse_docker_mirrors(version)
+            mirrors = self.get_opensuse_docker_mirrors(image)
         if image.startswith("opensuse:"):
-            version = image[len("opensuse:"):]
-            mirrors = self.get_opensuse_docker_mirrors(version)
+            mirrors = self.get_opensuse_docker_mirrors(image)
         if image.startswith("ubuntu:"):
-            version = image[len("ubuntu:"):]
-            mirrors = self.get_ubuntu_docker_mirrors(version)
+            mirrors = self.get_ubuntu_docker_mirrors(image)
         logg.info(" %s -> %s", image, " ".join([mirror.cname for mirror in mirrors]))
         return mirrors
+    def get_ubuntu_latest(self, image, default=None):
+        if image.startswith("ubuntu:"):
+            distro = "ubuntu"
+            version = image[len("ubuntu:"):]
+            latest = self.get_ubuntu_latest_version(version)
+            if latest:
+                return "{distro}:{latest}".format(**locals())
+        if default is not None:
+            return default
+        return image
     def get_ubuntu_latest_version(self, version):
         """ allows to use 'ubuntu:18' or 'ubuntu:bionic' """
         ver = version
@@ -278,18 +268,28 @@ class DockerMirrorPackagesRepo:
             if latest:
                 ver = latest
         return ver or version
-    def get_ubuntu_docker_mirror(self, ver):
+    def get_ubuntu_docker_mirror(self, image):
         """ detects a local ubuntu mirror or starts a local
             docker container with a ubunut repo mirror. It
             will return the extra_hosts setting to start
             other docker containers"""
         rmi = "localhost:5000/mirror-packages"
         rep = "ubuntu-repo"
-        ver = self.get_ubuntu_latest_version(ver)
+        ver = self.get_ubuntu_latest_version(onlyversion(image))
         return self.docker_mirror(rmi, rep, ver, "archive.ubuntu.com", "security.ubuntu.com")
-    def get_ubuntu_docker_mirrors(self, ver):
-        main = self.get_ubuntu_docker_mirror(ver)
+    def get_ubuntu_docker_mirrors(self, image):
+        main = self.get_ubuntu_docker_mirror(image)
         return [main]
+    def get_centos_latest(self, image, default=None):
+        if image.startswith("centos:"):
+            distro = "centos"
+            version = image[len("centos:"):]
+            latest = self.get_centos_latest_version(version)
+            if latest:
+                return "{distro}:{latest}".format(**locals())
+        if default is not None:
+            return default
+        return image
     def get_centos_latest_version(self, version):
         """ allows to use 'centos:7' or 'centos:7.9' making 'centos:7.9.2009' """
         ver = version
@@ -308,17 +308,37 @@ class DockerMirrorPackagesRepo:
         if ver in CENTOS_VERSIONS:
             ver = CENTOS_VERSIONS[ver]
         return ver or version
-    def get_centos_docker_mirror(self, ver):
+    def get_centos_docker_mirror(self, image):
         """ detects a local centos mirror or starts a local
             docker container with a centos repo mirror. It
             will return the setting for extrahosts"""
         rmi = "localhost:5000/mirror-packages"
         rep = "centos-repo"
-        ver = self.get_centos_latest_version(ver)
+        ver = self.get_centos_latest_version(onlyversion(image))
         return self.docker_mirror(rmi, rep, ver, "mirrorlist.centos.org")
-    def get_centos_docker_mirrors(self, ver):
-        main = self.get_centos_docker_mirror(ver)
+    def get_centos_docker_mirrors(self, image):
+        main = self.get_centos_docker_mirror(image)
         return [main]
+    def get_opensuse_latest(self, image, default=None):
+        if image.startswith("opensuse/leap:"):
+            distro = "opensuse/leap"
+            version = image[len("opensuse/leap:"):]
+            latest = self.get_opensuse_latest_version(version)
+            if latest:
+                if latest in OPENSUSE_VERSIONS:
+                    distro = OPENSUSE_VERSIONS[latest]
+                return "{distro}:{latest}".format(**locals())
+        if image.startswith("opensuse:"):
+            distro = "opensuse"
+            version = image[len("opensuse:"):]
+            latest = self.get_opensuse_latest_version(version)
+            if latest:
+                if latest in OPENSUSE_VERSIONS:
+                    distro = OPENSUSE_VERSIONS[latest]
+                return "{distro}:{latest}".format(**locals())
+        if default is not None:
+            return default
+        return image
     def get_opensuse_latest_version(self, version):
         """ allows to use 'opensuse:42' making 'opensuse:42.3' """
         ver = version
@@ -330,23 +350,23 @@ class DockerMirrorPackagesRepo:
                 if release.startswith(ver):
                     logg.debug("release %s", release)
                     # opensuse:42.0 was before opensuse/leap:15.0
-                    release42 = release.replace("42.","14.")
-                    latest42 = latest.replace("42.","14.")
+                    release42 = release.replace("42.", "14.")
+                    latest42 = latest.replace("42.", "14.")
                     if latest42 < release42:
                         latest = release
             ver = latest or ver
         return ver or version
-    def get_opensuse_docker_mirror(self, ver):
+    def get_opensuse_docker_mirror(self, image):
         """ detects a local opensuse mirror or starts a local
             docker container with a centos repo mirror. It
             will return the extra_hosts setting to start
             other docker containers"""
         rmi = "localhost:5000/mirror-packages"
         rep = "opensuse-repo"
-        ver = self.get_opensuse_latest_version(ver)
+        ver = self.get_opensuse_latest_version(onlyversion(image))
         return self.docker_mirror(rmi, rep, ver, "download.opensuse.org")
-    def get_opensuse_docker_mirrors(self, ver):
-        main = self.get_opensuse_docker_mirror(ver)
+    def get_opensuse_docker_mirrors(self, image):
+        main = self.get_opensuse_docker_mirror(image)
         return [main]
     def docker_mirror(self, rmi, rep, ver, *hosts):
         image = "{rmi}/{rep}:{ver}".format(**locals())
@@ -359,22 +379,24 @@ class DockerMirrorPackagesRepo:
             version = image[len("centos:"):]
             mirrors = self.get_epel_docker_mirrors(version)
         return mirrors
-    def get_epel_docker_mirrors(self, ver):
-        main = self.get_epel_docker_mirror(ver)
+    def get_epel_docker_mirrors(self, image):
+        main = self.get_epel_docker_mirror(image)
         return [main]
-    def get_epel_docker_mirror(self, ver):
+    def get_epel_docker_mirror(self, image):
         """ detects a local epel mirror or starts a local
             docker container with a epel repo mirror. It
             will return the setting for extrahosts"""
         docker = DOCKER
         rmi = "localhost:5000/mirror-packages"
         rep = "epel-repo"
+        ver = onlyversion(image)
         version = self.get_centos_latest_version(ver)
         # cut the yymm date part from the centos release
         released = version.split(".")[-1]
-        latest = ""
+        later = ""
+        before = ""
         # and then check for actual images around
-        cmd = docker+" images --format '{{.Repository}}:{{.Tag}}'"
+        cmd = docker + " images --format '{{.Repository}}:{{.Tag}}'"
         out, err, end = output3(cmd)
         if end:
             logg.error("docker images [%s]\n\t", end, cmd)
@@ -386,11 +408,16 @@ class DockerMirrorPackagesRepo:
             created = tagname.split(".")[-1]
             accepts = tagname.startswith(major(version))
             logg.debug(": %s (%s) (%s) %s:%s", line.strip(), created, released, major(version), accepts and "x" or "ignore")
-            if created < released and accepts:
-                if latest < tagname:
-                    latest = tagname
-        if latest:
-            ver = latest
+            if created >= released and accepts:
+                if not later or later > tagname:
+                    later = tagname
+            elif created < released and accepts:
+                if not before or before < tagname:
+                    before = tagname
+        if later:
+            ver = later
+        elif before:
+            ver = before
         return self.docker_mirror(rmi, rep, ver, "mirrors.fedoraproject.org")
     #
     def ip_container(self, name):
@@ -495,6 +522,7 @@ class DockerMirrorPackagesRepo:
         args = []
         for mirror in mirrors:
             name = mirror.cname
+            logg.info("name = %s (%s)", name, done)
             if name in done:
                 addr = done[name]
                 if addr:
@@ -603,13 +631,16 @@ if __name__ == "__main__":
         helper script to divert 'pkg install' calls to a local docker container as the real source.""")
     _o.add_argument("-v", "--verbose", action="count", default=0, help="more logging")
     _o.add_argument("-a", "--add-hosts", "--add-host", action="store_true", default=ADDHOSTS,
-                    help="show options for 'docker run'")
+                    help="show addhost options for 'docker run' [%(default)s]")
+    _o.add_argument("--epel", action="store_true", default=ADDEPEL,
+                    help="addhosts for epel as well [%(default)s]")
     commands = ["help", "detect", "image", "repo", "info", "facts", "start", "stop"]
     _o.add_argument("command", nargs="?", default="detect", help="|".join(commands))
     _o.add_argument("image", nargs="?", default=None, help="defaults to image name of the local host system")
     opt = _o.parse_args()
     logging.basicConfig(level=max(0, logging.WARNING - opt.verbose * 10))
     ADDHOSTS = opt.add_hosts
+    ADDEPEL = opt.epel  # centos epel-repo
     command = "detect"
     repo = DockerMirrorPackagesRepo()
     if opt.command in ["?", "help"]:
