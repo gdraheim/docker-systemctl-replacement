@@ -5,6 +5,32 @@
 This script may be used to overwrite "/usr/bin/systemctl".   
 It will execute the systemctl commands without SystemD!
 
+
+## QuickStart
+
+To install docker-systemctl-replacement, run the following
+commands within your docker container:
+
+### Python 2
+
+```bash
+wget https://raw.githubusercontent.com/gdraheim/docker-systemctl-replacement/master/files/docker/systemctl.py \
+  --output-document /usr/local/bin/systemctl \
+  --no-clobber
+chmod +x /usr/local/bin/systemctl
+```
+
+### Python 3
+
+```bash
+wget https://raw.githubusercontent.com/gdraheim/docker-systemctl-replacement/master/files/docker/systemctl3.py \
+  --output-document /usr/local/bin/systemctl \
+  --no-clobber
+chmod +x /usr/local/bin/systemctl
+```
+
+## Uses
+
 This is used to test deployment of services with a docker
 container as the target host. Just as on a real machine you 
 can use "systemctl start" and "systemctl enable" and other 
