@@ -2,7 +2,7 @@
 """ Testcases for docker-systemctl-replacement functionality """
 
 __copyright__ = "(C) Guido Draheim, licensed under the EUPL"""
-__version__ = "1.5.4476"
+__version__ = "1.5.4505"
 
 ## NOTE:
 ## The testcases 1000...4999 are using a --root=subdir environment
@@ -106,13 +106,31 @@ def _recent(top_list: Union[str, List[str]]) -> str:
             result.append(" "+line)
     return "\n".join(result)
 
-def package_tool(image: str) -> str:
+def package_tool(image: str, checks = False) -> str:
     if "opensuse" in image:
+        if not checks:
+            # --gpgcheck-strict / --no-gpg-checks
+            # --gpgcheck-allow-unsigned( --gpgcheck-allow-unsigned-repo --gpgcheck-allow-unsigned-package)
+            ## return "zypper --gpgcheck-allow-unsigned-repo"
+            return "zypper"
         return "zypper"
     if "ubuntu" in image:
+        # sources.list:
+        # deb [ allow-insecure=yes ] # disables but keeps warning
+        # deb [ trusted=yes ] # disables GPG
+        # --allow-unauthenticated 
+        # -o APT::Get::AllowUnauthenticated=true
+        # -o Acquire::Check-Valid-Until=false
+        # -o APT::Ignore::gpg-pubkey
+        # -o Acquire::AllowInsecureRepositories=true 
+        # -o Acquire::AllowDowngradeToInsecureRepositories=true
+        if not checks:
+            return "apt-get -o Acquire::AllowInsecureRepositories=true"
         return "apt-get"
+    if not checks:
+        return "yum --setopt=repo_gpgcheck=false"
     return "yum"
-def refresh_tool(image: str) -> str:
+def refresh_tool(image: str, checks = False) -> str:
     ## https://github.com/openSUSE/docker-containers/issues/64
     #  {package} rr oss-update"
     #  {package} ar -f http://download.opensuse.org/update/leap/42.3/oss/openSUSE:Leap:42.3:Update.repo"
@@ -121,15 +139,16 @@ def refresh_tool(image: str) -> str:
             "zypper mr --no-gpgcheck oss-update",
             "zypper refresh" ]
         return "bash -c '%s'" % (" && ".join(cmds))
-    if "opensuse/leap:15.1" in image:
+    if "opensuse/leap:15." in image:
         cmds = [
-            "zypper mr --no-gpgcheck repo-update",
-            "zypper mr --no-gpgcheck repo-update-non-oss",
+            "zypper mr --no-gpgcheck --all",
             "zypper refresh" ]
         return "bash -c '%s'" % (" && ".join(cmds))
     if "opensuse" in image:
         return "zypper refresh"
     if "ubuntu" in image:
+        if not checks:
+            return "apt-get -o Acquire::AllowInsecureRepositories=true update"
         return "apt-get update"
     return "true"
 def python_package(python : str, image : Optional[str] = None) -> str:
