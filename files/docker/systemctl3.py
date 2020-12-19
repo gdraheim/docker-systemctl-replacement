@@ -6457,24 +6457,26 @@ def config_globals(settings):
             if old is False or old is True:
                 dbg_("yes {nam}={val}".format(**locals()))
                 globals()[nam] = (val in ("true", "True", "TRUE", "yes", "y", "Y", "YES", "1"))
-                logg.debug("... _show_all=%s", _show_all)
+                v_show_all = _show_all
+                dbg_("... _show_all={v_show_all}".format(**locals()))
             elif isinstance(old, float):
                 dbg_("num {nam}={val}".format(**locals()))
                 globals()[nam] = float(val)
                 vMinimumYield = MinimumYield
-                logg.debug("... MinimumYield={vMinimumYield}".format(**locals()))
+                dbg_("... MinimumYield={vMinimumYield}".format(**locals()))
             elif isinstance(old, int):
                 dbg_("int {nam}={val}".format(**locals()))
                 globals()[nam] = int(val)
                 vInitLoopSleep = InitLoopSleep
-                logg.debug("... InitLoopSleep={vInitLoopSleep}".format(**locals()))
+                dbg_("... InitLoopSleep={vInitLoopSleep}".format(**locals()))
             elif isinstance(old, basestring):
                 dbg_("str {nam}={val}".format(**locals()))
                 globals()[nam] = val.strip()
                 vSysInitTarget = SysInitTarget
-                logg.debug("... SysInitTarget={vSysInitTarget}".format(**locals()))
+                dbg_("... SysInitTarget={vSysInitTarget}".format(**locals()))
             else:
-                logg.warning("(ignored) unknown target type -c '%s' : %s", nam, type(old))
+                nam_type = type(old)
+                warn_("(ignored) unknown target type -c '{nam}' : {nam_type}".format(**locals()))
         else:
             warn_("(ignored) unknown target config -c '{nam}' : no such variable".format(**locals()))
 
