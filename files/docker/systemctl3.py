@@ -2175,14 +2175,16 @@ class Systemctl:
         # of '$bar' is ["one","two"] and '${bar}' becomes ["one two"]. We
         # tackle that by expand $bar before shlex, and the rest thereafter.
         def get_env1(m):
-            if m.group(1) in env:
-                return env[m.group(1)]
-            logg.debug("can not expand $%s", m.group(1))
+            name = m.group(1)
+            if name in env:
+                return env[name]
+            logg.debug("can not expand ${name}".format(**locals()))
             return "" # empty string
         def get_env2(m):
-            if m.group(1) in env:
-                return env[m.group(1)]
-            logg.debug("can not expand ${%s}", m.group(1))
+            name = m.group(1)
+            if name in env:
+                return env[name]
+            logg.debug("can not expand ${{{name}}}".format(**locals()))
             return "" # empty string
         cmd3 = re.sub("[$](\w+)", lambda m: get_env1(m), cmd2)
         newcmd = []
