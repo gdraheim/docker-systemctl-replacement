@@ -1804,7 +1804,7 @@ class Systemctl:
                     logg.debug("writing to %s\n\t%s", status_file, content.strip())
                     f.write(content)
         except IOError as e:
-            logg.error("writing STATUS %s: %s\n\t to status file %s", status, e, status_file)
+            logg.error("writing STATUS {status}: {e}\n\t to status file {status_file}".format(**locals()))
         return True
     def read_status_from(self, conf):
         status_file = self.get_status_file_from(conf)
@@ -2431,7 +2431,7 @@ class Systemctl:
                 logg.debug("do chown {dirpath}".format(**locals()))
                 try:
                     ok = self.do_chown_tree(dirpath, user, group)
-                    logg.info("changed %s:%s %s", user, group, ok)
+                    logg.info("changed {user}:{group} {ok}".format(**locals()))
                     return ok
                 except Exception as e:
                     logg.info("oops {dirpath}\n\t{e}".format(**locals()))
@@ -2467,7 +2467,7 @@ class Systemctl:
             logg.debug("could not set %s:%s on %s\n\t%s", user, group, path, e)
             ok = False
         if not ok:
-            logg.debug("could not chown %s:%s service directory %s", user, group, path)
+            logg.debug("could not chown {user}:{group} service directory {path}".format(**locals()))
         return ok
     def clean_modules(self, *modules):
         """ [UNIT]... -- remove the state directories
@@ -2691,7 +2691,7 @@ class Systemctl:
                 results[name] = value
                 if name in ["STATUS", "ACTIVESTATE", "MAINPID", "READY"]:
                     hint="seen notify %s     " % (waiting)
-                    logg.debug("%s :%s=%s", hint, name, value)
+                    logg.debug("{hint} :{name}={value}".format(**locals()))
             if status != results.get("STATUS",""):
                 mainpidTimeout = lapseTimeout
                 status = results.get("STATUS", "")
@@ -2959,7 +2959,7 @@ class Systemctl:
                     run.returncode or "OK", run.signal or "")
             if pid_file and service_result in [ "success" ]:
                 pid = self.wait_pid_file(pid_file) # application PIDFile
-                logg.info("%s start done PID %s [%s]", runs, pid, pid_file)
+                logg.info("{runs} start done PID {pid} [{pid_file}]".format(**locals()))
                 if pid:
                     env["MAINPID"] = strE(pid)
             if not pid_file:
@@ -5145,7 +5145,7 @@ class Systemctl:
         for env_file in conf.getlist(section, "EnvironmentFile", []):
             if env_file.startswith("-"): continue
             if not os.path.isfile(os_path(self._root, env_file)):
-                logg.error(" %s: %s failed to load environment files: %s", unit, section, env_file)
+                logg.error(" {unit}: {section} failed to load environment files: {env_file}".format(**locals()))
                 errors += 101
         return errors
     def exec_check_unit(self, conf, env, section = "Service", exectype = ""):
@@ -5175,10 +5175,10 @@ class Systemctl:
                 if not exe:
                     continue
                 if exe[0] != "/":
-                    logg.error(" %s: Exec is not an absolute path:  %s=%s", unit, execs, cmd)
+                    logg.error(" {unit}: Exec is not an absolute path:  {execs}={cmd}".format(**locals()))
                     abspath += 1
                 if not os.path.isfile(exe):
-                    logg.error(" %s: Exec command does not exist: (%s) %s", unit, execs, exe)
+                    logg.error(" {unit}: Exec command does not exist: ({execs}) {exe}".format(**locals()))
                     if mode.check:
                         notexists += 1
                     newexe1 = os.path.join("/usr/bin", exe)
@@ -5212,7 +5212,7 @@ class Systemctl:
             "ProtectSystem", "ProjectHome", "ProtectHostname", "PrivateMounts", "MountAPIVFS"):
             setting_yes = conf.getbool(section, setting, "no")
             if setting_yes:
-                logg.info("%s: %s private directory option is ignored: %s=yes", unit, section, setting)
+                logg.info("{unit}: {section} private directory option is ignored: {setting}=yes".format(**locals()))
                 tmpproblems += 1
         if not abspath and not notexists and not badusers and not badgroups:
             return True
@@ -5598,7 +5598,7 @@ class Systemctl:
         # services = self.start_target_system(target)
         services = self.target_default_services(target, "S")
         units = [service for service in services if not self.is_running_unit(service)]
-        logg.debug("start %s is starting %s from %s", target, units, services)
+        logg.debug("start {target} is starting {units} from {services}".format(**locals()))
         return self.start_units(units)
     def stop_system_default(self):
         """ detect the default.target services and stop them.
@@ -5618,7 +5618,7 @@ class Systemctl:
         # services = self.stop_target_system(target)
         services = self.target_default_services(target, "K")
         units = [service for service in services if self.is_running_unit(service)]
-        logg.debug("stop %s is stopping %s from %s", target, units, services)
+        logg.debug("stop {target} is stopping {units} from {services}".format(**locals()))
         return self.stop_units(units)
     def do_reload_target_from(self, conf):
         target = conf.name()
@@ -5738,7 +5738,7 @@ class Systemctl:
                 self._log_file[unit] = opened
                 self._log_hold[unit] = b""
             except Exception as e:
-                logg.error("can not open %s log: %s\n\t%s", unit, log_path, e)
+                logg.error("can not open {unit} log: {log_path}\n\t{e}".format(**locals()))
     def read_log_files(self, units):
         BUFSIZE=8192
         for unit in units:
@@ -5866,7 +5866,7 @@ class Systemctl:
                         logg.debug("[%s] [%s] restart scheduled in %+.3fs", 
                             me, unit, (self._restart_failed_units[unit] - now))
             except Exception as e:
-                logg.error("[%s] [%s] An error ocurred while restart checking: %s", me, unit, e)
+                logg.error("[{me}] [{unit}] An error ocurred while restart checking: {e}".format(**locals()))
         if not self._restart_failed_units:
             self.error |= NOT_OK
             return []
@@ -5894,7 +5894,7 @@ class Systemctl:
                     if unit in self._restarted_unit:
                         self._restarted_unit[unit].append(time.time())
             except Exception as e:
-                logg.error("[%s] [%s] An error ocurred while restarting: %s", me, unit, e)
+                logg.error("[{me}] [{unit}] An error ocurred while restarting: {e}".format(**locals()))
         for unit in restart_done:
             if unit in self._restart_failed_units:
                 del self._restart_failed_units[unit]
@@ -6141,10 +6141,10 @@ class Systemctl:
                         if found:
                             if DEBUG_KILLALL: logg.debug("%s found %s %s", found, pid, [ c for c in cmd ])
                             if pid != os.getpid():
-                                logg.debug(" kill -%s %s # %s", sig, pid, target)
+                                logg.debug(" kill -{sig} {pid} # {target}".format(**locals()))
                                 os.kill(pid, sig)
                     except Exception as e:
-                        logg.error("kill -%s %s : %s", sig, pid, e)
+                        logg.error("kill -{sig} {pid} : {e}".format(**locals()))
         return True
     def force_ipv4(self, *args):
         """ only ipv4 localhost in /etc/hosts """
