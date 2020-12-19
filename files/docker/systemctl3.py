@@ -1158,13 +1158,15 @@ class SystemctlListenThread(threading.Thread):
                     logg.debug("[{me}] listen: poll".format(**locals()))
                 accepting = listen.poll(100) # milliseconds
                 if DEBUG_INITLOOP: # pragma: no cover
-                    logg.debug("[%s] listen: poll (%s)", me, len(accepting))
+                    amount = len(accepting)
+                    logg.debug("[{me}] listen: poll ({accepting})".format(**locals()))
                 for sock_fileno, event in accepting:
                     for sock in self.systemctl._sockets.values():
                         if sock.fileno() == sock_fileno:
                             if not self.stopped.is_set():
                                 if self.systemctl.loop.acquire():
-                                    logg.debug("[%s] listen: accept %s :%s", me, sock.name(), sock_fileno)
+                                    sock_name = sock.name()
+                                    logg.debug("[{me}] listen: accept {sock_name} :{sock_fileno}".format(**locals()))
                                     self.systemctl.do_accept_socket_from(sock.conf, sock.sock)
             except Exception as e:
                 logg.info("[{me}] listen: interrupted - exception {e}".format(**locals()))
