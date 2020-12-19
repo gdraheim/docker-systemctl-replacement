@@ -1138,7 +1138,8 @@ class SystemctlListenThread(threading.Thread):
         for sock in self.systemctl._sockets.values():
             listen.register(sock, READ_ONLY)
             sock.listen()
-            logg.debug("[%s] listen: %s :%s", me, sock.name(), sock.addr())
+            name, addr = sock.name(), sock.addr()
+            logg.debug("[{me}] listen: {name} :{addr}".format(**locals()))
         timestamp = time.time()
         while not self.stopped.is_set():
             try:
