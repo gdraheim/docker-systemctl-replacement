@@ -550,7 +550,8 @@ def _pid_zombie(pid):
                 return "Z" in line
     except IOError as e:
         if e.errno != errno.ENOENT:
-            logg.error("%s (%s): %s", pid_status, e.errno, e)
+            err = e.errno
+            logg.error("{pid_status} ({err}): {e}".format(**locals()))
         return False
     return False
 
@@ -691,7 +692,7 @@ class SystemctlConfigParser(SystemctlConfData):
                 logg.error("the '.include' syntax is deprecated. Use x.service.d/ drop-in files!")
                 includefile = re.sub(r'^\.include[ ]*', '', line).rstrip()
                 if not os.path.isfile(includefile):
-                    raise Exception("tried to include file that doesn't exist: %s" % includefile)
+                    raise Exception("tried to include file that doesn't exist: {includefile}".format(**locals()))
                 self.read_sysd(includefile)
                 continue
             if line.startswith("["):
@@ -702,7 +703,7 @@ class SystemctlConfigParser(SystemctlConfData):
                 continue
             m = re.match(r"(\w+) *=(.*)", line)
             if not m:
-                logg.warning("bad ini line: %s", line)
+                logg.warning("bad ini line: {line}".format(**locals()))
                 raise Exception("bad ini line")
             name, text = m.group(1), m.group(2).strip()
             if text.endswith("\\") or text.endswith("\\\n"):
