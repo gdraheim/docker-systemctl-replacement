@@ -1429,7 +1429,8 @@ class Systemctl:
         """ read the unit template with a UnitConfParser (systemd) """
         if module and "@" in module:
             unit = parse_unit(module)
-            service = "%s@.service" % unit.prefix
+            prefix = unit.prefix
+            service = "{prefix}@.service".format(**locals())
             conf = self.load_sysd_unit_conf(service)
             if conf:
                 conf.module = module
@@ -1526,13 +1527,14 @@ class Systemctl:
         for item in sorted(self._file_for_unit_sysd.keys()):
             if "@" not in item:
                 continue
-            service_unit = parse_unit(item)
+            unit = parse_unit(item)
             for module in modules:
                 if "@" not in module:
                     continue
-                module_unit = parse_unit(module)
-                if service_unit.prefix == module_unit.prefix:
-                    yield "%s@%s.%s" % (service_unit.prefix, module_unit.instance, service_unit.suffix)
+                mod_unit = parse_unit(module)
+                if unit.prefix == mod_unit.prefix:
+                    prefix, instance, suffix = unit.prefix, mod_unit.instance, unit.suffix
+                    yield "{prefix}@{instance}.{suffix}".format(**locals())
     def match_sysd_units(self, modules = None, suffix=".service"): # -> generate[ unit ]
         """ make a file glob on all known units (systemd areas).
             It returns all modules if no modules pattern were given.
