@@ -2814,17 +2814,19 @@ class Systemctl:
         if not conf: return False
         if self.syntax_check(conf) > 100: return False
         with waitlock(conf):
-            logg.debug(" start unit %s => %s", conf.name(), strQ(conf.filename()))
+            unit, filenameQ = conf.name(), strQ(conf.filename())
+            logg.debug(" start unit {unit} => {filenameQ}".format(**locals()))
             return self.do_start_unit_from(conf)
     def do_start_unit_from(self, conf):
-        if conf.name().endswith(".service"):
+        unit = conf.name()
+        if unit.endswith(".service"):
             return self.do_start_service_from(conf)
-        elif conf.name().endswith(".socket"):
+        elif unit.endswith(".socket"):
             return self.do_start_socket_from(conf)
-        elif conf.name().endswith(".target"):
+        elif unit.endswith(".target"):
             return self.do_start_target_from(conf)
         else:
-            logg.error("start not implemented for unit type: %s", conf.name())
+            logg.error("start not implemented for unit type: {unit}".format(**locals()))
             return False
     def do_start_service_from(self, conf):
         timeout = self.get_TimeoutStartSec(conf)
