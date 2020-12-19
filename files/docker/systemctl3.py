@@ -6356,7 +6356,9 @@ class Systemctl:
             if "::1" in line:
                 newline = re.sub("\\slocalhost\\s", " ", line)
                 if line != newline:
-                    logg.info("%s: '%s' => '%s'", _etc_hosts, line.rstrip(), newline.rstrip())
+                    hosts44 = path44(sysconf_hosts)
+                    line44, newline44 = o44(line.rstrip()), o44(newline.rstrip())
+                    info_("{hosts44}: '{line44}' => '{newline44}'".format(**locals()))
                     line = newline
             lines.append(line)
         f = open(sysconf_hosts, "w")
@@ -6372,7 +6374,9 @@ class Systemctl:
             if "127.0.0.1" in line:
                 newline = re.sub("\\slocalhost\\s", " ", line)
                 if line != newline:
-                    logg.info("%s: '%s' => '%s'", _etc_hosts, line.rstrip(), newline.rstrip())
+                    hosts44 = path44(sysconf_hosts)
+                    line44, newline44 = o44(line.rstrip()), o44(newline.rstrip())
+                    info_("{hosts44}: '{line44}' => '{newline44}'".format(**locals()))
                     line = newline
             lines.append(line)
         f = open(sysconf_hosts, "w")
