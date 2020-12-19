@@ -2151,14 +2151,16 @@ class Systemctl:
             return confs
         def get_conf1(m):
             confs = get_confs(conf)
-            if m.group(1) in confs:
-                return confs[m.group(1)]
-            logg.warning("can not expand %%%s", m.group(1))
+            name = m.group(1)
+            if name in confs:
+                return confs[name]
+            logg.warning("can not expand %{name} special".format(**locals()))
             return ""
         result = ""
         if cmd:
             result = re.sub("[%](.)", lambda m: get_conf1(m), cmd)
-            #++# logg.info("expanded => %s", result)
+            if DEBUG_VARS: # pragma: no cover
+                logg.debug("expanded => {result}".format(**locals()))
         return result
     ExecMode = collections.namedtuple("ExecMode", ["check"])
     def exec_newcmd(self, cmd, env, conf):
