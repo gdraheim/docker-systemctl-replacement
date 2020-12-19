@@ -614,21 +614,22 @@ class SystemctlConfData:
                 return default
             if allow_no_value:
                 return None
-            logg.warning("section {} does not exist".format(section))
-            logg.warning("  have {}".format(self.sections()))
-            raise AttributeError("section {} does not exist".format(section))
+            _sections = self.sections()
+            logg.warning("section {section} does not exist".format(**locals()))
+            logg.warning("  have {_sections}".format(**locals()))
+            raise AttributeError("section {section} does not exist".format(**locals()))
         if option not in self._conf[section]:
             if default is not None:
                 return default
             if allow_no_value:
                 return None
-            raise AttributeError("option {} in {} does not exist".format(option, section))
+            raise AttributeError("option {option} in {section} does not exist".format(**locals()))
         if not self._conf[section][option]: # i.e. an empty list
             if default is not None:
                 return default
             if allow_no_value:
                 return None
-            raise AttributeError("option {} in {} is None".format(option, section))
+            raise AttributeError("option {option} in {section} is None".format(**locals()))
         return self._conf[section][option][0] # the first line in the list of configs
     def getlist(self, section, option, default = None, allow_no_value = False):
         allow_no_value = allow_no_value or self._allow_no_value
@@ -637,15 +638,16 @@ class SystemctlConfData:
                 return default
             if allow_no_value:
                 return []
-            logg.warning("section {} does not exist".format(section))
-            logg.warning("  have {}".format(self.sections()))
-            raise AttributeError("section {} does not exist".format(section))
+            _sections = self.sections()
+            logg.warning("section {section} does not exist".format(**locals()))
+            logg.warning("  have {_sections}".format(**locals()))
+            raise AttributeError("section {section} does not exist".format(**locals()))
         if option not in self._conf[section]:
             if default is not None:
                 return default
             if allow_no_value:
                 return []
-            raise AttributeError("option {} in {} does not exist".format(option, section))
+            raise AttributeError("option {option} in {section} does not exist".format(**locals()))
         return self._conf[section][option] # returns a list, possibly empty
     def filenames(self):
         return self._files
