@@ -442,20 +442,22 @@ def shutil_setuid(user = None, group = None, xgroups = None):
     if group:
         gid = grp.getgrnam(group).gr_gid
         os.setgid(gid)
-        logg.debug("setgid %s for %s", gid, strQ(group))
+        groupQ = strQ(group)
+        logg.debug("setgid {gid} for {groupQ}".format(**locals()))
         groups = [ gid ]
         try:
             os.setgroups(groups)
-            logg.debug("setgroups %s < (%s)", groups, group)
+            logg.debug("setgroups {groups} < ({group})".format(**locals()))
         except OSError as e: # pragma: no cover (it will occur in non-root mode anyway)
-            logg.debug("setgroups %s < (%s) : %s", groups, group, e)
+            logg.debug("setgroups {groups} < ({group}) : {e}".format(**locals()))
     if user:
         pw = pwd.getpwnam(user)
         gid = pw.pw_gid
         gname = grp.getgrgid(gid).gr_name
         if not group:
             os.setgid(gid)
-            logg.debug("setgid %s for user %s", gid, strQ(user))
+            userQ = strQ(user)
+            logg.debug("setgid {gid} for user {userQ}".format(**locals()))
         groupnames = [g.gr_name for g in grp.getgrall() if user in g.gr_mem]
         groups = [g.gr_gid for g in grp.getgrall() if user in g.gr_mem]
         if xgroups:
@@ -466,12 +468,13 @@ def shutil_setuid(user = None, group = None, xgroups = None):
             groups = [ gid ]
         try:
             os.setgroups(groups)
-            logg.debug("setgroups %s > %s ", groups, groupnames)
+            logg.debug("setgroups {groups} > {groupnames} ".format(**locals()))
         except OSError as e: # pragma: no cover (it will occur in non-root mode anyway)
-            logg.debug("setgroups %s > %s : %s", groups, groupnames, e)
+            logg.debug("setgroups {groups} > {groupnames} : {e}".format(**locals()))
         uid = pw.pw_uid
         os.setuid(uid)
-        logg.debug("setuid %s for user %s", uid, strQ(user))
+        userQ = strQ(user)
+        logg.debug("setuid {uid} for user {userQ}".format(**locals()))
         home = pw.pw_dir
         shell = pw.pw_shell
         logname = pw.pw_name
