@@ -75,24 +75,24 @@ def run(filename):
         m = re.match(r'^(\s*)(\w+[.]\w+)([(]["][^"]*["])(.*)([)].*)$', line)
         if m:
             prefix, command, string, formats, suffix = m.groups()
-            if command in ["logg.debug"] and formats.strip() in [".format(**locals())"]:
+            if command in ["logg.debug"] and formats.strip() in [".format(**locals())", ""]:
                 line = prefix+"dbg_"+string+formats+suffix
-            if command in ["logg.info"] and formats.strip() in [".format(**locals())"]:
+            if command in ["logg.info"] and formats.strip() in [".format(**locals())", ""]:
                 line = prefix+"info_"+string+formats+suffix
-            if command in ["logg.warning"] and formats.strip() in [".format(**locals())"]:
+            if command in ["logg.warning"] and formats.strip() in [".format(**locals())", ""]:
                 line = prefix+"warn_"+string+formats+suffix
-            if command in ["logg.error"] and formats.strip() in [".format(**locals())"]:
+            if command in ["logg.error"] and formats.strip() in [".format(**locals())", ""]:
                 line = prefix+"error_"+string+formats+suffix
         m = re.match(r'^(.*:\s*)(\w+[.]\w+)([(]["][^"]*["])(.*)([)].*)$', line)
         if m:
             prefix, command, string, formats, suffix = m.groups()
-            if command in ["logg.debug"] and formats.strip() in [".format(**locals())"]:
+            if command in ["logg.debug"] and formats.strip() in [".format(**locals())", ""]:
                 line = prefix+"dbg_"+string+formats+suffix
-            if command in ["logg.info"] and formats.strip() in [".format(**locals())"]:
+            if command in ["logg.info"] and formats.strip() in [".format(**locals())", ""]:
                 line = prefix+"info_"+string+formats+suffix
-            if command in ["logg.warning"] and formats.strip() in [".format(**locals())"]:
+            if command in ["logg.warning"] and formats.strip() in [".format(**locals())", ""]:
                 line = prefix+"warn_"+string+formats+suffix
-            if command in ["logg.error"] and formats.strip() in [".format(**locals())"]:
+            if command in ["logg.error"] and formats.strip() in [".format(**locals())", ""]:
                 line = prefix+"error_"+string+formats+suffix
         if line != line0:
             if not NEWS:
