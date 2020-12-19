@@ -1391,15 +1391,18 @@ class Systemctl:
         if conf is None: # pragma: no cover (is never null)
             return True
         if not self.user_mode():
-            logg.debug("%s no --user mode >> accept", strQ(conf.filename()))
+            filenameQ = strQ(conf.filename())
+            logg.debug("{filenameQ} no --user mode >> accept".format(**locals()))
             return False
         if self.is_user_conf(conf):
-            logg.debug("%s is /user/ conf >> accept", strQ(conf.filename()))
+            filenameQ = strQ(conf.filename())
+            logg.debug("{filenameQ} is /user/ conf >> accept".format(**locals()))
             return False
         # to allow for 'docker run -u user' with system services
         user = self.get_User(conf)
         if user and user == self.user():
-            logg.debug("%s with User=%s >> accept", strQ(conf.filename()), user)
+            filenameQ = strQ(conf.filename())
+            logg.debug("{filenameQ} with User={user} >> accept".format(**locals()))
             return False
         return True
     def find_drop_in_files(self, unit):
