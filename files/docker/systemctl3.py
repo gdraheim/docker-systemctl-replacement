@@ -1679,22 +1679,24 @@ class Systemctl:
         them are shown. This command reacts to limitations of --type being
         --type=service or --type=target (and --now for some basics)."""
         result = []
+        types = self._unit_type
         if self._now:
             basics = self.list_service_unit_basics()
             result = [ (name, sysv + " " + filename) for name, sysv, filename in basics ]
-        elif self._unit_type == "target":
+        elif types in ["target"]:
             result = self.list_target_unit_files()
-        elif self._unit_type == "service":
+        elif types in ["service"]:
             result = self.list_service_unit_files()
-        elif self._unit_type:
-            logg.warning("unsupported unit --type=%s", self._unit_type)
+        elif types:
+            logg.warning("unsupported unit --type={types}".format(**locals()))
         else:
             result = self.list_target_unit_files()
             result += self.list_service_unit_files(*modules)
         if self._no_legend:
             return result
-        found = "%s unit files listed." % len(result)
-        return [ ("UNIT FILE", "STATE") ] + result + [ ("", ""), (found, "") ]
+        found = len(result)
+        msg = "{found} unit files listed.".format(**locals())
+        return [ ("UNIT FILE", "STATE") ] + result + [ ("", ""), (msg, "") ]
     ##
     ##
     def get_description(self, unit, default = None):
