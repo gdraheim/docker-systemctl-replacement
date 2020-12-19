@@ -2651,15 +2651,18 @@ class Systemctl:
         if len(socketfile) > 100:
             # occurs during testsuite.py for ~user/test.tmp/root path
             if debug:
-                logg.debug("https://unix.stackexchange.com/questions/367008/%s",
-                           "why-is-socket-path-length-limited-to-a-hundred-chars")
-                logg.debug("old notify socketfile (%s) = %s", len(socketfile), socketfile)
+                path_length = len(socketfile)
+                page = "why-is-socket-path-length-limited-to-a-hundred-chars"
+                logg.debug("https://unix.stackexchange.com/questions/367008/{page}".format(**locals()))
+                logg.debug("old notify socketfile ({path_length}) = {socketfile}".format(**locals()))
             notify_name44 = o44(notify_name)
             notify_name77 = o77(notify_name)
             socketfile = os.path.join(notify_folder, notify_name77)
             if len(socketfile) > 100:
                 socketfile = os.path.join(notify_folder, notify_name44)
-            pref = "zz.%i.%s" % (get_USER_ID(),o22(os.path.basename(notify_socket_folder)))
+            uid = get_USER_ID()
+            folder = o22(os.path.basename(notify_socket_folder)) # that is just the base name
+            pref = "zz.{uid}.{folder}".format(**locals())
             if len(socketfile) > 100:
                 socketfile = os.path.join(get_TMP(), pref, notify_name)
             if len(socketfile) > 100:
@@ -2669,7 +2672,8 @@ class Systemctl:
             if len(socketfile) > 100: # pragma: no cover
                 socketfile = os.path.join(get_TMP(), notify_name44)
             if debug:
-                logg.info("new notify socketfile (%s) = %s", len(socketfile), socketfile)
+                path_length = len(socketfile)
+                logg.info("new notify socketfile ({path_length}) = {socketfile}".format(**locals()))
         return socketfile
     def notify_socket_from(self, conf, socketfile = None):
         socketfile = self.get_notify_socket_from(conf, socketfile, debug=True)
@@ -2725,7 +2729,7 @@ class Systemctl:
                 name, value = line.split("=", 1)
                 results[name] = value
                 if name in ["STATUS", "ACTIVESTATE", "MAINPID", "READY"]:
-                    hint="seen notify %s     " % (waiting)
+                    hint="seen notify {waiting}     ".format(**locals())
                     logg.debug("{hint} :{name}={value}".format(**locals()))
             if status != results.get("STATUS",""):
                 mainpidTimeout = lapseTimeout
