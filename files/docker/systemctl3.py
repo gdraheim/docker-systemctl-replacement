@@ -3737,23 +3737,25 @@ class Systemctl:
         if not conf: return False
         if self.syntax_check(conf) > 100: return False
         with waitlock(conf):
-            logg.info(" reload unit %s => %s", conf.name(), strQ(conf.filename()))
+            unit, filenameQ = conf.name(), strQ(conf.filename())
+            logg.info(" reload unit {unit} => {filenameQ}".format(**locals()))
             return self.do_reload_unit_from(conf)
     def do_reload_unit_from(self, conf):
-        if conf.name().endswith(".service"):
+        unit = conf.name()
+        if unit.endswith(".service"):
             return self.do_reload_service_from(conf)
-        elif conf.name().endswith(".socket"):
+        elif unit.endswith(".socket"):
             service_unit = self.get_socket_service_from(conf)
             service_conf = self.load_unit_conf(service_unit)
             if service_conf:
                 return self.do_reload_service_from(service_conf)
             else:
-                logg.error("no %s found for unit type: %s", service_unit, conf.name())
+                logg.error("no {service_unit} found for unit type: {unit}".format(**locals()))
                 return False
-        elif conf.name().endswith(".target"):
+        elif unit.endswith(".target"):
             return self.do_reload_target_from(conf)
         else:
-            logg.error("reload not implemented for unit type: %s", conf.name())
+            logg.error("reload not implemented for unit type: {unit}".format(**locals()))
             return False
     def do_reload_service_from(self, conf):
         runs = conf.get("Service", "Type", "simple").lower()
@@ -3842,8 +3844,9 @@ class Systemctl:
         if not conf: return False
         if self.syntax_check(conf) > 100: return False
         with waitlock(conf):
-            if conf.name().endswith(".service"):
-                logg.info(" restart service %s => %s", conf.name(), strQ(conf.filename()))
+            unit, filenameQ = conf.name(), strQ(conf.filename())
+            if unit.endswith(".service"):
+                logg.info(" restart service {unit} => {filenameQ}".format(**locals()))
                 if not self.is_active_from(conf):
                     return self.do_start_unit_from(conf)
                 else:
@@ -3851,7 +3854,8 @@ class Systemctl:
             else:
                 return self.do_restart_unit_from(conf)
     def do_restart_unit_from(self, conf):
-        logg.info("(restart) => stop/start %s", conf.name())
+        unit = conf.name()
+        logg.info("(restart) => stop/start {unit}".format(**locals()))
         self.do_stop_unit_from(conf)
         return self.do_start_unit_from(conf)
     def try_restart_modules(self, *modules):
@@ -3887,8 +3891,11 @@ class Systemctl:
         if self.not_user_conf(conf):
             logg.error("Unit {unit} not for --user mode".format(**locals()))
             return False
+        return self.try_restart_unit_from(conf)
+    def try_restart_unit_from(self, conf):
         with waitlock(conf):
-            logg.info(" try-restart unit %s => %s", conf.name(), strQ(conf.filename()))
+            unit, filenameQ = conf.name(), strQ(conf.filename())
+            logg.info(" try-restart unit {unit} => {filenameQ}".format(**locals()))
             if self.is_active_from(conf):
                 return self.do_restart_unit_from(conf)
         return True
@@ -3930,7 +3937,8 @@ class Systemctl:
         """ do 'reload' if specified, otherwise do 'restart' """
         if not conf: return False
         with waitlock(conf):
-            logg.info(" reload-or-restart unit %s => %s", conf.name(), strQ(conf.filename()))
+            unit, filenameQ = conf.name(), strQ(conf.filename())
+            logg.info(" reload-or-restart unit {unit} => {filenameQ}".format(**locals()))
             return self.do_reload_or_restart_unit_from(conf)
     def do_reload_or_restart_unit_from(self, conf):
         if not self.is_active_from(conf):
@@ -3978,7 +3986,8 @@ class Systemctl:
         return self.reload_or_try_restart_unit_from(conf)
     def reload_or_try_restart_unit_from(self, conf):
         with waitlock(conf):
-            logg.info(" reload-or-try-restart unit %s => %s", conf.name(), strQ(conf.filename()))
+            unit, filenameQ = conf.name(), strQ(conf.filename())
+            logg.info(" reload-or-try-restart unit {unit} => {filenameQ}".format(**locals()))
             return self.do_reload_or_try_restart_unit_from(conf)
     def do_reload_or_try_restart_unit_from(self, conf):
         if conf.getlist("Service", "ExecReload", []):
@@ -4023,7 +4032,8 @@ class Systemctl:
     def kill_unit_from(self, conf):
         if not conf: return False
         with waitlock(conf):
-            logg.info(" kill unit %s => %s", conf.name(), strQ(conf.filename()))
+            unit, filenameQ = conf.name(), strQ(conf.filename())
+            logg.info(" kill unit {unit} => {filenameQ}".format(**locals()))
             return self.do_kill_unit_from(conf)
     def do_kill_unit_from(self, conf):
         started = time.time()
