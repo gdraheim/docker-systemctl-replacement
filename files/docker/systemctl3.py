@@ -862,7 +862,8 @@ class PresetFile:
             if m:
                 status, pattern = m.group(1), m.group(2)
                 if fnmatch.fnmatchcase(unit, pattern):
-                    logg.debug("%s %s => %s %s", status, pattern, unit, strQ(self.filename()))
+                    filenameQ = strQ(self.filename())
+                    logg.debug("{status} {pattern} => {unit} {filenameQ}".format(**locals()))
                     return status
         return None
 
