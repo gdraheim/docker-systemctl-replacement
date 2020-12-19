@@ -49,6 +49,20 @@ def run(filename):
                     fmt4 = fmt3.replace("%s", "{"+c+"}", 1)
                     if fmt != fmt4 and "%" not in fmt4:
                         line = prefix+loggfu+fmt4+".format(**locals())"+suffix
+        m = re.match(r'^(\s*)(\w+[.]\w+[(])(["][^"]*["]),\s*(\w+)\s*,\s*(\w+)\s*,\s*(\w+),\s*(\w+)\s*([)].*)$', line)
+        if m:
+            prefix, loggfu, fmt, a, b, c, d, suffix = m.groups()
+            if loggfu in ("logg.debug(", "logg.info(", "logg.warning(", "logg.error("):
+                if (not a.startswith("_") and a.lower() == a and
+                    not b.startswith("_") and b.lower() == b and
+                    not c.startswith("_") and c.lower() == c and
+                    not c.startswith("_") and d.lower() == d):
+                    fmt2 = fmt.replace("%s", "{"+a+"}", 1)
+                    fmt3 = fmt2.replace("%s", "{"+b+"}", 1)
+                    fmt4 = fmt3.replace("%s", "{"+c+"}", 1)
+                    fmt5 = fmt4.replace("%s", "{"+d+"}", 1)
+                    if fmt != fmt5 and "%" not in fmt5:
+                        line = prefix+loggfu+fmt5+".format(**locals())"+suffix
         m = re.match('(^[^"]*)(["][^"]*["])([^"]*)$', line)
         if m:
             prefix, string, suffix = m.groups()
