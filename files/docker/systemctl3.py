@@ -885,39 +885,39 @@ class waitlock:
             unit = self.conf.name()
         return os.path.join(self.lockfolder, str(unit or "global") + ".lock")
     def __enter__(self):
-        mypid = os.getpid()
+        me = os.getpid()
         try:
             lockfile = self.lockfile()
             lockname = os.path.basename(lockfile)
             self.opened = os.open(lockfile, os.O_RDWR | os.O_CREAT, 0o600)
             for attempt in xrange(int(MaxLockWait or DefaultMaximumTimeout)):
                 try:
-                    logg_debug_flock("[{mypid}] {attempt}. trying {lockname} _______ ".format(**locals()))
+                    logg_debug_flock("[{me}] {attempt}. trying {lockname} _______ ".format(**locals()))
                     fcntl.flock(self.opened, fcntl.LOCK_EX | fcntl.LOCK_NB)
                     st = os.fstat(self.opened)
                     if not st.st_nlink:
-                        logg_debug_flock("[{mypid}] {attempt}. {lockname} got deleted, trying again".format(**locals()))
+                        logg_debug_flock("[{me}] {attempt}. {lockname} got deleted, trying again".format(**locals()))
                         os.close(self.opened)
                         self.opened = os.open(lockfile, os.O_RDWR | os.O_CREAT, 0o600)
                         continue
                     content = "{ 'systemctl': {mypid}, 'lock': '{lockname}' }\n".format(**locals())
                     os.write(self.opened, content.encode("utf-8"))
-                    logg_debug_flock("[{mypid}] {attempt}. holding lock on {lockname}".format(**locals()))
+                    logg_debug_flock("[{me}] {attempt}. holding lock on {lockname}".format(**locals()))
                     return True
                 except IOError as e:
                     whom = os.read(self.opened, 4096).rstrip()
                     os.lseek(self.opened, 0, os.SEEK_SET)
-                    logg.info("[{mypid}] {attempt}. systemctl locked by {whom}".format(**locals()))
+                    logg.info("[{me}] {attempt}. systemctl locked by {whom}".format(**locals()))
                     time.sleep(1) # until MaxLockWait
                     continue
-            logg.error("[{mypid}] not able to get the lock to {lockname}".format(**locals()))
+            logg.error("[{me}] not able to get the lock to {lockname}".format(**locals()))
         except Exception as e:
             exc = str(type(e))
-            logg.warning("[{mypid}] oops {exc}, {e}".format(**locals()))
+            logg.warning("[{me}] oops {exc}, {e}".format(**locals()))
         #TODO# raise Exception(f"no lock for {self.unit or global}")
         return False
     def __exit__(self, type, value, traceback):
-        mypid = os.getpid()
+        me = os.getpid()
         try:
             os.lseek(self.opened, 0, os.SEEK_SET)
             os.ftruncate(self.opened, 0)
@@ -925,12 +925,12 @@ class waitlock:
                 lockfile = self.lockfile()
                 lockname = os.path.basename(lockfile)
                 os.unlink(lockfile) # ino is kept allocated because opened by this process
-                logg.debug("[{mypid}] lockfile removed for {lockname}".format(**locals()))
+                logg.debug("[{me}] lockfile removed for {lockname}".format(**locals()))
             fcntl.flock(self.opened, fcntl.LOCK_UN)
             os.close(self.opened) # implies an unlock but that has happend like 6 seconds later
             self.opened = -1
         except Exception as e:
-            logg.warning("oops, {e}".format(**locals()))
+            logg.warning("[{me}] oops, {e}".format(**locals()))
 
 waitpid_result = collections.namedtuple("waitpid", ["pid", "returncode", "signal" ])
 
