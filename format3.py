@@ -23,10 +23,20 @@ def run(filename):
         if m:
             prefix, loggfu, fmt, a, suffix = m.groups()
             if loggfu in ("logg.debug(", "logg.info(", "logg.warning(", "logg.error("):
-                if not a.startswith("_") and a.lower() == a:
-                    fmt2 = fmt.replace("%s", "{"+a+"}")
-                    if fmt != fmt2:
+                if (not a.startswith("_") and a.lower() == a):
+                    fmt2 = fmt.replace("%s", "{"+a+"}", 1)
+                    if fmt != fmt2 and "%" not in fmt2:
                         line = prefix+loggfu+fmt2+".format(**locals())"+suffix
+        m = re.match(r'^(\s*)(\w+[.]\w+[(])(["][^"]*["]),\s*(\w+)\s*,\s*(\w+)\s*([)].*)$', line)
+        if m:
+            prefix, loggfu, fmt, a, b, suffix = m.groups()
+            if loggfu in ("logg.debug(", "logg.info(", "logg.warning(", "logg.error("):
+                if (not a.startswith("_") and a.lower() == a and
+                    not b.startswith("_") and b.lower() == b):
+                    fmt2 = fmt.replace("%s", "{"+a+"}", 1)
+                    fmt3 = fmt2.replace("%s", "{"+b+"}", 1)
+                    if fmt != fmt3 and "%" not in fmt3:
+                        line = prefix+loggfu+fmt3+".format(**locals())"+suffix
         m = re.match('(^[^"]*)(["][^"]*["])([^"]*)$', line)
         if m:
             prefix, string, suffix = m.groups()
