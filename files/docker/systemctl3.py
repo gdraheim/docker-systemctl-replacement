@@ -40,6 +40,7 @@ DEBUG_INITLOOP = False
 DEBUG_KILLALL = False
 DEBUG_FLOCK = False
 DEBUG_VARS = False
+DEBUG_RESULT = False
 TestListen = False
 TestAccept = False
 
@@ -56,6 +57,15 @@ def dbg_flock_(msg):
 def dbg_killall_(msg): 
     if DEBUG_KILLALL: #pragma: no cover
         logg.debug("%s", msg)
+def debug_result_(msg): 
+    if DEBUG_RESULT: #pragma: no cover
+        logg.debug("%s", msg)
+def hint_result_(msg): 
+    if DEBUG_RESULT: #pragma: no cover
+        logg.info("%s", msg)
+def note_result_(msg): 
+    if DEBUG_RESULT: #pragma: no cover
+        logg.warning("%s", msg)
 
 def dbg_(msg): logg.debug("%s", msg)
 def debug_(msg): logg.debug("%s", msg)
@@ -6374,7 +6384,7 @@ def print_begin(argv, args):
     command = " ".join(args)
     system = _user_mode and " --user" or " --system"
     init = _init and " --init" or ""
-    info_("EXEC BEGIN {script} {command}{system}{init}".format(**locals()))
+    hint_result_("EXEC BEGIN {script} {command}{system}{init}".format(**locals()))
     if _root and not is_good_root(_root):
         root44 = path44(_root)
         warn_("the --root={root44} should have alteast three levels /tmp/test_123/root")
@@ -6389,24 +6399,24 @@ def print_result(result):
     def logg_debug(*msg): pass
     exitcode = 0
     if result is None:
-        logg_info("EXEC END None")
+        hint_result_("EXEC END None")
     elif result is True:
-        logg_info("EXEC END True")
+        hint_result_("EXEC END True")
         exitcode = 0
     elif result is False:
-        logg_info("EXEC END False")
+        hint_result_("EXEC END False")
         exitcode = NOT_OK # the only case that exitcode gets set
     elif isinstance(result, int):
-        logg_info("EXEC END %s", result)
+        hint_result_("EXEC END {result}".format(**locals()))
         # exitcode = result # we do not do that anymore
     elif isinstance(result, basestring):
         print(result)
         result1 = result.split("\n")[0][:-20]
         if result == result1:
-            logg_info("EXEC END '%s'", result)
+            hint_result_("EXEC END '{result}'".format(**locals()))
         else:
-            logg_info("EXEC END '%s...'", result1)
-            logg_debug("    END '%s'", result)
+            hint_result_("EXEC END '{result1}...'".format(**locals()))
+            debug_result_("    END '{result}'".format(**locals()))
     elif isinstance(result, list) or isinstance(result, GeneratorType):
         shown = 0
         for element in result:
@@ -6415,8 +6425,8 @@ def print_result(result):
             else:
                 print(element)
             shown += 1
-        logg_info("EXEC END %s items", shown)
-        logg_debug("    END %s", result)
+        hint_result_("EXEC END {shown} items".format(**locals()))
+        debug_result_("    END {result}".format(**locals()))
     elif isinstance(result, dict):
         shown = 0
         for key in sorted(result.keys()):
@@ -6426,10 +6436,11 @@ def print_result(result):
             else:
                 print("%s=%s" % (key,element))
             shown += 1
-        logg_info("EXEC END %s items", shown)
-        logg_debug("    END %s", result)
+        hint_result_("EXEC END {shown} items".format(**locals()))
+        debug_result_("    END {result}".format(**locals()))
     else:
-        logg.warning("EXEC END Unknown result type %s", str(type(result)))
+        result_type = str(type(result))
+        note_result_("EXEC END Unknown result type {result_type}".format(**locals()))
     return exitcode
 
 def config_globals(settings):
