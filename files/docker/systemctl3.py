@@ -4307,7 +4307,7 @@ class Systemctl:
             return 3, result
         active = self.get_active_from(conf)
         substate = self.get_substate_from(conf)
-        result += "\n    Active: {} ({})".format(active, substate)
+        result += "\n    Active: {active} ({substate})".format(**locals())
         if active == "active":
             return 0, result
         else:
