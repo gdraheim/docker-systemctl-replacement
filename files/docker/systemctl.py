@@ -5034,75 +5034,82 @@ class Systemctl:
     def syntax_check(self, conf):
         filename = conf.filename()
         if filename and filename.endswith(".service"):
-            return self.syntax_check_service(conf)
+            return self.syntax_check_unit(conf, "Service")
         return 0
-    def syntax_check_service(self, conf):
+    def syntax_check_unit(self, conf, section = "Service"):
         unit = conf.name()
         if not conf.data.has_section("Service"):
            logg.error(" %s: a .service file without [Service] section", unit)
            return 101
         errors = 0
-        haveType = conf.get("Service", "Type", "simple")
-        haveExecStart = conf.getlist("Service", "ExecStart", [])
-        haveExecStop = conf.getlist("Service", "ExecStop", [])
-        haveExecReload = conf.getlist("Service", "ExecReload", [])
+        haveType = conf.get(section, "Type", "simple")
+        haveExecStart = conf.getlist(section, "ExecStart", [])
+        haveExecStop = conf.getlist(section, "ExecStop", [])
+        haveExecReload = conf.getlist(section, "ExecReload", [])
+        havePIDFile = conf.get(section, "PIDFile", "")
         usedExecStart = []
         usedExecStop = []
         usedExecReload = []
         if haveType not in [ "simple", "forking", "notify", "oneshot", "dbus", "idle"]:
             logg.error(" %s: Failed to parse service type, ignoring: %s", unit, haveType)
             errors += 100
+        if haveType in ["notify"]:
+            if not havePIDFile:
+                logg.info("%s: %s type=%s does not provide a %s PIDFile. (expect timeout problems)", unit, section, haveType, section)
+        if haveType in ["forking"]:
+            if not havePIDFile:
+                logg.warning("%s: %s type=%s does not provide a %s PIDFile. (expect restart problems)", unit, section, haveType, section)
         for line in haveExecStart:
             if not line.startswith("/") and not line.startswith("-/"):
-                logg.error(" %s: Executable path is not absolute, ignoring: %s", unit, line.strip())
+                logg.error(" %s: %s Executable path is not absolute, ignoring: %s", unit, section, line.strip())
                 errors += 1
             usedExecStart.append(line)
         for line in haveExecStop:
             if not line.startswith("/") and not line.startswith("-/"):
-                logg.error(" %s: Executable path is not absolute, ignoring: %s", unit, line.strip())
+                logg.error(" %s: %s Executable path is not absolute, ignoring: %s", unit, section, line.strip())
                 errors += 1
             usedExecStop.append(line)
         for line in haveExecReload:
             if not line.startswith("/") and not line.startswith("-/"):
-                logg.error(" %s: Executable path is not absolute, ignoring: %s", unit, line.strip())
+                logg.error(" %s: %s Executable path is not absolute, ignoring: %s", unit, section, line.strip())
                 errors += 1
             usedExecReload.append(line)
         if haveType in ["simple", "notify", "forking", "idle"]:
             if not usedExecStart and not usedExecStop:
-                logg.error(" %s: Service lacks both ExecStart and ExecStop= setting. Refusing.", unit)
+                logg.error(" %s: %s lacks both ExecStart and ExecStop= setting. Refusing.", unit, section)
                 errors += 101
             elif not usedExecStart and haveType != "oneshot":
-                logg.error(" %s: Service has no ExecStart= setting, which is only allowed for Type=oneshot services. Refusing.",  unit)
+                logg.error(" %s: %s has no ExecStart= setting, which is only allowed for Type=oneshot services. Refusing.", unit, section)
                 errors += 101
         if len(usedExecStart) > 1 and haveType != "oneshot":
-            logg.error(" %s: there may be only one ExecStart statement (unless for 'oneshot' services)."
-              + "\n\t\t\tYou can use ExecStartPre / ExecStartPost to add additional commands.", unit)
+            logg.error(" %s: there may be only one %s ExecStart statement (unless for 'oneshot' services)."
+              + "\n\t\t\tYou can use ExecStartPre / ExecStartPost to add additional commands.", unit, section)
             errors += 1
         if len(usedExecStop) > 1 and haveType != "oneshot":
-            logg.info(" %s: there should be only one ExecStop statement (unless for 'oneshot' services)."
-              + "\n\t\t\tYou can use ExecStopPost to add additional commands (also executed on failed Start)", unit)
+            logg.info(" %s: there should be only one %s ExecStop statement (unless for 'oneshot' services)."
+              + "\n\t\t\tYou can use ExecStopPost to add additional commands (also executed on failed Start)", unit, section)
         if len(usedExecReload) > 1:
-            logg.info(" %s: there should be only one ExecReload statement."
-              + "\n\t\t\tUse ' ; ' for multiple commands (ExecReloadPost or ExedReloadPre do not exist)", unit)
+            logg.info(" %s: there should be only one %s ExecReload statement."
+              + "\n\t\t\tUse ' ; ' for multiple commands (ExecReloadPost or ExedReloadPre do not exist)", unit, section)
         if len(usedExecReload) > 0 and "/bin/kill " in usedExecReload[0]:
-            logg.warning(" %s: the use of /bin/kill is not recommended for ExecReload as it is asychronous."
-              + "\n\t\t\tThat means all the dependencies will perform the reload simultanously / out of order.", unit)
+            logg.warning(" %s: the use of /bin/kill is not recommended for %s ExecReload as it is asychronous."
+              + "\n\t\t\tThat means all the dependencies will perform the reload simultanously / out of order.", unit, section)
         if conf.getlist("Service", "ExecRestart", []): #pragma: no cover
-            logg.error(" %s: there no such thing as an ExecRestart (ignored)", unit)
+            logg.error(" %s: there no such thing as a %s ExecRestart (ignored)", unit, section)
         if conf.getlist("Service", "ExecRestartPre", []): #pragma: no cover
-            logg.error(" %s: there no such thing as an ExecRestartPre (ignored)", unit)
+            logg.error(" %s: there no such thing as a %s ExecRestartPre (ignored)", unit, section)
         if conf.getlist("Service", "ExecRestartPost", []): #pragma: no cover 
-            logg.error(" %s: there no such thing as an ExecRestartPost (ignored)", unit)
+            logg.error(" %s: there no such thing as a %s ExecRestartPost (ignored)", unit, section)
         if conf.getlist("Service", "ExecReloadPre", []): #pragma: no cover
-            logg.error(" %s: there no such thing as an ExecReloadPre (ignored)", unit)
+            logg.error(" %s: there no such thing as a %s ExecReloadPre (ignored)", unit, section)
         if conf.getlist("Service", "ExecReloadPost", []): #pragma: no cover
-            logg.error(" %s: there no such thing as an ExecReloadPost (ignored)", unit)
+            logg.error(" %s: there no such thing as a %s ExecReloadPost (ignored)", unit, section)
         if conf.getlist("Service", "ExecStopPre", []): #pragma: no cover
-            logg.error(" %s: there no such thing as an ExecStopPre (ignored)", unit)
-        for env_file in conf.getlist("Service", "EnvironmentFile", []):
+            logg.error(" %s: there no such thing as a %s ExecStopPre (ignored)", unit, section)
+        for env_file in conf.getlist(section, "EnvironmentFile", []):
             if env_file.startswith("-"): continue
             if not os.path.isfile(os_path(self._root, env_file)):
-                logg.error(" %s: Failed to load environment files: %s", unit, env_file)
+                logg.error(" %s: %s failed to load environment files: %s", unit, section, env_file)
                 errors += 101
         return errors
     def exec_check_unit(self, conf, env, section = "Service", exectype = ""):
@@ -5110,10 +5117,13 @@ class Systemctl:
             return True
         if not conf.data.has_section(section):
             return True #pragma: no cover
+        unit = conf.name()
         haveType = conf.get(section, "Type", "simple")
         if self.is_sysv_file(conf.filename()):
             return True # we don't care about that
-        unit = conf.name()
+        havePIDFile = conf.get(section, "PIDFile", "")
+        if haveType in ["notify", "forking"] and not havePIDFile:
+            logg.info("%s: %s type=%s does not provide a %s PIDFile.", unit, section, haveType, section)
         abspath = 0
         notexists = 0
         badusers = 0
