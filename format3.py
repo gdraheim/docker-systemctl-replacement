@@ -9,6 +9,8 @@ logging.addLevelName(DONE, "DONE")
 
 WRITEBACK=False
 COMPAT=False
+DBG=False
+NEWS=False
 
 def run(filename):
     changes = 0
@@ -70,9 +72,33 @@ def run(filename):
             if suffix.startswith(flocals) and not COMPAT:
                 if not prefix.strip().endswith("+"):
                     line = prefix+"f"+string+suffix[len(flocals):]
+        m = re.match(r'^(\s*)(\w+[.]\w+)([(]["][^"]*["])(.*)([)].*)$', line)
+        if m:
+            prefix, command, string, formats, suffix = m.groups()
+            if command in ["logg.debug"] and formats.strip() in [".format(**locals())"]:
+                line = prefix+"dbg_"+string+formats+suffix
+            if command in ["logg.info"] and formats.strip() in [".format(**locals())"]:
+                line = prefix+"info_"+string+formats+suffix
+            if command in ["logg.warning"] and formats.strip() in [".format(**locals())"]:
+                line = prefix+"warn_"+string+formats+suffix
+            if command in ["logg.error"] and formats.strip() in [".format(**locals())"]:
+                line = prefix+"error_"+string+formats+suffix
+        m = re.match(r'^(.*:\s*)(\w+[.]\w+)([(]["][^"]*["])(.*)([)].*)$', line)
+        if m:
+            prefix, command, string, formats, suffix = m.groups()
+            if command in ["logg.debug"] and formats.strip() in [".format(**locals())"]:
+                line = prefix+"dbg_"+string+formats+suffix
+            if command in ["logg.info"] and formats.strip() in [".format(**locals())"]:
+                line = prefix+"info_"+string+formats+suffix
+            if command in ["logg.warning"] and formats.strip() in [".format(**locals())"]:
+                line = prefix+"warn_"+string+formats+suffix
+            if command in ["logg.error"] and formats.strip() in [".format(**locals())"]:
+                line = prefix+"error_"+string+formats+suffix
         if line != line0:
-            logg.info(" -%s", line0)
-            logg.info(" +%s", line)
+            if not NEWS:
+                logg.info(" -%s", line0)
+            if True:
+                logg.info(" +%s", line)
             changes += 1
         lines.append(line)
     logg.debug("found %s lines in %s", len(lines), filename)
@@ -92,12 +118,18 @@ if __name__ == "__main__":
                    help="write the changes back to the file [%(default)s]")
     o.add_argument("-2", "--compat", action="store_true", default=COMPAT,
                    help="update only with python2 compatible parts [%(default)s]")
+    o.add_argument("-d", "--dbg", action="store_true", default=DBG,
+                   help="implant dbg_ wrapper calls [%(default)s]")
+    o.add_argument("-n", "--news", action="store_true", default=NEWS,
+                   help="show only the new lines in diff [%(default)s]")
     o.add_argument("filename", 
                    help="the file to show the changes")
     opt = o.parse_args()
     logging.basicConfig(level = max(0, DONE - 10 * opt.verbose))
     WRITEBACK = opt.writeback
     COMPAT = opt.compat
+    DBG = opt.dbg
+    NEWS = opt.news
     run(opt.filename)
     
     
