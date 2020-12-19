@@ -1791,11 +1791,11 @@ class Systemctl:
         try:
             with open(status_file, "w") as f:
                 for key in sorted(conf.status):
-                    value = conf.status[key]
-                    if key == "MainPID" and str(value) == "0":
+                    value = str(conf.status[key])
+                    if key == "MainPID" and value == "0":
                         logg.warning("ignore writing MainPID=0")
                         continue
-                    content = "{}={}\n".format(key, str(value))
+                    content = "{key}={value}\n".format(**locals())
                     logg.debug("writing to %s\n\t%s", status_file, content.strip())
                     f.write(content)
         except IOError as e:
