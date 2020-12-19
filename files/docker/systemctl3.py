@@ -947,7 +947,9 @@ def must_have_failed(waitpid, cmd):
                 pid = arg
         if pid is None: # unknown $MAINPID
             if not waitpid.returncode:
-                logg.error("waitpid %s did return %s => correcting as 11", cmd, waitpid.returncode)
+                command = shell_cmd(cmd)
+                returncode = waitpid.returncode
+                logg.error("waitpid {command} did return {returncode} => correcting as 11".format(**locals()))
             waitpid = waitpid_result(waitpid.pid, 11, waitpid.signal)
     return waitpid
 
@@ -1105,12 +1107,14 @@ def conf_sortedAfter(conflist, cmp = compareAfter):
             # because Requires is almost always the same as the After clauses
             # we are mostly done in round 1 as the list is in required order
     for conf in conflist:
-        logg_debug_after(".. %s", conf.name())
+        logg_debug_after(".. " + conf.name())
     for item in sortlist:
-        logg_debug_after("(%s) %s", item.rank, item.conf.name())
+        rank, name = item.rank, item.conf.name()
+        logg_debug_after("({rank}) {name}".format(**locals()))
     sortedlist = sorted(sortlist, key = lambda item: -item.rank)
     for item in sortedlist:
-        logg_debug_after("[%s] %s", item.rank, item.conf.name())
+        rank, name = item.rank, item.conf.name()
+        logg_debug_after("[{rank}] {name}".format(**locals()))
     return [ item.conf for item in sortedlist ]
 
 class SystemctlListenThread(threading.Thread):
