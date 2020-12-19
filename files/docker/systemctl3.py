@@ -3279,35 +3279,42 @@ class Systemctl:
             return None
         return sock
     def create_port_socket(self, conf, port, dgram):
+        unit = conf.name()
         inet = dgram and socket.SOCK_DGRAM or socket.SOCK_STREAM
         sock = socket.socket(socket.AF_INET, inet)
         try:
             sock.bind(('', int(port)))
-            logg.info("%s: bound socket at %s %s:%s", conf.name(), strINET(inet), "*", port)
+            socktype = strINET(inet)
+            addr = "*"
+            logg.info("{unit}: bound socket at {socktype} ({addr}:{port})".format(**locals()))
         except Exception as e:
-            logg.error("%s: create socket failed (%s:%s): %s", conf.name(), "*", port, e)
+            logg.error("{unit}: create socket failed ({addr}:{port}): {e}".format(**locals()))
             sock.close()
             return None
         return sock
     def create_port_ipv4_socket(self, conf, addr, port, dgram):
+        unit = conf.name()
         inet = dgram and socket.SOCK_DGRAM or socket.SOCK_STREAM
         sock = socket.socket(socket.AF_INET, inet)
         try:
             sock.bind((addr, int(port)))
-            logg.info("%s: bound socket at %s %s:%s", conf.name(), strINET(inet), addr, port)
+            socktype = strINET(inet)
+            logg.info("{unit}: bound socket at {socktype} ({addr}:{port})".format(**locals()))
         except Exception as e:
-            logg.error("%s: create socket failed (%s:%s): %s", conf.name(), addr, port, e)
+            logg.error("{unit}: create socket failed ({addr}:{port}): {e}".format(**locals()))
             sock.close()
             return None
         return sock
     def create_port_ipv6_socket(self, conf, addr, port, dgram):
+        unit = conf.name()
         inet = dgram and socket.SOCK_DGRAM or socket.SOCK_STREAM
         sock = socket.socket(socket.AF_INET6, inet)
         try:
             sock.bind((addr, int(port)))
-            logg.info("%s: bound socket at %s [%s]:%s", conf.name(), strINET(inet), addr, port)
+            socktype = strINET(inet)
+            logg.info("{unit}: bound socket at {socktype} ([{addr}]:{port})".format(**locals()))
         except Exception as e:
-            logg.error("%s: create socket failed ([%s]:%s): %s", conf.name(), addr, port, e)
+            logg.error("{unit}: create socket failed ({addr}:{port}): {e}".format(**locals()))
             sock.close()
             return None
         return sock
