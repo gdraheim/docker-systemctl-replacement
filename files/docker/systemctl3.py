@@ -238,14 +238,8 @@ def strE(part):
     if not part:
         return ""
     return str(part)
-def strQ(part):
-    if part is None:
-        return ""
-    if isinstance(part, int):
-        return str(part)
-    return "'{part}'".format(**locals())
 def shell_cmd(cmd):
-    return " ".join([strQ(part) for part in cmd])
+    return " ".join(["'%s'" % part for part in cmd])
 def to_intN(value, default = None):
     if not value:
         return default
@@ -274,23 +268,40 @@ def unit_of(module):
         return module + ".service"
     return module
 def o22(part):
-    if isinstance(part, basestring):
-        if len(part) <= 22:
-            return part
-        return part[:5] + "..." + part[-14:]
-    return part # pragma: no cover (is always str)
+    if len(part) <= 22:
+        return part
+    return part[:5] + "..." + part[-14:]
 def o44(part):
-    if isinstance(part, basestring):
-        if len(part) <= 44:
-            return part
-        return part[:10] + "..." + part[-31:]
-    return part # pragma: no cover (is always str)
+    if len(part) <= 44:
+        return part
+    return part[:10] + "..." + part[-31:]
 def o77(part):
-    if isinstance(part, basestring):
-        if len(part) <= 77:
-            return part
-        return part[:20] + "..." + part[-54:]
-    return part # pragma: no cover (is always str)
+    if len(part) <= 77:
+        return part
+    return part[:20] + "..." + part[-54:]
+def path44(filename):
+    if not filename:
+        return "<none>"
+    x = filename.find("/", 8)
+    if len(filename) <= 40:
+        if "/" not in filename:
+            return ".../" + filename
+    elif len(filename) <= 44:
+        return filename
+    if 0 < x and x < 14:
+        out = filename[:x+1]
+        out += "..."
+    else:
+        out = filename[:10]
+        out += "..."
+    remain = len(filename) - len(out)
+    y = filename.find("/", remain)
+    if 0 < y and y < remain+5:
+        out += filename[y:]
+    else:
+        out += filename[remain:]
+    return out
+
 def unit_name_escape(text):
     # https://www.freedesktop.org/software/systemd/man/systemd.unit.html#id-1.6
     esc = re.sub("([^a-z-AZ.-/])", lambda m: "\\x%02x" % ord(m.group(1)[0]), text)
@@ -465,8 +476,7 @@ def shutil_setuid(user = None, group = None, xgroups = None):
     if group:
         gid = grp.getgrnam(group).gr_gid
         os.setgid(gid)
-        groupQ = strQ(group)
-        dbg_("setgid {gid} for {groupQ}".format(**locals()))
+        dbg_("setgid {gid} for group {group}".format(**locals()))
         groups = [ gid ]
         try:
             os.setgroups(groups)
@@ -479,8 +489,7 @@ def shutil_setuid(user = None, group = None, xgroups = None):
         gname = grp.getgrgid(gid).gr_name
         if not group:
             os.setgid(gid)
-            userQ = strQ(user)
-            dbg_("setgid {gid} for user {userQ}".format(**locals()))
+            dbg_("setgid {gid} for user {user}".format(**locals()))
         groupnames = [g.gr_name for g in grp.getgrall() if user in g.gr_mem]
         groups = [g.gr_gid for g in grp.getgrall() if user in g.gr_mem]
         if xgroups:
@@ -496,8 +505,7 @@ def shutil_setuid(user = None, group = None, xgroups = None):
             dbg_("setgroups {groups} > {groupnames} : {e}".format(**locals()))
         uid = pw.pw_uid
         os.setuid(uid)
-        userQ = strQ(user)
-        dbg_("setuid {uid} for user {userQ}".format(**locals()))
+        dbg_("setuid {uid} for user {user}".format(**locals()))
         home = pw.pw_dir
         shell = pw.pw_shell
         logname = pw.pw_name
@@ -881,8 +889,8 @@ class PresetFile:
             if m:
                 status, pattern = m.group(1), m.group(2)
                 if fnmatch.fnmatchcase(unit, pattern):
-                    filenameQ = strQ(self.filename())
-                    dbg_("{status} {pattern} => {unit} {filenameQ}".format(**locals()))
+                    filename44 = path44(self.filename())
+                    dbg_("{status} {pattern} => {unit} {filename44}".format(**locals()))
                     return status
         return None
 
@@ -1417,18 +1425,18 @@ class Systemctl:
         if conf is None: # pragma: no cover (is never null)
             return True
         if not self.user_mode():
-            filenameQ = strQ(conf.filename())
-            dbg_("{filenameQ} no --user mode >> accept".format(**locals()))
+            filename44 = path44(conf.filename())
+            dbg_("{filename44} no --user mode >> accept".format(**locals()))
             return False
         if self.is_user_conf(conf):
-            filenameQ = strQ(conf.filename())
-            dbg_("{filenameQ} is /user/ conf >> accept".format(**locals()))
+            filename44 = path44(conf.filename())
+            dbg_("{filename44} is /user/ conf >> accept".format(**locals()))
             return False
         # to allow for 'docker run -u user' with system services
         user = self.get_User(conf)
         if user and user == self.user():
-            filenameQ = strQ(conf.filename())
-            dbg_("{filenameQ} with User={user} >> accept".format(**locals()))
+            filename44 = path44(conf.filename())
+            dbg_("{filename44} with User={user} >> accept".format(**locals()))
             return False
         return True
     def find_drop_in_files(self, unit):
@@ -2839,8 +2847,8 @@ class Systemctl:
         if not conf: return False
         if self.syntax_check(conf) > 100: return False
         with waitlock(conf):
-            unit, filenameQ = conf.name(), strQ(conf.filename())
-            dbg_(" start unit {unit} => {filenameQ}".format(**locals()))
+            unit, filename44 = conf.name(), path44(conf.filename())
+            dbg_(" start unit {unit} => {filename44}".format(**locals()))
             return self.do_start_unit_from(conf)
     def do_start_unit_from(self, conf):
         unit = conf.name()
@@ -3030,7 +3038,8 @@ class Systemctl:
                     env["MAINPID"] = strE(pid)
             if not pid_file:
                 time.sleep(MinimumTimeoutStartSec)
-                logg.warning("No PIDFile for forking %s", strQ(conf.filename()))
+                filename44 = path44(conf.filename())
+                warn_("No PIDFile for forking {filename44}".format(**locals()))
                 status_file = self.get_status_file_from(conf)
                 self.set_status_from(conf, "ExecMainCode", strE(returncode))
                 active = returncode and "failed" or "active"
@@ -3115,8 +3124,8 @@ class Systemctl:
     def listen_unit_from(self, conf):
         if not conf: return False
         with waitlock(conf):
-            unit, filenameQ = conf.name(), strQ(conf.filename())
-            dbg_(" listen unit {unit} => {filenameQ}".format(**locals()))
+            unit, filename44 = conf.name(), path44(conf.filename())
+            dbg_(" listen unit {unit} => {filename44}".format(**locals()))
             return self.do_listen_unit_from(conf)
     def do_listen_unit_from(self, conf):
         if conf.name().endswith(".socket"):
@@ -3464,7 +3473,8 @@ class Systemctl:
     def execve_from(self, conf, cmd, env):
         """ this code is commonly run in a child process // returns exit-code"""
         runs = conf.get("Service", "Type", "simple").lower()
-        # logg.debug("%s process for %s => %s", runs, strE(conf.name()), strQ(conf.filename()))
+        # nameE, filename44 = strE(conf.name(), path44(conf.filename())
+        # dbg_("{runs} process for {nameE} => {filename44}".format(**locals())) # internal
         self.dup2_journal_log(conf)
         #
         runuser = self.get_User(conf)
@@ -3539,8 +3549,8 @@ class Systemctl:
         if not conf: return False
         if self.syntax_check(conf) > 100: return False
         with waitlock(conf):
-            unit, filenameQ = conf.name(), strQ(conf.filename())
-            info_(" stop unit {unit} => {filenameQ}".format(**locals()))
+            unit, filename44 = conf.name(), path44(conf.filename())
+            info_(" stop unit {unit} => {filename44}".format(**locals()))
             return self.do_stop_unit_from(conf)
     def do_stop_unit_from(self, conf):
         unit = conf.name()
@@ -3762,8 +3772,8 @@ class Systemctl:
         if not conf: return False
         if self.syntax_check(conf) > 100: return False
         with waitlock(conf):
-            unit, filenameQ = conf.name(), strQ(conf.filename())
-            info_(" reload unit {unit} => {filenameQ}".format(**locals()))
+            unit, filename44 = conf.name(), path44(conf.filename())
+            info_(" reload unit {unit} => {filename44}".format(**locals()))
             return self.do_reload_unit_from(conf)
     def do_reload_unit_from(self, conf):
         unit = conf.name()
@@ -3869,9 +3879,9 @@ class Systemctl:
         if not conf: return False
         if self.syntax_check(conf) > 100: return False
         with waitlock(conf):
-            unit, filenameQ = conf.name(), strQ(conf.filename())
+            unit, filename44 = conf.name(), path44(conf.filename())
             if unit.endswith(".service"):
-                info_(" restart service {unit} => {filenameQ}".format(**locals()))
+                info_(" restart service {unit} => {filename44}".format(**locals()))
                 if not self.is_active_from(conf):
                     return self.do_start_unit_from(conf)
                 else:
@@ -3919,8 +3929,8 @@ class Systemctl:
         return self.try_restart_unit_from(conf)
     def try_restart_unit_from(self, conf):
         with waitlock(conf):
-            unit, filenameQ = conf.name(), strQ(conf.filename())
-            info_(" try-restart unit {unit} => {filenameQ}".format(**locals()))
+            unit, filename44 = conf.name(), path44(conf.filename())
+            info_(" try-restart unit {unit} => {filename44}".format(**locals()))
             if self.is_active_from(conf):
                 return self.do_restart_unit_from(conf)
         return True
@@ -3962,8 +3972,8 @@ class Systemctl:
         """ do 'reload' if specified, otherwise do 'restart' """
         if not conf: return False
         with waitlock(conf):
-            unit, filenameQ = conf.name(), strQ(conf.filename())
-            info_(" reload-or-restart unit {unit} => {filenameQ}".format(**locals()))
+            unit, filename44 = conf.name(), path44(conf.filename())
+            info_(" reload-or-restart unit {unit} => {filename44}".format(**locals()))
             return self.do_reload_or_restart_unit_from(conf)
     def do_reload_or_restart_unit_from(self, conf):
         if not self.is_active_from(conf):
@@ -4011,8 +4021,8 @@ class Systemctl:
         return self.reload_or_try_restart_unit_from(conf)
     def reload_or_try_restart_unit_from(self, conf):
         with waitlock(conf):
-            unit, filenameQ = conf.name(), strQ(conf.filename())
-            info_(" reload-or-try-restart unit {unit} => {filenameQ}".format(**locals()))
+            unit, filename44 = conf.name(), path44(conf.filename())
+            info_(" reload-or-try-restart unit {unit} => {filename44}".format(**locals()))
             return self.do_reload_or_try_restart_unit_from(conf)
     def do_reload_or_try_restart_unit_from(self, conf):
         if conf.getlist("Service", "ExecReload", []):
@@ -4057,8 +4067,8 @@ class Systemctl:
     def kill_unit_from(self, conf):
         if not conf: return False
         with waitlock(conf):
-            unit, filenameQ = conf.name(), strQ(conf.filename())
-            info_(" kill unit {unit} => {filenameQ}".format(**locals()))
+            unit, filename44 = conf.name(), path44(conf.filename())
+            info_(" kill unit {unit} => {filename44}".format(**locals()))
             return self.do_kill_unit_from(conf)
     def do_kill_unit_from(self, conf):
         started = time.time()
@@ -4074,11 +4084,12 @@ class Systemctl:
         mainpid = self.read_mainpid_from(conf)
         self.clean_status_from(conf) # clear RemainAfterExit and TimeoutStartSec
         if not mainpid:
+            filename44 = path44(conf.filename())
             if useKillMode in ["control-group"]:
-                logg.warning("no main PID %s", strQ(conf.filename()))
+                warn_("no main PID {filename44}".format(**locals()))
                 warn_("and there is no control-group here")
             else:
-                logg.info("no main PID %s", strQ(conf.filename()))
+                info_("no main PID {filename44}".format(**locals()))
             return False
         if not pid_exists(mainpid) or pid_zombie(mainpid):
             dbg_("ignoring children when mainpid is already dead")
@@ -5151,8 +5162,8 @@ class Systemctl:
             try:
                 conf = self.get_unit_conf(unit)
             except Exception as e:
-                filenameQ = strQ(conf.filename())
-                error_("{unit}: can not read unit file {filenameQ}\n\t{e}".format(**locals()))
+                filename44 = path44(conf.filename())
+                error_("{unit}: can not read unit file {filename44}\n\t{e}".format(**locals()))
                 continue
             errors += self.syntax_check(conf)
         if errors:
