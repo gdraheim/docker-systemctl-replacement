@@ -2452,19 +2452,19 @@ class Systemctl:
                 try: 
                     os.chown(filepath, uid, gid)
                 except Exception as e: # pragma: no cover
-                    logg.debug("could not set %s:%s on %s\n\t%s", user, group, filepath, e)
+                    logg.debug("could not set {user}:{group} on {filepath}\n\t{e}".format(**locals()))
                     ok = False
             for item in dirnames:
                 dir_path = os.path.join(dirpath, item)
                 try: 
                     os.chown(dir_path, uid, gid)
                 except Exception as e: # pragma: no cover
-                    logg.debug("could not set %s:%s on %s\n\t%s", user, group, dir_path, e)
+                    logg.debug("could not set {user}:{group} on {dir_path}\n\t{e}".format(**locals()))
                     ok = False
         try: 
             os.chown(path, uid, gid)
         except Exception as e: # pragma: no cover
-            logg.debug("could not set %s:%s on %s\n\t%s", user, group, path, e)
+            logg.debug("could not set {user}:{group} on {path}\n\t{e}".format(**locals()))
             ok = False
         if not ok:
             logg.debug("could not chown {user}:{group} service directory {path}".format(**locals()))
@@ -5206,7 +5206,7 @@ class Systemctl:
             "ReadWritePaths", "ReadOnlyPaths", "TemporaryFileSystem"):
             setting_value = conf.get(section, setting, "")
             if setting_value:
-                logg.info("%s: %s private directory remounts ignored: %s=%s", unit, section, setting, setting_value)
+                logg.info("{unit}: {section} private directory remounts ignored: {setting}={setting_value}".format(**locals()))
                 tmpproblems += 1
         for setting in ("PrivateTmp", "PrivateDevices", "PrivateNetwork", "PrivateUsers", "DynamicUser", 
             "ProtectSystem", "ProjectHome", "ProtectHostname", "PrivateMounts", "MountAPIVFS"):
