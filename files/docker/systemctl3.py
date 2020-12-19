@@ -273,6 +273,10 @@ EXITCODE[EXIT_CACHE_DIRECTORY] = "CACHE_DIRECTORY"
 EXITCODE[EXIT_LOGS_DIRECTORY] = "LOGS_DIRECTORY"
 EXITCODE[EXIT_CONFIGURATION_DIRECTORY] = "CONFIGURATION_DIRECTORY"
 
+def boolOK(returnvalue):
+    if not returnvalue:
+       "NAK"
+    return "OK"
 def exitOK(returncode):
     if not returncode:
         return "OK"
@@ -4202,7 +4206,8 @@ class Systemctl:
                 break
             time.sleep(1) # until TimeoutStopSec
         if dead or not doSendSIGKILL:
-            logg.info("done kill PID %s %s", mainpid, dead and "OK")
+            deadOK = boolOK(dead)
+            info_("done kill PID {mainpid} {deadOK}".format(**locals()))
             return dead
         if useKillMode in [ "control-group", "mixed" ]:
             info_("hard kill PIDs {pidlist}".format(**locals()))
@@ -4216,7 +4221,8 @@ class Systemctl:
             self._kill_pid(mainpid, signal.SIGKILL)
             time.sleep(MinimumYield)
         dead = not pid_exists(mainpid) or pid_zombie(mainpid)
-        logg.info("done hard kill PID %s %s", mainpid, dead and "OK")
+        deadOK = boolOK(dead)
+        info_("done hard kill PID {mainpid} {deadOK}".format(**locals()))
         return dead
     def _kill_pid(self, pid, kill_signal = None):
         try: 
