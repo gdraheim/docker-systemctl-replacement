@@ -2478,7 +2478,8 @@ class Systemctl:
         for module in modules:
             matched = self.match_units(to_list(module))
             if not matched:
-                logg.error("Unit %s not found.", unit_of(module))
+                unit_ = unit_of(module)
+                logg.error("Unit {unit_} not found.".format(**locals()))
                 self.error |= NOT_FOUND
                 found_all = False
                 continue
@@ -2514,7 +2515,8 @@ class Systemctl:
         for module in modules:
             matched = self.match_units(to_list(module))
             if not matched:
-                logg.error("Unit %s not found.", unit_of(module))
+                unit_ = unit_of(module)
+                logg.error("Unit {unit_} not found.".format(**locals()))
                 self.error |= NOT_FOUND
                 found_all = False
                 continue
@@ -2722,7 +2724,8 @@ class Systemctl:
         for module in modules:
             matched = self.match_units(to_list(module))
             if not matched:
-                logg.error("Unit %s not found.", unit_of(module))
+                unit_ = unit_of(module)
+                logg.error("Unit {unit_} not found.".format(**locals()))
                 self.error |= NOT_FOUND
                 found_all = False
                 continue
@@ -3005,7 +3008,8 @@ class Systemctl:
         for module in modules:
             matched = self.match_units(to_list(module))
             if not matched:
-                logg.error("Unit %s not found.", unit_of(module))
+                unit_ = unit_of(module)
+                logg.error("Unit {unit_} not found.".format(**locals()))
                 self.error |= NOT_FOUND
                 found_all = False
                 continue
@@ -3421,7 +3425,8 @@ class Systemctl:
         for module in modules:
             matched = self.match_units(to_list(module))
             if not matched:
-                logg.error("Unit %s not found.", unit_of(module))
+                unit_ = unit_of(module)
+                logg.error("Unit {unit_} not found.".format(**locals()))
                 self.error |= NOT_FOUND
                 found_all = False
                 continue
@@ -3646,7 +3651,8 @@ class Systemctl:
         for module in modules:
             matched = self.match_units(to_list(module))
             if not matched:
-                logg.error("Unit %s not found.", unit_of(module))
+                unit_ = unit_of(module)
+                logg.error("Unit {unit_} not found.".format(**locals()))
                 self.error |= NOT_FOUND
                 found_all = False
                 continue
@@ -3750,7 +3756,8 @@ class Systemctl:
         for module in modules:
             matched = self.match_units(to_list(module))
             if not matched:
-                logg.error("Unit %s not found.", unit_of(module))
+                unit_ = unit_of(module)
+                logg.error("Unit {unit_} not found.".format(**locals()))
                 self.error |= NOT_FOUND
                 found_all = False
                 continue
@@ -3798,7 +3805,8 @@ class Systemctl:
         for module in modules:
             matched = self.match_units(to_list(module))
             if not matched:
-                logg.error("Unit %s not found.", unit_of(module))
+                unit_ = unit_of(module)
+                logg.error("Unit {unit_} not found.".format(**locals()))
                 self.error |= NOT_FOUND
                 found_all = False
                 continue
@@ -3835,7 +3843,8 @@ class Systemctl:
         for module in modules:
             matched = self.match_units(to_list(module))
             if not matched:
-                logg.error("Unit %s not found.", unit_of(module))
+                unit_ = unit_of(module)
+                logg.error("Unit {unit_} not found.".format(**locals()))
                 self.error |= NOT_FOUND
                 found_all = False
                 continue
@@ -3885,7 +3894,8 @@ class Systemctl:
         for module in modules:
             matched = self.match_units(to_list(module))
             if not matched:
-                logg.error("Unit %s not found.", unit_of(module))
+                unit_ = unit_of(module)
+                logg.error("Unit {unit_} not found.".format(**locals()))
                 self.error |= NOT_FOUND
                 found_all = False
                 continue
@@ -3928,7 +3938,8 @@ class Systemctl:
         for module in modules:
             matched = self.match_units(to_list(module))
             if not matched:
-                logg.error("Unit %s not found.", unit_of(module))
+                unit_ = unit_of(module)
+                logg.error("Unit {unit_} not found.".format(**locals()))
                 # self.error |= NOT_FOUND
                 found_all = False
                 continue
@@ -4057,7 +4068,8 @@ class Systemctl:
         for module in modules:
             units = self.match_units(to_list(module))
             if not units:
-                logg.error("Unit %s not found.", unit_of(module))
+                unit_ = unit_of(module)
+                logg.error("Unit {unit_} not found.".format(**locals()))
                 # self.error |= NOT_FOUND
                 self.error |= NOT_ACTIVE
                 results += [ "inactive" ]
@@ -4197,7 +4209,8 @@ class Systemctl:
         for module in modules:
             units = self.match_units(to_list(module))
             if not units:
-                logg.error("Unit %s not found.", unit_of(module))
+                unit_ = unit_of(module)
+                logg.error("Unit {unit_} not found.".format(**locals()))
                 # self.error |= NOT_FOUND
                 results += [ "inactive" ]
                 continue
@@ -4225,12 +4238,13 @@ class Systemctl:
         for module in modules:
             units = self.match_units(to_list(module))
             if not units:
-                logg.error("Unit %s not found.", unit_of(module))
+                unit_ = unit_of(module)
+                logg.error("Unit {unit_} not found.".format(**locals()))
                 # self.error |= NOT_FOUND
                 return False
             for unit in units:
                 if not self.reset_failed_unit(unit):
-                    logg.error("Unit %s could not be reset.", unit_of(module))
+                    logg.error("Unit {unit} could not be reset.".format(**locals()))
                     status = False
                 break
         return status
@@ -4272,7 +4286,8 @@ class Systemctl:
         for module in modules:
             matched = self.match_units(to_list(module))
             if not matched:
-                logg.error("Unit %s could not be found.", unit_of(module))
+                unit_ = unit_of(module)
+                logg.error("Unit {unit_} could not be found.".format(**locals()))
                 self.error |= NOT_FOUND
                 found_all = False
                 continue
@@ -4325,7 +4340,8 @@ class Systemctl:
         for module in modules:
             matched = self.match_units(to_list(module))
             if not matched:
-                logg.error("Unit %s could not be found.", unit_of(module))
+                unit_ = unit_of(module)
+                logg.error("Unit {unit_} could not be found.".format(**locals()))
                 # self.error |= NOT_FOUND
                 found_all = False
                 continue
@@ -4407,7 +4423,8 @@ class Systemctl:
         for module in modules:
             matched = self.match_units(to_list(module))
             if not matched:
-                logg.error("Unit %s could not be found.", unit_of(module))
+                unit_ = unit_of(module)
+                logg.error("Unit {unit_} could not be found.".format(**locals()))
                 found_all = False
                 continue
             for unit in matched:
@@ -4476,7 +4493,8 @@ class Systemctl:
         for module in modules:
             matched = self.match_units(to_list(module))
             if not matched:
-                logg.error("Unit %s not found.", unit_of(module))
+                unit_ = unit_of(module)
+                logg.error("Unit {unit_} not found.".format(**locals()))
                 # self.error |= NOT_FOUND
                 found_all = False
                 continue
@@ -4581,7 +4599,8 @@ class Systemctl:
         for module in modules:
             matched = self.match_units(to_list(module))
             if not matched:
-                logg.error("Unit %s not found.", unit_of(module))
+                unit_ = unit_of(module)
+                logg.error("Unit {unit_} not found.".format(**locals()))
                 # self.error |= NOT_FOUND
                 found_all = False
                 continue
@@ -4673,7 +4692,8 @@ class Systemctl:
         for module in modules:
             matched = self.match_units(to_list(module))
             if not matched:
-                logg.error("Unit %s not found.", unit_of(module))
+                unit_ = unit_of(module)
+                logg.error("Unit {unit_} not found.".format(**locals()))
                 # self.error |= NOT_FOUND
                 found_all = False
                 continue
@@ -4739,7 +4759,8 @@ class Systemctl:
         for module in modules:
             matched = self.match_units(to_list(module))
             if not matched:
-                logg.error("Unit %s not found.", unit_of(module))
+                unit_ = unit_of(module)
+                logg.error("Unit {unit_} not found.".format(**locals()))
                 self.error |= NOT_FOUND
                 found_all = False
                 continue
@@ -4806,7 +4827,8 @@ class Systemctl:
         for module in modules:
             matched = self.match_units(to_list(module))
             if not matched:
-                logg.error("Unit %s not found.", unit_of(module))
+                unit_ = unit_of(module)
+                logg.error("Unit {unit_} not found.".format(**locals()))
                 self.error |= NOT_FOUND
                 found_all = False
                 continue
@@ -4857,7 +4879,8 @@ class Systemctl:
         for module in modules:
             matched = self.match_units(to_list(module))
             if not matched:
-                logg.error("Unit %s could not be found.", unit_of(module))
+                unit_ = unit_of(module)
+                logg.error("Unit {unit_} could not be found.".format(**locals()))
                 found_all = False
                 continue
             for unit in matched:
@@ -5229,7 +5252,8 @@ class Systemctl:
         for module in modules:
             matched = self.match_units(to_list(module))
             if not matched:
-                logg.error("Unit %s could not be found.", unit_of(module))
+                unit_ = unit_of(module)
+                logg.error("Unit {unit_} could not be found.".format(**locals()))
                 units += [ module ]
                 # self.error |= NOT_FOUND
                 found_all = False
@@ -5690,7 +5714,8 @@ class Systemctl:
         for module in modules:
             matched = self.match_units(to_list(module))
             if not matched:
-                logg.error("Unit %s could not be found.", unit_of(module))
+                unit_ = unit_of(module)
+                logg.error("Unit {unit_} could not be found.".format(**locals()))
                 found_all = False
                 continue
             for unit in matched:
