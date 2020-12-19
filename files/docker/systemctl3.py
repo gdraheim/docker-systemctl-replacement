@@ -42,9 +42,6 @@ DEBUG_FLOCK = False
 TestListen = False
 TestAccept = False
 
-def logg_debug_flock(msg, *args):
-    if DEBUG_FLOCK:
-        logg.debug(msg, *args) # pragma: no cover
 def logg_debug_after(msg, *args):
     if DEBUG_AFTER:
         logg.debug(msg, *args) # pragma: no cover
@@ -892,17 +889,17 @@ class waitlock:
             self.opened = os.open(lockfile, os.O_RDWR | os.O_CREAT, 0o600)
             for attempt in xrange(int(MaxLockWait or DefaultMaximumTimeout)):
                 try:
-                    logg_debug_flock("[{me}] {attempt}. trying {lockname} _______ ".format(**locals()))
+                    if DEBUG_FLOCK: logg.debug("[{me}] {attempt}. trying {lockname} _______ ".format(**locals()))
                     fcntl.flock(self.opened, fcntl.LOCK_EX | fcntl.LOCK_NB)
                     st = os.fstat(self.opened)
                     if not st.st_nlink:
-                        logg_debug_flock("[{me}] {attempt}. {lockname} got deleted, trying again".format(**locals()))
+                        if DEBUG_FLOCK: logg.debug("[{me}] {attempt}. {lockname} got deleted, trying again".format(**locals()))
                         os.close(self.opened)
                         self.opened = os.open(lockfile, os.O_RDWR | os.O_CREAT, 0o600)
                         continue
                     content = "{ 'systemctl': {mypid}, 'lock': '{lockname}' }\n".format(**locals())
                     os.write(self.opened, content.encode("utf-8"))
-                    logg_debug_flock("[{me}] {attempt}. holding lock on {lockname}".format(**locals()))
+                    if DEBUG_FLOCK: logg.debug("[{me}] {attempt}. holding lock on {lockname}".format(**locals()))
                     return True
                 except IOError as e:
                     whom = os.read(self.opened, 4096).rstrip()
