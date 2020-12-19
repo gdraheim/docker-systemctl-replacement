@@ -5164,17 +5164,17 @@ class Systemctl:
                 logg.warning("{unit}: {section} type={haveType} does not provide a {section} PIDFile. (expect restart problems)".format(**locals()))
         for line in haveExecStart:
             if not line.startswith("/") and not line.startswith("-/"):
-                logg.error(" %s: %s Executable path is not absolute, ignoring: %s", unit, section, line.strip())
+                logg.error(" {unit}: {section} Executable path is not absolute, ignoring: {line}".format(**locals()))
                 errors += 1
             usedExecStart.append(line)
         for line in haveExecStop:
             if not line.startswith("/") and not line.startswith("-/"):
-                logg.error(" %s: %s Executable path is not absolute, ignoring: %s", unit, section, line.strip())
+                logg.error(" {unit}: {section} Executable path is not absolute, ignoring: {line}".format(**locals()))
                 errors += 1
             usedExecStop.append(line)
         for line in haveExecReload:
             if not line.startswith("/") and not line.startswith("-/"):
-                logg.error(" %s: %s Executable path is not absolute, ignoring: %s", unit, section, line.strip())
+                logg.error(" {unit}: {section} Executable path is not absolute, ignoring: {line}".format(**locals()))
                 errors += 1
             usedExecReload.append(line)
         if haveType in ["simple", "notify", "forking", "idle"]:
@@ -5185,18 +5185,18 @@ class Systemctl:
                 logg.error(" {unit}: {section} has no ExecStart= setting, which is only allowed for Type=oneshot services. Refusing.".format(**locals()))
                 errors += 101
         if len(usedExecStart) > 1 and haveType != "oneshot":
-            logg.error(" %s: there may be only one %s ExecStart statement (unless for 'oneshot' services)."
-              + "\n\t\t\tYou can use ExecStartPre / ExecStartPost to add additional commands.", unit, section)
+            hint = "You can use ExecStartPre / ExecStartPost to add additional commands."
+            logg.error(" {unit}: there may be only one {section} ExecStart statement (unless for 'oneshot' services).\n\t\t\t{hint}".format(**locals()))
             errors += 1
         if len(usedExecStop) > 1 and haveType != "oneshot":
-            logg.info(" %s: there should be only one %s ExecStop statement (unless for 'oneshot' services)."
-              + "\n\t\t\tYou can use ExecStopPost to add additional commands (also executed on failed Start)", unit, section)
+            hint = "You can use ExecStopPost to add additional commands (also executed on failed Start)."
+            logg.info(" {unit}: there should be only one {section} ExecStop statement (unless for 'oneshot' services).\n\t\t\t{hint}".format(**locals()))
         if len(usedExecReload) > 1:
-            logg.info(" %s: there should be only one %s ExecReload statement."
-              + "\n\t\t\tUse ' ; ' for multiple commands (ExecReloadPost or ExedReloadPre do not exist)", unit, section)
+            hint = "Use ' ; ' for multiple commands (ExecReloadPost or ExedReloadPre do not exist)"
+            logg.info(" {unit}: there should be only one {section} ExecReload statement.\n\t\t\t{hint}".format(**locals()))
         if len(usedExecReload) > 0 and "/bin/kill " in usedExecReload[0]:
-            logg.warning(" %s: the use of /bin/kill is not recommended for %s ExecReload as it is asychronous."
-              + "\n\t\t\tThat means all the dependencies will perform the reload simultanously / out of order.", unit, section)
+            hint = "That means all the dependencies will perform the reload simultanously / out of order."
+            logg.warning(" {unit}: the use of /bin/kill is not recommended for {section} ExecReload as it is asychronous.\n\t\t\t{hint}".format(**locals()))
         if conf.getlist("Service", "ExecRestart", []): #pragma: no cover
             logg.error(" {unit}: there no such thing as a {section} ExecRestart (ignored)".format(**locals()))
         if conf.getlist("Service", "ExecRestartPre", []): #pragma: no cover
