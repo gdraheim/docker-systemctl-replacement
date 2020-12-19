@@ -316,26 +316,30 @@ def get_runtime_dir():
     explicit = os.environ.get("XDG_RUNTIME_DIR", "")
     if explicit: return explicit
     user = os_getlogin()
-    return "/tmp/run-"+user
+    return "/tmp/run-{user}".format(**locals())
 def get_RUN(root = False):
     tmp_var = get_TMP(root)
     if _root:
        tmp_var = _root
     if root:
-        for p in ("/run", "/var/run", "{tmp_var}/run"):
-            path = p.format(**locals())
-            if os.path.isdir(path) and os.access(path, os.W_OK):
-                return path
-        os.makedirs(path) # "/tmp/run"
-        return path
+        run_root = "/run".format(**locals())
+        var_root = "/var/run".format(**locals())
+        tmp_root = "{tmp_var}/run".format(**locals())
+        for run_path in (run_root, var_root, tmp_root):
+            if os.path.isdir(run_path) and os.access(run_path, os.W_OK):
+                return run_path
+        os.makedirs(run_path) # "/tmp/run"
+        return run_path
     else:
         uid = get_USER_ID(root)
-        for p in ("/run/user/{uid}", "/var/run/user/{uid}", "{tmp_var}/run-{uid}"):
-            path = p.format(**locals())
-            if os.path.isdir(path) and os.access(path, os.W_OK):
-                return path
-        os.makedirs(path, 0o700) # "/tmp/run/user/{uid}"
-        return path
+        run_user = "/run/user/{uid}".format(**locals())
+        var_user = "/var/run/user/{uid}".format(**locals())
+        tmp_user = "{tmp_var}/run-{uid}".format(**locals())
+        for run_path in (run_user, var_user, tmp_user):
+            if os.path.isdir(run_path) and os.access(run_path, os.W_OK):
+                return run_path
+        os.makedirs(run_path, 0o700) # "/tmp/run/user/{uid}"
+        return run_path
 def get_PID_DIR(root = False):
     if root:
         return get_RUN(root)
