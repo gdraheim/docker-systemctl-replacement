@@ -5881,15 +5881,16 @@ class Systemctl:
                     continue
                 restartSec = self.get_RestartSec(conf)
                 if restartSec == 0:
-                    if InitLoopSleep > 1:
-                        logg.warning("[%s] set InitLoopSleep from %ss to 1 (caused by RestartSec=0!)", 
-                            unit, InitLoopSleep)
-                        InitLoopSleep = 1
+                    minSleep = 1
+                    if minSleep < InitLoopSleep:
+                        oldSleep = InitLoopSleep
+                        logg.warning("[{me}] [{unit}] set InitLoopSleep from {oldSleep}s to {minSleep} (caused by RestartSec=0!)".format(**locals()))
+                        InitLoopSleep = minSleep
                 elif restartSec > 0.9 and restartSec < InitLoopSleep:
                     restartSleep = int(restartSec + 0.2)
                     if restartSleep < InitLoopSleep:
-                        logg.warning("[%s] set InitLoopSleep from %ss to %s (caused by RestartSec=%.3fs)", 
-                            unit, InitLoopSleep, restartSleep, restartSec)
+                        oldSleep = InitLoopSleep
+                        logg.warning("[{me}] [{unit}] set InitLoopSleep from {oldSleep}s to {restartSleep}s (caused by RestartSec={restartSec:.3f}s)".format(**locals()))
                         InitLoopSleep = restartSleep
                 isUnitState = self.get_active_from(conf)
                 isUnitFailed = isUnitState in ["failed"]
@@ -5906,13 +5907,13 @@ class Systemctl:
                             self._restarted_unit[unit] = []
                             # we want to register restarts from now on
                         restarted = self._restarted_unit[unit]
-                        logg.debug("[%s] [%s] Current limitSecs=%ss limitBurst=%sx (restarted %sx)", 
-                            me, unit, limitSecs, limitBurst, len(restarted))
+                        restarted_ = len(restarted)
+                        logg.debug("[{me}] [{unit}] Current limitSecs={limitSecs}s limitBurst={limitBurst}x (restarted {restarted_}x)".format(**locals()))
                         oldest = 0.
                         interval = 0.
                         if len(restarted) >= limitBurst:
-                            logg.debug("[%s] [%s] restarted %s", 
-                                me, unit, [ "%.3fs" % (t - now) for t in restarted ])
+                            history = [ "%.3fs" % (t - now) for t in restarted ]
+                            logg.debug("[{me}] [{unit}] restarted {history}".format(**locals()))
                             while len(restarted):
                                 oldest = restarted[0]
                                 interval = time.time() - oldest
@@ -5921,12 +5922,11 @@ class Systemctl:
                                     continue
                                 break
                             self._restarted_unit[unit] = restarted
-                            logg.debug("[%s] [%s] ratelimit %s", 
-                                me, unit, [ "%.3fs" % (t - now) for t in restarted ])
+                            history = [ "%.3fs" % (t - now) for t in restarted ]
+                            logg.debug("[{me}] [{unit}] ratelimit {history}".format(**locals()))
                             # all values in restarted have a time below limitSecs
                         if len(restarted) >= limitBurst:
-                            logg.info("[%s] [%s] Blocking Restart - oldest %s is %s ago (allowed %s)", 
-                               me, unit, oldest, interval, limitSecs)
+                            logg.info("[{me}] [{unit}] Blocking Restart - oldest {oldest} is {interval} ago (allowed {limitSecs})".format(**locals()))
                             self.write_status_from(conf, AS="error")
                             unit = "" # dropped out
                             continue
@@ -5935,8 +5935,8 @@ class Systemctl:
                 if unit: # not dropped out
                     if unit not in self._restart_failed_units:
                         self._restart_failed_units[unit] = now + restartSec
-                        logg.debug("[%s] [%s] restart scheduled in %+.3fs", 
-                            me, unit, (self._restart_failed_units[unit] - now))
+                        restarting = self._restart_failed_units[unit] - now
+                        logg.debug("[{me}] [{unit}] restart scheduled in {restarting:+.3f}s".format(**locals()))
             except Exception as e:
                 logg.error("[{me}] [{unit}] An error ocurred while restart checking: {e}".format(**locals()))
         if not self._restart_failed_units:
@@ -5946,8 +5946,8 @@ class Systemctl:
         # let's check if any of the restart_units has its restartSec expired
         now = time.time()
         restart_done = []
-        logg.debug("[%s] Restart checking  %s", 
-            me, [ "%+.3fs" % (t - now) for t in self._restart_failed_units.values() ])
+        checkinglist = [ "%+.3fs" % (t - now) for t in self._restart_failed_units.values() ]
+        logg.debug("[{me}] Restart checking  {checkinglist}".format(**locals()))
         for unit in sorted(self._restart_failed_units):
             restartAt = self._restart_failed_units[unit]
             if restartAt > now:
@@ -5970,8 +5970,8 @@ class Systemctl:
         for unit in restart_done:
             if unit in self._restart_failed_units:
                 del self._restart_failed_units[unit]
-        logg.debug("[%s] Restart remaining %s", 
-            me, [ "%+.3fs" % (t - now) for t in self._restart_failed_units.values() ])
+        remaininglist = [ "%+.3fs" % (t - now) for t in self._restart_failed_units.values() ]
+        logg.debug("[{me}] Restart remaining {remaininglist}".format(**locals()))
         return restart_done
 
     def init_loop_until_stop(self, units):
