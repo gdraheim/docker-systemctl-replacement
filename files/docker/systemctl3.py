@@ -43,6 +43,23 @@ DEBUG_VARS = False
 TestListen = False
 TestAccept = False
 
+HINT = (logging.DEBUG + logging.INFO) // 2
+NOTE = (logging.WARNING + logging.INFO) // 2
+DONE = (logging.WARNING + logging.ERROR) // 2
+logging.addLevelName(HINT, "HINT")
+logging.addLevelName(NOTE, "NOTE")
+logging.addLevelName(DONE, "DONE")
+
+def dbg_(msg): logg.debug("%s", msg)
+def debug_(msg): logg.debug("%s", msg)
+def hint_(msg): logg.log(HINT, "%s", msg)
+def info_(msg): logg.info("%s", msg)
+def note_(msg): logg.log(NOTE, "%s", msg)
+def warn_(msg): logg.warning("%s", msg)
+def warning_(msg): logg.warning("%s", msg)
+def done_(msg): logg.log(DONE, "%s", msg)
+def error_(msg): logg.error("%s", msg)
+
 NOT_A_PROBLEM = 0   # FOUND_OK
 NOT_OK = 1          # FOUND_ERROR
 NOT_ACTIVE = 2      # FOUND_INACTIVE
