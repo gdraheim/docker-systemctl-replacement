@@ -3514,17 +3514,19 @@ class Systemctl:
         if not conf: return False
         if self.syntax_check(conf) > 100: return False
         with waitlock(conf):
-            logg.info(" stop unit %s => %s", conf.name(), strQ(conf.filename()))
+            unit, filenameQ = conf.name(), strQ(conf.filename())
+            logg.info(" stop unit {unit} => {filenameQ}".format(**locals()))
             return self.do_stop_unit_from(conf)
     def do_stop_unit_from(self, conf):
-        if conf.name().endswith(".service"):
+        unit = conf.name()
+        if unit.endswith(".service"):
             return self.do_stop_service_from(conf)
-        elif conf.name().endswith(".socket"):
+        elif unit.endswith(".socket"):
             return self.do_stop_socket_from(conf)
-        elif conf.name().endswith(".target"):
+        elif unit.endswith(".target"):
             return self.do_stop_target_from(conf)
         else:
-            logg.error("stop not implemented for unit type: %s", conf.name())
+            logg.error("stop not implemented for unit type: {unit}".format(**locals()))
             return False
     def do_stop_service_from(self, conf):
         timeout = self.get_TimeoutStopSec(conf)
