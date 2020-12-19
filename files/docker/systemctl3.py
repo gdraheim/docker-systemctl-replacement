@@ -4233,7 +4233,7 @@ class Systemctl:
                 dbg_("kill PID {pid} => No such process".format(**locals()))
                 return True
             else:
-                logg.error("kill PID %s => %s", pid, str(e))
+                error_("kill PID {pid} => {e}".format(**locals()))
                 return False
         return not pid_exists(pid) or pid_zombie(pid)
     def is_active_modules(self, *modules):
@@ -4301,16 +4301,17 @@ class Systemctl:
         else:
             return self.get_active_from(conf)
     def get_active_from(self, conf):
-        if conf.name().endswith(".service"):
+        unit = conf.name()
+        if unit.endswith(".service"):
             return self.get_active_service_from(conf)
-        elif conf.name().endswith(".socket"):
+        elif unit.endswith(".socket"):
             service_unit = self.get_socket_service_from(conf)
             service_conf = self.load_unit_conf(service_unit)
             return self.get_active_service_from(service_conf)
-        elif conf.name().endswith(".target"):
+        elif unit.endswith(".target"):
             return self.get_active_target_from(conf)
         else:
-            logg.debug("is-active not implemented for unit type: %s", conf.name())
+            debug_("is-active not implemented for unit type: {unit}".format(**locals()))
             return "unknown" # TODO: "inactive" ?
     def get_active_service_from(self, conf):
         """ returns 'active' 'inactive' 'failed' 'unknown' """
@@ -4325,11 +4326,13 @@ class Systemctl:
             state = self.get_status_from(conf, "ActiveState", "")
             if state:
                 if DEBUG_STATUS:
-                    logg.info("get_status_from %s => %s", conf.name(), state)
+                    unit = conf.name()
+                    info_("get_status_from {unit} => {state}".format(**locals()))
                 return state
         pid = self.read_mainpid_from(conf)
         if DEBUG_STATUS:
-            logg.debug("pid_file '%s' => PID %s", pid_file or status_file, strE(pid))
+            filename44 = path44(pid_file or status_file)
+            debug_("pid_file {filename44} => PID {pid}".format(**locals()))
         if pid:
             if not pid_exists(pid) or pid_zombie(pid):
                 return "failed"
@@ -4381,7 +4384,8 @@ class Systemctl:
                     return self.get_status_from(conf, "SubState", "dead")
         pid = self.read_mainpid_from(conf)
         if DEBUG_STATUS:
-            logg.debug("pid_file '%s' => PID %s", pid_file or status_file, strE(pid))
+            filename44 = path44(pid_file or status_file)
+            debug_("pid_file {filename44} => PID {pid}".format(**locals()))
         if pid:
             if not pid_exists(pid) or pid_zombie(pid):
                 return "failed"
@@ -4586,7 +4590,8 @@ class Systemctl:
                             continue
                         preset = PresetFile().read(path)
                         self._preset_file_list[name] = preset
-            logg.debug("found %s preset files", len(self._preset_file_list))
+            found = len(self._preset_file_list)
+            debug_("found {found} preset files".format(**locals()))
         return sorted(self._preset_file_list.keys())
     def get_preset_of_unit(self, unit):
         """ [UNIT] check the *.preset of this unit
@@ -4825,7 +4830,8 @@ class Systemctl:
     def disable_unit_from(self, conf):
         wanted = self.wanted_from(conf)
         if not wanted and not self._force:
-            logg.debug("%s has no target", conf.name())
+            unit = conf.name()
+            dbg_("{unit} has no target".format(**locals()))
             return False # "static" is-enabled
         target = wanted or self.get_default_target()
         for folder in self.enablefolders(target):
@@ -6209,7 +6215,8 @@ class Systemctl:
                     info_("reap zombie {pid}".format(**locals()))
                     try: os.waitpid(pid, os.WNOHANG)
                     except OSError as e: 
-                        logg.warning("reap zombie %s: %s", e.strerror)
+                        strerror = e.strerror
+                        warn_("reap zombie {pid}: {strerror}".format(**locals()))
             if os.path.isfile(pid_status):
                 if pid > 1:
                     running += 1
