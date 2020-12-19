@@ -1828,22 +1828,26 @@ class Systemctl:
         status = {}
         # if not status_file: return status
         if not os.path.isfile(status_file):
-            if DEBUG_STATUS: logg.debug("no status file: %s\n returning %s", status_file, status)
+            if DEBUG_STATUS: # pagma: no cover
+                logg.debug("no status file: {status_file}\n returning {status}".format(**locals()))
             return status
         if self.truncate_old(status_file):
-            if DEBUG_STATUS: logg.debug("old status file: %s\n returning %s", status_file, status)
+            if DEBUG_STATUS: # pagma: no cover 
+                logg.debug("old status file: {status_file}\n returning {status}".format(**locals()))
             return status
         try:
-            if DEBUG_STATUS: logg.debug("reading %s", status_file)
-            for line in open(status_file):
-                if line.strip(): 
+            if DEBUG_STATUS: # pragma: no cover
+                logg.debug("reading {status_file}".format(**locals()))
+            for line0 in open(status_file):
+                line = line0.rstrip()
+                if line: 
                     m = re.match(r"(\w+)[:=](.*)", line)
                     if m:
                         key, value = m.group(1), m.group(2)
                         if key.strip():
                             status[key.strip()] = value.strip()
                     else: #pragma: no cover
-                        logg.warning("ignored %s", line.strip())
+                        logg.warning("ignored '{line}'".format(**locals()))
         except:
             logg.warning("bad read of status file '{status_file}'".format(**locals()))
         return status
