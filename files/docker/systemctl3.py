@@ -6369,6 +6369,19 @@ class Systemctl:
     def test_float(self):
         return 0. # "Unknown result type"
 
+def print_begin(argv, args):
+    script = os.path.realpath(argv[0])
+    command = " ".join(args)
+    system = _user_mode and " --user" or " --system"
+    init = _init and " --init" or ""
+    info_("EXEC BEGIN {script} {command}{system}{init}".format(**locals()))
+    if _root and not is_good_root(_root):
+        root44 = path44(_root)
+        warn_("the --root={root44} should have alteast three levels /tmp/test_123/root")
+
+def print_begin2(args):
+    dbg_("======= systemctl.py " + " ".join(args))
+
 def print_result(result):
     # logg_info = logg.info
     # logg_debug = logg.debug
@@ -6418,6 +6431,41 @@ def print_result(result):
     else:
         logg.warning("EXEC END Unknown result type %s", str(type(result)))
     return exitcode
+
+def config_globals(settings):
+    for setting in settings:
+        nam, val = setting, "1"
+        if "=" in setting:
+            nam, val = setting.split("=", 1)
+        elif nam.startswith("no-") or nam.startswith("NO-"):
+            nam, val = nam[3:], "0"
+        elif nam.startswith("No") or nam.startswith("NO"):
+            nam, val = nam[2:], "0"
+        if nam in globals():
+            old = globals()[nam]
+            if old is False or old is True:
+                dbg_("yes {nam}={val}".format(**locals()))
+                globals()[nam] = (val in ("true", "True", "TRUE", "yes", "y", "Y", "YES", "1"))
+                logg.debug("... _show_all=%s", _show_all)
+            elif isinstance(old, float):
+                dbg_("num {nam}={val}".format(**locals()))
+                globals()[nam] = float(val)
+                vMinimumYield = MinimumYield
+                logg.debug("... MinimumYield={vMinimumYield}".format(**locals()))
+            elif isinstance(old, int):
+                dbg_("int {nam}={val}".format(**locals()))
+                globals()[nam] = int(val)
+                vInitLoopSleep = InitLoopSleep
+                logg.debug("... InitLoopSleep={vInitLoopSleep}".format(**locals()))
+            elif isinstance(old, basestring):
+                dbg_("str {nam}={val}".format(**locals()))
+                globals()[nam] = val.strip()
+                vSysInitTarget = SysInitTarget
+                logg.debug("... SysInitTarget={vSysInitTarget}".format(**locals()))
+            else:
+                logg.warning("(ignored) unknown target type -c '%s' : %s", nam, type(old))
+        else:
+            warn_("(ignored) unknown target config -c '{nam}' : no such variable".format(**locals()))
 
 if __name__ == "__main__":
     import optparse
@@ -6532,36 +6580,7 @@ if __name__ == "__main__":
     if opt.system:
         _user_mode = False # override --user
     #
-    for setting in opt.config:
-        nam, val = setting, "1"
-        if "=" in setting:
-            nam, val = setting.split("=", 1)
-        elif nam.startswith("no-") or nam.startswith("NO-"):
-            nam, val = nam[3:], "0"
-        elif nam.startswith("No") or nam.startswith("NO"):
-            nam, val = nam[2:], "0"
-        if nam in globals():
-            old = globals()[nam]
-            if old is False or old is True:
-                dbg_("yes {nam}={val}".format(**locals()))
-                globals()[nam] = (val in ("true", "True", "TRUE", "yes", "y", "Y", "YES", "1"))
-                logg.debug("... _show_all=%s", _show_all)
-            elif isinstance(old, float):
-                dbg_("num {nam}={val}".format(**locals()))
-                globals()[nam] = float(val)
-                logg.debug("... MinimumYield=%s", MinimumYield)
-            elif isinstance(old, int):
-                dbg_("int {nam}={val}".format(**locals()))
-                globals()[nam] = int(val)
-                logg.debug("... InitLoopSleep=%s", InitLoopSleep)
-            elif isinstance(old, basestring):
-                dbg_("str {nam}={val}".format(**locals()))
-                globals()[nam] = val.strip()
-                logg.debug("... SysInitTarget=%s", SysInitTarget)
-            else:
-                logg.warning("(ignored) unknown target type -c '%s' : %s", nam, type(old))
-        else:
-            warn_("(ignored) unknown target config -c '{nam}' : no such variable".format(**locals()))
+    config_globals(opt.configs)
     #
     systemctl_debug_log = os_path(_root, expand_path(SYSTEMCTL_DEBUG_LOG, not _user_mode))
     systemctl_extra_log = os_path(_root, expand_path(SYSTEMCTL_EXTRA_LOG, not _user_mode))
@@ -6575,11 +6594,8 @@ if __name__ == "__main__":
         loggfile.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
         logg.addHandler(loggfile)
         logg.setLevel(logging.DEBUG)
-    logg.info("EXEC BEGIN %s %s%s%s", os.path.realpath(sys.argv[0]), " ".join(args),
-        _user_mode and " --user" or " --system", _init and " --init" or "", )
-    if _root and not is_good_root(_root):
-        warn_("the --root=path should have alteast three levels /tmp/test_123/root")
     #
+    print_begin(sys.argv, args)
     #
     systemctl = Systemctl()
     if opt.version:
@@ -6589,7 +6605,7 @@ if __name__ == "__main__":
             args = [ "default" ]
         else:
             args = [ "list-units" ]
-    logg.debug("======= systemctl.py " + " ".join(args))
+    print_begin2(args)
     command = args[0]
     modules = args[1:]
     try:
@@ -6629,7 +6645,7 @@ if __name__ == "__main__":
         found = True
         result = command_func()
     if not found:
-        error_("Unknown operation {command}.".format(**locals()))
+        error_("Unknown operation "+command)
         sys.exit(1)
     #
     exitcode = print_result(result)
