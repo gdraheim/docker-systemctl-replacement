@@ -5250,23 +5250,26 @@ class Systemctl:
                         notexists += 1
                     newexe1 = os.path.join("/usr/bin", exe)
                     newexe2 = os.path.join("/bin", exe)
+                    indent = " " * len(execs)
                     if os.path.exists(newexe1):
-                        logg.error(" %s: but this does exist: %s  %s", unit, " " * len(execs), newexe1)
+                        logg.error(" {unit}: but this does exist: {indent}  {newexe1}".format(**locals()))
                     elif os.path.exists(newexe2):
-                        logg.error(" %s: but this does exist: %s      %s", unit, " " * len(execs), newexe2)
+                        logg.error(" {unit}: but this does exist: {indent}      {newexe2}".format(**locals()))
         users = [ conf.get(section, "User", ""), conf.get(section, "SocketUser", "") ]
         groups = [ conf.get(section, "Group", ""), conf.get(section, "SocketGroup", "") ] + conf.getlist(section, "SupplementaryGroups")
         for user in users:
             if user:
                 try: pwd.getpwnam(user)
                 except Exception as e:
-                    logg.error(" %s: User does not exist: %s (%s)", unit, user, getattr(e, "__doc__", ""))
+                    info = getattr(e, "__doc__", "")
+                    logg.error(" {unit}: User does not exist: {user} ({info})".format(**locals()))
                     badusers += 1
         for group in groups:
             if group: 
                 try: grp.getgrnam(group)
                 except Exception as e:
-                    logg.error(" %s: Group does not exist: %s (%s)", unit, group, getattr(e, "__doc__", ""))
+                    info = getattr(e, "__doc__", "")
+                    logg.error(" {unit}: Group does not exist: {group} ({info})".format(**locals()))
                     badgroups += 1
         tmpproblems = 0
         for setting in ("RootDirectory", "RootImage", "BindPaths", "BindReadOnlyPaths",
