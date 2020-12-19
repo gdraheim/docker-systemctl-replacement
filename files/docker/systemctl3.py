@@ -5333,18 +5333,19 @@ class Systemctl:
                     units += [ unit ]
         return self.show_units(units) + notfound # and found_all
     def show_units(self, units):
-        logg.debug("show --property=%s", self._unit_property)
+        unit_property = self._unit_property
+        logg.debug("show --property={property}".format(**locals()))
         result = []
         for unit in units:
             if result: result += [ "" ]
             for var, value in self.show_unit_items(unit):
-                if self._unit_property:
-                    if self._unit_property != var:
+                if unit_property:
+                    if unit_property != var:
                         continue
                 else:
                     if not value and not self._show_all:
                         continue
-                result += [ "%s=%s" % (var, value) ]
+                result += [ "{var}={value}".format(**locals()) ]
         return result
     def show_unit_items(self, unit):
         """ [UNIT]... -- show properties of a unit.
