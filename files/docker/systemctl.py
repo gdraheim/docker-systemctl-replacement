@@ -2654,8 +2654,10 @@ class Systemctl:
             logg.info("no $NOTIFY_SOCKET exists")
             return {}
         #
-        mainpidTimeout = int(timeout / 10) # Apache sends READY before MAINPID
-        logg.info("wait $NOTIFY_SOCKET, timeout %s (mainpid %s)", timeout, mainpidTimeout)
+        lapseTimeout = max(3, int(timeout / 100)) 
+        mainpidTimeout = lapseTimeout # Apache sends READY before MAINPID
+        status = ""
+        logg.info("wait $NOTIFY_SOCKET, timeout %s (lapse %s)", timeout, lapseTimeout)
         waiting = " ---"
         results = {}
         for attempt in xrange(int(timeout)+1):
@@ -2675,6 +2677,9 @@ class Systemctl:
                 if name in ["STATUS", "ACTIVESTATE", "MAINPID", "READY"]:
                     hint="seen notify %s     " % (waiting)
                     logg.debug("%s :%s=%s", hint, name, value)
+            if status != results.get("STATUS",""):
+                mainpidTimeout = lapseTimeout
+                status = results.get("STATUS", "")
             if "READY" not in results:
                 time.sleep(1) # until TimeoutStart
                 continue
