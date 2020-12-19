@@ -4352,7 +4352,7 @@ class Systemctl:
                 return open(unit_file).read()
             logg.error("No files found for %s", unit) 
         except Exception as e:
-            print("Unit {} is not-loaded: {}".format(unit, e))
+            logg.error("Unit {unit} is not-loaded: {e}".format(**locals()))
         self.error |= NOT_OK
         return None
     ##
