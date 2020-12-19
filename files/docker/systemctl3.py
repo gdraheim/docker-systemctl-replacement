@@ -64,6 +64,7 @@ def warning_(msg): logg.warning("%s", msg)
 def done_(msg): logg.log(DONE, "%s", msg)
 def error_(msg): logg.error("%s", msg)
 
+
 NOT_A_PROBLEM = 0   # FOUND_OK
 NOT_OK = 1          # FOUND_ERROR
 NOT_ACTIVE = 2      # FOUND_INACTIVE
@@ -704,7 +705,7 @@ class SystemctlConfigParser(SystemctlConfData):
             if line.startswith(";"):
                 continue
             if line.startswith(".include"):
-                logg.error("the '.include' syntax is deprecated. Use x.service.d/ drop-in files!")
+                error_("the '.include' syntax is deprecated. Use x.service.d/ drop-in files!")
                 includefile = re.sub(r'^\.include[ ]*', '', line).rstrip()
                 if not os.path.isfile(includefile):
                     raise Exception("tried to include file that doesn't exist: {includefile}".format(**locals()))
@@ -1837,10 +1838,10 @@ class Systemctl:
                 for key in sorted(conf.status):
                     value = str(conf.status[key])
                     if key == "MainPID" and value == "0":
-                        logg.warning("ignore writing MainPID=0")
+                        warn_("ignore writing MainPID=0")
                         continue
                     content = "{key}={value}\n".format(**locals())
-                    logg.debug("writing {content}\t to {status_file}")
+                    dbg_("writing {content}\t to {status_file}")
                     f.write(content)
         except IOError as e:
             error_("writing STATUS {status}: {e}\n\t to status file {status_file}".format(**locals()))
@@ -2726,7 +2727,7 @@ class Systemctl:
         return result
     def wait_notify_socket(self, notify, timeout, pid = None, pid_file = None):
         if not os.path.exists(notify.socketfile):
-            logg.info("no $NOTIFY_SOCKET exists")
+            info_("no $NOTIFY_SOCKET exists")
             return {}
         #
         lapseTimeout = max(3, int(timeout / 100)) 
@@ -2766,9 +2767,9 @@ class Systemctl:
                     continue
             break # READY and MAINPID
         if "READY" not in results:
-            logg.info(".... timeout while waiting for 'READY=1' status on $NOTIFY_SOCKET")
+            info_(".... timeout while waiting for 'READY=1' status on $NOTIFY_SOCKET")
         elif "MAINPID" not in results:
-            logg.info(".... seen 'READY=1' but no MAINPID update status on $NOTIFY_SOCKET")
+            info_(".... seen 'READY=1' but no MAINPID update status on $NOTIFY_SOCKET")
         dbg_("notify = {results}".format(**locals()))
         try:
             notify.socket.close()
@@ -2806,7 +2807,7 @@ class Systemctl:
             if not self.start_unit(unit):
                 done = False
         if init:
-            logg.info("init-loop start")
+            info_("init-loop start")
             sig = self.init_loop_until_stop(started_units)
             info_("init-loop {sig}".format(**locals()))
             for unit in reversed(started_units):
@@ -2875,7 +2876,7 @@ class Systemctl:
                 logg.debug(" pre-start done (%s) <-%s>",
                     run.returncode or "OK", run.signal or "")
                 if run.returncode and exe.check:
-                    logg.error("the ExecStartPre control process exited with error code")
+                    error_("the ExecStartPre control process exited with error code")
                     active = "failed"
                     self.write_status_from(conf, AS=active )
                     if _what_kind not in ["none", "keep"]:
@@ -2884,7 +2885,7 @@ class Systemctl:
         if runs in [ "oneshot" ]:
             status_file = self.get_status_file_from(conf)
             if self.get_status_from(conf, "ActiveState", "unknown") == "active":
-                logg.warning("the service was already up once")
+                warn_("the service was already up once")
                 return True
             for cmd in conf.getlist("Service", "ExecStart", []):
                 exe, newcmd = self.exec_newcmd(cmd, env, conf)
@@ -3092,7 +3093,7 @@ class Systemctl:
             else:
                 active_units.append(unit)
         if active_units:
-            logg.info("init-loop start")
+            info_("init-loop start")
             sig = self.init_loop_until_stop(started_units)
             info_("init-loop {sig}".format(**locals()))
         for unit in reversed(started_units):
@@ -3177,7 +3178,7 @@ class Systemctl:
                 logg.debug(" pre-start done (%s) <-%s>",
                     run.returncode or "OK", run.signal or "")
                 if run.returncode and exe.check:
-                    logg.error("the ExecStartPre control process exited with error code")
+                    error_("the ExecStartPre control process exited with error code")
                     active = "failed"
                     self.write_status_from(conf, AS=active )
                     return False
@@ -3563,7 +3564,7 @@ class Systemctl:
         if runs in [ "oneshot" ]:
             status_file = self.get_status_file_from(conf)
             if self.get_status_from(conf, "ActiveState", "unknown") == "inactive":
-                logg.warning("the service is already down once")
+                warn_("the service is already down once")
                 return True
             for cmd in conf.getlist("Service", "ExecStop", []):
                 exe, newcmd = self.exec_newcmd(cmd, env, conf)
@@ -3584,7 +3585,7 @@ class Systemctl:
                     self.clean_status_from(conf) # "inactive"
         ### fallback Stop => Kill for ["simple","notify","forking"]
         elif not conf.getlist("Service", "ExecStop", []):
-            logg.info("no ExecStop => systemctl kill")
+            info_("no ExecStop => systemctl kill")
             if True:
                 self.do_kill_unit_from(conf)
                 self.clean_pid_file_from(conf)
@@ -3967,10 +3968,10 @@ class Systemctl:
             # except Exception as e: pass
             return self.do_start_unit_from(conf)
         elif conf.getlist("Service", "ExecReload", []):
-            logg.info("found service to have ExecReload -> 'reload'")
+            info_("found service to have ExecReload -> 'reload'")
             return self.do_reload_unit_from(conf)
         else:
-            logg.info("found service without ExecReload -> 'restart'")
+            info_("found service without ExecReload -> 'restart'")
             return self.do_restart_unit_from(conf)
     def reload_or_try_restart_modules(self, *modules):
         """ [UNIT]... -- reload-or-try-restart these units """
@@ -4072,12 +4073,12 @@ class Systemctl:
         if not mainpid:
             if useKillMode in ["control-group"]:
                 logg.warning("no main PID %s", strQ(conf.filename()))
-                logg.warning("and there is no control-group here")
+                warn_("and there is no control-group here")
             else:
                 logg.info("no main PID %s", strQ(conf.filename()))
             return False
         if not pid_exists(mainpid) or pid_zombie(mainpid):
-            logg.debug("ignoring children when mainpid is already dead")
+            dbg_("ignoring children when mainpid is already dead")
             # because we list child processes, not processes in control-group
             return True
         pidlist = self.pidlist_of(mainpid) # here
@@ -4503,7 +4504,7 @@ class Systemctl:
         """ [UNIT]... -- set 'enabled' when in *.preset
         """
         if self.user_mode():
-            logg.warning("preset makes no sense in --user mode")
+            warn_("preset makes no sense in --user mode")
             return True
         found_all = True
         units = []
@@ -4545,7 +4546,7 @@ class Systemctl:
         enable or disable services according to *.preset files
         """
         if self.user_mode():
-            logg.warning("preset-all makes no sense in --user mode")
+            warn_("preset-all makes no sense in --user mode")
             return True
         found_all = True
         units = self.match_units() # TODO: how to handle module arguments
@@ -5310,9 +5311,9 @@ class Systemctl:
         if True:
             filename = strE(conf.filename())
             if len(filename) > 44: filename = o44(filename)
-            logg.error(" !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+            error_(" !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
             if abspath:
-                logg.error(" The SystemD ExecXY commands must always be absolute paths by definition.")
+                error_(" The SystemD ExecXY commands must always be absolute paths by definition.")
                 time.sleep(1)
             if notexists:
                 error_(" Oops, {notexists} executable paths were not found in the current environment. Refusing.".format(**locals()))
@@ -5323,7 +5324,7 @@ class Systemctl:
             if tmpproblems:
                 info_("  Note, {tmpproblems} private directory settings are ignored. The application should not depend on it.".format(**locals()))
                 time.sleep(1)
-            logg.error(" !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+            error_(" !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         return False
     def show_modules(self, *modules):
         """ [PATTERN]... -- Show properties of one or more units
@@ -5676,7 +5677,7 @@ class Systemctl:
         services = self.start_target_system(target, init)
         info_("{target} system is up".format(**locals()))
         if init:
-            logg.info("init-loop start")
+            info_("init-loop start")
             sig = self.init_loop_until_stop(services)
             info_("init-loop {sig}".format(**locals()))
             self.stop_system_default()
@@ -5747,7 +5748,7 @@ class Systemctl:
     def set_default_modules(self, *modules):
         """ set current default run-level"""
         if not modules:
-            logg.debug(".. no runlevel given")
+            dbg_(".. no runlevel given")
             self.error |= NOT_OK
             return "Too few arguments"
         current = self.get_default_target()
@@ -5792,14 +5793,14 @@ class Systemctl:
         if not modules:
             # like 'systemctl --init default'
             if self._now or self._show_all:
-                logg.debug("init default --now --all => no_more_procs")
+                dbg_("init default --now --all => no_more_procs")
                 self.doExitWhenNoMoreProcs = True
             return self.start_system_default(init = True)
         #
         # otherwise quit when all the init-services have died
         self.doExitWhenNoMoreServices = True
         if self._now or self._show_all:
-            logg.debug("init services --now --all => no_more_procs")
+            dbg_("init services --now --all => no_more_procs")
             self.doExitWhenNoMoreProcs = True
         found_all = True
         units = []
@@ -5816,7 +5817,7 @@ class Systemctl:
         modulelist, unitlist = " ".join(modules), " ".join(units)
         info_("init {modulelist} -> start {unitlist}".format(**locals()))
         done = self.start_units(units, init = True) 
-        logg.info("-- init is done")
+        info_("-- init is done")
         return done # and found_all
     def start_log_files(self, units):
         self._log_file = {}
@@ -6006,11 +6007,11 @@ class Systemctl:
         signal.signal(signal.SIGTERM, lambda signum, frame: ignore_signals_and_raise_keyboard_interrupt("SIGTERM"))
         #
         self.start_log_files(units)
-        logg.debug("start listen")
+        dbg_("start listen")
         listen = SystemctlListenThread(self)
-        logg.debug("starts listen")
+        dbg_("starts listen")
         listen.start()
-        logg.debug("started listen")
+        dbg_("started listen")
         self.sysinit_status(ActiveState = "active", SubState = "running")
         timestamp = time.time()
         result = None
@@ -6036,7 +6037,7 @@ class Systemctl:
                     dbg_("NEXT InitLoop (after {sleep_sec}s)".format(**locals()))
                 self.read_log_files(units)
                 if DEBUG_INITLOOP: # pragma: no cover
-                    logg.debug("reap zombies - check current processes")
+                    dbg_("reap zombies - check current processes")
                 running = self.system_reap_zombies()
                 if DEBUG_INITLOOP: # pragma: no cover
                     dbg_("reap zombies - init-loop found {running} running procs".format(**locals()))
@@ -6048,11 +6049,11 @@ class Systemctl:
                         if self.is_active_from(conf):
                             active = True
                     if not active:
-                        logg.info("no more services - exit init-loop")
+                        info_("no more services - exit init-loop")
                         break
                 if self.doExitWhenNoMoreProcs:
                     if not running:
-                        logg.info("no more procs - exit init-loop")
+                        info_("no more procs - exit init-loop")
                         break
                 if RESTART_FAILED_UNITS:
                     self.restart_failed_units(units)
@@ -6060,12 +6061,12 @@ class Systemctl:
             except KeyboardInterrupt as e:
                 if e.args and e.args[0] == "SIGQUIT":
                     # the original systemd puts a coredump on that signal.
-                    logg.info("SIGQUIT - switch to no more procs check")
+                    info_("SIGQUIT - switch to no more procs check")
                     self.doExitWhenNoMoreProcs = True
                     continue
                 signal.signal(signal.SIGTERM, signal.SIG_DFL)
                 signal.signal(signal.SIGINT, signal.SIG_DFL)
-                logg.info("interrupted - exit init-loop")
+                info_("interrupted - exit init-loop")
                 result = str(e) or "STOPPED"
                 break
             except Exception as e:
@@ -6079,7 +6080,7 @@ class Systemctl:
         self.read_log_files(units)
         self.read_log_files(units)
         self.stop_log_files(units)
-        logg.debug("done - init loop")
+        dbg_("done - init loop")
         return result
     def system_reap_zombies(self):
         """ check to reap children """
@@ -6242,7 +6243,7 @@ class Systemctl:
         return True
     def force_ipv4(self, *args):
         """ only ipv4 localhost in /etc/hosts """
-        logg.debug("checking hosts sysconf for '::1 localhost'")
+        dbg_("checking hosts sysconf for '::1 localhost'")
         lines = []
         sysconf_hosts = os_path(self._root, _etc_hosts)
         for line in open(sysconf_hosts):
@@ -6258,7 +6259,7 @@ class Systemctl:
         f.close()
     def force_ipv6(self, *args):
         """ only ipv4 localhost in /etc/hosts """
-        logg.debug("checking hosts sysconf for '127.0.0.1 localhost'")
+        dbg_("checking hosts sysconf for '127.0.0.1 localhost'")
         lines = []
         sysconf_hosts = os_path(self._root, _etc_hosts)
         for line in open(sysconf_hosts):
@@ -6563,7 +6564,7 @@ if __name__ == "__main__":
     logg.info("EXEC BEGIN %s %s%s%s", os.path.realpath(sys.argv[0]), " ".join(args),
         _user_mode and " --user" or " --system", _init and " --init" or "", )
     if _root and not is_good_root(_root):
-        logg.warning("the --root=path should have alteast three levels /tmp/test_123/root")
+        warn_("the --root=path should have alteast three levels /tmp/test_123/root")
     #
     #
     systemctl = Systemctl()
