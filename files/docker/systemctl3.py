@@ -5792,7 +5792,8 @@ class Systemctl:
             for unit in matched:
                 if unit not in units:
                     units += [ unit ]
-        logg.info("init %s -> start %s", ",".join(modules), ",".join(units))
+        modulelist, unitlist = " ".join(modules), " ".join(units)
+        logg.info("init {modulelist} -> start {unitlist}".format(**locals()))
         done = self.start_units(units, init = True) 
         logg.info("-- init is done")
         return done # and found_all
