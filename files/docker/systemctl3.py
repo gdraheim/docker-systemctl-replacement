@@ -4987,9 +4987,9 @@ class Systemctl:
         if not conf.loaded():
             if not self._show_all:
                 return
-            yield "%s(%s): %s" % (indent, unit, mark)
+            yield "{indent}({unit}): {mark}".format(**locals())
         else:
-            yield "%s%s: %s" % (indent, unit, mark)
+            yield "{indent}{unit}: {mark}".format(**locals())
             for stop_recursion in [ "Conflict", "conflict", "reloaded", "Propagate" ]:
                 if stop_recursion in mark:
                     return
