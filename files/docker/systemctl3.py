@@ -5126,12 +5126,13 @@ class Systemctl:
             try:
                 conf = self.get_unit_conf(unit)
             except Exception as e:
-                logg.error("%s: can not read unit file %s\n\t%s", 
-                    unit, strQ(conf.filename()), e)
+                filenameQ = strQ(conf.filename())
+                logg.error("{unit}: can not read unit file {filenameQ}\n\t{e}".format(**locals()))
                 continue
             errors += self.syntax_check(conf)
         if errors:
-            logg.warning(" (%s) found %s problems", errors, errors % 100)
+            problems = errors % 100
+            logg.warning(" ({errors}) found {problems} problems".format(**locals()))
         return True # errors
     def syntax_check(self, conf):
         filename = conf.filename()
