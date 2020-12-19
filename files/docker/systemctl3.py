@@ -112,12 +112,6 @@ _rc3_boot_folder = "/etc/rc3.d"
 _rc3_init_folder = "/etc/init.d/rc3.d"
 _rc5_boot_folder = "/etc/rc5.d"
 _rc5_init_folder = "/etc/init.d/rc5.d"
-_proc_pid_stat   = "/proc/{pid}/stat"
-_proc_pid_status = "/proc/{pid}/status"
-_proc_pid_cmdline= "/proc/{pid}/cmdline"
-_proc_pid_dir    = "/proc"
-_proc_sys_uptime = "/proc/uptime"
-_proc_sys_stat   = "/proc/stat"
 
 # default values
 SystemCompatibilityVersion = 219
@@ -168,6 +162,7 @@ ACTIVE_IF_ENABLED=False
 TAIL_CMD = "/usr/bin/tail"
 LESS_CMD = "/usr/bin/less"
 CAT_CMD = "/usr/bin/cat"
+PROC_DIR = "/proc"
 
 # The systemd default was NOTIFY_SOCKET="/var/run/systemd/notify"
 _notify_socket_folder = "{RUN}/systemd" # alias /run/systemd
@@ -540,14 +535,15 @@ def _pid_zombie(pid):
         # On certain systems 0 is a valid PID but we have no way
         # to know that in a portable fashion.
         raise ValueError('invalid PID 0')
-    check = _proc_pid_status.format(**locals())
+    proc = PROC_DIR
+    pid_status = "{proc}/{pid}/status".format(**locals())
     try:
-        for line in open(check):
+        for line in open(pid_status):
             if line.startswith("State:"):
                 return "Z" in line
     except IOError as e:
         if e.errno != errno.ENOENT:
-            logg.error("%s (%s): %s", check, e.errno, e)
+            logg.error("%s (%s): %s", pid_status, e.errno, e)
         return False
     return False
 
@@ -1846,28 +1842,30 @@ class Systemctl:
         if pid_max < 0:
             pid_max = pid1 - pid_max
         for pid in xrange(pid1, pid_max):
-            proc = _proc_pid_stat.format(**locals())
+            proc = PROC_DIR
+            pid_stat = "{proc}/{pid}/stat".format(**locals())
             try:
-                if os.path.exists(proc):
-                    # return os.path.getmtime(proc) # did sometimes change
-                    return self.path_proc_started(proc)
+                if os.path.exists(pid_stat):
+                    # return os.path.getmtime(pid_stat) # did sometimes change
+                    return self.path_proc_started(pid_stat)
             except Exception as e: # pragma: no cover
-                logg.warning("boottime - could not access %s: %s", proc, e)
+                logg.warning("boottime - could not access %s: %s", pid_stat, e)
         if DEBUG_BOOTTIME:
             logg.debug(" boottime from the oldest entry in /proc [nothing in %s..%s]", pid1, pid_max)
         return self.get_boottime_from_old_proc()
     def get_boottime_from_old_proc(self):
+        proc = PROC_DIR
         booted = time.time()
-        for pid in os.listdir(_proc_pid_dir):
-            proc = _proc_pid_stat.format(**locals())
+        for pid in os.listdir(proc):
+            pid_stat = "{proc}/{pid}/stat".format(**locals())
             try:
-                if os.path.exists(proc):
-                    # ctime = os.path.getmtime(proc)
-                    ctime = self.path_proc_started(proc)
+                if os.path.exists(pid_stat):
+                    # ctime = os.path.getmtime(pid_stat)
+                    ctime = self.path_proc_started(pid_stat)
                     if ctime < booted:
                         booted = ctime 
             except Exception as e: # pragma: no cover
-                logg.warning("could not access %s: %s", proc, e)
+                logg.warning("could not access %s: %s", pid_stat, e)
         return booted
 
     # Use uptime, time process running in ticks, and current time to determine process boot time
@@ -1892,7 +1890,8 @@ class Systemctl:
         # this value is the start time from the host system
 
         # Variant 1:
-        system_uptime = _proc_sys_uptime
+        proc = PROC_DIR
+        system_uptime = "{proc}/uptime".format(**locals())
         with open(system_uptime,"rb") as file_uptime:
             data_uptime = file_uptime.readline()
         file_uptime.close()
@@ -1908,7 +1907,7 @@ class Systemctl:
             logg.debug("  BOOT 1. Proc has been running since: %s" % (datetime.datetime.fromtimestamp(started_time)))
 
         # Variant 2:
-        system_stat = _proc_sys_stat
+        system_stat = "{proc}/stat".format(**locals())
         system_btime = 0.
         with open(system_stat,"rb") as f:
             for line in f:
@@ -5951,33 +5950,34 @@ class Systemctl:
         return result
     def system_reap_zombies(self):
         """ check to reap children """
+        proc = PROC_DIR
         selfpid = os.getpid()
         running = 0
-        for pid_entry in os.listdir(_proc_pid_dir):
+        for pid_entry in os.listdir(proc):
             pid = to_intN(pid_entry)
             if pid is None:
                 continue
             if pid == selfpid:
                 continue
-            proc_status = _proc_pid_status.format(**locals())
-            if os.path.isfile(proc_status):
+            pid_status = "{proc}/{pid}/status".format(**locals())
+            if os.path.isfile(pid_status):
                 zombie = False
                 ppid = -1
                 try:
-                    for line in open(proc_status):
+                    for line in open(pid_status):
                         m = re.match(r"State:\s*Z.*", line)
                         if m: zombie = True
                         m = re.match(r"PPid:\s*(\d+)", line)
                         if m: ppid = int(m.group(1))
                 except IOError as e:
-                    logg.warning("%s : %s", proc_status, e)
+                    logg.warning("%s : %s", pid_status, e)
                     continue
                 if zombie and ppid == os.getpid():
                     logg.info("reap zombie %s", pid)
                     try: os.waitpid(pid, os.WNOHANG)
                     except OSError as e: 
                         logg.warning("reap zombie %s: %s", e.strerror)
-            if os.path.isfile(proc_status):
+            if os.path.isfile(pid_status):
                 if pid > 1:
                     running += 1
         return running # except PID 0 and PID 1
@@ -6030,17 +6030,18 @@ class Systemctl:
     def pidlist_of(self, pid):
         if not pid:
             return []
+        proc = PROC_DIR
         pidlist = [ pid ]
         pids = [ pid ]
         for depth in xrange(PROC_MAX_DEPTH):
-            for pid_entry in os.listdir(_proc_pid_dir):
+            for pid_entry in os.listdir(proc):
                 pid = to_intN(pid_entry)
                 if pid is None:
                     continue
-                proc_status = _proc_pid_status.format(**locals())
-                if os.path.isfile(proc_status):
+                pid_status = "{proc}/{pid}/status".format(**locals())
+                if os.path.isfile(pid_status):
                     try:
-                        for line in open(proc_status):
+                        for line in open(pid_status):
                             if line.startswith("PPid:"):
                                 ppid_text = line[len("PPid:"):].strip()
                                 try: ppid = int(ppid_text)
@@ -6048,7 +6049,7 @@ class Systemctl:
                                 if ppid in pidlist and pid not in pids:
                                     pids += [ pid ]
                     except IOError as e:
-                        logg.warning("%s : %s", proc_status, e)
+                        logg.warning("%s : %s", pid_status, e)
                         continue
             if len(pids) != len(pidlist):
                 pidlist = pids[:]
@@ -6059,6 +6060,7 @@ class Systemctl:
         logg.info(" == echo == %s", line)
         return line
     def killall(self, *targets):
+        proc = PROC_DIR
         mapping = {}
         mapping[":3"] = signal.SIGQUIT
         mapping[":QUIT"] = signal.SIGQUIT
@@ -6074,11 +6076,11 @@ class Systemctl:
                 else: # pragma: no cover
                     logg.error("unsupported %s", target)
                 continue
-            for pid_entry in os.listdir(_proc_pid_dir):
+            for pid_entry in os.listdir(proc):
                 pid = to_intN(pid_entry)
                 if pid:
                     try:
-                        cmdline = _proc_pid_cmdline.format(**locals())
+                        cmdline = "{proc}/{pid}/cmdline".format(**locals())
                         cmd = open(cmdline).read().split("\0")
                         if DEBUG_KILLALL: logg.debug("cmdline %s", cmd)
                         found = None
