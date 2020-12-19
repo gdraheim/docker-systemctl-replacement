@@ -1783,7 +1783,7 @@ class Systemctl:
             return status_file
         root = conf.root_mode()
         folder = get_PID_DIR(root)
-        name = "%s.status" % conf.name()
+        name = conf.name() + ".status"
         return os.path.join(folder, name)
     def clean_status_from(self, conf):
         status_file = self.get_status_file_from(conf)
