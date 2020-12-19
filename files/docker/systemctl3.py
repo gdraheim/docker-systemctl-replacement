@@ -1320,7 +1320,8 @@ class Systemctl:
                     service_name = name
                     if service_name not in self._file_for_unit_sysd:
                         self._file_for_unit_sysd[service_name] = path
-            logg.debug("found %s sysd files", len(self._file_for_unit_sysd))
+            found = len(self._file_for_unit_sysd)
+            logg.debug("found {found} sysd files".format(**locals()))
         return list(self._file_for_unit_sysd.keys())
     def scan_unit_sysv_files(self, module = None): # -> [ unit-names,... ]
         """ reads all init.d files, returns the first filename when unit is a '.service' """
@@ -1339,7 +1340,8 @@ class Systemctl:
                     service_name = name + ".service" # simulate systemd
                     if service_name not in self._file_for_unit_sysv:
                         self._file_for_unit_sysv[service_name] = path
-            logg.debug("found %s sysv files", len(self._file_for_unit_sysv))
+            found = len(self._file_for_unit_sysv)
+            logg.debug("found {found} sysv files".format(**locals()))
         return list(self._file_for_unit_sysv.keys())
     def unit_sysd_file(self, module = None): # -> filename?
         """ file path for the given module (systemd) """
