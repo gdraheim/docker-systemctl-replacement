@@ -3253,7 +3253,8 @@ class Systemctl:
             return None
         logg.error("{unit}: unknown socket address type ({address})".format(**locals()))
         return None
-    def create_unix_socket(self, conf, path, dgram):
+    def create_unix_socket(self, conf, sockpath, dgram):
+        unit = conf.name()
         sock_stream = dgram and socket.SOCK_DGRAM or socket.SOCK_STREAM
         sock = socket.socket(socket.AF_UNIX, sock_stream)
         try:
@@ -3262,18 +3263,18 @@ class Systemctl:
             user = conf.get("Socket", "SocketUser", "")
             group = conf.get("Socket", "SocketGroup", "")
             symlinks = conf.getlist("Socket", "SymLinks", [])
-            dirpath = os.path.dirname(path)
+            dirpath = os.path.dirname(sockpath)
             if not os.path.isdir(dirpath):
                 os.makedirs(dirpath, int(dirmode, 8))
-            if os.path.exists(path):
-                os.unlink(path)
-            sock.bind(path)
+            if os.path.exists(sockpath):
+                os.unlink(sockpath)
+            sock.bind(sockpath)
             os.fchmod(sock.fileno(), int(mode, 8))
             shutil_fchown(sock.fileno(), user, group)
             if symlinks:
-                logg.warning("%s: symlinks for socket not implemented (%s)", conf.name(), path)
+                logg.warning("{unit}: symlinks for socket not implemented [{sockpath}]".format(**locals()))
         except Exception as e:
-            logg.error("%s: create socket failed [%s]: %s", conf.name(), path, e)
+            logg.error("{unit}: create socket failed [{sockpath}]: {e}".format(**locals()))
             sock.close()
             return None
         return sock
