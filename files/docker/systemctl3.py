@@ -1051,19 +1051,19 @@ def compareAfter(confA, confB):
     idB = confB.name()
     for after in getAfter(confA):
         if after == idB:
-            logg.debug("%s After %s", idA, idB)
+            logg.debug("{idA} After {idB}".format(**locals()))
             return -1
     for after in getAfter(confB):
         if after == idA:
-            logg.debug("%s After %s", idB, idA)
+            logg.debug("{idB} After {idA}".format(**locals()))
             return 1
     for before in getBefore(confA):
         if before == idB:
-            logg.debug("%s Before %s", idA, idB)
+            logg.debug("{idA} Before {idB}".format(**locals()))
             return 1
     for before in getBefore(confB):
         if before == idA:
-            logg.debug("%s Before %s", idB, idA)
+            logg.debug("{idB} Before {idA}".format(**locals()))
             return -1
     return 0
 
@@ -2672,7 +2672,7 @@ class Systemctl:
         lapseTimeout = max(3, int(timeout / 100)) 
         mainpidTimeout = lapseTimeout # Apache sends READY before MAINPID
         status = ""
-        logg.info("wait $NOTIFY_SOCKET, timeout %s (lapse %s)", timeout, lapseTimeout)
+        logg.info("wait $NOTIFY_SOCKET, timeout {timeout} (lapse {lapseTimeout})".format(**locals()))
         waiting = " ---"
         results = {}
         for attempt in xrange(int(timeout)+1):
@@ -5087,14 +5087,14 @@ class Systemctl:
         usedExecStop = []
         usedExecReload = []
         if haveType not in [ "simple", "forking", "notify", "oneshot", "dbus", "idle"]:
-            logg.error(" %s: Failed to parse service type, ignoring: %s", unit, haveType)
+            logg.error(" {unit}: Failed to parse service type, ignoring: {haveType}".format(**locals()))
             errors += 100
         if haveType in ["notify"]:
             if not havePIDFile:
-                logg.info("%s: %s type=%s does not provide a %s PIDFile. (expect timeout problems)", unit, section, haveType, section)
+                logg.info("{unit}: {section} type={haveType} does not provide a {section} PIDFile. (expect timeout problems)".format(**locals()))
         if haveType in ["forking"]:
             if not havePIDFile:
-                logg.warning("%s: %s type=%s does not provide a %s PIDFile. (expect restart problems)", unit, section, haveType, section)
+                logg.warning("{unit}: {section} type={haveType} does not provide a {section} PIDFile. (expect restart problems)".format(**locals()))
         for line in haveExecStart:
             if not line.startswith("/") and not line.startswith("-/"):
                 logg.error(" %s: %s Executable path is not absolute, ignoring: %s", unit, section, line.strip())
@@ -5159,7 +5159,7 @@ class Systemctl:
             return True # we don't care about that
         havePIDFile = conf.get(section, "PIDFile", "")
         if haveType in ["notify", "forking"] and not havePIDFile:
-            logg.info("%s: %s type=%s does not provide a %s PIDFile.", unit, section, haveType, section)
+            logg.info("{unit}: {section} type={haveType} does not provide a {section} PIDFile.".format(**locals()))
         abspath = 0
         notexists = 0
         badusers = 0
@@ -5805,7 +5805,7 @@ class Systemctl:
                 if not conf: continue
                 restartPolicy = conf.get("Service", "Restart", "no")
                 if restartPolicy in ["no", "on-success"]:
-                    logg.debug("[%s] [%s] Current NoCheck (Restart=%s)", me, unit, restartPolicy)
+                    logg.debug("[{me}] [{unit}] Current NoCheck (Restart={restartPolicy})".format(**locals()))
                     continue
                 restartSec = self.get_RestartSec(conf)
                 if restartSec == 0:
@@ -5821,7 +5821,7 @@ class Systemctl:
                         InitLoopSleep = restartSleep
                 isUnitState = self.get_active_from(conf)
                 isUnitFailed = isUnitState in ["failed"]
-                logg.debug("[%s] [%s] Current Status: %s (%s)", me, unit, isUnitState, isUnitFailed)
+                logg.debug("[{me}] [{unit}] Current Status: {isUnitState} ({isUnitFailed})".format(**locals()))
                 if not isUnitFailed:
                     if unit in self._restart_failed_units:
                         del self._restart_failed_units[unit]
@@ -5886,7 +5886,7 @@ class Systemctl:
                 if not conf: continue
                 isUnitState = self.get_active_from(conf)
                 isUnitFailed = isUnitState in ["failed"]
-                logg.debug("[%s] [%s] Restart Status: %s (%s)", me, unit, isUnitState, isUnitFailed)
+                logg.debug("[{me}] [{unit}] Restart Status: {isUnitState} ({isUnitFailed})".format(**locals()))
                 if isUnitFailed:
                     logg.debug("[{me}] [{unit}] --- restarting failed unit...".format(**locals()))
                     self.restart_unit(unit)
