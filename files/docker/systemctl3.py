@@ -5741,7 +5741,7 @@ class Systemctl:
                     targetfile = targetpath
             if not targetfile:
                 self.error |= NOT_OK | NOT_ACTIVE # 3
-                msg = "No such runlevel %s" % (module)
+                msg = "No such runlevel {module}".format(**locals())
                 continue
             #
             if os.path.islink(default_target_file):
@@ -5749,8 +5749,7 @@ class Systemctl:
             if not os.path.isdir(os.path.dirname(default_target_file)):
                 os.makedirs(os.path.dirname(default_target_file))
             os.symlink(targetfile, default_target_file)
-            msg = "Created symlink from %s -> %s" % (default_target_file, targetfile)
-            logg.debug("{msg}".format(**locals()))
+            logg.debug("Created symlink from {default_target_file} -> {targetfile}".format(**locals()))
         return msg
     def init_modules(self, *modules):
         """ [UNIT*] -- init loop: '--init default' or '--init start UNIT*'
