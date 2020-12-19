@@ -1818,7 +1818,7 @@ class Systemctl:
                         logg.warning("ignore writing MainPID=0")
                         continue
                     content = "{key}={value}\n".format(**locals())
-                    logg.debug("writing to %s\n\t%s", status_file, content.strip())
+                    logg.debug("writing {content}\t to {status_file}")
                     f.write(content)
         except IOError as e:
             logg.error("writing STATUS {status}: {e}\n\t to status file {status_file}".format(**locals()))
