@@ -3401,7 +3401,7 @@ class Systemctl:
                     os.makedirs(fdir)
                 out = open(fname, "a")
         except Exception as e:
-            msg += "\n%s: %s" % (fname, e)
+            msg += "\n{fname}: {e}".format(**locals())
         if out is None:
             out = self.open_journal_log(conf)
             err = out
@@ -3424,7 +3424,7 @@ class Systemctl:
                     os.makedirs(fdir)
                 err = open(fname, "a")
         except Exception as e:
-            msg += "\n%s: %s" % (fname, e)
+            msg += "\n{fname}: {e}".format(**locals())
         if err is None:
             err = self.open_journal_log(conf)
         assert err is not None
