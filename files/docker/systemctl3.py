@@ -3208,11 +3208,12 @@ class Systemctl:
                     run.returncode or "OK", run.signal or "")
             return True
     def create_socket(self, conf):
+        unit = conf.name()
         unsupported = ["ListenUSBFunction", "ListenMessageQueue", "ListenNetlink"]
         unsupported += [ "ListenSpecial", "ListenFIFO", "ListenSequentialPacket"]
-        for item in unsupported:
-            if conf.get("Socket", item, ""):
-                logg.warning("%s: %s sockets are not implemented", conf.name(), item)
+        for setting in unsupported:
+            if conf.get("Socket", setting, ""):
+                logg.warning("{unit}: {setting} sockets are not implemented".format(**locals()))
                 self.error |= NOT_OK
                 return None
         vListenDatagram = conf.get("Socket", "ListenDatagram", "")
@@ -3245,12 +3246,12 @@ class Systemctl:
             self.set_status_from(conf, "port", port)
             return sock
         if re.match("@.*", address):
-            logg.warning("%s: abstract namespace socket not implemented (%s)", conf.name(), address)
+            logg.warning("{unit}: abstract namespace socket not implemented ({address})".format(**locals()))
             return None
         if re.match("vsock:.*", address):
-            logg.warning("%s: virtual machine socket not implemented (%s)", conf.name(), address)
+            logg.warning("{unit}: virtual machine socket not implemented ({address})".format(**locals()))
             return None
-        logg.error("%s: unknown socket address type (%s)", conf.name(), address)
+        logg.error("{unit}: unknown socket address type ({address})".format(**locals()))
         return None
     def create_unix_socket(self, conf, path, dgram):
         sock_stream = dgram and socket.SOCK_DGRAM or socket.SOCK_STREAM
