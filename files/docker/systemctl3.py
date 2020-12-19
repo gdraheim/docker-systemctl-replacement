@@ -2536,7 +2536,8 @@ class Systemctl:
         return self.clean_unit_from(conf, what)
     def clean_unit_from(self, conf, what):
         if self.is_active_from(conf):
-            logg.warning("can not clean active unit: %s", conf.name())
+            name = conf.name()
+            logg.warning("can not clean active unit: {name}".format(**locals()))
             return False
         return self.clean_service_directories(conf, what)
     def log_modules(self, *modules):
@@ -2578,21 +2579,22 @@ class Systemctl:
         return self.log_unit_from(conf, lines, follow)
     def log_unit_from(self, conf, lines = None, follow = False):
         log_path = self.get_journal_log_from(conf)
+        unit = conf.name()
         if follow:
             cmd = [ TAIL_CMD, "-n", str(lines or 10), "-F", log_path ]
-            logg.debug("journalctl %s -> %s", conf.name(), cmd)
+            logg.debug("journalctl {unit} -> {cmd}".format(**locals()))
             return os.spawnvp(os.P_WAIT, cmd[0], cmd) # type: ignore
         elif lines:
             cmd = [ TAIL_CMD, "-n", str(lines or 10), log_path ]
-            logg.debug("journalctl %s -> %s", conf.name(), cmd)
+            logg.debug("journalctl {unit} -> {cmd}".format(**locals()))
             return os.spawnvp(os.P_WAIT, cmd[0], cmd) # type: ignore
         elif _no_pager:
             cmd = [ CAT_CMD, log_path ]
-            logg.debug("journalctl %s -> %s", conf.name(), cmd)
+            logg.debug("journalctl {unit} -> {cmd}".format(**locals()))
             return os.spawnvp(os.P_WAIT, cmd[0], cmd) # type: ignore
         else:
             cmd = [ LESS_CMD, log_path ]
-            logg.debug("journalctl %s -> %s", conf.name(), cmd)
+            logg.debug("journalctl {unit} -> {cmd}".format(**locals()))
             return os.spawnvp(os.P_WAIT, cmd[0], cmd) # type: ignore
     def get_journal_log_from(self, conf):
         return os_path(self._root, self.get_journal_log(conf))
