@@ -4633,9 +4633,10 @@ class Systemctl:
             return False
         return self.enable_unit_from(conf)
     def enable_unit_from(self, conf):
+        unit = conf.name()
         wanted = self.wanted_from(conf)
         if not wanted and not self._force: 
-            logg.debug("%s has no target", conf.name())
+            dbg_("{unit} has no target".format(**locals()))
             return False # "static" is-enabled
         target = wanted or self.get_default_target()
         folder = self.enablefolder(target)
@@ -4645,12 +4646,13 @@ class Systemctl:
             os.makedirs(folder)
         source = conf.filename()
         if not source: # pragma: no cover (was checked before)
-            logg.debug("%s has no real file", conf.name())
+            dbg_("{unit} has no real file".format(**locals()))
             return False
-        symlink = os.path.join(folder, conf.name())
+        symlink = os.path.join(folder, unit)
         if True:
             _f = self._force and "-f" or ""
-            info_("ln -s {_f} '{source}' '{symlink}'".format(**locals()))
+            source44 = path44(source)
+            info_("ln -s {_f} '{source44}' '{symlink}'".format(**locals()))
         if self._force and os.path.islink(symlink):
             os.remove(target)
         if not os.path.islink(symlink):
@@ -5323,8 +5325,6 @@ class Systemctl:
         if not abspath and not notexists and not badusers and not badgroups:
             return True
         if True:
-            filename = strE(conf.filename())
-            if len(filename) > 44: filename = o44(filename)
             error_(" !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
             if abspath:
                 error_(" The SystemD ExecXY commands must always be absolute paths by definition.")
