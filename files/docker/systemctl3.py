@@ -3090,32 +3090,36 @@ class Systemctl:
     def listen_unit_from(self, conf):
         if not conf: return False
         with waitlock(conf):
-            logg.debug(" listen unit %s => %s", conf.name(), strQ(conf.filename()))
+            unit, filenameQ = conf.name(), strQ(conf.filename())
+            logg.debug(" listen unit {unit} => {filenameQ}".format(**locals()))
             return self.do_listen_unit_from(conf)
     def do_listen_unit_from(self, conf):
         if conf.name().endswith(".socket"):
             return self.do_start_socket_from(conf)
         else:
-            logg.error("listen not implemented for unit type: %s", conf.name())
+            unit = conf.name()
+            logg.error("listen not implemented for unit type: {unit}".format(**locals()))
             return False
     def do_accept_socket_from(self, conf, sock):
-        logg.debug("%s: accepting %s", conf.name(), sock.fileno())
+        unit, fileno = conf.name(), sock.fileno()
+        logg.debug("{unit}: accepting {fileno}".format(**locals()))
         service_unit = self.get_socket_service_from(conf)
         service_conf = self.load_unit_conf(service_unit)
         if service_conf is None or TestAccept: #pragma: no cover
             if sock.type == socket.SOCK_STREAM:
                 conn, addr = sock.accept()
                 data = conn.recv(1024)
-                logg.debug("%s: '%s'", conf.name(), data)
+                logg.debug("{unit}: '{data}'".format(**locals()))
                 conn.send(b"ERROR: "+data.upper())
                 conn.close()
                 return False
             if sock.type == socket.SOCK_DGRAM:
                 data, sender = sock.recvfrom(1024)
-                logg.debug("%s: '%s'", conf.name(), data)
+                logg.debug("{unit}: '{data}'".format(**locals()))
                 sock.sendto(b"ERROR: "+data.upper(), sender)
                 return False
-            logg.error("can not accept socket type %s", strINET(sock.type))
+            socktype = strINET(sock.type)
+            logg.error("can not accept socket type {socktype}".format(**locals()))
             return False
         return self.do_start_service_from(service_conf)
     def get_socket_service_from(self, conf):
