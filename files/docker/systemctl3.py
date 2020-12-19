@@ -42,10 +42,6 @@ DEBUG_FLOCK = False
 TestListen = False
 TestAccept = False
 
-def logg_debug_after(msg, *args):
-    if DEBUG_AFTER:
-        logg.debug(msg, *args) # pragma: no cover
-
 NOT_A_PROBLEM = 0   # FOUND_OK
 NOT_OK = 1          # FOUND_ERROR
 NOT_ACTIVE = 2      # FOUND_INACTIVE
@@ -1091,27 +1087,34 @@ def conf_sortedAfter(conflist, cmp = compareAfter):
                     itemB = sortlist[B]
                     before = compareAfter(itemA.conf, itemB.conf)
                     if before > 0 and itemA.rank <= itemB.rank:
-                        logg_debug_after("  %-30s before %s", itemA.conf.name(), itemB.conf.name())
+                        if DEBUG_AFTER: # pragma: no cover
+                            nameA, nameB = itemA.conf.name(), itemB.conf.name()
+                            logg.debug("  {nameA:-30} before {nameB}".format(**locals()))
                         itemA.rank = itemB.rank + 1
                         changed += 1
                     if before < 0 and itemB.rank <= itemA.rank:
-                        logg_debug_after("  %-30s before %s", itemB.conf.name(), itemA.conf.name())
+                        if DEBUG_AFTER: # pragma: no cover
+                            nameA, nameB = itemA.conf.name(), itemB.conf.name()
+                            logg.debug("  {nameB:-30} before {nameA}".format(**locals()))
                         itemB.rank = itemA.rank + 1
                         changed += 1
         if not changed:
-            logg_debug_after("done in check %s of %s", check, len(sortlist))
+            if DEBUG_AFTER: # pragma: no cover
+                allconfs = len(sortlist)
+                logg.debug("done in check {check} of {allconfs}".format(**locals()))
             break
             # because Requires is almost always the same as the After clauses
             # we are mostly done in round 1 as the list is in required order
-    for conf in conflist:
-        logg_debug_after(".. " + conf.name())
-    for item in sortlist:
-        rank, name = item.rank, item.conf.name()
-        logg_debug_after("({rank}) {name}".format(**locals()))
-    sortedlist = sorted(sortlist, key = lambda item: -item.rank)
-    for item in sortedlist:
-        rank, name = item.rank, item.conf.name()
-        logg_debug_after("[{rank}] {name}".format(**locals()))
+    if DEBUG_AFTER:
+        for conf in conflist:
+            logg.debug(".. " + conf.name())
+        for item in sortlist:
+            rank, name = item.rank, item.conf.name()
+            logg.debug("({rank}) {name}".format(**locals()))
+        sortedlist = sorted(sortlist, key = lambda item: -item.rank)
+        for item in sortedlist:
+            rank, name = item.rank, item.conf.name()
+            logg.debug("[{rank}] {name}".format(**locals()))
     return [ item.conf for item in sortedlist ]
 
 class SystemctlListenThread(threading.Thread):
