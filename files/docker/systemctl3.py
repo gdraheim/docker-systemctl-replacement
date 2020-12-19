@@ -301,7 +301,7 @@ def path_replace_extension(path, old, new):
 
 def get_PAGER():
     PAGER = os.environ.get("PAGER", "less")
-    pager = os.environ.get("SYSTEMD_PAGER", "{PAGER}").format(**locals())
+    pager = os.environ.get("SYSTEMD_PAGER", "{PAGER}").format(**locals()) # internal
     options = os.environ.get("SYSTEMD_LESS", "FRSXMK") # see 'man timedatectl'
     if not pager: pager = "cat"
     if "less" in pager and options:
@@ -421,7 +421,7 @@ def expand_path(path, root = False):
     XDG_DATA_HOME=get_DATA_HOME(root)
     XDG_CONFIG_HOME=get_CONFIG_HOME(root)
     XDG_RUNTIME_DIR=get_RUNTIME_DIR(root)
-    return os.path.expanduser(path.replace("${","{").format(**locals()))
+    return os.path.expanduser(path.replace("${","{").format(**locals())) # internal
 
 def shutil_chown(path, user, group):
     if user or group:
