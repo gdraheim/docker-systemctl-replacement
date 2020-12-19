@@ -224,7 +224,7 @@ def strQ(part):
         return ""
     if isinstance(part, int):
         return str(part)
-    return "'%s'" % part
+    return "'{part}'".format(**locals())
 def shell_cmd(cmd):
     return " ".join([strQ(part) for part in cmd])
 def to_intN(value, default = None):
