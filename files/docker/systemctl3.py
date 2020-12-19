@@ -1209,7 +1209,7 @@ def conf_sortedAfter(conflist, cmp = compareAfter):
             # we are mostly done in round 1 as the list is in required order
     if DEBUG_AFTER:
         for conf in conflist:
-            logg.debug(".. " + conf.name())
+            dbg_(".. " + conf.name())
         for item in sortlist:
             rank, name = item.rank, item.conf.name()
             dbg_("({rank}) {name}".format(**locals()))
@@ -2023,7 +2023,7 @@ class Systemctl:
         clockTicksPerSec = os.sysconf(clkTickInt)
         started_secs = float(started_ticks) / clockTicksPerSec
         if DEBUG_BOOTTIME:
-            logg.debug("  BOOT .. Proc started time:  %.3f (%s)", started_secs, proc)
+            dbg_("  BOOT .. Proc started time:  {started_secs:.3f} ({proc})".format(**locals()))
         # this value is the start time from the host system
 
         # Variant 1:
@@ -2035,13 +2035,14 @@ class Systemctl:
         uptime_data = data_uptime.decode().split()
         uptime_secs = float(uptime_data[0])
         if DEBUG_BOOTTIME:
-            logg.debug("  BOOT 1. System uptime secs: %.3f (%s)", uptime_secs, system_uptime)
+            dbg_("  BOOT 1. System uptime secs: {uptime_secs:.3f} ({system_uptime})".format(**locals()))
 
         #get time now
         now = time.time()
         started_time = now - (uptime_secs - started_secs)
         if DEBUG_BOOTTIME:
-            logg.debug("  BOOT 1. Proc has been running since: %s" % (datetime.datetime.fromtimestamp(started_time)))
+            date_started_time = datetime.datetime.fromtimestamp(started_time)
+            dbg_("  BOOT 1. Proc has been running since: {date_started_time}".format(**locals()))
 
         # Variant 2:
         system_stat = "{proc}/stat".format(**locals())
@@ -2053,11 +2054,12 @@ class Systemctl:
                     system_btime = float(line.decode().split()[1])
         f.closed
         if DEBUG_BOOTTIME:
-            logg.debug("  BOOT 2. System btime secs: %.3f (%s)", system_btime, system_stat)
+            dbg_("  BOOT 2. System btime secs: {system_btime:.3f} ({system_stat})".format(**locals()))
 
         started_btime = system_btime + started_secs
         if DEBUG_BOOTTIME:
-            logg.debug("  BOOT 2. Proc has been running since: %s" % (datetime.datetime.fromtimestamp(started_btime)))
+            date_started_btime = datetime.datetime.fromtimestamp(started_btime)
+            dbg_("  BOOT 2. Proc has been running since: {date_started_btime}".format(**locals()))
 
         # return started_time
         return started_btime
@@ -2069,17 +2071,24 @@ class Systemctl:
         boottime = self.get_boottime()
         if filetime >= boottime:
             if DEBUG_BOOTTIME:
-                logg.debug("  file time: %s (%s)", datetime.datetime.fromtimestamp(filetime), o22(filename))
-                logg.debug("  boot time: %s (%s)", datetime.datetime.fromtimestamp(boottime), "status modified later")
+                date_filetime = datetime.datetime.fromtimestamp(filetime)
+                date_boottime = datetime.datetime.fromtimestamp(boottime)
+                filename22, status22 = o22(filename), "status modified later"
+                debug_("  file time: {date_filetime} ({filename22})".format(**locals()))
+                debug_("  boot time: {date_boottime} ({status22})".format(**locals()))
             return False # OK
-        if DEBUG_BOOTTIME:
-            logg.info("  file time: %s (%s)", datetime.datetime.fromtimestamp(filetime), o22(filename))
-            logg.info("  boot time: %s (%s)", datetime.datetime.fromtimestamp(boottime), "status TRUNCATED NOW")
-        try:
-            shutil_truncate(filename)
-        except Exception as e:
-            warn_("while truncating: {e}".format(**locals()))
-        return True # truncated
+        else:
+            if DEBUG_BOOTTIME:
+                date_filetime = datetime.datetime.fromtimestamp(filetime)
+                date_boottime = datetime.datetime.fromtimestamp(boottime)
+                filename22, status22 = o22(filename), "status TRUNCATED NOW"
+                info_("  file time: {date_filetime} ({filename22})".format(**locals()))
+                info_("  boot time: {date_boottime} ({status22})".format(**locals()))
+            try:
+                shutil_truncate(filename)
+            except Exception as e:
+                warn_("while truncating: {e}".format(**locals()))
+            return True # truncated
     def getsize(self, filename):
         if filename is None: # pragma: no cover (is never null)
             return 0
