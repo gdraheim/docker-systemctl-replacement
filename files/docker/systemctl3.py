@@ -2213,10 +2213,10 @@ class Systemctl:
         if not ok:
             logg.debug("could not fully remove service directory {path}".format(**locals()))
         return ok
-    def do_rm_tree(self, path):
+    def do_rm_tree(self, run_path):
         ok = True
-        if os.path.isdir(path):
-            for dirpath, dirnames, filenames in os.walk(path, topdown=False):
+        if os.path.isdir(run_path):
+            for dirpath, dirnames, filenames in os.walk(run_path, topdown=False):
                 for item in filenames:
                     filepath = os.path.join(dirpath, item)
                     try: 
@@ -2232,11 +2232,12 @@ class Systemctl:
                         logg.debug("not removed dir: {dir_path} ({e})".format(**locals()))
                         ok = False
             try: 
-                os.rmdir(path)
+                os.rmdir(run_path)
             except Exception as e: 
-                logg.debug("not removed top dir: {path} ({e})".format(**locals()))
+                logg.debug("not removed top dir: {run_path} ({e})".format(**locals()))
                 ok = False # pragma: no cover
-        logg.debug("%s rm_tree %s", ok and "done" or "fail", path)
+        fail = ok and "done" or "fail"
+        logg.debug("{fail} rm_tree {run_path}".format(**locals()))
         return ok
     def get_RuntimeDirectoryPreserve(self, conf, section = "Service"):
         return conf.getbool(section, "RuntimeDirectoryPreserve", "no")
