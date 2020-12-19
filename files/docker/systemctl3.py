@@ -5434,7 +5434,8 @@ class Systemctl:
         targets = modules or [ self.get_default_target() ]
         for target in targets:
             units = self.target_default_services(target)
-            logg.debug(" %s # %s", " ".join(units), target)
+            unitlist = " ".join(units)
+            logg.debug(" {unitlist} # {target}".format(**locals()))
             for unit in units:
                 if unit not in results:
                     results.append(unit)
