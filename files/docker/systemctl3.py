@@ -50,6 +50,10 @@ logging.addLevelName(HINT, "HINT")
 logging.addLevelName(NOTE, "NOTE")
 logging.addLevelName(DONE, "DONE")
 
+def dbg_flock_(msg): 
+    if DEBUG_FLOCK: #pragma: no cover
+        logg.debug("%s", msg)
+
 def dbg_(msg): logg.debug("%s", msg)
 def debug_(msg): logg.debug("%s", msg)
 def hint_(msg): logg.log(HINT, "%s", msg)
@@ -903,17 +907,17 @@ class waitlock:
             self.opened = os.open(lockfile, os.O_RDWR | os.O_CREAT, 0o600)
             for attempt in xrange(int(MaxLockWait or DefaultMaximumTimeout)):
                 try:
-                    if DEBUG_FLOCK: logg.debug("[{me}] {attempt}. trying {lockname} _______ ".format(**locals()))
+                    dbg_flock_("[{me}] {attempt}. trying {lockname} _______ ".format(**locals()))
                     fcntl.flock(self.opened, fcntl.LOCK_EX | fcntl.LOCK_NB)
                     st = os.fstat(self.opened)
                     if not st.st_nlink:
-                        if DEBUG_FLOCK: logg.debug("[{me}] {attempt}. {lockname} got deleted, trying again".format(**locals()))
+                        dbg_flock_("[{me}] {attempt}. {lockname} got deleted, trying again".format(**locals()))
                         os.close(self.opened)
                         self.opened = os.open(lockfile, os.O_RDWR | os.O_CREAT, 0o600)
                         continue
                     content = "{ 'systemctl': {mypid}, 'lock': '{lockname}' }\n".format(**locals())
                     os.write(self.opened, content.encode("utf-8"))
-                    if DEBUG_FLOCK: logg.debug("[{me}] {attempt}. holding lock on {lockname}".format(**locals()))
+                    dbg_flock_("[{me}] {attempt}. holding lock on {lockname}".format(**locals()))
                     return True
                 except IOError as e:
                     whom = os.read(self.opened, 4096).rstrip()
