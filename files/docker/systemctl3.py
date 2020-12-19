@@ -878,43 +878,46 @@ class waitlock:
             if not os.path.isdir(folder):
                 os.makedirs(folder)
         except Exception as e:
-            logg.warning("oops, %s", e)
+            logg.warning("oops, {e}".format(**locals()))
     def lockfile(self):
         unit = ""
         if self.conf:
             unit = self.conf.name()
         return os.path.join(self.lockfolder, str(unit or "global") + ".lock")
     def __enter__(self):
+        mypid = os.getpid()
         try:
             lockfile = self.lockfile()
             lockname = os.path.basename(lockfile)
             self.opened = os.open(lockfile, os.O_RDWR | os.O_CREAT, 0o600)
             for attempt in xrange(int(MaxLockWait or DefaultMaximumTimeout)):
                 try:
-                    logg_debug_flock("[%s] %s. trying %s _______ ", os.getpid(), attempt, lockname)
+                    logg_debug_flock("[{mypid}] {attempt}. trying {lockname} _______ ".format(**locals()))
                     fcntl.flock(self.opened, fcntl.LOCK_EX | fcntl.LOCK_NB)
                     st = os.fstat(self.opened)
                     if not st.st_nlink:
-                        logg_debug_flock("[%s] %s. %s got deleted, trying again", os.getpid(), attempt, lockname)
+                        logg_debug_flock("[{mypid}] {attempt}. {lockname} got deleted, trying again".format(**locals()))
                         os.close(self.opened)
                         self.opened = os.open(lockfile, os.O_RDWR | os.O_CREAT, 0o600)
                         continue
-                    content = "{ 'systemctl': %s, 'lock': '%s' }\n" % (os.getpid(), lockname)
+                    content = "{ 'systemctl': {mypid}, 'lock': '{lockname}' }\n".format(**locals())
                     os.write(self.opened, content.encode("utf-8"))
-                    logg_debug_flock("[%s] %s. holding lock on %s", os.getpid(), attempt, lockname)
+                    logg_debug_flock("[{mypid}] {attempt}. holding lock on {lockname}".format(**locals()))
                     return True
                 except IOError as e:
-                    whom = os.read(self.opened, 4096)
+                    whom = os.read(self.opened, 4096).rstrip()
                     os.lseek(self.opened, 0, os.SEEK_SET)
-                    logg.info("[%s] %s. systemctl locked by %s", os.getpid(), attempt, whom.rstrip())
+                    logg.info("[{mypid}] {attempt}. systemctl locked by {whom}".format(**locals()))
                     time.sleep(1) # until MaxLockWait
                     continue
-            logg.error("[%s] not able to get the lock to %s", os.getpid(), lockname)
+            logg.error("[{mypid}] not able to get the lock to {lockname}".format(**locals()))
         except Exception as e:
-            logg.warning("[%s] oops %s, %s", os.getpid(), str(type(e)), e)
-        #TODO# raise Exception("no lock for %s", self.unit or "global")
+            exc = str(type(e))
+            logg.warning("[{mypid}] oops {exc}, {e}".format(**locals()))
+        #TODO# raise Exception(f"no lock for {self.unit or global}")
         return False
     def __exit__(self, type, value, traceback):
+        mypid = os.getpid()
         try:
             os.lseek(self.opened, 0, os.SEEK_SET)
             os.ftruncate(self.opened, 0)
@@ -922,12 +925,12 @@ class waitlock:
                 lockfile = self.lockfile()
                 lockname = os.path.basename(lockfile)
                 os.unlink(lockfile) # ino is kept allocated because opened by this process
-                logg.debug("[%s] lockfile removed for %s", os.getpid(), lockname)
+                logg.debug("[{mypid}] lockfile removed for {lockname}".format(**locals()))
             fcntl.flock(self.opened, fcntl.LOCK_UN)
             os.close(self.opened) # implies an unlock but that has happend like 6 seconds later
             self.opened = -1
         except Exception as e:
-            logg.warning("oops, %s", e)
+            logg.warning("oops, {e}".format(**locals()))
 
 waitpid_result = collections.namedtuple("waitpid", ["pid", "returncode", "signal" ])
 
