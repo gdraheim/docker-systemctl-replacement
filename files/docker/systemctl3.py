@@ -5996,7 +5996,8 @@ class Systemctl:
         while True:
             try:
                 if DEBUG_INITLOOP: # pragma: no cover
-                    logg.debug("DONE InitLoop (sleep %ss)", InitLoopSleep)
+                    sleeps = InitLoopSleep
+                    logg.debug("DONE InitLoop (sleep {sleeps}s)".format(**locals()))
                 sleep_sec = InitLoopSleep - (time.time() - timestamp)
                 if sleep_sec < MinimumYield:
                     sleep_sec = MinimumYield
