@@ -23,7 +23,7 @@ def run(filename):
         if m:
             prefix, loggfu, fmt, a, suffix = m.groups()
             if loggfu in ("logg.debug(", "logg.info(", "logg.warning(", "logg.error("):
-                if (not a.startswith("_") and a.lower() == a):
+                if (not a.startswith("_") and a[0].lower() == a[0]):
                     fmt2 = fmt.replace("%s", "{"+a+"}", 1)
                     if fmt != fmt2 and "%" not in fmt2:
                         line = prefix+loggfu+fmt2+".format(**locals())"+suffix
@@ -31,8 +31,8 @@ def run(filename):
         if m:
             prefix, loggfu, fmt, a, b, suffix = m.groups()
             if loggfu in ("logg.debug(", "logg.info(", "logg.warning(", "logg.error("):
-                if (not a.startswith("_") and a.lower() == a and
-                    not b.startswith("_") and b.lower() == b):
+                if (not a.startswith("_") and a[0].lower() == a[0] and
+                    not b.startswith("_") and b[0].lower() == b[0]):
                     fmt2 = fmt.replace("%s", "{"+a+"}", 1)
                     fmt3 = fmt2.replace("%s", "{"+b+"}", 1)
                     if fmt != fmt3 and "%" not in fmt3:
@@ -41,9 +41,9 @@ def run(filename):
         if m:
             prefix, loggfu, fmt, a, b, c, suffix = m.groups()
             if loggfu in ("logg.debug(", "logg.info(", "logg.warning(", "logg.error("):
-                if (not a.startswith("_") and a.lower() == a and
-                    not b.startswith("_") and b.lower() == b and
-                    not c.startswith("_") and c.lower() == c):
+                if (not a.startswith("_") and a[0].lower() == a[0] and
+                    not b.startswith("_") and b[0].lower() == b[0] and
+                    not c.startswith("_") and c[0].lower() == c[0]):
                     fmt2 = fmt.replace("%s", "{"+a+"}", 1)
                     fmt3 = fmt2.replace("%s", "{"+b+"}", 1)
                     fmt4 = fmt3.replace("%s", "{"+c+"}", 1)
@@ -53,10 +53,10 @@ def run(filename):
         if m:
             prefix, loggfu, fmt, a, b, c, d, suffix = m.groups()
             if loggfu in ("logg.debug(", "logg.info(", "logg.warning(", "logg.error("):
-                if (not a.startswith("_") and a.lower() == a and
-                    not b.startswith("_") and b.lower() == b and
-                    not c.startswith("_") and c.lower() == c and
-                    not c.startswith("_") and d.lower() == d):
+                if (not a.startswith("_") and a[0].lower() == a[0] and
+                    not b.startswith("_") and b[0].lower() == b[0] and
+                    not c.startswith("_") and c[0].lower() == c[0] and
+                    not c.startswith("_") and d[0].lower() == d[0]):
                     fmt2 = fmt.replace("%s", "{"+a+"}", 1)
                     fmt3 = fmt2.replace("%s", "{"+b+"}", 1)
                     fmt4 = fmt3.replace("%s", "{"+c+"}", 1)
