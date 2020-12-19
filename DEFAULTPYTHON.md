@@ -36,13 +36,21 @@ centos:7.7.1908
 * python3 ; yum install --enablerepo=base -y python3 (3.6.8)
 * /usr/libexec/platform-python : (n/a)
 
+centos:7.9.2009
+* /usr/libexec/platform-python = python2
+* /usr/libexec/platform-python : installed (2.7.5)
+* python = python2 
+* python2 : installed (2.7.5)
+* python3 ; yum install --enablerepo=base -y python3 (3.6.8)
+* /usr/libexec/platform-python : (n/a)
+* python38 (n/a)
+
 centos:8.0.1905
 * /usr/libexec/platform-python = python3
 * /usr/libexec/platform-python : installed (3.6.8)
 * python2 : yum install --enablerepo=AppStream -y python2 (2.7.16)
 * python2 = does not setup 'python'
 * python3 ; yum install --enablerepo=BaseOS -y python3 (3.6.8)
-* python2 = does not setup 'python'
 
 centos:8.1.1911
 * /usr/libexec/platform-python = python3
@@ -50,7 +58,17 @@ centos:8.1.1911
 * python2 : yum install --enablerepo=AppStream -y python2 (2.7.16)
 * python2 = does not setup 'python'
 * python3 ; yum install --enablerepo=BaseOS -y python3 (3.6.8)
+* python38 ; yum install --enablerepo=BaseOS -y python38 (3.8.3)
+* python38 = does not setup 'python3'
+
+centos:8.3.2011
+* /usr/libexec/platform-python = python3
+* /usr/libexec/platform-python : installed (3.6.8)
+* python2 : yum install --enablerepo=appstream -y python2 (2.7.17)
 * python2 = does not setup 'python'
+* python3 ; yum install --enablerepo=baseos -y python3 (#error)
+* python3 : yum install --enablerepo=appstream -y python38 (3.8.3)
+* python38: overrides 'python3' as well
 
 opensuse:42.2 (2016.11)
 * zypper is not python anymore
@@ -99,4 +117,12 @@ ubuntu:18.04
 * python2 : apt-get install -y python (2.7.17)
 * python2 = with 'python' (note that there is no package 'python2')
 * python3 : apt-get install -y python3 (3.6.9)
+* python3 = does not setup 'python'
+
+ubuntu:20.04
+* apt is binary
+* python2 : (package install 'python' will install package 'python2')
+* python2 : apt-get install -y python2 (2.7.18)
+* python2 = with 'python'
+* python3 : apt-get install -y python3 (3.8.5)
 * python3 = does not setup 'python'
