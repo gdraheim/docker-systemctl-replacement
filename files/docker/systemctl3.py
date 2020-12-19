@@ -1125,11 +1125,11 @@ class SystemctlListenThread(threading.Thread):
         READ_WRITE = READ_ONLY | select.POLLOUT
         me = os.getpid()
         if DEBUG_INITLOOP: # pragma: no cover
-            logg.info("[%s] listen: new thread", me)
+            logg.info("[{me}] listen: new thread".format(**locals()))
         if not self.systemctl._sockets:
             return
         if DEBUG_INITLOOP: # pragma: no cover
-            logg.info("[%s] listen: start thread", me)
+            logg.info("[{me}] listen: start thread".format(**locals()))
         listen = select.poll()
         for sock in self.systemctl._sockets.values():
             listen.register(sock, READ_ONLY)
@@ -1150,7 +1150,7 @@ class SystemctlListenThread(threading.Thread):
                        break
                 time.sleep(sleeping) # remainder waits less that 2 seconds
                 if DEBUG_INITLOOP: # pragma: no cover
-                    logg.debug("[%s] listen: poll", me)
+                    logg.debug("[{me}] listen: poll".format(**locals()))
                 accepting = listen.poll(100) # milliseconds
                 if DEBUG_INITLOOP: # pragma: no cover
                     logg.debug("[%s] listen: poll (%s)", me, len(accepting))
@@ -1594,7 +1594,7 @@ class Systemctl:
                 active[unit] = self.get_active_from(conf)
                 substate[unit] = self.get_substate_from(conf) or "unknown"
             except Exception as e:
-                logg.warning("list-units: %s", e)
+                logg.warning("list-units: {e}".format(**locals()))
             if self._unit_state:
                 if self._unit_state not in [ result[unit], active[unit], substate[unit] ]:
                     del result[unit]
@@ -1611,7 +1611,7 @@ class Systemctl:
         return result + [ ("", "", ""), (found, "", ""), (hint, "", "") ]
     def list_service_unit_files(self, *modules): # -> [ (unit,enabled) ]
         """ show all the service units and the enabled status"""
-        logg.debug("list service unit files for %s", modules)
+        logg.debug("list service unit files for {modules}".format(**locals()))
         result = {}
         enabled = {}
         for unit in self.match_units(to_list(modules)):
@@ -1627,7 +1627,7 @@ class Systemctl:
                 result[unit] = conf
                 enabled[unit] = self.enabled_from(conf)
             except Exception as e:
-                logg.warning("list-units: %s", e)
+                logg.warning("list-units: {e}".format(**locals()))
         return [ (unit, enabled[unit]) for unit in sorted(result) if result[unit] ]
     def each_target_file(self):
         folders = self.system_folders()
@@ -1645,7 +1645,7 @@ class Systemctl:
         enabled = {}
         targets = {}
         for target, filepath in self.each_target_file():
-            logg.info("target %s", filepath)
+            logg.info("target {filepath}".format(**locals()))
             targets[target] = filepath
             enabled[target] = "static"
         for unit in _all_common_targets:
@@ -1828,7 +1828,7 @@ class Systemctl:
                     else: #pragma: no cover
                         logg.warning("ignored %s", line.strip())
         except:
-            logg.warning("bad read of status file '%s'", status_file)
+            logg.warning("bad read of status file '{status_file}'".format(**locals()))
         return status
     def get_status_from(self, conf, name, default = None):
         if conf.status is None:
@@ -1955,7 +1955,7 @@ class Systemctl:
         try:
             shutil_truncate(filename)
         except Exception as e:
-            logg.warning("while truncating: %s", e)
+            logg.warning("while truncating: {e}".format(**locals()))
         return True # truncated
     def getsize(self, filename):
         if filename is None: # pragma: no cover (is never null)
@@ -2017,7 +2017,7 @@ class Systemctl:
         """ [UNIT]. -- show environment parts """
         conf = self.load_unit_conf(unit)
         if conf is None:
-            logg.error("Unit %s could not be found.", unit)
+            logg.error("Unit {unit} could not be found.".format(**locals()))
             return False
         if _unit_property:
             return conf.getlist("Service", _unit_property)
@@ -2049,14 +2049,14 @@ class Systemctl:
             if name in env:
                 return env[name]
             namevar = "$%s" % name
-            logg.debug("can not expand %s", namevar)
+            logg.debug("can not expand {namevar}".format(**locals()))
             return (EXPAND_KEEP_VARS and namevar or "")
         def get_env2(m):
             name = m.group(1)
             if name in env:
                 return env[name]
             namevar = "${%s}" % name
-            logg.debug("can not expand %s", namevar)
+            logg.debug("can not expand {namevar}".format(**locals()))
             return (EXPAND_KEEP_VARS and namevar or "")
         #
         maxdepth = EXPAND_VARS_MAXDEPTH
@@ -2066,7 +2066,7 @@ class Systemctl:
             if new_text == expanded:
                 return expanded
             expanded = new_text
-        logg.error("shell variable expansion exceeded maxdepth %s", maxdepth)
+        logg.error("shell variable expansion exceeded maxdepth {maxdepth}".format(**locals()))
         return expanded
     def expand_special(self, cmd, conf):
         """ expand %i %t and similar special vars. They are being expanded
@@ -2179,7 +2179,7 @@ class Systemctl:
                             var_dirpath = os_path(self._root, var_path)
                             self.do_rm_tree(var_dirpath)
         if not ok:
-            logg.debug("could not fully remove service directory %s", path)
+            logg.debug("could not fully remove service directory {path}".format(**locals()))
         return ok
     def do_rm_tree(self, path):
         ok = True
@@ -2333,7 +2333,7 @@ class Systemctl:
             if not name.strip(): continue
             RUN = get_RUNTIME_DIR(root)
             path = os.path.join(RUN, name)
-            logg.debug("RuntimeDirectory %s", path)
+            logg.debug("RuntimeDirectory {path}".format(**locals()))
             self.make_service_directory(path, modeRuntimeDirectory)
             self.chown_service_directory(path, user, group)
             envs["RUNTIME_DIRECTORY"] = path
@@ -2344,7 +2344,7 @@ class Systemctl:
                         var_dirpath = os_path(self._root, var_path)
                         if os.path.isdir(var_dirpath):
                             if not os.path.islink(var_dirpath):
-                                logg.debug("not a symlink: %s", var_dirpath)
+                                logg.debug("not a symlink: {var_dirpath}".format(**locals()))
                             continue
                         dirpath = os_path(self._root, path)
                         basepath = os.path.dirname(var_dirpath)
@@ -2358,7 +2358,7 @@ class Systemctl:
             if not name.strip(): continue
             DAT = get_VARLIB_HOME(root)
             path = os.path.join(DAT, name)
-            logg.debug("StateDirectory %s", path)
+            logg.debug("StateDirectory {path}".format(**locals()))
             self.make_service_directory(path, modeStateDirectory)
             self.chown_service_directory(path, user, group)
             envs["STATE_DIRECTORY"] = path
@@ -2366,7 +2366,7 @@ class Systemctl:
             if not name.strip(): continue
             CACHE = get_CACHE_HOME(root)
             path = os.path.join(CACHE, name)
-            logg.debug("CacheDirectory %s", path)
+            logg.debug("CacheDirectory {path}".format(**locals()))
             self.make_service_directory(path, modeCacheDirectory)
             self.chown_service_directory(path, user, group)
             envs["CACHE_DIRECTORY"] = path
@@ -2374,7 +2374,7 @@ class Systemctl:
             if not name.strip(): continue
             LOGS = get_LOG_DIR(root)
             path = os.path.join(LOGS, name)
-            logg.debug("LogsDirectory %s", path)
+            logg.debug("LogsDirectory {path}".format(**locals()))
             self.make_service_directory(path, modeLogsDirectory)
             self.chown_service_directory(path, user, group)
             envs["LOGS_DIRECTORY"] = path
@@ -2382,7 +2382,7 @@ class Systemctl:
             if not name.strip(): continue
             CONFIG = get_CONFIG_HOME(root)
             path = os.path.join(CONFIG, name)
-            logg.debug("ConfigurationDirectory %s", path)
+            logg.debug("ConfigurationDirectory {path}".format(**locals()))
             self.make_service_directory(path, modeConfigurationDirectory)
             # not done according the standard
             # self.chown_service_directory(path, user, group)
@@ -2394,7 +2394,7 @@ class Systemctl:
         if not os.path.isdir(dirpath):
             try: 
                 os.makedirs(dirpath)
-                logg.info("created directory path: %s", dirpath)
+                logg.info("created directory path: {dirpath}".format(**locals()))
             except Exception as e: # pragma: no cover
                 logg.debug("errors directory path: %s\n\t%s", dirpath, e)
                 ok = False
@@ -2406,9 +2406,9 @@ class Systemctl:
                     logg.debug("errors directory path: %s\n\t%s", dirpath, e)
                     ok = False
         else:
-            logg.debug("path did already exist: %s", dirpath)
+            logg.debug("path did already exist: {dirpath}".format(**locals()))
         if not ok:
-            logg.debug("could not fully create service directory %s", path)
+            logg.debug("could not fully create service directory {path}".format(**locals()))
         return ok
     def chown_service_directory(self, path, user, group):
         # the standard defines an optimization so that if the parent
@@ -2416,7 +2416,7 @@ class Systemctl:
         # is no other chown on files and subdirectories to be done.
         dirpath = os_path(self._root, path)
         if not os.path.isdir(dirpath):
-            logg.debug("chown did not find %s", dirpath)
+            logg.debug("chown did not find {dirpath}".format(**locals()))
             return True
         if user or group:
             st = os.stat(dirpath)
@@ -2428,7 +2428,7 @@ class Systemctl:
             if group and (group.strip() != st_group and group.strip() != str(st.st_gid)):
                 change = True
             if change:
-                logg.debug("do chown %s", dirpath)
+                logg.debug("do chown {dirpath}".format(**locals()))
                 try:
                     ok = self.do_chown_tree(dirpath, user, group)
                     logg.info("changed %s:%s %s", user, group, ok)
@@ -2436,7 +2436,7 @@ class Systemctl:
                 except Exception as e:
                     logg.info("oops %s\n\t%s", dirpath, e)
             else:
-                logg.debug("untouched %s", dirpath)
+                logg.debug("untouched {dirpath}".format(**locals()))
         return True
     def do_chown_tree(self, path, user, group):
         ok = True
@@ -2594,7 +2594,7 @@ class Systemctl:
                 ignore = True
             into = os_path(self._root, self.expand_special(workingdir, conf))
             try: 
-               logg.debug("chdir workingdir '%s'", into)
+               logg.debug("chdir workingdir '{into}'".format(**locals()))
                os.chdir(into)
                return False
             except Exception as e:
@@ -2662,7 +2662,7 @@ class Systemctl:
                 logg.debug("read_notify_socket(%s):%s", result_len, result_txt)
         except socket.timeout as e:
             if timeout > 2:
-                logg.debug("socket.timeout %s", e)
+                logg.debug("socket.timeout {e}".format(**locals()))
         return result
     def wait_notify_socket(self, notify, timeout, pid = None, pid_file = None):
         if not os.path.exists(notify.socketfile):
@@ -2677,7 +2677,7 @@ class Systemctl:
         results = {}
         for attempt in xrange(int(timeout)+1):
             if pid and not self.is_active_pid(pid):
-                logg.info("seen dead PID %s", pid)
+                logg.info("seen dead PID {pid}".format(**locals()))
                 return results
             if not attempt: # first one
                 time.sleep(1) # until TimeoutStartSec
@@ -2709,11 +2709,11 @@ class Systemctl:
             logg.info(".... timeout while waiting for 'READY=1' status on $NOTIFY_SOCKET")
         elif "MAINPID" not in results:
             logg.info(".... seen 'READY=1' but no MAINPID update status on $NOTIFY_SOCKET")
-        logg.debug("notify = %s", results)
+        logg.debug("notify = {results}".format(**locals()))
         try:
             notify.socket.close()
         except Exception as e:
-            logg.debug("socket.close %s", e)
+            logg.debug("socket.close {e}".format(**locals()))
         return results
     def start_modules(self, *modules):
         """ [UNIT]... -- start these units
@@ -2748,18 +2748,18 @@ class Systemctl:
         if init:
             logg.info("init-loop start")
             sig = self.init_loop_until_stop(started_units)
-            logg.info("init-loop %s", sig)
+            logg.info("init-loop {sig}".format(**locals()))
             for unit in reversed(started_units):
                 self.stop_unit(unit)
         return done
     def start_unit(self, unit):
         conf = self.load_unit_conf(unit)
         if conf is None:
-            logg.debug("unit could not be loaded (%s)", unit)
-            logg.error("Unit %s not found.", unit)
+            logg.debug("unit could not be loaded ({unit})".format(**locals()))
+            logg.error("Unit {unit} not found.".format(**locals()))
             return False
         if self.not_user_conf(conf):
-            logg.error("Unit %s not for --user mode", unit)
+            logg.error("Unit {unit} not for --user mode".format(**locals()))
             return False
         return self.start_unit_from(conf)
     def get_TimeoutStartSec(self, conf):
@@ -2848,10 +2848,10 @@ class Systemctl:
             status_file = self.get_status_file_from(conf)
             pid = self.read_mainpid_from(conf)
             if self.is_active_pid(pid):
-                logg.warning("the service is already running on PID %s", pid)
+                logg.warning("the service is already running on PID {pid}".format(**locals()))
                 return True
             if doRemainAfterExit:
-                logg.debug("%s RemainAfterExit -> AS=active", runs)
+                logg.debug("{runs} RemainAfterExit -> AS=active".format(**locals()))
                 self.write_status_from(conf, AS="active")
             cmdlist = conf.getlist("Service", "ExecStart", [])
             for idx, cmd in enumerate(cmdlist):
@@ -2886,14 +2886,14 @@ class Systemctl:
             pid_file = self.pid_file_from(conf)
             pid = self.read_mainpid_from(conf)
             if self.is_active_pid(pid):
-                logg.error("the service is already running on PID %s", pid)
+                logg.error("the service is already running on PID {pid}".format(**locals()))
                 return False
             notify = self.notify_socket_from(conf)
             if notify:
                 env["NOTIFY_SOCKET"] = notify.socketfile
                 logg.debug("use NOTIFY_SOCKET=%s", notify.socketfile)
             if doRemainAfterExit:
-                logg.debug("%s RemainAfterExit -> AS=active", runs)
+                logg.debug("{runs} RemainAfterExit -> AS=active".format(**locals()))
                 self.write_status_from(conf, AS="active")
             cmdlist = conf.getlist("Service", "ExecStart", [])
             for idx, cmd in enumerate(cmdlist):
@@ -2926,7 +2926,7 @@ class Systemctl:
                         service_result = "failed"
                         break
             if service_result in [ "success" ] and mainpid:
-                logg.debug("okay, wating on socket for %ss", timeout)
+                logg.debug("okay, wating on socket for {timeout}s".format(**locals()))
                 results = self.wait_notify_socket(notify, timeout, mainpid, pid_file)
                 if "MAINPID" in results:
                     new_pid = to_intN(results["MAINPID"])
@@ -2970,11 +2970,11 @@ class Systemctl:
                 active = returncode and "failed" or "active"
                 self.write_status_from(conf, AS=active)
         else:
-            logg.error("unsupported run type '%s'", runs)
+            logg.error("unsupported run type '{runs}'".format(**locals()))
             return False
         # POST sequence
         if not self.is_active_from(conf):
-            logg.warning("%s start not active", runs)
+            logg.warning("{runs} start not active".format(**locals()))
             # according to the systemd documentation, a failed start-sequence
             # should execute the ExecStopPost sequence allowing some cleanup.
             env["SERVICE_RESULT"] = service_result
@@ -3032,18 +3032,18 @@ class Systemctl:
         if active_units:
             logg.info("init-loop start")
             sig = self.init_loop_until_stop(started_units)
-            logg.info("init-loop %s", sig)
+            logg.info("init-loop {sig}".format(**locals()))
         for unit in reversed(started_units):
             pass # self.stop_unit(unit)
         return done
     def listen_unit(self, unit):
         conf = self.load_unit_conf(unit)
         if conf is None:
-            logg.debug("unit could not be loaded (%s)", unit)
-            logg.error("Unit %s not found.", unit)
+            logg.debug("unit could not be loaded ({unit})".format(**locals()))
+            logg.error("Unit {unit} not found.".format(**locals()))
             return False
         if self.not_user_conf(conf):
-            logg.error("Unit %s not for --user mode", unit)
+            logg.error("Unit {unit} not for --user mode".format(**locals()))
             return False
         return self.listen_unit_from(conf)
     def listen_unit_from(self, conf):
@@ -3093,8 +3093,8 @@ class Systemctl:
         service_unit = self.get_socket_service_from(conf)
         service_conf = self.load_unit_conf(service_unit)
         if service_conf is None:
-            logg.debug("unit could not be loaded (%s)", service_unit)
-            logg.error("Unit %s not found.", service_unit)
+            logg.debug("unit could not be loaded ({service_unit})".format(**locals()))
+            logg.error("Unit {service_unit} not found.".format(**locals()))
             return False
         env = self.get_env(conf)
         if not self._quiet:
@@ -3445,10 +3445,10 @@ class Systemctl:
     def stop_unit(self, unit):
         conf = self.load_unit_conf(unit)
         if conf is None:
-            logg.error("Unit %s not found.", unit)
+            logg.error("Unit {unit} not found.".format(**locals()))
             return False
         if self.not_user_conf(conf):
-            logg.error("Unit %s not for --user mode", unit)
+            logg.error("Unit {unit} not for --user mode".format(**locals()))
             return False
         return self.stop_unit_from(conf)
 
@@ -3537,7 +3537,7 @@ class Systemctl:
                     self.clean_pid_file_from(conf)
                     self.clean_status_from(conf) # "inactive"
             else:
-                logg.info("%s sleep as no PID was found on Stop", runs)
+                logg.info("{runs} sleep as no PID was found on Stop".format(**locals()))
                 time.sleep(MinimumTimeoutStopSec)
                 pid = self.read_mainpid_from(conf)
                 if not pid or not pid_exists(pid) or pid_zombie(pid):
@@ -3567,7 +3567,7 @@ class Systemctl:
                 if self.wait_vanished_pid(pid, timeout):
                     self.clean_pid_file_from(conf)
             else:
-                logg.info("%s sleep as no PID was found on Stop", runs)
+                logg.info("{runs} sleep as no PID was found on Stop".format(**locals()))
                 time.sleep(MinimumTimeoutStopSec)
                 pid = self.read_mainpid_from(conf)
                 if not pid or not pid_exists(pid) or pid_zombie(pid):
@@ -3579,7 +3579,7 @@ class Systemctl:
             else:
                 self.clean_status_from(conf) # "inactive"
         else:
-            logg.error("unsupported run type '%s'", runs)
+            logg.error("unsupported run type '{runs}'".format(**locals()))
             return False
         # POST sequence
         if not self.is_active_from(conf):
@@ -3603,8 +3603,8 @@ class Systemctl:
         service_unit = self.get_socket_service_from(conf)
         service_conf = self.load_unit_conf(service_unit)
         if service_conf is None:
-            logg.debug("unit could not be loaded (%s)", service_unit)
-            logg.error("Unit %s not found.", service_unit)
+            logg.debug("unit could not be loaded ({service_unit})".format(**locals()))
+            logg.error("Unit {service_unit} not found.".format(**locals()))
             return False
         env = self.get_env(conf)
         if not self._quiet:
@@ -3671,10 +3671,10 @@ class Systemctl:
     def reload_unit(self, unit):
         conf = self.load_unit_conf(unit)
         if conf is None:
-            logg.error("Unit %s not found.", unit)
+            logg.error("Unit {unit} not found.".format(**locals()))
             return False
         if self.not_user_conf(conf):
-            logg.error("Unit %s not for --user mode", unit)
+            logg.error("Unit {unit} not for --user mode".format(**locals()))
             return False
         return self.reload_unit_from(conf)
     def reload_unit_from(self, conf):
@@ -3744,10 +3744,10 @@ class Systemctl:
             time.sleep(MinimumYield)
             return True
         elif runs in [ "oneshot" ]:
-            logg.debug("ignored run type '%s' for reload", runs)
+            logg.debug("ignored run type '{runs}' for reload".format(**locals()))
             return True
         else:
-            logg.error("unsupported run type '%s'", runs)
+            logg.error("unsupported run type '{runs}'".format(**locals()))
             return False
     def restart_modules(self, *modules):
         """ [UNIT]... -- restart these units """
@@ -3776,10 +3776,10 @@ class Systemctl:
     def restart_unit(self, unit):
         conf = self.load_unit_conf(unit)
         if conf is None:
-            logg.error("Unit %s not found.", unit)
+            logg.error("Unit {unit} not found.".format(**locals()))
             return False
         if self.not_user_conf(conf):
-            logg.error("Unit %s not for --user mode", unit)
+            logg.error("Unit {unit} not for --user mode".format(**locals()))
             return False
         return self.restart_unit_from(conf)
     def restart_unit_from(self, conf):
@@ -3826,10 +3826,10 @@ class Systemctl:
         """ only do 'restart' if 'active' """
         conf = self.load_unit_conf(unit)
         if conf is None:
-            logg.error("Unit %s not found.", unit)
+            logg.error("Unit {unit} not found.".format(**locals()))
             return False
         if self.not_user_conf(conf):
-            logg.error("Unit %s not for --user mode", unit)
+            logg.error("Unit {unit} not for --user mode".format(**locals()))
             return False
         with waitlock(conf):
             logg.info(" try-restart unit %s => %s", conf.name(), strQ(conf.filename()))
@@ -3864,10 +3864,10 @@ class Systemctl:
         """ do 'reload' if specified, otherwise do 'restart' """
         conf = self.load_unit_conf(unit)
         if conf is None:
-            logg.error("Unit %s not found.", unit)
+            logg.error("Unit {unit} not found.".format(**locals()))
             return False
         if self.not_user_conf(conf):
-            logg.error("Unit %s not for --user mode", unit)
+            logg.error("Unit {unit} not for --user mode".format(**locals()))
             return False
         return self.reload_or_restart_unit_from(conf)
     def reload_or_restart_unit_from(self, conf):
@@ -3914,10 +3914,10 @@ class Systemctl:
     def reload_or_try_restart_unit(self, unit):
         conf = self.load_unit_conf(unit)
         if conf is None:
-            logg.error("Unit %s not found.", unit)
+            logg.error("Unit {unit} not found.".format(**locals()))
             return False
         if self.not_user_conf(conf):
-            logg.error("Unit %s not for --user mode", unit)
+            logg.error("Unit {unit} not for --user mode".format(**locals()))
             return False
         return self.reload_or_try_restart_unit_from(conf)
     def reload_or_try_restart_unit_from(self, conf):
@@ -3958,10 +3958,10 @@ class Systemctl:
     def kill_unit(self, unit):
         conf = self.load_unit_conf(unit)
         if conf is None:
-            logg.error("Unit %s not found.", unit)
+            logg.error("Unit {unit} not found.".format(**locals()))
             return False
         if self.not_user_conf(conf):
-            logg.error("Unit %s not for --user mode", unit)
+            logg.error("Unit {unit} not for --user mode".format(**locals()))
             return False
         return self.kill_unit_from(conf)
     def kill_unit_from(self, conf):
@@ -3995,16 +3995,16 @@ class Systemctl:
             return True
         pidlist = self.pidlist_of(mainpid) # here
         if pid_exists(mainpid):
-            logg.info("stop kill PID %s", mainpid)
+            logg.info("stop kill PID {mainpid}".format(**locals()))
             self._kill_pid(mainpid, kill_signal)
         if useKillMode in ["control-group"]:
             if len(pidlist) > 1:
-                logg.info("stop control-group PIDs %s", pidlist)
+                logg.info("stop control-group PIDs {pidlist}".format(**locals()))
             for pid in pidlist:
                 if pid != mainpid:
                     self._kill_pid(pid, kill_signal)
         if doSendSIGHUP: 
-            logg.info("stop SendSIGHUP to PIDs %s", pidlist)
+            logg.info("stop SendSIGHUP to PIDs {pidlist}".format(**locals()))
             for pid in pidlist:
                 self._kill_pid(pid, signal.SIGHUP)
         # wait for the processes to have exited
@@ -4017,21 +4017,21 @@ class Systemctl:
             if dead:
                 break
             if time.time() > started + timeout:
-                logg.info("service PIDs not stopped after %s", timeout)
+                logg.info("service PIDs not stopped after {timeout}".format(**locals()))
                 break
             time.sleep(1) # until TimeoutStopSec
         if dead or not doSendSIGKILL:
             logg.info("done kill PID %s %s", mainpid, dead and "OK")
             return dead
         if useKillMode in [ "control-group", "mixed" ]:
-            logg.info("hard kill PIDs %s", pidlist)
+            logg.info("hard kill PIDs {pidlist}".format(**locals()))
             for pid in pidlist:
                 if pid != mainpid:
                     self._kill_pid(pid, signal.SIGKILL)
             time.sleep(MinimumYield)
         # useKillMode in [ "control-group", "mixed", "process" ]
         if pid_exists(mainpid):
-            logg.info("hard kill PID %s", mainpid)
+            logg.info("hard kill PID {mainpid}".format(**locals()))
             self._kill_pid(mainpid, signal.SIGKILL)
             time.sleep(MinimumYield)
         dead = not pid_exists(mainpid) or pid_zombie(mainpid)
@@ -4043,7 +4043,7 @@ class Systemctl:
             os.kill(pid, sig)
         except OSError as e:
             if e.errno == errno.ESRCH or e.errno == errno.ENOENT:
-                logg.debug("kill PID %s => No such process", pid)
+                logg.debug("kill PID {pid} => No such process".format(**locals()))
                 return True
             else:
                 logg.error("kill PID %s => %s", pid, str(e))
@@ -4109,7 +4109,7 @@ class Systemctl:
         """ returns 'active' 'inactive' 'failed' 'unknown' """
         conf = self.load_unit_conf(unit)
         if not conf:
-            logg.warning("Unit %s not found.", unit)
+            logg.warning("Unit {unit} not found.".format(**locals()))
             return "unknown"
         else:
             return self.get_active_from(conf)
@@ -4251,10 +4251,10 @@ class Systemctl:
     def reset_failed_unit(self, unit):
         conf = self.load_unit_conf(unit)
         if not conf:
-            logg.warning("Unit %s not found.", unit)
+            logg.warning("Unit {unit} not found.".format(**locals()))
             return False
         if self.not_user_conf(conf):
-            logg.error("Unit %s not for --user mode", unit)
+            logg.error("Unit {unit} not for --user mode".format(**locals()))
             return False
         return self.reset_failed_from(conf)
     def reset_failed_from(self, conf):
@@ -4266,7 +4266,7 @@ class Systemctl:
             try:
                 os.remove(status_file)
                 done = True
-                logg.debug("done rm %s", status_file)
+                logg.debug("done rm {status_file}".format(**locals()))
             except Exception as e:
                 logg.error("while rm %s: %s", status_file, e)
         pid_file = self.pid_file_from(conf)
@@ -4274,7 +4274,7 @@ class Systemctl:
             try:
                 os.remove(pid_file)
                 done = True
-                logg.debug("done rm %s", pid_file)
+                logg.debug("done rm {pid_file}".format(**locals()))
             except Exception as e:
                 logg.error("while rm %s: %s", pid_file, e)
         return done
@@ -4371,7 +4371,7 @@ class Systemctl:
             unit_file = self.unit_file(unit)
             if unit_file:
                 return open(unit_file).read()
-            logg.error("No files found for %s", unit) 
+            logg.error("No files found for {unit}".format(**locals())) 
         except Exception as e:
             logg.error("Unit {unit} is not-loaded: {e}".format(**locals()))
         self.error |= NOT_OK
@@ -4442,15 +4442,15 @@ class Systemctl:
             found += 1
             if status.startswith("enable"):
                 if self._preset_mode == "disable": continue
-                logg.info("preset enable %s", unit)
+                logg.info("preset enable {unit}".format(**locals()))
                 if not self.enable_unit(unit):
-                    logg.warning("failed to enable %s", unit)
+                    logg.warning("failed to enable {unit}".format(**locals()))
                     fails += 1
             if status.startswith("disable"):
                 if self._preset_mode == "enable": continue
-                logg.info("preset disable %s", unit)
+                logg.info("preset disable {unit}".format(**locals()))
                 if not self.disable_unit(unit):
-                    logg.warning("failed to disable %s", unit)
+                    logg.warning("failed to disable {unit}".format(**locals()))
                     fails += 1
         return not fails and not not found
     def system_preset_all(self, *modules):
@@ -4499,7 +4499,7 @@ class Systemctl:
                 found_all = False
                 continue
             for unit in matched:
-                logg.info("matched %s", unit) #++
+                logg.info("matched {unit}".format(**locals())) #++
                 if unit not in units:
                     units += [ unit ]
         return self.enable_units(units) and found_all
@@ -4515,19 +4515,19 @@ class Systemctl:
     def enable_unit(self, unit):
         conf = self.load_unit_conf(unit)
         if conf is None:
-            logg.error("Unit %s not found.", unit)
+            logg.error("Unit {unit} not found.".format(**locals()))
             return False
         unit_file = conf.filename()
         if unit_file is None:
-            logg.error("Unit file %s not found.", unit)
+            logg.error("Unit file {unit} not found.".format(**locals()))
             return False
         if self.is_sysv_file(unit_file):
             if self.user_mode():
-                logg.error("Initscript %s not for --user mode", unit)
+                logg.error("Initscript {unit} not for --user mode".format(**locals()))
                 return False
             return self.enable_unit_sysv(unit_file)
         if self.not_user_conf(conf):
-            logg.error("Unit %s not for --user mode", unit)
+            logg.error("Unit {unit} not for --user mode".format(**locals()))
             return False
         return self.enable_unit_from(conf)
     def enable_unit_from(self, conf):
@@ -4618,19 +4618,19 @@ class Systemctl:
     def disable_unit(self, unit):
         conf = self.load_unit_conf(unit)
         if conf is None:
-            logg.error("Unit %s not found.", unit)
+            logg.error("Unit {unit} not found.".format(**locals()))
             return False
         unit_file = conf.filename()
         if unit_file is None:
-            logg.error("Unit file %s not found.", unit)
+            logg.error("Unit file {unit} not found.".format(**locals()))
             return False
         if self.is_sysv_file(unit_file):
             if self.user_mode():
-                logg.error("Initscript %s not for --user mode", unit)
+                logg.error("Initscript {unit} not for --user mode".format(**locals()))
                 return False
             return self.disable_unit_sysv(unit_file)
         if self.not_user_conf(conf):
-            logg.error("Unit %s not for --user mode", unit)
+            logg.error("Unit {unit} not for --user mode".format(**locals()))
             return False
         return self.disable_unit_from(conf)
     def disable_unit_from(self, conf):
@@ -4715,11 +4715,11 @@ class Systemctl:
     def is_enabled(self, unit):
         conf = self.load_unit_conf(unit)
         if conf is None:
-            logg.error("Unit %s not found.", unit)
+            logg.error("Unit {unit} not found.".format(**locals()))
             return False
         unit_file = conf.filename()
         if not unit_file:
-            logg.error("Unit %s not found.", unit)
+            logg.error("Unit {unit} not found.".format(**locals()))
             return False
         if self.is_sysv_file(unit_file):
             return self.is_enabled_sysv(unit_file)
@@ -4778,14 +4778,14 @@ class Systemctl:
     def mask_unit(self, unit):
         unit_file = self.unit_file(unit)
         if not unit_file:
-            logg.error("Unit %s not found.", unit)
+            logg.error("Unit {unit} not found.".format(**locals()))
             return False
         if self.is_sysv_file(unit_file):
-            logg.error("Initscript %s can not be masked", unit)
+            logg.error("Initscript {unit} can not be masked".format(**locals()))
             return False
         conf = self.get_unit_conf(unit)
         if self.not_user_conf(conf):
-            logg.error("Unit %s not for --user mode", unit)
+            logg.error("Unit {unit} not for --user mode".format(**locals()))
             return False
         folder = self.mask_folder()
         if self._root:
@@ -4804,10 +4804,10 @@ class Systemctl:
             logg.info("Created symlink {target} -> {dev_null}".format(**locals()))
             return True
         elif os.path.islink(target):
-            logg.debug("mask symlink does already exist: %s", target)
+            logg.debug("mask symlink does already exist: {target}".format(**locals()))
             return True
         else:
-            logg.error("mask target does already exist: %s", target)
+            logg.error("mask target does already exist: {target}".format(**locals()))
             return False
     def mask_folder(self):
         for folder in self.mask_folders():
@@ -4846,14 +4846,14 @@ class Systemctl:
     def unmask_unit(self, unit):
         unit_file = self.unit_file(unit)
         if not unit_file:
-            logg.error("Unit %s not found.", unit)
+            logg.error("Unit {unit} not found.".format(**locals()))
             return False
         if self.is_sysv_file(unit_file):
-            logg.error("Initscript %s can not be un/masked", unit)
+            logg.error("Initscript {unit} can not be un/masked".format(**locals()))
             return False
         conf = self.get_unit_conf(unit)
         if self.not_user_conf(conf):
-            logg.error("Unit %s not for --user mode", unit)
+            logg.error("Unit {unit} not for --user mode".format(**locals()))
             return False
         folder = self.mask_folder()
         if self._root:
@@ -4866,10 +4866,10 @@ class Systemctl:
             os.remove(target)
             return True
         elif not os.path.exists(target):
-            logg.debug("Symlink did not exist anymore: %s", target)
+            logg.debug("Symlink did not exist anymore: {target}".format(**locals()))
             return True
         else:
-            logg.warning("target is not a symlink: %s", target)
+            logg.warning("target is not a symlink: {target}".format(**locals()))
             return True
     def list_dependencies_modules(self, *modules):
         """ [UNIT]... show the dependency tree"
@@ -4929,7 +4929,7 @@ class Systemctl:
                     return
             for dep in deps:
                 if dep in loop:
-                    logg.debug("detected loop at %s", dep)
+                    logg.debug("detected loop at {dep}".format(**locals()))
                     continue
                 new_loop = loop + list(deps.keys())
                 new_indent = indent + "| "
@@ -5032,7 +5032,7 @@ class Systemctl:
             for unit in unitlist:
                 conf = self.get_unit_conf(unit)
                 if conf.masked:
-                    logg.debug("ignoring masked unit %s", unit)
+                    logg.debug("ignoring masked unit {unit}".format(**locals()))
                     continue
                 conflist.append(conf)
         sortlist = conf_sortedAfter(conflist)
@@ -5045,7 +5045,7 @@ class Systemctl:
             for unit in unitlist:
                 conf = self.get_unit_conf(unit)
                 if conf.masked:
-                    logg.debug("ignoring masked unit %s", unit)
+                    logg.debug("ignoring masked unit {unit}".format(**locals()))
                     continue
                 conflist.append(conf)
         sortlist = conf_sortedAfter(reversed(conflist))
@@ -5075,7 +5075,7 @@ class Systemctl:
     def syntax_check_unit(self, conf, section = "Service"):
         unit = conf.name()
         if not conf.data.has_section("Service"):
-           logg.error(" %s: a .service file without [Service] section", unit)
+           logg.error(" {unit}: a .service file without [Service] section".format(**locals()))
            return 101
         errors = 0
         haveType = conf.get(section, "Type", "simple")
@@ -5224,13 +5224,13 @@ class Systemctl:
                 logg.error(" The SystemD ExecXY commands must always be absolute paths by definition.")
                 time.sleep(1)
             if notexists:
-                logg.error(" Oops, %s executable paths were not found in the current environment. Refusing.", notexists)
+                logg.error(" Oops, {notexists} executable paths were not found in the current environment. Refusing.".format(**locals()))
                 time.sleep(1)
             if badusers or badgroups:
                 logg.error(" Oops, %s user names and %s group names were not found. Refusing.", badusers, badgroups)
                 time.sleep(1)
             if tmpproblems:
-                logg.info("  Note, %s private directory settings are ignored. The application should not depend on it.", tmpproblems)
+                logg.info("  Note, {tmpproblems} private directory settings are ignored. The application should not depend on it.".format(**locals()))
                 time.sleep(1)
             logg.error(" !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         return False
@@ -5279,7 +5279,7 @@ class Systemctl:
     def show_unit_items(self, unit):
         """ [UNIT]... -- show properties of a unit.
         """
-        logg.info("try read unit %s", unit)
+        logg.info("try read unit {unit}".format(**locals()))
         conf = self.get_unit_conf(unit)
         for entry in self.each_unit_items(unit, conf):
             yield entry
@@ -5377,7 +5377,7 @@ class Systemctl:
             igno = self.igno_always
             if self._force:
                 igno = []
-        logg.debug("ignored services filter for default.target:\n\t%s", igno)
+        logg.debug("ignored services filter for default.target:\n\t{igno}".format(**locals()))
         default_target = target or self.get_default_target()
         return self.enabled_target_services(default_target, sysv, igno)
     def enabled_target_services(self, target, sysv = "S", igno = []):
@@ -5518,7 +5518,7 @@ class Systemctl:
             folders += [ self.rc5_root_folder() ]
         for folder in folders:
             if not os.path.isdir(folder):
-                logg.warning("non-existant %s", folder)
+                logg.warning("non-existant {folder}".format(**locals()))
                 continue
             for unit in sorted(os.listdir(folder)):
                 path = os.path.join(folder, unit)
@@ -5572,7 +5572,7 @@ class Systemctl:
             /// SPECIAL: with --now or --init the init-loop is run and afterwards
                 a system_halt is performed with the enabled services to be stopped."""
         self.sysinit_status(SubState = "initializing")
-        logg.info("system default requested - %s", arg)
+        logg.info("system default requested - {arg}".format(**locals()))
         init = self._now or self._init
         return self.start_system_default(init = init)
     def start_system_default(self, init = False):
@@ -5581,11 +5581,11 @@ class Systemctl:
             the services are stopped again by 'systemctl halt'."""
         target = self.get_default_target()
         services = self.start_target_system(target, init)
-        logg.info("%s system is up", target)
+        logg.info("{target} system is up".format(**locals()))
         if init:
             logg.info("init-loop start")
             sig = self.init_loop_until_stop(services)
-            logg.info("init-loop %s", sig)
+            logg.info("init-loop {sig}".format(**locals()))
             self.stop_system_default()
         return not not services
     def start_target_system(self, target, init = False):
@@ -5606,7 +5606,7 @@ class Systemctl:
             at the end of a 'systemctl --init default' loop."""
         target = self.get_default_target()
         services = self.stop_target_system(target)
-        logg.info("%s system is down", target)
+        logg.info("{target} system is down".format(**locals()))
         return not not services
     def stop_target_system(self, target):
         services = self.target_default_services(target, "K")
@@ -5629,12 +5629,12 @@ class Systemctl:
         return self.reload_units(units)
     def system_halt(self, arg = True):
         """ stop units from default system level """
-        logg.info("system halt requested - %s", arg)
+        logg.info("system halt requested - {arg}".format(**locals()))
         done = self.stop_system_default()
         try: 
             os.kill(1, signal.SIGQUIT) # exit init-loop on no_more_procs
         except Exception as e:
-            logg.warning("SIGQUIT to init-loop on PID-1: %s", e)
+            logg.warning("SIGQUIT to init-loop on PID-1: {e}".format(**locals()))
         return done
     def system_get_default(self):
         """ get current default run-level"""
@@ -5678,7 +5678,7 @@ class Systemctl:
                 os.makedirs(os.path.dirname(default_target_file))
             os.symlink(targetfile, default_target_file)
             msg = "Created symlink from %s -> %s" % (default_target_file, targetfile)
-            logg.debug("%s", msg)
+            logg.debug("{msg}".format(**locals()))
         return msg
     def init_modules(self, *modules):
         """ [UNIT*] -- init loop: '--init default' or '--init start UNIT*'
@@ -5939,13 +5939,13 @@ class Systemctl:
                 timestamp = time.time()
                 self.loop.acquire()
                 if DEBUG_INITLOOP: # pragma: no cover
-                    logg.debug("NEXT InitLoop (after %ss)", sleep_sec)
+                    logg.debug("NEXT InitLoop (after {sleep_sec}s)".format(**locals()))
                 self.read_log_files(units)
                 if DEBUG_INITLOOP: # pragma: no cover
                     logg.debug("reap zombies - check current processes")
                 running = self.system_reap_zombies()
                 if DEBUG_INITLOOP: # pragma: no cover
-                    logg.debug("reap zombies - init-loop found %s running procs", running)
+                    logg.debug("reap zombies - init-loop found {running} running procs".format(**locals()))
                 if self.doExitWhenNoMoreServices:
                     active = False
                     for unit in units:
@@ -5975,7 +5975,7 @@ class Systemctl:
                 result = str(e) or "STOPPED"
                 break
             except Exception as e:
-                logg.info("interrupted - exception %s", e)
+                logg.info("interrupted - exception {e}".format(**locals()))
                 raise
         self.sysinit_status(ActiveState = None, SubState = "degraded")
         try: self.loop.release()
@@ -6012,7 +6012,7 @@ class Systemctl:
                     logg.warning("%s : %s", pid_status, e)
                     continue
                 if zombie and ppid == os.getpid():
-                    logg.info("reap zombie %s", pid)
+                    logg.info("reap zombie {pid}".format(**locals()))
                     try: os.waitpid(pid, os.WNOHANG)
                     except OSError as e: 
                         logg.warning("reap zombie %s: %s", e.strerror)
@@ -6049,16 +6049,16 @@ class Systemctl:
             state = self.is_system_running()
             if "init" in state:
                 if target in [ SysInitTarget, "basic.target" ]:
-                    logg.info("system not initialized - wait %s", target)
+                    logg.info("system not initialized - wait {target}".format(**locals()))
                     time.sleep(1)
                     continue
             if "start" in state or "stop" in state:
                 if target in [ "basic.target" ]:
-                    logg.info("system not running - wait %s", target)
+                    logg.info("system not running - wait {target}".format(**locals()))
                     time.sleep(1)
                     continue
             if "running" not in state:
-                logg.info("system is %s", state)
+                logg.info("system is {state}".format(**locals()))
             break
     def is_running_unit_from(self, conf):
         status_file = self.get_status_file_from(conf)
@@ -6096,7 +6096,7 @@ class Systemctl:
         return pids
     def echo(self, *targets):
         line = " ".join(*targets)
-        logg.info(" == echo == %s", line)
+        logg.info(" == echo == {line}".format(**locals()))
         return line
     def killall(self, *targets):
         proc = PROC_DIR
@@ -6113,7 +6113,7 @@ class Systemctl:
                 if target in mapping:
                     sig = mapping[target]
                 else: # pragma: no cover
-                    logg.error("unsupported %s", target)
+                    logg.error("unsupported {target}".format(**locals()))
                 continue
             for pid_entry in os.listdir(proc):
                 pid = to_intN(pid_entry)
@@ -6238,7 +6238,7 @@ class Systemctl:
                         doc_text = "-- " + doc_text
                 else: 
                     func_name = arg # FIXME
-                    logg.debug("__doc__ of %s is none", func_name)
+                    logg.debug("__doc__ of {func_name} is none".format(**locals()))
                     if not self._show_all: continue
                 lines.append("%s %s %s" % (prog, arg, doc_text))
         if not okay:
@@ -6452,7 +6452,7 @@ if __name__ == "__main__":
             else:
                 logg.warning("(ignored) unknown target type -c '%s' : %s", nam, type(old))
         else:
-            logg.warning("(ignored) unknown target config -c '%s' : no such variable", nam)
+            logg.warning("(ignored) unknown target config -c '{nam}' : no such variable".format(**locals()))
     #
     systemctl_debug_log = os_path(_root, expand_path(SYSTEMCTL_DEBUG_LOG, not _user_mode))
     systemctl_extra_log = os_path(_root, expand_path(SYSTEMCTL_EXTRA_LOG, not _user_mode))
@@ -6520,7 +6520,7 @@ if __name__ == "__main__":
         found = True
         result = command_func()
     if not found:
-        logg.error("Unknown operation %s.", command)
+        logg.error("Unknown operation {command}.".format(**locals()))
         sys.exit(1)
     #
     exitcode = print_result(result)
