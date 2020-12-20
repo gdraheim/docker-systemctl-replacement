@@ -25263,10 +25263,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "LoadState=not-found"))
         #
         cmd = "{systemctl} cat zza.service"
-        out, end = output2(cmd.format(**locals()))
-        logg.info(" %s =>%s\n%s", cmd, end, out)
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
         self.assertNotEqual(end, 0)
-        self.assertTrue(greps(out, "Unit zza.service is not-loaded"))
+        self.assertTrue(greps(err, "Unit zza.service is not-loaded"))
         #
         cmd = "{systemctl} list-dependencies zza.service"
         out, end = output2(cmd.format(**locals()))
