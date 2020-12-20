@@ -6562,7 +6562,7 @@ def print_begin(argv, args):
     command = " ".join(args)
     system = _user_mode and " --user" or " --system"
     init = _init and " --init" or ""
-    hint_result_("EXEC BEGIN {script} {command}{system}{init}".format(**locals()))
+    info_("EXEC BEGIN {script} {command}{system}{init}".format(**locals()))
     if _root and not is_good_root(_root):
         root44 = path44(_root)
         warn_("the --root={root44} should have alteast three levels /tmp/test_123/root")
