@@ -942,7 +942,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_1019_systemctl_test_commands_work(self) -> None:
         """ some commands are internal for testing only """
         systemctl = cover() + _systemctl_py
-        cmd = "{systemctl} __test_float -vvvv"
+        cmd = "{systemctl} __test_float -vvvv -c DEBUG_RESULT=yes"
         out, err, end = output3(cmd.format(**locals()))
         logg.info("%s\n%s\n%s", cmd, out, err)
         self.assertEqual(end, 0)
