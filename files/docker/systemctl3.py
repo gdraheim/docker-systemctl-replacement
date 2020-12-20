@@ -6837,7 +6837,7 @@ if __name__ == "__main__":
         result = command_func()
     if not found:
         error_("Unknown operation "+command)
-        sys.exit(EXIT_INVALIDARGUMENT)
+        sys.exit(EXIT_FAILURE)
     #
     exitcode = print_result(result)
     exitcode |= systemctl.error
