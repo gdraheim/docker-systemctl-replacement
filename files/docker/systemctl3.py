@@ -272,6 +272,25 @@ EXIT_NOPERMISSION = 4
 EXIT_NOTINSTALLED = 5
 EXIT_NOTCONFIGURED = 6
 EXIT_NOTRUNNING = 7
+EXIT_CORRUPTED = 11
+EXIT_NOTEXECUTABLE = 126
+EXIT_NOTFOUND = 127
+EXIT_NOTSIG = 128
+EXIT_SIGHUP = 129
+EXIT_SIGINT = 130
+EXIT_SIGQUIT = 131
+EXIT_SIGILL = 132
+EXIT_SIGTRAP = 133
+EXIT_SIGABRT = 134
+EXIT_SIGBUS = 135
+EXIT_SIGFPE = 136
+EXIT_SIGKILL = 137
+EXIT_SIGUSR1= 138
+EXIT_SIGSEGV= 139
+EXIT_SIGUSR2= 140
+EXIT_SIGPIPE= 141
+EXIT_SIGALRM= 143
+EXIT_SIGTERM= 144
 EXIT_CHDIR = 200
 EXIT_EXEC = 203
 EXIT_STDIN = 208
@@ -295,6 +314,25 @@ EXITCODE[EXIT_NOPERMISSION] = "NOPERMISSION"
 EXITCODE[EXIT_NOTINSTALLED] = "NOTINSTALLED"
 EXITCODE[EXIT_NOTCONFIGURED] = "NOTCONFIGURED"
 EXITCODE[EXIT_NOTRUNNING] = "NOTRUNNING"
+EXITCODE[EXIT_CORRUPTED] = "CORRUPTED"
+EXITCODE[EXIT_NOTEXECUTABLE] = "NOTEXECUTABLE"
+EXITCODE[EXIT_NOTFOUND] = "NOTFOUND"
+EXITCODE[EXIT_NOTSIG] = "NOTSIG"
+EXITCODE[EXIT_SIGHUP] = "SIGHUP"
+EXITCODE[EXIT_SIGINT] = "SIGINT"
+EXITCODE[EXIT_SIGQUIT] = "SIGQUIT"
+EXITCODE[EXIT_SIGILL] = "SIGILL"
+EXITCODE[EXIT_SIGTRAP] = "SIGTRAP"
+EXITCODE[EXIT_SIGABRT] = "SIGABRT"
+EXITCODE[EXIT_SIGBUS] = "SIGBUS"
+EXITCODE[EXIT_SIGFPE] = "SIGFPE"
+EXITCODE[EXIT_SIGKILL] = "SIGKIKK"
+EXITCODE[EXIT_SIGUSR1] = "SIGUSR1"
+EXITCODE[EXIT_SIGSEGV] = "SIGSEGV"
+EXITCODE[EXIT_SIGUSR2] = "SIGUSR2"
+EXITCODE[EXIT_SIGPIPE] = "SIGPIPE"
+EXITCODE[EXIT_SIGALRM] = "SIGALRM"
+EXITCODE[EXIT_SIGTERM] = "SIGTERM"
 EXITCODE[EXIT_CHDIR] = "CHDIR"
 EXITCODE[EXIT_EXEC] = "EXEC"
 EXITCODE[EXIT_STDIN] = "STDIN"
@@ -1081,11 +1119,12 @@ def must_have_failed(waitpid, cmd):
             if not arg.startswith("-"):
                 pid = arg
         if pid is None: # unknown $MAINPID
+            exitcode = EXIT_CORRUPTED # 11
             if not waitpid.returncode:
                 command = shell_cmd(cmd)
                 returncode = waitpid.returncode
-                error_("waitpid {command} did return {returncode} => correcting as 11".format(**locals()))
-            waitpid = waitpid_result(waitpid.pid, 11, waitpid.signal)
+                error_("waitpid {command} did return {returncode} => correcting as {exitcode}".format(**locals()))
+            waitpid = waitpid_result(waitpid.pid, exitcode, waitpid.signal)
     return waitpid
 
 def subprocess_waitpid(pid):
@@ -3604,7 +3643,7 @@ class Systemctl:
         if badpath:
             cmdline44 = o44(shell_cmd(cmd))
             error_("({cmdline44}): bad workingdir: {badpath}'".format(**locals()))
-            sys.exit(1)
+            sys.exit(EXIT_CHDIR)
         env = self.extend_exec_env(env)
         env.update(envs) # set $HOME to ~$USER
         try:
@@ -3614,11 +3653,11 @@ class Systemctl:
                 sys.exit(exitcode)
             else: # pragma: no cover
                 os.execve(cmd[0], cmd, env)
-                sys.exit(11) # pragma: no cover (can not be reached / bug like mypy#8401)
+                sys.exit(EXIT_CORRUPTED) # pragma: no cover (can not be reached / bug like mypy#8401)
         except Exception as e:
             cmdline44 = o44(shell_cmd(cmd))
             error_("({cmdline44}): {e}".format(**locals()))
-            sys.exit(1)
+            sys.exit(EXIT_NOTEXECUTABLE)
     def test_start_unit(self, unit):
         """ helper function to test the code that is normally forked off """
         conf = self.load_unit_conf(unit)
@@ -6784,7 +6823,7 @@ if __name__ == "__main__":
         result = command_func()
     if not found:
         error_("Unknown operation "+command)
-        sys.exit(1)
+        sys.exit(EXIT_INVALIDARGUMENT)
     #
     exitcode = print_result(result)
     exitcode |= systemctl.error
