@@ -297,7 +297,7 @@ type:
 	python3 ../retype/retype.py files/docker/systemctl3.py -t tmp.files/docker
 	python3 format3.py -i tmp.files/docker/systemctl3.py
 	@ grep -w format tmp.files/docker/systemctl3.py | grep -v internal | sed -e "s|^|ERROR: |"; true
-	mypy --strict tmp.files/docker/systemctl3.py
+	mypy --strict tmp.files/docker/systemctl3.py # --new-semantic-analyzer --show-traceback
 
 ####### box test
 box:
