@@ -3562,20 +3562,26 @@ class Systemctl:
         return out and err
     def dup2_journal_log(self, conf):
         msg = ""
+        ret = 0
         std_inp = conf.get("Service", "StandardInput", DefaultStandardInput)
         std_out = conf.get("Service", "StandardOutput", DefaultStandardOutput)
         std_err = conf.get("Service", "StandardError", DefaultStandardError)
         inp, out, err = None, None, None
-        if std_inp in ["null"]:
-            inp = open(_dev_null, "r")
-        elif std_inp.startswith("file:"):
-            fname = std_inp[len("file:"):]
-            if os.path.exists(fname):
-                inp = open(fname, "r")
+        try:
+            if std_inp in ["null"]:
+                inp = open(_dev_null, "r")
+            elif std_inp.startswith("file:"):
+                fname = std_inp[len("file:"):]
+                if os.path.exists(fname):
+                    inp = open(fname, "r")
+                else:
+                    inp = open(_dev_zero, "r")
             else:
                 inp = open(_dev_zero, "r")
-        else:
-            inp = open(_dev_zero, "r")
+        except Exception as e:
+            msg += "\n{fname}: {e}".format(**locals())
+            ret = EXIT_STDIN
+            return ret, msg
         assert inp is not None
         try:
             if std_out in ["null"]:
@@ -3594,6 +3600,7 @@ class Systemctl:
                 out = open(fname, "a")
         except Exception as e:
             msg += "\n{fname}: {e}".format(**locals())
+            ret = EXIT_STDOUT
         if out is None:
             out = self.open_journal_log(conf)
             err = out
@@ -3617,6 +3624,7 @@ class Systemctl:
                 err = open(fname, "a")
         except Exception as e:
             msg += "\n{fname}: {e}".format(**locals())
+            ret = EXIT_STDERR
         if err is None:
             err = self.open_journal_log(conf)
         assert err is not None
@@ -3628,12 +3636,17 @@ class Systemctl:
             os.dup2(inp.fileno(), sys.stdin.fileno())
             os.dup2(out.fileno(), sys.stdout.fileno())
             os.dup2(err.fileno(), sys.stderr.fileno())
+        return ret, msg
     def execve_from(self, conf, cmd, env):
         """ this code is commonly run in a child process // returns exit-code"""
         runs = conf.get("Service", "Type", "simple").lower()
         # nameE, filename44 = strE(conf.name(), path44(conf.filename())
         # dbg_("{runs} process for {nameE} => {filename44}".format(**locals())) # internal
-        self.dup2_journal_log(conf)
+        retcode, msg = self.dup2_journal_log(conf)
+        if retcode:
+            cmdline44 = o44(shell_cmd(cmd))
+            error_("({cmdline44}): bad logs ({retcode}): {msg}".format(**locals()))
+            sys.exit(retcode)
         #
         runuser = self.get_User(conf)
         rungroup = self.get_Group(conf)
