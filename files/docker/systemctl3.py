@@ -67,15 +67,51 @@ def note_result_(msg):
     if DEBUG_RESULT: #pragma: no cover
         logg.warning("%s", msg)
 
-def dbg_(msg): logg.debug("%s", msg)
-def debug_(msg): logg.debug("%s", msg)
-def hint_(msg): logg.log(HINT, "%s", msg)
-def info_(msg): logg.info("%s", msg)
-def note_(msg): logg.log(NOTE, "%s", msg)
-def warn_(msg): logg.warning("%s", msg)
-def warning_(msg): logg.warning("%s", msg)
-def done_(msg): logg.log(DONE, "%s", msg)
-def error_(msg): logg.error("%s", msg)
+def dbg_(msg, note = None): 
+    if note is None:
+        logg.debug("%s", msg)
+    else:
+        logg.debug("%s %s", msg, note)
+def debug_(msg, note = None):
+    if note is None:
+        logg.debug("%s", msg)
+    else:
+        logg.debug("%s %s", msg, note)
+def hint_(msg, note = None): 
+    if note is None:
+        logg.log(HINT, "%s", msg)
+    else:
+        logg.log(HINT, "%s %s", msg, note)
+def info_(msg, note = None): 
+    if note is None:
+        logg.info("%s", msg)
+    else:
+        logg.info("%s %s", msg, note)
+def note_(msg, note = None): 
+    if note is None:
+        logg.log(NOTE, "%s", msg)
+    else:
+        logg.log(NOTE, "%s %s", msg, note)
+def warn_(msg, note = None): 
+    if note is None:
+        logg.warning("%s", msg)
+    else:
+        logg.warning("%s %s", msg, note)
+def warning_(msg, note = None): 
+    if note is None:
+        logg.warning("%s", msg)
+    else:
+        logg.warning("%s %s", msg, note)
+def done_(msg, note = None): 
+    if note is None:
+        logg.log(DONE, "%s", msg)
+    else:
+        logg.log(DONE, "%s %s", msg, note)
+def error_(msg, note = None): 
+    if note is None:
+        logg.error("%s", msg)
+    else:
+        logg.error("%s %s", msg, note)
 
 
 NOT_A_PROBLEM = 0   # FOUND_OK
