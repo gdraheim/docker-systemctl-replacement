@@ -215,6 +215,7 @@ DefaultStandardError=os.environ.get("SYSTEMD_STANDARD_ERROR", "inherit") # syste
 
 EXEC_SPAWN = False
 EXEC_DUP2 = True
+EXEC_CONTINUE = False
 REMOVE_LOCK_FILE = False
 BOOT_PID_MIN = 0
 BOOT_PID_MAX = -9
@@ -3583,7 +3584,7 @@ class Systemctl:
             else:
                 inp = open(_dev_zero, "r")
         except Exception as e:
-            msg += "\n {fname}: {e}".format(**locals())
+            msg += "\n {std_inp}: {e}".format(**locals())
             ret = EXIT_STDIN
             return ret, msg
         assert inp is not None
@@ -3595,8 +3596,6 @@ class Systemctl:
                 fdir = os.path.dirname(fname)
                 if not os.path.exists(fdir):
                     os.makedirs(fdir)
-                if os.path.isdir(fname):
-                    os.rmdir(fname)
                 out = open(fname, "w")
             elif std_out.startswith("append:"):
                 fname = std_out[len("append:"):]
@@ -3605,9 +3604,10 @@ class Systemctl:
                     os.makedirs(fdir)
                 out = open(fname, "a")
         except Exception as e:
-            msg += "\n {fname}: {e}".format(**locals())
+            msg += "\n {std_out}: {e}".format(**locals())
             ret = EXIT_STDOUT
         if out is None:
+            msg += "\n fallback to StandardOutput=journal log"
             out = self.open_journal_log(conf)
             err = out
         assert out is not None
@@ -3621,8 +3621,6 @@ class Systemctl:
                 fdir = os.path.dirname(fname)
                 if not os.path.exists(fdir):
                     os.makedirs(fdir)
-                if os.path.isdir(fname):
-                    os.rmdir(fname)
                 err = open(fname, "w")
             elif std_err.startswith("append:"):
                 fname = std_err[len("append:"):]
@@ -3631,9 +3629,10 @@ class Systemctl:
                     os.makedirs(fdir)
                 err = open(fname, "a")
         except Exception as e:
-            msg += "\n {fname}: {e}".format(**locals())
+            msg += "\n {std_err}: {e}".format(**locals())
             ret = EXIT_STDERR
         if err is None:
+            msg += "\n fallback to StandardError=journal log"
             err = self.open_journal_log(conf)
         assert err is not None
         if msg:
@@ -3654,7 +3653,8 @@ class Systemctl:
         if retcode:
             cmdline44, retcode44 = o44(shell_cmd(cmd)), exitCODE(retcode)
             error_("({cmdline44}): bad logs ({retcode44}): {msg}".format(**locals()))
-            sys.exit(retcode)
+            if not EXEC_CONTINUE:
+                sys.exit(retcode)
         #
         runuser = self.get_User(conf)
         rungroup = self.get_Group(conf)
@@ -3664,7 +3664,8 @@ class Systemctl:
         if badpath:
             cmdline44 = o44(shell_cmd(cmd))
             error_("({cmdline44}): bad workingdir: {badpath}'".format(**locals()))
-            sys.exit(EXIT_CHDIR)
+            if not EXEC_CONTINUE:
+                sys.exit(EXIT_CHDIR)
         env = self.extend_exec_env(env)
         env.update(envs) # set $HOME to ~$USER
         try:
