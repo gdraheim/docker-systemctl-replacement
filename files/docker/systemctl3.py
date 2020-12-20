@@ -2781,11 +2781,11 @@ class Systemctl:
             try: 
                dbg_("chdir workingdir '{into}'".format(**locals()))
                os.chdir(into)
-               return False
+               return None
             except Exception as e:
                if not ignore:
                    error_("chdir workingdir '{into}': {e}".format(**locals()))
-                   return into
+                   return "{into} : {e}".format(**locals())
                else:
                    dbg_("chdir workingdir '{into}': {e}".format(**locals()))
                    return None
@@ -2996,7 +2996,7 @@ class Systemctl:
                 env["MAINPID"] = strE(self.read_mainpid_from(conf))
             for cmd in conf.getlist("Service", "ExecStartPre", []):
                 exe, newcmd = self.exec_newcmd(cmd, env, conf)
-                logg.info(" pre-start %s", shell_cmd(newcmd))
+                info_(" pre-start", shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid: 
                     self.execve_from(conf, newcmd, env) # pragma: no cover
@@ -3017,7 +3017,7 @@ class Systemctl:
                 return True
             for cmd in conf.getlist("Service", "ExecStart", []):
                 exe, newcmd = self.exec_newcmd(cmd, env, conf)
-                logg.info("%s start %s", runs, shell_cmd(newcmd))
+                info_("{runs} start".format(**locals()), shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid: # pragma: no cover
                     os.setsid() # detach child process from parent
@@ -3052,7 +3052,7 @@ class Systemctl:
                 pid = self.read_mainpid_from(conf)
                 env["MAINPID"] = strE(pid)
                 exe, newcmd = self.exec_newcmd(cmd, env, conf)
-                logg.info("%s start %s", runs, shell_cmd(newcmd))
+                info_("{runs} start".format(**locals()), shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid: # pragma: no cover
                     os.setsid() # detach child process from parent
@@ -3083,7 +3083,8 @@ class Systemctl:
             notify = self.notify_socket_from(conf)
             if notify:
                 env["NOTIFY_SOCKET"] = notify.socketfile
-                logg.debug("use NOTIFY_SOCKET=%s", notify.socketfile)
+                socketfile44 = path44(notify.socketfile)
+                debug_("use NOTIFY_SOCKET={socketfile44}".format(**locals()))
             if doRemainAfterExit:
                 dbg_("{runs} RemainAfterExit -> AS=active".format(**locals()))
                 self.write_status_from(conf, AS="active")
@@ -3095,7 +3096,7 @@ class Systemctl:
                 mainpid = self.read_mainpid_from(conf)
                 env["MAINPID"] = strE(mainpid)
                 exe, newcmd = self.exec_newcmd(cmd, env, conf)
-                logg.info("%s start %s", runs, shell_cmd(newcmd))
+                info_("{runs} start".format(**locals()), shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid: # pragma: no cover
                     os.setsid() # detach child process from parent
@@ -3137,7 +3138,7 @@ class Systemctl:
             for cmd in conf.getlist("Service", "ExecStart", []):
                 exe, newcmd = self.exec_newcmd(cmd, env, conf)
                 if not newcmd: continue
-                logg.info("%s start %s", runs, shell_cmd(newcmd))
+                info_("{runs} start".format(**locals()), shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid: # pragma: no cover
                     os.setsid() # detach child process from parent
@@ -3173,7 +3174,7 @@ class Systemctl:
             env["SERVICE_RESULT"] = service_result
             for cmd in conf.getlist("Service", "ExecStopPost", []):
                 exe, newcmd = self.exec_newcmd(cmd, env, conf)
-                logg.info("post-fail %s", shell_cmd(newcmd))
+                info_("post-fail", shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
                     self.execve_from(conf, newcmd, env) # pragma: no cover
@@ -3186,7 +3187,7 @@ class Systemctl:
         else:
             for cmd in conf.getlist("Service", "ExecStartPost", []):
                 exe, newcmd = self.exec_newcmd(cmd, env, conf)
-                logg.info("post-start %s", shell_cmd(newcmd))
+                info_("post-start", shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
                     self.execve_from(conf, newcmd, env) # pragma: no cover
@@ -3300,7 +3301,7 @@ class Systemctl:
         if True:
             for cmd in conf.getlist("Socket", "ExecStartPre", []):
                 exe, newcmd = self.exec_newcmd(cmd, env, conf)
-                logg.info(" pre-start %s", shell_cmd(newcmd))
+                info_(" pre-start", shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid: 
                     self.execve_from(conf, newcmd, env) # pragma: no cover
@@ -3340,7 +3341,7 @@ class Systemctl:
             env["SERVICE_RESULT"] = service_result
             for cmd in conf.getlist("Socket", "ExecStopPost", []):
                 exe, newcmd = self.exec_newcmd(cmd, env, conf)
-                logg.info("post-fail %s", shell_cmd(newcmd))
+                info_("post-fail", shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
                     self.execve_from(conf, newcmd, env) # pragma: no cover
@@ -3351,7 +3352,7 @@ class Systemctl:
         else:
             for cmd in conf.getlist("Socket", "ExecStartPost", []):
                 exe, newcmd = self.exec_newcmd(cmd, env, conf)
-                logg.info("post-start %s", shell_cmd(newcmd))
+                info_("post-start", shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
                     self.execve_from(conf, newcmd, env) # pragma: no cover
@@ -3601,7 +3602,8 @@ class Systemctl:
         envs = shutil_setuid(runuser, rungroup, xgroups)
         badpath = self.chdir_workingdir(conf) # some dirs need setuid before
         if badpath:
-            logg.error("(%s): bad workingdir: '%s'", shell_cmd(cmd), badpath)
+            cmdline44 = o44(shell_cmd(cmd))
+            error_("({cmdline44}): bad workingdir: {badpath}'".format(**locals()))
             sys.exit(1)
         env = self.extend_exec_env(env)
         env.update(envs) # set $HOME to ~$USER
@@ -3614,7 +3616,8 @@ class Systemctl:
                 os.execve(cmd[0], cmd, env)
                 sys.exit(11) # pragma: no cover (can not be reached / bug like mypy#8401)
         except Exception as e:
-            logg.error("(%s): %s", shell_cmd(cmd), e)
+            cmdline44 = o44(shell_cmd(cmd))
+            error_("({cmdline44}): {e}".format(**locals()))
             sys.exit(1)
     def test_start_unit(self, unit):
         """ helper function to test the code that is normally forked off """
@@ -3699,7 +3702,7 @@ class Systemctl:
                 return True
             for cmd in conf.getlist("Service", "ExecStop", []):
                 exe, newcmd = self.exec_newcmd(cmd, env, conf)
-                logg.info("%s stop %s", runs, shell_cmd(newcmd))
+                info_("{runs} stop".format(**locals()), shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
                     self.execve_from(conf, newcmd, env) # pragma: no cover
@@ -3729,7 +3732,7 @@ class Systemctl:
             for cmd in conf.getlist("Service", "ExecStop", []):
                 env["MAINPID"] = strE(self.read_mainpid_from(conf))
                 exe, newcmd = self.exec_newcmd(cmd, env, conf)
-                logg.info("%s stop %s", runs, shell_cmd(newcmd))
+                info_("{runs} stop".format(**locals()), shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
                     self.execve_from(conf, newcmd, env) # pragma: no cover
@@ -3762,7 +3765,7 @@ class Systemctl:
                     if new_pid:
                         env["MAINPID"] = strE(new_pid)
                 exe, newcmd = self.exec_newcmd(cmd, env, conf)
-                logg.info("fork stop %s", shell_cmd(newcmd))
+                info_("fork stop", shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
                     self.execve_from(conf, newcmd, env) # pragma: no cover
@@ -3795,7 +3798,7 @@ class Systemctl:
             env["SERVICE_RESULT"] = service_result
             for cmd in conf.getlist("Service", "ExecStopPost", []):
                 exe, newcmd = self.exec_newcmd(cmd, env, conf)
-                logg.info("post-stop %s", shell_cmd(newcmd))
+                info_("post-stop", shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
                     self.execve_from(conf, newcmd, env) # pragma: no cover
@@ -3833,7 +3836,7 @@ class Systemctl:
             env["SERVICE_RESULT"] = service_result
             for cmd in conf.getlist("Socket", "ExecStopPost", []):
                 exe, newcmd = self.exec_newcmd(cmd, env, conf)
-                logg.info("post-stop %s", shell_cmd(newcmd))
+                info_("post-stop", shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
                     self.execve_from(conf, newcmd, env) # pragma: no cover
@@ -3922,7 +3925,7 @@ class Systemctl:
             if initscript:
                 newcmd = [initscript, "reload"]
                 env["SYSTEMCTL_SKIP_REDIRECT"] = "yes"
-                logg.info("%s reload %s", runs, shell_cmd(newcmd))
+                info_("{runs} reload".format(**locals()), shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
                     self.execve_from(conf, newcmd, env) # pragma: nocover
@@ -3944,7 +3947,7 @@ class Systemctl:
             for cmd in conf.getlist("Service", "ExecReload", []):
                 env["MAINPID"] = strE(self.read_mainpid_from(conf))
                 exe, newcmd = self.exec_newcmd(cmd, env, conf)
-                logg.info("%s reload %s", runs, shell_cmd(newcmd))
+                info_("{runs} reload".format(**locals()), shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
                     self.execve_from(conf, newcmd, env) # pragma: no cover
