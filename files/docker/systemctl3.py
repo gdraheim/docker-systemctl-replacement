@@ -3567,6 +3567,9 @@ class Systemctl:
         std_inp = conf.get("Service", "StandardInput", DefaultStandardInput)
         std_out = conf.get("Service", "StandardOutput", DefaultStandardOutput)
         std_err = conf.get("Service", "StandardError", DefaultStandardError)
+        # msg += "\n StandardInp {std_inp}".format(**locals())
+        # msg += "\n StandardOut {std_out}".format(**locals())
+        # msg += "\n StandardErr {std_err}".format(**locals())
         inp, out, err = None, None, None
         try:
             if std_inp in ["null"]:
@@ -3580,7 +3583,7 @@ class Systemctl:
             else:
                 inp = open(_dev_zero, "r")
         except Exception as e:
-            msg += "\n{fname}: {e}".format(**locals())
+            msg += "\n {fname}: {e}".format(**locals())
             ret = EXIT_STDIN
             return ret, msg
         assert inp is not None
@@ -3592,6 +3595,8 @@ class Systemctl:
                 fdir = os.path.dirname(fname)
                 if not os.path.exists(fdir):
                     os.makedirs(fdir)
+                if os.path.isdir(fname):
+                    os.rmdir(fname)
                 out = open(fname, "w")
             elif std_out.startswith("append:"):
                 fname = std_out[len("append:"):]
@@ -3600,7 +3605,7 @@ class Systemctl:
                     os.makedirs(fdir)
                 out = open(fname, "a")
         except Exception as e:
-            msg += "\n{fname}: {e}".format(**locals())
+            msg += "\n {fname}: {e}".format(**locals())
             ret = EXIT_STDOUT
         if out is None:
             out = self.open_journal_log(conf)
@@ -3616,6 +3621,8 @@ class Systemctl:
                 fdir = os.path.dirname(fname)
                 if not os.path.exists(fdir):
                     os.makedirs(fdir)
+                if os.path.isdir(fname):
+                    os.rmdir(fname)
                 err = open(fname, "w")
             elif std_err.startswith("append:"):
                 fname = std_err[len("append:"):]
@@ -3624,7 +3631,7 @@ class Systemctl:
                     os.makedirs(fdir)
                 err = open(fname, "a")
         except Exception as e:
-            msg += "\n{fname}: {e}".format(**locals())
+            msg += "\n {fname}: {e}".format(**locals())
             ret = EXIT_STDERR
         if err is None:
             err = self.open_journal_log(conf)
@@ -3645,8 +3652,8 @@ class Systemctl:
         # dbg_("{runs} process for {nameE} => {filename44}".format(**locals())) # internal
         retcode, msg = self.dup2_journal_log(conf)
         if retcode:
-            cmdline44 = o44(shell_cmd(cmd))
-            error_("({cmdline44}): bad logs ({retcode}): {msg}".format(**locals()))
+            cmdline44, retcode44 = o44(shell_cmd(cmd)), exitCODE(retcode)
+            error_("({cmdline44}): bad logs ({retcode44}): {msg}".format(**locals()))
             sys.exit(retcode)
         #
         runuser = self.get_User(conf)
@@ -5553,7 +5560,7 @@ class Systemctl:
         return self.show_units(units) + notfound # and found_all
     def show_units(self, units):
         unit_property = self._unit_property
-        dbg_("show --property={property}".format(**locals()))
+        dbg_("show --property={unit_property}".format(**locals()))
         result = []
         for unit in units:
             if result: result += [ "" ]
@@ -6109,7 +6116,7 @@ class Systemctl:
                     restartSleep = int(restartSec + 0.2)
                     if restartSleep < InitLoopSleep:
                         oldSleep = InitLoopSleep
-                        warn_("[{me}] [{unit}] set InitLoopSleep from {oldSleep}s to {restartSleep}s (caused by RestartSec={restartSec:.3f}s)".format(**locals()))
+                        warn_("[{me}] [{unit}] set InitLoopSleep from {oldSleep}s to {restartSleep} (caused by RestartSec={restartSec:.3f}s)".format(**locals()))
                         InitLoopSleep = restartSleep
                 isUnitState = self.get_active_from(conf)
                 isUnitFailed = isUnitState in ["failed"]
