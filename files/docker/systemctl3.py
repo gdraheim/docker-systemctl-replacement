@@ -1073,7 +1073,7 @@ class waitlock:
                         os.close(self.opened)
                         self.opened = os.open(lockfile, os.O_RDWR | os.O_CREAT, 0o600)
                         continue
-                    content = "{ 'systemctl': {mypid}, 'lock': '{lockname}' }\n".format(**locals())
+                    content = "{{ 'systemctl': {me}, 'lock': '{lockname}' }}\n".format(**locals())
                     os.write(self.opened, content.encode("utf-8"))
                     dbg_flock_("[{me}] {attempt}. holding lock on {lockname}".format(**locals()))
                     return True
