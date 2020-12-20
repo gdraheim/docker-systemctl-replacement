@@ -20410,8 +20410,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += " -c EXEC_CONTINUE=True" # use fallback to journal
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True -c EXEC_CONTINUE=True"
+            initsystemctl += " -c EXEC_SPAWN=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -20525,8 +20526,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += " -c EXEC_CONTINUE=True" # use fallback to journal
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True -c EXEC_CONTINUE=True"
+            initsystemctl += " -c EXEC_SPAWN=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -20644,8 +20646,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += " -c EXEC_CONTINUE=True" # use fallback to journal
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True -c EXEC_CONTINUE"
+            initsystemctl += " -c EXEC_SPAWN=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
