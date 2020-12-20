@@ -1292,7 +1292,8 @@ def conf_sortedAfter(conflist, cmp = compareAfter):
         for item in sortlist:
             rank, name = item.rank, item.conf.name()
             dbg_("({rank}) {name}".format(**locals()))
-        sortedlist = sorted(sortlist, key = lambda item: -item.rank)
+    sortedlist = sorted(sortlist, key = lambda item: -item.rank)
+    if DEBUG_AFTER:
         for item in sortedlist:
             rank, name = item.rank, item.conf.name()
             dbg_("[{rank}] {name}".format(**locals()))
