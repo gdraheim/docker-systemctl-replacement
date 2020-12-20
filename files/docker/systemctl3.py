@@ -6770,7 +6770,7 @@ if __name__ == "__main__":
     if opt.system:
         _user_mode = False # override --user
     #
-    config_globals(opt.configs)
+    config_globals(opt.config)
     #
     systemctl_debug_log = os_path(_root, expand_path(SYSTEMCTL_DEBUG_LOG, not _user_mode))
     systemctl_extra_log = os_path(_root, expand_path(SYSTEMCTL_EXTRA_LOG, not _user_mode))
