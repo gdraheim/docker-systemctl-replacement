@@ -1926,10 +1926,10 @@ class Systemctl:
                 continue
             return pid
         return None
-    def test_pid_file(self, unit): # -> text
-        """ support for the testsuite.py """
+    def get_pid_file_path(self, unit):
+        """ actual file path of pid file (internal) """
         conf = self.get_unit_conf(unit)
-        return self.pid_file_from(conf) or self.get_status_file_from(conf)
+        return self.pid_file_from(conf)
     def pid_file_from(self, conf, default = ""):
         """ get the specified pid file path (not a computed default) """
         pid_file = self.get_pid_file(conf) or default
@@ -1954,7 +1954,8 @@ class Systemctl:
             except OSError as e:
                 warn_("while rm {pid_file}: {e}".format(**locals()))
         self.write_status_from(conf, MainPID=None)
-    def get_status_file(self, unit): # for testing
+    def get_status_file_path(self, unit):
+        """ actual file path of the status file (internal) """
         conf = self.get_unit_conf(unit)
         return self.get_status_file_from(conf)
     def get_status_file_from(self, conf, default = None):
@@ -6950,18 +6951,52 @@ if __name__ == "__main__":
         exitcode = is_not_ok(systemctl.try_restart_modules(*modules))
     elif command in ["unmask"]:
         exitcode = is_not_ok(systemctl.unmask_modules(*modules))
-    elif command in ["__killall"]:
-        exitcode = is_not_ok(systemctl.killall(*modules))
+    elif command in ["__cat_unit"]:
+        print_str(systemctl.cat_unit(*modules))
+    elif command in ["__get_active_unit"]:
+        print_str(systemctl.get_active_unit(*modules))
     elif command in ["__get_description"]:
         print_str(systemctl.get_description(*modules))
     elif command in ["__get_status_file"]:
-        print_str(systemctl.get_status_file(*modules))
-    elif command in ["__test_pid_file"]:
-        print_str(systemctl.test_pid_file(*modules))
-    elif command in ["__read_env_file"]:
-        print_str_list_list(list(systemctl.read_env_file(*modules)))
+        print_str(systemctl.get_status_file_path(*modules))
+    elif command in ["__get_pid_file"]:
+        print_str(systemctl.get_pid_file_path(*modules))
+    elif command in ["__disable_unit"]:
+        exitcode = is_not_ok(systemctl.disable_unit(*modules))
+    elif command in ["__enable_unit"]:
+        exitcode = is_not_ok(systemctl.enable_unit(*modules))
+    elif command in ["__is_enabled"]:
+        exitcode = is_not_ok(systemctl.is_enabled(*modules))
+    elif command in ["__killall"]:
+        exitcode = is_not_ok(systemctl.killall(*modules))
+    elif command in ["__kill_unit"]:
+        exitcode = is_not_ok(systemctl.kill_unit(*modules))
     elif command in ["__load_preset_files"]:
         print_str_list(systemctl.load_preset_files(*modules))
+    elif command in ["__make_unit"]:
+        exitcode = is_not_ok(systemctl.mask_unit(*modules))
+    elif command in ["__read_env_file"]:
+        print_str_list_list(list(systemctl.read_env_file(*modules)))
+    elif command in ["__reload_unit"]:
+        exitcode = is_not_ok(systemctl.reload_unit(*modules))
+    elif command in ["__reload_or_restart_unit"]:
+        exitcode = is_not_ok(systemctl.reload_or_restart_unit(*modules))
+    elif command in ["__reload_or_try_restart_unit"]:
+        exitcode = is_not_ok(systemctl.reload_or_try_restart_unit(*modules))
+    elif command in ["__reset_failed_unit"]:
+        exitcode = is_not_ok(systemctl.reset_failed_unit(*modules))
+    elif command in ["__restart_unit"]:
+        exitcode = is_not_ok(systemctl.restart_unit(*modules))
+    elif command in ["__start_unit"]:
+        exitcode = is_not_ok(systemctl.start_unit(*modules))
+    elif command in ["__stop_unit"]:
+        exitcode = is_not_ok(systemctl.stop_unit(*modules))
+    elif command in ["__try_restart_unit"]:
+        exitcode = is_not_ok(systemctl.try_restart_unit(*modules))
+    elif command in ["__unmask_unit"]:
+        exitcode = is_not_ok(systemctl.unmask_unit(*modules))
+    elif command in ["__show_unit_items"]:
+        print_str_list_list(list(systemctl.show_unit_items(*modules)))
     else:
         error_("Unknown operation "+command)
         sys.exit(EXIT_FAILURE)
