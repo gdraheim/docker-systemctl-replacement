@@ -1026,10 +1026,8 @@ class SystemctlConf:
         name = self.name() + ".status"
         return os.path.join(folder, name)
     def clean_status(self):
-        status_file = self.status_file()
-        if os.path.exists(status_file):
-            os.remove(status_file)
         self.status = {}
+        # this will ftruncate on next end of waitlock
     def write_status(self, **status): # -> bool(written)
         """ if a status_file is known then path is created and the
             give status is written as the only content. """
@@ -1079,8 +1077,10 @@ class SystemctlConf:
             if DEBUG_STATUS: # pragma: no cover
                 dbg_("reading {status_file}".format(**locals()))
             for line0 in open(status_file):
+                if line0.startswith("#"):
+                    continue
                 line = line0.rstrip()
-                if line: 
+                if line:
                     m = re.match(r"(\w+)[:=](.*)", line)
                     if m:
                         key, value = m.group(1), m.group(2)
@@ -1272,23 +1272,16 @@ class waitlock:
     def __init__(self, conf):
         self.conf = conf # currently unused
         self.opened = -1
-        self.lockfolder = expand_path(_notify_socket_folder, conf.root_mode())
-        try:
-            folder = self.lockfolder
-            if not os.path.isdir(folder):
-                os.makedirs(folder)
-        except Exception as e:
-            warn_("oops, {e}".format(**locals()))
     def lockfile(self):
-        unit = ""
-        if self.conf:
-            unit = self.conf.name()
-        return os.path.join(self.lockfolder, str(unit or "global") + ".lock")
+        return self.conf.status_file()
     def __enter__(self):
         me = os.getpid()
         try:
             lockfile = self.lockfile()
             lockname = os.path.basename(lockfile)
+            basedir = os.path.dirname(lockfile)
+            if not os.path.isdir(basedir):
+                os.makedirs(basedir)
             self.opened = os.open(lockfile, os.O_RDWR | os.O_CREAT, 0o600)
             for attempt in xrange(int(MaxLockWait or DefaultMaximumTimeout)):
                 try:
@@ -1300,13 +1293,18 @@ class waitlock:
                         os.close(self.opened)
                         self.opened = os.open(lockfile, os.O_RDWR | os.O_CREAT, 0o600)
                         continue
-                    content = "{{ 'systemctl': {me}, 'lock': '{lockname}' }}\n".format(**locals())
-                    os.write(self.opened, content.encode("utf-8"))
+                    os.lseek(self.opened, 0, os.SEEK_END)
+                    content = "#lock={me}\n".format(**locals())
+                    os.write(self.opened, content.encode("ascii"))
                     dbg_flock_("[{me}] {attempt}. holding lock on {lockname}".format(**locals()))
                     return True
                 except IOError as e:
-                    whom = os.read(self.opened, 4096).rstrip()
+                    whom = "<n/a>"
+                    status = os.read(self.opened, 4096)
                     os.lseek(self.opened, 0, os.SEEK_SET)
+                    for state in status.splitlines():
+                        if state.startswith(b"#lock="):
+                            whom=state[len(b"#lock="):].decode("ascii")
                     info_("[{me}] {attempt}. systemctl locked by {whom}".format(**locals()))
                     time.sleep(1) # until MaxLockWait
                     continue
@@ -1320,12 +1318,13 @@ class waitlock:
         me = os.getpid()
         try:
             os.lseek(self.opened, 0, os.SEEK_SET)
-            os.ftruncate(self.opened, 0)
-            if REMOVE_LOCK_FILE: # an optional implementation
-                lockfile = self.lockfile()
-                lockname = os.path.basename(lockfile)
-                os.unlink(lockfile) # ino is kept allocated because opened by this process
-                dbg_("[{me}] lockfile removed for {lockname}".format(**locals()))
+            if not self.conf.status:
+                os.ftruncate(self.opened, 0)
+                if REMOVE_LOCK_FILE: # an optional implementation
+                    lockfile = self.lockfile()
+                    lockname = os.path.basename(lockfile)
+                    os.unlink(lockfile) # ino is kept allocated because opened by this process
+                    dbg_("[{me}] lockfile removed for {lockname}".format(**locals()))
             fcntl.flock(self.opened, fcntl.LOCK_UN)
             os.close(self.opened) # implies an unlock but that has happend like 6 seconds later
             self.opened = -1
@@ -2149,10 +2148,10 @@ class Systemctl:
                 continue
             return pid
         return None
-    def get_pid_file_path(self, unit):
+    def get_status_pid_file(self, unit):
         """ actual file path of pid file (internal) """
         conf = self.get_unit_conf(unit)
-        return self.pid_file_from(conf)
+        return self.pid_file_from(conf) or conf.status_file()
     def pid_file_from(self, conf, default = ""):
         """ get the specified pid file path (not a computed default) """
         pid_file = self.get_pid_file(conf) or default
@@ -4576,14 +4575,9 @@ class Systemctl:
         if conf is None: return True
         if not self.is_failed_from(conf): return False
         done = False
-        status_file = self.get_status_file_from(conf)
-        if status_file and os.path.exists(status_file):
-            try:
-                os.remove(status_file)
-                done = True
-                dbg_("done rm {status_file}".format(**locals()))
-            except Exception as e:
-                error_("while rm {status_file}: {e}".format(**locals()))
+        with waitlock(conf):
+            return self.do_reset_failed_from(conf)
+    def do_reset_failed_from(self, conf):
         pid_file = self.pid_file_from(conf)
         if pid_file and os.path.exists(pid_file):
             try:
@@ -4592,6 +4586,8 @@ class Systemctl:
                 dbg_("done rm {pid_file}".format(**locals()))
             except Exception as e:
                 error_("while rm {pid_file}: {e}".format(**locals()))
+        conf.clean_status()
+        # this will truncate/remove the status file on end of waitlock
         return done
     def status_modules(self, *modules):
         """ [UNIT]... check the status of these units.
@@ -4717,7 +4713,7 @@ class Systemctl:
             found = len(self._preset_file_list)
             debug_("found {found} preset files".format(**locals()))
         return sorted(self._preset_file_list.keys())
-    def get_preset_of_unit(self, unit):
+    def get_preset_of_unit(self, unit, default = None):
         """ [UNIT] check the *.preset of this unit (experimental)
         """
         self.load_preset_files()
@@ -4729,7 +4725,7 @@ class Systemctl:
                 return status
         logg.info("Unit {unit} not found in preset files (defaults to disable)".format(**locals()))
         self.error |= NOT_FOUND
-        return "disable"
+        return default
     def preset_modules(self, *modules):
         """ [UNIT]... -- set 'enabled' when in *.preset
         """
@@ -6614,7 +6610,7 @@ class Systemctl:
         features2 = " +SYSVINIT -UTMP -LIBCRYPTSETUP -GCRYPT -GNUTLS"
         features3 = " -ACL -XZ -LZ4 -SECCOMP -BLKID -ELFUTILS -KMOD -IDN"
         return features1+features2+features3
-    def systems_version(self):
+    def version_info(self):
         return [ self.systemd_version(), self.systemd_features() ]
 
 def print_begin(argv, args):
@@ -6811,6 +6807,8 @@ def run(command, *modules):
         exitcode = is_not_ok(systemctl.try_restart_modules(*modules))
     elif command in ["unmask"]:
         exitcode = is_not_ok(systemctl.unmask_modules(*modules))
+    elif command in ["version"]:
+        print_str_list(systemctl.version_info())
     elif command in ["__cat_unit"]:
         print_str(systemctl.cat_unit(*modules))
     elif command in ["__get_active_unit"]:
@@ -6819,8 +6817,8 @@ def run(command, *modules):
         print_str(systemctl.get_description(*modules))
     elif command in ["__get_status_file"]:
         print_str(systemctl.get_status_file_path(*modules))
-    elif command in ["__get_pid_file"]:
-        print_str(systemctl.get_pid_file_path(*modules))
+    elif command in ["__get_status_pid_file", "__get_pid_file"]:
+        print_str(systemctl.get_status_pid_file(*modules))
     elif command in ["__disable_unit"]:
         exitcode = is_not_ok(systemctl.disable_unit(*modules))
     elif command in ["__enable_unit"]:
