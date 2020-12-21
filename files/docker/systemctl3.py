@@ -1030,11 +1030,13 @@ class PresetFile:
         for line in open(filename):
             self._lines.append(line.strip())
         return self
-    def get_preset(self, unit):
+    def get_preset(self, unit, nodefault = False):
         for line in self._lines:
             m = re.match(r"(enable|disable)\s+(\S+)", line)
             if m:
                 status, pattern = m.group(1), m.group(2)
+                if pattern.startswith("*") and nodefault:
+                    continue
                 if fnmatch.fnmatchcase(unit, pattern):
                     filename44 = path44(self.filename())
                     dbg_("{status} {pattern} => {unit} {filename44}".format(**locals()))
@@ -4710,10 +4712,12 @@ class Systemctl:
         assert self._preset_file_list is not None
         for filename in sorted(self._preset_file_list.keys()):
             preset = self._preset_file_list[filename]
-            status = preset.get_preset(unit)
+            status = preset.get_preset(unit, nodefault = True)
             if status:
                 return status
-        return None
+        logg.info("Unit {unit} not found in preset files (defaults to disable)".format(**locals()))
+        self.error |= NOT_FOUND
+        return "disable"
     def preset_modules(self, *modules):
         """ [UNIT]... -- set 'enabled' when in *.preset
         """
