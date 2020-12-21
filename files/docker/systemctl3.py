@@ -2227,7 +2227,8 @@ class Systemctl:
         except Exception as e:
             info_("while reading {env_part}: {e}".format(**locals()))
     def environmentfile_of_unit(self, unit):
-        """ [UNIT]. -- show environment parts """
+        """ [UNIT]. -- show EnvironmentFile settings (experimental)
+            or use -p VarName to show another property."""
         conf = self.load_unit_conf(unit)
         if conf is None:
             error_("Unit {unit} could not be found.".format(**locals()))
@@ -5177,6 +5178,9 @@ class Systemctl:
             return True
 
     def list_start_dependencies_modules(self, *modules):
+        """ [UNIT]... show the dependency tree (experimental)"
+        """
+        # for future usage
         found_all = True
         units = []
         for module in modules:
@@ -5671,7 +5675,7 @@ class Systemctl:
                 return True # ignore
         return False
     def default_services_modules(self, *modules):
-        """ show the default services 
+        """ -- show the default services (started by 'default')
             This is used internally to know the list of service to be started in the 'get-default'
             target runlevel when the container is started through default initialisation. It will
             ignore a number of services - use '--all' to show a longer list of services and
@@ -5883,7 +5887,7 @@ class Systemctl:
         dbg_("the {module} requires {targets}".format(**locals()))
         return targets
     def system_default(self, arg = True):
-        """ start units for default system level
+        """ -- start units for default system level
             This will go through the enabled services in the default 'multi-user.target'.
             However some services are ignored as being known to be installation garbage
             from unintended services. Use '--all' so start all of the installed services
@@ -5947,7 +5951,7 @@ class Systemctl:
         units = [service for service in services if self.is_running_unit(service)]
         return self.reload_units(units)
     def system_halt(self, arg = True):
-        """ stop units from default system level """
+        """ -- stop units from default system level """
         info_("system halt requested - {arg}".format(**locals()))
         done = self.stop_system_default()
         try: 
@@ -6308,7 +6312,7 @@ class Systemctl:
         dbg_("done - init loop")
         return result
     def system_reap_zombies(self):
-        """ check to reap children """
+        """ -- check to reap children (internal) """
         running = self.reap_zombies()
         return "remaining {running} process".format(**locals())
     def reap_zombies(self):
@@ -6539,6 +6543,9 @@ class Systemctl:
             doc_text = firstline.strip()
             if "--" not in firstline:
                 doc_text = "-- " + doc_text
+            if "(internal)" in firstline or "(experimental)" in firstline:
+                if not self._show_all:
+                    continue
             lines.append(" %s %s" % (arg, firstline.strip()))
         return lines
     def help_modules(self, *args):
@@ -6864,11 +6871,10 @@ if __name__ == "__main__":
         exitcode = is_not_ok(systemctl.disable_modules(*modules))
     elif command in ["enable"]:
         exitcode = is_not_ok(systemctl.enable_modules(*modules))
+    elif command in ["environmentfile"]:
+        print_str_list(systemctl.environmentfile_of_unit(*modules))
     elif command in ["environment"]:
-        if _unit_property:
-            print_str_list(systemctl.environmentfile_of_unit(*modules))
-        else:
-            print_str_dict(systemctl.environment_of_unit(*modules))
+        print_str_dict(systemctl.environment_of_unit(*modules))
     elif command in ["get-default"]:
         print_str(systemctl.system_get_default())
     elif command in ["get-preset"]:
@@ -6885,6 +6891,8 @@ if __name__ == "__main__":
         print_str_list(systemctl.is_failed_modules(*modules))
     elif command in ["kill"]:
         exitcode = is_not_ok(systemctl.kill_modules(*modules))
+    elif command in ["list-start-dependencies"]:
+        print_str_list_list(systemctl.list_start_dependencies_modules(*modules))
     elif command in ["list-dependencies"]:
         if systemctl._now:
             print_str_list_list(systemctl.list_start_dependencies_modules(*modules))
