@@ -3013,7 +3013,7 @@ class Systemctl:
         return conf.getbool("Service", "RemainAfterExit", "no")
     def start_unit_from(self, conf):
         if not conf: return False
-        if self.syntax_check(conf) > 100: return False
+        if self.syntax_check_from(conf) > 100: return False
         with waitlock(conf):
             unit, filename44 = conf.name(), path44(conf.filename())
             dbg_(" start unit {unit} => {filename44}".format(**locals()))
@@ -3739,7 +3739,7 @@ class Systemctl:
         return time_to_seconds(timeout, DefaultMaximumTimeout)
     def stop_unit_from(self, conf):
         if not conf: return False
-        if self.syntax_check(conf) > 100: return False
+        if self.syntax_check_from(conf) > 100: return False
         with waitlock(conf):
             unit, filename44 = conf.name(), path44(conf.filename())
             info_(" stop unit {unit} => {filename44}".format(**locals()))
@@ -3962,7 +3962,7 @@ class Systemctl:
         return self.reload_unit_from(conf)
     def reload_unit_from(self, conf):
         if not conf: return False
-        if self.syntax_check(conf) > 100: return False
+        if self.syntax_check_from(conf) > 100: return False
         with waitlock(conf):
             unit, filename44 = conf.name(), path44(conf.filename())
             info_(" reload unit {unit} => {filename44}".format(**locals()))
@@ -4070,7 +4070,7 @@ class Systemctl:
         return self.restart_unit_from(conf)
     def restart_unit_from(self, conf):
         if not conf: return False
-        if self.syntax_check(conf) > 100: return False
+        if self.syntax_check_from(conf) > 100: return False
         with waitlock(conf):
             unit, filename44 = conf.name(), path44(conf.filename())
             if unit.endswith(".service"):
@@ -5384,12 +5384,12 @@ class Systemctl:
                 filename44 = path44(conf.filename())
                 error_("{unit}: can not read unit file {filename44}\n\t{e}".format(**locals()))
                 continue
-            errors += self.syntax_check(conf)
+            errors += self.syntax_check_from(conf)
         if errors:
             problems = errors % 100
             warn_(" ({errors}) found {problems} problems".format(**locals()))
         return True # errors
-    def syntax_check(self, conf):
+    def syntax_check_from(self, conf):
         filename = conf.filename()
         if filename and filename.endswith(".service"):
             return self.syntax_check_unit(conf, "Service")
