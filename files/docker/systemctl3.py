@@ -4755,7 +4755,7 @@ class Systemctl:
                     warn_("failed to disable {unit}".format(**locals()))
                     fails += 1
         return not fails and not not found
-    def system_preset_all(self, *modules):
+    def preset_all_modules(self, *modules):
         """ 'preset' all services
         enable or disable services according to *.preset files
         """
@@ -6911,7 +6911,7 @@ if __name__ == "__main__":
     elif command in ["preset"]:
         exitcode = is_not_ok(systemctl.preset_modules(*modules))
     elif command in ["preset-all"]:
-        exitcode = is_not_ok(systemctl.system_preset_all())
+        exitcode = is_not_ok(systemctl.preset_all_modules())
     elif command in ["reap-zombies"]:
         print_str(systemctl.system_reap_zombies())
     elif command in ["reload"]:
