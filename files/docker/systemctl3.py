@@ -4704,7 +4704,7 @@ class Systemctl:
             debug_("found {found} preset files".format(**locals()))
         return sorted(self._preset_file_list.keys())
     def get_preset_of_unit(self, unit):
-        """ [UNIT] check the *.preset of this unit
+        """ [UNIT] check the *.preset of this unit (experimental)
         """
         self.load_preset_files()
         assert self._preset_file_list is not None
@@ -6431,6 +6431,7 @@ class Systemctl:
         info_(" == echo == {line}".format(**locals()))
         return line
     def killall(self, *targets):
+        """ --- explicitly kill processes (internal) """
         proc = PROC_DIR
         mapping = {}
         mapping[":3"] = signal.SIGQUIT
@@ -6599,8 +6600,6 @@ class Systemctl:
         return features1+features2+features3
     def systems_version(self):
         return [ self.systemd_version(), self.systemd_features() ]
-    def test_float(self):
-        return 0. # "Unknown result type"
 
 def print_begin(argv, args):
     script = os.path.realpath(argv[0])
@@ -6947,6 +6946,18 @@ if __name__ == "__main__":
         exitcode = is_not_ok(systemctl.try_restart_modules(*modules))
     elif command in ["unmask"]:
         exitcode = is_not_ok(systemctl.unmask_modules(*modules))
+    elif command in ["__killall"]:
+        exitcode = is_not_ok(systemctl.killall(*modules))
+    elif command in ["__get_description"]:
+        print_str(systemctl.get_description(*modules))
+    elif command in ["__get_status_file"]:
+        print_str(systemctl.get_status_file(*modules))
+    elif command in ["__test_pid_file"]:
+        print_str(systemctl.test_pid_file(*modules))
+    elif command in ["__read_env_file"]:
+        print_str(systemctl.read_env_file(*modules))
+    elif command in ["__load_preset_files"]:
+        print_str(systemctl.load_preset_files(*modules))
     else:
         error_("Unknown operation "+command)
         sys.exit(EXIT_FAILURE)
