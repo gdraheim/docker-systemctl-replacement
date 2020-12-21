@@ -6907,10 +6907,7 @@ if __name__ == "__main__":
     elif command in ["list-start-dependencies"]:
         print_str_list_list(systemctl.list_start_dependencies_modules(*modules))
     elif command in ["list-dependencies"]:
-        if systemctl._now:
-            print_str_list_list(systemctl.list_start_dependencies_modules(*modules))
-        else:
-            print_str_list(systemctl.list_dependencies_modules(*modules))
+        print_str_list(systemctl.list_dependencies_modules(*modules))
     elif command in ["list-unit-files"]:
         print_str_list_list(systemctl.list_unit_files_modules(*modules))
     elif command in ["list-units"]:
