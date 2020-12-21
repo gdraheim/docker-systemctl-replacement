@@ -6716,6 +6716,143 @@ def config_globals(settings):
         else:
             warn_("(ignored) unknown target config -c '{nam}' : no such variable".format(**locals()))
 
+def run(command, *modules):
+    exitcode = 0
+    if command in ["help"]:
+        print_str_list(systemctl.help_modules(*modules))
+    elif command in ["cat"]:
+        print_str(systemctl.cat_modules(*modules))
+    elif command in ["clean"]:
+        exitcode = is_not_ok(systemctl.clean_modules(*modules))
+    elif command in ["command"]:
+        print_str_list(systemctl.command_of_unit(*modules))
+    elif command in ["daemon-reload"]:
+        exitcode = is_not_ok(systemctl.daemon_reload_target())
+    elif command in ["default"]:
+        exitcode = is_not_ok(systemctl.default_target())
+    elif command in ["default-services"]:
+        print_str_list(systemctl.default_services_modules(*modules))
+    elif command in ["disable"]:
+        exitcode = is_not_ok(systemctl.disable_modules(*modules))
+    elif command in ["enable"]:
+        exitcode = is_not_ok(systemctl.enable_modules(*modules))
+    elif command in ["environment"]:
+        print_str_dict(systemctl.environment_of_unit(*modules))
+    elif command in ["get-default"]:
+        print_str(systemctl.get_default_target())
+    elif command in ["get-preset"]:
+        print_str(systemctl.get_preset_of_unit(*modules))
+    elif command in ["halt"]:
+        exitcode = is_not_ok(systemctl.halt_target())
+    elif command in ["init"]:
+        exitcode = is_not_ok(systemctl.init_modules(*modules))
+    elif command in ["is-active"]:
+        print_str_list(systemctl.is_active_modules(*modules))
+    elif command in ["is-enabled"]:
+        print_str_list(systemctl.is_enabled_modules(*modules))
+    elif command in ["is-failed"]:
+        print_str_list(systemctl.is_failed_modules(*modules))
+    elif command in ["is-system-running"]:
+        print_str(systemctl.is_system_running_target())
+    elif command in ["kill"]:
+        exitcode = is_not_ok(systemctl.kill_modules(*modules))
+    elif command in ["list-start-dependencies"]:
+        print_str_list_list(systemctl.list_start_dependencies_modules(*modules))
+    elif command in ["list-dependencies"]:
+        print_str_list(systemctl.list_dependencies_modules(*modules))
+    elif command in ["list-unit-files"]:
+        print_str_list_list(systemctl.list_unit_files_modules(*modules))
+    elif command in ["list-units"]:
+        print_str_list_list(systemctl.list_units_modules(*modules))
+    elif command in ["listen"]:
+        exitcode = is_not_ok(systemctl.listen_modules(*modules))
+    elif command in ["log", "logs"]:
+        exitcode = is_not_ok(systemctl.log_modules(*modules))
+    elif command in ["mask"]:
+        exitcode = is_not_ok(systemctl.mask_modules(*modules))
+    elif command in ["preset"]:
+        exitcode = is_not_ok(systemctl.preset_modules(*modules))
+    elif command in ["preset-all"]:
+        exitcode = is_not_ok(systemctl.preset_all_modules())
+    elif command in ["reap-zombies"]:
+        print_str(systemctl.reap_zombies_target())
+    elif command in ["reload"]:
+        exitcode = is_not_ok(systemctl.reload_modules(*modules))
+    elif command in ["reload-or-restart"]:
+        exitcode = is_not_ok(systemctl.reload_or_restart_modules(*modules))
+    elif command in ["reload-or-try-restart"]:
+        exitcode = is_not_ok(systemctl.reload_or_try_restart_modules(*modules))
+    elif command in ["reset-failed"]:
+        exitcode = is_not_ok(systemctl.reset_failed_modules(*modules))
+    elif command in ["restart"]:
+        exitcode = is_not_ok(systemctl.restart_modules(*modules))
+    elif command in ["set-default"]:
+        print_str(systemctl.set_default_modules(*modules))
+    elif command in ["show"]:
+        print_str_list(systemctl.show_modules(*modules))
+    elif command in ["start"]:
+        exitcode = is_not_ok(systemctl.start_modules(*modules))
+    elif command in ["status"]:
+        print_str(systemctl.status_modules(*modules))
+    elif command in ["stop"]:
+        exitcode = is_not_ok(systemctl.stop_modules(*modules))
+    elif command in ["try-restart"]:
+        exitcode = is_not_ok(systemctl.try_restart_modules(*modules))
+    elif command in ["unmask"]:
+        exitcode = is_not_ok(systemctl.unmask_modules(*modules))
+    elif command in ["__cat_unit"]:
+        print_str(systemctl.cat_unit(*modules))
+    elif command in ["__get_active_unit"]:
+        print_str(systemctl.get_active_unit(*modules))
+    elif command in ["__get_description"]:
+        print_str(systemctl.get_description(*modules))
+    elif command in ["__get_status_file"]:
+        print_str(systemctl.get_status_file_path(*modules))
+    elif command in ["__get_pid_file"]:
+        print_str(systemctl.get_pid_file_path(*modules))
+    elif command in ["__disable_unit"]:
+        exitcode = is_not_ok(systemctl.disable_unit(*modules))
+    elif command in ["__enable_unit"]:
+        exitcode = is_not_ok(systemctl.enable_unit(*modules))
+    elif command in ["__is_enabled"]:
+        exitcode = is_not_ok(systemctl.is_enabled(*modules))
+    elif command in ["__killall"]:
+        exitcode = is_not_ok(systemctl.killall(*modules))
+    elif command in ["__kill_unit"]:
+        exitcode = is_not_ok(systemctl.kill_unit(*modules))
+    elif command in ["__load_preset_files"]:
+        print_str_list(systemctl.load_preset_files(*modules))
+    elif command in ["__make_unit"]:
+        exitcode = is_not_ok(systemctl.mask_unit(*modules))
+    elif command in ["__read_env_file"]:
+        print_str_list_list(list(systemctl.read_env_file(*modules)))
+    elif command in ["__reload_unit"]:
+        exitcode = is_not_ok(systemctl.reload_unit(*modules))
+    elif command in ["__reload_or_restart_unit"]:
+        exitcode = is_not_ok(systemctl.reload_or_restart_unit(*modules))
+    elif command in ["__reload_or_try_restart_unit"]:
+        exitcode = is_not_ok(systemctl.reload_or_try_restart_unit(*modules))
+    elif command in ["__reset_failed_unit"]:
+        exitcode = is_not_ok(systemctl.reset_failed_unit(*modules))
+    elif command in ["__restart_unit"]:
+        exitcode = is_not_ok(systemctl.restart_unit(*modules))
+    elif command in ["__start_unit"]:
+        exitcode = is_not_ok(systemctl.start_unit(*modules))
+    elif command in ["__stop_unit"]:
+        exitcode = is_not_ok(systemctl.stop_unit(*modules))
+    elif command in ["__try_restart_unit"]:
+        exitcode = is_not_ok(systemctl.try_restart_unit(*modules))
+    elif command in ["__unmask_unit"]:
+        exitcode = is_not_ok(systemctl.unmask_unit(*modules))
+    elif command in ["__show_unit_items"]:
+        print_str_list_list(list(systemctl.show_unit_items(*modules)))
+    else:
+        error_("Unknown operation "+command)
+        return EXIT_FAILURE
+    #
+    exitcode |= systemctl.error
+    return exitcode
+
 if __name__ == "__main__":
     import optparse
     _o = optparse.OptionParser("%prog [options] command [name...]", 
@@ -6865,138 +7002,4 @@ if __name__ == "__main__":
         systemctl.force_ipv4()
     elif opt.ipv6:
         systemctl.force_ipv6()
-    exitcode = 0
-    if command in ["help"]:
-        print_str_list(systemctl.help_modules(*modules))
-    elif command in ["cat"]:
-        print_str(systemctl.cat_modules(*modules))
-    elif command in ["clean"]:
-        exitcode = is_not_ok(systemctl.clean_modules(*modules))
-    elif command in ["command"]:
-        print_str_list(systemctl.command_of_unit(*modules))
-    elif command in ["daemon-reload"]:
-        exitcode = is_not_ok(systemctl.daemon_reload_target())
-    elif command in ["default"]:
-        exitcode = is_not_ok(systemctl.default_target())
-    elif command in ["default-services"]:
-        print_str_list(systemctl.default_services_modules(*modules))
-    elif command in ["disable"]:
-        exitcode = is_not_ok(systemctl.disable_modules(*modules))
-    elif command in ["enable"]:
-        exitcode = is_not_ok(systemctl.enable_modules(*modules))
-    elif command in ["environment"]:
-        print_str_dict(systemctl.environment_of_unit(*modules))
-    elif command in ["get-default"]:
-        print_str(systemctl.get_default_target())
-    elif command in ["get-preset"]:
-        print_str(systemctl.get_preset_of_unit(*modules))
-    elif command in ["halt"]:
-        exitcode = is_not_ok(systemctl.halt_target())
-    elif command in ["init"]:
-        exitcode = is_not_ok(systemctl.init_modules(*modules))
-    elif command in ["is-active"]:
-        print_str_list(systemctl.is_active_modules(*modules))
-    elif command in ["is-enabled"]:
-        print_str_list(systemctl.is_enabled_modules(*modules))
-    elif command in ["is-failed"]:
-        print_str_list(systemctl.is_failed_modules(*modules))
-    elif command in ["is-system-running"]:
-        print_str(systemctl.is_system_running_target())
-    elif command in ["kill"]:
-        exitcode = is_not_ok(systemctl.kill_modules(*modules))
-    elif command in ["list-start-dependencies"]:
-        print_str_list_list(systemctl.list_start_dependencies_modules(*modules))
-    elif command in ["list-dependencies"]:
-        print_str_list(systemctl.list_dependencies_modules(*modules))
-    elif command in ["list-unit-files"]:
-        print_str_list_list(systemctl.list_unit_files_modules(*modules))
-    elif command in ["list-units"]:
-        print_str_list_list(systemctl.list_units_modules(*modules))
-    elif command in ["listen"]:
-        exitcode = is_not_ok(systemctl.listen_modules(*modules))
-    elif command in ["log", "logs"]:
-        exitcode = is_not_ok(systemctl.log_modules(*modules))
-    elif command in ["mask"]:
-        exitcode = is_not_ok(systemctl.mask_modules(*modules))
-    elif command in ["preset"]:
-        exitcode = is_not_ok(systemctl.preset_modules(*modules))
-    elif command in ["preset-all"]:
-        exitcode = is_not_ok(systemctl.preset_all_modules())
-    elif command in ["reap-zombies"]:
-        print_str(systemctl.reap_zombies_target())
-    elif command in ["reload"]:
-        exitcode = is_not_ok(systemctl.reload_modules(*modules))
-    elif command in ["reload-or-restart"]:
-        exitcode = is_not_ok(systemctl.reload_or_restart_modules(*modules))
-    elif command in ["reload-or-try-restart"]:
-        exitcode = is_not_ok(systemctl.reload_or_try_restart_modules(*modules))
-    elif command in ["reset-failed"]:
-        exitcode = is_not_ok(systemctl.reset_failed_modules(*modules))
-    elif command in ["restart"]:
-        exitcode = is_not_ok(systemctl.restart_modules(*modules))
-    elif command in ["set-default"]:
-        print_str(systemctl.set_default_modules(*modules))
-    elif command in ["show"]:
-        print_str_list(systemctl.show_modules(*modules))
-    elif command in ["start"]:
-        exitcode = is_not_ok(systemctl.start_modules(*modules))
-    elif command in ["status"]:
-        print_str(systemctl.status_modules(*modules))
-    elif command in ["stop"]:
-        exitcode = is_not_ok(systemctl.stop_modules(*modules))
-    elif command in ["try-restart"]:
-        exitcode = is_not_ok(systemctl.try_restart_modules(*modules))
-    elif command in ["unmask"]:
-        exitcode = is_not_ok(systemctl.unmask_modules(*modules))
-    elif command in ["__cat_unit"]:
-        print_str(systemctl.cat_unit(*modules))
-    elif command in ["__get_active_unit"]:
-        print_str(systemctl.get_active_unit(*modules))
-    elif command in ["__get_description"]:
-        print_str(systemctl.get_description(*modules))
-    elif command in ["__get_status_file"]:
-        print_str(systemctl.get_status_file_path(*modules))
-    elif command in ["__get_pid_file"]:
-        print_str(systemctl.get_pid_file_path(*modules))
-    elif command in ["__disable_unit"]:
-        exitcode = is_not_ok(systemctl.disable_unit(*modules))
-    elif command in ["__enable_unit"]:
-        exitcode = is_not_ok(systemctl.enable_unit(*modules))
-    elif command in ["__is_enabled"]:
-        exitcode = is_not_ok(systemctl.is_enabled(*modules))
-    elif command in ["__killall"]:
-        exitcode = is_not_ok(systemctl.killall(*modules))
-    elif command in ["__kill_unit"]:
-        exitcode = is_not_ok(systemctl.kill_unit(*modules))
-    elif command in ["__load_preset_files"]:
-        print_str_list(systemctl.load_preset_files(*modules))
-    elif command in ["__make_unit"]:
-        exitcode = is_not_ok(systemctl.mask_unit(*modules))
-    elif command in ["__read_env_file"]:
-        print_str_list_list(list(systemctl.read_env_file(*modules)))
-    elif command in ["__reload_unit"]:
-        exitcode = is_not_ok(systemctl.reload_unit(*modules))
-    elif command in ["__reload_or_restart_unit"]:
-        exitcode = is_not_ok(systemctl.reload_or_restart_unit(*modules))
-    elif command in ["__reload_or_try_restart_unit"]:
-        exitcode = is_not_ok(systemctl.reload_or_try_restart_unit(*modules))
-    elif command in ["__reset_failed_unit"]:
-        exitcode = is_not_ok(systemctl.reset_failed_unit(*modules))
-    elif command in ["__restart_unit"]:
-        exitcode = is_not_ok(systemctl.restart_unit(*modules))
-    elif command in ["__start_unit"]:
-        exitcode = is_not_ok(systemctl.start_unit(*modules))
-    elif command in ["__stop_unit"]:
-        exitcode = is_not_ok(systemctl.stop_unit(*modules))
-    elif command in ["__try_restart_unit"]:
-        exitcode = is_not_ok(systemctl.try_restart_unit(*modules))
-    elif command in ["__unmask_unit"]:
-        exitcode = is_not_ok(systemctl.unmask_unit(*modules))
-    elif command in ["__show_unit_items"]:
-        print_str_list_list(list(systemctl.show_unit_items(*modules)))
-    else:
-        error_("Unknown operation "+command)
-        sys.exit(EXIT_FAILURE)
-    #
-    exitcode |= systemctl.error
-    sys.exit(exitcode)
+    sys.exit(run(command, *modules))
