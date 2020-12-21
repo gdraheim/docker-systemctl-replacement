@@ -6896,7 +6896,7 @@ if __name__ == "__main__":
     elif command in ["is-failed"]:
         print_str_list(systemctl.is_failed_modules(*modules))
     elif command in ["is-system-running"]:
-        print_str(systemctl.is_system_running_target(*modules))
+        print_str(systemctl.is_system_running_target())
     elif command in ["kill"]:
         exitcode = is_not_ok(systemctl.kill_modules(*modules))
     elif command in ["list-start-dependencies"]:
@@ -6955,9 +6955,9 @@ if __name__ == "__main__":
     elif command in ["__test_pid_file"]:
         print_str(systemctl.test_pid_file(*modules))
     elif command in ["__read_env_file"]:
-        print_str(systemctl.read_env_file(*modules))
+        print_str_list_list(list(systemctl.read_env_file(*modules)))
     elif command in ["__load_preset_files"]:
-        print_str(systemctl.load_preset_files(*modules))
+        print_str_list(systemctl.load_preset_files(*modules))
     else:
         error_("Unknown operation "+command)
         sys.exit(EXIT_FAILURE)
