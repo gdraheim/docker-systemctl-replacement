@@ -11485,7 +11485,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     #     self. test_3821_get_preset_some_unknown(True)
     def test_3821_get_preset_some_unknown(self, real:bool = False) -> None:
         """ check get-preset some unknown unit fails okay"""
-        self.skipTest("get-preset currently not exported")
+        # self.skipTest("get-preset currently not exported")
         vv = self.begin()
         testname = self.testname()
         testdir = self.testdir()
@@ -11497,9 +11497,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} get-preset zz-unknown.service {vv}"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
-        self.assertEqual(end, 1)
+        self.assertEqual(end, 4)
         if not real:
-            self.assertTrue(greps(err, "Unit zz-unknown.service not found."))
+            self.assertTrue(greps(err, "Unit zz-unknown.service not found"))
         #
         self.rm_zzfiles(root)
         self.rm_testdir()
