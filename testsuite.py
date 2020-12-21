@@ -897,16 +897,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(out, "reload-or-try-restart"))
         self.assertTrue(greps(out, "no such command"))
         self.coverage()
-    def test_1009_systemctl_help_command_without_doc(self) -> None:
-        """ for a command without doc, 'help command' is empty """
-        systemctl = cover() + _systemctl_py
-        cmd = "{systemctl} help __test_float -vvvv"
-        out, err, end = output3(cmd.format(**locals()))
-        logg.info("%s\n%s\n%s", cmd, out, err)
-        self.assertEqual(end, 0)
-        self.assertEqual(out.strip(), "")
-        self.assertTrue(greps(err, "__doc__ of __test_float is none"))
-        self.coverage()
     def test_1010_systemctl_daemon_reload(self) -> None:
         """ daemon-reload always succeeds (does nothing) """
         systemctl = cover() + _systemctl_py
@@ -938,16 +928,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 0)
         self.rm_testdir()
         self.rm_zzfiles(root)
-        self.coverage()
-    def test_1019_systemctl_test_commands_work(self) -> None:
-        """ some commands are internal for testing only """
-        systemctl = cover() + _systemctl_py
-        cmd = "{systemctl} __test_float -vvvv -c DEBUG_RESULT=yes"
-        out, err, end = output3(cmd.format(**locals()))
-        logg.info("%s\n%s\n%s", cmd, out, err)
-        self.assertEqual(end, 0)
-        self.assertEqual(out.strip(), "")
-        self.assertTrue(greps(err, "Unknown result type <(class|type) 'float'>"))
         self.coverage()
     def test_1020_systemctl_with_systemctl_log(self) -> None:
         """ when /var/log/systemctl.log exists then print INFO messages into it"""
@@ -1476,21 +1456,21 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, r"^our.preset"))
         self.assertEqual(len(lines(out)), 1)
         #
-        cmd = "{systemctl} __get_preset_of_unit zza.service"
+        cmd = "{systemctl} get-preset zza.service"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         # self.assertTrue(greps(out, r"^our.preset"))
         self.assertEqual(len(lines(out)), 0)
         #
-        cmd = "{systemctl} __get_preset_of_unit zzb.service"
+        cmd = "{systemctl} get-preset zzb.service"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         self.assertTrue(greps(out, r"^enable"))
         self.assertEqual(len(lines(out)), 1)
         #
-        cmd = "{systemctl} __get_preset_of_unit zzc.service"
+        cmd = "{systemctl} get-preset zzc.service"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
@@ -11948,7 +11928,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         #
         sh____("{systemctl} daemon-reload".format(**locals()))
-        cmd = "{systemctl} __get_preset_of_unit zz-unknown.service {vv}"
+        cmd = "{systemctl} get-preset zz-unknown.service {vv}"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
         # self.assertTrue(greps(err, "Unit zz-unknown.service not found."))
