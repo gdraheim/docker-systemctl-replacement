@@ -37443,7 +37443,7 @@ ExecStart=/usr/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_CONFIG_ARGS $KUBELE
         logg.info(" HAVE %s", greps(out, "KUBE"))
         self.assertTrue(greps(out, "KUBELET_CONFIG_ARGS=--config"))
         self.assertEqual(len(greps(out, "KUBE")), 2)
-        cmd = "{systemctl} environment kubelet -vvv -p ExecStart"
+        cmd = "{systemctl} command kubelet -vvv"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(len(lines(out)), 1)
@@ -37465,7 +37465,7 @@ ExecStart=/usr/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_CONFIG_ARGS $KUBELE
         logg.info(" HAVE %s", greps(out, "KUBE"))
         self.assertTrue(greps(out, "KUBELET_CONFIG_ARGS=--config"))
         self.assertEqual(len(greps(out, "KUBE")), 2)
-        cmd = "{systemctl} environment kubelet -vvv -p ExecStart"
+        cmd = "{systemctl} command kubelet -vvv"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(len(lines(out)), 1)
