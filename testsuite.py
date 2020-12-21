@@ -1234,7 +1234,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         textA = reads(os_path(root, "/etc/systemd/system/zza.service"))
         self.assertTrue(greps(textA, "Testing A"))
         self.assertTrue(greps(textA, "PIDFile="))
-        cmd = "{systemctl} __test_pid_file zza.service"
+        cmd = "{systemctl} __get_pid_file zza.service"
         out, end = output2(cmd.format(**locals()))
         logg.info("%s => \n%s", cmd, out)
         self.assertEqual(end, 0)
@@ -1256,7 +1256,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         textA = reads(os_path(root, "/etc/systemd/system/zza.service"))
         self.assertTrue(greps(textA, "Testing A"))
         self.assertFalse(greps(textA, "PIDFile="))
-        cmd = "{systemctl} __test_pid_file zza.service"
+        cmd = "{systemctl} __get_pid_file zza.service"
         out, end = output2(cmd.format(**locals()))
         logg.info("%s => \n%s", cmd, out)
         self.assertEqual(end, 0)
@@ -1300,7 +1300,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         textA = reads(os_path(root, "/etc/systemd/system/zza.service"))
         self.assertTrue(greps(textA, "Testing A"))
         self.assertTrue(greps(textA, "PIDFile="))
-        cmd = "{systemctl} __test_pid_file zza.service"
+        cmd = "{systemctl} __get_pid_file zza.service"
         out, end = output2(cmd.format(**locals()))
         logg.info("%s => \n%s", cmd, out)
         self.assertEqual(end, 0)
@@ -1323,7 +1323,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         textA = reads(os_path(root, "/etc/systemd/system/zza.service"))
         self.assertTrue(greps(textA, "Testing A"))
         self.assertTrue(greps(textA, "PIDFile="))
-        cmd = "{systemctl} __test_pid_file zza.service"
+        cmd = "{systemctl} __get_pid_file zza.service"
         out, end = output2(cmd.format(**locals()))
         logg.info("%s => \n%s", cmd, out)
         self.assertEqual(end, 0)
@@ -1354,7 +1354,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 0)
         self.assertTrue(greps(out, "Testing A"))
         self.assertTrue(greps(out, "quite special"))
-        cmd = "{systemctl} __test_pid_file zza.service"
+        cmd = "{systemctl} __get_pid_file zza.service"
         out, end = output2(cmd.format(**locals()))
         logg.info("%s => \n%s", cmd, out)
         self.assertEqual(end, 0)
@@ -1385,7 +1385,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 0)
         self.assertFalse(greps(out, "Testing A"))
         self.assertFalse(greps(out, "quite special"))
-        cmd = "{systemctl} __test_pid_file zza.service"
+        cmd = "{systemctl} __get_pid_file zza.service"
         out, end = output2(cmd.format(**locals()))
         logg.info("%s => \n%s", cmd, out)
         self.assertEqual(end, 0)
@@ -11549,7 +11549,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} environment zz-unknown.service {vv}"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
-        self.assertEqual(end, 1)
+        self.assertEqual(end, 4)
         if not real:
             self.assertTrue(greps(err, "Unit zz-unknown.service could not be found."))
         #
@@ -11770,7 +11770,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} __mask_unit zz-unknown.service {vv}"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
-        self.assertEqual(end, 1)
+        self.assertEqual(end, 4)
         self.assertTrue(greps(err, "Unit zz-unknown.service not found."))
         #
         self.rm_zzfiles(root)
@@ -11893,26 +11893,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
         self.assertEqual(end, 1)
         self.assertTrue(greps(err, "No files found for zz-unknown.service"))
-        #
-        self.rm_zzfiles(root)
-        self.rm_testdir()
-        self.coverage()
-        self.end()
-    def test_3850_API_preset_all_some_unknown(self, real:bool = False) -> None:
-        """ check API preset_all some unknown unit fails okay"""
-        vv = self.begin()
-        testname = self.testname()
-        testdir = self.testdir()
-        root = self.root(testdir, real)
-        systemctl = cover() + _systemctl_py + " --root=" + root
-        if real: vv, systemctl = "", "/usr/bin/systemctl"
-        #
-        sh____("{systemctl} daemon-reload".format(**locals()))
-        cmd = "{systemctl} __system_preset_all zz-unknown.service {vv}"
-        out, err, end = output3(cmd.format(**locals()))
-        logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
-        self.assertEqual(end, 1)
-        # self.assertTrue(greps(err, "Unit zz-unknown.service could not be found."))
         #
         self.rm_zzfiles(root)
         self.rm_testdir()
