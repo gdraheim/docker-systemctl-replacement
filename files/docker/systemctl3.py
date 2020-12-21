@@ -2227,13 +2227,21 @@ class Systemctl:
         except Exception as e:
             info_("while reading {env_part}: {e}".format(**locals()))
     def show_environment(self, unit):
+        conf = self.load_unit_conf(unit)
+        if conf is None:
+            error_("Unit {unit} could not be found.".format(**locals()))
+            self.error |= NOT_FOUND
+            return None
+        if _unit_property:
+            return conf.getlist("Service", _unit_property)
+        return conf.getlist("Service", "Environment")
+    def show_env(self, unit):
         """ [UNIT]. -- show environment parts """
         conf = self.load_unit_conf(unit)
         if conf is None:
             error_("Unit {unit} could not be found.".format(**locals()))
-            return False
-        if _unit_property:
-            return conf.getlist("Service", _unit_property)
+            self.error |= NOT_FOUND
+            return None
         return self.get_env(conf)
     def extra_vars(self):
         return self._extra_vars # from command line
@@ -5166,6 +5174,21 @@ class Systemctl:
         else:
             warn_("target is not a symlink: {target}".format(**locals()))
             return True
+
+    def list_start_dependencies_modules(self, *modules):
+        found_all = True
+        units = []
+        for module in modules:
+            matched = self.match_units(to_list(module))
+            if not matched:
+                unit_ = unit_of(module)
+                error_("Unit {unit_} could not be found.".format(**locals()))
+                found_all = False
+                continue
+            for unit in matched:
+                if unit not in units:
+                    units += [ unit ]
+        return self.list_start_dependencies_units(units)
     def list_dependencies_modules(self, *modules):
         """ [UNIT]... show the dependency tree"
         """
@@ -5183,8 +5206,6 @@ class Systemctl:
                     units += [ unit ]
         return self.list_dependencies_units(units) # and found_all
     def list_dependencies_units(self, units):
-        if self._now:
-            return self.list_start_dependencies_units(units)
         result = []
         for unit in units:
             if result:
@@ -6629,6 +6650,69 @@ def print_result(result):
         note_result_("EXEC END Unknown result type {result_type}".format(**locals()))
     return exitcode
 
+def print_bool(result):
+    hint_result_("EXEC END {result}")
+    if result is False:
+        return NOT_OK
+    return 0
+def print_int(result):
+    hint_result_("EXEC END {result}".format(**locals()))
+    # exitcode = result # we do not do that anymore
+
+def print_str(result):
+    if result is None:
+       debug_result_("    END {result}")
+       return
+    print(result)
+    result1 = result.split("\n")[0][:-20]
+    if result == result1:
+        hint_result_("EXEC END '{result}'".format(**locals()))
+    else:
+        hint_result_("EXEC END '{result1}...'".format(**locals()))
+        debug_result_("    END '{result}'".format(**locals()))
+def print_str_list(result):
+    if result is None:
+       debug_result_("    END {result}")
+       return
+    shown = 0
+    for element in result:
+        print(element)
+        shown += 1
+    hint_result_("EXEC END {shown} items".format(**locals()))
+    debug_result_("    END {result}".format(**locals()))
+def print_str_list_list(result):
+    if result is None:
+       debug_result_("    END {result}")
+       return
+    shown = 0
+    for element in result:
+        print("\t".join([ str(elem) for elem in element] ))
+        shown += 1
+    hint_result_("EXEC END {shown} items".format(**locals()))
+    debug_result_("    END {result}".format(**locals()))
+def print_str_dict(result):
+    if result is None:
+       debug_result_("    END {result}")
+       return
+    shown = 0
+    for key in sorted(result.keys()):
+        element = result[key]
+        print("%s=%s" % (key,element))
+        shown += 1
+    hint_result_("EXEC END {shown} items".format(**locals()))
+    debug_result_("    END {result}".format(**locals()))
+def print_str_list_dict(result):
+    if result is None:
+       debug_result_("    END {result}")
+       return
+    shown = 0
+    for key in sorted(result.keys()):
+        element = result[key]
+        print(key,"=","\t".join([ str(elem) for elem in element]))
+        shown += 1
+    hint_result_("EXEC END {shown} items".format(**locals()))
+    debug_result_("    END {result}".format(**locals()))
+
 def config_globals(settings):
     for setting in settings:
         nam, val = setting, "1"
@@ -6815,38 +6899,94 @@ if __name__ == "__main__":
         systemctl.force_ipv4()
     elif opt.ipv6:
         systemctl.force_ipv6()
-    found = False
-    # command NAME
-    if command.startswith("__"):
-        command_name = command[2:]
-        command_func = getattr(systemctl, command_name, None)
-        if callable(command_func) and not found:
-            found = True
-            result = command_func(*modules)
-    command_name = command.replace("-","_").replace(".","_")+"_modules"
-    command_func = getattr(systemctl, command_name, None)
-    if callable(command_func) and not found:
-        found = True
-        result = command_func(*modules)
-    command_name = "show_"+command.replace("-","_").replace(".","_")
-    command_func = getattr(systemctl, command_name, None)
-    if callable(command_func) and not found:
-        found = True
-        result = command_func(*modules)
-    command_name = "system_"+command.replace("-","_").replace(".","_")
-    command_func = getattr(systemctl, command_name, None)
-    if callable(command_func) and not found:
-        found = True
-        result = command_func()
-    command_name = "systems_"+command.replace("-","_").replace(".","_")
-    command_func = getattr(systemctl, command_name, None)
-    if callable(command_func) and not found:
-        found = True
-        result = command_func()
-    if not found:
+    exitcode = 0
+    if command in ["help"]:
+        exitcode = print_result(systemctl.show_help(*modules))
+    elif command in ["cat"]:
+        exitcode = print_result(systemctl.cat_modules(*modules))
+    elif command in ["clean"]:
+        exitcode = print_result(systemctl.clean_modules(*modules))
+    elif command in ["daemon-reload"]:
+        exitcode = print_result(systemctl.system_daemon_reload())
+    elif command in ["default"]:
+        exitcode = print_result(systemctl.system_default())
+    elif command in ["default-services"]:
+        exitcode = print_result(systemctl.default_services_modules(*modules))
+    elif command in ["disable"]:
+        exitcode = print_result(systemctl.disable_modules(*modules))
+    elif command in ["enable"]:
+        exitcode = print_result(systemctl.enable_modules(*modules))
+    elif command in ["environment"]:
+        if _unit_property:
+            print_str_list(systemctl.show_environment(*modules))
+        else:
+            print_str_dict(systemctl.show_env(*modules))
+    elif command in ["get-default"]:
+        exitcode = print_result(systemctl.system_get_default())
+    elif command in ["get-preset"]:
+        exitcode = print_result(systemctl.get_preset_of_unit(*modules))
+    elif command in ["halt"]:
+        exitcode = print_result(systemctl.system_halt())
+    elif command in ["init"]:
+        exitcode = print_result(systemctl.init_modules(*modules))
+    elif command in ["is-active"]:
+        exitcode = print_result(systemctl.is_active_modules(*modules))
+    elif command in ["is-enabled"]:
+        exitcode = print_result(systemctl.is_enabled_modules(*modules))
+    elif command in ["is-failed"]:
+        exitcode = print_result(systemctl.is_failed_modules(*modules))
+    elif command in ["kill"]:
+        exitcode = print_result(systemctl.kill_modules(*modules))
+    elif command in ["list-dependencies"]:
+        if systemctl._now:
+            print_str_list_list(systemctl.list_start_dependencies_modules(*modules))
+        else:
+            print_str_list(systemctl.list_dependencies_modules(*modules))
+    elif command in ["list-unit-files"]:
+        print_str_list_list(systemctl.show_list_unit_files(*modules))
+    elif command in ["list-units"]:
+        print_str_list_list(systemctl.show_list_units(*modules))
+    elif command in ["listen"]:
+        exitcode = print_result(systemctl.listen_modules(*modules))
+    elif command in ["log", "logs"]:
+        exitcode = print_result(systemctl.log_modules(*modules))
+    elif command in ["mask"]:
+        exitcode = print_result(systemctl.mask_modules(*modules))
+    elif command in ["preset"]:
+        exitcode = print_result(systemctl.preset_modules(*modules))
+    elif command in ["preset-all"]:
+        exitcode = print_result(systemctl.system_preset_all())
+    elif command in ["reap-zombies"]:
+        exitcode = print_result(systemctl.system_reap_zombies())
+    elif command in ["reload"]:
+        exitcode = print_result(systemctl.reload_modules(*modules))
+    elif command in ["reload-or-restart"]:
+        exitcode = print_result(systemctl.reload_or_restart_modules(*modules))
+    elif command in ["reload-or-try-restart"]:
+        exitcode = print_result(systemctl.reload_or_try_restart_modules(*modules))
+    elif command in ["reset-failed"]:
+        exitcode = print_result(systemctl.reset_failed_modules(*modules))
+    elif command in ["restart"]:
+        exitcode = print_result(systemctl.restart_modules(*modules))
+    elif command in ["set-default"]:
+        exitcode = print_result(systemctl.set_default_modules(*modules))
+    elif command in ["show"]:
+        exitcode = print_result(systemctl.show_modules(*modules))
+    elif command in ["start"]:
+        exitcode = print_result(systemctl.start_modules(*modules))
+    elif command in ["status"]:
+        exitcode = print_result(systemctl.status_modules(*modules))
+    elif command in ["stop"]:
+        exitcode = print_result(systemctl.stop_modules(*modules))
+    elif command in ["try-restart"]:
+        exitcode = print_result(systemctl.try_restart_modules(*modules))
+    elif command in ["unit-items"]:
+        print_str_list_list(list(systemctl.show_unit_items(*modules)))
+    elif command in ["unmask"]:
+        exitcode = print_result(systemctl.unmask_modules(*modules))
+    else:
         error_("Unknown operation "+command)
         sys.exit(EXIT_FAILURE)
     #
-    exitcode = print_result(result)
     exitcode |= systemctl.error
     sys.exit(exitcode)
