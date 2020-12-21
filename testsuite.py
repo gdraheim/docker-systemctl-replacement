@@ -17874,7 +17874,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         os.makedirs(os_path(root, "/var/run"))
         os.makedirs(os_path(root, "/var/log"))
         #
-        list_dependencies = "{systemctl} list-dependencies zza.service --now"
+        list_dependencies = "{systemctl} list-start-dependencies zza.service"
         deps  = output(list_dependencies.format(**locals()))
         logg.info("deps \n%s", deps)
         #
@@ -17976,7 +17976,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         os.makedirs(os_path(root, "/var/run"))
         os.makedirs(os_path(root, "/var/log"))
         #
-        list_dependencies = "{systemctl} list-dependencies zza.service --now"
+        list_dependencies = "{systemctl} list-start-dependencies zza.service"
         deps  = output(list_dependencies.format(**locals()))
         logg.info("deps \n%s", deps)
         #
@@ -18078,7 +18078,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         os.makedirs(os_path(root, "/var/run"))
         os.makedirs(os_path(root, "/var/log"))
         #
-        list_dependencies = "{systemctl} list-dependencies zza.service --now"
+        list_dependencies = "{systemctl} list-start-dependencies zza.service"
         deps  = output(list_dependencies.format(**locals()))
         logg.info("deps \n%s", deps)
         #
@@ -18181,7 +18181,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         os.makedirs(os_path(root, "/var/run"))
         os.makedirs(os_path(root, "/var/log"))
         #
-        list_dependencies = "{systemctl} list-dependencies zza.service --now"
+        list_dependencies = "{systemctl} list-start-dependencies zza.service"
         deps_text  = output(list_dependencies.format(**locals()))
         # logg.info("deps \n%s", deps_text)
         #
@@ -18257,7 +18257,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         os.makedirs(os_path(root, "/var/run"))
         os.makedirs(os_path(root, "/var/log"))
         #
-        list_dependencies = "{systemctl} list-dependencies zza.service --now"
+        list_dependencies = "{systemctl} list-start-dependencies zza.service"
         deps_text  = output(list_dependencies.format(**locals()))
         # logg.info("deps \n%s", deps_text)
         #
@@ -18268,7 +18268,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(deps[1], "zza.service\t(Requested)")
         self.assertEqual(len(deps), 2)
         #
-        list_dependencies = "{systemctl} list-dependencies zzb.service --now"
+        list_dependencies = "{systemctl} list-start-dependencies zzb.service"
         deps_text  = output(list_dependencies.format(**locals()))
         # logg.info("deps \n%s", deps_text)
         #
@@ -18279,7 +18279,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(deps), 1)
         #
         #
-        list_dependencies = "{systemctl} list-dependencies zzc.service --now"
+        list_dependencies = "{systemctl} list-start-dependencies zzc.service"
         deps_text  = output(list_dependencies.format(**locals()))
         # logg.info("deps \n%s", deps_text)
         #
@@ -18356,7 +18356,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         os.makedirs(os_path(root, "/var/run"))
         os.makedirs(os_path(root, "/var/log"))
         #
-        list_dependencies = "{systemctl} list-dependencies zza.service --now"
+        list_dependencies = "{systemctl} list-start-dependencies zza.service"
         deps_text  = output(list_dependencies.format(**locals()))
         # logg.info("deps \n%s", deps_text)
         #
@@ -18367,7 +18367,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(deps[1], "zza.service\t(Requested)")
         self.assertEqual(len(deps), 2)
         #
-        list_dependencies = "{systemctl} list-dependencies zzb.service --now"
+        list_dependencies = "{systemctl} list-start-dependencies zzb.service"
         deps_text  = output(list_dependencies.format(**locals()))
         # logg.info("deps \n%s", deps_text)
         #
@@ -18378,7 +18378,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(deps), 1)
         #
         #
-        list_dependencies = "{systemctl} list-dependencies zzc.service --now"
+        list_dependencies = "{systemctl} list-start-dependencies zzc.service"
         deps_text  = output(list_dependencies.format(**locals()))
         # logg.info("deps \n%s", deps_text)
         #
