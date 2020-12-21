@@ -3581,9 +3581,9 @@ class Systemctl:
         std_inp = conf.get("Service", "StandardInput", DefaultStandardInput)
         std_out = conf.get("Service", "StandardOutput", DefaultStandardOutput)
         std_err = conf.get("Service", "StandardError", DefaultStandardError)
-        # msg += "\n StandardInp {std_inp}".format(**locals())
-        # msg += "\n StandardOut {std_out}".format(**locals())
-        # msg += "\n StandardErr {std_err}".format(**locals())
+        # msg += "\n StandardInp {std_inp}".format(**locals()) # internal
+        # msg += "\n StandardOut {std_out}".format(**locals()) # internal
+        # msg += "\n StandardErr {std_err}".format(**locals()) # internal
         inp, out, err = None, None, None
         try:
             if std_inp in ["null"]:
