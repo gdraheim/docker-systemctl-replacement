@@ -2226,9 +2226,9 @@ class Systemctl:
                     yield name, value
         except Exception as e:
             info_("while reading {env_part}: {e}".format(**locals()))
-    def environmentfile_of_unit(self, unit):
-        """ [UNIT]. -- show EnvironmentFile settings (experimental)
-            or use -p VarName to show another property."""
+    def command_of_unit(self, unit):
+        """ [UNIT]. -- show service settings (experimental)
+            or use -p VarName to show another property than 'ExecStart' """
         conf = self.load_unit_conf(unit)
         if conf is None:
             error_("Unit {unit} could not be found.".format(**locals()))
@@ -2236,7 +2236,7 @@ class Systemctl:
             return None
         if _unit_property:
             return conf.getlist("Service", _unit_property)
-        return conf.getlist("Service", "EnvironmentFile")
+        return conf.getlist("Service", "ExecStart")
     def environment_of_unit(self, unit):
         """ [UNIT]. -- show environment parts """
         conf = self.load_unit_conf(unit)
@@ -6868,6 +6868,8 @@ if __name__ == "__main__":
         print_str(systemctl.cat_modules(*modules))
     elif command in ["clean"]:
         exitcode = is_not_ok(systemctl.clean_modules(*modules))
+    elif command in ["command"]:
+        print_str_list(systemctl.command_of_unit(*modules))
     elif command in ["daemon-reload"]:
         exitcode = is_not_ok(systemctl.daemon_reload_target())
     elif command in ["default"]:
@@ -6878,8 +6880,6 @@ if __name__ == "__main__":
         exitcode = is_not_ok(systemctl.disable_modules(*modules))
     elif command in ["enable"]:
         exitcode = is_not_ok(systemctl.enable_modules(*modules))
-    elif command in ["environmentfile"]:
-        print_str_list(systemctl.environmentfile_of_unit(*modules))
     elif command in ["environment"]:
         print_str_dict(systemctl.environment_of_unit(*modules))
     elif command in ["get-default"]:
