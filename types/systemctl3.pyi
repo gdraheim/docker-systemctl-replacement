@@ -346,7 +346,7 @@ class Systemctl:
         active: Dict[str, str]
         substate: Dict[str, str]
         description: Dict[str, str]
-    def show_list_units(self, *modules : str) -> List[Tuple[str,str,str,]]: ... # -> [ (unit,loaded,description) ]
+    def list_units_modules(self, *modules : str) -> List[Tuple[str,str,str,]]: ... # -> [ (unit,loaded,description) ]
     def list_service_unit_files(self, *modules : str) -> List[Tuple[str, str]]: # -> [ (unit,enabled) ]
         result: Dict[str, Optional[SystemctlConf]]
         enabled: Dict[str, str]
@@ -354,7 +354,7 @@ class Systemctl:
     def list_target_unit_files(self, *modules : str) -> List[Tuple[str,str]]: # -> [ (unit,enabled) ]
         enabled: Dict[str, str]
         targets: Dict[str, Optional[str]]
-    def show_list_unit_files(self, *modules : str) -> List[Tuple[str,str]]: # -> [ (unit,enabled) ]
+    def list_unit_files_modules(self, *modules : str) -> List[Tuple[str,str]]: # -> [ (unit,enabled) ]
         result: List[Tuple[str,str]]
     def get_description(self, unit : str, default : Optional[str] = None) -> str: ...
     def get_description_from(self, conf : Optional[SystemctlConf], default : Optional[str] = None) -> str: ... # -> text
@@ -383,8 +383,8 @@ class Systemctl:
     def getsize(self, filename: str) -> int: ...
     def read_env_file(self, env_file: str) -> Iterable[Tuple[str,str]]: ... # -> generate[ (name,value) ]
     def read_env_part(self, env_part: str) -> Iterable[Tuple[str,str]]: ... # -> generate[ (name, value) ]
-    def show_environment(self, unit: str) -> Union[None, List[str]]: ...
-    def show_env(self, unit: str) -> Union[None, Dict[str,str]]: ...
+    def environmentfile_of_unit(self, unit: str) -> Union[None, List[str]]: ...
+    def environment_of_unit(self, unit: str) -> Union[None, Dict[str,str]]: ...
     def extra_vars(self) -> List[str]: ...
     def get_env(self, conf: SystemctlConf) -> Dict[str, str]: ...
     def expand_env(self, cmd: str, env: Dict[str, str]) -> str:
@@ -702,7 +702,9 @@ class Systemctl:
         lines: List[str]
     def force_ipv6(self, *args: str) -> None:
         lines: List[str]
-    def show_help(self, *args: str) -> List[str]:
+    def help_overview(self) -> List[str]:
+        lines: List[str]
+    def help_modules(self, *args: str) -> List[str]:
         lines: List[str]
     def systemd_version(self) -> str: ...
     def systemd_features(self) -> str: ...
