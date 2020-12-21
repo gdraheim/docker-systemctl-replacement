@@ -6896,6 +6896,8 @@ if __name__ == "__main__":
         print_str_list(systemctl.is_enabled_modules(*modules))
     elif command in ["is-failed"]:
         print_str_list(systemctl.is_failed_modules(*modules))
+    elif command in ["is-system-running"]:
+        print_str(systemctl.is_system_running_target(*modules))
     elif command in ["kill"]:
         exitcode = is_not_ok(systemctl.kill_modules(*modules))
     elif command in ["list-start-dependencies"]:
