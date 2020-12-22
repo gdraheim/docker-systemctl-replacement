@@ -34,7 +34,7 @@ if sys.version[0] == '3':
     xrange = range
 
 DEBUG_AFTER = False
-DEBUG_STATUS = False
+DEBUG_STATUS = True
 DEBUG_BOOTTIME = False
 DEBUG_INITLOOP = False
 DEBUG_KILLALL = False
@@ -3255,6 +3255,8 @@ class Systemctl:
                 self.set_status_from(conf, "ExecMainCode", strE(returncode))
                 active = returncode and "failed" or "active"
                 self.write_status_from(conf, AS=active)
+            else:
+                self.clean_status_from(conf)
         else:
             error_("unsupported run type '{runs}'".format(**locals()))
             return False
@@ -3897,9 +3899,8 @@ class Systemctl:
                 if not pid or not pid_exists(pid) or pid_zombie(pid):
                     self.clean_pid_file_from(conf)
             if returncode:
-                if os.path.isfile(status_file):
-                    self.set_status_from(conf, "ExecStopCode", strE(returncode))
-                    self.write_status_from(conf, AS="failed")
+                self.set_status_from(conf, "ExecStopCode", strE(returncode))
+                self.write_status_from(conf, AS="failed")
             else:
                 self.clean_status_from(conf) # "inactive"
         else:
