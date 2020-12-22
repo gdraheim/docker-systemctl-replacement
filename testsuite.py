@@ -1456,11 +1456,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, r"^our.preset"))
         self.assertEqual(len(lines(out)), 1)
         #
-        cmd = "{systemctl} get-preset zza.service"
-        out, end = output2(cmd.format(**locals()))
-        logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(end, 0)
-        # self.assertTrue(greps(out, r"^our.preset"))
+        cmd = "{systemctl} get-preset zza.service -vv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 4)
+        self.assertTrue(greps(err, r"not found"))
         self.assertEqual(len(lines(out)), 0)
         #
         cmd = "{systemctl} get-preset zzb.service"
@@ -7976,7 +7976,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             scenario we test what happens if the lockfile is deleted in between."""
         self.begin()
         vv = "-vv"
-        removelockfile="-c REMOVE_LOCK_FILE=True -c DEBUG_FLOCK=True"
+        removelockfile="-c REMOVE_LOCK_FILE=True -c TEST_LOCK_FILE=True -c DEBUG_FLOCK=True"
         timeouts = "-c MinimumTimeoutStartSec=7 -c MinimumTimeoutStopSec=7"
         testname = self.testname()
         testdir = self.testdir()
@@ -8077,9 +8077,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(top, testsleep))
         #
         self.assertTrue(greps(err, "1. systemctl locked by"))
-        self.assertTrue(greps(err, "the service is already running on PID"))
-        self.assertTrue(greps(err, "lock got deleted, trying again"))
-        self.assertTrue(greps(err, "lock got deleted, trying again"))
+        # self.assertTrue(greps(err, "the service is already running on PID"))
+        self.assertTrue(greps(err, "got deleted, trying again"))
+        self.assertTrue(greps(err, "got deleted, trying again"))
         #
         log1 = lines(open(logfile))
         logg.info("zzz.log>\n\t%s", "\n\t".join(log1))
@@ -11770,7 +11770,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} __mask_unit zz-unknown.service {vv}"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
-        self.assertEqual(end, 4)
+        self.assertEqual(end, 1)
         self.assertTrue(greps(err, "Unit zz-unknown.service not found."))
         #
         self.rm_zzfiles(root)
