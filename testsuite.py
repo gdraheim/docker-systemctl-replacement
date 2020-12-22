@@ -106,7 +106,7 @@ def _recent(top_list: Union[str, List[str]]) -> str:
             result.append(" "+line)
     return "\n".join(result)
 
-def package_tool(image: str, checks = False) -> str:
+def package_tool(image: str, checks: bool = False) -> str:
     if "opensuse" in image:
         if not checks:
             # --gpgcheck-strict / --no-gpg-checks
@@ -130,7 +130,7 @@ def package_tool(image: str, checks = False) -> str:
     if not checks:
         return "yum --setopt=repo_gpgcheck=false"
     return "yum"
-def refresh_tool(image: str, checks = False) -> str:
+def refresh_tool(image: str, checks: bool = False) -> str:
     ## https://github.com/openSUSE/docker-containers/issues/64
     #  {package} rr oss-update"
     #  {package} ar -f http://download.opensuse.org/update/leap/42.3/oss/openSUSE:Leap:42.3:Update.repo"
@@ -373,7 +373,7 @@ def beep() -> None:
         # sx___("play -n synth 0.1 tri  1000.0")
         sx____("play -V1 -q -n -c1 synth 0.1 sine 500")
 
-def path_getsize(filename):
+def path_getsize(filename: str) -> int:
     if filename is None: # pragma: no cover (is never null)
         return 0
     if not os.path.isfile(filename):
@@ -381,7 +381,7 @@ def path_getsize(filename):
     try:
         return os.path.getsize(filename)
     except Exception as e:
-        warn_("while reading file size: {e}\n of {filename}".format(**locals()))
+        logg.warning("while reading file size: {e}\n of {filename}".format(**locals()))
         return 0
 
 def get_proc_started(pid: int) -> float:
