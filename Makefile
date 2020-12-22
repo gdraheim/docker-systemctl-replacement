@@ -298,6 +298,8 @@ type:
 	python3 format3.py -i tmp.files/docker/systemctl3.py
 	@ grep -w format tmp.files/docker/systemctl3.py | grep -v internal | sed -e "s|^|ERROR: |"; true
 	mypy --strict tmp.files/docker/systemctl3.py # --new-semantic-analyzer --show-traceback
+type.t type.testsuite:
+	mypy --strict testsuite.py # --new-semantic-analyzer --show-traceback
 
 ####### box test
 box:
