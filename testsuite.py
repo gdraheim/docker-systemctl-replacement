@@ -373,6 +373,17 @@ def beep() -> None:
         # sx___("play -n synth 0.1 tri  1000.0")
         sx____("play -V1 -q -n -c1 synth 0.1 sine 500")
 
+def path_getsize(filename):
+    if filename is None: # pragma: no cover (is never null)
+        return 0
+    if not os.path.isfile(filename):
+        return 0
+    try:
+        return os.path.getsize(filename)
+    except Exception as e:
+        warn_("while reading file size: {e}\n of {filename}".format(**locals()))
+        return 0
+
 def get_proc_started(pid: int) -> float:
     """ get time process started after boot in clock ticks"""
     proc = "/proc/%s/stat" % pid
@@ -16434,13 +16445,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____("LANG=C stat {status_file} | grep Modify:".format(**locals()))
         #
         logg.info("== the next is-active shall then truncate it")
-        old_size = os.path.getsize(status_file)
+        old_size = path_getsize(status_file)
         is_activeXX = "{systemctl} is-active zzz.service other.service {vv} {vv}"
         act, end = output2(is_activeXX.format(**locals()))
         self.assertEqual(act.strip(), "inactive\ninactive")
         self.assertEqual(end, 3)
         self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
-        new_size = os.path.getsize(status_file)
+        new_size = path_getsize(status_file)
         logg.info("status-file size: old %s new %s", old_size, new_size)
         self.assertGreater(old_size, 0)
         self.assertEqual(new_size, 0)
@@ -16455,7 +16466,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 3)
         self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.1")))
         # and the status_file is also cleaned away
-        self.assertFalse(os.path.exists(status_file))
+        self.assertFalse(path_getsize(status_file))
         #
         logg.info("LOG\n%s", " "+reads(logfile).replace("\n","\n "))
         self.rm_testdir()
@@ -16548,14 +16559,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #+ sh____("LANG=C stat {pid_file} | grep Modify:".format(**locals()))
         #
         logg.info("== the next is-active shall then truncate it")
-        old_status = os.path.getsize(status_file)
-        #+ old_pid = os.path.getsize(pid_file)
+        old_status = path_getsize(status_file)
+        #+ old_pid = path_getsize(pid_file)
         is_activeXX = "{systemctl} is-active zzz.service other.service {vv} {vv}"
         act, end = output2(is_activeXX.format(**locals()))
         self.assertEqual(act.strip(), "inactive\ninactive")
         self.assertEqual(end, 3)
-        new_status = os.path.getsize(status_file)
-        #+ new_pid = os.path.getsize(pid_file)
+        new_status = path_getsize(status_file)
+        #+ new_pid = path_getsize(pid_file)
         logg.info("status-file size: old %s new %s", old_status, new_status)
         self.assertGreater(old_status, 0)
         self.assertEqual(new_status, 0)
@@ -16572,7 +16583,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(act.strip(), "inactive\ninactive")
         self.assertEqual(end, 3)
         logg.info("== and the status_file / pid_file is also cleaned away")
-        self.assertFalse(os.path.exists(status_file))
+        self.assertFalse(path_getsize(status_file))
         self.assertFalse(os.path.exists(pid_file))
         #
         self.rm_testdir()
