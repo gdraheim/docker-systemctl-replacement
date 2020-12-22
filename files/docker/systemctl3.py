@@ -193,6 +193,7 @@ DefaultRestartSec = 0.1       # official value of 100ms
 DefaultStartLimitIntervalSec = 10 # official value
 DefaultStartLimitBurst = 5        # official value
 InitLoopSleep = 5
+TestLockSleep = 1
 MaxLockWait = 0 # equals DefaultMaximumTimeout
 DefaultPath = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 ResetLocale = ["LANG", "LANGUAGE", "LC_CTYPE", "LC_NUMERIC", "LC_TIME", "LC_COLLATE", "LC_MONETARY",
@@ -217,6 +218,7 @@ EXEC_SPAWN = False
 EXEC_DUP2 = True
 EXEC_CONTINUE = False
 REMOVE_LOCK_FILE = False
+TEST_LOCK_FILE = False
 BOOT_PID_MIN = 0
 BOOT_PID_MAX = -9
 PROC_MAX_DEPTH = 100
@@ -1056,7 +1058,7 @@ class SystemctlConf:
                         warn_("ignore writing MainPID=0")
                         continue
                     content = "{key}={value}\n".format(**locals())
-                    dbg_("writing {content}\t to {status_file}")
+                    dbg_("writing {content}\t to {status_file}".format(**locals()))
                     f.write(content)
         except IOError as e:
             error_("writing STATUS {status}: {e}\n\t to status file {status_file}".format(**locals()))
@@ -1306,7 +1308,7 @@ class waitlock:
                         if state.startswith(b"#lock="):
                             whom=state[len(b"#lock="):].decode("ascii")
                     info_("[{me}] {attempt}. systemctl locked by {whom}".format(**locals()))
-                    time.sleep(1) # until MaxLockWait
+                    time.sleep(TestLockSleep) # until MaxLockWait
                     continue
             error_("[{me}] not able to get the lock to {lockname}".format(**locals()))
         except Exception as e:
@@ -1318,7 +1320,7 @@ class waitlock:
         me = os.getpid()
         try:
             os.lseek(self.opened, 0, os.SEEK_SET)
-            if not self.conf.status:
+            if not self.conf.status or TEST_LOCK_FILE:
                 os.ftruncate(self.opened, 0)
                 if REMOVE_LOCK_FILE: # an optional implementation
                     lockfile = self.lockfile()
@@ -3134,8 +3136,13 @@ class Systemctl:
                         active = run.returncode and "failed" or "active"
                         self.write_status_from(conf, AS=active)
                     if run.returncode and exe.check:
+                        returncode = run.returncode
                         service_result = "failed"
                         break
+            if returncode:
+                self.set_status_from(conf, "ExecMainCode", strE(returncode))
+                active = returncode and "failed" or "active"
+                self.write_status_from(conf, AS=active)
         elif runs in [ "notify" ]:
             # "notify" is the same as "simple" but we create a $NOTIFY_SOCKET 
             # and wait for startup completion by checking the socket messages
@@ -3180,6 +3187,7 @@ class Systemctl:
                         active = run.returncode and "failed" or "active"
                         self.write_status_from(conf, AS=active)
                     if run.returncode and exe.check:
+                        returncode = run.returncode
                         service_result = "failed"
                         break
             if service_result in [ "success" ] and mainpid:
@@ -3197,6 +3205,10 @@ class Systemctl:
                     env["MAINPID"] = strE(pid)
                 else:
                     service_result = "timeout" # "could not start service"
+            if returncode:
+                self.set_status_from(conf, "ExecMainCode", strE(returncode))
+                active = returncode and "failed" or "active"
+                self.write_status_from(conf, AS=active)
         elif runs in [ "forking" ]:
             pid_file = self.pid_file_from(conf)
             for cmd in conf.getlist("Service", "ExecStart", []):
@@ -3224,6 +3236,10 @@ class Systemctl:
                 filename44 = path44(conf.filename())
                 warn_("No PIDFile for forking {filename44}".format(**locals()))
                 status_file = self.get_status_file_from(conf)
+                self.set_status_from(conf, "ExecMainCode", strE(returncode))
+                active = returncode and "failed" or "active"
+                self.write_status_from(conf, AS=active)
+            elif returncode:
                 self.set_status_from(conf, "ExecMainCode", strE(returncode))
                 active = returncode and "failed" or "active"
                 self.write_status_from(conf, AS=active)
@@ -4574,10 +4590,10 @@ class Systemctl:
     def reset_failed_from(self, conf):
         if conf is None: return True
         if not self.is_failed_from(conf): return False
-        done = False
         with waitlock(conf):
             return self.do_reset_failed_from(conf)
     def do_reset_failed_from(self, conf):
+        done = False
         pid_file = self.pid_file_from(conf)
         if pid_file and os.path.exists(pid_file):
             try:
@@ -4586,8 +4602,10 @@ class Systemctl:
                 dbg_("done rm {pid_file}".format(**locals()))
             except Exception as e:
                 error_("while rm {pid_file}: {e}".format(**locals()))
+        # clean_status will truncate/remove the status file on end of waitlock
         conf.clean_status()
-        # this will truncate/remove the status file on end of waitlock
+        if conf.write_status():
+            done = True
         return done
     def status_modules(self, *modules):
         """ [UNIT]... check the status of these units.
@@ -4713,7 +4731,7 @@ class Systemctl:
             found = len(self._preset_file_list)
             debug_("found {found} preset files".format(**locals()))
         return sorted(self._preset_file_list.keys())
-    def get_preset_of_unit(self, unit, default = None):
+    def get_preset(self, unit, default = None):
         """ [UNIT] check the *.preset of this unit (experimental)
         """
         self.load_preset_files()
@@ -4723,6 +4741,13 @@ class Systemctl:
             status = preset.get_preset(unit, nodefault = True)
             if status:
                 return status
+        return default
+    def get_preset_of_unit(self, unit, default = None):
+        """ [UNIT] check the *.preset of this unit (experimental)
+        """
+        status = self.get_preset(unit)
+        if status is not None:
+            return status
         logg.info("Unit {unit} not found in preset files (defaults to disable)".format(**locals()))
         self.error |= NOT_FOUND
         return default
@@ -4751,7 +4776,7 @@ class Systemctl:
         fails = 0
         found = 0
         for unit in units:
-            status = self.get_preset_of_unit(unit)
+            status = self.get_preset(unit)
             if not status: continue
             found += 1
             if status.startswith("enable"):
@@ -6379,7 +6404,7 @@ class Systemctl:
             return "offline"
         status = self.read_status_from(conf)
         return status.get("SubState", "unknown")
-    def is_system_running_target(self):
+    def is_system_running_info(self):
         """ -- return status while running 'default' services """
         state = self.is_system_running()
         if state not in [ "running" ]:
@@ -6537,8 +6562,8 @@ class Systemctl:
                arg = name[:-len("_target")].replace("_","-")
             if name.endswith("_of_unit"):
                arg = name[:-len("_of_unit")].replace("_","-")
-            if name.endswith("_module"):
-               arg = name[:-len("_module")].replace("_","-")
+            if name.endswith("_info"):
+               arg = name[:-len("_info")].replace("_","-")
             if name.endswith("_modules"):
                arg = name[:-len("_modules")].replace("_","-")
             if arg:
@@ -6576,7 +6601,7 @@ class Systemctl:
         for arg in args:
             arg = arg.replace("-","_")
             func1 = getattr(self.__class__, arg+"_modules", None)
-            func2 = getattr(self.__class__, arg+"_module", None)
+            func2 = getattr(self.__class__, arg+"_info", None)
             func3 = getattr(self.__class__, arg+"_of_unit", None)
             func4 = getattr(self.__class__, arg+"_target", None)
             func5 = None
@@ -6760,7 +6785,7 @@ def run(command, *modules):
     elif command in ["is-failed"]:
         print_str_list(systemctl.is_failed_modules(*modules))
     elif command in ["is-system-running"]:
-        print_str(systemctl.is_system_running_target())
+        print_str(systemctl.is_system_running_info())
     elif command in ["kill"]:
         exitcode = is_not_ok(systemctl.kill_modules(*modules))
     elif command in ["list-start-dependencies"]:
@@ -6831,7 +6856,7 @@ def run(command, *modules):
         exitcode = is_not_ok(systemctl.kill_unit(*modules))
     elif command in ["__load_preset_files"]:
         print_str_list(systemctl.load_preset_files(*modules))
-    elif command in ["__make_unit"]:
+    elif command in ["__mask_unit"]:
         exitcode = is_not_ok(systemctl.mask_unit(*modules))
     elif command in ["__read_env_file"]:
         print_str_list_list(list(systemctl.read_env_file(*modules)))
