@@ -1327,7 +1327,7 @@ class waitlock:
             remove = False
             lockfile = self.lockfile()
             if self.conf.status is None:
-                if not path_filesize(lockfile):
+                if not path_getsize(lockfile):
                     remove = True
             elif not self.conf.status: # empty dict
                 remove = True

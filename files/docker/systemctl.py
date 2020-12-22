@@ -1015,6 +1015,94 @@ class SystemctlConf:
             if value[0] in "TtYy123456789":
                 return True
         return False
+    def root(self):
+        return self._root
+    def status_file(self):
+        return os_path(self._root, self.get_status_file())
+    def get_status_file(self): # -> text
+        """ file where to store a status mark """
+        root = self.root_mode()
+        folder = get_PID_DIR(root)
+        name = self.name() + ".status"
+        return os.path.join(folder, name)
+    def clean_status(self):
+        self.status = {}
+        # this will ftruncate on next end of waitlock
+    def write_status(self, **status): # -> bool(written)
+        """ if a status_file is known then path is created and the
+            give status is written as the only content. """
+        status_file = self.status_file()
+        # if not status_file: return False
+        dirpath = os.path.dirname(os.path.abspath(status_file))
+        if not os.path.isdir(dirpath):
+            os.makedirs(dirpath)
+        if self.status is None:
+            self.status = self.read_status()
+        if True:
+            for key in sorted(status.keys()):
+                value = status[key]
+                if key.upper() == "AS": key = "ActiveState"
+                if key.upper() == "EXIT": key = "ExecMainCode"
+                if value is None:
+                    try: del self.status[key]
+                    except KeyError: pass
+                else:
+                    self.status[key] = strE(value)
+        try:
+            with open(status_file, "w") as f:
+                for key in sorted(self.status):
+                    value = str(self.status[key])
+                    if key == "MainPID" and value == "0":
+                        warn_("ignore writing MainPID=0")
+                        continue
+                    content = "{key}={value}\n".format(**locals())
+                    dbg_("writing {content}\t to {status_file}")
+                    f.write(content)
+        except IOError as e:
+            error_("writing STATUS {status}: {e}\n\t to status file {status_file}".format(**locals()))
+        return True
+    def read_status(self):
+        status_file = self.status_file()
+        status = {}
+        # if not status_file: return status
+        if not os.path.isfile(status_file):
+            if DEBUG_STATUS: # pagma: no cover
+                dbg_("no status file: {status_file}\n returning {status}".format(**locals()))
+            return status
+        if path_truncate_old(status_file):
+            if DEBUG_STATUS: # pagma: no cover 
+                dbg_("old status file: {status_file}\n returning {status}".format(**locals()))
+            return status
+        try:
+            if DEBUG_STATUS: # pragma: no cover
+                dbg_("reading {status_file}".format(**locals()))
+            for line0 in open(status_file):
+                if line0.startswith("#"):
+                    continue
+                line = line0.rstrip()
+                if line:
+                    m = re.match(r"(\w+)[:=](.*)", line)
+                    if m:
+                        key, value = m.group(1), m.group(2)
+                        if key.strip():
+                            status[key.strip()] = value.strip()
+                    else: #pragma: no cover
+                        warn_("ignored '{line}'".format(**locals()))
+        except:
+            warn_("bad read of status file '{status_file}'".format(**locals()))
+        return status
+    def get_status(self, name, default = None):
+        if self.status is None:
+            self.status = self.read_status()
+        return self.status.get(name, default)
+    def set_status(self, name, value):
+        if self.status is None:
+            self.status = self.read_status()
+        if value is None:
+            try: del self.status[name]
+            except KeyError: pass
+        else:
+            self.status[name] = value
 
 class PresetFile:
     def __init__(self):
@@ -1043,28 +1131,157 @@ class PresetFile:
                     return status
         return None
 
+_boottime = None
+def get_boottime():
+    """ detects the boot time of the container - in general the start time of PID 1 """
+    global _boottime
+    if _boottime is None:
+        _boottime = get_boottime_from_proc()
+    assert _boottime is not None
+    return _boottime
+def get_boottime_from_proc():
+    """ detects the latest boot time by looking at the start time of available process"""
+    pid1 = BOOT_PID_MIN or 0
+    pid_max = BOOT_PID_MAX
+    if pid_max < 0:
+        pid_max = pid1 - pid_max
+    for pid in xrange(pid1, pid_max):
+        proc = PROC_DIR
+        pid_stat = "{proc}/{pid}/stat".format(**locals())
+        try:
+            if os.path.exists(pid_stat):
+                # return os.path.getmtime(pid_stat) # did sometimes change
+                return path_proc_started(pid_stat)
+        except Exception as e: # pragma: no cover
+            warn_("boottime - could not access {pid_stat}: {e}".format(**locals()))
+    if DEBUG_BOOTTIME:
+        dbg_(" boottime from the oldest entry in /proc [nothing in {pid1}..{pid_max}]".format(**locals()))
+    return get_boottime_from_old_proc()
+def get_boottime_from_old_proc():
+    proc = PROC_DIR
+    booted = time.time()
+    for pid in os.listdir(proc):
+        pid_stat = "{proc}/{pid}/stat".format(**locals())
+        try:
+            if os.path.exists(pid_stat):
+                # ctime = os.path.getmtime(pid_stat)
+                ctime = path_proc_started(pid_stat)
+                if ctime < booted:
+                    booted = ctime 
+        except Exception as e: # pragma: no cover
+            warn_("could not access {pid_stat}: {e}".format(**locals()))
+    return booted
+
+# Use uptime, time process running in ticks, and current time to determine process boot time
+# You can't use the modified timestamp of the status file because it isn't static.
+# ... using clock ticks it is known to be a linear time on Linux
+def path_proc_started(proc):
+    #get time process started after boot in clock ticks
+    with open(proc) as file_stat:
+        data_stat = file_stat.readline()
+    file_stat.close()
+    stat_data = data_stat.split()
+    started_ticks = stat_data[21]
+    # man proc(5): "(22) starttime = The time the process started after system boot."
+    #    ".. the value is expressed in clock ticks (divide by sysconf(_SC_CLK_TCK))."
+    # NOTE: for containers the start time is related to the boot time of host system.
+
+    clkTickInt = os.sysconf_names['SC_CLK_TCK']
+    clockTicksPerSec = os.sysconf(clkTickInt)
+    started_secs = float(started_ticks) / clockTicksPerSec
+    if DEBUG_BOOTTIME:
+        dbg_("  BOOT .. Proc started time:  {started_secs:.3f} ({proc})".format(**locals()))
+    # this value is the start time from the host system
+
+    # Variant 1:
+    proc = PROC_DIR
+    system_uptime = "{proc}/uptime".format(**locals())
+    with open(system_uptime,"rb") as file_uptime:
+        data_uptime = file_uptime.readline()
+    file_uptime.close()
+    uptime_data = data_uptime.decode().split()
+    uptime_secs = float(uptime_data[0])
+    if DEBUG_BOOTTIME:
+        dbg_("  BOOT 1. System uptime secs: {uptime_secs:.3f} ({system_uptime})".format(**locals()))
+
+    #get time now
+    now = time.time()
+    started_time = now - (uptime_secs - started_secs)
+    if DEBUG_BOOTTIME:
+        date_started_time = datetime.datetime.fromtimestamp(started_time)
+        dbg_("  BOOT 1. Proc has been running since: {date_started_time}".format(**locals()))
+
+    # Variant 2:
+    system_stat = "{proc}/stat".format(**locals())
+    system_btime = 0.
+    with open(system_stat,"rb") as f:
+        for line in f:
+            assert isinstance(line, bytes)
+            if line.startswith(b"btime"):
+                system_btime = float(line.decode().split()[1])
+    f.closed
+    if DEBUG_BOOTTIME:
+        dbg_("  BOOT 2. System btime secs: {system_btime:.3f} ({system_stat})".format(**locals()))
+
+    started_btime = system_btime + started_secs
+    if DEBUG_BOOTTIME:
+        date_started_btime = datetime.datetime.fromtimestamp(started_btime)
+        dbg_("  BOOT 2. Proc has been running since: {date_started_btime}".format(**locals()))
+
+    # return started_time
+    return started_btime
+
+def path_truncate_old(filename):
+    filetime = os.path.getmtime(filename)
+    boottime = get_boottime()
+    if filetime >= boottime:
+        if DEBUG_BOOTTIME:
+            date_filetime = datetime.datetime.fromtimestamp(filetime)
+            date_boottime = datetime.datetime.fromtimestamp(boottime)
+            filename22, status22 = o22(filename), "status modified later"
+            debug_("  file time: {date_filetime} ({filename22})".format(**locals()))
+            debug_("  boot time: {date_boottime} ({status22})".format(**locals()))
+        return False # OK
+    else:
+        if DEBUG_BOOTTIME:
+            date_filetime = datetime.datetime.fromtimestamp(filetime)
+            date_boottime = datetime.datetime.fromtimestamp(boottime)
+            filename22, status22 = o22(filename), "status TRUNCATED NOW"
+            info_("  file time: {date_filetime} ({filename22})".format(**locals()))
+            info_("  boot time: {date_boottime} ({status22})".format(**locals()))
+        try:
+            shutil_truncate(filename)
+        except Exception as e:
+            warn_("while truncating: {e}".format(**locals()))
+        return True # truncated
+def path_getsize(filename):
+    if filename is None: # pragma: no cover (is never null)
+        return 0
+    if not os.path.isfile(filename):
+        return 0
+    if path_truncate_old(filename):
+        return 0
+    try:
+        return os.path.getsize(filename)
+    except Exception as e:
+        warn_("while reading file size: {e}\n of {filename}".format(**locals()))
+        return 0
+
 ## with waitlock(conf): self.start()
 class waitlock:
     def __init__(self, conf):
         self.conf = conf # currently unused
         self.opened = -1
-        self.lockfolder = expand_path(_notify_socket_folder, conf.root_mode())
-        try:
-            folder = self.lockfolder
-            if not os.path.isdir(folder):
-                os.makedirs(folder)
-        except Exception as e:
-            warn_("oops, {e}".format(**locals()))
     def lockfile(self):
-        unit = ""
-        if self.conf:
-            unit = self.conf.name()
-        return os.path.join(self.lockfolder, str(unit or "global") + ".lock")
+        return self.conf.status_file()
     def __enter__(self):
         me = os.getpid()
         try:
             lockfile = self.lockfile()
             lockname = os.path.basename(lockfile)
+            basedir = os.path.dirname(lockfile)
+            if not os.path.isdir(basedir):
+                os.makedirs(basedir)
             self.opened = os.open(lockfile, os.O_RDWR | os.O_CREAT, 0o600)
             for attempt in xrange(int(MaxLockWait or DefaultMaximumTimeout)):
                 try:
@@ -1076,13 +1293,18 @@ class waitlock:
                         os.close(self.opened)
                         self.opened = os.open(lockfile, os.O_RDWR | os.O_CREAT, 0o600)
                         continue
-                    content = "{{ 'systemctl': {me}, 'lock': '{lockname}' }}\n".format(**locals())
-                    os.write(self.opened, content.encode("utf-8"))
+                    os.lseek(self.opened, 0, os.SEEK_END)
+                    content = "#lock={me}\n".format(**locals())
+                    os.write(self.opened, content.encode("ascii"))
                     dbg_flock_("[{me}] {attempt}. holding lock on {lockname}".format(**locals()))
                     return True
                 except IOError as e:
-                    whom = os.read(self.opened, 4096).rstrip()
+                    whom = "<n/a>"
+                    status = os.read(self.opened, 4096)
                     os.lseek(self.opened, 0, os.SEEK_SET)
+                    for state in status.splitlines():
+                        if state.startswith(b"#lock="):
+                            whom=state[len(b"#lock="):].decode("ascii")
                     info_("[{me}] {attempt}. systemctl locked by {whom}".format(**locals()))
                     time.sleep(1) # until MaxLockWait
                     continue
@@ -1096,12 +1318,13 @@ class waitlock:
         me = os.getpid()
         try:
             os.lseek(self.opened, 0, os.SEEK_SET)
-            os.ftruncate(self.opened, 0)
-            if REMOVE_LOCK_FILE: # an optional implementation
-                lockfile = self.lockfile()
-                lockname = os.path.basename(lockfile)
-                os.unlink(lockfile) # ino is kept allocated because opened by this process
-                dbg_("[{me}] lockfile removed for {lockname}".format(**locals()))
+            if not self.conf.status:
+                os.ftruncate(self.opened, 0)
+                if REMOVE_LOCK_FILE: # an optional implementation
+                    lockfile = self.lockfile()
+                    lockname = os.path.basename(lockfile)
+                    os.unlink(lockfile) # ino is kept allocated because opened by this process
+                    dbg_("[{me}] lockfile removed for {lockname}".format(**locals()))
             fcntl.flock(self.opened, fcntl.LOCK_UN)
             os.close(self.opened) # implies an unlock but that has happend like 6 seconds later
             self.opened = -1
@@ -1399,7 +1622,6 @@ class Systemctl:
         self._user_getlogin = os_getlogin()
         self._log_file = {} # init-loop
         self._log_hold = {} # init-loop
-        self._boottime = None # cache self.get_boottime()
         self._SYSTEMD_UNIT_PATH = None
         self._SYSTEMD_SYSVINIT_PATH = None
         self._SYSTEMD_PRESET_PATH = None
@@ -1897,7 +2119,7 @@ class Systemctl:
             return default
         if not os.path.isfile(pid_file):
             return default
-        if self.truncate_old(pid_file):
+        if path_truncate_old(pid_file):
             return default
         try:
             # some pid-files from applications contain multiple lines
@@ -1926,10 +2148,10 @@ class Systemctl:
                 continue
             return pid
         return None
-    def get_pid_file_path(self, unit):
+    def get_status_pid_file(self, unit):
         """ actual file path of pid file (internal) """
         conf = self.get_unit_conf(unit)
-        return self.pid_file_from(conf)
+        return self.pid_file_from(conf) or conf.status_file()
     def pid_file_from(self, conf, default = ""):
         """ get the specified pid file path (not a computed default) """
         pid_file = self.get_pid_file(conf) or default
@@ -1958,233 +2180,21 @@ class Systemctl:
         """ actual file path of the status file (internal) """
         conf = self.get_unit_conf(unit)
         return self.get_status_file_from(conf)
-    def get_status_file_from(self, conf, default = None):
-        status_file = self.get_StatusFile(conf)
-        # this not a real setting, but do the expand_special anyway
-        return os_path(self._root, self.expand_special(status_file, conf))
-    def get_StatusFile(self, conf, default = None): # -> text
-        """ file where to store a status mark """
-        status_file = conf.get("Service", "StatusFile", default)
-        if status_file:
-            return status_file
-        root = conf.root_mode()
-        folder = get_PID_DIR(root)
-        name = conf.name() + ".status"
-        return os.path.join(folder, name)
+    def get_status_file_from(self, conf):
+        return conf.status_file()
+    def get_StatusFile(self, conf): # -> text
+        return conf.get_status_file()
     def clean_status_from(self, conf):
-        status_file = self.get_status_file_from(conf)
-        if os.path.exists(status_file):
-            os.remove(status_file)
-        conf.status = {}
+        conf.clean_status()
     def write_status_from(self, conf, **status): # -> bool(written)
-        """ if a status_file is known then path is created and the
-            give status is written as the only content. """
-        status_file = self.get_status_file_from(conf)
-        # if not status_file: return False
-        dirpath = os.path.dirname(os.path.abspath(status_file))
-        if not os.path.isdir(dirpath):
-            os.makedirs(dirpath)
-        if conf.status is None:
-            conf.status = self.read_status_from(conf)
-        if True:
-            for key in sorted(status.keys()):
-                value = status[key]
-                if key.upper() == "AS": key = "ActiveState"
-                if key.upper() == "EXIT": key = "ExecMainCode"
-                if value is None:
-                    try: del conf.status[key]
-                    except KeyError: pass
-                else:
-                    conf.status[key] = strE(value)
-        try:
-            with open(status_file, "w") as f:
-                for key in sorted(conf.status):
-                    value = str(conf.status[key])
-                    if key == "MainPID" and value == "0":
-                        warn_("ignore writing MainPID=0")
-                        continue
-                    content = "{key}={value}\n".format(**locals())
-                    dbg_("writing {content}\t to {status_file}")
-                    f.write(content)
-        except IOError as e:
-            error_("writing STATUS {status}: {e}\n\t to status file {status_file}".format(**locals()))
-        return True
+        return conf.write_status(**status)
     def read_status_from(self, conf):
-        status_file = self.get_status_file_from(conf)
-        status = {}
-        # if not status_file: return status
-        if not os.path.isfile(status_file):
-            if DEBUG_STATUS: # pagma: no cover
-                dbg_("no status file: {status_file}\n returning {status}".format(**locals()))
-            return status
-        if self.truncate_old(status_file):
-            if DEBUG_STATUS: # pagma: no cover 
-                dbg_("old status file: {status_file}\n returning {status}".format(**locals()))
-            return status
-        try:
-            if DEBUG_STATUS: # pragma: no cover
-                dbg_("reading {status_file}".format(**locals()))
-            for line0 in open(status_file):
-                line = line0.rstrip()
-                if line: 
-                    m = re.match(r"(\w+)[:=](.*)", line)
-                    if m:
-                        key, value = m.group(1), m.group(2)
-                        if key.strip():
-                            status[key.strip()] = value.strip()
-                    else: #pragma: no cover
-                        warn_("ignored '{line}'".format(**locals()))
-        except:
-            warn_("bad read of status file '{status_file}'".format(**locals()))
-        return status
+        return conf.read_status()
     def get_status_from(self, conf, name, default = None):
-        if conf.status is None:
-            conf.status = self.read_status_from(conf)
-        return conf.status.get(name, default)
+        return conf.get_status(name, default)
     def set_status_from(self, conf, name, value):
-        if conf.status is None:
-            conf.status = self.read_status_from(conf)
-        if value is None:
-            try: del conf.status[name]
-            except KeyError: pass
-        else:
-            conf.status[name] = value
+        conf.set_status(name, value)
     #
-    def get_boottime(self):
-        """ detects the boot time of the container - in general the start time of PID 1 """
-        if self._boottime is None:
-            self._boottime = self.get_boottime_from_proc()
-        assert self._boottime is not None
-        return self._boottime
-    def get_boottime_from_proc(self):
-        """ detects the latest boot time by looking at the start time of available process"""
-        pid1 = BOOT_PID_MIN or 0
-        pid_max = BOOT_PID_MAX
-        if pid_max < 0:
-            pid_max = pid1 - pid_max
-        for pid in xrange(pid1, pid_max):
-            proc = PROC_DIR
-            pid_stat = "{proc}/{pid}/stat".format(**locals())
-            try:
-                if os.path.exists(pid_stat):
-                    # return os.path.getmtime(pid_stat) # did sometimes change
-                    return self.path_proc_started(pid_stat)
-            except Exception as e: # pragma: no cover
-                warn_("boottime - could not access {pid_stat}: {e}".format(**locals()))
-        if DEBUG_BOOTTIME:
-            dbg_(" boottime from the oldest entry in /proc [nothing in {pid1}..{pid_max}]".format(**locals()))
-        return self.get_boottime_from_old_proc()
-    def get_boottime_from_old_proc(self):
-        proc = PROC_DIR
-        booted = time.time()
-        for pid in os.listdir(proc):
-            pid_stat = "{proc}/{pid}/stat".format(**locals())
-            try:
-                if os.path.exists(pid_stat):
-                    # ctime = os.path.getmtime(pid_stat)
-                    ctime = self.path_proc_started(pid_stat)
-                    if ctime < booted:
-                        booted = ctime 
-            except Exception as e: # pragma: no cover
-                warn_("could not access {pid_stat}: {e}".format(**locals()))
-        return booted
-
-    # Use uptime, time process running in ticks, and current time to determine process boot time
-    # You can't use the modified timestamp of the status file because it isn't static.
-    # ... using clock ticks it is known to be a linear time on Linux
-    def path_proc_started(self, proc):
-        #get time process started after boot in clock ticks
-        with open(proc) as file_stat:
-            data_stat = file_stat.readline()
-        file_stat.close()
-        stat_data = data_stat.split()
-        started_ticks = stat_data[21]
-        # man proc(5): "(22) starttime = The time the process started after system boot."
-        #    ".. the value is expressed in clock ticks (divide by sysconf(_SC_CLK_TCK))."
-        # NOTE: for containers the start time is related to the boot time of host system.
-
-        clkTickInt = os.sysconf_names['SC_CLK_TCK']
-        clockTicksPerSec = os.sysconf(clkTickInt)
-        started_secs = float(started_ticks) / clockTicksPerSec
-        if DEBUG_BOOTTIME:
-            dbg_("  BOOT .. Proc started time:  {started_secs:.3f} ({proc})".format(**locals()))
-        # this value is the start time from the host system
-
-        # Variant 1:
-        proc = PROC_DIR
-        system_uptime = "{proc}/uptime".format(**locals())
-        with open(system_uptime,"rb") as file_uptime:
-            data_uptime = file_uptime.readline()
-        file_uptime.close()
-        uptime_data = data_uptime.decode().split()
-        uptime_secs = float(uptime_data[0])
-        if DEBUG_BOOTTIME:
-            dbg_("  BOOT 1. System uptime secs: {uptime_secs:.3f} ({system_uptime})".format(**locals()))
-
-        #get time now
-        now = time.time()
-        started_time = now - (uptime_secs - started_secs)
-        if DEBUG_BOOTTIME:
-            date_started_time = datetime.datetime.fromtimestamp(started_time)
-            dbg_("  BOOT 1. Proc has been running since: {date_started_time}".format(**locals()))
-
-        # Variant 2:
-        system_stat = "{proc}/stat".format(**locals())
-        system_btime = 0.
-        with open(system_stat,"rb") as f:
-            for line in f:
-                assert isinstance(line, bytes)
-                if line.startswith(b"btime"):
-                    system_btime = float(line.decode().split()[1])
-        f.closed
-        if DEBUG_BOOTTIME:
-            dbg_("  BOOT 2. System btime secs: {system_btime:.3f} ({system_stat})".format(**locals()))
-
-        started_btime = system_btime + started_secs
-        if DEBUG_BOOTTIME:
-            date_started_btime = datetime.datetime.fromtimestamp(started_btime)
-            dbg_("  BOOT 2. Proc has been running since: {date_started_btime}".format(**locals()))
-
-        # return started_time
-        return started_btime
-
-    def get_filetime(self, filename):
-        return os.path.getmtime(filename)
-    def truncate_old(self, filename):
-        filetime = self.get_filetime(filename)
-        boottime = self.get_boottime()
-        if filetime >= boottime:
-            if DEBUG_BOOTTIME:
-                date_filetime = datetime.datetime.fromtimestamp(filetime)
-                date_boottime = datetime.datetime.fromtimestamp(boottime)
-                filename22, status22 = o22(filename), "status modified later"
-                debug_("  file time: {date_filetime} ({filename22})".format(**locals()))
-                debug_("  boot time: {date_boottime} ({status22})".format(**locals()))
-            return False # OK
-        else:
-            if DEBUG_BOOTTIME:
-                date_filetime = datetime.datetime.fromtimestamp(filetime)
-                date_boottime = datetime.datetime.fromtimestamp(boottime)
-                filename22, status22 = o22(filename), "status TRUNCATED NOW"
-                info_("  file time: {date_filetime} ({filename22})".format(**locals()))
-                info_("  boot time: {date_boottime} ({status22})".format(**locals()))
-            try:
-                shutil_truncate(filename)
-            except Exception as e:
-                warn_("while truncating: {e}".format(**locals()))
-            return True # truncated
-    def getsize(self, filename):
-        if filename is None: # pragma: no cover (is never null)
-            return 0
-        if not os.path.isfile(filename):
-            return 0
-        if self.truncate_old(filename):
-            return 0
-        try:
-            return os.path.getsize(filename)
-        except Exception as e:
-            warn_("while reading file size: {e}\n of {filename}".format(**locals()))
-            return 0
     #
     def read_env_file(self, env_file): # -> generate[ (name,value) ]
         """ EnvironmentFile=<name> is being scanned """
@@ -4435,7 +4445,7 @@ class Systemctl:
             if not os.path.exists(pid_file):
                 return "inactive"
         status_file = self.get_status_file_from(conf)
-        if self.getsize(status_file):
+        if path_getsize(status_file):
             state = self.get_status_from(conf, "ActiveState", "")
             if state:
                 if DEBUG_STATUS:
@@ -4488,7 +4498,7 @@ class Systemctl:
             if not os.path.exists(pid_file):
                 return "dead"
         status_file = self.get_status_file_from(conf)
-        if self.getsize(status_file):
+        if path_getsize(status_file):
             state = self.get_status_from(conf, "ActiveState", "")
             if state:
                 if state in [ "active" ]:
@@ -4564,15 +4574,10 @@ class Systemctl:
     def reset_failed_from(self, conf):
         if conf is None: return True
         if not self.is_failed_from(conf): return False
+        with waitlock(conf):
+            return self.do_reset_failed_from(conf)
+    def do_reset_failed_from(self, conf):
         done = False
-        status_file = self.get_status_file_from(conf)
-        if status_file and os.path.exists(status_file):
-            try:
-                os.remove(status_file)
-                done = True
-                dbg_("done rm {status_file}".format(**locals()))
-            except Exception as e:
-                error_("while rm {status_file}: {e}".format(**locals()))
         pid_file = self.pid_file_from(conf)
         if pid_file and os.path.exists(pid_file):
             try:
@@ -4581,6 +4586,8 @@ class Systemctl:
                 dbg_("done rm {pid_file}".format(**locals()))
             except Exception as e:
                 error_("while rm {pid_file}: {e}".format(**locals()))
+        conf.clean_status()
+        # this will truncate/remove the status file on end of waitlock
         return done
     def status_modules(self, *modules):
         """ [UNIT]... check the status of these units.
@@ -4706,7 +4713,7 @@ class Systemctl:
             found = len(self._preset_file_list)
             debug_("found {found} preset files".format(**locals()))
         return sorted(self._preset_file_list.keys())
-    def get_preset_of_unit(self, unit):
+    def get_preset_of_unit(self, unit, default = None):
         """ [UNIT] check the *.preset of this unit (experimental)
         """
         self.load_preset_files()
@@ -4718,7 +4725,7 @@ class Systemctl:
                 return status
         logg.info("Unit {unit} not found in preset files (defaults to disable)".format(**locals()))
         self.error |= NOT_FOUND
-        return "disable"
+        return default
     def preset_modules(self, *modules):
         """ [UNIT]... -- set 'enabled' when in *.preset
         """
@@ -6372,7 +6379,7 @@ class Systemctl:
             return "offline"
         status = self.read_status_from(conf)
         return status.get("SubState", "unknown")
-    def is_system_running_target(self):
+    def is_system_running_info(self):
         """ -- return status while running 'default' services """
         state = self.is_system_running()
         if state not in [ "running" ]:
@@ -6399,7 +6406,7 @@ class Systemctl:
             break
     def is_running_unit_from(self, conf):
         status_file = self.get_status_file_from(conf)
-        return self.getsize(status_file) > 0
+        return path_getsize(status_file) > 0
     def is_running_unit(self, unit):
         conf = self.get_unit_conf(unit)
         return self.is_running_unit_from(conf)
@@ -6530,8 +6537,8 @@ class Systemctl:
                arg = name[:-len("_target")].replace("_","-")
             if name.endswith("_of_unit"):
                arg = name[:-len("_of_unit")].replace("_","-")
-            if name.endswith("_module"):
-               arg = name[:-len("_module")].replace("_","-")
+            if name.endswith("_info"):
+               arg = name[:-len("_info")].replace("_","-")
             if name.endswith("_modules"):
                arg = name[:-len("_modules")].replace("_","-")
             if arg:
@@ -6569,7 +6576,7 @@ class Systemctl:
         for arg in args:
             arg = arg.replace("-","_")
             func1 = getattr(self.__class__, arg+"_modules", None)
-            func2 = getattr(self.__class__, arg+"_module", None)
+            func2 = getattr(self.__class__, arg+"_info", None)
             func3 = getattr(self.__class__, arg+"_of_unit", None)
             func4 = getattr(self.__class__, arg+"_target", None)
             func5 = None
@@ -6603,7 +6610,7 @@ class Systemctl:
         features2 = " +SYSVINIT -UTMP -LIBCRYPTSETUP -GCRYPT -GNUTLS"
         features3 = " -ACL -XZ -LZ4 -SECCOMP -BLKID -ELFUTILS -KMOD -IDN"
         return features1+features2+features3
-    def systems_version(self):
+    def version_info(self):
         return [ self.systemd_version(), self.systemd_features() ]
 
 def print_begin(argv, args):
@@ -6753,7 +6760,7 @@ def run(command, *modules):
     elif command in ["is-failed"]:
         print_str_list(systemctl.is_failed_modules(*modules))
     elif command in ["is-system-running"]:
-        print_str(systemctl.is_system_running_target())
+        print_str(systemctl.is_system_running_info())
     elif command in ["kill"]:
         exitcode = is_not_ok(systemctl.kill_modules(*modules))
     elif command in ["list-start-dependencies"]:
@@ -6800,6 +6807,8 @@ def run(command, *modules):
         exitcode = is_not_ok(systemctl.try_restart_modules(*modules))
     elif command in ["unmask"]:
         exitcode = is_not_ok(systemctl.unmask_modules(*modules))
+    elif command in ["version"]:
+        print_str_list(systemctl.version_info())
     elif command in ["__cat_unit"]:
         print_str(systemctl.cat_unit(*modules))
     elif command in ["__get_active_unit"]:
@@ -6808,8 +6817,8 @@ def run(command, *modules):
         print_str(systemctl.get_description(*modules))
     elif command in ["__get_status_file"]:
         print_str(systemctl.get_status_file_path(*modules))
-    elif command in ["__get_pid_file"]:
-        print_str(systemctl.get_pid_file_path(*modules))
+    elif command in ["__get_status_pid_file", "__get_pid_file"]:
+        print_str(systemctl.get_status_pid_file(*modules))
     elif command in ["__disable_unit"]:
         exitcode = is_not_ok(systemctl.disable_unit(*modules))
     elif command in ["__enable_unit"]:
