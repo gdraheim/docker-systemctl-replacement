@@ -1028,8 +1028,11 @@ class SystemctlConf:
         name = self.name() + ".status"
         return os.path.join(folder, name)
     def clean_status(self):
-        self.status = {}
-        # this will ftruncate on next end of waitlock
+        self.status = None
+        status_file = self.status_file()
+        if os.path.exists(status_file):
+            with open(status_file, 'w'): pass
+        # ftruncate would also be done at the next end of waitlock
     def write_status(self, **status): # -> bool(written)
         """ if a status_file is known then path is created and the
             give status is written as the only content. """
@@ -1298,10 +1301,12 @@ class waitlock:
                     os.lseek(self.opened, 0, os.SEEK_END)
                     content = "#lock={me}\n".format(**locals())
                     os.write(self.opened, content.encode("ascii"))
+                    os.lseek(self.opened, 0, os.SEEK_SET)
                     dbg_flock_("[{me}] {attempt}. holding lock on {lockname}".format(**locals()))
                     return True
                 except IOError as e:
                     whom = "<n/a>"
+                    os.lseek(self.opened, 0, os.SEEK_SET)
                     status = os.read(self.opened, 4096)
                     os.lseek(self.opened, 0, os.SEEK_SET)
                     for state in status.splitlines():
@@ -1319,11 +1324,18 @@ class waitlock:
     def __exit__(self, type, value, traceback):
         me = os.getpid()
         try:
-            os.lseek(self.opened, 0, os.SEEK_SET)
-            if not self.conf.status or TEST_LOCK_FILE:
+            remove = False
+            lockfile = self.lockfile()
+            if self.conf.status is None:
+                if not path_filesize(lockfile):
+                    remove = True
+            elif not self.conf.status: # empty dict
+                remove = True
+            if remove or TEST_LOCK_FILE:
                 os.ftruncate(self.opened, 0)
+                lockfile = self.lockfile()
+                info_("truncated {lockfile}".format(**locals()))
                 if REMOVE_LOCK_FILE: # an optional implementation
-                    lockfile = self.lockfile()
                     lockname = os.path.basename(lockfile)
                     os.unlink(lockfile) # ino is kept allocated because opened by this process
                     dbg_("[{me}] lockfile removed for {lockname}".format(**locals()))
@@ -4459,6 +4471,9 @@ class Systemctl:
         pid_file = self.pid_file_from(conf)
         if pid_file: # application PIDFile
             if not os.path.exists(pid_file):
+                if DEBUG_STATUS:
+                    unit = conf.name()
+                    debug_("get_pid status {unit} (does not exist) => inactive".format(**locals()))
                 return "inactive"
         status_file = self.get_status_file_from(conf)
         if path_getsize(status_file):
@@ -4471,7 +4486,7 @@ class Systemctl:
         pid = self.read_mainpid_from(conf)
         if DEBUG_STATUS:
             filename44 = path44(pid_file or status_file)
-            debug_("pid_file {filename44} => PID {pid}".format(**locals()))
+            debug_("status_pid_file {filename44} => PID {pid}".format(**locals()))
         if pid:
             if not pid_exists(pid) or pid_zombie(pid):
                 return "failed"
