@@ -16274,9 +16274,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} is-active zzz.service -vv"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s", cmd, end, out)
-        self.assertEqual(end, 0)
-        self.assertEqual(out.strip(), "active")
-        # 'active' because the PIDFile process was not killed
+        ## self.assertEqual(end, 0)
+        ## self.assertEqual(out.strip(), "active")
+        ### 'active' because the PIDFile process was not killed
+        self.assertEqual(end, 3)
+        self.assertEqual(out.strip(), "failed")
         #
         log = lines(open(logfile))
         logg.info("LOG\n %s", "\n ".join(log))
@@ -16285,7 +16287,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
            "run-start-pre", "START-PRE",
            "run-start", "START-IT", "started",
            "run-start-post", "START-POST",
-           "run-stop", "fail-stop"])
+           "run-stop", "fail-stop",
+           "run-stop-post", "STOP-POST"])
         #
         os.remove(fail+"stop")
         text_file(fail+"afterstop", "")
