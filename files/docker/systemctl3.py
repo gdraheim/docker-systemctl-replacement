@@ -3098,7 +3098,6 @@ class Systemctl:
                         self.remove_service_directories(conf) # cleanup that /run/sshd
                     return False
         if runs in [ "oneshot" ]:
-            status_file = self.get_status_file_from(conf)
             if oldstatus in ["active"]:
                 warn_("the service was already up once")
                 self.write_status_from(conf, AS=oldstatus)
@@ -3125,7 +3124,6 @@ class Systemctl:
                 active = returncode and "failed" or "active"
                 self.write_status_from(conf, AS=active)
         elif runs in [ "simple", "idle" ]:
-            status_file = self.get_status_file_from(conf)
             pid = self.read_mainpid_from(conf)
             if self.is_active_pid(pid):
                 warn_("the service is already running on PID {pid}".format(**locals()))
@@ -3261,7 +3259,6 @@ class Systemctl:
                 time.sleep(MinimumTimeoutStartSec)
                 filename44 = path44(conf.filename())
                 warn_("No PIDFile for forking {filename44}".format(**locals()))
-                status_file = self.get_status_file_from(conf)
                 self.set_status_from(conf, ExecMainCode, strE(returncode))
                 if returncode:
                     active = run.returncode and "failed" or "active" # result "failed"
@@ -3835,7 +3832,6 @@ class Systemctl:
         self.set_status_from(conf, ExecStopCode, None)
         self.write_status_from(conf, AS="stopping")
         if runs in [ "oneshot" ]:
-            status_file = self.get_status_file_from(conf)
             if oldstatus in ["inactive"]:
                 warn_("the service is already down once")
                 self.write_status_from(conf, AS=oldstatus)
@@ -3865,9 +3861,6 @@ class Systemctl:
                 self.clean_pid_file_from(conf)
                 self.clean_status_from(conf) # "inactive"
         elif runs in [ "simple", "notify", "idle" ]:
-            status_file = self.get_status_file_from(conf)
-            size = os.path.exists(status_file) and os.path.getsize(status_file)
-            info_("STATUS {status_file} {size}".format(**locals()))
             pid = 0
             for cmd in conf.getlist("Service", "ExecStop", []):
                 env["MAINPID"] = strE(self.read_mainpid_from(conf))
@@ -3898,7 +3891,6 @@ class Systemctl:
                     self.clean_pid_file_from(conf)
                 self.clean_status_from(conf) # "inactive"
         elif runs in [ "forking" ]:
-            status_file = self.get_status_file_from(conf)
             pid_file = self.pid_file_from(conf)
             for cmd in conf.getlist("Service", "ExecStop", []):
                 # active = self.is_active_from(conf)
