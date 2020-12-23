@@ -2003,6 +2003,104 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
+    def test_1094_check_service_directory_diagnostics_on_start_service(self) -> None:
+        """ check that user and groups are checks are done before a start of a service"""
+        self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            Type=foo
+            ExecStart=/usr/bin/false
+            RootDirectory=/foo
+            ReadOnlyPaths=/foo""")
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            Type=foo
+            ExecStart=-/usr/bin/false
+            PrivateTmp=yes
+            ProtectSystem=yes
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/system/zzc.service"),"""
+            [Unit]
+            Description=Testing C
+            [Service]
+            Type=foo
+            ExecStart=-/usr/bin/false
+            PrivateTmp=yes
+            AnyOtherOption=yes
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/system/zzd.service"),"""
+            [Unit]
+            Description=Testing D
+            [Service]
+            Type=foo
+            ExecStart=-/usr/bin/false
+            User=not-existant-user
+            PrivateTmp=yes
+            [Install]
+            WantedBy=multi-user.target""")
+        #
+        cmd = "{systemctl} daemon-reload -vv 2>&1"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertTrue(greps(out, r"Failed to parse service type, ignoring: foo"))
+        #
+        logg.info("========================= zza ========")
+        cmd = "{systemctl} start --no-reload zza -vv 2>&1"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 1)
+        self.assertTrue(greps(out, r"Failed to parse service type, ignoring: foo"))
+        self.assertTrue(greps(out, r"a.service: Service private directory remounts ignored: RootDirectory=/foo"))
+        self.assertTrue(greps(out, r"a.service: Service private directory remounts ignored: ReadOnlyPaths=/foo"))
+        self.assertFalse(greps(out, r"Oops")) # not a real error here
+        self.assertFalse(greps(out, r"private directory settings are ignored")) # which makes for no summary
+        #
+        logg.info("========================= zzb ========")
+        cmd = "{systemctl} start --no-reload zzb -vv 2>&1"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 1)
+        self.assertTrue(greps(out, r"Failed to parse service type, ignoring: foo"))
+        self.assertTrue(greps(out, r"b.service: Service private directory option is ignored: PrivateTmp=yes"))
+        self.assertTrue(greps(out, r"b.service: Service private directory option is ignored: ProtectSystem=yes"))
+        self.assertFalse(greps(out, r"Oops")) # not a real error here
+        self.assertFalse(greps(out, r"private directory settings are ignored")) # which makes for no summary
+        #
+        logg.info("========================= zzc ========")
+        cmd = "{systemctl} start --no-reload zzc -vv 2>&1"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 1)
+        self.assertTrue(greps(out, r"Failed to parse service type, ignoring: foo"))
+        self.assertTrue(greps(out, r"c.service: Service private directory option is ignored: PrivateTmp=yes"))
+        self.assertFalse(greps(out, r"c.service: Service private directory option is ignored: AnyOtherOption=yes"))
+        self.assertFalse(greps(out, r"Oops")) # not a real error here
+        self.assertFalse(greps(out, r"private directory settings are ignored")) # which makes for no summary
+        #
+        logg.info("========================= zzd ========")
+        cmd = "{systemctl} start --no-reload zzd -vv 2>&1"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 1)
+        self.assertTrue(greps(out, r"Failed to parse service type, ignoring: foo"))
+        self.assertTrue(greps(out, r"d.service: Service private directory option is ignored: PrivateTmp=yes"))
+        self.assertTrue(greps(out, r"Oops")) # not a real error here
+        self.assertTrue(greps(out, r"private directory settings are ignored")) # which makes for no summary
+        #
+        self.rm_testdir()
+        self.coverage()
+        self.end()
     def test_1099_errors_message_on_dot_include(self) -> None:
         """ check that '.include' is accepted but marked deprecated"""
         self.begin()
