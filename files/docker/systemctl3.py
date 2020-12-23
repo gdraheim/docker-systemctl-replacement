@@ -2899,14 +2899,18 @@ class Systemctl:
             socketfile = os.path.join(notify_folder, notify_name77)
             if len(socketfile) > 100:
                 socketfile = os.path.join(notify_folder, notify_name44)
+            socketfoldername = os.path.basename(_notify_socket_folder)
             uid = get_USER_ID()
-            pref = "zz.{uid}.systemctl".format(**locals())
+            pref1 = "zz.{uid}.{socketfoldername}".format(**locals())
+            pref0 = "zz.{uid}".format(**locals())
             if len(socketfile) >= 100:
-                socketfile = os.path.join(get_TMP(), pref, notify_name)
+                socketfile = os.path.join(get_TMP(), pref1, notify_name)
             if len(socketfile) >= 100:
-                socketfile = os.path.join(get_TMP(), pref, notify_name77)
+                socketfile = os.path.join(get_TMP(), pref1, notify_name77)
             if len(socketfile) >= 100: # pragma: no cover
-                socketfile = os.path.join(get_TMP(), pref, notify_name44)
+                socketfile = os.path.join(get_TMP(), pref1, notify_name44)
+            if len(socketfile) >= 100: # pragma: no cover
+                socketfile = os.path.join(get_TMP(), pref0, notify_name44)
             if len(socketfile) >= 100: # pragma: no cover
                 socketfile = os.path.join(get_TMP(), notify_name44)
             if debug:
