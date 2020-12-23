@@ -34,13 +34,14 @@ if sys.version[0] == '3':
     xrange = range
 
 DEBUG_AFTER = False
-DEBUG_STATUS = True
+DEBUG_STATUS = False
 DEBUG_BOOTTIME = False
 DEBUG_INITLOOP = False
 DEBUG_KILLALL = False
 DEBUG_FLOCK = False
 DEBUG_VARS = False
 DEBUG_RESULT = False
+DEBUG_SOCKETFILE = True
 TestListen = False
 TestAccept = False
 
@@ -2900,20 +2901,20 @@ class Systemctl:
                 socketfile = os.path.join(notify_folder, notify_name44)
             uid = get_USER_ID()
             pref = "zz.{uid}.systemctl".format(**locals())
-            if len(socketfile) > 100:
+            if len(socketfile) >= 100:
                 socketfile = os.path.join(get_TMP(), pref, notify_name)
-            if len(socketfile) > 100:
+            if len(socketfile) >= 100:
                 socketfile = os.path.join(get_TMP(), pref, notify_name77)
-            if len(socketfile) > 100: # pragma: no cover
+            if len(socketfile) >= 100: # pragma: no cover
                 socketfile = os.path.join(get_TMP(), pref, notify_name44)
-            if len(socketfile) > 100: # pragma: no cover
+            if len(socketfile) >= 100: # pragma: no cover
                 socketfile = os.path.join(get_TMP(), notify_name44)
             if debug:
                 path_length = len(socketfile)
                 info_("new notify socketfile ({path_length}) = {socketfile}".format(**locals()))
         return socketfile
     def notify_socket_from(self, conf, socketfile = None):
-        socketfile = self.get_notify_socket_from(conf, socketfile, debug=True)
+        socketfile = self.get_notify_socket_from(conf, socketfile, debug=DEBUG_SOCKETFILE)
         try:
             if not os.path.isdir(os.path.dirname(socketfile)):
                 os.makedirs(os.path.dirname(socketfile))
