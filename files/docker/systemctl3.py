@@ -265,13 +265,6 @@ _sysv_mappings["$remote_fs"] = "remote-fs.target"
 _sysv_mappings["$timer"] = "timers.target"
 
 # ActiveState values
-AS_active="active"
-AS_inactive="inactive"
-AS_activating="activating"
-AS_deactivating="deactivating"
-AS_reloading="reloading"
-AS_failed="failed"
-AS_notfound="not-found"
 ExecMainCode="ExecMainCode"
 ExecStopCode="ExecStopCode"
 
@@ -3847,7 +3840,7 @@ class Systemctl:
             if True:
                 if returncode:
                     self.set_status_from(conf, ExecStopCode, strE(returncode))
-                    self.write_status_from(conf, AS=AS_failed)
+                    self.write_status_from(conf, AS="failed")
                 else:
                     self.clean_status_from(conf) # "inactive"
         ### fallback Stop => Kill for ["simple","notify","forking"]
@@ -3882,7 +3875,7 @@ class Systemctl:
                     self.clean_pid_file_from(conf)
                     self.clean_status_from(conf) # "inactive"
                 else:
-                    self.write_status_from(conf, AS=AS_failed) # keep MainPID
+                    self.write_status_from(conf, AS="failed") # keep MainPID
             else:
                 info_("{runs} sleep as no PID was found on Stop".format(**locals()))
                 time.sleep(MinimumTimeoutStopSec)
@@ -3914,7 +3907,7 @@ class Systemctl:
                 if self.wait_vanished_pid(pid, timeout):
                     self.clean_pid_file_from(conf)
                 else:
-                    self.write_status_from(conf, AS=AS_failed) # keep MainPID
+                    self.write_status_from(conf, AS="failed") # keep MainPID
             else:
                 info_("{runs} sleep as no PID was found on Stop".format(**locals()))
                 time.sleep(MinimumTimeoutStopSec)
@@ -6261,7 +6254,7 @@ class Systemctl:
                             # all values in restarted have a time below limitSecs
                         if len(restarted) >= limitBurst:
                             info_("[{me}] [{unit}] Blocking Restart - oldest {oldest} is {interval} ago (allowed {limitSecs})".format(**locals()))
-                            self.write_status_from(conf, AS=AS_failed)
+                            self.write_status_from(conf, AS="failed")
                             unit = "" # dropped out
                             continue
                     except Exception as e:
