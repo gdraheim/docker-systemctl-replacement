@@ -3072,6 +3072,9 @@ class Systemctl:
         # for StopPost on failure:
         returncode = 0
         service_result = "success"
+        oldstatus = self.get_status_from(conf, "ActiveState", "unknown")
+        self.set_status_from(conf, "ExecMainCode", None)
+        self.write_status_from(conf, AS="starting")
         if True:
             if runs in [ "simple", "forking", "notify", "idle" ]:
                 env["MAINPID"] = strE(self.read_mainpid_from(conf))
@@ -3093,8 +3096,9 @@ class Systemctl:
                     return False
         if runs in [ "oneshot" ]:
             status_file = self.get_status_file_from(conf)
-            if self.get_status_from(conf, "ActiveState", "unknown") == "active":
+            if oldstatus in ["active"]:
                 warn_("the service was already up once")
+                self.write_status_from(conf, AS=oldstatus)
                 return True
             for cmd in conf.getlist("Service", "ExecStart", []):
                 exe, newcmd = self.exec_newcmd(cmd, env, conf)
@@ -3269,6 +3273,7 @@ class Systemctl:
                 self.clean_status_from(conf) # active comes from PIDFile alone
         else:
             error_("unsupported run type '{runs}'".format(**locals()))
+            self.clean_status_from(conf) # "inactive"
             return False
         # POST sequence
         if not self.is_active_from(conf):
@@ -3821,10 +3826,14 @@ class Systemctl:
         env.update(service_directories)
         returncode = 0
         service_result = "success"
+        oldstatus = self.get_status_from(conf, "ActiveState", "unknown")
+        self.set_status_from(conf, "ExecStopCode", None)
+        self.write_status_from(conf, AS="stopping")
         if runs in [ "oneshot" ]:
             status_file = self.get_status_file_from(conf)
-            if self.get_status_from(conf, "ActiveState", "unknown") == "inactive":
+            if oldstatus in ["inactive"]:
                 warn_("the service is already down once")
+                self.write_status_from(conf, AS=oldstatus)
                 return True
             for cmd in conf.getlist("Service", "ExecStop", []):
                 exe, newcmd = self.exec_newcmd(cmd, env, conf)
@@ -3921,6 +3930,7 @@ class Systemctl:
                 self.clean_status_from(conf) # "inactive"
         else:
             error_("unsupported run type '{runs}'".format(**locals()))
+            self.clean_status_from(conf) # "inactive"
             return False
         # POST sequence
         if not self.is_active_from(conf):
@@ -4048,10 +4058,13 @@ class Systemctl:
         if not self._quiet:
             okee = self.exec_check_unit(conf, env, "Service", "ExecReload")
             if not okee and _no_reload: return False
+        oldstatus = self.get_status_from(conf, "ActiveState", "unknown")
+        self.set_status_from(conf, "ExecReloadCode", None)
+        self.write_status_from(conf, AS="reloading")
+        #
         initscript = conf.filename()
-        if self.is_sysv_file(initscript):
-            status_file = self.get_status_file_from(conf)
-            if initscript:
+        if initscript and self.is_sysv_file(initscript):
+            for cmd in [initscript]:
                 newcmd = [initscript, "reload"]
                 env["SYSTEMCTL_SKIP_REDIRECT"] = "yes"
                 info_("{runs} reload".format(**locals()), shell_cmd(newcmd))
@@ -4084,14 +4097,19 @@ class Systemctl:
                 if run.returncode and exe.check: 
                     returncodeOK = exitOK(run.returncode)
                     error_("Job for {unit} failed because the control process exited with error code. ({returncodeOK})".format(**locals()))
+                    self.set_status_from(conf, "ExecReloadCode", run.returncode)
+                    self.write_status_from(conf, AS="failed")
                     return False
             time.sleep(MinimumYield)
+            self.write_status_from(conf, AS=oldstatus)
             return True
         elif runs in [ "oneshot" ]:
             dbg_("ignored run type '{runs}' for reload".format(**locals()))
+            self.write_status_from(conf, AS=oldstatus)
             return True
         else:
             error_("unsupported run type '{runs}'".format(**locals()))
+            self.clean_status_from(conf) # "inactive"
             return False
     def restart_modules(self, *modules):
         """ [UNIT]... -- restart these units """
