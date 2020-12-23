@@ -25321,7 +25321,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("systemctl.debug.log>\n\t%s", "\n\t".join(log))
         self.assertTrue(greps(log, "restart"))
         self.assertTrue(greps(log, "zza.service.*Blocking Restart"))
-        self.assertTrue(greps(log, "zza.service.*Status: error"))
+        # self.assertTrue(greps(log, "zza.service.*Status: error"))
         #
         logg.info("kill daemon at %s", init.pid)
         self.assertTrue(self.kill(init.pid))
