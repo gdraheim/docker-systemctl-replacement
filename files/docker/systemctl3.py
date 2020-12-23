@@ -1247,17 +1247,17 @@ def path_truncate_old(filename):
         if DEBUG_BOOTTIME:
             date_filetime = datetime.datetime.fromtimestamp(filetime)
             date_boottime = datetime.datetime.fromtimestamp(boottime)
-            filename22, status22 = o22(filename), "status modified later"
-            debug_("  file time: {date_filetime} ({filename22})".format(**locals()))
-            debug_("  boot time: {date_boottime} ({status22})".format(**locals()))
+            filename44, status44 = path44(filename), "status modified later"
+            debug_("  file time: {date_filetime} ({filename44})".format(**locals()))
+            debug_("  boot time: {date_boottime} ({status44})".format(**locals()))
         return False # OK
     else:
         if DEBUG_BOOTTIME:
             date_filetime = datetime.datetime.fromtimestamp(filetime)
             date_boottime = datetime.datetime.fromtimestamp(boottime)
-            filename22, status22 = o22(filename), "status TRUNCATED NOW"
-            info_("  file time: {date_filetime} ({filename22})".format(**locals()))
-            info_("  boot time: {date_boottime} ({status22})".format(**locals()))
+            filename44, status44 = path44(filename), "status TRUNCATED NOW"
+            info_("  file time: {date_filetime} ({filename44})".format(**locals()))
+            info_("  boot time: {date_boottime} ({status44})".format(**locals()))
         try:
             shutil_truncate(filename)
         except Exception as e:
