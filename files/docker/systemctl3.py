@@ -5605,6 +5605,10 @@ class Systemctl:
         havePIDFile = conf.get(section, "PIDFile", "")
         if haveType in ["notify", "forking"] and not havePIDFile:
             info_("{unit}: {section} type={haveType} does not provide a {section} PIDFile.".format(**locals()))
+        if haveType in ["oneshot"]:
+           doRemainAfterExit = self.get_RemainAfterExit(conf)
+           if not doRemainAfterExit:
+              warn_("{unit}: {section} type={haveType} requires RemainAfterExit=yes to be 'active' after start.".format(**locals()))
         abspath = 0
         notexists = 0
         badusers = 0
