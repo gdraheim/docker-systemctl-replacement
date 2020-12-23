@@ -13234,6 +13234,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             After=foo.service
             [Service]
             Type=oneshot
+            RemainAfterExit=yes
             ExecStart={bindir}/{testsleep} 3
             ExecStop="/bin/false"
             [Install]
