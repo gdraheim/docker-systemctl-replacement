@@ -264,6 +264,16 @@ _sysv_mappings["$network"] = "network.target"
 _sysv_mappings["$remote_fs"] = "remote-fs.target"
 _sysv_mappings["$timer"] = "timers.target"
 
+# ActiveState values
+AS_active="active"
+AS_inactive="inactive"
+AS_activating="activating"
+AS_deactivating="deactivating"
+AS_reloading="reloading"
+AS_failed="failed"
+AS_notfound="not-found"
+ExecMainCode="ExecMainCode"
+ExecStopCode="ExecStopCode"
 
 # https://tldp.org/LDP/abs/html/exitcodes.html
 # https://freedesktop.org/software/systemd/man/systemd.exec.html#id-1.20.8
@@ -3155,6 +3165,8 @@ class Systemctl:
                 self.set_status_from(conf, "ExecMainCode", strE(returncode))
                 active = returncode and "failed" or "active"
                 self.write_status_from(conf, AS=active)
+            else:
+                self.write_status_from(conf, AS=None) # active comes from PID
         elif runs in [ "notify" ]:
             # "notify" is the same as "simple" but we create a $NOTIFY_SOCKET 
             # and wait for startup completion by checking the socket messages
@@ -3221,6 +3233,8 @@ class Systemctl:
                 self.set_status_from(conf, "ExecMainCode", strE(returncode))
                 active = returncode and "failed" or "active"
                 self.write_status_from(conf, AS=active)
+            else:
+                self.write_status_from(conf, AS=None) # active comes from PID
         elif runs in [ "forking" ]:
             pid_file = self.pid_file_from(conf)
             for cmd in conf.getlist("Service", "ExecStart", []):
@@ -3249,14 +3263,17 @@ class Systemctl:
                 warn_("No PIDFile for forking {filename44}".format(**locals()))
                 status_file = self.get_status_file_from(conf)
                 self.set_status_from(conf, "ExecMainCode", strE(returncode))
-                active = returncode and "failed" or "active"
-                self.write_status_from(conf, AS=active)
+                if returncode:
+                    active = run.returncode and "failed" or "active" # result "failed"
+                    self.write_status_from(conf, AS=active)
+                else:
+                    self.write_status_from(conf, AS=None) # active comes from PID
             elif returncode:
                 self.set_status_from(conf, "ExecMainCode", strE(returncode))
-                active = returncode and "failed" or "active"
+                active = run.returncode and "failed" or "active" # result "failed"
                 self.write_status_from(conf, AS=active)
             else:
-                self.clean_status_from(conf)
+                self.clean_status_from(conf) # active comes from PIDFile alone
         else:
             error_("unsupported run type '{runs}'".format(**locals()))
             return False
@@ -3321,8 +3338,9 @@ class Systemctl:
             info_("init-loop start")
             sig = self.init_loop_until_stop(started_units)
             info_("init-loop {sig}".format(**locals()))
-        for unit in reversed(started_units):
-            pass # self.stop_unit(unit)
+        for started in reversed(started_units):
+            if False: # pragma: no cover
+                self.stop_unit(started)
         return done
     def listen_unit(self, unit):
         conf = self.load_unit_conf(unit)
@@ -3405,7 +3423,8 @@ class Systemctl:
                 if run.returncode and exe.check:
                     error_("the ExecStartPre control process exited with error code")
                     active = "failed"
-                    self.write_status_from(conf, AS=active )
+                    # self.set_status_from(conf, "ExecMainCode", strE(returncode))
+                    self.write_status_from(conf, AS=active)
                     return False
         # service_directories = self.create_service_directories(conf)
         # env.update(service_directories)
@@ -3827,8 +3846,8 @@ class Systemctl:
                     break
             if True:
                 if returncode:
-                    self.set_status_from(conf, "ExecStopCode", strE(returncode))
-                    self.write_status_from(conf, AS="failed")
+                    self.set_status_from(conf, ExecStopCode, strE(returncode))
+                    self.write_status_from(conf, AS=AS_failed)
                 else:
                     self.clean_status_from(conf) # "inactive"
         ### fallback Stop => Kill for ["simple","notify","forking"]
@@ -3862,6 +3881,8 @@ class Systemctl:
                 if self.wait_vanished_pid(pid, timeout):
                     self.clean_pid_file_from(conf)
                     self.clean_status_from(conf) # "inactive"
+                else:
+                    self.write_status_from(conf, AS=AS_failed) # keep MainPID
             else:
                 info_("{runs} sleep as no PID was found on Stop".format(**locals()))
                 time.sleep(MinimumTimeoutStopSec)
@@ -3892,6 +3913,8 @@ class Systemctl:
             if pid:
                 if self.wait_vanished_pid(pid, timeout):
                     self.clean_pid_file_from(conf)
+                else:
+                    self.write_status_from(conf, AS=AS_failed) # keep MainPID
             else:
                 info_("{runs} sleep as no PID was found on Stop".format(**locals()))
                 time.sleep(MinimumTimeoutStopSec)
@@ -3900,7 +3923,7 @@ class Systemctl:
                     self.clean_pid_file_from(conf)
             if returncode:
                 self.set_status_from(conf, "ExecStopCode", strE(returncode))
-                self.write_status_from(conf, AS="failed")
+                self.write_status_from(conf, AS="failed") # keep MainPID
             else:
                 self.clean_status_from(conf) # "inactive"
         else:
@@ -6238,7 +6261,7 @@ class Systemctl:
                             # all values in restarted have a time below limitSecs
                         if len(restarted) >= limitBurst:
                             info_("[{me}] [{unit}] Blocking Restart - oldest {oldest} is {interval} ago (allowed {limitSecs})".format(**locals()))
-                            self.write_status_from(conf, AS="error")
+                            self.write_status_from(conf, AS=AS_failed)
                             unit = "" # dropped out
                             continue
                     except Exception as e:
