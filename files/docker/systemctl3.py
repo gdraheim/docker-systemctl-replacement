@@ -6893,6 +6893,8 @@ def run(command, *modules):
         exitcode = is_not_ok(systemctl.stop_unit(*modules))
     elif command in ["__try_restart_unit"]:
         exitcode = is_not_ok(systemctl.try_restart_unit(*modules))
+    elif command in ["__test_start_unit"]:
+        systemctl.test_start_unit(*modules)
     elif command in ["__unmask_unit"]:
         exitcode = is_not_ok(systemctl.unmask_unit(*modules))
     elif command in ["__show_unit_items"]:
