@@ -3260,11 +3260,8 @@ class Systemctl:
                 filename44 = path44(conf.filename())
                 warn_("No PIDFile for forking {filename44}".format(**locals()))
                 self.set_status_from(conf, ExecMainCode, strE(returncode))
-                if returncode:
-                    active = run.returncode and "failed" or "active" # result "failed"
-                    self.write_status_from(conf, AS=active)
-                else:
-                    self.write_status_from(conf, AS=None) # active comes from PID
+                active = run.returncode and "failed" or "active" # result "failed"
+                self.write_status_from(conf, AS=active) # have no PID and no PIDFile
             elif returncode:
                 self.set_status_from(conf, ExecMainCode, strE(returncode))
                 active = run.returncode and "failed" or "active" # result "failed"
