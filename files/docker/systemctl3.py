@@ -1043,6 +1043,8 @@ class SystemctlConf:
             os.makedirs(dirpath)
         if self.status is None:
             self.status = self.read_status()
+        if DEBUG_STATUS:
+            oldstatus = self.status.copy()
         if True:
             for key in sorted(status.keys()):
                 value = status[key]
@@ -1055,13 +1057,20 @@ class SystemctlConf:
                     self.status[key] = strE(value)
         try:
             with open(status_file, "w") as f:
+                if DEBUG_STATUS:
+                    unit = self.name()
+                    dbg_("[{unit}] writing to {status_file}".format(**locals()))
                 for key in sorted(self.status):
                     value = str(self.status[key])
                     if key == "MainPID" and value == "0":
                         warn_("ignore writing MainPID=0")
                         continue
+                    if DEBUG_STATUS:
+                        old = "old"
+                        if key in oldstatus and oldstatus[key] != value:
+                           old = "new"
+                        dbg_("[{unit}] writing {old} {key}={value}".format(**locals()))
                     content = "{key}={value}\n".format(**locals())
-                    dbg_("writing {content}\t to {status_file}".format(**locals()))
                     f.write(content)
         except IOError as e:
             error_("writing STATUS {status}: {e}\n\t to status file {status_file}".format(**locals()))
@@ -1080,7 +1089,8 @@ class SystemctlConf:
             return status
         try:
             if DEBUG_STATUS: # pragma: no cover
-                dbg_("reading {status_file}".format(**locals()))
+                unit = self.name()
+                dbg_("[{unit}] got status file: {status_file}".format(**locals()))
             for line0 in open(status_file):
                 if line0.startswith("#"):
                     continue
@@ -4497,28 +4507,32 @@ class Systemctl:
         pid_file = self.pid_file_from(conf)
         if pid_file: # application PIDFile
             if not os.path.exists(pid_file):
-                if DEBUG_STATUS:
+                if DEBUG_STATUS: # pragma: no cover
                     unit = conf.name()
-                    debug_("get_pid status {unit} (does not exist) => inactive".format(**locals()))
+                    debug_("[{unit}] get from pid file: (does not exist) => inactive".format(**locals()))
                 return "inactive"
         status_file = self.get_status_file_from(conf)
         if path_getsize(status_file):
             state = self.get_status_from(conf, "ActiveState", "")
             if state:
-                if DEBUG_STATUS:
+                if DEBUG_STATUS: # pragma: no cover
                     unit = conf.name()
-                    info_("get_status_from {unit} => {state}".format(**locals()))
+                    info_("[{unit}] state from status file: written => {state}".format(**locals()))
                 return state
         pid = self.read_mainpid_from(conf)
-        if DEBUG_STATUS:
-            filename44 = path44(pid_file or status_file)
-            debug_("status_pid_file {filename44} => PID {pid}".format(**locals()))
+        result = "inactive"
         if pid:
+            result = "active"
             if not pid_exists(pid) or pid_zombie(pid):
-                return "failed"
-            return "active"
-        else:
-            return "inactive"
+                result = "failed"
+        if DEBUG_STATUS: # pragma: no cover
+            if pid_file:
+                unit = conf.name()
+                debug_("[{unit}] pid from pid file: PID {pid} => {result}".format(**locals()))
+            else: # status file
+                unit = conf.name()
+                debug_("[{unit}] pid from status file: PID {pid} => {result}".format(**locals()))
+        return result
     def get_active_target_from(self, conf):
         """ returns 'active' 'inactive' 'failed' 'unknown' """
         return self.get_active_target(conf.name())
@@ -6280,7 +6294,7 @@ class Systemctl:
                             # all values in restarted have a time below limitSecs
                         if len(restarted) >= limitBurst:
                             info_("[{me}] [{unit}] Blocking Restart - oldest {oldest} is {interval} ago (allowed {limitSecs})".format(**locals()))
-                            self.write_status_from(conf, AS="failed")
+                            self.write_status_from(conf, AS="failed", SubState="restart-limit")
                             unit = "" # dropped out
                             continue
                     except Exception as e:
