@@ -4345,9 +4345,10 @@ class Systemctl:
         useKillSignal = self.get_KillSignal(conf)
         kill_signal = getattr(signal, useKillSignal)
         timeout = self.get_TimeoutStopSec(conf)
-        status_file = self.get_status_file_from(conf)
-        size = os.path.exists(status_file) and os.path.getsize(status_file)
-        info_("STATUS {status_file} {size}".format(**locals()))
+        if DEBUG_STATUS:
+            status_file = self.get_status_file_from(conf)
+            size = os.path.exists(status_file) and os.path.getsize(status_file)
+            info_("STATUS {status_file} {size}".format(**locals()))
         mainpid = self.read_mainpid_from(conf)
         self.clean_status_from(conf) # clear RemainAfterExit and TimeoutStartSec
         if not mainpid:
