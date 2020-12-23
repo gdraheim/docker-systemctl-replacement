@@ -3113,6 +3113,9 @@ class Systemctl:
                 warn_("the service was already up once")
                 self.write_status_from(conf, AS=oldstatus)
                 return True
+            if doRemainAfterExit and ActiveWhileStarting:
+                dbg_("{runs} RemainAfterExit -> AS=active".format(**locals()))
+                self.write_status_from(conf, AS="active")
             for cmd in conf.getlist("Service", "ExecStart", []):
                 exe, newcmd = self.exec_newcmd(cmd, env, conf)
                 info_("{runs} start".format(**locals()), shell_cmd(newcmd))
@@ -3130,10 +3133,19 @@ class Systemctl:
                 else:
                     returncodeOK, signalEE = exitOK(run.returncode), run.signal or ""
                     info_("{runs} start done ({returncodeOK}) <-{signalEE}>".format(**locals()))
-            if True: # implicit doRemainAfterExit
-                self.set_status_from(conf, ExecMainCode, str(returncode))
-                active = returncode and "failed" or "active"
+            if doRemainAfterExit:
+                self.set_status_from(conf, ExecMainCode, str(run.returncode))
+                active = run.returncode and "failed" or "active"
                 self.write_status_from(conf, AS=active)
+            else:
+                self.set_status_from(conf, ExecMainCode, str(returncode))
+                active = returncode and "failed" or "dead"
+                self.write_status_from(conf, AS=active)
+                # Note that if this option is used without RemainAfterExit= the service will never enter
+                # "active" unit state, but directly transition from "activating" to "deactivating" or "dead"
+                # since no process is configured that shall run continuously. In particular this means that
+                # after a service of this type ran (and which has RemainAfterExit= not set) it will not show
+                # up as started afterwards, but as dead. [freedesktop.org/.../man/systemd.service.html]
         elif runs in [ "simple", "idle" ]:
             pid = self.read_mainpid_from(conf)
             if self.is_active_pid(pid):
