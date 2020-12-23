@@ -5734,6 +5734,15 @@ class Systemctl:
         yield "RestartSec", seconds_to_time(self.get_RestartSec(conf))
         yield "RemainAfterExit", strYes(self.get_RemainAfterExit(conf))
         yield "WorkingDirectory", strE(self.get_WorkingDirectory(conf))
+        result = self.get_status_from(conf, "ExecMainCode", "")
+        if result:
+            yield "ExecMainCode", result
+        result = self.get_status_from(conf, "ExecStopCode", "")
+        if result:
+            yield "ExecStopCode", result
+        result = self.get_status_from(conf, "ExecReloadCode", "")
+        if result:
+            yield "ExecReloadCode", result
         env_parts = []
         for env_part in conf.getlist("Service", "Environment", []):
             env_parts.append(self.expand_special(env_part, conf))
