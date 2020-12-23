@@ -3073,7 +3073,7 @@ class Systemctl:
         # for StopPost on failure:
         returncode = 0
         service_result = "success"
-        oldstatus = self.get_status_from(conf, "ActiveState", "unknown")
+        oldstatus = self.get_status_from(conf, "ActiveState", None)
         self.set_status_from(conf, ExecReloadCode, None)
         self.set_status_from(conf, ExecStopCode, None)
         self.set_status_from(conf, ExecMainCode, None)
@@ -3829,7 +3829,7 @@ class Systemctl:
         env.update(service_directories)
         returncode = 0
         service_result = "success"
-        oldstatus = self.get_status_from(conf, "ActiveState", "unknown")
+        oldstatus = self.get_status_from(conf, "ActiveState", "")
         self.set_status_from(conf, ExecReloadCode, None)
         self.set_status_from(conf, ExecMainCode, None)
         self.set_status_from(conf, ExecStopCode, None)
@@ -4063,11 +4063,9 @@ class Systemctl:
         if not self._quiet:
             okee = self.exec_check_unit(conf, env, "Service", "ExecReload")
             if not okee and _no_reload: return False
-        oldstatus = self.get_status_from(conf, "ActiveState", "unknown")
         self.set_status_from(conf, ExecMainCode, None)
         self.set_status_from(conf, ExecStopCode, None)
         self.set_status_from(conf, ExecReloadCode, None)
-        self.write_status_from(conf, AS="reloading")
         #
         initscript = conf.filename()
         if initscript and self.is_sysv_file(initscript):
@@ -4093,6 +4091,8 @@ class Systemctl:
             if not self.is_active_from(conf):
                 info_("no reload on inactive service {unit}".format(**locals()))
                 return True
+            oldstatus = self.get_status_from(conf, "ActiveState", None)
+            self.write_status_from(conf, AS="reloading")
             for cmd in conf.getlist("Service", "ExecReload", []):
                 env["MAINPID"] = strE(self.read_mainpid_from(conf))
                 exe, newcmd = self.exec_newcmd(cmd, env, conf)
@@ -4112,7 +4112,6 @@ class Systemctl:
             return True
         elif runs in [ "oneshot" ]:
             dbg_("ignored run type '{runs}' for reload".format(**locals()))
-            self.write_status_from(conf, AS=oldstatus)
             return True
         else:
             error_("unsupported run type '{runs}'".format(**locals()))
