@@ -6479,10 +6479,6 @@ class Systemctl:
                 pidlist = pids[:]
                 continue
         return pids
-    def echo(self, *targets):
-        line = " ".join(*targets)
-        info_(" == echo == {line}".format(**locals()))
-        return line
     def killall(self, *targets):
         """ --- explicitly kill processes (internal) """
         proc = PROC_DIR
