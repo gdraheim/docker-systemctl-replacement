@@ -1049,7 +1049,7 @@ class SystemctlConf:
             for key in sorted(status.keys()):
                 value = status[key]
                 if key.upper() == "AS": key = "ActiveState"
-                if key.upper() == "EXIT": key = ExecMainCode
+                if key.upper() == "SS": key = "SubState"
                 if value is None:
                     try: del self.status[key]
                     except KeyError: pass
@@ -3082,7 +3082,7 @@ class Systemctl:
         self.set_status_from(conf, ExecReloadCode, None)
         self.set_status_from(conf, ExecStopCode, None)
         self.set_status_from(conf, ExecMainCode, None)
-        self.write_status_from(conf, AS="starting")
+        self.write_status_from(conf, AS="starting", SS=None)
         if True:
             if runs in [ "simple", "forking", "notify", "idle" ]:
                 env["MAINPID"] = strE(self.read_mainpid_from(conf))
@@ -3832,7 +3832,7 @@ class Systemctl:
         self.set_status_from(conf, ExecReloadCode, None)
         self.set_status_from(conf, ExecMainCode, None)
         self.set_status_from(conf, ExecStopCode, None)
-        self.write_status_from(conf, AS="stopping")
+        self.write_status_from(conf, AS="stopping", SS=None)
         if runs in [ "oneshot" ]:
             if oldstatus in ["inactive"]:
                 warn_("the service is already down once")
@@ -4073,10 +4073,10 @@ class Systemctl:
                 run = subprocess_waitpid(forkpid)
                 self.set_status_from(conf, ExecReloadCode, str(run.returncode))
                 if run.returncode:
-                    self.write_status_from(conf, AS="failed")
+                    self.write_status_from(conf, AS="failed", SS="initscript")
                     return False
                 else:
-                    self.write_status_from(conf, AS="active")
+                    self.write_status_from(conf, AS="active", SS="initscript")
                     return True
         service_directories = self.env_service_directories(conf)
         env.update(service_directories)
@@ -4086,7 +4086,7 @@ class Systemctl:
                 info_("no reload on inactive service {unit}".format(**locals()))
                 return True
             oldstatus = self.get_status_from(conf, "ActiveState", None)
-            self.write_status_from(conf, AS="reloading")
+            self.write_status_from(conf, AS="reloading", SS=None)
             for cmd in conf.getlist("Service", "ExecReload", []):
                 env["MAINPID"] = strE(self.read_mainpid_from(conf))
                 exe, newcmd = self.exec_newcmd(cmd, env, conf)
@@ -6294,7 +6294,7 @@ class Systemctl:
                             # all values in restarted have a time below limitSecs
                         if len(restarted) >= limitBurst:
                             info_("[{me}] [{unit}] Blocking Restart - oldest {oldest} is {interval} ago (allowed {limitSecs})".format(**locals()))
-                            self.write_status_from(conf, AS="failed", SubState="restart-limit")
+                            self.write_status_from(conf, AS="failed", SS="restart-limit")
                             unit = "" # dropped out
                             continue
                     except Exception as e:
