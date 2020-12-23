@@ -16338,7 +16338,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             echo "done$1" >&2
             exit 0
             """.format(**locals()))
-        zzz_service = "zzz-using-a-very-long-service-name-which-needs-to-be-truncated-for-the-notify-socket-file.service"
+        zzz_service = "zzz.service"
         text_file(os_path(testdir, zzz_service),"""
             [Unit]
             Description=Testing Z
