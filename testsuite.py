@@ -12559,6 +12559,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             After=foo.service
             [Service]
             Type=oneshot
+            RemainAfterExit=yes
             ExecStart="/bin/false"
             ExecStop=/usr/bin/killall {testsleep}
             [Install]
@@ -15023,6 +15024,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing Z
             [Service]
             Type=oneshot
+            RemainAfterExit=yes
             ExecStartPre={bindir}/backup {root}/var/tmp/test.1 {root}/var/tmp/test.2
             ExecStart=/usr/bin/touch {root}/var/tmp/test.1
             ExecStop=/bin/rm {root}/var/tmp/test.1
@@ -15213,6 +15215,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing Z
             [Service]
             Type=oneshot
+            RemainAfterExit=yes
             ExecStartPre={bindir}/backup {root}/var/tmp/test.1 {root}/var/tmp/test.2
             ExecStart=/usr/bin/touch {root}/var/tmp/test.1
             ExecStop=/bin/rm {root}/var/tmp/test.1
@@ -15420,6 +15423,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing Z.%i
             [Service]
             Type=oneshot
+            RemainAfterExit=yes
             ExecStartPre={bindir}/backup {root}/var/tmp/test.%i.1 {root}/var/tmp/test.%i.2
             ExecStart=/usr/bin/touch {root}/var/tmp/test.%i.1
             ExecStop=/bin/rm {root}/var/tmp/test.%i.1
@@ -16721,6 +16725,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing Z
             [Service]
             Type=oneshot
+            RemainAfterExit=yes
             ExecStart=/usr/bin/touch {root}/var/tmp/test.1
             ExecStopPost=/bin/rm {root}/var/tmp/test.1
             [Install]
@@ -24971,6 +24976,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing A
             [Service]
             Type=oneshot
+            RemainAfterExit=yes
             ExecStart=/bin/touch {root}/tmp/zz.a.txt
             ExecStop=/bin/rm {root}/tmp/zz.a.txt
             [Install]
@@ -24981,6 +24987,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing B
             [Service]
             Type=oneshot
+            RemainAfterExit=yes
             ExecStart=/bin/touch {root}/tmp/zz.b.txt
             ExecStop=/bin/rm {root}/tmp/zz.b.txt
             [Install]
@@ -24991,6 +24998,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing Z.%i
             [Service]
             Type=oneshot
+            RemainAfterExit=yes
             ExecStart=/bin/touch {root}/tmp/zz.%i.txt
             ExecStop=/bin/rm {root}/tmp/zz.%i.txt
             [Install]
@@ -27903,6 +27911,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Service]
             User=somebody
             Type=oneshot
+            RemainAfterExit=yes
             ExecStartPre={bindir}/backup {root}/var/tmp/test.1 {root}/var/tmp/test.2
             ExecStart=/usr/bin/touch {root}/var/tmp/test.1
             ExecStop=/bin/rm {root}/var/tmp/test.1
@@ -28168,6 +28177,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Service]
             User=somebody
             Type=oneshot
+            RemainAfterExit=yes
             ExecStartPre={bindir}/backup {root}/var/tmp/test.1 {root}/var/tmp/test.2
             ExecStart=/usr/bin/touch {root}/var/tmp/test.1
             ExecStop=/bin/rm {root}/var/tmp/test.1
@@ -28449,6 +28459,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Service]
             User=somebody
             Type=oneshot
+            RemainAfterExit=yes
             ExecStartPre={bindir}/backup {root}/var/tmp/test.%i.1 {root}/var/tmp/test.%i.2
             ExecStart=/usr/bin/touch {root}/var/tmp/test.%i.1
             ExecStop=/bin/rm {root}/var/tmp/test.%i.1
@@ -30884,6 +30895,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Service]
             User=somebody
             Type=oneshot
+            RemainAfterExit=yes
             ExecStartPre={bindir}/backup {root}/var/tmp/test.1 {root}/var/tmp/test.2
             ExecStart=/usr/bin/touch {root}/var/tmp/test.1
             ExecStop=/bin/rm {root}/var/tmp/test.1
@@ -31166,6 +31178,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Service]
             User=somebody
             Type=oneshot
+            RemainAfterExit=yes
             ExecStartPre={bindir}/backup {root}/var/tmp/test.1 {root}/var/tmp/test.2
             ExecStart=/usr/bin/touch {root}/var/tmp/test.1
             ExecStop=/bin/rm {root}/var/tmp/test.1
@@ -32474,6 +32487,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Service]
             {extra}
             Type=oneshot
+            RemainAfterExit=yes
             ExecStartPre={bindir}/backup {root}/var/tmp/test.1 {root}/var/tmp/test.2
             ExecStart=/usr/bin/touch {root}/var/tmp/test.1
             ExecStop=/bin/rm {root}/var/tmp/test.1
