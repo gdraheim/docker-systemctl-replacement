@@ -44,6 +44,7 @@ DEBUG_RESULT = False
 DEBUG_SOCKETFILE = True
 TestListen = False
 TestAccept = False
+ActiveWhileStarting = True
 
 HINT = (logging.DEBUG + logging.INFO) // 2
 NOTE = (logging.WARNING + logging.INFO) // 2
@@ -3129,7 +3130,7 @@ class Systemctl:
                 else:
                     returncodeOK, signalEE = exitOK(run.returncode), run.signal or ""
                     info_("{runs} start done ({returncodeOK}) <-{signalEE}>".format(**locals()))
-            if True:
+            if True: # implicit doRemainAfterExit
                 self.set_status_from(conf, ExecMainCode, str(returncode))
                 active = returncode and "failed" or "active"
                 self.write_status_from(conf, AS=active)
@@ -3138,7 +3139,7 @@ class Systemctl:
             if self.is_active_pid(pid):
                 warn_("the service is already running on PID {pid}".format(**locals()))
                 return True
-            if doRemainAfterExit:
+            if doRemainAfterExit and ActiveWhileStarting:
                 dbg_("{runs} RemainAfterExit -> AS=active".format(**locals()))
                 self.write_status_from(conf, AS="active")
             cmdlist = conf.getlist("Service", "ExecStart", [])
@@ -3161,17 +3162,17 @@ class Systemctl:
                 if run.returncode is not None:
                     returncodeOK, signalEE, fork_pid = exitOK(run.returncode), run.signal or "", run.pid
                     info_("{runs} stopped PID {fork_pid} ({returncodeOK}) <-{signalEE}>".format(**locals()))
-                    if doRemainAfterExit:
-                        self.set_status_from(conf, ExecMainCode, str(run.returncode))
-                        active = run.returncode and "failed" or "active"
-                        self.write_status_from(conf, AS=active)
                     if run.returncode and exe.check:
                         returncode = run.returncode
                         service_result = "failed"
                         break
-            if returncode:
+            if doRemainAfterExit:
+                self.set_status_from(conf, ExecMainCode, str(run.returncode))
+                active = run.returncode and "failed" or "active"
+                self.write_status_from(conf, AS=active)
+            elif returncode:
                 self.set_status_from(conf, ExecMainCode, str(returncode))
-                active = returncode and "failed" or "active"
+                active = returncode and "failed" or "active" # always "failed"
                 self.write_status_from(conf, AS=active)
             else:
                 self.write_status_from(conf, AS=None) # active comes from PID
@@ -3188,7 +3189,7 @@ class Systemctl:
                 env["NOTIFY_SOCKET"] = notify.socketfile
                 socketfile44 = path44(notify.socketfile)
                 debug_("use NOTIFY_SOCKET={socketfile44}".format(**locals()))
-            if doRemainAfterExit:
+            if doRemainAfterExit and ActiveWhileStarting:
                 dbg_("{runs} RemainAfterExit -> AS=active".format(**locals()))
                 self.write_status_from(conf, AS="active")
             cmdlist = conf.getlist("Service", "ExecStart", [])
@@ -3214,10 +3215,6 @@ class Systemctl:
                 if run.returncode is not None:
                     returncodeOK, signalEE, fork_pid = exitOK(run.returncode), run.signal or "", run.pid
                     info_("{runs} stopped PID {fork_pid} ({returncodeOK}) <-{signalEE}>".format(**locals()))
-                    if doRemainAfterExit:
-                        self.set_status_from(conf, ExecMainCode, str(run.returncode))
-                        active = run.returncode and "failed" or "active"
-                        self.write_status_from(conf, AS=active)
                     if run.returncode and exe.check:
                         returncode = run.returncode
                         service_result = "failed"
@@ -3237,9 +3234,13 @@ class Systemctl:
                     env["MAINPID"] = strE(pid)
                 else:
                     service_result = "timeout" # "could not start service"
-            if returncode:
+            if doRemainAfterExit:
                 self.set_status_from(conf, ExecMainCode, str(returncode))
-                active = returncode and "failed" or "active"
+                active = run.returncode and "failed" or "active"
+                self.write_status_from(conf, AS=active)
+            elif returncode:
+                self.set_status_from(conf, ExecMainCode, str(returncode))
+                active = returncode and "failed" or "active" # always "failed"
                 self.write_status_from(conf, AS=active)
             else:
                 self.write_status_from(conf, AS=None) # active comes from PID
