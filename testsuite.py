@@ -4832,9 +4832,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.rm_testdir()
         self.coverage()
-    def real_3002_enable_service_creates_a_symlink(self) -> None:
-        self.test_3002_enable_service_creates_a_symlink(True)
-    def test_3002_enable_service_creates_a_symlink(self, real:bool = False) -> None:
+    def real_3001_enable_service_creates_a_symlink(self) -> None:
+        self.test_3001_enable_service_creates_a_symlink(True)
+    def test_3001_enable_service_creates_a_symlink(self, real:bool = False) -> None:
         """ check that a service can be enabled """
         self.begin()
         testname = self.testname()
@@ -4854,6 +4854,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart=/bin/sleep 2
             [Install]
             WantedBy=multi-user.target""")
+        enabled_file = os_path(root, "/etc/systemd/system/multi-user.target.wants/zzb.service")
+        self.assertFalse(os.path.islink(enabled_file))
         cmd = "{systemctl} daemon-reload"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
@@ -4861,11 +4863,112 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        enabled_file = os_path(root, "/etc/systemd/system/multi-user.target.wants/zzb.service")
         self.assertTrue(os.path.islink(enabled_file))
         textB = reads(enabled_file)
         self.assertTrue(greps(textB, "Testing B"))
         self.assertIn("\nDescription", textB)
+        # doing it twice does not change a thing
+        cmd = "{systemctl} enable zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertTrue(os.path.islink(enabled_file))
+        textB = reads(enabled_file)
+        self.assertTrue(greps(textB, "Testing B"))
+        self.assertIn("\nDescription", textB)
+        #
+        # divert the symlink to another service
+        os.remove(enabled_file)
+        os.symlink(os_path(root, "/etc/systemd/system/zza.service"), enabled_file)
+        textB = reads(enabled_file)
+        self.assertTrue(greps(textB, "Testing A"))
+        # doing it twice will switch it back
+        cmd = "{systemctl} enable zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertTrue(os.path.islink(enabled_file))
+        textB = reads(enabled_file)
+        self.assertTrue(greps(textB, "Testing B"))
+        self.rm_zzfiles(root)
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def real_3002_enable_service_force_creates_a_symlink(self) -> None:
+        self.test_3002_enable_service_force_creates_a_symlink(True)
+    def test_3002_enable_service_force_creates_a_symlink(self, real:bool = False) -> None:
+        """ check that a service can be enabled by force"""
+        self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir, real)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
+        self.rm_zzfiles(root)
+        #
+        text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
+            [Unit]
+            Description=Testing A""")
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            ExecStart=/bin/sleep 2
+            [Install]
+            WantedBy=multi-user.target""")
+        enabled_file = os_path(root, "/etc/systemd/system/multi-user.target.wants/zzb.service")
+        self.assertFalse(os.path.islink(enabled_file))
+        cmd = "{systemctl} daemon-reload"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "{systemctl} enable zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertTrue(os.path.islink(enabled_file))
+        textB = reads(enabled_file)
+        self.assertTrue(greps(textB, "Testing B"))
+        self.assertIn("\nDescription", textB)
+        #
+        # divert the symlink to another service
+        os.remove(enabled_file)
+        os.symlink(os_path(root, "/etc/systemd/system/zza.service"), enabled_file)
+        textB = reads(enabled_file)
+        self.assertTrue(greps(textB, "Testing A"))
+        # doing it twice does not change that either
+        cmd = "{systemctl} enable zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertTrue(os.path.islink(enabled_file))
+        textB = reads(enabled_file)
+        self.assertTrue(greps(textB, "Testing B"))
+        #
+        # divert the symlink to something else
+        os.remove(enabled_file)
+        text_file(enabled_file, "foo")
+        textB = reads(enabled_file)
+        self.assertTrue(greps(textB, "foo"))
+        # doing it twice does not change that either
+        cmd = "{systemctl} enable zzb.service"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 1)
+        self.assertTrue(greps(err, "Failed to enable unit: File .* exists"))
+        self.assertFalse(os.path.islink(enabled_file))
+        textB = reads(enabled_file)
+        self.assertTrue(greps(textB, "foo"))
+        # but we can force it
+        if not real:
+            cmd = "{systemctl} enable -f zzb.service"
+            out, end = output2(cmd.format(**locals()))
+            logg.info(" %s =>%s\n%s", cmd, end, out)
+            self.assertEqual(end, 0)
+            self.assertTrue(os.path.islink(enabled_file))
+            textB = reads(enabled_file)
+            self.assertTrue(greps(textB, "Testing B"))
+            self.assertIn("\nDescription", textB)
+        #
         self.rm_zzfiles(root)
         self.rm_testdir()
         self.coverage()
