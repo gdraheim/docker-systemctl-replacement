@@ -3120,7 +3120,7 @@ class Systemctl:
                     returncodeOK, signalEE = exitOK(run.returncode), run.signal or ""
                     info_("{runs} start done ({returncodeOK}) <-{signalEE}>".format(**locals()))
             if True:
-                self.set_status_from(conf, ExecMainCode, strE(returncode))
+                self.set_status_from(conf, ExecMainCode, str(returncode))
                 active = returncode and "failed" or "active"
                 self.write_status_from(conf, AS=active)
         elif runs in [ "simple", "idle" ]:
@@ -3152,7 +3152,7 @@ class Systemctl:
                     returncodeOK, signalEE, fork_pid = exitOK(run.returncode), run.signal or "", run.pid
                     info_("{runs} stopped PID {fork_pid} ({returncodeOK}) <-{signalEE}>".format(**locals()))
                     if doRemainAfterExit:
-                        self.set_status_from(conf, ExecMainCode, strE(run.returncode))
+                        self.set_status_from(conf, ExecMainCode, str(run.returncode))
                         active = run.returncode and "failed" or "active"
                         self.write_status_from(conf, AS=active)
                     if run.returncode and exe.check:
@@ -3160,7 +3160,7 @@ class Systemctl:
                         service_result = "failed"
                         break
             if returncode:
-                self.set_status_from(conf, ExecMainCode, strE(returncode))
+                self.set_status_from(conf, ExecMainCode, str(returncode))
                 active = returncode and "failed" or "active"
                 self.write_status_from(conf, AS=active)
             else:
@@ -3205,7 +3205,7 @@ class Systemctl:
                     returncodeOK, signalEE, fork_pid = exitOK(run.returncode), run.signal or "", run.pid
                     info_("{runs} stopped PID {fork_pid} ({returncodeOK}) <-{signalEE}>".format(**locals()))
                     if doRemainAfterExit:
-                        self.set_status_from(conf, ExecMainCode, strE(run.returncode))
+                        self.set_status_from(conf, ExecMainCode, str(run.returncode))
                         active = run.returncode and "failed" or "active"
                         self.write_status_from(conf, AS=active)
                     if run.returncode and exe.check:
@@ -3228,7 +3228,7 @@ class Systemctl:
                 else:
                     service_result = "timeout" # "could not start service"
             if returncode:
-                self.set_status_from(conf, ExecMainCode, strE(returncode))
+                self.set_status_from(conf, ExecMainCode, str(returncode))
                 active = returncode and "failed" or "active"
                 self.write_status_from(conf, AS=active)
             else:
@@ -3259,11 +3259,11 @@ class Systemctl:
                 time.sleep(MinimumTimeoutStartSec)
                 filename44 = path44(conf.filename())
                 warn_("No PIDFile for forking {filename44}".format(**locals()))
-                self.set_status_from(conf, ExecMainCode, strE(returncode))
+                self.set_status_from(conf, ExecMainCode, str(returncode))
                 active = run.returncode and "failed" or "active" # result "failed"
                 self.write_status_from(conf, AS=active) # have no PID and no PIDFile
             elif returncode:
-                self.set_status_from(conf, ExecMainCode, strE(returncode))
+                self.set_status_from(conf, ExecMainCode, str(returncode))
                 active = run.returncode and "failed" or "active" # result "failed"
                 self.write_status_from(conf, AS=active)
             else:
@@ -3418,7 +3418,7 @@ class Systemctl:
                 if run.returncode and exe.check:
                     error_("the ExecStartPre control process exited with error code")
                     active = "failed"
-                    # self.set_status_from(conf, ExecMainCode, strE(returncode))
+                    # self.set_status_from(conf, ExecMainCode, str(returncode))
                     self.write_status_from(conf, AS=active)
                     return False
         # service_directories = self.create_service_directories(conf)
@@ -3846,7 +3846,7 @@ class Systemctl:
                     break
             if True:
                 if returncode:
-                    self.set_status_from(conf, ExecStopCode, strE(returncode))
+                    self.set_status_from(conf, ExecStopCode, str(returncode))
                     self.write_status_from(conf, AS="failed")
                 else:
                     self.clean_status_from(conf) # "inactive"
@@ -3918,7 +3918,7 @@ class Systemctl:
                 if not pid or not pid_exists(pid) or pid_zombie(pid):
                     self.clean_pid_file_from(conf)
             if returncode:
-                self.set_status_from(conf, ExecStopCode, strE(returncode))
+                self.set_status_from(conf, ExecStopCode, str(returncode))
                 self.write_status_from(conf, AS="failed") # keep MainPID
             else:
                 self.clean_status_from(conf) # "inactive"
@@ -4066,7 +4066,7 @@ class Systemctl:
                 if not forkpid:
                     self.execve_from(conf, newcmd, env) # pragma: nocover
                 run = subprocess_waitpid(forkpid)
-                self.set_status_from(conf, ExecReloadCode, run.returncode)
+                self.set_status_from(conf, ExecReloadCode, str(run.returncode))
                 if run.returncode:
                     self.write_status_from(conf, AS="failed")
                     return False
@@ -4093,7 +4093,7 @@ class Systemctl:
                 if run.returncode and exe.check: 
                     returncodeOK = exitOK(run.returncode)
                     error_("Job for {unit} failed because the control process exited with error code. ({returncodeOK})".format(**locals()))
-                    self.set_status_from(conf, ExecReloadCode, run.returncode)
+                    self.set_status_from(conf, ExecReloadCode, str(run.returncode))
                     self.write_status_from(conf, AS="failed")
                     return False
             time.sleep(MinimumYield)
