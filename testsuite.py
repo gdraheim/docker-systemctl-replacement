@@ -887,6 +887,35 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(out, "--verbose"))
         self.assertTrue(greps(out, "reload-or-try-restart"))
         self.coverage()
+    def test_1004_systemctl_help_alll(self) -> None:
+        """ the 'help' understands "--all" to show more """
+        systemctl = cover() + _systemctl_py
+        cmd = "{systemctl} help"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertFalse(greps(out, "--verbose"))
+        self.assertTrue(greps(out, "reload-or-try-restart"))
+        self.assertFalse(greps(out, "[(]experimental[)]"))
+        self.assertFalse(greps(out, "reap-zombies"))
+        systemctl = cover() + _systemctl_py
+        cmd = "{systemctl} help -a"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertFalse(greps(out, "--verbose"))
+        self.assertTrue(greps(out, "reload-or-try-restart"))
+        self.assertTrue(greps(out, "[(]experimental[)]"))
+        self.assertTrue(greps(out, "reap-zombies"))
+        cmd = "{systemctl} help --all"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertFalse(greps(out, "--verbose"))
+        self.assertTrue(greps(out, "reload-or-try-restart"))
+        self.assertTrue(greps(out, "[(]experimental[)]"))
+        self.assertTrue(greps(out, "reap-zombies"))
+        self.coverage()
     def test_1005_systemctl_help_command(self) -> None:
         """ for any command, 'help command' shows the documentation """
         systemctl = cover() + _systemctl_py
