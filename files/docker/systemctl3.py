@@ -4906,10 +4906,15 @@ class Systemctl:
             _f = self._force and "-f" or ""
             source44 = path44(source)
             info_("ln -s {_f} '{source44}' '{symlink}'".format(**locals()))
-        if self._force and os.path.islink(symlink):
-            os.remove(target)
-        if not os.path.islink(symlink):
+        try:
+            if self._force and os.path.exists(symlink):
+                os.remove(symlink)
+            if os.path.islink(symlink):
+                os.remove(symlink)
             os.symlink(source, symlink)
+        except Exception as e:
+            error_("Failed to enable unit: File {symlink}: {e}".format(**locals()))
+            return False
         return True
     def rc3_root_folder(self):
         old_folder = os_path(self._root, _rc3_boot_folder)
