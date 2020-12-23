@@ -420,10 +420,6 @@ def unit_of(module):
     if "." not in module:
         return module + ".service"
     return module
-def o22(part):
-    if len(part) <= 22:
-        return part
-    return part[:5] + "..." + part[-14:]
 def o44(part):
     if len(part) <= 44:
         return part
@@ -2893,8 +2889,7 @@ class Systemctl:
             if len(socketfile) > 100:
                 socketfile = os.path.join(notify_folder, notify_name44)
             uid = get_USER_ID()
-            folder = o22(os.path.basename(notify_socket_folder)) # that is just the base name
-            pref = "zz.{uid}.{folder}".format(**locals())
+            pref = "zz.{uid}.systemctl".format(**locals())
             if len(socketfile) > 100:
                 socketfile = os.path.join(get_TMP(), pref, notify_name)
             if len(socketfile) > 100:
