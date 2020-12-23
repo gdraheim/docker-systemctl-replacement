@@ -13362,6 +13362,118 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_zzfiles(root)
         self.coverage()
         self.end()
+    def real_4001_enable_service_now(self) -> None:
+        self.test_4001_enable_service_now(True)
+    def test_4001_enable_service_now(self, real:bool = False) -> None:
+        """ check that a service can be enabled and started right away"""
+        self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir, real)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
+        self.rm_zzfiles(root)
+        #
+        text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
+            [Unit]
+            Description=Testing A""")
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            ExecStart=/bin/sleep 2
+            [Install]
+            WantedBy=multi-user.target""")
+        enabled_file = os_path(root, "/etc/systemd/system/multi-user.target.wants/zzb.service")
+        self.assertFalse(os.path.islink(enabled_file))
+        cmd = "{systemctl} daemon-reload"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "{systemctl} enable zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertTrue(os.path.islink(enabled_file))
+        textB = reads(enabled_file)
+        self.assertTrue(greps(textB, "Testing B"))
+        self.assertIn("\nDescription", textB)
+        cmd = "{systemctl} is-active zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(out.strip(), "inactive")
+        #
+        # doing it twice does not change a thing
+        cmd = "{systemctl} enable zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertTrue(os.path.islink(enabled_file))
+        textB = reads(enabled_file)
+        self.assertTrue(greps(textB, "Testing B"))
+        self.assertIn("\nDescription", textB)
+        cmd = "{systemctl} is-active zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(out.strip(), "inactive")
+        #
+        # doing it twice but with --now can start it
+        cmd = "{systemctl} enable --now zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertTrue(os.path.islink(enabled_file))
+        textB = reads(enabled_file)
+        self.assertTrue(greps(textB, "Testing B"))
+        self.assertIn("\nDescription", textB)
+        cmd = "{systemctl} is-active zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(out.strip(), "active")
+        #
+        # and disable will not stop it right away
+        cmd = "{systemctl} disable zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertFalse(os.path.islink(enabled_file))
+        # textB = reads(enabled_file)
+        # self.assertTrue(greps(textB, "Testing B"))
+        cmd = "{systemctl} is-active zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(out.strip(), "active")
+        #
+        # let us stop it for now
+        cmd = "{systemctl} stop zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertFalse(os.path.islink(enabled_file))
+        # textB = reads(enabled_file)
+        # self.assertTrue(greps(textB, "Testing B"))
+        cmd = "{systemctl} is-active zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(out.strip(), "inactive")
+        #
+        # and enable it --now which starts it right away
+        cmd = "{systemctl} enable --now zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertTrue(os.path.islink(enabled_file))
+        textB = reads(enabled_file)
+        self.assertTrue(greps(textB, "Testing B"))
+        self.assertIn("\nDescription", textB)
+        cmd = "{systemctl} is-active zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(out.strip(), "active")
+        #
+        self.rm_zzfiles(root)
+        self.rm_testdir()
+        self.coverage()
+        self.end()
     def test_4030_simple_service_functions_system(self) -> None:
         """ check that we manage simple services in a root env
             with commands like start, restart, stop, etc"""
