@@ -6771,9 +6771,6 @@ def print_str_list(result):
     hint_result_("EXEC END {shown} items".format(**locals()))
     debug_result_("    END {result}".format(**locals()))
 def print_str_list_list(result):
-    if result is None:
-       debug_result_("    END {result}")
-       return
     shown = 0
     for element in result:
         print("\t".join([ str(elem) for elem in element] ))
