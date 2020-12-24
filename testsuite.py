@@ -17424,6 +17424,213 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_zzfiles(root)
         self.coverage()
         self.end()
+    def real_4091_oneshot_service_RemainAfterExit(self) -> None:
+        self.test_4091_oneshot_service_RemainAfterExit(True)
+    def test_4091_oneshot_service_RemainAfterExit(self, real:bool = False) -> None:
+        """ it turns out that a oneshot-service does not imply RemainAfterExit
+            which will render it 'dead' after the first 'start'."""
+        self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir, real)
+        vv = "-vv"
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
+        testsleep = self.testname("testsleep")
+        testfail = self.testname("testfail.sh")
+        bindir = os_path(root, "/usr/bin")
+        text_file(os_path(testdir, "zze.service"),"""
+            [Unit]
+            Description=Testing E
+            [Service]
+            Type=oneshot
+            ExecStartPre=/bin/echo %n
+            ExecStart={bindir}/{testsleep} 3
+            ExecStartPost=/bin/echo started $MAINPID
+            ExecStop=-/bin/kill $MAINPID
+            ExecStopPost=/bin/echo stopped $MAINPID
+            ExecStopPost=/bin/sleep 2
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        text_file(os_path(testdir, "zzf.service"),"""
+            [Unit]
+            Description=Testing F
+            [Service]
+            Type=oneshot
+            ExecStartPre=/bin/echo %n
+            ExecStart={bindir}/{testfail} 3
+            ExecStartPost=/bin/echo started $MAINPID
+            ExecStop=-/bin/kill $MAINPID
+            ExecStopPost=/bin/echo stopped $MAINPID
+            ExecStopPost=/bin/sleep 2
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        text_file(os_path(testdir, "zzr.service"),"""
+            [Unit]
+            Description=Testing R
+            [Service]
+            Type=oneshot
+            RemainAfterExit=yes
+            ExecStartPre=/bin/echo %n
+            ExecStart={bindir}/{testsleep} 3
+            ExecStartPost=/bin/echo started $MAINPID
+            ExecStop=-/bin/kill $MAINPID
+            ExecStopPost=/bin/echo stopped $MAINPID
+            ExecStopPost=/bin/sleep 2
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        text_file(os_path(testdir, "testfail.sh"),"""
+            #! /bin/sh
+            {bindir}/{testsleep} $1
+            exit 2
+            """.format(**locals()))
+        copy_tool(_bin_sleep, os_path(bindir, testsleep))
+        copy_tool(os_path(testdir, "testfail.sh"), os_path(bindir, testfail))
+        copy_file(os_path(testdir, "zze.service"), os_path(root, "/etc/systemd/system/zze.service"))
+        copy_file(os_path(testdir, "zzf.service"), os_path(root, "/etc/systemd/system/zzf.service"))
+        copy_file(os_path(testdir, "zzr.service"), os_path(root, "/etc/systemd/system/zzr.service"))
+        sh____("{systemctl} daemon-reload".format(**locals()))
+        #
+        cmd = "{systemctl} enable zze.service {vv}"
+        sh____(cmd.format(**locals()))
+        #
+        logg.info("== 'start' will run a later exiting service ")
+        cmd = "{systemctl} start zze.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 1)
+        for i in range(4):
+            time.sleep(1)
+            cmd = "{systemctl} is-active zze.service {vv}"
+            out, end = output2(cmd.format(**locals()))
+            logg.info(" %s =>%s \n%s", cmd, end, out)
+            if out.strip() != "active": break
+        #top = _recent(output(_top_list))
+        #logg.info("\n>>>\n%s", top)
+        #self.assertFalse(greps(top, testsleep))
+        cmd = "{systemctl} is-active zze.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        self.assertEqual(out.strip(), "dead")
+        #
+        logg.info("== 'stop' shall clean an already exited service")
+        cmd = "{systemctl} stop zze.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        if TODO or real: self.assertEqual(end, 0)
+        else: self.assertEqual(end, 0)
+        #top = _recent(output(_top_list))
+        #logg.info("\n>>>\n%s", top)
+        #self.assertFalse(greps(top, testsleep))
+        cmd = "{systemctl} is-active zze.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        if TODO or real: self.assertEqual(out.strip(), "failed")
+        else: self.assertEqual(out.strip(), "inactive")
+        #
+        cmd = "{systemctl} enable zzf.service {vv}"
+        sh____(cmd.format(**locals()))
+        #
+        logg.info("== 'start' will run a later failing service ")
+        cmd = "{systemctl} start zzf.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 1)
+        for i in range(4):
+            time.sleep(1)
+            cmd = "{systemctl} is-active zzf.service {vv}"
+            out, end = output2(cmd.format(**locals()))
+            logg.info(" %s =>%s \n%s", cmd, end, out)
+            if out.strip() != "active": break
+        #top = _recent(output(_top_list))
+        #logg.info("\n>>>\n%s", top)
+        #self.assertFalse(greps(top, testsleep))
+        cmd = "{systemctl} is-active zzf.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        self.assertEqual(out.strip(), "failed")
+        #
+        logg.info("== 'reset-failed' shall clean an already failed service")
+        cmd = "{systemctl} reset-failed zzf.service {vv} {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        cmd = "{systemctl} is-active zzf.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        self.assertEqual(out.strip(), "inactive")
+        #
+        logg.info("== 'stop' shall clean an already failed service")
+        cmd = "{systemctl} stop zzf.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        if TODO or real: self.assertEqual(end, 0)
+        else: self.assertEqual(end, 0)
+        #top = _recent(output(_top_list))
+        #logg.info("\n>>>\n%s", top)
+        #self.assertFalse(greps(top, testsleep))
+        cmd = "{systemctl} is-active zzf.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 3)
+        self.assertEqual(out.strip(), "inactive")
+        #
+        #
+        cmd = "{systemctl} enable zzr.service {vv}"
+        sh____(cmd.format(**locals()))
+        #
+        logg.info("== 'start' will have a later exiting service as remaining active")
+        cmd = "{systemctl} start zzr.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        for i in range(4):
+            time.sleep(1)
+            cmd = "{systemctl} is-active zzr.service {vv}"
+            out, end = output2(cmd.format(**locals()))
+            logg.info(" %s =>%s \n%s", cmd, end, out)
+            if out.strip() != "active": break
+        #top = _recent(output(_top_list))
+        #logg.info("\n>>>\n%s", top)
+        #self.assertFalse(greps(top, testsleep))
+        cmd = "{systemctl} is-active zzr.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(out.strip(), "active") 
+        #
+        logg.info("== 'stop' shall clean an exited but remaining service")
+        cmd = "{systemctl} stop zzr.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        if TODO or real: self.assertEqual(end, 0)
+        else: self.assertEqual(end, 0)
+        #top = _recent(output(_top_list))
+        #logg.info("\n>>>\n%s", top)
+        #self.assertFalse(greps(top, testsleep))
+        cmd = "{systemctl} is-active zzr.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        if TODO or real: self.assertEqual(end, 0)
+        else: self.assertEqual(end, 3)
+        if TODO or real: self.assertEqual(out.strip(), "failed")
+        else: self.assertEqual(out.strip(), "inactive")
+        #
+        # cleanup
+        kill_testsleep = "{systemctl} __killall {testsleep}"
+        sx____(kill_testsleep.format(**locals()))
+        self.rm_testdir()
+        self.rm_zzfiles(root)
+        self.coverage()
+        self.end()
     def test_4101_systemctl_py_kill_basic_behaviour(self) -> None:
         """ check systemctl_py kill basic behaviour"""
         self.begin()
