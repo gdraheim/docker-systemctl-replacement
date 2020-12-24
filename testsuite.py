@@ -10273,6 +10273,136 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
+    def test_3311_show_logfile_journal(self) -> None:
+        self.begin()
+        self.rm_testdir()
+        self.rm_killall()
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        logfile = os_path(root, "/var/log/"+testname+".log")
+        testsleepA = self.testname("sleepA")
+        testsleepB = self.testname("sleepB")
+        bindir = os_path(root, "/usr/bin")
+        shell_file(os_path(testdir, "testsleepA.bin"),"""
+            #! /bin/sh
+            echo starts testsleepA >&2
+            echo running testsleepA
+            exec {bindir}/{testsleepA} "$@"
+            """.format(**locals()))
+        shell_file(os_path(testdir, "testsleepB.bin"),"""
+            #! /bin/sh
+            echo starts testsleepB >&2
+            echo running testsleepB
+            exec {bindir}/{testsleepB} "$@"
+            """.format(**locals()))
+        text_file(os_path(testdir, "zza.service"),"""
+            [Unit]
+            Description=Testing A
+            [Service]
+            Type=simple
+            ExecStart={bindir}/{testsleepA}.bin 4
+            # StandardOutput=journal
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        text_file(os_path(testdir, "zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            Type=simple
+            ExecStart={bindir}/{testsleepB}.bin 5
+            StandardOutput=file:{root}/var/log/zzb.log
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        copy_tool(_bin_sleep, os_path(bindir, testsleepA))
+        copy_tool(_bin_sleep, os_path(bindir, testsleepB))
+        copy_tool(os_path(testdir, "testsleepA.bin"), os_path(bindir, testsleepA + ".bin"))
+        copy_tool(os_path(testdir, "testsleepB.bin"), os_path(bindir, testsleepB + ".bin"))
+        copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
+        copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
+        #
+        log_a = root + "/var/log/zza.log"
+        log_b = root + "/var/log/zzb.log"
+        logg.info("log zza = %s", log_a)
+        logg.info("log zzb = %s", log_b)
+        #
+        cmd = "{systemctl} show zza.service -p JournalFilePath"
+        journal_a=output(cmd.format(**locals())).strip().split("=",1)[1]
+        cmd = "{systemctl} show zzb.service -p JournalFilePath"
+        journal_b=output(cmd.format(**locals())).strip().split("=",1)[1]
+        logg.info("journal zza = %s", journal_a)
+        logg.info("journal zzb = %s", journal_b)
+        self.assertFalse(os.path.exists(journal_a))
+        self.assertFalse(os.path.exists(journal_b))
+        #
+        cmd = "{systemctl} start zza.service"
+        sh____(cmd.format(**locals()))
+        cmd = "{systemctl} start zzb.service"
+        sh____(cmd.format(**locals()))
+        time.sleep(1)
+        #
+        cmd = "{systemctl} show zza.service -p JournalFilePath"
+        journal_a=output(cmd.format(**locals())).strip().split("=",1)[1]
+        cmd = "{systemctl} show zzb.service -p JournalFilePath"
+        journal_b=output(cmd.format(**locals())).strip().split("=",1)[1]
+        logg.info("journal zza = %s", journal_a)
+        logg.info("journal zzb = %s", journal_b)
+        self.assertTrue(os.path.exists(journal_a))
+        self.assertFalse(os.path.exists(journal_b))
+        self.assertTrue(os.path.exists(log_b))
+        #
+        out_a = open(journal_a).read()
+        out_b = open(log_b).read()
+        logg.info("out_a=%s", out_a.strip())
+        logg.info("out_b=%s", out_b.strip())
+        self.assertTrue(greps(out_a, "running testsleepA"))
+        self.assertTrue(greps(out_b, "running testsleepB"))
+        self.assertFalse(greps(out_a, "running testsleepB"))
+        self.assertFalse(greps(out_b, "running testsleepA"))
+        self.assertTrue(greps(out_a, "starts testsleepA"))
+        self.assertTrue(greps(out_b, "starts testsleepB"))
+        self.assertFalse(greps(out_a, "starts testsleepB"))
+        self.assertFalse(greps(out_b, "starts testsleepA"))
+        #
+        cmd = "{systemctl} stop zza.service zzb.service"
+        sh____(cmd.format(**locals()))
+        #
+        cmd = "{systemctl} logs -n 5 zza.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 0) # file not found
+        self.assertTrue(greps(out, "running testsleepA"))
+        self.assertTrue(greps(out, "starts testsleepA"))
+        #
+        cmd = "{systemctl} logs -n 5 zzb.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 1) # file not found
+        self.assertFalse(greps(out, "running testsleep"))
+        self.assertFalse(greps(out, "starts testsleep"))
+        #
+        cmd = "{systemctl} logs --no-pager zza.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 0) # file not found
+        self.assertTrue(greps(out, "running testsleepA"))
+        self.assertTrue(greps(out, "starts testsleepA"))
+        #
+        cmd = "{systemctl} -c LESS_CMD=/bin/cat logs zza.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 0) # file not found
+        self.assertTrue(greps(out, "running testsleepA"))
+        self.assertTrue(greps(out, "starts testsleepA"))
+        #
+        self.rm_killall()
+        self.rm_testdir()
+        self.coverage()
+        self.end()
     def test_3401_service_status_show(self) -> None:
         """ check that a named service config can show its status"""
         self.begin()
