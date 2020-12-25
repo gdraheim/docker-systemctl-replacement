@@ -10392,7 +10392,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "running testsleepA"))
         self.assertTrue(greps(out, "starts testsleepA"))
         #
-        cmd = "{systemctl} -c LESS_CMD=/bin/cat logs zza.service -vv"
+        cmd = "{systemctl} -c DefaultPager=/bin/cat logs zza.service -vv"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s", cmd, end, out)
         self.assertEqual(end, 0) # file not found

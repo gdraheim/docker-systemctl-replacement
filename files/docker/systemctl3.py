@@ -228,9 +228,9 @@ ExpandVarsMaxDepth = 20
 ExpandVarsKeepName = True
 RestartOnFailure = True
 
-TAIL_CMD = "/usr/bin/tail"
-LESS_CMD = "/usr/bin/less"
-CAT_CMD = "/usr/bin/cat"
+DefaultTail = "/usr/bin/tail"
+DefaultPager = "/usr/bin/less"
+DefaultCat = "/usr/bin/cat"
 PROC_DIR = "/proc"
 
 # The systemd default was NOTIFY_SOCKET="/var/run/systemd/notify"
@@ -480,7 +480,8 @@ def get_PAGER():
     PAGER = os.environ.get("PAGER", "less")
     pager = os.environ.get("SYSTEMD_PAGER", "{PAGER}").format(**locals()) # internal
     options = os.environ.get("SYSTEMD_LESS", "FRSXMK") # see 'man timedatectl'
-    if not pager: pager = "cat"
+    if not pager: 
+        pager = DefaultPager
     if "less" in pager and options:
         return [ pager, "-" + options ]
     return [ pager ]
@@ -2835,17 +2836,20 @@ class Systemctl:
         if not conf: return -1
         return self.log_unit_from(conf, lines, follow)
     def log_unit_from(self, conf, lines = None, follow = False):
-        log_path = self.get_journal_log_from(conf)
+        filename = self.get_journal_log_from(conf)
         unit = conf.name()
+        msg = "journalctl {unit}".format(**locals())
         if _no_pager or not os.isatty(sys.stdout.fileno()):
-            cmd = [ CAT_CMD, log_path ]
+            show = [ DefaultCat ]
+            cmd = show + [ filename ]
         else:
-            cmd = [ LESS_CMD, log_path ]
+            pager = get_PAGER()
+            cmd = pager + [ filename ]
         if follow:
-            cmd = [ TAIL_CMD, "-n", str(lines or 10), "-F", log_path ]
+            cmd = [ DefaultTail, "-n", str(lines or 10), "-F", filename ]
         elif lines:
-            cmd = [ TAIL_CMD, "-n", str(lines or 10), log_path ]
-        dbg_("journalctl {unit} -> {cmd}".format(**locals()))
+            cmd = [ DefaultTail, "-n", str(lines or 10), filename ]
+        dbg_("{msg} -> {cmd}".format(**locals()))
         return os.spawnvp(os.P_WAIT, cmd[0], cmd) # type: ignore
     def get_journal_log_from(self, conf):
         return os_path(self._root, self.get_journal_log(conf))
