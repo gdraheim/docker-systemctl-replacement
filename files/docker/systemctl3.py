@@ -39,7 +39,7 @@ DebugBootTime = False
 DebugInitLoop = False
 DebugKillAll = False
 DebugLockFile = False
-DEBUG_VARS = False
+DebugExpandVars = False
 DEBUG_RESULT = False
 DEBUG_SOCKETFILE = True
 TestListen = False
@@ -2309,18 +2309,18 @@ class Systemctl:
         for env_file in conf.getlist("Service", "EnvironmentFile", []):
             for name, value in self.read_env_file(self.expand_special(env_file, conf)):
                 env[name] = self.expand_env(value, env) # but nonlazy expansion here
-        if DEBUG_VARS: # pragma: no cover
+        if DebugExpandVars: # pragma: no cover
             extra_vars = self.extra_vars()
             dbg_("extra-vars {extra_vars}".format(**locals()))
         for extra in self.extra_vars():
             if extra.startswith("@"):
                 for name, value in self.read_env_file(extra[1:]):
-                    if DEBUG_VARS: # pragma: no cover
+                    if DebugExpandVars: # pragma: no cover
                         info_("override {name}={value}".format(**locals()))
                     env[name] = self.expand_env(value, env)
             else:
                 for name, value in self.read_env_part(extra):
-                    if DEBUG_VARS: # pragma: no cover
+                    if DebugExpandVars: # pragma: no cover
                         info_("override {name}={value}".format(**locals()))
                     env[name] = value # a '$word' is not special here
         return env
@@ -2330,7 +2330,7 @@ class Systemctl:
             if name in env:
                 return env[name]
             namevar = "$%s" % name
-            if DEBUG_VARS: # pragma: no cover
+            if DebugExpandVars: # pragma: no cover
                 dbg_("can not expand {namevar}".format(**locals()))
             return (ExpandVarsKeepName and namevar or "")
         def get_env2(m):
@@ -2338,7 +2338,7 @@ class Systemctl:
             if name in env:
                 return env[name]
             namevar = "${%s}" % name
-            if DEBUG_VARS: # pragma: no cover
+            if DebugExpandVars: # pragma: no cover
                 dbg_("can not expand {namevar}".format(**locals()))
             return (ExpandVarsKeepName and namevar or "")
         #
@@ -2414,7 +2414,7 @@ class Systemctl:
         result = ""
         if cmd:
             result = re.sub("[%](.)", lambda m: get_conf1(m), cmd)
-            if DEBUG_VARS: # pragma: no cover
+            if DebugExpandVars: # pragma: no cover
                 dbg_("expanded => {result}".format(**locals()))
         return result
     ExecMode = collections.namedtuple("ExecMode", ["check"])
