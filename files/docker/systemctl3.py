@@ -5876,11 +5876,9 @@ class Systemctl:
                     units += [ unit ]
         if not found_all and not _force:
             error_("Use --force to append the pattern as text (to be evaluated later)")
-            self.error |= NOT_FOUND
+            self.error |= NOT_OK
             return False
         result = self.ignore_units(units)
-        if not found_all:
-            self.error |= NOT_OK
         return result
     def ignore_units(self, units):
         filename = os_path(self._root, IgnoredServicesFile)

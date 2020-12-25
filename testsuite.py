@@ -6205,12 +6205,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} default-services --all"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(len(lines(out)), 3)
-        self.assertEqual(end, 0)
-        #
-        cmd = "{systemctl} default-services --all --force"
-        out, end = output2(cmd.format(**locals()))
-        logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(len(lines(out)), 4)
         self.assertEqual(end, 0)
         #
@@ -9547,7 +9541,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} --no-legend ignore some*.service"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        self.assertEqual(end, 5)
+        self.assertEqual(end, 1)
         self.assertTrue(greps(err, "could not be found"))
         self.assertTrue(greps(err, "--force to append"))
         #
@@ -9684,7 +9678,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} --no-legend ignore some*.service"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        self.assertEqual(end, 5)
+        self.assertEqual(end, 1)
         self.assertTrue(greps(err, "could not be found"))
         self.assertTrue(greps(err, "--force to append"))
         #
@@ -9786,6 +9780,152 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(len(lines(out)), 5) # again
+        self.assertEqual(end, 0)
+        #
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def test_3135_default_services_ignores_bad_cases(self, real: bool = False) -> None:
+        """ check that 'default-services' changes when modifing default-target """
+        self.begin()
+        self.rm_testdir()
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        testsleep=self.testname("sleep")
+        text_file(os_path(root, "/etc/systemd/system/zza.service"), """
+            [Unit]
+            Description=Testing A""")
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"), """
+            [Unit]
+            Description=Testing B
+            [Service]
+            ExecStart={root}/bin/{testsleep} 4
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        text_file(os_path(root, "/etc/systemd/system/zzc.service"), """
+            [Unit]
+            Description=Testing C
+            [Service]
+            ExecStart={root}/bin/{testsleep} 4
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        copy_tool(_bin_sleep, "{root}/bin/{testsleep}".format(**locals()))
+        #
+        cmd = "{systemctl} list-unit-files --type=service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertGreater(len(lines(out)), 3)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} default-services"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 0)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} --no-legend enable zza.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 1)
+        #
+        cmd = "{systemctl} default-services"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 0)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} --no-legend enable zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} default-services"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 1)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} -c IgnoredServicesFile=/var/tmp/special ignore zzb.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 0)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} -c IgnoredServicesFile=/var/tmp/special default-services -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 0)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} default-services"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 1)
+        self.assertEqual(end, 0)
+        #
+        tmp_special = os_path(root, "/var/tmp/special")
+        text_file(tmp_special, " ")
+        #
+        cmd = "{systemctl} -c IgnoredServicesFile=/var/tmp/special default-services -vv -c DebugIgnoredServices"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 1)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} -c IgnoredServicesFile=/var/tmp/special ignore zzb.service -vv -c DebugIgnoredServices"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 0)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} -c IgnoredServicesFile=/var/tmp/special default-services -vv -c DebugIgnoredServices"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 0)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} -c IgnoredServicesFile=/var/tmp/special ignore !zzb --force -vv -c DebugIgnoredServices"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 0)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} -c IgnoredServicesFile=/var/tmp/special default-services -vv -c DebugIgnoredServices"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 1)
+        self.assertEqual(end, 0)
+        #
+        os.remove(tmp_special)
+        os.mkdir(tmp_special)
+        #
+        cmd = "{systemctl} -c IgnoredServicesFile=/var/tmp/special default-services -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 1)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} -c IgnoredServicesFile=/var/tmp/special ignore zzb.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 0)
+        self.assertEqual(end, 1) # Is a directory
+        #
+        cmd = "{systemctl} -c IgnoredServicesFile=/var/tmp/special ignore zzb.service -vv"
+        out, err, end = output3(cmd.format(**locals()))
+        ## logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 0)
+        self.assertEqual(end, 1) # Is a directory
+        self.assertTrue(greps(err, "Is a directory"))
+        #
+        cmd = "{systemctl} -c IgnoredServicesFile=/var/tmp/special default-services -vv"
+        out, err, end = output3(cmd.format(**locals()))
+        # logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(len(lines(out)), 1)
         self.assertEqual(end, 0)
         #
         self.rm_testdir()
