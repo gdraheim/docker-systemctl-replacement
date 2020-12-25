@@ -507,8 +507,8 @@ def get_runtime_dir() -> str:
 def docname(path: str) -> str:
     return os.path.splitext(os.path.basename(path))[0]
 
-SYSTEMCTL_DEBUG_LOG = "{LOG}/systemctl.debug.log"
-SYSTEMCTL_EXTRA_LOG = "{LOG}/systemctl.log"
+SYSTEMCTL_DEBUG_LOG = "{VARLOG}/systemctl.debug.log"
+SYSTEMCTL_EXTRA_LOG = "{VARLOG}/systemctl.log"
 
 def get_home() -> str:
     return os.path.expanduser("~")              # password directory. << from docs(os.path.expanduser)
@@ -530,7 +530,7 @@ def get_LOG_DIR(root:bool = False) -> str:
     CONFIG = get_CONFIG_HOME(root)
     return os.path.join(CONFIG, "log")
 def expand_path(path: str, root:bool = True) -> str:
-    LOG = get_LOG_DIR(root)
+    VARLOG = get_LOG_DIR(root)
     XDG_CONFIG_HOME=get_CONFIG_HOME(root)
     XDG_RUNTIME_DIR=get_RUNTIME_DIR(root)
     return os.path.expanduser(path.replace("${","{").format(**locals()))
