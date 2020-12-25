@@ -9594,7 +9594,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         root = self.root(testdir, real)
         systemctl = cover() + _systemctl_py + " --root=" + root
-        systemctl += " -c EXPAND_KEEP_VARS=no"
+        systemctl += " -c ExpandVarsKeepName=no"
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         print_sh = os_path(root, "/usr/bin/zz_print.sh")
         logfile = os_path(root, "/var/log/zz_print_sh.log")
@@ -9670,7 +9670,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         root = self.root(testdir, real)
         systemctl = cover() + _systemctl_py + " --root=" + root
-        systemctl += " -c EXPAND_VARS_MAXDEPTH=5"
+        systemctl += " -c ExpandVarsMaxDepth=5"
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         print_sh = os_path(root, "/usr/bin/zz_print.sh")
         logfile = os_path(root, "/var/log/zz_print_sh.log")

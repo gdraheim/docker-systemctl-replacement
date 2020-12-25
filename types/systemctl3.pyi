@@ -94,8 +94,6 @@ ExitWhenNoMoreServices: bool
 ExitWhenNoMoreProcs: bool
 DefaultUnit: str
 DefaultTarget: str
-EXPAND_VARS_MAXDEPTH: int
-EXPAND_KEEP_VARS: bool
 RESTART_FAILED_UNITS: bool
 _pid_file_folder: str
 _journal_log_folder: str

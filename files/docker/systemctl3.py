@@ -224,8 +224,8 @@ ForceLockFile = False
 BootTimeMinPID = 0
 BootTimeMaxPID = -9
 KillChildrenMaxDepth = 100
-EXPAND_VARS_MAXDEPTH = 20
-EXPAND_KEEP_VARS = True
+ExpandVarsMaxDepth = 20
+ExpandVarsKeepName = True
 RESTART_FAILED_UNITS = True
 ACTIVE_IF_ENABLED=False
 
@@ -2335,7 +2335,7 @@ class Systemctl:
             namevar = "$%s" % name
             if DEBUG_VARS: # pragma: no cover
                 dbg_("can not expand {namevar}".format(**locals()))
-            return (EXPAND_KEEP_VARS and namevar or "")
+            return (ExpandVarsKeepName and namevar or "")
         def get_env2(m):
             name = m.group(1)
             if name in env:
@@ -2343,9 +2343,9 @@ class Systemctl:
             namevar = "${%s}" % name
             if DEBUG_VARS: # pragma: no cover
                 dbg_("can not expand {namevar}".format(**locals()))
-            return (EXPAND_KEEP_VARS and namevar or "")
+            return (ExpandVarsKeepName and namevar or "")
         #
-        maxdepth = EXPAND_VARS_MAXDEPTH
+        maxdepth = ExpandVarsMaxDepth
         expanded = re.sub("[$](\w+)", lambda m: get_env1(m), cmd.replace("\\\n",""))
         for depth in xrange(maxdepth):
             new_text = re.sub("[$][{](\w+)[}]", lambda m: get_env2(m), expanded)
