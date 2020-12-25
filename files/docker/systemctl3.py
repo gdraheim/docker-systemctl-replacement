@@ -223,7 +223,7 @@ RemoveLockFile = False
 ForceLockFile = False
 BootTimeMinPID = 0
 BootTimeMaxPID = -9
-PROC_MAX_DEPTH = 100
+KillChildrenMaxDepth = 100
 EXPAND_VARS_MAXDEPTH = 20
 EXPAND_KEEP_VARS = True
 RESTART_FAILED_UNITS = True
@@ -4394,7 +4394,7 @@ class Systemctl:
             dbg_("ignoring children when mainpid is already dead")
             # because we list child processes, not processes in control-group
             return True
-        pidlist = self.pidlist_of(mainpid) # here
+        pidlist = self.kill_children_pidlist_of(mainpid) # here
         if pid_exists(mainpid):
             info_("stop kill PID {mainpid}".format(**locals()))
             self._kill_pid(mainpid, kill_signal)
@@ -6563,13 +6563,13 @@ class Systemctl:
     def is_running_unit(self, unit):
         conf = self.get_unit_conf(unit)
         return self.is_running_unit_from(conf)
-    def pidlist_of(self, pid):
+    def kill_children_pidlist_of(self, pid):
         if not pid:
             return []
         proc = PROC_DIR
         pidlist = [ pid ]
         pids = [ pid ]
-        for depth in xrange(PROC_MAX_DEPTH):
+        for depth in xrange(KillChildrenMaxDepth):
             for pid_entry in os.listdir(proc):
                 pid = to_intN(pid_entry)
                 if pid is None:
