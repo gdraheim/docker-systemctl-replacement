@@ -16431,7 +16431,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
         systemctl += " --{system}".format(**locals())
-        systemctl += " -c _notify_socket_folder=/var/run-using-notify-special-folder"
+        systemctl += " -c NotifySocketFolder=/var/run-using-notify-special-folder"
         testsleep = self.testname("sleep")
         logfile = os_path(root, "/var/log/"+testsleep+".log")
         bindir = os_path(root, "/usr/bin")

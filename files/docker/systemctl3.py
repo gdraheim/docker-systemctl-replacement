@@ -219,11 +219,11 @@ DefaultCat = "/usr/bin/cat"
 DefaultProcDir = "/proc"
 
 # The systemd default was NOTIFY_SOCKET="/var/run/systemd/notify"
-_notify_socket_folder = "{RUN}/systemd" # alias /run/systemd
-_journal_log_folder = "{LOG}/journal"
+NotifySocketFolder = "{VARRUN}/systemd" # alias /run/systemd
+JournalLogFolder = "{VARLOG}/journal"
 
-SYSTEMCTL_DEBUG_LOG = "{LOG}/systemctl.debug.log"
-SYSTEMCTL_EXTRA_LOG = "{LOG}/systemctl.log"
+SYSTEMCTL_DEBUG_LOG = "{VARLOG}/systemctl.debug.log"
+SYSTEMCTL_EXTRA_LOG = "{VARLOG}/systemctl.log"
 
 _default_targets = [ "poweroff.target", "rescue.target", "sysinit.target", "basic.target", "multi-user.target", "graphical.target", "reboot.target" ]
 _feature_targets = [ "network.target", "remote-fs.target", "local-fs.target", "timers.target", "nfs-client.target" ]
@@ -549,8 +549,8 @@ def get_SHELL(root = False):
     if root: return SHELL
     return os.environ.get("SHELL", SHELL)
 def get_RUNTIME_DIR(root = False):
-    RUN = "/run"
-    if root: return RUN
+    VARRUN = "/run"
+    if root: return VARRUN
     return os.environ.get("XDG_RUNTIME_DIR", get_runtime_dir())
 def get_CONFIG_HOME(root = False):
     CONFIG = "/etc"
@@ -579,8 +579,8 @@ def get_VARLIB_HOME(root = False):
     return CONFIG
 def expand_path(path, root = False):
     HOME = get_HOME(root)
-    RUN = get_RUN(root)
-    LOG = get_LOG_DIR(root)
+    VARRUN = get_RUN(root)
+    VARLOG = get_LOG_DIR(root)
     XDG_DATA_HOME=get_DATA_HOME(root)
     XDG_CONFIG_HOME=get_CONFIG_HOME(root)
     XDG_RUNTIME_DIR=get_RUNTIME_DIR(root)
@@ -1618,7 +1618,7 @@ class Systemctl:
         self._unit_type = _unit_type
         # some common constants that may be changed
         self._systemd_version = SystemCompatibilityVersion
-        self._journal_log_folder = _journal_log_folder
+        self._journal_log_folder = JournalLogFolder
         # and the actual internal runtime state
         self._loaded_file_sysv = {} # /etc/init.d/name => config data
         self._loaded_file_sysd = {} # /etc/systemd/system/name.service => config data
@@ -2886,7 +2886,7 @@ class Systemctl:
     NotifySocket = collections.namedtuple("NotifySocket", ["socket", "socketfile" ])
     def get_notify_socket_from(self, conf, socketfile = None, debug = False):
         """ creates a notify-socket for the (non-privileged) user """
-        notify_socket_folder = expand_path(_notify_socket_folder, conf.root_mode())
+        notify_socket_folder = expand_path(NotifySocketFolder, conf.root_mode())
         notify_folder = os_path(self._root, notify_socket_folder)
         notify_name = "notify." + str(conf.name() or "systemctl")
         notify_socket = os.path.join(notify_folder, notify_name)
@@ -2903,7 +2903,7 @@ class Systemctl:
             socketfile = os.path.join(notify_folder, notify_name77)
             if len(socketfile) > 100:
                 socketfile = os.path.join(notify_folder, notify_name44)
-            socketfoldername = os.path.basename(_notify_socket_folder)
+            socketfoldername = os.path.basename(NotifySocketFolder)
             uid = get_USER_ID()
             pref1 = "zz.{uid}.{socketfoldername}".format(**locals())
             pref0 = "zz.{uid}".format(**locals())
