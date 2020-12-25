@@ -36,7 +36,7 @@ if sys.version[0] == '3':
 DebugSortedAfter = False
 DebugStatusFile = False
 DebugBootTime = False
-DEBUG_INITLOOP = False
+DebugInitLoop = False
 DEBUG_KILLALL = False
 DEBUG_FLOCK = False
 DEBUG_VARS = False
@@ -1559,11 +1559,11 @@ class SystemctlListenThread(threading.Thread):
         READ_ONLY = select.POLLIN | select.POLLPRI | select.POLLHUP | select.POLLERR
         READ_WRITE = READ_ONLY | select.POLLOUT
         me = os.getpid()
-        if DEBUG_INITLOOP: # pragma: no cover
+        if DebugInitLoop: # pragma: no cover
             info_("[{me}] listen: new thread".format(**locals()))
         if not self.systemctl._sockets:
             return
-        if DEBUG_INITLOOP: # pragma: no cover
+        if DebugInitLoop: # pragma: no cover
             info_("[{me}] listen: start thread".format(**locals()))
         listen = select.poll()
         for sock in self.systemctl._sockets.values():
@@ -1585,10 +1585,10 @@ class SystemctlListenThread(threading.Thread):
                        sleeping = MinimumYield
                        break
                 time.sleep(sleeping) # remainder waits less that 2 seconds
-                if DEBUG_INITLOOP: # pragma: no cover
+                if DebugInitLoop: # pragma: no cover
                     dbg_("[{me}] listen: poll".format(**locals()))
                 accepting = listen.poll(100) # milliseconds
-                if DEBUG_INITLOOP: # pragma: no cover
+                if DebugInitLoop: # pragma: no cover
                     amount = len(accepting)
                     dbg_("[{me}] listen: poll ({accepting})".format(**locals()))
                 for sock_fileno, event in accepting:
@@ -6412,7 +6412,7 @@ class Systemctl:
         result = None
         while True:
             try:
-                if DEBUG_INITLOOP: # pragma: no cover
+                if DebugInitLoop: # pragma: no cover
                     sleeps = InitLoopSleep
                     dbg_("DONE InitLoop (sleep {sleeps}s)".format(**locals()))
                 sleep_sec = InitLoopSleep - (time.time() - timestamp)
@@ -6428,13 +6428,13 @@ class Systemctl:
                 time.sleep(sleeping) # remainder waits less that 2 seconds
                 timestamp = time.time()
                 self.loop.acquire()
-                if DEBUG_INITLOOP: # pragma: no cover
+                if DebugInitLoop: # pragma: no cover
                     dbg_("NEXT InitLoop (after {sleep_sec}s)".format(**locals()))
                 self.read_log_files(units)
-                if DEBUG_INITLOOP: # pragma: no cover
+                if DebugInitLoop: # pragma: no cover
                     dbg_("reap zombies - check current processes")
                 running = self.reap_zombies()
-                if DEBUG_INITLOOP: # pragma: no cover
+                if DebugInitLoop: # pragma: no cover
                     dbg_("reap zombies - init-loop found {running} running procs".format(**locals()))
                 if self.doExitWhenNoMoreServices:
                     active = False
