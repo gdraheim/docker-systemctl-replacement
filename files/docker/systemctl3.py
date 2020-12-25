@@ -216,9 +216,9 @@ DefaultStandardInput=os.environ.get("SYSTEMD_STANDARD_INPUT", "null")
 DefaultStandardOutput=os.environ.get("SYSTEMD_STANDARD_OUTPUT", "journal") # systemd.exe --default-standard-output
 DefaultStandardError=os.environ.get("SYSTEMD_STANDARD_ERROR", "inherit") # systemd.exe --default-standard-error
 
-EXEC_SPAWN = False
-EXEC_DUP2 = True
-EXEC_CONTINUE = False
+ExecSpawn = False
+ExecRedirectLogs = True
+ExecIgnoreErrors = False
 REMOVE_LOCK_FILE = False
 TEST_LOCK_FILE = False
 BOOT_PID_MIN = 0
@@ -3741,7 +3741,7 @@ class Systemctl:
             err.write("ERROR:")
             err.write(msg.strip())
             err.write("\n")
-        if EXEC_DUP2:
+        if ExecRedirectLogs:
             os.dup2(inp.fileno(), sys.stdin.fileno())
             os.dup2(out.fileno(), sys.stdout.fileno())
             os.dup2(err.fileno(), sys.stderr.fileno())
@@ -3755,7 +3755,7 @@ class Systemctl:
         if retcode:
             cmdline44, retcode44 = o44(shell_cmd(cmd)), exitCODE(retcode)
             error_("({cmdline44}): bad logs ({retcode44}): {msg}".format(**locals()))
-            if not EXEC_CONTINUE:
+            if not ExecIgnoreErrors:
                 sys.exit(retcode)
         #
         runuser = self.get_User(conf)
@@ -3766,12 +3766,12 @@ class Systemctl:
         if badpath:
             cmdline44 = o44(shell_cmd(cmd))
             error_("({cmdline44}): bad workingdir: {badpath}'".format(**locals()))
-            if not EXEC_CONTINUE:
+            if not ExecIgnoreErrors:
                 sys.exit(EXIT_CHDIR)
         env = self.extend_exec_env(env)
         env.update(envs) # set $HOME to ~$USER
         try:
-            if EXEC_SPAWN:
+            if ExecSpawn:
                 cmd_args = [ arg for arg in cmd ] # satisfy mypy
                 exitcode = os.spawnvpe(os.P_WAIT, cmd[0], cmd_args, env)
                 sys.exit(exitcode)
