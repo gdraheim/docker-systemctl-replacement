@@ -33,7 +33,7 @@ if sys.version[0] == '3':
     basestring = str
     xrange = range
 
-DEBUG_AFTER = False
+DebugSortedAfter = False
 DEBUG_STATUS = False
 DEBUG_BOOTTIME = False
 DEBUG_INITLOOP = False
@@ -1517,32 +1517,32 @@ def conf_sortedAfter(conflist, cmp = compareAfter):
                     itemB = sortlist[B]
                     before = compareAfter(itemA.conf, itemB.conf)
                     if before > 0 and itemA.rank <= itemB.rank:
-                        if DEBUG_AFTER: # pragma: no cover
+                        if DebugSortedAfter: # pragma: no cover
                             nameA, nameB = itemA.conf.name(), itemB.conf.name()
                             dbg_("  {nameA:-30} before {nameB}".format(**locals()))
                         itemA.rank = itemB.rank + 1
                         changed += 1
                     if before < 0 and itemB.rank <= itemA.rank:
-                        if DEBUG_AFTER: # pragma: no cover
+                        if DebugSortedAfter: # pragma: no cover
                             nameA, nameB = itemA.conf.name(), itemB.conf.name()
                             dbg_("  {nameB:-30} before {nameA}".format(**locals()))
                         itemB.rank = itemA.rank + 1
                         changed += 1
         if not changed:
-            if DEBUG_AFTER: # pragma: no cover
+            if DebugSortedAfter: # pragma: no cover
                 allconfs = len(sortlist)
                 dbg_("done in check {check} of {allconfs}".format(**locals()))
             break
             # because Requires is almost always the same as the After clauses
             # we are mostly done in round 1 as the list is in required order
-    if DEBUG_AFTER:
+    if DebugSortedAfter:
         for conf in conflist:
             dbg_(".. " + conf.name())
         for item in sortlist:
             rank, name = item.rank, item.conf.name()
             dbg_("({rank}) {name}".format(**locals()))
     sortedlist = sorted(sortlist, key = lambda item: -item.rank)
-    if DEBUG_AFTER:
+    if DebugSortedAfter:
         for item in sortedlist:
             rank, name = item.rank, item.conf.name()
             dbg_("[{rank}] {name}".format(**locals()))
