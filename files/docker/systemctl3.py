@@ -227,7 +227,6 @@ KillChildrenMaxDepth = 100
 ExpandVarsMaxDepth = 20
 ExpandVarsKeepName = True
 RestartOnFailure = True
-ACTIVE_IF_ENABLED=False
 
 TAIL_CMD = "/usr/bin/tail"
 LESS_CMD = "/usr/bin/less"
@@ -4480,8 +4479,6 @@ class Systemctl:
             for unit in units:
                 active = self.get_active_unit(unit) 
                 enabled = self.enabled_unit(unit)
-                if enabled != "enabled" and ACTIVE_IF_ENABLED:
-                    active = "inactive" # "unknown"
                 results += [ active ]
                 break
         ## how it should work:
@@ -4631,8 +4628,6 @@ class Systemctl:
             for unit in units:
                 active = self.get_active_unit(unit) 
                 enabled = self.enabled_unit(unit)
-                if enabled != "enabled" and ACTIVE_IF_ENABLED: 
-                    active = "inactive"
                 results += [ active ]
                 break
         if "failed" in results:
