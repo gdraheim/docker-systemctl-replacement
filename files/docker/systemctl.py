@@ -226,6 +226,7 @@ JournalLogFolder = "{VARLOG}/journal"
 SystemctlDebugLog = "{VARLOG}/systemctl.debug.log"
 SystemctlExtraLog = "{VARLOG}/systemctl.log"
 
+IgnoredServicesFile="/etc/systemd/services.ignore"
 _ignored_services = """
 [centos]
 netconsole
@@ -5851,12 +5852,81 @@ class Systemctl:
     def get_KillSignal(self, conf):
         return conf.get(Service, "KillSignal", "SIGTERM")
     #
+    def ignore_modules(self, *modules):
+        """ [UNIT]... append ignore-pattern to mask pre-enabled services
+            Use --force to append the pattern as text instead of matching
+            them with existing units in the system. That allows for them
+            to have fnmatch */? wildcards and a gitignore-style !-inverse.
+        """
+        found_all = True
+        units = []
+        for module in modules:
+            if _force:
+                units += to_list(module)
+                continue
+            matched = self.match_units(to_list(module))
+            if not matched:
+                unit_ = unit_of(module)
+                error_("Unit {unit_} could not be found.".format(**locals()))
+                # self.error |= NOT_FOUND
+                found_all = False
+                continue
+            for unit in matched:
+                if unit not in units:
+                    units += [ unit ]
+        if not found_all and not _force:
+            error_("Use --force to append the pattern as text (to be evaluated later)")
+            self.error |= NOT_FOUND
+            return False
+        result = self.ignore_units(units)
+        if not found_all:
+            self.error |= NOT_OK
+        return result
+    def ignore_units(self, units):
+        filename = os_path(self._root, IgnoredServicesFile)
+        try:
+            if os.path.exists(filename):
+                text = open(filename, "rb").read()
+                if text and not text.endswith(b"\n"):
+                    text += b"\n"
+            else:
+                text = b""
+            for unit in units:
+                text += unit.encode("utf-8")
+                text += b"\n"
+            dirpath = os.path.dirname(filename)
+            if not os.path.isdir(dirpath):
+                os.makedirs(dirpath)
+            with open(filename, "wb") as f:
+                f.write(text)
+            # dbg_("written {text}".format(**locals()))  # (internal)
+            # dbg__("after adding {units}".format(**locals()))  # (internal)
+            return True
+        except Exception as e:
+            error_("while append to {filename}: {e}".format(**locals()))
+            return False
+    def get_ignored_services(self):
+        igno = _ignored_services
+        filename = os_path(self._root, IgnoredServicesFile)
+        if os.path.isfile(filename):
+            if igno and not igno.endswith("\n"):
+                igno += "\n"
+            try:
+                text_data = open(filename, "rb").read()
+                igno_text = text_data.decode("utf-8")
+                if not igno_text.endswith("\n"):
+                    igno_text += "\n"
+                igno += "[{filename}]\n".format(**locals())
+                igno += igno_text
+            except Exception as e:
+                error_("while reading from {filename}: {e}".format(**locals()))
+        return igno
     def _ignored_unit(self, unit, igno):
         is_ignored = False
         because_of = ""
         in_section = ""
         for line in igno.splitlines():
-            if not line.strip(): 
+            if not line.strip():
                 continue
             if line.startswith("["):
                 in_section = line.strip()
@@ -5902,9 +5972,10 @@ class Systemctl:
         """ get the default services for a target - this will ignore a number of services,
             use '--all' see the original list as systemd would see them.
         """
-        igno = _ignored_services
         if self._show_all:
             igno = ""
+        else:
+            igno = self.get_ignored_services()
         if DebugIgnoredServices:
             dbg_("ignored services filter for default.target:\n\t{igno}".format(**locals()))
         default_target = target or self.get_default_target()
@@ -6060,7 +6131,7 @@ class Systemctl:
                         continue  # ignore
                     units.append(unit)
         return units
-    def required_target_units(self, target, unit_type, igno = ""):
+    def required_target_units(self, target, unit_type, igno=""):
         units = []
         deps = self.get_required_dependencies(target)
         for unit in sorted(deps):
@@ -6944,6 +7015,8 @@ def run(command, *modules):
         print_str(systemctl.get_preset_of_unit(*modules))
     elif command in ["halt"]:
         exitcode = is_not_ok(systemctl.halt_target())
+    elif command in ["ignore"]:
+        exitcode = is_not_ok(systemctl.ignore_modules(*modules))
     elif command in ["init"]:
         exitcode = is_not_ok(systemctl.init_modules(*modules))
     elif command in ["is-active"]:
