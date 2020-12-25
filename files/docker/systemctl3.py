@@ -54,7 +54,7 @@ logging.addLevelName(NOTE, "NOTE")
 logging.addLevelName(DONE, "DONE")
 
 
-def dbg_(msg, note = None): 
+def dbg_(msg, note = None):
     if note is None:
         logg.debug("%s", msg)
     else:
@@ -64,37 +64,37 @@ def debug_(msg, note = None):
         logg.debug("%s", msg)
     else:
         logg.debug("%s %s", msg, note)
-def hint_(msg, note = None): 
+def hint_(msg, note = None):
     if note is None:
         logg.log(HINT, "%s", msg)
     else:
         logg.log(HINT, "%s %s", msg, note)
-def info_(msg, note = None): 
+def info_(msg, note = None):
     if note is None:
         logg.info("%s", msg)
     else:
         logg.info("%s %s", msg, note)
-def note_(msg, note = None): 
+def note_(msg, note = None):
     if note is None:
         logg.log(NOTE, "%s", msg)
     else:
         logg.log(NOTE, "%s %s", msg, note)
-def warn_(msg, note = None): 
+def warn_(msg, note = None):
     if note is None:
         logg.warning("%s", msg)
     else:
         logg.warning("%s %s", msg, note)
-def warning_(msg, note = None): 
+def warning_(msg, note = None):
     if note is None:
         logg.warning("%s", msg)
     else:
         logg.warning("%s %s", msg, note)
-def done_(msg, note = None): 
+def done_(msg, note = None):
     if note is None:
         logg.log(DONE, "%s", msg)
     else:
         logg.log(DONE, "%s %s", msg, note)
-def error_(msg, note = None): 
+def error_(msg, note = None):
     if note is None:
         logg.error("%s", msg)
     else:
@@ -465,7 +465,7 @@ def get_PAGER():
     PAGER = os.environ.get("PAGER", "less")
     pager = os.environ.get("SYSTEMD_PAGER", "{PAGER}").format(**locals()) # internal
     options = os.environ.get("SYSTEMD_LESS", "FRSXMK") # see 'man timedatectl'
-    if not pager: 
+    if not pager:
         pager = DefaultPager
     if "less" in pager and options:
         return [ pager, "-" + options ]
@@ -884,10 +884,10 @@ class SystemctlConfigParser(SystemctlConfData):
         for orig_line in open(filename):
             line = orig_line.strip()
             if line.startswith("#"):
-                if " BEGIN INIT INFO" in line: 
+                if " BEGIN INIT INFO" in line:
                      initinfo = True
                      section = "init.d"
-                if " END INIT INFO" in line: 
+                if " END INIT INFO" in line:
                      initinfo = False
                 if initinfo:
                     m = re.match(r"\S+\s*(\w[\w_-]*):(.*)", line)
@@ -1068,7 +1068,7 @@ class SystemctlConf:
                 dbg_("no status file: {status_file}\n returning {status}".format(**locals()))
             return status
         if path_truncate_old(status_file):
-            if DebugStatusFile: # pagma: no cover 
+            if DebugStatusFile: # pagma: no cover
                 dbg_("old status file: {status_file}\n returning {status}".format(**locals()))
             return status
         try:
@@ -1166,7 +1166,7 @@ def get_boottime_from_old_proc():
                 # ctime = os.path.getmtime(pid_stat)
                 ctime = path_proc_started(pid_stat)
                 if ctime < booted:
-                    booted = ctime 
+                    booted = ctime
         except Exception as e:  # pragma: no cover
             warn_("could not access {pid_stat}: {e}".format(**locals()))
     return booted
@@ -1379,7 +1379,7 @@ parse_result = collections.namedtuple("UnitName", ["fullname", "name", "prefix",
 def parse_unit(fullname): # -> object(prefix, instance, suffix, ...., name, component)
     name, suffix = fullname, ""
     has_suffix = fullname.rfind(".")
-    if has_suffix > 0: 
+    if has_suffix > 0:
         name = fullname[:has_suffix]
         suffix = fullname[has_suffix+1:]
     prefix, instance = name, ""
@@ -1389,7 +1389,7 @@ def parse_unit(fullname): # -> object(prefix, instance, suffix, ...., name, comp
         instance = name[has_instance+1:]
     component = ""
     has_component = prefix.rfind("-")
-    if has_component > 0: 
+    if has_component > 0:
         component = prefix[has_component+1:]
     return parse_result(fullname, name, prefix, instance, suffix, component)
 
@@ -1728,7 +1728,7 @@ class Systemctl:
         if self._file_for_unit_sysd is None:
             self._file_for_unit_sysd = {}
             for folder in self.sysd_folders():
-                if not folder: 
+                if not folder:
                     continue
                 folder = os_path(self._root, folder)
                 if not os.path.isdir(folder):
@@ -1748,7 +1748,7 @@ class Systemctl:
         if self._file_for_unit_sysv is None:
             self._file_for_unit_sysv = {}
             for folder in self.init_folders():
-                if not folder: 
+                if not folder:
                     continue
                 folder = os_path(self._root, folder)
                 if not os.path.isdir(folder):
@@ -1828,7 +1828,7 @@ class Systemctl:
         result = {}
         basename_d = unit + ".d"
         for folder in self.sysd_folders():
-            if not folder: 
+            if not folder:
                 continue
             folder = os_path(self._root, folder)
             override_d = os_path(folder, basename_d)
@@ -2019,7 +2019,7 @@ class Systemctl:
             active[unit] = "inactive"
             substate[unit] = "dead"
             description[unit] = ""
-            try: 
+            try:
                 conf = self.get_unit_conf(unit)
                 result[unit] = "loaded"
                 description[unit] = self.get_description_from(conf)
@@ -2052,7 +2052,7 @@ class Systemctl:
                 continue
             result[unit] = None
             enabled[unit] = ""
-            try: 
+            try:
                 conf = self.get_unit_conf(unit)
                 if self.not_user_conf(conf):
                     result[unit] = None
@@ -2135,7 +2135,7 @@ class Systemctl:
         try:
             # some pid-files from applications contain multiple lines
             for line in open(pid_file):
-                if line.strip(): 
+                if line.strip():
                     pid = to_intN(line.strip())
                     break
         except Exception as e:
@@ -2255,9 +2255,9 @@ class Systemctl:
             info_("while reading {env_file}: {e}".format(**locals()))
     def read_env_part(self, env_part): # -> generate[ (name, value) ]
         """ Environment=<name>=<value> is being scanned """
-        # systemd Environment= spec says it is a space-seperated list of 
-        # assignments. In order to use a space or an equals sign in a value 
-        # one should enclose the whole assignment with double quotes: 
+        # systemd Environment= spec says it is a space-seperated list of
+        # assignments. In order to use a space or an equals sign in a value
+        # one should enclose the whole assignment with double quotes:
         # Environment="VAR1=word word" VAR2=word3 "VAR3=$word 5 6"
         # and the $word is not expanded by other environment variables.
         try:
@@ -2465,7 +2465,7 @@ class Systemctl:
             for dirpath, dirnames, filenames in os.walk(run_path, topdown=False):
                 for item in filenames:
                     filepath = os.path.join(dirpath, item)
-                    try: 
+                    try:
                         os.remove(filepath)
                     except Exception as e:  # pragma: no cover
                         dbg_("not removed file: {filepath} ({e})".format(**locals()))
@@ -2477,9 +2477,9 @@ class Systemctl:
                     except Exception as e:  # pragma: no cover
                         dbg_("not removed dir: {dir_path} ({e})".format(**locals()))
                         ok = False
-            try: 
+            try:
                 os.rmdir(run_path)
-            except Exception as e: 
+            except Exception as e:
                 dbg_("not removed top dir: {run_path} ({e})".format(**locals()))
                 ok = False # pragma: no cover
         fail = ok and "done" or "fail"
@@ -2493,7 +2493,7 @@ class Systemctl:
         return self.expand_special(conf.get(section, "StateDirectory", ""), conf)
     def get_CacheDirectory(self, conf, section = "Service"):
         return self.expand_special(conf.get(section, "CacheDirectory", ""), conf)
-    def get_LogsDirectory(self, conf, section = "Service"): 
+    def get_LogsDirectory(self, conf, section = "Service"):
         return self.expand_special(conf.get(section, "LogsDirectory", ""), conf)
     def get_ConfigurationDirectory(self, conf, section = "Service"):
         return self.expand_special(conf.get(section, "ConfigurationDirectory", ""), conf)
@@ -2503,7 +2503,7 @@ class Systemctl:
         return conf.get(section, "StateDirectoryMode", "")
     def get_CacheDirectoryMode(self, conf, section = "Service"):
         return conf.get(section, "CacheDirectoryMode", "")
-    def get_LogsDirectoryMode(self, conf, section = "Service"): 
+    def get_LogsDirectoryMode(self, conf, section = "Service"):
         return conf.get(section, "LogsDirectoryMode", "")
     def get_ConfigurationDirectoryMode(self, conf, section = "Service"):
         return conf.get(section, "ConfigurationDirectoryMode", "")
@@ -2671,7 +2671,7 @@ class Systemctl:
         ok = True
         dirpath = os_path(self._root, path)
         if not os.path.isdir(dirpath):
-            try: 
+            try:
                 os.makedirs(dirpath)
                 info_("created directory path: {dirpath}".format(**locals()))
             except Exception as e:  # pragma: no cover
@@ -2728,19 +2728,19 @@ class Systemctl:
         for dirpath, dirnames, filenames in os.walk(path, topdown=False):
             for item in filenames:
                 filepath = os.path.join(dirpath, item)
-                try: 
+                try:
                     os.chown(filepath, uid, gid)
                 except Exception as e:  # pragma: no cover
                     dbg_("could not set {user}:{group} on {filepath}\n\t{e}".format(**locals()))
                     ok = False
             for item in dirnames:
                 dir_path = os.path.join(dirpath, item)
-                try: 
+                try:
                     os.chown(dir_path, uid, gid)
                 except Exception as e:  # pragma: no cover
                     dbg_("could not set {user}:{group} on {dir_path}\n\t{e}".format(**locals()))
                     ok = False
-        try: 
+        try:
             os.chown(path, uid, gid)
         except Exception as e:  # pragma: no cover
             dbg_("could not set {user}:{group} on {path}\n\t{e}".format(**locals()))
@@ -2871,7 +2871,7 @@ class Systemctl:
                 workingdir = workingdir[1:]
                 ignore = True
             into = os_path(self._root, self.expand_special(workingdir, conf))
-            try: 
+            try:
                dbg_("chdir workingdir '{into}'".format(**locals()))
                os.chdir(into)
                return None
@@ -2954,7 +2954,7 @@ class Systemctl:
             info_("no $NOTIFY_SOCKET exists")
             return {}
         #
-        lapseTimeout = max(3, int(timeout / 100)) 
+        lapseTimeout = max(3, int(timeout / 100))
         mainpidTimeout = lapseTimeout # Apache sends READY before MAINPID
         status = ""
         info_("wait $NOTIFY_SOCKET, timeout {timeout} (lapse {lapseTimeout})".format(**locals()))
@@ -3097,7 +3097,7 @@ class Systemctl:
                 exe, newcmd = self.exec_newcmd(cmd, env, conf)
                 info_(" pre-start", shell_cmd(newcmd))
                 forkpid = os.fork()
-                if not forkpid: 
+                if not forkpid:
                     self.execve_from(conf, newcmd, env)  # pragma: no cover
                 run = subprocess_waitpid(forkpid)
                 self.set_status_code_from(conf, "ExecStartPre", run)
@@ -3128,7 +3128,7 @@ class Systemctl:
                     self.execve_from(conf, newcmd, env)
                 run = subprocess_waitpid(forkpid)
                 self.set_status_code_from(conf, "ExecStart", run)
-                if run.returncode and exe.check: 
+                if run.returncode and exe.check:
                     returncode = run.returncode
                     service_result = "failed"
                     returncodeOK, signalEE = exitOK(run.returncode), run.signal or ""
@@ -3191,7 +3191,7 @@ class Systemctl:
             else:
                 self.write_status_from(conf, AS=None) # active comes from PID
         elif runs in [ "notify" ]:
-            # "notify" is the same as "simple" but we create a $NOTIFY_SOCKET 
+            # "notify" is the same as "simple" but we create a $NOTIFY_SOCKET
             # and wait for startup completion by checking the socket messages
             pid_file = self.pid_file_from(conf)
             pid = self.read_mainpid_from(conf)
@@ -3437,7 +3437,7 @@ class Systemctl:
                 exe, newcmd = self.exec_newcmd(cmd, env, conf)
                 info_(" pre-start", shell_cmd(newcmd))
                 forkpid = os.fork()
-                if not forkpid: 
+                if not forkpid:
                     self.execve_from(conf, newcmd, env)  # pragma: no cover
                 run = subprocess_waitpid(forkpid)
                 returncodeOK, signalEE, fork_pid = exitOK(run.returncode), run.signal or "", run.pid
@@ -3465,7 +3465,7 @@ class Systemctl:
             if not self.is_active_from(service_conf):
                 service_result = "failed"
             state = service_result
-            if service_result in ["success"]: 
+            if service_result in ["success"]:
                 state = "active"
             self.write_status_from(conf, AS=state)
         # POST sequence
@@ -3865,7 +3865,7 @@ class Systemctl:
                     self.execve_from(conf, newcmd, env)  # pragma: no cover
                 run = subprocess_waitpid(forkpid)
                 self.set_status_code_from(conf, "ExecStop", run)
-                if run.returncode and exe.check: 
+                if run.returncode and exe.check:
                     returncode = run.returncode
                     service_result = "failed"
                     break
@@ -4116,7 +4116,7 @@ class Systemctl:
                     self.execve_from(conf, newcmd, env)  # pragma: no cover
                 run = subprocess_waitpid(forkpid)
                 self.set_status_code_from(conf, "ExecReload", run)
-                if run.returncode and exe.check: 
+                if run.returncode and exe.check:
                     returncodeOK = exitOK(run.returncode)
                     error_("Job for {unit} failed because the control process exited with error code. ({returncodeOK})".format(**locals()))
                     self.write_status_from(conf, AS="failed")
@@ -4395,7 +4395,7 @@ class Systemctl:
             for pid in pidlist:
                 if pid != mainpid:
                     self._kill_pid(pid, kill_signal)
-        if doSendSIGHUP: 
+        if doSendSIGHUP:
             info_("stop SendSIGHUP to PIDs {pidlist}".format(**locals()))
             for pid in pidlist:
                 self._kill_pid(pid, signal.SIGHUP)
@@ -4432,7 +4432,7 @@ class Systemctl:
         info_("done hard kill PID {mainpid} {deadOK}".format(**locals()))
         return dead
     def _kill_pid(self, pid, kill_signal = None):
-        try: 
+        try:
             sig = kill_signal or signal.SIGTERM
             os.kill(pid, sig)
         except OSError as e:
@@ -4469,7 +4469,7 @@ class Systemctl:
                 results += [ "inactive" ]
                 continue
             for unit in units:
-                active = self.get_active_unit(unit) 
+                active = self.get_active_unit(unit)
                 enabled = self.enabled_unit(unit)
                 results += [ active ]
                 break
@@ -4618,7 +4618,7 @@ class Systemctl:
                 results += [ "inactive" ]
                 continue
             for unit in units:
-                active = self.get_active_unit(unit) 
+                active = self.get_active_unit(unit)
                 enabled = self.enabled_unit(unit)
                 results += [ active ]
                 break
@@ -4702,7 +4702,7 @@ class Systemctl:
     def status_units(self, units):
         """ concatenates the status output of all units
             and the last non-successful statuscode """
-        status = 0 
+        status = 0
         result = ""
         for unit in units:
             status1, result1 = self.status_unit(unit)
@@ -4710,7 +4710,7 @@ class Systemctl:
             if result: result += "\n\n"
             result += result1
         if status:
-            self.error |= NOT_OK | NOT_ACTIVE # 3 
+            self.error |= NOT_OK | NOT_ACTIVE # 3
         return result
     def status_unit(self, unit):
         conf = self.get_unit_conf(unit)
@@ -4795,7 +4795,7 @@ class Systemctl:
             unit_file = self.unit_file(unit)
             if unit_file:
                 return open(unit_file).read()
-            error_("No files found for {unit}".format(**locals())) 
+            error_("No files found for {unit}".format(**locals()))
         except Exception as e:
             error_("Unit {unit} is not-loaded: {e}".format(**locals()))
         self.error |= NOT_OK
@@ -4808,7 +4808,7 @@ class Systemctl:
             self._preset_file_list = {}
             assert self._preset_file_list is not None
             for folder in self.preset_folders():
-                if not folder: 
+                if not folder:
                     continue
                 if self._root:
                     folder = os_path(self._root, folder)
@@ -4915,7 +4915,7 @@ class Systemctl:
             return self.default_enablefolder(wanted)
     def default_enablefolder(self, wanted, basefolder = None):
         basefolder = basefolder or self.system_folder()
-        if not wanted: 
+        if not wanted:
             return wanted
         if not wanted.endswith(".wants"):
             wanted = wanted + ".wants"
@@ -4967,7 +4967,7 @@ class Systemctl:
     def enable_unit_from(self, conf):
         unit = conf.name()
         wanted = self.wanted_from(conf)
-        if not wanted and not self._force: 
+        if not wanted and not self._force:
             dbg_("{unit} has no target".format(**locals()))
             return False # "static" is-enabled
         target = wanted or self.get_default_target()
@@ -5176,7 +5176,7 @@ class Systemctl:
         unit_file = strE(conf.filename())
         if self.is_sysv_file(unit_file):
             state = self.is_enabled_sysv(unit_file)
-            if state: 
+            if state:
                 return "enabled"
             return "disabled"
         return self.get_enabled_from(conf)
@@ -5370,7 +5370,7 @@ class Systemctl:
         mapping[".wants"] = ".wanted to start"
         mapping["PropagateReloadTo"] = "(to be reloaded as well)"
         mapping["Conflicts"] = "(to be stopped on conflict)"
-        restrict = ["Requires", "Requisite", "ConsistsOf", "Wants", 
+        restrict = ["Requires", "Requisite", "ConsistsOf", "Wants",
             "BindsTo", ".requires", ".wants"]
         indent = indent or ""
         mark = mark or ""
@@ -5397,7 +5397,7 @@ class Systemctl:
                         continue
                 if new_mark in mapping:
                     new_mark = mapping[new_mark]
-                restrict = ["Requires", "Wants", "Requisite", "BindsTo", "PartOf", "ConsistsOf", 
+                restrict = ["Requires", "Wants", "Requisite", "BindsTo", "PartOf", "ConsistsOf",
                     ".requires", ".wants"]
                 for line in self.list_dependencies(dep, new_indent, new_mark, new_loop):
                     yield line
@@ -5409,7 +5409,7 @@ class Systemctl:
         for style in styles:
             if style.startswith("."):
                 for folder in self.sysd_folders():
-                    if not folder: 
+                    if not folder:
                         continue
                     require_path = os.path.join(folder, unit + style)
                     if self._root:
@@ -5593,7 +5593,7 @@ class Systemctl:
             error_(" {unit}: there no such thing as a {section} ExecRestart (ignored)".format(**locals()))
         if conf.getlist("Service", "ExecRestartPre", []): #pragma: no cover
             error_(" {unit}: there no such thing as a {section} ExecRestartPre (ignored)".format(**locals()))
-        if conf.getlist("Service", "ExecRestartPost", []): #pragma: no cover 
+        if conf.getlist("Service", "ExecRestartPost", []): #pragma: no cover
             error_(" {unit}: there no such thing as a {section} ExecRestartPost (ignored)".format(**locals()))
         if conf.getlist("Service", "ExecReloadPre", []): #pragma: no cover
             error_(" {unit}: there no such thing as a {section} ExecReloadPre (ignored)".format(**locals()))
@@ -5664,7 +5664,7 @@ class Systemctl:
                     error_(" {unit}: User does not exist: {user} ({info})".format(**locals()))
                     badusers += 1
         for group in groups:
-            if group: 
+            if group:
                 try: grp.getgrnam(group)
                 except Exception as e:
                     info = getattr(e, "__doc__", "")
@@ -5677,7 +5677,7 @@ class Systemctl:
             if setting_value:
                 info_("{unit}: {section} private directory remounts ignored: {setting}={setting_value}".format(**locals()))
                 tmpproblems += 1
-        for setting in ("PrivateTmp", "PrivateDevices", "PrivateNetwork", "PrivateUsers", "DynamicUser", 
+        for setting in ("PrivateTmp", "PrivateDevices", "PrivateNetwork", "PrivateUsers", "DynamicUser",
             "ProtectSystem", "ProjectHome", "ProtectHostname", "PrivateMounts", "MountAPIVFS"):
             setting_yes = conf.getbool(section, setting, "no")
             if setting_yes:
@@ -5797,7 +5797,7 @@ class Systemctl:
         env_parts = []
         for env_part in conf.getlist("Service", "Environment", []):
             env_parts.append(self.expand_special(env_part, conf))
-        if env_parts: 
+        if env_parts:
             yield "Environment", " ".join(env_parts)
         env_files = []
         for env_file in conf.getlist("Service", "EnvironmentFile", []):
@@ -5948,7 +5948,7 @@ class Systemctl:
                         if conf is None:
                             pass
                         elif self.not_user_conf(conf):
-                            pass 
+                            pass
                         else:
                             units.append(unit)
         return units
@@ -6111,7 +6111,7 @@ class Systemctl:
         """ -- stop units from default system level """
         info_("system halt requested - {arg}".format(**locals()))
         done = self.stop_system_default()
-        try: 
+        try:
             os.kill(1, signal.SIGQUIT) # exit init-loop on no_more_procs
         except Exception as e:
             warn_("SIGQUIT to init-loop on PID-1: {e}".format(**locals()))
@@ -6199,7 +6199,7 @@ class Systemctl:
                     units += [ unit ]
         modulelist, unitlist = " ".join(modules), " ".join(units)
         info_("init {modulelist} -> start {unitlist}".format(**locals()))
-        done = self.start_units(units, init = True) 
+        done = self.start_units(units, init = True)
         info_("-- init is done")
         return done # and found_all
     def start_log_files(self, units):
@@ -6496,7 +6496,7 @@ class Systemctl:
                 if zombie and ppid == os.getpid():
                     info_("reap zombie {pid}".format(**locals()))
                     try: os.waitpid(pid, os.WNOHANG)
-                    except OSError as e: 
+                    except OSError as e:
                         strerror = e.strerror
                         warn_("reap zombie {pid}: {strerror}".format(**locals()))
             if os.path.isfile(pid_status):
@@ -6609,13 +6609,13 @@ class Systemctl:
                         if DebugKillAll:  # pragma: no cover
                             dbg_("cmd.exe '{cmd_exe}'".format(**locals()))
                         if fnmatch.fnmatchcase(cmd_exe, target): found = "exe"
-                        if len(cmd) > 1 and cmd_exe.startswith("python"): 
+                        if len(cmd) > 1 and cmd_exe.startswith("python"):
                             X = 1
                             while cmd[X].startswith("-"): X += 1 # atleast '-u' unbuffered
                             cmd_arg = os.path.basename(cmd[X])
                             if DebugKillAll:  # pragma: no cover
                                 dbg_("cmd.arg '{cmd_arg}'".format(**locals()))
-                            if fnmatch.fnmatchcase(cmd_arg, target): 
+                            if fnmatch.fnmatchcase(cmd_arg, target):
                                 found = "arg"
                             if cmd_exe.startswith("coverage") or cmd_arg.startswith("coverage"):
                                 x = cmd.index("--")
@@ -6623,7 +6623,7 @@ class Systemctl:
                                     cmd_run = os.path.basename(cmd[x+1])
                                     if DebugKillAll:  # pragma: no cover
                                         dbg_("cmd.run '{cmd_run}'".format(**locals()))
-                                    if fnmatch.fnmatchcase(cmd_run, target): 
+                                    if fnmatch.fnmatchcase(cmd_run, target):
                                         found = "run"
                         if found:
                             if DebugKillAll:  # pragma: no cover
@@ -6738,7 +6738,7 @@ class Systemctl:
                 doc_text = doc.replace("\n", "\n\n", 1).strip()
                 if "--" not in doc_text:
                     doc_text = "-- " + doc_text
-            else: 
+            else:
                 func_name = arg # FIXME
                 dbg_("__doc__ of {func_name} is none".format(**locals()))
                 if not self._show_all: continue
@@ -6756,13 +6756,13 @@ class Systemctl:
     def version_info(self):
         return [ self.systemd_version(), self.systemd_features() ]
 
-def debug_result_(msg): 
+def debug_result_(msg):
     if DebugPrintResult: #pragma: no cover
         logg.debug("%s", msg)
-def hint_result_(msg): 
+def hint_result_(msg):
     if DebugPrintResult: #pragma: no cover
         logg.info("%s", msg)
-def note_result_(msg): 
+def note_result_(msg):
     if DebugPrintResult: #pragma: no cover
         logg.warning("%s", msg)
 
