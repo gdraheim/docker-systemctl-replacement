@@ -94,7 +94,6 @@ ExitWhenNoMoreServices: bool
 ExitWhenNoMoreProcs: bool
 DefaultUnit: str
 DefaultTarget: str
-RESTART_FAILED_UNITS: bool
 _pid_file_folder: str
 _journal_log_folder: str
 SYSTEMCTL_DEBUG_LOG: str

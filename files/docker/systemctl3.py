@@ -226,7 +226,7 @@ BootTimeMaxPID = -9
 KillChildrenMaxDepth = 100
 ExpandVarsMaxDepth = 20
 ExpandVarsKeepName = True
-RESTART_FAILED_UNITS = True
+RestartOnFailure = True
 ACTIVE_IF_ENABLED=False
 
 TAIL_CMD = "/usr/bin/tail"
@@ -6451,7 +6451,7 @@ class Systemctl:
                     if not running:
                         info_("no more procs - exit init-loop")
                         break
-                if RESTART_FAILED_UNITS:
+                if RestartOnFailure:
                     self.restart_failed_units(units)
                 self.loop.release()
             except KeyboardInterrupt as e:
