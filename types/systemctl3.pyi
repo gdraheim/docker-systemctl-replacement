@@ -94,8 +94,6 @@ ExitWhenNoMoreServices: bool
 ExitWhenNoMoreProcs: bool
 DefaultUnit: str
 DefaultTarget: str
-BOOT_PID_MIN: int
-BOOT_PID_MAX: int
 PROC_MAX_DEPTH: int
 EXPAND_VARS_MAXDEPTH: int
 EXPAND_KEEP_VARS: bool

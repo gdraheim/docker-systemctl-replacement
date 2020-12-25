@@ -221,8 +221,8 @@ ExecRedirectLogs = True
 ExecIgnoreErrors = False
 RemoveLockFile = False
 ForceLockFile = False
-BOOT_PID_MIN = 0
-BOOT_PID_MAX = -9
+BootTimeMinPID = 0
+BootTimeMaxPID = -9
 PROC_MAX_DEPTH = 100
 EXPAND_VARS_MAXDEPTH = 20
 EXPAND_KEEP_VARS = True
@@ -1155,11 +1155,11 @@ def get_boottime():
     return _boottime
 def get_boottime_from_proc():
     """ detects the latest boot time by looking at the start time of available process"""
-    pid1 = BOOT_PID_MIN or 0
-    pid_max = BOOT_PID_MAX
+    pid_min = BootTimeMinPID or 0
+    pid_max = BootTimeMaxPID
     if pid_max < 0:
-        pid_max = pid1 - pid_max
-    for pid in xrange(pid1, pid_max):
+        pid_max = pid_min - pid_max
+    for pid in xrange(pid_min, pid_max):
         proc = PROC_DIR
         pid_stat = "{proc}/{pid}/stat".format(**locals())
         try:
@@ -1169,7 +1169,7 @@ def get_boottime_from_proc():
         except Exception as e: # pragma: no cover
             warn_("boottime - could not access {pid_stat}: {e}".format(**locals()))
     if DEBUG_BOOTTIME:
-        dbg_(" boottime from the oldest entry in /proc [nothing in {pid1}..{pid_max}]".format(**locals()))
+        dbg_(" boottime from the oldest entry in /proc [nothing in {pid_min}..{pid_max}]".format(**locals()))
     return get_boottime_from_old_proc()
 def get_boottime_from_old_proc():
     proc = PROC_DIR
