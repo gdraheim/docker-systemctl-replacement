@@ -35,7 +35,7 @@ if sys.version[0] == '3':
 
 DebugSortedAfter = False
 DebugStatusFile = False
-DEBUG_BOOTTIME = False
+DebugBootTime = False
 DEBUG_INITLOOP = False
 DEBUG_KILLALL = False
 DEBUG_FLOCK = False
@@ -1168,7 +1168,7 @@ def get_boottime_from_proc():
                 return path_proc_started(pid_stat)
         except Exception as e: # pragma: no cover
             warn_("boottime - could not access {pid_stat}: {e}".format(**locals()))
-    if DEBUG_BOOTTIME:
+    if DebugBootTime:
         dbg_(" boottime from the oldest entry in /proc [nothing in {pid_min}..{pid_max}]".format(**locals()))
     return get_boottime_from_old_proc()
 def get_boottime_from_old_proc():
@@ -1203,7 +1203,7 @@ def path_proc_started(proc):
     clkTickInt = os.sysconf_names['SC_CLK_TCK']
     clockTicksPerSec = os.sysconf(clkTickInt)
     started_secs = float(started_ticks) / clockTicksPerSec
-    if DEBUG_BOOTTIME:
+    if DebugBootTime:
         dbg_("  BOOT .. Proc started time:  {started_secs:.3f} ({proc})".format(**locals()))
     # this value is the start time from the host system
 
@@ -1215,13 +1215,13 @@ def path_proc_started(proc):
     file_uptime.close()
     uptime_data = data_uptime.decode().split()
     uptime_secs = float(uptime_data[0])
-    if DEBUG_BOOTTIME:
+    if DebugBootTime:
         dbg_("  BOOT 1. System uptime secs: {uptime_secs:.3f} ({system_uptime})".format(**locals()))
 
     #get time now
     now = time.time()
     started_time = now - (uptime_secs - started_secs)
-    if DEBUG_BOOTTIME:
+    if DebugBootTime:
         date_started_time = datetime.datetime.fromtimestamp(started_time)
         dbg_("  BOOT 1. Proc has been running since: {date_started_time}".format(**locals()))
 
@@ -1234,11 +1234,11 @@ def path_proc_started(proc):
             if line.startswith(b"btime"):
                 system_btime = float(line.decode().split()[1])
     f.closed
-    if DEBUG_BOOTTIME:
+    if DebugBootTime:
         dbg_("  BOOT 2. System btime secs: {system_btime:.3f} ({system_stat})".format(**locals()))
 
     started_btime = system_btime + started_secs
-    if DEBUG_BOOTTIME:
+    if DebugBootTime:
         date_started_btime = datetime.datetime.fromtimestamp(started_btime)
         dbg_("  BOOT 2. Proc has been running since: {date_started_btime}".format(**locals()))
 
@@ -1249,7 +1249,7 @@ def path_truncate_old(filename):
     filetime = os.path.getmtime(filename)
     boottime = get_boottime()
     if filetime >= boottime:
-        if DEBUG_BOOTTIME:
+        if DebugBootTime:
             date_filetime = datetime.datetime.fromtimestamp(filetime)
             date_boottime = datetime.datetime.fromtimestamp(boottime)
             filename44, status44 = path44(filename), "status modified later"
@@ -1257,7 +1257,7 @@ def path_truncate_old(filename):
             debug_("  boot time: {date_boottime} ({status44})".format(**locals()))
         return False # OK
     else:
-        if DEBUG_BOOTTIME:
+        if DebugBootTime:
             date_filetime = datetime.datetime.fromtimestamp(filetime)
             date_boottime = datetime.datetime.fromtimestamp(boottime)
             filename44, status44 = path44(filename), "status TRUNCATED NOW"

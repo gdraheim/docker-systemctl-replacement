@@ -16867,7 +16867,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         getpid_boot_time = get_proc_started(os.getpid())
         system_boot_time = datetime.datetime.fromtimestamp(getpid_boot_time - 1)
-        systemctl += " -c BootTimeMinPID=%s -c DEBUG_BOOTTIME" % (os.getpid())
+        systemctl += " -c BootTimeMinPID=%s -c DebugBootTime" % (os.getpid())
         #
         cmd = "{systemctl} enable zzz.service -vv"
         sh____(cmd.format(**locals()))
@@ -16980,7 +16980,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         getpid_boot_time = get_proc_started(os.getpid())
         system_boot_time = datetime.datetime.fromtimestamp(getpid_boot_time - 1)
-        systemctl += " -c BootTimeMinPID=%s -c DEBUG_BOOTTIME" % (os.getpid())
+        systemctl += " -c BootTimeMinPID=%s -c DebugBootTime" % (os.getpid())
         #
         cmd = "{systemctl} enable zzz.service -vv"
         sh____(cmd.format(**locals()))
@@ -17096,7 +17096,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         #
         pid_max = reads("/proc/sys/kernel/pid_max").strip()
-        systemctl += " -c BootTimeMinPID=%s -c DEBUG_BOOTTIME" % (pid_max)
+        systemctl += " -c BootTimeMinPID=%s -c DebugBootTime" % (pid_max)
         #
         cmd = "{systemctl} enable zzz.service -vv"
         sh____(cmd.format(**locals()))
