@@ -288,6 +288,22 @@ dockerfiles:
 	; wc -l test-$$dockerfile \
 	; done
 
+####### autopep8
+pep style: 
+	$(MAKE) pep.s pep.t
+pep.i style.i: 
+	$(MAKE) pep.s.i pep.t.i
+pep.s style.s     pep.s.diff style.s.diff:
+	autopep8 files/docker/systemctl3.py --diff
+pep.s.i style.s.i pep.s.apply style.s.apply:
+	autopep8 files/docker/systemctl3.py --in-place
+	git diff scripts/*.py
+pep.t style.t     pep.t.diff style.t.diff:
+	autopep8 testsuite.py --diff
+pep.t.i style.t.i pep.t.apply style.t.apply:
+	autopep8 testsuite.py --in-place
+	git diff docker_mirror.py
+
 ####### retype + stubgen
 mypy:
 	zypper install -y mypy
