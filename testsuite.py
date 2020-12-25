@@ -118,11 +118,11 @@ def package_tool(image: str, checks: bool = False) -> str:
         # sources.list:
         # deb [ allow-insecure=yes ] # disables but keeps warning
         # deb [ trusted=yes ] # disables GPG
-        # --allow-unauthenticated 
+        # --allow-unauthenticated
         # -o APT::Get::AllowUnauthenticated=true
         # -o Acquire::Check-Valid-Until=false
         # -o APT::Ignore::gpg-pubkey
-        # -o Acquire::AllowInsecureRepositories=true 
+        # -o Acquire::AllowInsecureRepositories=true
         # -o Acquire::AllowDowngradeToInsecureRepositories=true
         if not checks:
             return "apt-get -o Acquire::AllowInsecureRepositories=true"
@@ -363,7 +363,7 @@ def get_LASTGROUP(root: bool = False) -> str:
     return grp.getgrgid(gid).gr_name
 
 def beep() -> None:
-    if os.name == "nt": 
+    if os.name == "nt":
         import winsound # type: ignore
         frequency = 2500
         duration = 1000
@@ -17616,7 +17616,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        self.assertEqual(out.strip(), "active") 
+        self.assertEqual(out.strip(), "active")
         #
         logg.info("== 'stop' shall clean an exited but remaining service")
         cmd = "{systemctl} stop zzr.service {vv}"
