@@ -41,7 +41,7 @@ DebugKillAll = False
 DebugLockFile = False
 DebugExpandVars = False
 DebugPrintResult = False
-DEBUG_SOCKETFILE = True
+DebugSocketFile = True
 TestListen = False
 TestAccept = False
 ActiveWhileStarting = True
@@ -2922,7 +2922,7 @@ class Systemctl:
                 info_("new notify socketfile ({path_length}) = {socketfile}".format(**locals()))
         return socketfile
     def notify_socket_from(self, conf, socketfile = None):
-        socketfile = self.get_notify_socket_from(conf, socketfile, debug=DEBUG_SOCKETFILE)
+        socketfile = self.get_notify_socket_from(conf, socketfile, debug=DebugSocketFile)
         try:
             if not os.path.isdir(os.path.dirname(socketfile)):
                 os.makedirs(os.path.dirname(socketfile))
