@@ -7005,89 +7005,89 @@ def run(command, *modules):
 
 if __name__ == "__main__":
     import optparse
-    _o = optparse.OptionParser("%prog [options] command [name...]", 
-        epilog="use 'help' command for more information")
+    _o = optparse.OptionParser("%prog [options] command [name...]",
+                               epilog="use 'help' command for more information")
     _o.add_option("--version", action="store_true",
-        help="Show package version")
+                  help="Show package version")
     _o.add_option("--system", action="store_true", default=False,
-        help="Connect to system manager (default)") # overrides --user
+                  help="Connect to system manager (default)")  # overrides --user
     _o.add_option("--user", action="store_true", default=_user_mode,
-        help="Connect to user service manager")
+                  help="Connect to user service manager")
     # _o.add_option("-H", "--host", metavar="[USER@]HOST",
     #     help="Operate on remote host*")
     # _o.add_option("-M", "--machine", metavar="CONTAINER",
     #     help="Operate on local container*")
-    _o.add_option("-t","--type", metavar="TYPE", dest="unit_type", default=_unit_type,
-        help="List units of a particual type")
+    _o.add_option("-t", "--type", metavar="TYPE", dest="unit_type", default=_unit_type,
+                  help="List units of a particual type")
     _o.add_option("--state", metavar="STATE", default=_unit_state,
-        help="List units with particular LOAD or SUB or ACTIVE state")
+                  help="List units with particular LOAD or SUB or ACTIVE state")
     _o.add_option("-p", "--property", metavar="NAME", dest="unit_property", default=_unit_property,
-        help="Show only properties by this name")
+                  help="Show only properties by this name")
     _o.add_option("--what", metavar="TYPE", dest="what_kind", default=_what_kind,
-        help="Defines the service directories to be cleaned (configuration, state, cache, logs, runtime)")
+                  help="Defines the service directories to be cleaned (configuration, state, cache, logs, runtime)")
     _o.add_option("-a", "--all", action="store_true", dest="show_all", default=_show_all,
-        help="Show all loaded units/properties, including dead empty ones. To list all units installed on the system, use the 'list-unit-files' command instead")
-    _o.add_option("-l","--full", action="store_true", default=_full,
-        help="Don't ellipsize unit names on output (never ellipsized)")
+                  help="Show all loaded units/properties, including dead empty ones. To list all units installed on the system, use the 'list-unit-files' command instead")
+    _o.add_option("-l", "--full", action="store_true", default=_full,
+                  help="Don't ellipsize unit names on output (never ellipsized)")
     _o.add_option("--reverse", action="store_true",
-        help="Show reverse dependencies with 'list-dependencies' (ignored)")
+                  help="Show reverse dependencies with 'list-dependencies' (ignored)")
     _o.add_option("--job-mode", metavar="MODE",
-        help="Specifiy how to deal with already queued jobs, when queuing a new job (ignored)")    
+                  help="Specifiy how to deal with already queued jobs, when queuing a new job (ignored)")
     _o.add_option("--show-types", action="store_true",
-        help="When showing sockets, explicitly show their type (ignored)")
-    _o.add_option("-i","--ignore-inhibitors", action="store_true",
-        help="When shutting down or sleeping, ignore inhibitors (ignored)")
+                  help="When showing sockets, explicitly show their type (ignored)")
+    _o.add_option("-i", "--ignore-inhibitors", action="store_true",
+                  help="When shutting down or sleeping, ignore inhibitors (ignored)")
     _o.add_option("--kill-who", metavar="WHO",
-        help="Who to send signal to (ignored)")
+                  help="Who to send signal to (ignored)")
     _o.add_option("-s", "--signal", metavar="SIG",
-        help="Which signal to send (ignored)")
+                  help="Which signal to send (ignored)")
     _o.add_option("--now", action="store_true", default=_now,
-        help="Start or stop unit in addition to enabling or disabling it")
-    _o.add_option("-q","--quiet", action="store_true", default=_quiet,
-        help="Suppress output")
+                  help="Start or stop unit in addition to enabling or disabling it")
+    _o.add_option("-q", "--quiet", action="store_true", default=_quiet,
+                  help="Suppress output")
     _o.add_option("--no-block", action="store_true", default=False,
-        help="Do not wait until operation finished (ignored)")
+                  help="Do not wait until operation finished (ignored)")
     _o.add_option("--no-legend", action="store_true", default=_no_legend,
-        help="Do not print a legend (column headers and hints)")
+                  help="Do not print a legend (column headers and hints)")
     _o.add_option("--no-wall", action="store_true", default=False,
-        help="Don't send wall message before halt/power-off/reboot (ignored)")
+                  help="Don't send wall message before halt/power-off/reboot (ignored)")
     _o.add_option("--no-reload", action="store_true", default=_no_reload,
-        help="Don't reload daemon after en-/dis-abling unit files")
+                  help="Don't reload daemon after en-/dis-abling unit files")
     _o.add_option("--no-ask-password", action="store_true", default=_no_ask_password,
-        help="Do not ask for system passwords")
+                  help="Do not ask for system passwords")
     # _o.add_option("--global", action="store_true", dest="globally", default=_globally,
     #    help="Enable/disable unit files globally") # for all user logins
     # _o.add_option("--runtime", action="store_true",
     #     help="Enable unit files only temporarily until next reboot")
     _o.add_option("-f", "--force", action="store_true", default=_force,
-        help="When enabling unit files, override existing symblinks / When shutting down, execute action immediately")
+                  help="When enabling unit files, override existing symblinks / When shutting down, execute action immediately")
     _o.add_option("--preset-mode", metavar="TYPE", default=_preset_mode,
-        help="Apply only enable, only disable, or all presets [%default]")
+                  help="Apply only enable, only disable, or all presets [%default]")
     _o.add_option("--root", metavar="PATH", default=_root,
-        help="Enable unit files in the specified root directory (used for alternative root prefix)")
-    _o.add_option("-n","--lines", metavar="NUM",
-        help="Number of journal entries to show")
-    _o.add_option("-o","--output", metavar="CAT",
-        help="change journal output mode [short, ..., cat] (ignored)")
+                  help="Enable unit files in the specified root directory (used for alternative root prefix)")
+    _o.add_option("-n", "--lines", metavar="NUM",
+                  help="Number of journal entries to show")
+    _o.add_option("-o", "--output", metavar="CAT",
+                  help="change journal output mode [short, ..., cat] (ignored)")
     _o.add_option("--plain", action="store_true",
-        help="Print unit dependencies as a list instead of a tree (ignored)")
+                  help="Print unit dependencies as a list instead of a tree (ignored)")
     _o.add_option("--no-pager", action="store_true",
-        help="Do not pipe output into pager (mostly ignored)")
+                  help="Do not pipe output into pager (mostly ignored)")
     #
-    _o.add_option("-c","--config", metavar="NAME=VAL", action="append", default=[],
-        help="..override internal variables (InitLoopSleep,SysInitTarget) {%default}")
-    _o.add_option("-e","--extra-vars", "--environment", metavar="NAME=VAL", action="append", default=[],
-        help="..override settings in the syntax of 'Environment='")
-    _o.add_option("-v","--verbose", action="count", default=0,
-        help="..increase debugging information level")
-    _o.add_option("-4","--ipv4", action="store_true", default=False,
-        help="..only keep ipv4 localhost in /etc/hosts")
-    _o.add_option("-6","--ipv6", action="store_true", default=False,
-        help="..only keep ipv6 localhost in /etc/hosts")
-    _o.add_option("-1","--init", action="store_true", default=False,
-        help="..keep running as init-process (default if PID 1)")
+    _o.add_option("-c", "--config", metavar="NAME=VAL", action="append", default=[],
+                  help="..override internal variables (InitLoopSleep,SysInitTarget) {%default}")
+    _o.add_option("-e", "--extra-vars", "--environment", metavar="NAME=VAL", action="append", default=[],
+                  help="..override settings in the syntax of 'Environment='")
+    _o.add_option("-v", "--verbose", action="count", default=0,
+                  help="..increase debugging information level")
+    _o.add_option("-4", "--ipv4", action="store_true", default=False,
+                  help="..only keep ipv4 localhost in /etc/hosts")
+    _o.add_option("-6", "--ipv6", action="store_true", default=False,
+                  help="..only keep ipv6 localhost in /etc/hosts")
+    _o.add_option("-1", "--init", action="store_true", default=False,
+                  help="..keep running as init-process (default if PID 1)")
     opt, args = _o.parse_args()
-    logging.basicConfig(level = max(0, logging.FATAL - 10 * opt.verbose))
+    logging.basicConfig(level=max(0, logging.FATAL - 10 * opt.verbose))
     logg.setLevel(max(0, logging.ERROR - 10 * opt.verbose))
     #
     _extra_vars = opt.extra_vars
