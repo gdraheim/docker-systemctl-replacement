@@ -354,11 +354,11 @@ def strINET(value):
         return "UDP"
     if value == socket.SOCK_STREAM:
         return "TCP"
-    if value == socket.SOCK_RAW: # pragma: no cover
+    if value == socket.SOCK_RAW:  # pragma: no cover
         return "RAW"
-    if value == socket.SOCK_RDM: # pragma: no cover
+    if value == socket.SOCK_RDM:  # pragma: no cover
         return "RDM"
-    if value == socket.SOCK_SEQPACKET: # pragma: no cover
+    if value == socket.SOCK_SEQPACKET:  # pragma: no cover
         return "SEQ"
     return "<?>" # pragma: no cover
 
@@ -510,7 +510,7 @@ def get_PID_DIR(root = False):
         return os.path.join(get_RUN(root), "run") # compat with older systemctl.py
 
 def get_home():
-    if False: # pragma: no cover
+    if False:  # pragma: no cover
         explicit = os.environ.get("HOME", "")   # >> On Unix, an initial ~ (tilde) is replaced by the
         if explicit: return explicit            # environment variable HOME if it is set; otherwise
         uid = os.geteuid()                      # the current users home directory is looked up in the
@@ -614,7 +614,7 @@ def shutil_setuid(user = None, group = None, xgroups = None):
         try:
             os.setgroups(groups)
             dbg_("setgroups {groups} < ({group})".format(**locals()))
-        except OSError as e: # pragma: no cover (it will occur in non-root mode anyway)
+        except OSError as e:  # pragma: no cover (it will occur in non-root mode anyway)
             dbg_("setgroups {groups} < ({group}) : {e}".format(**locals()))
     if user:
         pw = pwd.getpwnam(user)
@@ -634,7 +634,7 @@ def shutil_setuid(user = None, group = None, xgroups = None):
         try:
             os.setgroups(groups)
             dbg_("setgroups {groups} > {groupnames} ".format(**locals()))
-        except OSError as e: # pragma: no cover (it will occur in non-root mode anyway)
+        except OSError as e:  # pragma: no cover (it will occur in non-root mode anyway)
             dbg_("setgroups {groups} > {groupnames} : {e}".format(**locals()))
         uid = pw.pw_uid
         os.setuid(uid)
@@ -657,7 +657,7 @@ def shutil_truncate(filename):
 # http://stackoverflow.com/questions/568271/how-to-check-if-there-exists-a-process-with-a-given-pid
 def pid_exists(pid):
     """Check whether pid exists in the current process table."""
-    if pid is None: # pragma: no cover (is never null)
+    if pid is None:  # pragma: no cover (is never null)
         return False
     return _pid_exists(int(pid))
 def _pid_exists(pid):
@@ -1027,7 +1027,7 @@ class SystemctlConf:
             os.makedirs(dirpath)
         if self.status is None:
             self.status = self.read_status()
-        if DebugStatusFile: # pragma: no cover
+        if DebugStatusFile:  # pragma: no cover
             oldstatus = self.status.copy()
         if True:
             for key in sorted(status.keys()):
@@ -1041,7 +1041,7 @@ class SystemctlConf:
                     self.status[key] = strE(value)
         try:
             with open(status_file, "w") as f:
-                if DebugStatusFile: # pragma: no cover
+                if DebugStatusFile:  # pragma: no cover
                     unit = self.name()
                     dbg_("[{unit}] writing to {status_file}".format(**locals()))
                 for key in sorted(self.status):
@@ -1049,7 +1049,7 @@ class SystemctlConf:
                     if key == "MainPID" and value == "0":
                         warn_("ignore writing MainPID=0")
                         continue
-                    if DebugStatusFile: # pragma: no cover
+                    if DebugStatusFile:  # pragma: no cover
                         old = "old"
                         if key in oldstatus and oldstatus[key] != value:
                            old = "new"
@@ -1072,7 +1072,7 @@ class SystemctlConf:
                 dbg_("old status file: {status_file}\n returning {status}".format(**locals()))
             return status
         try:
-            if DebugStatusFile: # pragma: no cover
+            if DebugStatusFile:  # pragma: no cover
                 unit = self.name()
                 dbg_("[{unit}] got status file: {status_file}".format(**locals()))
             for line0 in open(status_file):
@@ -1151,7 +1151,7 @@ def get_boottime_from_proc():
             if os.path.exists(pid_stat):
                 # return os.path.getmtime(pid_stat) # did sometimes change
                 return path_proc_started(pid_stat)
-        except Exception as e: # pragma: no cover
+        except Exception as e:  # pragma: no cover
             warn_("boottime - could not access {pid_stat}: {e}".format(**locals()))
     if DebugBootTime:
         dbg_(" boottime from the oldest entry in /proc [nothing in {pid_min}..{pid_max}]".format(**locals()))
@@ -1167,7 +1167,7 @@ def get_boottime_from_old_proc():
                 ctime = path_proc_started(pid_stat)
                 if ctime < booted:
                     booted = ctime 
-        except Exception as e: # pragma: no cover
+        except Exception as e:  # pragma: no cover
             warn_("could not access {pid_stat}: {e}".format(**locals()))
     return booted
 
@@ -1254,7 +1254,7 @@ def path_truncate_old(filename):
             warn_("while truncating: {e}".format(**locals()))
         return True # truncated
 def path_getsize(filename):
-    if filename is None: # pragma: no cover (is never null)
+    if filename is None:  # pragma: no cover (is never null)
         return 0
     if not os.path.isfile(filename):
         return 0
@@ -1284,12 +1284,12 @@ class waitlock:
             self.opened = os.open(lockfile, os.O_RDWR | os.O_CREAT, 0o600)
             for attempt in xrange(int(MaxLockWait or DefaultMaximumTimeout)):
                 try:
-                    if DebugLockFile: # pragma: no cover
+                    if DebugLockFile:  # pragma: no cover
                         dbg_("[{me}] {attempt}. trying {lockname} _______ ".format(**locals()))
                     fcntl.flock(self.opened, fcntl.LOCK_EX | fcntl.LOCK_NB)
                     st = os.fstat(self.opened)
                     if not st.st_nlink:
-                        if DebugLockFile: # pragma: no cover
+                        if DebugLockFile:  # pragma: no cover
                             dbg_("[{me}] {attempt}. {lockname} got deleted, trying again".format(**locals()))
                         os.close(self.opened)
                         self.opened = os.open(lockfile, os.O_RDWR | os.O_CREAT, 0o600)
@@ -1298,7 +1298,7 @@ class waitlock:
                     content = "#lock={me}\n".format(**locals())
                     os.write(self.opened, content.encode("ascii"))
                     os.lseek(self.opened, 0, os.SEEK_SET)
-                    if DebugLockFile: # pragma: no cover
+                    if DebugLockFile:  # pragma: no cover
                         dbg_("[{me}] {attempt}. holding lock on {lockname}".format(**locals()))
                     return True
                 except IOError as e:
@@ -1505,19 +1505,19 @@ def conf_sortedAfter(conflist, cmp = compareAfter):
                     itemB = sortlist[B]
                     before = compareAfter(itemA.conf, itemB.conf)
                     if before > 0 and itemA.rank <= itemB.rank:
-                        if DebugSortedAfter: # pragma: no cover
+                        if DebugSortedAfter:  # pragma: no cover
                             nameA, nameB = itemA.conf.name(), itemB.conf.name()
                             dbg_("  {nameA:-30} before {nameB}".format(**locals()))
                         itemA.rank = itemB.rank + 1
                         changed += 1
                     if before < 0 and itemB.rank <= itemA.rank:
-                        if DebugSortedAfter: # pragma: no cover
+                        if DebugSortedAfter:  # pragma: no cover
                             nameA, nameB = itemA.conf.name(), itemB.conf.name()
                             dbg_("  {nameB:-30} before {nameA}".format(**locals()))
                         itemB.rank = itemA.rank + 1
                         changed += 1
         if not changed:
-            if DebugSortedAfter: # pragma: no cover
+            if DebugSortedAfter:  # pragma: no cover
                 allconfs = len(sortlist)
                 dbg_("done in check {check} of {allconfs}".format(**locals()))
             break
@@ -1547,11 +1547,11 @@ class SystemctlListenThread(threading.Thread):
         READ_ONLY = select.POLLIN | select.POLLPRI | select.POLLHUP | select.POLLERR
         READ_WRITE = READ_ONLY | select.POLLOUT
         me = os.getpid()
-        if DebugInitLoop: # pragma: no cover
+        if DebugInitLoop:  # pragma: no cover
             info_("[{me}] listen: new thread".format(**locals()))
         if not self.systemctl._sockets:
             return
-        if DebugInitLoop: # pragma: no cover
+        if DebugInitLoop:  # pragma: no cover
             info_("[{me}] listen: start thread".format(**locals()))
         listen = select.poll()
         for sock in self.systemctl._sockets.values():
@@ -1573,10 +1573,10 @@ class SystemctlListenThread(threading.Thread):
                        sleeping = MinimumYield
                        break
                 time.sleep(sleeping) # remainder waits less that 2 seconds
-                if DebugInitLoop: # pragma: no cover
+                if DebugInitLoop:  # pragma: no cover
                     dbg_("[{me}] listen: poll".format(**locals()))
                 accepting = listen.poll(100) # milliseconds
-                if DebugInitLoop: # pragma: no cover
+                if DebugInitLoop:  # pragma: no cover
                     amount = len(accepting)
                     dbg_("[{me}] listen: poll ({accepting})".format(**locals()))
                 for sock_fileno, event in accepting:
@@ -1798,7 +1798,7 @@ class Systemctl:
         if filename in self._file_for_unit_sysv.values(): return True
         return None # not True
     def is_user_conf(self, conf):
-        if not conf: # pragma: no cover (is never null)
+        if not conf:  # pragma: no cover (is never null)
             return False
         filename = conf.nonloaded_path or conf.filename()
         if filename and "/user/" in filename:
@@ -1806,7 +1806,7 @@ class Systemctl:
         return False
     def not_user_conf(self, conf):
         """ conf can not be started as user service (when --user)"""
-        if conf is None: # pragma: no cover (is never null)
+        if conf is None:  # pragma: no cover (is never null)
             return True
         if not self.user_mode():
             filename44 = path44(conf.filename())
@@ -2300,18 +2300,18 @@ class Systemctl:
         for env_file in conf.getlist("Service", "EnvironmentFile", []):
             for name, value in self.read_env_file(self.expand_special(env_file, conf)):
                 env[name] = self.expand_env(value, env) # but nonlazy expansion here
-        if DebugExpandVars: # pragma: no cover
+        if DebugExpandVars:  # pragma: no cover
             extra_vars = self.extra_vars()
             dbg_("extra-vars {extra_vars}".format(**locals()))
         for extra in self.extra_vars():
             if extra.startswith("@"):
                 for name, value in self.read_env_file(extra[1:]):
-                    if DebugExpandVars: # pragma: no cover
+                    if DebugExpandVars:  # pragma: no cover
                         info_("override {name}={value}".format(**locals()))
                     env[name] = self.expand_env(value, env)
             else:
                 for name, value in self.read_env_part(extra):
-                    if DebugExpandVars: # pragma: no cover
+                    if DebugExpandVars:  # pragma: no cover
                         info_("override {name}={value}".format(**locals()))
                     env[name] = value # a '$word' is not special here
         return env
@@ -2321,7 +2321,7 @@ class Systemctl:
             if name in env:
                 return env[name]
             namevar = "$%s" % name
-            if DebugExpandVars: # pragma: no cover
+            if DebugExpandVars:  # pragma: no cover
                 dbg_("can not expand {namevar}".format(**locals()))
             return (ExpandVarsKeepName and namevar or "")
         def get_env2(m):
@@ -2329,7 +2329,7 @@ class Systemctl:
             if name in env:
                 return env[name]
             namevar = "${%s}" % name
-            if DebugExpandVars: # pragma: no cover
+            if DebugExpandVars:  # pragma: no cover
                 dbg_("can not expand {namevar}".format(**locals()))
             return (ExpandVarsKeepName and namevar or "")
         #
@@ -2350,7 +2350,7 @@ class Systemctl:
         def yy(arg): return arg
         def get_confs(conf):
             confs={ "%": "%" }
-            if conf is None: # pragma: no cover (is never null)
+            if conf is None:  # pragma: no cover (is never null)
                return confs
             unit = parse_unit(conf.name())
             #
@@ -2405,7 +2405,7 @@ class Systemctl:
         result = ""
         if cmd:
             result = re.sub("[%](.)", lambda m: get_conf1(m), cmd)
-            if DebugExpandVars: # pragma: no cover
+            if DebugExpandVars:  # pragma: no cover
                 dbg_("expanded => {result}".format(**locals()))
         return result
     ExecMode = collections.namedtuple("ExecMode", ["check"])
@@ -2467,14 +2467,14 @@ class Systemctl:
                     filepath = os.path.join(dirpath, item)
                     try: 
                         os.remove(filepath)
-                    except Exception as e: # pragma: no cover
+                    except Exception as e:  # pragma: no cover
                         dbg_("not removed file: {filepath} ({e})".format(**locals()))
                         ok = False
                 for item in dirnames:
                     dir_path = os.path.join(dirpath, item)
                     try:
                         os.rmdir(dir_path)
-                    except Exception as e: # pragma: no cover
+                    except Exception as e:  # pragma: no cover
                         dbg_("not removed dir: {dir_path} ({e})".format(**locals()))
                         ok = False
             try: 
@@ -2674,14 +2674,14 @@ class Systemctl:
             try: 
                 os.makedirs(dirpath)
                 info_("created directory path: {dirpath}".format(**locals()))
-            except Exception as e: # pragma: no cover
+            except Exception as e:  # pragma: no cover
                 dbg_("errors directory path: {dirpath}\n\t{e}".format(**locals()))
                 ok = False
             filemode = int_mode(mode)
             if filemode:
                 try:
                     os.chmod(dirpath, filemode)
-                except Exception as e: # pragma: no cover
+                except Exception as e:  # pragma: no cover
                     dbg_("errors directory path: {dirpath}\n\t{e}".format(**locals()))
                     ok = False
         else:
@@ -2730,19 +2730,19 @@ class Systemctl:
                 filepath = os.path.join(dirpath, item)
                 try: 
                     os.chown(filepath, uid, gid)
-                except Exception as e: # pragma: no cover
+                except Exception as e:  # pragma: no cover
                     dbg_("could not set {user}:{group} on {filepath}\n\t{e}".format(**locals()))
                     ok = False
             for item in dirnames:
                 dir_path = os.path.join(dirpath, item)
                 try: 
                     os.chown(dir_path, uid, gid)
-                except Exception as e: # pragma: no cover
+                except Exception as e:  # pragma: no cover
                     dbg_("could not set {user}:{group} on {dir_path}\n\t{e}".format(**locals()))
                     ok = False
         try: 
             os.chown(path, uid, gid)
-        except Exception as e: # pragma: no cover
+        except Exception as e:  # pragma: no cover
             dbg_("could not set {user}:{group} on {path}\n\t{e}".format(**locals()))
             ok = False
         if not ok:
@@ -2911,11 +2911,11 @@ class Systemctl:
                 socketfile = os.path.join(get_TMP(), pref1, notify_name)
             if len(socketfile) >= 100:
                 socketfile = os.path.join(get_TMP(), pref1, notify_name77)
-            if len(socketfile) >= 100: # pragma: no cover
+            if len(socketfile) >= 100:  # pragma: no cover
                 socketfile = os.path.join(get_TMP(), pref1, notify_name44)
-            if len(socketfile) >= 100: # pragma: no cover
+            if len(socketfile) >= 100:  # pragma: no cover
                 socketfile = os.path.join(get_TMP(), pref0, notify_name44)
-            if len(socketfile) >= 100: # pragma: no cover
+            if len(socketfile) >= 100:  # pragma: no cover
                 socketfile = os.path.join(get_TMP(), notify_name44)
             if debug:
                 path_length = len(socketfile)
@@ -3098,7 +3098,7 @@ class Systemctl:
                 info_(" pre-start", shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid: 
-                    self.execve_from(conf, newcmd, env) # pragma: no cover
+                    self.execve_from(conf, newcmd, env)  # pragma: no cover
                 run = subprocess_waitpid(forkpid)
                 self.set_status_code_from(conf, "ExecStartPre", run)
                 returncodeOK, signalEE = exitOK(run.returncode), run.signal or ""
@@ -3123,8 +3123,8 @@ class Systemctl:
                 exe, newcmd = self.exec_newcmd(cmd, env, conf)
                 info_("{runs} start".format(**locals()), shell_cmd(newcmd))
                 forkpid = os.fork()
-                if not forkpid: # pragma: no cover
-                    os.setsid() # detach child process from parent
+                if not forkpid:  # pragma: no cover
+                    os.setsid()  # detach child process from parent
                     self.execve_from(conf, newcmd, env)
                 run = subprocess_waitpid(forkpid)
                 self.set_status_code_from(conf, "ExecStart", run)
@@ -3166,8 +3166,8 @@ class Systemctl:
                 exe, newcmd = self.exec_newcmd(cmd, env, conf)
                 info_("{runs} start".format(**locals()), shell_cmd(newcmd))
                 forkpid = os.fork()
-                if not forkpid: # pragma: no cover
-                    os.setsid() # detach child process from parent
+                if not forkpid:  # pragma: no cover
+                    os.setsid()  # detach child process from parent
                     self.execve_from(conf, newcmd, env)
                 self.write_status_from(conf, MainPID=forkpid)
                 info_("{runs} started PID {forkpid}".format(**locals()))
@@ -3217,8 +3217,8 @@ class Systemctl:
                 exe, newcmd = self.exec_newcmd(cmd, env, conf)
                 info_("{runs} start".format(**locals()), shell_cmd(newcmd))
                 forkpid = os.fork()
-                if not forkpid: # pragma: no cover
-                    os.setsid() # detach child process from parent
+                if not forkpid:  # pragma: no cover
+                    os.setsid()  # detach child process from parent
                     self.execve_from(conf, newcmd, env)
                 # via NOTIFY # self.write_status_from(conf, MainPID=forkpid)
                 info_("{runs} started PID {forkpid}".format(**locals()))
@@ -3266,8 +3266,8 @@ class Systemctl:
                 if not newcmd: continue
                 info_("{runs} start".format(**locals()), shell_cmd(newcmd))
                 forkpid = os.fork()
-                if not forkpid: # pragma: no cover
-                    os.setsid() # detach child process from parent
+                if not forkpid:  # pragma: no cover
+                    os.setsid()  # detach child process from parent
                     self.execve_from(conf, newcmd, env)
                 info_("{runs} started PID {forkpid}".format(**locals()))
                 run = subprocess_waitpid(forkpid)
@@ -3308,7 +3308,7 @@ class Systemctl:
                 info_("post-fail", shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
-                    self.execve_from(conf, newcmd, env) # pragma: no cover
+                    self.execve_from(conf, newcmd, env)  # pragma: no cover
                 run = subprocess_waitpid(forkpid)
                 self.set_status_code_from(conf, "ExecStopPost", run)
                 returncodeOK, signalEE, fork_pid = exitOK(run.returncode), run.signal or "", run.pid
@@ -3322,7 +3322,7 @@ class Systemctl:
                 info_("post-start", shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
-                    self.execve_from(conf, newcmd, env) # pragma: no cover
+                    self.execve_from(conf, newcmd, env)  # pragma: no cover
                 run = subprocess_waitpid(forkpid)
                 self.set_status_code_from(conf, "ExecStartPost", run)
                 returncodeOK, signalEE, fork_pid = exitOK(run.returncode), run.signal or "", run.pid
@@ -3361,7 +3361,7 @@ class Systemctl:
             sig = self.init_loop_until_stop(started_units)
             info_("init-loop {sig}".format(**locals()))
         for started in reversed(started_units):
-            if False: # pragma: no cover
+            if False:  # pragma: no cover
                 self.stop_unit(started)
         return done
     def listen_unit(self, unit):
@@ -3438,7 +3438,7 @@ class Systemctl:
                 info_(" pre-start", shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid: 
-                    self.execve_from(conf, newcmd, env) # pragma: no cover
+                    self.execve_from(conf, newcmd, env)  # pragma: no cover
                 run = subprocess_waitpid(forkpid)
                 returncodeOK, signalEE, fork_pid = exitOK(run.returncode), run.signal or "", run.pid
                 dbg_(" pre-start done ({returncodeOK}) <-{signalEE}>".format(**locals()))
@@ -3478,7 +3478,7 @@ class Systemctl:
                 info_("post-fail", shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
-                    self.execve_from(conf, newcmd, env) # pragma: no cover
+                    self.execve_from(conf, newcmd, env)  # pragma: no cover
                 run = subprocess_waitpid(forkpid)
                 returncodeOK, signalEE, fork_pid = exitOK(run.returncode), run.signal or "", run.pid
                 dbg_("post-fail done ({returncodeOK}) <-{signalEE}>".format(**locals()))
@@ -3489,7 +3489,7 @@ class Systemctl:
                 info_("post-start", shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
-                    self.execve_from(conf, newcmd, env) # pragma: no cover
+                    self.execve_from(conf, newcmd, env)  # pragma: no cover
                 run = subprocess_waitpid(forkpid)
                 returncodeOK, signalEE, fork_pid = exitOK(run.returncode), run.signal or "", run.pid
                 dbg_("post-start done ({returncodeOK}) <-{signalEE}>".format(**locals()))
@@ -3766,9 +3766,9 @@ class Systemctl:
                 cmd_args = [ arg for arg in cmd ] # satisfy mypy
                 exitcode = os.spawnvpe(os.P_WAIT, cmd[0], cmd_args, env)
                 sys.exit(exitcode)
-            else: # pragma: no cover
+            else:  # pragma: no cover
                 os.execve(cmd[0], cmd, env)
-                sys.exit(EXIT_CORRUPTED) # pragma: no cover (can not be reached / bug like mypy#8401)
+                sys.exit(EXIT_CORRUPTED)  # pragma: no cover (can not be reached / bug like mypy#8401)
         except Exception as e:
             cmdline44 = o44(shell_cmd(cmd))
             error_("({cmdline44}): {e}".format(**locals()))
@@ -3862,7 +3862,7 @@ class Systemctl:
                 info_("{runs} stop".format(**locals()), shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
-                    self.execve_from(conf, newcmd, env) # pragma: no cover
+                    self.execve_from(conf, newcmd, env)  # pragma: no cover
                 run = subprocess_waitpid(forkpid)
                 self.set_status_code_from(conf, "ExecStop", run)
                 if run.returncode and exe.check: 
@@ -3890,7 +3890,7 @@ class Systemctl:
                 info_("{runs} stop".format(**locals()), shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
-                    self.execve_from(conf, newcmd, env) # pragma: no cover
+                    self.execve_from(conf, newcmd, env)  # pragma: no cover
                 run = subprocess_waitpid(forkpid)
                 self.set_status_code_from(conf, "ExecStop", run)
                 run = must_have_failed(run, newcmd) # TODO: a workaround for Ubuntu 16.04
@@ -3925,7 +3925,7 @@ class Systemctl:
                 info_("fork stop", shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
-                    self.execve_from(conf, newcmd, env) # pragma: no cover
+                    self.execve_from(conf, newcmd, env)  # pragma: no cover
                 run = subprocess_waitpid(forkpid)
                 self.set_status_code_from(conf, "ExecStop", run)
                 if run.returncode and exe.check:
@@ -3960,7 +3960,7 @@ class Systemctl:
                 info_("post-stop", shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
-                    self.execve_from(conf, newcmd, env) # pragma: no cover
+                    self.execve_from(conf, newcmd, env)  # pragma: no cover
                 run = subprocess_waitpid(forkpid)
                 self.set_status_code_from(conf, "ExecStopPost", run)
                 returncodeOK, signalEE, fork_pid = exitOK(run.returncode), run.signal or "", run.pid
@@ -3999,7 +3999,7 @@ class Systemctl:
                 info_("post-stop", shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
-                    self.execve_from(conf, newcmd, env) # pragma: no cover
+                    self.execve_from(conf, newcmd, env)  # pragma: no cover
                 run = subprocess_waitpid(forkpid)
                 returncodeOK, signalEE, fork_pid = exitOK(run.returncode), run.signal or "", run.pid
                 dbg_("post-stop done ({returncodeOK}) <-{signalEE}>".format(**locals()))
@@ -4089,7 +4089,7 @@ class Systemctl:
                 info_("{runs} reload".format(**locals()), shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
-                    self.execve_from(conf, newcmd, env) # pragma: nocover
+                    self.execve_from(conf, newcmd, env)  # pragma: no cover
                 run = subprocess_waitpid(forkpid)
                 self.set_status_code_from(conf, "initscript", run)
                 if run.returncode:
@@ -4113,7 +4113,7 @@ class Systemctl:
                 info_("{runs} reload".format(**locals()), shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
-                    self.execve_from(conf, newcmd, env) # pragma: no cover
+                    self.execve_from(conf, newcmd, env)  # pragma: no cover
                 run = subprocess_waitpid(forkpid)
                 self.set_status_code_from(conf, "ExecReload", run)
                 if run.returncode and exe.check: 
@@ -4367,7 +4367,7 @@ class Systemctl:
         useKillSignal = self.get_KillSignal(conf)
         kill_signal = getattr(signal, useKillSignal)
         timeout = self.get_TimeoutStopSec(conf)
-        if DebugStatusFile: # pragma: no cover
+        if DebugStatusFile:  # pragma: no cover
             status_file = self.get_status_file_from(conf)
             size = os.path.exists(status_file) and os.path.getsize(status_file)
             info_("STATUS {status_file} {size}".format(**locals()))
@@ -4525,7 +4525,7 @@ class Systemctl:
         pid_file = self.pid_file_from(conf)
         if pid_file: # application PIDFile
             if not os.path.exists(pid_file):
-                if DebugStatusFile: # pragma: no cover
+                if DebugStatusFile:  # pragma: no cover
                     unit = conf.name()
                     debug_("[{unit}] get from pid file: (does not exist) => inactive".format(**locals()))
                 return "inactive"
@@ -4533,7 +4533,7 @@ class Systemctl:
         if path_getsize(status_file):
             state = self.get_status_from(conf, "ActiveState", "")
             if state:
-                if DebugStatusFile: # pragma: no cover
+                if DebugStatusFile:  # pragma: no cover
                     unit = conf.name()
                     info_("[{unit}] state from status file: written => {state}".format(**locals()))
                 return state
@@ -4543,7 +4543,7 @@ class Systemctl:
             result = "active"
             if not pid_exists(pid) or pid_zombie(pid):
                 result = "failed"
-        if DebugStatusFile: # pragma: no cover
+        if DebugStatusFile:  # pragma: no cover
             if pid_file:
                 unit = conf.name()
                 debug_("[{unit}] pid from pid file: PID {pid} => {result}".format(**locals()))
@@ -4595,7 +4595,7 @@ class Systemctl:
                 else:
                     return self.get_status_from(conf, "SubState", "dead")
         pid = self.read_mainpid_from(conf)
-        if DebugStatusFile: # pragma: no cover
+        if DebugStatusFile:  # pragma: no cover
             filename44 = path44(pid_file or status_file)
             debug_("pid_file {filename44} => PID {pid}".format(**locals()))
         if pid:
@@ -4977,7 +4977,7 @@ class Systemctl:
         if not os.path.isdir(folder):
             os.makedirs(folder)
         source = conf.filename()
-        if not source: # pragma: no cover (was checked before)
+        if not source:  # pragma: no cover (was checked before)
             dbg_("{unit} has no real file".format(**locals()))
             return False
         symlink = os.path.join(folder, unit)
@@ -4998,13 +4998,13 @@ class Systemctl:
     def rc3_root_folder(self):
         old_folder = os_path(self._root, _rc3_boot_folder)
         new_folder = os_path(self._root, _rc3_init_folder)
-        if os.path.isdir(old_folder): # pragma: no cover
+        if os.path.isdir(old_folder):  # pragma: no cover
             return old_folder
         return new_folder
     def rc5_root_folder(self):
         old_folder = os_path(self._root, _rc5_boot_folder)
         new_folder = os_path(self._root, _rc5_init_folder)
-        if os.path.isdir(old_folder): # pragma: no cover
+        if os.path.isdir(old_folder):  # pragma: no cover
             return old_folder
         return new_folder
     def enable_unit_sysv(self, unit_file):
@@ -5427,7 +5427,7 @@ class Systemctl:
         styles = styles or [ "Requires", "Wants", "Requisite", "BindsTo",
             ".requires", ".wants"  ]
         return self.get_dependencies_unit(unit, styles)
-    def get_start_dependencies(self, unit, styles = None): # pragma: no cover
+    def get_start_dependencies(self, unit, styles = None):  # pragma: no cover
         """ the list of services to be started as well / TODO: unused """
         styles = styles or ["Requires", "Wants", "Requisite", "BindsTo", "PartOf", "ConsistsOf",
             ".requires", ".wants"]
@@ -5608,7 +5608,7 @@ class Systemctl:
                 errors += 101
         return errors
     def exec_check_unit(self, conf, env, section = "Service", exectype = ""):
-        if conf is None: # pragma: no cover (is never null)
+        if conf is None:  # pragma: no cover (is never null)
             return True
         if not conf.data.has_section(section):
             return True #pragma: no cover
@@ -6400,7 +6400,7 @@ class Systemctl:
         result = None
         while True:
             try:
-                if DebugInitLoop: # pragma: no cover
+                if DebugInitLoop:  # pragma: no cover
                     sleeps = InitLoopSleep
                     dbg_("DONE InitLoop (sleep {sleeps}s)".format(**locals()))
                 sleep_sec = InitLoopSleep - (time.time() - timestamp)
@@ -6416,13 +6416,13 @@ class Systemctl:
                 time.sleep(sleeping) # remainder waits less that 2 seconds
                 timestamp = time.time()
                 self.loop.acquire()
-                if DebugInitLoop: # pragma: no cover
+                if DebugInitLoop:  # pragma: no cover
                     dbg_("NEXT InitLoop (after {sleep_sec}s)".format(**locals()))
                 self.read_log_files(units)
-                if DebugInitLoop: # pragma: no cover
+                if DebugInitLoop:  # pragma: no cover
                     dbg_("reap zombies - check current processes")
                 running = self.reap_zombies()
-                if DebugInitLoop: # pragma: no cover
+                if DebugInitLoop:  # pragma: no cover
                     dbg_("reap zombies - init-loop found {running} running procs".format(**locals()))
                 if self.doExitWhenNoMoreServices:
                     active = False
@@ -6593,7 +6593,7 @@ class Systemctl:
             if target.startswith(":"):
                 if target in mapping:
                     sig = mapping[target]
-                else: # pragma: no cover
+                else:  # pragma: no cover
                     error_("unsupported {target}".format(**locals()))
                 continue
             for pid_entry in os.listdir(proc):
@@ -6602,18 +6602,18 @@ class Systemctl:
                     try:
                         cmdline = "{proc}/{pid}/cmdline".format(**locals())
                         cmd = open(cmdline).read().split("\0")
-                        if DebugKillAll: # pragma: no cover
+                        if DebugKillAll:  # pragma: no cover
                             dbg_("cmdline {cmd}".format(**locals()))
                         found = None
                         cmd_exe = os.path.basename(cmd[0])
-                        if DebugKillAll: # pragma: no cover
+                        if DebugKillAll:  # pragma: no cover
                             dbg_("cmd.exe '{cmd_exe}'".format(**locals()))
                         if fnmatch.fnmatchcase(cmd_exe, target): found = "exe"
                         if len(cmd) > 1 and cmd_exe.startswith("python"): 
                             X = 1
                             while cmd[X].startswith("-"): X += 1 # atleast '-u' unbuffered
                             cmd_arg = os.path.basename(cmd[X])
-                            if DebugKillAll: # pragma: no cover
+                            if DebugKillAll:  # pragma: no cover
                                 dbg_("cmd.arg '{cmd_arg}'".format(**locals()))
                             if fnmatch.fnmatchcase(cmd_arg, target): 
                                 found = "arg"
@@ -6621,12 +6621,12 @@ class Systemctl:
                                 x = cmd.index("--")
                                 if x > 0 and x+1 < len(cmd):
                                     cmd_run = os.path.basename(cmd[x+1])
-                                    if DebugKillAll: # pragma: no cover
+                                    if DebugKillAll:  # pragma: no cover
                                         dbg_("cmd.run '{cmd_run}'".format(**locals()))
                                     if fnmatch.fnmatchcase(cmd_run, target): 
                                         found = "run"
                         if found:
-                            if DebugKillAll: # pragma: no cover
+                            if DebugKillAll:  # pragma: no cover
                                 dbg_("{found} found {pid} {cmd}".format(**locals()))
                             if pid != os.getpid():
                                 dbg_(" kill -{sig} {pid} # {target}".format(**locals()))
