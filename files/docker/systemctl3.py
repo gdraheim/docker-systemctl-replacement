@@ -34,7 +34,7 @@ if sys.version[0] == '3':
     xrange = range
 
 DebugSortedAfter = False
-DEBUG_STATUS = False
+DebugStatusFile = False
 DEBUG_BOOTTIME = False
 DEBUG_INITLOOP = False
 DEBUG_KILLALL = False
@@ -1042,7 +1042,7 @@ class SystemctlConf:
             os.makedirs(dirpath)
         if self.status is None:
             self.status = self.read_status()
-        if DEBUG_STATUS:
+        if DebugStatusFile: # pragma: no cover
             oldstatus = self.status.copy()
         if True:
             for key in sorted(status.keys()):
@@ -1056,7 +1056,7 @@ class SystemctlConf:
                     self.status[key] = strE(value)
         try:
             with open(status_file, "w") as f:
-                if DEBUG_STATUS:
+                if DebugStatusFile: # pragma: no cover
                     unit = self.name()
                     dbg_("[{unit}] writing to {status_file}".format(**locals()))
                 for key in sorted(self.status):
@@ -1064,7 +1064,7 @@ class SystemctlConf:
                     if key == "MainPID" and value == "0":
                         warn_("ignore writing MainPID=0")
                         continue
-                    if DEBUG_STATUS:
+                    if DebugStatusFile: # pragma: no cover
                         old = "old"
                         if key in oldstatus and oldstatus[key] != value:
                            old = "new"
@@ -1079,15 +1079,15 @@ class SystemctlConf:
         status = {}
         # if not status_file: return status
         if not os.path.isfile(status_file):
-            if DEBUG_STATUS: # pagma: no cover
+            if DebugStatusFile: # pagma: no cover
                 dbg_("no status file: {status_file}\n returning {status}".format(**locals()))
             return status
         if path_truncate_old(status_file):
-            if DEBUG_STATUS: # pagma: no cover 
+            if DebugStatusFile: # pagma: no cover 
                 dbg_("old status file: {status_file}\n returning {status}".format(**locals()))
             return status
         try:
-            if DEBUG_STATUS: # pragma: no cover
+            if DebugStatusFile: # pragma: no cover
                 unit = self.name()
                 dbg_("[{unit}] got status file: {status_file}".format(**locals()))
             for line0 in open(status_file):
@@ -4379,7 +4379,7 @@ class Systemctl:
         useKillSignal = self.get_KillSignal(conf)
         kill_signal = getattr(signal, useKillSignal)
         timeout = self.get_TimeoutStopSec(conf)
-        if DEBUG_STATUS:
+        if DebugStatusFile: # pragma: no cover
             status_file = self.get_status_file_from(conf)
             size = os.path.exists(status_file) and os.path.getsize(status_file)
             info_("STATUS {status_file} {size}".format(**locals()))
@@ -4537,7 +4537,7 @@ class Systemctl:
         pid_file = self.pid_file_from(conf)
         if pid_file: # application PIDFile
             if not os.path.exists(pid_file):
-                if DEBUG_STATUS: # pragma: no cover
+                if DebugStatusFile: # pragma: no cover
                     unit = conf.name()
                     debug_("[{unit}] get from pid file: (does not exist) => inactive".format(**locals()))
                 return "inactive"
@@ -4545,7 +4545,7 @@ class Systemctl:
         if path_getsize(status_file):
             state = self.get_status_from(conf, "ActiveState", "")
             if state:
-                if DEBUG_STATUS: # pragma: no cover
+                if DebugStatusFile: # pragma: no cover
                     unit = conf.name()
                     info_("[{unit}] state from status file: written => {state}".format(**locals()))
                 return state
@@ -4555,7 +4555,7 @@ class Systemctl:
             result = "active"
             if not pid_exists(pid) or pid_zombie(pid):
                 result = "failed"
-        if DEBUG_STATUS: # pragma: no cover
+        if DebugStatusFile: # pragma: no cover
             if pid_file:
                 unit = conf.name()
                 debug_("[{unit}] pid from pid file: PID {pid} => {result}".format(**locals()))
@@ -4607,7 +4607,7 @@ class Systemctl:
                 else:
                     return self.get_status_from(conf, "SubState", "dead")
         pid = self.read_mainpid_from(conf)
-        if DEBUG_STATUS:
+        if DebugStatusFile: # pragma: no cover
             filename44 = path44(pid_file or status_file)
             debug_("pid_file {filename44} => PID {pid}".format(**locals()))
         if pid:
