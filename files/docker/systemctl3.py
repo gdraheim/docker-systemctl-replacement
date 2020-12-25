@@ -219,8 +219,8 @@ DefaultStandardError=os.environ.get("SYSTEMD_STANDARD_ERROR", "inherit") # syste
 ExecSpawn = False
 ExecRedirectLogs = True
 ExecIgnoreErrors = False
-REMOVE_LOCK_FILE = False
-TEST_LOCK_FILE = False
+RemoveLockFile = False
+ForceLockFile = False
 BOOT_PID_MIN = 0
 BOOT_PID_MAX = -9
 PROC_MAX_DEPTH = 100
@@ -1340,11 +1340,11 @@ class waitlock:
                     remove = True
             elif not self.conf.status: # empty dict
                 remove = True
-            if remove or TEST_LOCK_FILE:
+            if remove or ForceLockFile:
                 os.ftruncate(self.opened, 0)
                 lockfile = self.lockfile()
                 info_("truncated {lockfile}".format(**locals()))
-                if REMOVE_LOCK_FILE: # an optional implementation
+                if RemoveLockFile: # an optional implementation
                     lockname = os.path.basename(lockfile)
                     os.unlink(lockfile) # ino is kept allocated because opened by this process
                     dbg_("[{me}] lockfile removed for {lockname}".format(**locals()))
