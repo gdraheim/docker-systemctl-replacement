@@ -632,24 +632,24 @@ class Systemctl:
     def get_SendSIGHUP(self, conf: SystemctlConf) -> bool: ...
     def get_KillMode(self, conf: SystemctlConf) -> str: ...
     def get_KillSignal(self, conf: SystemctlConf) -> str: ...
-    def _ignored_unit(self, unit: str, ignore_list: List[str]) -> bool: ...
+    def _ignored_unit(self, unit: str, igno: str) -> bool: ...
     def default_services_modules(self, *modules: str) -> List[str]:
         results: List[str]
     def target_default_services(self, target: Optional[str] = None, sysv: str = "S") -> List[str]: ...
-    def enabled_target_services(self, target: str, sysv: str = "S", igno: List[str] = []) -> List[str]:
+    def enabled_target_services(self, target: str, sysv: str = "S", igno: str = "") -> List[str]:
         units: List[str]
-    def enabled_target_user_local_units(self, target: str, unit_kind: str = ".service", igno: List[str] = []) -> List[str]:
+    def enabled_target_user_local_units(self, target: str, unit_kind: str = ".service", igno: str = "") -> List[str]:
         units: List[str]
-    def enabled_target_user_system_units(self, target: str, unit_kind: str = ".service", igno: List[str] = []) -> List[str]:
+    def enabled_target_user_system_units(self, target: str, unit_kind: str = ".service", igno: str = "") -> List[str]:
         units: List[str]
-    def enabled_target_installed_system_units(self, target: str, unit_type: str = ".service", igno: List[str] = []) -> List[str]:
+    def enabled_target_installed_system_units(self, target: str, unit_type: str = ".service", igno: str = "") -> List[str]:
         units: List[str]
-    def enabled_target_configured_system_units(self, target: str, unit_type: str = ".service", igno: List[str] = []) -> List[str]:
+    def enabled_target_configured_system_units(self, target: str, unit_type: str = ".service", igno: str = "") -> List[str]:
         units: List[str]
-    def enabled_target_sysv_units(self, target: str, sysv: str = "S", igno: List[str] = []) -> List[str]:
+    def enabled_target_sysv_units(self, target: str, sysv: str = "S", igno: str = "") -> List[str]:
         units: List[str]
         folders: List[str]
-    def required_target_units(self, target: str, unit_type: str, igno: List[str]) -> List[str]:
+    def required_target_units(self, target: str, unit_type: str, igno: str = "") -> List[str]:
         units: List[str]
     def get_target_conf(self, module: str) -> SystemctlConf: ...
     def get_target_list(self, module: str) -> List[str]: ...
