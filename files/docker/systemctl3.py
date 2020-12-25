@@ -37,7 +37,7 @@ DebugSortedAfter = False
 DebugStatusFile = False
 DebugBootTime = False
 DebugInitLoop = False
-DEBUG_KILLALL = False
+DebugKillAll = False
 DEBUG_FLOCK = False
 DEBUG_VARS = False
 DEBUG_RESULT = False
@@ -55,9 +55,6 @@ logging.addLevelName(DONE, "DONE")
 
 def dbg_flock_(msg): 
     if DEBUG_FLOCK: #pragma: no cover
-        logg.debug("%s", msg)
-def dbg_killall_(msg): 
-    if DEBUG_KILLALL: #pragma: no cover
         logg.debug("%s", msg)
 def debug_result_(msg): 
     if DEBUG_RESULT: #pragma: no cover
@@ -6614,25 +6611,32 @@ class Systemctl:
                     try:
                         cmdline = "{proc}/{pid}/cmdline".format(**locals())
                         cmd = open(cmdline).read().split("\0")
-                        dbg_killall_("cmdline {cmd}".format(**locals()))
+                        if DebugKillAll: # pragma: no cover
+                            dbg_("cmdline {cmd}".format(**locals()))
                         found = None
                         cmd_exe = os.path.basename(cmd[0])
-                        dbg_killall_("cmd.exe '{cmd_exe}'".format(**locals()))
+                        if DebugKillAll: # pragma: no cover
+                            dbg_("cmd.exe '{cmd_exe}'".format(**locals()))
                         if fnmatch.fnmatchcase(cmd_exe, target): found = "exe"
                         if len(cmd) > 1 and cmd_exe.startswith("python"): 
                             X = 1
                             while cmd[X].startswith("-"): X += 1 # atleast '-u' unbuffered
                             cmd_arg = os.path.basename(cmd[X])
-                            dbg_killall_("cmd.arg '{cmd_arg}'".format(**locals()))
-                            if fnmatch.fnmatchcase(cmd_arg, target): found = "arg"
+                            if DebugKillAll: # pragma: no cover
+                                dbg_("cmd.arg '{cmd_arg}'".format(**locals()))
+                            if fnmatch.fnmatchcase(cmd_arg, target): 
+                                found = "arg"
                             if cmd_exe.startswith("coverage") or cmd_arg.startswith("coverage"):
                                 x = cmd.index("--")
                                 if x > 0 and x+1 < len(cmd):
                                     cmd_run = os.path.basename(cmd[x+1])
-                                    dbg_killall_("cmd.run '{cmd_run}'".format(**locals()))
-                                    if fnmatch.fnmatchcase(cmd_run, target): found = "run"
+                                    if DebugKillAll: # pragma: no cover
+                                        dbg_("cmd.run '{cmd_run}'".format(**locals()))
+                                    if fnmatch.fnmatchcase(cmd_run, target): 
+                                        found = "run"
                         if found:
-                            dbg_killall_("{found} found {pid} {cmd}".format(**locals()))
+                            if DebugKillAll: # pragma: no cover
+                                dbg_("{found} found {pid} {cmd}".format(**locals()))
                             if pid != os.getpid():
                                 dbg_(" kill -{sig} {pid} # {target}".format(**locals()))
                                 os.kill(pid, sig)
