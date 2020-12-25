@@ -231,7 +231,7 @@ RestartOnFailure = True
 DefaultTail = "/usr/bin/tail"
 DefaultPager = "/usr/bin/less"
 DefaultCat = "/usr/bin/cat"
-PROC_DIR = "/proc"
+DefaultProcDir = "/proc"
 
 # The systemd default was NOTIFY_SOCKET="/var/run/systemd/notify"
 _notify_socket_folder = "{RUN}/systemd" # alias /run/systemd
@@ -717,7 +717,7 @@ def _pid_zombie(pid):
         # On certain systems 0 is a valid PID but we have no way
         # to know that in a portable fashion.
         raise ValueError('invalid PID 0')
-    proc = PROC_DIR
+    proc = DefaultProcDir
     pid_status = "{proc}/{pid}/status".format(**locals())
     try:
         for line in open(pid_status):
@@ -1160,7 +1160,7 @@ def get_boottime_from_proc():
     if pid_max < 0:
         pid_max = pid_min - pid_max
     for pid in xrange(pid_min, pid_max):
-        proc = PROC_DIR
+        proc = DefaultProcDir
         pid_stat = "{proc}/{pid}/stat".format(**locals())
         try:
             if os.path.exists(pid_stat):
@@ -1172,7 +1172,7 @@ def get_boottime_from_proc():
         dbg_(" boottime from the oldest entry in /proc [nothing in {pid_min}..{pid_max}]".format(**locals()))
     return get_boottime_from_old_proc()
 def get_boottime_from_old_proc():
-    proc = PROC_DIR
+    proc = DefaultProcDir
     booted = time.time()
     for pid in os.listdir(proc):
         pid_stat = "{proc}/{pid}/stat".format(**locals())
@@ -1208,7 +1208,7 @@ def path_proc_started(proc):
     # this value is the start time from the host system
 
     # Variant 1:
-    proc = PROC_DIR
+    proc = DefaultProcDir
     system_uptime = "{proc}/uptime".format(**locals())
     with open(system_uptime,"rb") as file_uptime:
         data_uptime = file_uptime.readline()
@@ -6483,7 +6483,7 @@ class Systemctl:
         return "remaining {running} process".format(**locals())
     def reap_zombies(self):
         """ check to reap children """
-        proc = PROC_DIR
+        proc = DefaultProcDir
         selfpid = os.getpid()
         running = 0
         for pid_entry in os.listdir(proc):
@@ -6565,7 +6565,7 @@ class Systemctl:
     def kill_children_pidlist_of(self, pid):
         if not pid:
             return []
-        proc = PROC_DIR
+        proc = DefaultProcDir
         pidlist = [ pid ]
         pids = [ pid ]
         for depth in xrange(KillChildrenMaxDepth):
@@ -6592,7 +6592,7 @@ class Systemctl:
         return pids
     def killall(self, *targets):
         """ --- explicitly kill processes (internal) """
-        proc = PROC_DIR
+        proc = DefaultProcDir
         mapping = {}
         mapping[":3"] = signal.SIGQUIT
         mapping[":QUIT"] = signal.SIGQUIT
