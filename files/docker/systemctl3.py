@@ -40,7 +40,7 @@ DebugInitLoop = False
 DebugKillAll = False
 DebugLockFile = False
 DebugExpandVars = False
-DEBUG_RESULT = False
+DebugPrintResult = False
 DEBUG_SOCKETFILE = True
 TestListen = False
 TestAccept = False
@@ -53,15 +53,6 @@ logging.addLevelName(HINT, "HINT")
 logging.addLevelName(NOTE, "NOTE")
 logging.addLevelName(DONE, "DONE")
 
-def debug_result_(msg): 
-    if DEBUG_RESULT: #pragma: no cover
-        logg.debug("%s", msg)
-def hint_result_(msg): 
-    if DEBUG_RESULT: #pragma: no cover
-        logg.info("%s", msg)
-def note_result_(msg): 
-    if DEBUG_RESULT: #pragma: no cover
-        logg.warning("%s", msg)
 
 def dbg_(msg, note = None): 
     if note is None:
@@ -6764,6 +6755,16 @@ class Systemctl:
         return features1+features2+features3
     def version_info(self):
         return [ self.systemd_version(), self.systemd_features() ]
+
+def debug_result_(msg): 
+    if DebugPrintResult: #pragma: no cover
+        logg.debug("%s", msg)
+def hint_result_(msg): 
+    if DebugPrintResult: #pragma: no cover
+        logg.info("%s", msg)
+def note_result_(msg): 
+    if DebugPrintResult: #pragma: no cover
+        logg.warning("%s", msg)
 
 def print_begin(argv, args):
     script = os.path.realpath(argv[0])
