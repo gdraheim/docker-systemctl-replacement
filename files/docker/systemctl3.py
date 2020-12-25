@@ -42,8 +42,8 @@ DebugLockFile = False
 DebugExpandVars = False
 DebugPrintResult = False
 DebugSocketFile = True
-TestListen = False
-TestAccept = False
+TestSocketListen = False
+TestSocketAccept = False
 ActiveWhileStarting = True
 
 HINT = (logging.DEBUG + logging.INFO) // 2
@@ -3392,7 +3392,7 @@ class Systemctl:
         dbg_("{unit}: accepting {fileno}".format(**locals()))
         service_unit = self.get_socket_service_from(conf)
         service_conf = self.load_unit_conf(service_unit)
-        if service_conf is None or TestAccept: #pragma: no cover
+        if service_conf is None or TestSocketAccept: #pragma: no cover
             if sock.type == socket.SOCK_STREAM:
                 conn, addr = sock.accept()
                 data = conn.recv(1024)
@@ -3452,7 +3452,7 @@ class Systemctl:
         listening=False
         if not accept:
             sock = self.create_socket(conf)
-            if sock and TestListen:
+            if sock and TestSocketListen:
                 listening=True
                 self._sockets[conf.name()] = SystemctlSocket(conf, sock)
                 service_result = "success"
