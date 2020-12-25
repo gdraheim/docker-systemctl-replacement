@@ -222,8 +222,8 @@ DefaultProcDir = "/proc"
 NotifySocketFolder = "{VARRUN}/systemd" # alias /run/systemd
 JournalLogFolder = "{VARLOG}/journal"
 
-SYSTEMCTL_DEBUG_LOG = "{VARLOG}/systemctl.debug.log"
-SYSTEMCTL_EXTRA_LOG = "{VARLOG}/systemctl.log"
+SystemctlDebugLog = "{VARLOG}/systemctl.debug.log"
+SystemctlExtraLog = "{VARLOG}/systemctl.log"
 
 _default_targets = [ "poweroff.target", "rescue.target", "sysinit.target", "basic.target", "multi-user.target", "graphical.target", "reboot.target" ]
 _feature_targets = [ "network.target", "remote-fs.target", "local-fs.target", "timers.target", "nfs-client.target" ]
@@ -7118,8 +7118,8 @@ if __name__ == "__main__":
     #
     config_globals(opt.config)
     #
-    systemctl_debug_log = os_path(_root, expand_path(SYSTEMCTL_DEBUG_LOG, not _user_mode))
-    systemctl_extra_log = os_path(_root, expand_path(SYSTEMCTL_EXTRA_LOG, not _user_mode))
+    systemctl_debug_log = os_path(_root, expand_path(SystemctlDebugLog, not _user_mode))
+    systemctl_extra_log = os_path(_root, expand_path(SystemctlExtraLog, not _user_mode))
     if os.access(systemctl_extra_log, os.W_OK):
         loggfile = logging.FileHandler(systemctl_extra_log)
         loggfile.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
