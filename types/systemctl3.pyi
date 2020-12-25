@@ -16,11 +16,6 @@ basestring: Type[str]
 __copyright__: str
 __version__: str
 logg: logging.Logger
-DEBUG_AFTER: bool
-DEBUG_STATUS: bool
-DEBUG_BOOTTIME: bool
-DEBUG_INITLOOP: bool
-DEBUG_KILLALL: bool
 HINT: int
 NOTE: int
 DONE: int
