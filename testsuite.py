@@ -656,7 +656,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 except Exception as e:
                     logg.info(" killing %s", e)
     def rm_killall(self, testname: Optional[str] = None) -> None:
-        self.killall("*systemctl*.py *", 10, but = ["edit ", "testsuite.py "])
+        self.killall("*systemctl*.py *", 10, but=["edit ", "testsuite.py "])
         testname = testname or self.caller_testname()
         self.killall("*/{testname}_*".format(**locals()))
     def kill(self, pid: Union[str, int], wait: Optional[int] = None, sig: Optional[int] = None) -> bool:
@@ -23771,7 +23771,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if TestSocketListen:
             self.assertTrue(self.kill(init.pid))
         elif not self.kill(init.pid):
-            self.kill(init.pid, sig = signal.SIGKILL)
+            self.kill(init.pid, sig=signal.SIGKILL)
         #
         self.rm_killall()
         self.rm_testdir()
@@ -23853,7 +23853,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if TestSocketListen:
             self.assertTrue(self.kill(init.pid))
         elif not self.kill(init.pid):
-            self.kill(init.pid, sig = signal.SIGKILL)
+            self.kill(init.pid, sig=signal.SIGKILL)
 
         self.assertTrue(self.kill(init.pid))
         #
@@ -23937,7 +23937,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if TestSocketListen:
             self.assertTrue(self.kill(init.pid))
         elif not self.kill(init.pid):
-            self.kill(init.pid, sig = signal.SIGKILL)
+            self.kill(init.pid, sig=signal.SIGKILL)
 
         self.assertTrue(self.kill(init.pid))
         #
@@ -24021,7 +24021,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if TestSocketListen:
             self.assertTrue(self.kill(init.pid))
         elif not self.kill(init.pid):
-            self.kill(init.pid, sig = signal.SIGKILL)
+            self.kill(init.pid, sig=signal.SIGKILL)
 
         self.assertTrue(self.kill(init.pid))
         #
@@ -24098,7 +24098,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if TestSocketListen:
             self.assertTrue(self.kill(init.pid))
         elif not self.kill(init.pid):
-            self.kill(init.pid, sig = signal.SIGKILL)
+            self.kill(init.pid, sig=signal.SIGKILL)
 
         self.assertTrue(self.kill(init.pid))
         #
@@ -24180,7 +24180,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if TestSocketListen:
             self.assertTrue(self.kill(init.pid))
         elif not self.kill(init.pid):
-            self.kill(init.pid, sig = signal.SIGKILL)
+            self.kill(init.pid, sig=signal.SIGKILL)
 
         self.assertTrue(self.kill(init.pid))
         #
@@ -24258,7 +24258,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if TestSocketListen:
             self.assertTrue(self.kill(init.pid))
         elif not self.kill(init.pid):
-            self.kill(init.pid, sig = signal.SIGKILL)
+            self.kill(init.pid, sig=signal.SIGKILL)
 
         self.assertTrue(self.kill(init.pid))
         #
@@ -24336,7 +24336,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if TestSocketListen:
             self.assertTrue(self.kill(init.pid))
         elif not self.kill(init.pid):
-            self.kill(init.pid, sig = signal.SIGKILL)
+            self.kill(init.pid, sig=signal.SIGKILL)
 
         self.assertTrue(self.kill(init.pid))
         #
@@ -24645,7 +24645,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if TestSocketListen:
             self.assertTrue(self.kill(init.pid))
         elif not self.kill(init.pid):
-            self.kill(init.pid, sig = signal.SIGKILL)
+            self.kill(init.pid, sig=signal.SIGKILL)
 
         self.assertTrue(self.kill(init.pid))
         #
@@ -24726,7 +24726,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if TestSocketListen:
             self.assertTrue(self.kill(init.pid))
         elif not self.kill(init.pid):
-            self.kill(init.pid, sig = signal.SIGKILL)
+            self.kill(init.pid, sig=signal.SIGKILL)
 
         self.assertTrue(self.kill(init.pid))
         #
@@ -24806,7 +24806,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if TestSocketListen:
             self.assertTrue(self.kill(init.pid))
         elif not self.kill(init.pid):
-            self.kill(init.pid, sig = signal.SIGKILL)
+            self.kill(init.pid, sig=signal.SIGKILL)
 
         self.assertTrue(self.kill(init.pid))
         #
@@ -24887,7 +24887,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if TestSocketListen:
             self.assertTrue(self.kill(init.pid))
         elif not self.kill(init.pid):
-            self.kill(init.pid, sig = signal.SIGKILL)
+            self.kill(init.pid, sig=signal.SIGKILL)
 
         self.assertTrue(self.kill(init.pid))
         #
@@ -24968,7 +24968,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if TestSocketListen:
             self.assertTrue(self.kill(init.pid))
         elif not self.kill(init.pid):
-            self.kill(init.pid, sig = signal.SIGKILL)
+            self.kill(init.pid, sig=signal.SIGKILL)
 
         self.assertTrue(self.kill(init.pid))
         #
@@ -25050,7 +25050,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if TestSocketListen:
             self.assertTrue(self.kill(init.pid))
         elif not self.kill(init.pid):
-            self.kill(init.pid, sig = signal.SIGKILL)
+            self.kill(init.pid, sig=signal.SIGKILL)
 
         self.assertTrue(self.kill(init.pid))
         #
@@ -25132,7 +25132,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if TestSocketListen:
             self.assertTrue(self.kill(init.pid))
         elif not self.kill(init.pid):
-            self.kill(init.pid, sig = signal.SIGKILL)
+            self.kill(init.pid, sig=signal.SIGKILL)
 
         self.assertTrue(self.kill(init.pid))
         #
@@ -26602,8 +26602,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             We take the realpath of our develop systemctl.py on purpose here.
         """
         docker = _docker
-        testdir = self.testdir(testname, keep = True)
-        cov_run = cover(image, append = "--parallel-mode")
+        testdir = self.testdir(testname, keep=True)
+        cov_run = cover(image, append="--parallel-mode")
         cov_option = cov_option or ""
         systemctl_py = realpath(_systemctl_py)
         systemctl_sh = os_path(testdir, "systemctl.sh")
@@ -38540,7 +38540,7 @@ if __name__ == "__main__":
     _o.add_option("--image", metavar="NAME", default=IMAGE,
        help="IMAGE=%default (or CENTOS)")
     opt, args = _o.parse_args()
-    logging.basicConfig(level = logging.WARNING - opt.verbose * 5)
+    logging.basicConfig(level=logging.WARNING - opt.verbose * 5)
     SKIP = not opt.force
     TODO = opt.todo
     KEEP = opt.keep
