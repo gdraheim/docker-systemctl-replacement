@@ -7478,7 +7478,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(actBD.split("\n"), [ "active", "inactive", ""])
         self.assertEqual(actBCD.split("\n"), ["active", "inactive", "inactive", ""])
         if not real:
-            self.assertNotEqual(exitBC, 0)  #TODO
+            self.assertNotEqual(exitBC, 0)  # TODO
             self.assertNotEqual(exitCD, 0)
             self.assertNotEqual(exitBD, 0)
             self.assertNotEqual(exitBCD, 0)
@@ -9565,9 +9565,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             A="'A.def1'"
             B="'B.def2.def3'"
             C="'C.${DEF4}.${DEF5}'"
-            D="'D.${DEF1}.${DEF2}'"             #TODO
+            D="'D.${DEF1}.${DEF2}'"  # TODO
             E="'E.${DEF1111}.def5.${DEF2222}'"
-            F="'F.${DEF3}.${DEF3}'"             #TODO
+            F="'F.${DEF3}.${DEF3}'"  # TODO
         else:
             A="'A.def1'"
             B="'B.def2.def3'"
@@ -11623,7 +11623,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
         if real:
             self.assertEqual(end, 0)
-            self.assertTrue(greps(err, "Unit zz-unknown.service does not exist, proceeding anyway.")) #TODO
+            self.assertTrue(greps(err, "Unit zz-unknown.service does not exist, proceeding anyway."))  # TODO
             self.assertTrue(greps(err, "Created symlink /etc/systemd/system/zz-unknown.service .* /dev/null"))
         else:
             self.assertEqual(end, 5)
@@ -11650,7 +11650,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
         if real:
             self.assertEqual(end, 0)
-            self.assertTrue(greps(err, "Unit zz-unknown.service does not exist, proceeding anyway.")) #TODO
+            self.assertTrue(greps(err, "Unit zz-unknown.service does not exist, proceeding anyway."))  # TODO
         else:
             self.assertEqual(end, 5)
             self.assertTrue(greps(err, "Unit zz-unknown.service not found."))
@@ -11676,7 +11676,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
         self.assertEqual(end, 1)
         if real:
-            self.assertTrue(greps(err, "Failed to enable unit: Unit file zz-unknown.service does not exist.")) #TODO
+            self.assertTrue(greps(err, "Failed to enable unit: Unit file zz-unknown.service does not exist."))  # TODO
         else:
             self.assertTrue(greps(err, "Unit zz-unknown.service not found."))
         #
@@ -11701,7 +11701,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
         self.assertEqual(end, 1)
         if real:
-            self.assertTrue(greps(err, "Failed to disable unit: Unit file zz-unknown.service does not exist.")) #TODO
+            self.assertTrue(greps(err, "Failed to disable unit: Unit file zz-unknown.service does not exist."))  # TODO
         else:
             self.assertTrue(greps(err, "Unit zz-unknown.service not found."))
         #
@@ -11726,7 +11726,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
         self.assertEqual(end, 1)
         if real:
-            self.assertTrue(greps(err, "Failed to get unit file state for zz-unknown.service: No such file or directory")) #TODO
+            self.assertTrue(greps(err, "Failed to get unit file state for zz-unknown.service: No such file or directory"))  # TODO
         else:
             self.assertTrue(greps(err, "Unit zz-unknown.service not found."))
         #
@@ -14879,7 +14879,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 3)
         self.assertEqual(out.strip(), "inactive")
         #
-        logg.info("== 'stop' will turn 'failed' to 'inactive' (when the PID is known)")  #TODO#
+        logg.info("== 'stop' will turn 'failed' to 'inactive' (when the PID is known)")  # TODO#
         cmd = "{systemctl} stop zzz.service -vv"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
@@ -18582,7 +18582,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} __killall {testsleepB}"
         sx____(cmd.format(**locals())) # cleanup before check
         self.assertFalse(greps(top, testscriptB))
-        self.assertTrue(greps(top, testsleepB)) ##TODO?##
+        self.assertTrue(greps(top, testsleepB))  # TODO?##
         #
         self.rm_testdir()
         self.coverage()
@@ -18689,7 +18689,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testscriptB))
-        self.assertFalse(greps(top, testsleepB)) ##TODO?##
+        self.assertFalse(greps(top, testsleepB))  # TODO?##
         #
         log = lines(reads(logfile))
         logg.info("LOG %s\n| %s", logfile, "\n| ".join(log))
@@ -26709,13 +26709,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}" # <<<< like here
             sx____(cmd.format(**locals()))
-        self.prep_coverage(image, testname)     ### setup a shell-wrapper /usr/bin/systemctl calling systemctl.py
+        self.prep_coverage(image, testname)  # setup a shell-wrapper /usr/bin/systemctl calling systemctl.py
         cmd = "{docker} exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
         out = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out)
         #
-        self.save_coverage(testname)     ### fetch {image}:.coverage and set path to develop systemctl.py
+        self.save_coverage(testname)  # fetch {image}:.coverage and set path to develop systemctl.py
         #
         self.rm_docker(testname)
         self.rm_testdir()
@@ -27677,7 +27677,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         self.runuser_notify_service_functions("user", testname, testdir)
         self.rm_testdir()
-        self.end(266) #TODO# too long?
+        self.end(266)  # TODO# too long?
     def runuser_notify_service_functions(self, system: str, testname: str, testdir: str) -> None:
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -28049,7 +28049,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         self.runuser_notify_service_functions_with_reload("system", testname, testdir)
         self.rm_testdir()
-        logg.error("too long") #TODO
+        logg.error("too long")  # TODO
         self.end(200)
     def test_5037_runuser_notify_service_functions_with_reload_user(self) -> None:
         """ check that we manage notify services in a root env
@@ -28062,7 +28062,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         self.runuser_notify_service_functions_with_reload("user", testname, testdir)
         self.rm_testdir()
-        self.end(266) #TODO# too long?
+        self.end(266)  # TODO# too long?
     def runuser_notify_service_functions_with_reload(self, system: str, testname: str, testdir: str) -> None:
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -28316,7 +28316,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 3)
         self.assertEqual(out.strip(), "inactive")
         #
-        logg.info("== 'stop' will turn 'failed' to 'inactive' (when the PID is known)")  #TODO#
+        logg.info("== 'stop' will turn 'failed' to 'inactive' (when the PID is known)")  # TODO#
         cmd = "{docker} exec {testname} {systemctl} stop zzz.service -vv {quick}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
@@ -31019,7 +31019,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.usermode_notify_service_functions_with_reload("system", testname, testdir)
         self.rm_testdir()
         self.coverage()
-        logg.error("too long") #TODO
+        logg.error("too long")  # TODO
         self.end(200)
     def test_5137_usermode_notify_service_functions_with_reload_user(self) -> None:
         """ check that we manage notify services in a root env
@@ -31033,7 +31033,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.usermode_notify_service_functions_with_reload("user", testname, testdir)
         self.rm_testdir()
         self.coverage()
-        logg.error("too long") #TODO
+        logg.error("too long")  # TODO
         self.end(266)
     def usermode_notify_service_functions_with_reload(self, system: str, testname: str, testdir: str) -> None:
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -31302,7 +31302,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 3)
         self.assertEqual(out.strip(), "inactive")
         #
-        logg.info("== 'stop' will turn 'failed' to 'inactive' (when the PID is known)")  #TODO#
+        logg.info("== 'stop' will turn 'failed' to 'inactive' (when the PID is known)")  # TODO#
         cmd = "{docker} exec {testname} {systemctl} stop zzz.service -vv {quick}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
@@ -32284,7 +32284,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} exec {testname} {systemctl} stop zzz.service -vv {quick}"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
-        self.assertEqual(end, 1) #TODO?
+        self.assertEqual(end, 1)  # TODO?
         # TODO?# self.assertTrue(greps(err, "Unit zzz.service not for --user mode"))
         #
         logg.info("== 'restart' shall start a service that NOT is-active")
@@ -32576,7 +32576,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         self.bad_usermode_notify_service_functions("User=foo", testname, testdir)
         self.rm_testdir()
-        self.end(266) #TODO# too long?
+        self.end(266)  # TODO# too long?
     def bad_usermode_notify_service_functions(self, extra: str, testname: str, testdir: str) -> None:
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -32790,7 +32790,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.bad_usermode_notify_service_functions_with_reload("", testname, testdir)
         self.rm_testdir()
         self.coverage()
-        logg.error("too long") #TODO
+        logg.error("too long")  # TODO
         self.end(200)
     def test_5237_bad_usermode_notify_service_functions_with_reload_user(self) -> None:
         """ check that we are disallowed to manage notify services in a root env
@@ -32804,7 +32804,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.bad_usermode_notify_service_functions_with_reload("User=foo", testname, testdir)
         self.rm_testdir()
         self.coverage()
-        logg.error("too long") #TODO
+        logg.error("too long")  # TODO
         self.end(266)
     def bad_usermode_notify_service_functions_with_reload(self, extra: str, testname: str, testdir: str) -> None:
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -33135,7 +33135,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
         self.assertEqual(end, 1)
         self.assertTrue(greps(err, "Unit zzz.service not for --user mode"))
-        self.assertEqual(out.strip(), "") #TODO#
+        self.assertEqual(out.strip(), "")  # TODO#
         #
         logg.info("== 'start' shall start a service that is NOT is-active ")
         cmd = "{docker} exec {testname} {systemctl} start zzz.service -vvvv {quick}"
@@ -33318,21 +33318,21 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
         self.assertEqual(end, 3)
-        self.assertFalse(greps(err, "Unit zzz.service not for --user mode")) #TODO
+        self.assertFalse(greps(err, "Unit zzz.service not for --user mode"))  # TODO
         self.assertEqual(out.strip(), "inactive")
         #
         cmd = "{docker} exec {testname} {systemctl} is-failed zzz.service -vv"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
         self.assertEqual(end, 1)
-        self.assertFalse(greps(err, "Unit zzz.service not for --user mode")) #TODO
+        self.assertFalse(greps(err, "Unit zzz.service not for --user mode"))  # TODO
         self.assertEqual(out.strip(), "inactive")
         #
         cmd = "{docker} exec {testname} {systemctl} is-enabled zzz.service -vv"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
         self.assertEqual(end, 1)
-        self.assertFalse(greps(err, "Unit zzz.service not for --user mode")) #TODO
+        self.assertFalse(greps(err, "Unit zzz.service not for --user mode"))  # TODO
         self.assertEqual(out.strip(), "disabled")
         #
         cmd = "{docker} exec {testname} {systemctl} status zzz.service -vv"
@@ -37282,7 +37282,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
             cmd = "{docker} exec {testname} touch /tmp/.coverage"
             sh____(cmd.format(**locals()))
-            cmd = "{docker} exec {testname} chmod 777 /tmp/.coverage" ## << switched user may write
+            cmd = "{docker} exec {testname} chmod 777 /tmp/.coverage"  # << switched user may write
             sh____(cmd.format(**locals()))
         #
         cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system"
