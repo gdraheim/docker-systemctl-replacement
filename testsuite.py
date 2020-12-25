@@ -10744,7 +10744,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         text_file(debug_log, "")
         if COVERAGE:
-            systemctl += " -c EXEC_SPAWN=True"
+            systemctl += " -c ExecSpawn=True"
         #
         cmd = "{systemctl} start zzz.service -vv"
         out, end = output2(cmd.format(**locals()))
@@ -19590,7 +19590,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True"
+            initsystemctl += " -c ExecSpawn=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -19680,7 +19680,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True"
+            initsystemctl += " -c ExecSpawn=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -19776,7 +19776,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True"
+            initsystemctl += " -c ExecSpawn=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -19879,7 +19879,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True"
+            initsystemctl += " -c ExecSpawn=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -19983,7 +19983,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True"
+            initsystemctl += " -c ExecSpawn=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -20087,7 +20087,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True"
+            initsystemctl += " -c ExecSpawn=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -20177,7 +20177,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True"
+            initsystemctl += " -c ExecSpawn=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -20267,7 +20267,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True"
+            initsystemctl += " -c ExecSpawn=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -20374,7 +20374,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True"
+            initsystemctl += " -c ExecSpawn=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -20485,7 +20485,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True"
+            initsystemctl += " -c ExecSpawn=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -20598,7 +20598,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True"
+            initsystemctl += " -c ExecSpawn=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -20711,7 +20711,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True"
+            initsystemctl += " -c ExecSpawn=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -20828,7 +20828,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True"
+            initsystemctl += " -c ExecSpawn=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -20943,7 +20943,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True"
+            initsystemctl += " -c ExecSpawn=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -21056,7 +21056,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True"
+            initsystemctl += " -c ExecSpawn=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -21173,7 +21173,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True"
+            initsystemctl += " -c ExecSpawn=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -21286,9 +21286,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
-        initsystemctl += " -c EXEC_CONTINUE=True" # use fallback to journal
+        initsystemctl += " -c ExecIgnoreErrors=True" # use fallback to journal
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True"
+            initsystemctl += " -c ExecSpawn=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -21402,9 +21402,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
-        initsystemctl += " -c EXEC_CONTINUE=True" # use fallback to journal
+        initsystemctl += " -c ExecIgnoreErrors=True" # use fallback to journal
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True"
+            initsystemctl += " -c ExecSpawn=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -21522,9 +21522,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         InitLoopSleep = 1
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
-        initsystemctl += " -c EXEC_CONTINUE=True" # use fallback to journal
+        initsystemctl += " -c ExecIgnoreErrors=True" # use fallback to journal
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True"
+            initsystemctl += " -c ExecSpawn=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -21641,7 +21641,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True"
+            initsystemctl += " -c ExecSpawn=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -21761,7 +21761,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True"
+            initsystemctl += " -c ExecSpawn=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -21878,7 +21878,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True"
+            initsystemctl += " -c ExecSpawn=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -21983,7 +21983,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True"
+            initsystemctl += " -c ExecSpawn=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -22078,7 +22078,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True"
+            initsystemctl += " -c ExecSpawn=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -22173,7 +22173,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True"
+            initsystemctl += " -c ExecSpawn=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -22260,7 +22260,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True"
+            initsystemctl += " -c ExecSpawn=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -22351,7 +22351,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True"
+            initsystemctl += " -c ExecSpawn=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -22468,7 +22468,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True"
+            initsystemctl += " -c ExecSpawn=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -22598,7 +22598,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True"
+            initsystemctl += " -c ExecSpawn=True"
         #
         sx____("ls -l {root}/var/run/zz*".format(**locals()))
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
@@ -22719,7 +22719,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True"
+            initsystemctl += " -c ExecSpawn=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -22840,7 +22840,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True"
+            initsystemctl += " -c ExecSpawn=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -22955,7 +22955,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True"
+            initsystemctl += " -c ExecSpawn=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -23084,7 +23084,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True"
+            initsystemctl += " -c ExecSpawn=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -23211,7 +23211,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True"
+            initsystemctl += " -c ExecSpawn=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -23338,7 +23338,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True"
+            initsystemctl += " -c ExecSpawn=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -23452,7 +23452,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True"
+            initsystemctl += " -c ExecSpawn=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -23564,7 +23564,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True"
+            initsystemctl += " -c ExecSpawn=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -23653,7 +23653,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True"
+            initsystemctl += " -c ExecSpawn=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -23726,7 +23726,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True"
+            initsystemctl += " -c ExecSpawn=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -23808,7 +23808,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True"
+            initsystemctl += " -c ExecSpawn=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -23892,7 +23892,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True"
+            initsystemctl += " -c ExecSpawn=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -23977,7 +23977,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True"
+            initsystemctl += " -c ExecSpawn=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -24062,7 +24062,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True"
+            initsystemctl += " -c ExecSpawn=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -24140,7 +24140,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True"
+            initsystemctl += " -c ExecSpawn=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -24224,7 +24224,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True"
+            initsystemctl += " -c ExecSpawn=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -24303,7 +24303,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True"
+            initsystemctl += " -c ExecSpawn=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -24379,7 +24379,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True"
+            initsystemctl += " -c ExecSpawn=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -24455,7 +24455,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True"
+            initsystemctl += " -c ExecSpawn=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -24531,7 +24531,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True"
+            initsystemctl += " -c ExecSpawn=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -24606,7 +24606,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True"
+            initsystemctl += " -c ExecSpawn=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -24688,7 +24688,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True"
+            initsystemctl += " -c ExecSpawn=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -24770,7 +24770,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True"
+            initsystemctl += " -c ExecSpawn=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -24852,7 +24852,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True"
+            initsystemctl += " -c ExecSpawn=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -24934,7 +24934,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True"
+            initsystemctl += " -c ExecSpawn=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -25017,7 +25017,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True"
+            initsystemctl += " -c ExecSpawn=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -25100,7 +25100,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         initsystemctl = systemctl
         initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
         if COVERAGE:
-            initsystemctl += " -c EXEC_SPAWN=True"
+            initsystemctl += " -c ExecSpawn=True"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -26203,7 +26203,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
-        systemctl += " -c InitLoopSleep=2 -c EXEC_SPAWN=True"
+        systemctl += " -c InitLoopSleep=2 -c ExecSpawn=True"
         logfile = os_path(root, "/var/log/"+testname+".log")
         testsleepA = self.testname("sleepA")
         bindir = os_path(root, "/usr/bin")
@@ -26245,7 +26245,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
-        systemctl += " -c InitLoopSleep=2 -c EXEC_SPAWN=True"
+        systemctl += " -c InitLoopSleep=2 -c ExecSpawn=True"
         logfile = os_path(root, "/var/log/"+testname+".log")
         testsleepA = self.testname("sleepA")
         bindir = os_path(root, "/usr/bin")
@@ -26288,7 +26288,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
-        systemctl += " -c InitLoopSleep=2 -c EXEC_SPAWN=True"
+        systemctl += " -c InitLoopSleep=2 -c ExecSpawn=True"
         logfile = os_path(root, "/var/log/"+testname+".log")
         testsleepA = self.testname("sleepA")
         bindir = os_path(root, "/usr/bin")
@@ -26330,7 +26330,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
-        systemctl += " -c InitLoopSleep=2 -c EXEC_SPAWN=True"
+        systemctl += " -c InitLoopSleep=2 -c ExecSpawn=True"
         logfile = os_path(root, "/var/log/"+testname+".log")
         testsleepA = self.testname("sleepA")
         bindir = os_path(root, "/usr/bin")
@@ -26374,7 +26374,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
-        systemctl += " -c InitLoopSleep=2 -c EXEC_SPAWN=True"
+        systemctl += " -c InitLoopSleep=2 -c ExecSpawn=True"
         logfile = os_path(root, "/var/log/"+testname+".log")
         testsleepA = self.testname("sleepA")
         bindir = os_path(root, "/usr/bin")
@@ -34551,7 +34551,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sometime = SOMETIME or 188
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "-c EXEC_SPAWN=True -c EXEC_DUP2=False"
+            cov_option = "-c ExecSpawn=True -c ExecRedirectLogs=False"
         testsleepA = self.testname("sleepA")
         bindir="/usr/bin"
         this_user="somebody"
@@ -34641,7 +34641,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sometime = SOMETIME or 188
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "-c EXEC_SPAWN=True -c EXEC_DUP2=False"
+            cov_option = "-c ExecSpawn=True -c ExecRedirectLogs=False"
         testsleepA = self.testname("sleepA")
         bindir="/usr/bin"
         this_user="somebody"
@@ -34728,7 +34728,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sometime = SOMETIME or 188
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "-c EXEC_SPAWN=True -c EXEC_DUP2=False"
+            cov_option = "-c ExecSpawn=True -c ExecRedirectLogs=False"
         testsleepA = self.testname("sleepA")
         bindir="/usr/bin"
         this_user="somebody"
@@ -34814,7 +34814,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sometime = SOMETIME or 188
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "-c EXEC_SPAWN=True -c EXEC_DUP2=False"
+            cov_option = "-c ExecSpawn=True -c ExecRedirectLogs=False"
         testsleepA = self.testname("sleepA")
         bindir="/usr/bin"
         this_user="somebody"
@@ -34902,7 +34902,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sometime = SOMETIME or 188
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "-c EXEC_SPAWN=True -c EXEC_DUP2=False"
+            cov_option = "-c ExecSpawn=True -c ExecRedirectLogs=False"
         testsleepA = self.testname("sleepA")
         bindir="/usr/bin"
         this_user="somebody"
@@ -34989,7 +34989,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sometime = SOMETIME or 188
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "-c EXEC_SPAWN=True -c EXEC_DUP2=False"
+            cov_option = "-c ExecSpawn=True -c ExecRedirectLogs=False"
         testsleepA = self.testname("sleepA")
         bindir="/usr/bin"
         this_user="somebody"
@@ -35078,7 +35078,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sometime = SOMETIME or 188
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "-c EXEC_SPAWN=True -c EXEC_DUP2=False"
+            cov_option = "-c ExecSpawn=True -c ExecRedirectLogs=False"
         testsleepA = self.testname("sleepA")
         bindir="/usr/bin"
         this_user="somebody"
@@ -35166,7 +35166,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sometime = SOMETIME or 188
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "-c EXEC_SPAWN=True -c EXEC_DUP2=False"
+            cov_option = "-c ExecSpawn=True -c ExecRedirectLogs=False"
         testsleepA = self.testname("sleepA")
         bindir="/usr/bin"
         this_user="somebody"
@@ -35256,7 +35256,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sometime = SOMETIME or 188
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "-c EXEC_SPAWN=True -c EXEC_DUP2=False"
+            cov_option = "-c ExecSpawn=True -c ExecRedirectLogs=False"
         testsleepA = self.testname("sleepA")
         bindir="/usr/bin"
         this_user="somebody"
@@ -35345,7 +35345,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sometime = SOMETIME or 188
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "-c EXEC_SPAWN=True -c EXEC_DUP2=False"
+            cov_option = "-c ExecSpawn=True -c ExecRedirectLogs=False"
         testsleepA = self.testname("sleepA")
         bindir="/usr/bin"
         this_user="somebody"
@@ -35437,7 +35437,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sometime = SOMETIME or 188
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "-c EXEC_SPAWN=True -c EXEC_DUP2=False"
+            cov_option = "-c ExecSpawn=True -c ExecRedirectLogs=False"
         testsleepA = self.testname("sleepA")
         bindir="/usr/bin"
         this_user="somebody"
@@ -35526,7 +35526,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sometime = SOMETIME or 188
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "-c EXEC_SPAWN=True -c EXEC_DUP2=False"
+            cov_option = "-c ExecSpawn=True -c ExecRedirectLogs=False"
         testsleepA = self.testname("sleepA")
         bindir="/usr/bin"
         this_user="somebody"
@@ -35614,7 +35614,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sometime = SOMETIME or 188
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "-c EXEC_SPAWN=True -c EXEC_DUP2=False"
+            cov_option = "-c ExecSpawn=True -c ExecRedirectLogs=False"
         testsleepA = self.testname("sleepA")
         bindir="/usr/bin"
         this_user="somebody"
@@ -35704,7 +35704,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sometime = SOMETIME or 188
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "-c EXEC_SPAWN=True -c EXEC_DUP2=False"
+            cov_option = "-c ExecSpawn=True -c ExecRedirectLogs=False"
         testsleepA = self.testname("sleepA")
         bindir="/usr/bin"
         this_user="somebody"
@@ -35793,7 +35793,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sometime = SOMETIME or 188
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "-c EXEC_SPAWN=True -c EXEC_DUP2=False"
+            cov_option = "-c ExecSpawn=True -c ExecRedirectLogs=False"
         testsleepA = self.testname("sleepA")
         bindir="/usr/bin"
         this_user="somebody"
@@ -35884,7 +35884,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sometime = SOMETIME or 188
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "-c EXEC_SPAWN=True -c EXEC_DUP2=False"
+            cov_option = "-c ExecSpawn=True -c ExecRedirectLogs=False"
         testsleepA = self.testname("sleepA")
         bindir="/usr/bin"
         this_user="somebody"
@@ -35974,7 +35974,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sometime = SOMETIME or 188
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "-c EXEC_SPAWN=True -c EXEC_DUP2=False"
+            cov_option = "-c ExecSpawn=True -c ExecRedirectLogs=False"
         testsleepA = self.testname("sleepA")
         bindir="/usr/bin"
         this_user="somebody"
@@ -36066,7 +36066,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sometime = SOMETIME or 188
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "-c EXEC_SPAWN=True -c EXEC_DUP2=False"
+            cov_option = "-c ExecSpawn=True -c ExecRedirectLogs=False"
         testsleepA = self.testname("sleepA")
         bindir="/usr/bin"
         this_user="somebody"
@@ -36156,7 +36156,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         refresh = refresh_tool(image)
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "-c EXEC_SPAWN=True"
+            cov_option = "-c ExecSpawn=True"
         sometime = SOMETIME or 188
         text_file(os_path(testdir, "zza.service"),"""
             [Unit]
@@ -36262,7 +36262,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         refresh = refresh_tool(image)
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "-c EXEC_SPAWN=True"
+            cov_option = "-c ExecSpawn=True"
         sometime = SOMETIME or 188
         text_file(os_path(testdir, "zza.service"),"""
             [Unit]
@@ -36368,7 +36368,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         refresh = refresh_tool(image)
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "-c EXEC_SPAWN=True"
+            cov_option = "-c ExecSpawn=True"
         sometime = SOMETIME or 188
         text_file(os_path(testdir, "zzb.service"),"""
             [Unit]
@@ -36509,7 +36509,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         refresh = refresh_tool(image)
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "-c EXEC_SPAWN=True"
+            cov_option = "-c ExecSpawn=True"
         sometime = SOMETIME or 188
         text_file(os_path(testdir, "zzb.service"),"""
             [Unit]
@@ -36655,7 +36655,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         refresh = refresh_tool(image)
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "-c EXEC_SPAWN=True"
+            cov_option = "-c ExecSpawn=True"
         sometime = SOMETIME or 188
         text_file(os_path(testdir, "zzb.service"),"""
             [Unit]
@@ -36791,7 +36791,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         refresh = refresh_tool(image)
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "-c EXEC_SPAWN=True"
+            cov_option = "-c ExecSpawn=True"
         sometime = SOMETIME or 188
         text_file(os_path(testdir, "zzb.service"),"""
             [Unit]
@@ -37050,7 +37050,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         refresh = refresh_tool(image)
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "-c EXEC_SPAWN=True"
+            cov_option = "-c ExecSpawn=True"
         sometime = SOMETIME or 188
         text_file(os_path(testdir, "zzb.service"),"""
             [Unit]
@@ -37193,7 +37193,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleep_sh = os_path(testdir, "testsleep.sh")
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "-c EXEC_SPAWN=True"
+            cov_option = "-c ExecSpawn=True"
         sometime = SOMETIME or 188
         shell_file(testsleep_sh,"""
             #! /bin/sh
@@ -37322,7 +37322,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         python_coverage = coverage_package(image)
         cov_option = "--system"
         if COVERAGE:
-            cov_option = "-c EXEC_SPAWN=True"
+            cov_option = "-c ExecSpawn=True"
         if _python.endswith("python3") and "centos:7" in image:
             if SKIP: self.skipTest("no python3 on centos:7")
         docker = _docker
