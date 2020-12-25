@@ -1,5 +1,5 @@
 #! /usr/bin/python3
-## type hints are provided in 'types/systemctl3.pyi'
+# type hints are provided in 'types/systemctl3.pyi'
 
 from __future__ import print_function
 
@@ -584,7 +584,7 @@ def expand_path(path, root = False):
     XDG_DATA_HOME=get_DATA_HOME(root)
     XDG_CONFIG_HOME=get_CONFIG_HOME(root)
     XDG_RUNTIME_DIR=get_RUNTIME_DIR(root)
-    return os.path.expanduser(path.replace("${","{").format(**locals())) # internal
+    return os.path.expanduser(path.replace("${", "{").format(**locals())) # internal
 
 def shutil_chown(path, user, group):
     if user or group:
@@ -903,7 +903,7 @@ class SystemctlConfigParser(SystemctlConfData):
         description = self.get("init.d", "Description", "")
         if description:
             self.set("Unit", "Description", description)
-        check = self.get("init.d", "Required-Start","")
+        check = self.get("init.d", "Required-Start", "")
         if check:
             for item in check.split(" "):
                 if item.strip() in _sysv_mappings:
@@ -912,7 +912,7 @@ class SystemctlConfigParser(SystemctlConfData):
         if provides:
             self.set("Install", "Alias", provides)
         # if already in multi-user.target then start it there.
-        runlevels = self.getstr("init.d", "Default-Start","3 5")
+        runlevels = self.getstr("init.d", "Default-Start", "3 5")
         for item in runlevels.split(" "):
             if item.strip() in _runlevel_mappings:
                 self.set("Install", "WantedBy", _runlevel_mappings[item.strip()])
@@ -1175,7 +1175,7 @@ def get_boottime_from_old_proc():
 # You can't use the modified timestamp of the status file because it isn't static.
 # ... using clock ticks it is known to be a linear time on Linux
 def path_proc_started(proc):
-    #get time process started after boot in clock ticks
+    # get time process started after boot in clock ticks
     with open(proc) as file_stat:
         data_stat = file_stat.readline()
     file_stat.close()
@@ -1195,7 +1195,7 @@ def path_proc_started(proc):
     # Variant 1:
     proc = DefaultProcDir
     system_uptime = "{proc}/uptime".format(**locals())
-    with open(system_uptime,"rb") as file_uptime:
+    with open(system_uptime, "rb") as file_uptime:
         data_uptime = file_uptime.readline()
     file_uptime.close()
     uptime_data = data_uptime.decode().split()
@@ -1203,7 +1203,7 @@ def path_proc_started(proc):
     if DebugBootTime:
         dbg_("  BOOT 1. System uptime secs: {uptime_secs:.3f} ({system_uptime})".format(**locals()))
 
-    #get time now
+    # get time now
     now = time.time()
     started_time = now - (uptime_secs - started_secs)
     if DebugBootTime:
@@ -1213,7 +1213,7 @@ def path_proc_started(proc):
     # Variant 2:
     system_stat = "{proc}/stat".format(**locals())
     system_btime = 0.
-    with open(system_stat,"rb") as f:
+    with open(system_stat, "rb") as f:
         for line in f:
             assert isinstance(line, bytes)
             if line.startswith(b"btime"):
@@ -1316,7 +1316,7 @@ class waitlock:
         except Exception as e:
             exc = str(type(e))
             warn_("[{me}] oops {exc}, {e}".format(**locals()))
-        #TODO# raise Exception(f"no lock for {self.unit or global}")
+        # TODO# raise Exception(f"no lock for {self.unit or global}")
         return False
     def __exit__(self, type, value, traceback):
         me = os.getpid()
@@ -2255,11 +2255,11 @@ class Systemctl:
             info_("while reading {env_file}: {e}".format(**locals()))
     def read_env_part(self, env_part): # -> generate[ (name, value) ]
         """ Environment=<name>=<value> is being scanned """
-        ## systemd Environment= spec says it is a space-seperated list of 
-        ## assignments. In order to use a space or an equals sign in a value 
-        ## one should enclose the whole assignment with double quotes: 
-        ##    Environment="VAR1=word word" VAR2=word3 "VAR3=$word 5 6"
-        ## and the $word is not expanded by other environment variables.
+        # systemd Environment= spec says it is a space-seperated list of 
+        # assignments. In order to use a space or an equals sign in a value 
+        # one should enclose the whole assignment with double quotes: 
+        # Environment="VAR1=word word" VAR2=word3 "VAR3=$word 5 6"
+        # and the $word is not expanded by other environment variables.
         try:
             for real_line in env_part.split("\n"):
                 line = real_line.strip()
@@ -2334,7 +2334,7 @@ class Systemctl:
             return (ExpandVarsKeepName and namevar or "")
         #
         maxdepth = ExpandVarsMaxDepth
-        expanded = re.sub("[$](\w+)", lambda m: get_env1(m), cmd.replace("\\\n",""))
+        expanded = re.sub("[$](\w+)", lambda m: get_env1(m), cmd.replace("\\\n", ""))
         for depth in xrange(maxdepth):
             new_text = re.sub("[$][{](\w+)[}]", lambda m: get_env2(m), expanded)
             if new_text == expanded:
@@ -2416,7 +2416,7 @@ class Systemctl:
         return mode, newcmd
     def exec_cmd(self, cmd, env, conf):
         """ expand ExecCmd statements including %i and $MAINPID """
-        cmd2 = cmd.replace("\\\n","")
+        cmd2 = cmd.replace("\\\n", "")
         # according to documentation, when bar="one two" then the expansion
         # of '$bar' is ["one","two"] and '${bar}' becomes ["one two"]. We
         # tackle that by expand $bar before shlex, and the rest thereafter.
@@ -2847,7 +2847,7 @@ class Systemctl:
         unitname = (conf.name() or "default")+".unit"
         name = filename or unitname
         log_folder = expand_path(self._journal_log_folder, conf.root_mode())
-        log_file = name.replace(os.path.sep,".") + ".log"
+        log_file = name.replace(os.path.sep, ".") + ".log"
         if log_file.startswith("."):
             log_file = "dot."+log_file
         return os.path.join(log_folder, log_file)
@@ -2942,7 +2942,7 @@ class Systemctl:
             assert isinstance(result, bytes)
             if result:
                 result = result.decode("utf-8")
-                result_txt = result.replace("\n","|")
+                result_txt = result.replace("\n", "|")
                 result_len = len(result)
                 dbg_("read_notify_socket({result_len}):{result_txt}".format(**locals()))
         except socket.timeout as e:
@@ -2977,7 +2977,7 @@ class Systemctl:
                 if name in ["STATUS", "ACTIVESTATE", "MAINPID", "READY"]:
                     hint="seen notify {waiting}     ".format(**locals())
                     dbg_("{hint} :{name}={value}".format(**locals()))
-            if status != results.get("STATUS",""):
+            if status != results.get("STATUS", ""):
                 mainpidTimeout = lapseTimeout
                 status = results.get("STATUS", "")
             if "READY" not in results:
@@ -3874,7 +3874,7 @@ class Systemctl:
                     self.write_status_from(conf, AS="failed")
                 else:
                     self.clean_status_from(conf) # "inactive"
-        ### fallback Stop => Kill for ["simple","notify","forking"]
+        # fallback Stop => Kill for ["simple","notify","forking"]
         elif not conf.getlist("Service", "ExecStop", []):
             info_("no ExecStop => systemctl kill")
             if True:
@@ -4473,9 +4473,9 @@ class Systemctl:
                 enabled = self.enabled_unit(unit)
                 results += [ active ]
                 break
-        ## how it should work:
+        # how it should work:
         status = "active" in results
-        ## how 'systemctl' works:
+        # how 'systemctl' works:
         non_active = [ result for result in results if result != "active" ]
         if non_active:
             self.error |= NOT_ACTIVE
@@ -5403,7 +5403,7 @@ class Systemctl:
                     yield line
     def get_dependencies_unit(self, unit, styles = None):
         styles = styles or [ "Requires", "Wants", "Requisite", "BindsTo", "PartOf", "ConsistsOf",
-            ".requires", ".wants", "PropagateReloadTo", "Conflicts",  ]
+            ".requires", ".wants", "PropagateReloadTo", "Conflicts", ]
         conf = self.get_unit_conf(unit)
         deps = {}
         for style in styles:
@@ -5479,7 +5479,7 @@ class Systemctl:
         result = []
         sortlist = conf_sortedAfter(deps_conf, cmp=compareAfter)
         for item in sortlist:
-            line = (item.name(),  "(%s)" % (" ".join(deps[item.name()])))
+            line = (item.name(), "(%s)" % (" ".join(deps[item.name()])))
             result.append(line)
         return result
     def sortedAfter(self, unitlist):
@@ -6677,13 +6677,13 @@ class Systemctl:
         for name in dir(self):
             arg = None
             if name.endswith("_target"):
-               arg = name[:-len("_target")].replace("_","-")
+               arg = name[:-len("_target")].replace("_", "-")
             if name.endswith("_of_unit"):
-               arg = name[:-len("_of_unit")].replace("_","-")
+               arg = name[:-len("_of_unit")].replace("_", "-")
             if name.endswith("_info"):
-               arg = name[:-len("_info")].replace("_","-")
+               arg = name[:-len("_info")].replace("_", "-")
             if name.endswith("_modules"):
-               arg = name[:-len("_modules")].replace("_","-")
+               arg = name[:-len("_modules")].replace("_", "-")
             if arg:
                argz[arg] = name
         lines.append("%s command [options]..." % prog)
@@ -6717,7 +6717,7 @@ class Systemctl:
         if not args:
             return self.help_overview()
         for arg in args:
-            arg = arg.replace("-","_")
+            arg = arg.replace("-", "_")
             func1 = getattr(self.__class__, arg+"_modules", None)
             func2 = getattr(self.__class__, arg+"_info", None)
             func3 = getattr(self.__class__, arg+"_of_unit", None)
@@ -6735,7 +6735,7 @@ class Systemctl:
             doc_text = "..."
             doc = getattr(func, "__doc__", None)
             if doc:
-                doc_text = doc.replace("\n","\n\n", 1).strip()
+                doc_text = doc.replace("\n", "\n\n", 1).strip()
                 if "--" not in doc_text:
                     doc_text = "-- " + doc_text
             else: 
@@ -6820,7 +6820,7 @@ def print_str_dict(result):
     shown = 0
     for key in sorted(result.keys()):
         element = result[key]
-        print("%s=%s" % (key,element))
+        print("%s=%s" % (key, element))
         shown += 1
     hint_result_("EXEC END {shown} items".format(**locals()))
     debug_result_("    END {result}".format(**locals()))
