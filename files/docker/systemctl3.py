@@ -5861,14 +5861,13 @@ class Systemctl:
         found_all = True
         units = []
         for module in modules:
+            if _force:
+                units += to_list(module)
+                continue
             matched = self.match_units(to_list(module))
             if not matched:
                 unit_ = unit_of(module)
-                if not _force:
-                    error_("Unit {unit_} could not be found.".format(**locals()))
-                else:
-                    info_("Unit {unit_} could not be found.".format(**locals()))
-                    units += to_list(module)
+                error_("Unit {unit_} could not be found.".format(**locals()))
                 # self.error |= NOT_FOUND
                 found_all = False
                 continue
