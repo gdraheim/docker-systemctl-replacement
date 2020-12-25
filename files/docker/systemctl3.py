@@ -38,7 +38,7 @@ DebugStatusFile = False
 DebugBootTime = False
 DebugInitLoop = False
 DebugKillAll = False
-DEBUG_FLOCK = False
+DebugLockFile = False
 DEBUG_VARS = False
 DEBUG_RESULT = False
 DEBUG_SOCKETFILE = True
@@ -53,9 +53,6 @@ logging.addLevelName(HINT, "HINT")
 logging.addLevelName(NOTE, "NOTE")
 logging.addLevelName(DONE, "DONE")
 
-def dbg_flock_(msg): 
-    if DEBUG_FLOCK: #pragma: no cover
-        logg.debug("%s", msg)
 def debug_result_(msg): 
     if DEBUG_RESULT: #pragma: no cover
         logg.debug("%s", msg)
@@ -1296,11 +1293,13 @@ class waitlock:
             self.opened = os.open(lockfile, os.O_RDWR | os.O_CREAT, 0o600)
             for attempt in xrange(int(MaxLockWait or DefaultMaximumTimeout)):
                 try:
-                    dbg_flock_("[{me}] {attempt}. trying {lockname} _______ ".format(**locals()))
+                    if DebugLockFile: # pragma: no cover
+                        dbg_("[{me}] {attempt}. trying {lockname} _______ ".format(**locals()))
                     fcntl.flock(self.opened, fcntl.LOCK_EX | fcntl.LOCK_NB)
                     st = os.fstat(self.opened)
                     if not st.st_nlink:
-                        dbg_flock_("[{me}] {attempt}. {lockname} got deleted, trying again".format(**locals()))
+                        if DebugLockFile: # pragma: no cover
+                            dbg_("[{me}] {attempt}. {lockname} got deleted, trying again".format(**locals()))
                         os.close(self.opened)
                         self.opened = os.open(lockfile, os.O_RDWR | os.O_CREAT, 0o600)
                         continue
@@ -1308,7 +1307,8 @@ class waitlock:
                     content = "#lock={me}\n".format(**locals())
                     os.write(self.opened, content.encode("ascii"))
                     os.lseek(self.opened, 0, os.SEEK_SET)
-                    dbg_flock_("[{me}] {attempt}. holding lock on {lockname}".format(**locals()))
+                    if DebugLockFile: # pragma: no cover
+                        dbg_("[{me}] {attempt}. holding lock on {lockname}".format(**locals()))
                     return True
                 except IOError as e:
                     whom = "<n/a>"
