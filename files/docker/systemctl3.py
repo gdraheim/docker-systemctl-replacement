@@ -42,6 +42,7 @@ DebugLockFile = False
 DebugExpandVars = False
 DebugPrintResult = False
 DebugSocketFile = True
+DebugIgnoredServices = False
 TestSocketListen = False
 TestSocketAccept = False
 ActiveWhileStarting = True
@@ -224,6 +225,37 @@ JournalLogFolder = "{VARLOG}/journal"
 
 SystemctlDebugLog = "{VARLOG}/systemctl.debug.log"
 SystemctlExtraLog = "{VARLOG}/systemctl.log"
+
+_ignored_services = """
+[centos]
+netconsole
+network
+[opensuse]
+raw
+pppoe
+boot.*
+rpmconf*
+postfix*
+purge-kernels.service
+after-local.service
+dm-event.*
+[ubuntu]
+mount*
+umount*
+ondemand
+[always]
+*.local
+network*
+dbus*
+systemd-*
+kdump*
+dm-event
+"""
+
+_ignored_targets = """
+[always]
+remote-fs.target
+"""
 
 _default_targets = [ "poweroff.target", "rescue.target", "sysinit.target", "basic.target", "multi-user.target", "graphical.target", "reboot.target" ]
 _feature_targets = [ "network.target", "remote-fs.target", "local-fs.target", "timers.target", "nfs-client.target" ]
@@ -5819,25 +5851,42 @@ class Systemctl:
     def get_KillSignal(self, conf):
         return conf.get(Service, "KillSignal", "SIGTERM")
     #
-    igno_centos = [ "netconsole", "network" ]
-    igno_opensuse = [ "raw", "pppoe", "*.local", "boot.*", "rpmconf*", "postfix*" ]
-    igno_ubuntu = [ "mount*", "umount*", "ondemand", "*.local" ]
-    igno_always = [ "network*", "dbus*", "systemd-*", "kdump*" ]
-    igno_always += [ "purge-kernels.service", "after-local.service", "dm-event.*" ]  # as on opensuse
-    igno_targets = [ "remote-fs.target" ]
-    def _ignored_unit(self, unit, ignore_list):
-        for ignore in ignore_list:
-            if fnmatch.fnmatchcase(unit, ignore):
-                return True  # ignore
-            if fnmatch.fnmatchcase(unit, ignore+".service"):
-                return True  # ignore
-        return False
+    def _ignored_unit(self, unit, igno):
+        is_ignored = False
+        because_of = ""
+        in_section = ""
+        for line in igno.splitlines():
+            if not line.strip(): 
+                continue
+            if line.startswith("["):
+                in_section = line.strip()
+            ignore = line.strip()
+            if ignore.startswith("!"):
+                ignore = ignore[1:].strip()
+                if fnmatch.fnmatchcase(unit, ignore):
+                    is_ignored = False
+                    because_of = in_section
+                if fnmatch.fnmatchcase(unit, ignore+".service"):
+                    is_ignored = False
+                    because_of = in_section
+            else:
+                if fnmatch.fnmatchcase(unit, ignore):
+                    is_ignored = True
+                    because_of = in_section
+                if fnmatch.fnmatchcase(unit, ignore+".service"):
+                    is_ignored = True
+                    because_of = in_section
+        if DebugIgnoredServices:
+            if is_ignored:
+                dbg_("Unit {unit} ignored because of {because_of}".format(**locals()))
+            elif because_of:
+                dbg_("Unit {unit} allowed because of {because_of}".format(**locals()))
+        return is_ignored
     def default_services_modules(self, *modules):
         """ -- show the default services (started by 'default')
             This is used internally to know the list of service to be started in the 'get-default'
             target runlevel when the container is started through default initialisation. It will
-            ignore a number of services - use '--all' to show a longer list of services and
-            use '--all --force' if not even a minimal filter shall be used.
+            ignore a number of services - use '--all' to show all services as systemd would do.
         """
         results = []
         targets = modules or [ self.get_default_target() ]
@@ -5851,17 +5900,16 @@ class Systemctl:
         return results
     def target_default_services(self, target=None, sysv="S"):
         """ get the default services for a target - this will ignore a number of services,
-            use '--all' and --force' to get more services.
+            use '--all' see the original list as systemd would see them.
         """
-        igno = self.igno_centos + self.igno_opensuse + self.igno_ubuntu + self.igno_always
+        igno = _ignored_services
         if self._show_all:
-            igno = self.igno_always
-            if self._force:
-                igno = []
-        dbg_("ignored services filter for default.target:\n\t{igno}".format(**locals()))
+            igno = ""
+        if DebugIgnoredServices:
+            dbg_("ignored services filter for default.target:\n\t{igno}".format(**locals()))
         default_target = target or self.get_default_target()
         return self.enabled_target_services(default_target, sysv, igno)
-    def enabled_target_services(self, target, sysv="S", igno=[]):
+    def enabled_target_services(self, target, sysv="S", igno=""):
         units = []
         if self.user_mode():
             targetlist = self.get_target_list(target)
@@ -5894,7 +5942,7 @@ class Systemctl:
             targetlist = self.get_target_list(target)
             dbg_("check for {target} system services: {targetlist}".format(**locals()))
             for targets in targetlist:
-                for unit in self.enabled_target_configured_system_units(targets, ".target", igno + self.igno_targets):
+                for unit in self.enabled_target_configured_system_units(targets, ".target", igno + _ignored_targets):
                     if unit not in units:
                         units.append(unit)
             for targets in targetlist:
@@ -5918,7 +5966,7 @@ class Systemctl:
                     if unit not in units:
                         units.append(unit)
         return units
-    def enabled_target_user_local_units(self, target, unit_kind=".service", igno=[]):
+    def enabled_target_user_local_units(self, target, unit_kind=".service", igno=""):
         units = []
         for basefolder in self.user_folders():
             if not basefolder:
@@ -5935,7 +5983,7 @@ class Systemctl:
                     if unit.endswith(unit_kind):
                         units.append(unit)
         return units
-    def enabled_target_user_system_units(self, target, unit_kind=".service", igno=[]):
+    def enabled_target_user_system_units(self, target, unit_kind=".service", igno=""):
         units = []
         for basefolder in self.system_folders():
             if not basefolder:
@@ -5958,7 +6006,7 @@ class Systemctl:
                         else:
                             units.append(unit)
         return units
-    def enabled_target_installed_system_units(self, target, unit_type=".service", igno=[]):
+    def enabled_target_installed_system_units(self, target, unit_type=".service", igno=""):
         units = []
         for basefolder in self.system_folders():
             if not basefolder:
@@ -5975,7 +6023,7 @@ class Systemctl:
                     if unit.endswith(unit_type):
                         units.append(unit)
         return units
-    def enabled_target_configured_system_units(self, target, unit_type=".service", igno=[]):
+    def enabled_target_configured_system_units(self, target, unit_type=".service", igno=""):
         units = []
         if True:
             folder = self.default_enablefolder(target)
@@ -5990,7 +6038,7 @@ class Systemctl:
                     if unit.endswith(unit_type):
                         units.append(unit)
         return units
-    def enabled_target_sysv_units(self, target, sysv="S", igno=[]):
+    def enabled_target_sysv_units(self, target, sysv="S", igno=""):
         units = []
         folders = []
         if target in [ "multi-user.target", DefaultUnit ]:
@@ -6012,7 +6060,7 @@ class Systemctl:
                         continue  # ignore
                     units.append(unit)
         return units
-    def required_target_units(self, target, unit_type, igno):
+    def required_target_units(self, target, unit_type, igno = ""):
         units = []
         deps = self.get_required_dependencies(target)
         for unit in sorted(deps):
