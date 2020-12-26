@@ -297,12 +297,12 @@ pep.s style.s     pep.s.diff style.s.diff:
 	autopep8 files/docker/systemctl3.py --diff
 pep.s.i style.s.i pep.s.apply style.s.apply:
 	autopep8 files/docker/systemctl3.py --in-place
-	git diff files/docker/systemctl3.py
+	git --no-pager diff files/docker/systemctl3.py
 pep.t style.t     pep.t.diff style.t.diff:
 	autopep8 testsuite.py --diff
 pep.t.i style.t.i pep.t.apply style.t.apply:
 	autopep8 testsuite.py --in-place
-	git diff testsuite.py
+	git --no-pager diff testsuite.py
 
 ####### retype + stubgen
 mypy:
