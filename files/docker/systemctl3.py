@@ -4775,23 +4775,32 @@ class Systemctl:
                     execstate = " {varname}={returncodeOK}".format(**locals())
             except Exception as e: pass
         result += "\n    Active: {active} ({substate})".format(**locals())
-        main_step = self.get_status_from(conf, "ExecMainStep", "")
-        if main_step:
-            main_code = self.get_status_from(conf, "ExecMainCode", "")
-            main_pid = self.get_status_from(conf, "ExecMainPID", "")
-            main_state = exitCODE(to_int(self.get_status_from(conf, "ExecMainStatus", "0")))
-            if main_code in ["0", ""]: main_code = "running"
-            if main_pid: main_pid = "PID "+main_pid
-            result += "\n    Process: {main_pid} ({main_state}) {main_step} {main_code})".format(**locals())
         last_step = self.get_status_from(conf, "ExecLastStep", "")
         if last_step:
+            inprocess = "  Process"
+            if not last_step.startswith("Exec"):
+                inprocess = "Last Step"
             last_code = self.get_status_from(conf, "ExecLastCode", "")
             last_pid = self.get_status_from(conf, "ExecLastPID", "")
             last_state = exitCODE(to_int(self.get_status_from(conf, "ExecMainStatus", "0")))
             if last_code in ["0", ""]: last_code = "running"
-            if last_pid: last_pid = "PID "+last_pid
-            result += "\n    Process: {last_pid} ({last_state}) {last_step} {last_code})".format(**locals())
-        if active == "active":
+            show_pid = "PID {last_pid:6s}".format(**locals())
+            if not last_pid: show_pid = "          "
+            result += "\n {inprocess}: {show_pid} ({last_state}) [{last_step}] {last_code}".format(**locals())
+        main_step = self.get_status_from(conf, "ExecMainStep", "")
+        if main_step:
+            inprocess = "  Process"
+            main_code = self.get_status_from(conf, "ExecMainCode", "")
+            main_pid = self.get_status_from(conf, "ExecMainPID", "")
+            main_state = exitCODE(to_int(self.get_status_from(conf, "ExecMainStatus", "0")))
+            if main_code in ["0", ""]: main_code = "running"
+            show_pid = "PID {main_pid:6s}".format(**locals())
+            if not main_pid: show_pid = "          "
+            result += "\n {inprocess}: {show_pid} ({main_state}) [{main_step}] {main_code}".format(**locals())
+        if active in ["active", "starting", "stopping", "reloading"]:
+            pid = self.read_mainpid_from(conf)
+            if pid:
+                result += "\n  Main PID: {pid}".format(**locals())
             return 0, result
         else:
             return 3, result
