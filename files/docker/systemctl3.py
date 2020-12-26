@@ -5906,9 +5906,7 @@ class Systemctl:
     def get_ignored_services(self):
         igno = _ignored_services
         filename = os_path(self._root, IgnoredServicesFile)
-        if os.path.isfile(filename):
-            if igno and not igno.endswith("\n"):
-                igno += "\n"
+        if os.path.exists(filename):
             try:
                 text_data = open(filename, "rb").read()
                 igno_text = text_data.decode("utf-8")
