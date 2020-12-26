@@ -9721,7 +9721,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} default-services --all"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(len(lines(out)), 4) # one more
+        self.assertEqual(len(lines(out)), 4)  # one more
         self.assertEqual(end, 0)
         #
         text_file(os_path(root, "/etc/systemd/system/zzzf.service"), """
@@ -9742,7 +9742,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} default-services --all"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(len(lines(out)), 4) # again
+        self.assertEqual(len(lines(out)), 4)  # again
         self.assertEqual(end, 0)
         #
         cmd = "{systemctl} --no-legend enable zzzf.service"
@@ -9759,7 +9759,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} default-services --all"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(len(lines(out)), 5) # but more
+        self.assertEqual(len(lines(out)), 5)  # but more
         self.assertEqual(end, 0)
         #
         # adding anti-pattern
@@ -9779,7 +9779,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} default-services --all"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(len(lines(out)), 5) # again
+        self.assertEqual(len(lines(out)), 5)  # again
         self.assertEqual(end, 0)
         #
         self.rm_testdir()
@@ -9913,13 +9913,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(len(lines(out)), 0)
-        self.assertEqual(end, 1) # Is a directory
+        self.assertEqual(end, 1)  # Is a directory
         #
         cmd = "{systemctl} -c IgnoredServicesFile=/var/tmp/special ignore zzb.service -vv"
         out, err, end = output3(cmd.format(**locals()))
         ## logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(len(lines(out)), 0)
-        self.assertEqual(end, 1) # Is a directory
+        self.assertEqual(end, 1)  # Is a directory
         self.assertTrue(greps(err, "Is a directory"))
         #
         cmd = "{systemctl} -c IgnoredServicesFile=/var/tmp/special default-services -vv"
