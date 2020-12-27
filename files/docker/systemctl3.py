@@ -226,7 +226,9 @@ JournalLogFolder = "{VARLOG}/journal"
 SystemctlDebugLog = "{VARLOG}/systemctl.debug.log"
 SystemctlExtraLog = "{VARLOG}/systemctl.log"
 
-IgnoredServicesFile="/etc/systemd/services.ignore"
+CacheRequiresFile="/etc/systemd/systemctl.requires.cache"
+CacheAliasFile="/etc/systemd/systemctl.alias.cache"
+IgnoredServicesFile="/etc/systemd/systemctl.services.ignore"
 _ignored_services = """
 [centos]
 netconsole
@@ -1663,6 +1665,7 @@ class Systemctl:
         self._loaded_file_sysd = {}  # /etc/systemd/system/name.service => config data
         self._file_for_unit_sysv = None  # name.service => /etc/init.d/name
         self._file_for_unit_sysd = None  # name.service => /etc/systemd/system/name.service
+        self._alias_modules = None       # name.service => real.name.service
         self._preset_file_list = None  # /etc/systemd/system-preset/* => file content
         self._default_target = DefaultTarget
         self._sysinit_target = None  # stores a UnitConf()
@@ -1804,25 +1807,31 @@ class Systemctl:
         return list(self._file_for_unit_sysv.keys())
     def unit_sysd_file(self, module=None):  # -> filename?
         """ file path for the given module (systemd) """
-        self.scan_unit_sysd_files()
-        assert self._file_for_unit_sysd is not None
-        if module and module in self._file_for_unit_sysd:
-            return self._file_for_unit_sysd[module]
-        if module and unit_of(module) in self._file_for_unit_sysd:
-            return self._file_for_unit_sysd[unit_of(module)]
+        # this file is scanned upon self.load_sysd_unit_conf(name) -> load_unit_conf(conf)
+        self.load_sysd_units()
+        if self._alias_modules:
+            if module and self._alias_modules and module in self._alias_modules:
+                module = self._alias_modules[module]
+        if self._file_for_unit_sysd:
+            if module and self._file_for_unit_sysd and module in self._file_for_unit_sysd:
+                return self._file_for_unit_sysd[module]
+            if module and unit_of(module) in self._file_for_unit_sysd:
+                return self._file_for_unit_sysd[unit_of(module)]
         return None
     def unit_sysv_file(self, module=None):  # -> filename?
         """ file path for the given module (sysv) """
-        self.scan_unit_sysv_files()
-        assert self._file_for_unit_sysv is not None
-        if module and module in self._file_for_unit_sysv:
-            return self._file_for_unit_sysv[module]
-        if module and unit_of(module) in self._file_for_unit_sysv:
-            return self._file_for_unit_sysv[unit_of(module)]
+        # this file is scanned upon self.load_sysv_unit_conf(name) -> load_unit_conf(name)
+        self.load_sysv_units()
+        if self._file_for_unit_sysv:
+            if module and module in self._file_for_unit_sysv:
+                return self._file_for_unit_sysv[module]
+            if module and unit_of(module) in self._file_for_unit_sysv:
+                return self._file_for_unit_sysv[unit_of(module)]
         return None
     def unit_file(self, module=None):  # -> filename?
         """ file path for the given module (sysv or systemd) """
-        path = self.unit_sysd_file(module)
+        # this is commonly used through enable/disable - to be similar to load_unit_conf(name)
+        path = self.unit_sysd_file(module) # does also check .alias_modules
         if path is not None: return path
         path = self.unit_sysv_file(module)
         if path is not None: return path
@@ -1912,6 +1921,9 @@ class Systemctl:
             for name in sorted(drop_in_files):
                 path = drop_in_files[name]
                 data.read_sysd(path)
+        if self._alias_modules:
+            if module in self._alias_modules:
+                module = self._alias_modules[module]
         conf = SystemctlConf(data, module)
         conf.masked = masked
         conf.nonloaded_path = path  # if masked
@@ -1972,6 +1984,11 @@ class Systemctl:
         return string.capwords(self.get_unit_type(module) or default)
     def get_unit_section_from(self, conf, default=Service):
         return self.get_unit_section(conf.name(), default)
+    def load_sysv_units(self):
+        self.scan_unit_sysv_files()
+    def load_sysd_units(self):
+        self.scan_unit_sysd_files()
+        self.load_alias_cache()
     def match_sysd_templates(self, modules=None, suffix=".service"):  # -> generate[ unit ]
         """ make a file glob on all known template units (systemd areas).
             It returns no modules (!!) if no modules pattern were given.
@@ -1979,7 +1996,7 @@ class Systemctl:
         modules = to_list(modules)
         if not modules:
             return
-        self.scan_unit_sysd_files()
+        self.load_sysd_units()
         assert self._file_for_unit_sysd is not None
         for item in sorted(self._file_for_unit_sysd.keys()):
             if "@" not in item:
@@ -1997,21 +2014,31 @@ class Systemctl:
             It returns all modules if no modules pattern were given.
             Also a single string as one module pattern may be given. """
         modules = to_list(modules)
-        self.scan_unit_sysd_files()
-        assert self._file_for_unit_sysd is not None
-        for item in sorted(self._file_for_unit_sysd.keys()):
-            if not modules:
-                yield item
-            elif [ module for module in modules if fnmatch.fnmatchcase(item, module) ]:
-                yield item
-            elif [ module for module in modules if module+suffix == item ]:
-                yield item
+        self.load_sysd_units()
+        if self._file_for_unit_sysd:
+            for item in sorted(self._file_for_unit_sysd.keys()):
+                if not modules:
+                    yield item
+                elif [ module for module in modules if fnmatch.fnmatchcase(item, module) ]:
+                    yield item
+                elif [ module for module in modules if module+suffix == item ]:
+                    yield item
+        if self._alias_modules:
+            for item in sorted(self._alias_modules.keys()):
+                if self._file_for_unit_sysd:
+                    if item in self._file_for_unit_sysd: continue # already matched
+                if not modules:
+                    yield item
+                elif [ module for module in modules if fnmatch.fnmatchcase(item, module) ]:
+                    yield item
+                elif [ module for module in modules if module+suffix == item ]:
+                    yield item
     def match_sysv_units(self, modules=None, suffix=".service"):  # -> generate[ unit ]
         """ make a file glob on all known units (sysv areas).
             It returns all modules if no modules pattern were given.
             Also a single string as one module pattern may be given. """
         modules = to_list(modules)
-        self.scan_unit_sysv_files()
+        self.load_sysv_units()
         assert self._file_for_unit_sysv is not None
         for item in sorted(self._file_for_unit_sysv.keys()):
             if not modules:
@@ -5562,6 +5589,7 @@ class Systemctl:
             and it is over 100 if it can not continue even
             for the relaxed systemctl.py style of execution. """
         errors = 0
+        aliases = {}
         for unit in self.match_units():
             try:
                 conf = self.get_unit_conf(unit)
@@ -5570,10 +5598,53 @@ class Systemctl:
                 error_("{unit}: can not read unit file {filename44}\n\t{e}".format(**locals()))
                 continue
             errors += self.syntax_check_from(conf)
+            aliases.update(self.get_alias_from(conf))
+        if aliases:
+            len_aliases = len(aliases)
+            info_(" found {len_aliases} alias units".format(**locals()))
+            if not self.user_mode():
+                self.write_alias_cache(aliases)
         if errors:
             problems = errors % 100
             warn_(" ({errors}) found {problems} problems".format(**locals()))
         return True  # errors
+    def get_alias_from(self, conf):
+        result = {}
+        for defs in conf.getlist("Install", "Alias"):
+            for unit_def in defs.split(" "):
+                unit = unit_def.strip()
+                if not unit: continue
+                name = conf.name()
+                result[unit] = name
+        return result
+    def write_alias_cache(self, aliases):
+        filename = os_path(self._root, CacheAliasFile)
+        try:
+            with open(filename, "w") as f:
+                for unit in sorted(aliases):
+                    name = aliases[unit]
+                    f.write("{unit} {name}\n".format(**locals()))
+            return True
+        except Exception as e:
+            warning_("while writing {filename}: {e}".format(**locals()))
+        return False
+    def read_alias_cache(self):
+        filename = os_path(self._root, CacheAliasFile)
+        if os.path.exists(filename):
+            try:
+                result = {}
+                text = open(filename).read()
+                for line in text.splitlines():
+                    if line.startswith("#"): continue
+                    unit, name = line.split(" ", 1)
+                    result[unit] = name
+                return result
+            except Exception as e:
+                warning_("while reading {filename}: {e}".format(**locals()))
+        return None
+    def load_alias_cache(self):
+        if self._alias_modules is None:
+            self._alias_modules = self.read_alias_cache()
     def syntax_check_from(self, conf):
         filename = conf.filename()
         if filename and filename.endswith(".service"):
