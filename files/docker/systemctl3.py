@@ -226,9 +226,9 @@ JournalLogFolder = "{VARLOG}/journal"
 SystemctlDebugLog = "{VARLOG}/systemctl.debug.log"
 SystemctlExtraLog = "{VARLOG}/systemctl.log"
 
-CacheDepsFile="/etc/systemd/systemctl.deps.cache"
-CacheAliasFile="/etc/systemd/systemctl.alias.cache"
-IgnoredServicesFile="/etc/systemd/systemctl.services.ignore"
+CacheDepsFile="${XDG_CONFIG_HOME}/systemd/systemctl.deps.cache"
+CacheAliasFile="${XDG_CONFIG_HOME}/systemd/systemctl.alias.cache"
+IgnoredServicesFile="${XDG_CONFIG_HOME}/systemd/systemctl.services.ignore"
 _ignored_services = """
 [centos]
 netconsole
@@ -618,14 +618,14 @@ def get_VARLIB_HOME(root=False):
     if root: return VARLIB
     CONFIG = get_CONFIG_HOME(root)
     return CONFIG
-def expand_path(path, root=False):
+def expand_path(filepath, root=False):
     HOME = get_HOME(root)
     VARRUN = get_RUN(root)
     VARLOG = get_LOG_DIR(root)
     XDG_DATA_HOME=get_DATA_HOME(root)
     XDG_CONFIG_HOME=get_CONFIG_HOME(root)
     XDG_RUNTIME_DIR=get_RUNTIME_DIR(root)
-    return os.path.expanduser(path.replace("${", "{").format(**locals()))  # internal
+    return os.path.expanduser(filepath.replace("${", "{").format(**locals()))  # internal
 
 def shutil_chown(path, user, group):
     if user or group:
@@ -1666,6 +1666,7 @@ class Systemctl:
         self._file_for_unit_sysv = None  # name.service => /etc/init.d/name
         self._file_for_unit_sysd = None  # name.service => /etc/systemd/system/name.service
         self._alias_modules = None       # name.service => real.name.service
+        self._deps_modules = None       # name.service => real.name.service
         self._preset_file_list = None  # /etc/systemd/system-preset/* => file content
         self._default_target = DefaultTarget
         self._sysinit_target = None  # stores a UnitConf()
@@ -1686,6 +1687,8 @@ class Systemctl:
         return self._user_getlogin
     def user_mode(self):
         return self._user_mode
+    def expand_path(self, filepath):
+        return expand_path(filepath, not self.user_mode())
     def user_folder(self):
         for folder in self.user_folders():
             if folder: return folder
@@ -5510,6 +5513,7 @@ class Systemctl:
         if self._deps_modules:
             if unit in self._deps_modules:
                 return self._deps_modules[unit]
+        dbg_("scanning Unit {unit} for Requuires".format(**locals()))
         conf = self.get_unit_conf(unit)
         return self.get_deps_from(conf, styles)
     def get_deps_from(self, conf, styles=None):
@@ -5632,13 +5636,11 @@ class Systemctl:
         if deps:
             len_deps = len(deps)
             info_(" found {len_deps} dependencies for units".format(**locals()))
-            if not self.user_mode():
-                self.write_deps_cache(deps)
+            self.write_deps_cache(deps)
         if aliases:
             len_aliases = len(aliases)
             info_(" found {len_aliases} alias units".format(**locals()))
-            if not self.user_mode():
-                self.write_alias_cache(aliases)
+            self.write_alias_cache(aliases)
         if errors:
             problems = errors % 100
             warn_(" ({errors}) found {problems} problems".format(**locals()))
@@ -5653,18 +5655,19 @@ class Systemctl:
                 result[unit] = name
         return result
     def write_alias_cache(self, aliases):
-        filename = os_path(self._root, CacheAliasFile)
+        filename = os_path(self._root, self.expand_path(CacheAliasFile))
         try:
             with open(filename, "w") as f:
                 for unit in sorted(aliases):
                     name = aliases[unit]
                     f.write("{unit} {name}\n".format(**locals()))
+            debug_("written aliases to {filename}".format(**locals()))
             return True
         except Exception as e:
             warning_("while writing {filename}: {e}".format(**locals()))
         return False
     def read_alias_cache(self):
-        filename = os_path(self._root, CacheAliasFile)
+        filename = os_path(self._root, self.expand_path(CacheAliasFile))
         if os.path.exists(filename):
             try:
                 result = {}
@@ -5681,7 +5684,7 @@ class Systemctl:
         if self._alias_modules is None:
             self._alias_modules = self.read_alias_cache()
     def write_deps_cache(self, deps):
-        filename = os_path(self._root, CacheDepsFile)
+        filename = os_path(self._root, self.expand_path(CacheDepsFile))
         try:
             with open(filename, "w") as f:
                 for unit in sorted(deps):
@@ -5689,12 +5692,13 @@ class Systemctl:
                     for name in sorted(sets):
                         requires = sets[name]
                         f.write("{unit} {requires} {name}\n".format(**locals()))
+            debug_("written deps to {filename}".format(**locals()))
             return True
         except Exception as e:
             warning_("while writing {filename}: {e}".format(**locals()))
         return False
     def read_deps_cache(self):
-        filename = os_path(self._root, CacheDepsFile)
+        filename = os_path(self._root, self.expand_path(CacheDepsFile))
         if os.path.exists(filename):
             try:
                 result = {}
