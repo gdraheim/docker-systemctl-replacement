@@ -607,6 +607,12 @@ class Systemctl:
         mapping: Dict[str,str]
     def get_dependencies_unit(self, unit: str, styles: Optional[List[str]] = None) -> Dict[str,str]:
         deps: Dict[str,str]
+    def get_wants_unit(self, unit: str, styles: Optional[List[str]] = None) -> Dict[str,str]:
+        deps: Dict[str,str]
+    def get_deps_unit(self, unit: str, styles: Optional[List[str]] = None) -> Dict[str,str]:
+        deps: Dict[str,str]
+    def get_deps_from(self, conf: SystemctlConf, styles: Optional[List[str]] = None) -> Dict[str,str]:
+        deps: Dict[str,str]
     def get_required_dependencies(self, unit: str, styles: Optional[List[str]] = None) -> Dict[str,str]:
         deps: Dict[str,str]
     def get_start_dependencies(self, unit: str, styles: Optional[List[str]] = None) -> Dict[str,List[str]]: # pragma: no cover

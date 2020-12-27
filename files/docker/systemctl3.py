@@ -5483,20 +5483,41 @@ class Systemctl:
         deps = {}
         for style in styles:
             if style.startswith("."):
-                for folder in self.sysd_folders():
-                    if not folder:
-                        continue
-                    require_path = os.path.join(folder, unit + style)
-                    if self._root:
-                        require_path = os_path(self._root, require_path)
-                    if os.path.isdir(require_path):
-                        for required in os.listdir(require_path):
-                            if required not in deps:
-                                deps[required] = style
+                deps.update(self.get_wants_unit(unit, [ style ]))
             else:
-                for requirelist in conf.getlist(Unit, style, []):
-                    for required in requirelist.strip().split(" "):
-                        deps[required.strip()] = style
+                deps.update(self.get_deps_unit(unit, [ style ]))
+        return deps
+    def get_wants_unit(self, unit, styles=None):
+        styles = styles or [ ".requires", ".wants" ]
+        deps = {}
+        for style in styles:
+            if not style.startswith("."): continue
+            for folder in self.sysd_folders():
+                if not folder:
+                    continue
+                require_path = os.path.join(folder, unit + style)
+                if self._root:
+                    require_path = os_path(self._root, require_path)
+                if os.path.isdir(require_path):
+                    for required in os.listdir(require_path):
+                        if required not in deps:
+                            deps[required] = style
+        return deps
+    def get_deps_unit(self, unit, styles=None):
+        if self._deps_modules:
+            if unit in self._deps_modules:
+                return self._deps_modules[unit]
+        conf = self.get_unit_conf(unit)
+        return self.get_deps_from(conf, styles)
+    def get_deps_from(self, conf, styles=None):
+        deps = {}
+        styles = styles or [ "Requires", "Wants", "Requisite", "BindsTo", "PartOf", "ConsistsOf",
+                             "PropagateReloadTo", "Conflicts", ]
+        for style in styles:
+            if style.startswith("."): continue
+            for requirelist in conf.getlist(Unit, style, []):
+                for required in requirelist.strip().split(" "):
+                    deps[required.strip()] = style
         return deps
     def get_required_dependencies(self, unit, styles=None):
         styles = styles or [ "Requires", "Wants", "Requisite", "BindsTo",
