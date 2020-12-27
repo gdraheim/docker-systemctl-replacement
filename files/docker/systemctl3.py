@@ -5621,7 +5621,7 @@ class Systemctl:
                 continue
             errors += self.syntax_check_from(conf)
             aliases.update(self.get_alias_from(conf))
-            found = self.get_dependencies_unit(unit)
+            found = self.get_deps_from(conf)
             if found:
                 deps[unit] = found
         if deps:
