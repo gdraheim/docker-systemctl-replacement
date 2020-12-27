@@ -226,8 +226,12 @@ JournalLogFolder = "{VARLOG}/journal"
 SystemctlDebugLog = "{VARLOG}/systemctl.debug.log"
 SystemctlExtraLog = "{VARLOG}/systemctl.log"
 
+CacheDeps=False
+CacheAlias=True
+DepsMaxDepth=9
 CacheDepsFile="${XDG_CONFIG_HOME}/systemd/systemctl.deps.cache"
 CacheAliasFile="${XDG_CONFIG_HOME}/systemd/systemctl.alias.cache"
+CacheSysinitFile="${XDG_CONFIG_HOME}/systemd/systemctl.sysinit.cache"
 IgnoredServicesFile="${XDG_CONFIG_HOME}/systemd/systemctl.services.ignore"
 _ignored_services = """
 [centos]
@@ -1666,7 +1670,8 @@ class Systemctl:
         self._file_for_unit_sysv = None  # name.service => /etc/init.d/name
         self._file_for_unit_sysd = None  # name.service => /etc/systemd/system/name.service
         self._alias_modules = None       # name.service => real.name.service
-        self._deps_modules = None       # name.service => real.name.service
+        self._deps_modules = None        # name.service => Dict[dep,why]
+        self._sysinit_modules = None     # name.service => Dict[dep,why]
         self._preset_file_list = None  # /etc/systemd/system-preset/* => file content
         self._default_target = DefaultTarget
         self._sysinit_target = None  # stores a UnitConf()
@@ -5620,7 +5625,8 @@ class Systemctl:
             for the relaxed systemctl.py style of execution. """
         errors = 0
         aliases = {}
-        deps = {}
+        unit_deps = {}
+        sysinit_deps = {}
         for unit in self.match_units():
             try:
                 conf = self.get_unit_conf(unit)
@@ -5629,17 +5635,25 @@ class Systemctl:
                 error_("{unit}: can not read unit file {filename44}\n\t{e}".format(**locals()))
                 continue
             errors += self.syntax_check_from(conf)
-            aliases.update(self.get_alias_from(conf))
-            found = self.get_deps_from(conf)
-            if found:
-                deps[unit] = found
-        if deps:
-            len_deps = len(deps)
-            info_(" found {len_deps} dependencies for units".format(**locals()))
-            self.write_deps_cache(deps)
+            if CacheAlias:
+                aliases.update(self.get_alias_from(conf))
+            if CacheDeps:
+                found = self.get_deps_from(conf)
+                if found:
+                    unit_deps[unit] = found
+        if CacheDeps:
+            sysinit_deps = self.get_sysinit_deps(SysInitTarget)
+        if sysinit_deps:
+            some_sysinit = len(sysinit_deps) - 1 # do not count sysinit.target itself
+            info_(" found {some_sysinit} sysinit.target deps".format(**locals()))
+            self.write_sysinit_cache(sysinit_deps)
+        if unit_deps:
+            some_unit = len(unit_deps)
+            info_(" found {some_unit} dependencies for units".format(**locals()))
+            self.write_deps_cache(unit_deps)
         if aliases:
-            len_aliases = len(aliases)
-            info_(" found {len_aliases} alias units".format(**locals()))
+            some_given = len(aliases)
+            info_(" found {some_given} alias units".format(**locals()))
             self.write_alias_cache(aliases)
         if errors:
             problems = errors % 100
@@ -5692,7 +5706,7 @@ class Systemctl:
                     for name in sorted(sets):
                         requires = sets[name]
                         f.write("{unit} {requires} {name}\n".format(**locals()))
-            debug_("written deps to {filename}".format(**locals()))
+            debug_("written unit deps to {filename}".format(**locals()))
             return True
         except Exception as e:
             warning_("while writing {filename}: {e}".format(**locals()))
@@ -5716,6 +5730,63 @@ class Systemctl:
     def load_deps_cache(self):
         if self._deps_modules is None:
             self._deps_modules = self.read_deps_cache()
+    def get_sysinit_deps(self, unit):
+        result = {}
+        deps = self.get_wants_unit(unit)
+        result[unit] = deps
+        newresults = {}
+        for depth in xrange(DepsMaxDepth):
+            newresults = {}
+            for name, deps in result.items():
+                for dep in deps:
+                    units = self.get_wants_unit(dep)
+                    if dep not in result:
+                        newresults[dep] = units
+                    # dbg_("wants for {dep} -> {units}".format(**locals()))
+            if not newresults:
+                break
+            result.update(newresults)
+        result_units = list(result)
+        dbg_("found sysinit deps = {result_units} # after {depth} rounds".format(**locals()))
+        if len(result) == 1:
+            if not result[unit]:
+                return {}
+        return result
+    def write_sysinit_cache(self, deps):
+        filename = os_path(self._root, self.expand_path(CacheSysinitFile))
+        try:
+            with open(filename, "w") as f:
+                for unit in sorted(deps):
+                    sets = deps[unit]
+                    for name in sorted(sets):
+                        requires = sets[name]
+                        f.write("{unit} {requires} {name}\n".format(**locals()))
+                    if not sets:
+                        f.write("{unit} .required\n".format(**locals()))
+            debug_("written sysinit deps to {filename}".format(**locals()))
+            return True
+        except Exception as e:
+            warning_("while writing {filename}: {e}".format(**locals()))
+        return False
+    def read_sysinit_cache(self):
+        filename = os_path(self._root, self.expand_path(CacheSysinitFile))
+        if os.path.exists(filename):
+            try:
+                result = {}
+                text = open(filename).read()
+                for line in text.splitlines():
+                    if line.startswith("#"): continue
+                    unit, requires, name = line.split(" ", 2)
+                    if unit not in result:
+                        result[unit] = {}
+                    result[unit][name] = requires
+                return result
+            except Exception as e:
+                warning_("while reading {filename}: {e}".format(**locals()))
+        return None
+    def load_sysinit_cache(self):
+        if self._deps_modules is None:
+            self._sysinit_modules = self.read_sysinit_cache()
     def syntax_check_from(self, conf):
         filename = conf.filename()
         if filename and filename.endswith(".service"):
