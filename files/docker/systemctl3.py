@@ -5873,6 +5873,10 @@ class Systemctl:
             if _force:
                 units += to_list(module)
                 continue
+            prefix = ""
+            if module.startswith("!"):
+                prefix = "!"
+                module = module[1:]
             matched = self.match_units(to_list(module))
             if not matched:
                 unit_ = unit_of(module)
@@ -5882,7 +5886,7 @@ class Systemctl:
                 continue
             for unit in matched:
                 if unit not in units:
-                    units += [ unit ]
+                    units += [ prefix + unit ]
         if not found_all and not _force:
             error_("Use --force to append the pattern as text (to be evaluated later)")
             self.error |= NOT_OK
