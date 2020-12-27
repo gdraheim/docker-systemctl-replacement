@@ -1831,7 +1831,7 @@ class Systemctl:
     def unit_file(self, module=None):  # -> filename?
         """ file path for the given module (sysv or systemd) """
         # this is commonly used through enable/disable - to be similar to load_unit_conf(name)
-        path = self.unit_sysd_file(module) # does also check .alias_modules
+        path = self.unit_sysd_file(module)  # does also check .alias_modules
         if path is not None: return path
         path = self.unit_sysv_file(module)
         if path is not None: return path
@@ -2026,7 +2026,7 @@ class Systemctl:
         if self._alias_modules:
             for item in sorted(self._alias_modules.keys()):
                 if self._file_for_unit_sysd:
-                    if item in self._file_for_unit_sysd: continue # already matched
+                    if item in self._file_for_unit_sysd: continue  # already matched
                 if not modules:
                     yield item
                 elif [ module for module in modules if fnmatch.fnmatchcase(item, module) ]:
@@ -5477,6 +5477,7 @@ class Systemctl:
                 for line in self.list_dependencies(dep, new_indent, new_mark, new_loop):
                     yield line
     def get_dependencies_unit(self, unit, styles=None):
+        """ scans both systemd folders and unit conf for dependency relations """
         styles = styles or [ "Requires", "Wants", "Requisite", "BindsTo", "PartOf", "ConsistsOf",
                              ".requires", ".wants", "PropagateReloadTo", "Conflicts", ]
         conf = self.get_unit_conf(unit)
@@ -5488,6 +5489,7 @@ class Systemctl:
                 deps.update(self.get_deps_unit(unit, [ style ]))
         return deps
     def get_wants_unit(self, unit, styles=None):
+        """ scans the systemd folders for unit.service.wants subfolders """
         styles = styles or [ ".requires", ".wants" ]
         deps = {}
         for style in styles:
@@ -5504,12 +5506,15 @@ class Systemctl:
                             deps[required] = style
         return deps
     def get_deps_unit(self, unit, styles=None):
+        """ scans the unit conf for Requires= or Wants= settings - can use the cache file """
         if self._deps_modules:
             if unit in self._deps_modules:
                 return self._deps_modules[unit]
         conf = self.get_unit_conf(unit)
         return self.get_deps_from(conf, styles)
     def get_deps_from(self, conf, styles=None):
+        """ scans the unit conf for Requires= or Wants= settings in the [Unit] section """
+        # shall not use the cache file as it is called from cache creation in daemon-reload
         deps = {}
         styles = styles or [ "Requires", "Wants", "Requisite", "BindsTo", "PartOf", "ConsistsOf",
                              "PropagateReloadTo", "Conflicts", ]
@@ -5682,7 +5687,7 @@ class Systemctl:
                 for unit in sorted(deps):
                     sets = deps[unit]
                     for name in sorted(sets):
-                        requires = sets[name] 
+                        requires = sets[name]
                         f.write("{unit} {requires} {name}\n".format(**locals()))
             return True
         except Exception as e:
