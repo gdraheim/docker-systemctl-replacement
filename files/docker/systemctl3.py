@@ -226,7 +226,7 @@ JournalLogFolder = "{VARLOG}/journal"
 SystemctlDebugLog = "{VARLOG}/systemctl.debug.log"
 SystemctlExtraLog = "{VARLOG}/systemctl.log"
 
-CacheRequiresFile="/etc/systemd/systemctl.requires.cache"
+CacheDepsFile="/etc/systemd/systemctl.deps.cache"
 CacheAliasFile="/etc/systemd/systemctl.alias.cache"
 IgnoredServicesFile="/etc/systemd/systemctl.services.ignore"
 _ignored_services = """
@@ -5590,6 +5590,7 @@ class Systemctl:
             for the relaxed systemctl.py style of execution. """
         errors = 0
         aliases = {}
+        deps = {}
         for unit in self.match_units():
             try:
                 conf = self.get_unit_conf(unit)
@@ -5599,6 +5600,14 @@ class Systemctl:
                 continue
             errors += self.syntax_check_from(conf)
             aliases.update(self.get_alias_from(conf))
+            found = self.get_dependencies_unit(unit)
+            if found:
+                deps[unit] = found
+        if deps:
+            len_deps = len(deps)
+            info_(" found {len_deps} dependencies for units".format(**locals()))
+            if not self.user_mode():
+                self.write_deps_cache(deps)
         if aliases:
             len_aliases = len(aliases)
             info_(" found {len_aliases} alias units".format(**locals()))
@@ -5645,6 +5654,38 @@ class Systemctl:
     def load_alias_cache(self):
         if self._alias_modules is None:
             self._alias_modules = self.read_alias_cache()
+    def write_deps_cache(self, deps):
+        filename = os_path(self._root, CacheDepsFile)
+        try:
+            with open(filename, "w") as f:
+                for unit in sorted(deps):
+                    sets = deps[unit]
+                    for name in sorted(sets):
+                        requires = sets[name] 
+                        f.write("{unit} {requires} {name}\n".format(**locals()))
+            return True
+        except Exception as e:
+            warning_("while writing {filename}: {e}".format(**locals()))
+        return False
+    def read_deps_cache(self):
+        filename = os_path(self._root, CacheDepsFile)
+        if os.path.exists(filename):
+            try:
+                result = {}
+                text = open(filename).read()
+                for line in text.splitlines():
+                    if line.startswith("#"): continue
+                    unit, requires, name = line.split(" ", 2)
+                    if unit not in result:
+                        result[unit] = {}
+                    result[unit][name] = requires
+                return result
+            except Exception as e:
+                warning_("while reading {filename}: {e}".format(**locals()))
+        return None
+    def load_deps_cache(self):
+        if self._deps_modules is None:
+            self._deps_modules = self.read_deps_cache()
     def syntax_check_from(self, conf):
         filename = conf.filename()
         if filename and filename.endswith(".service"):
