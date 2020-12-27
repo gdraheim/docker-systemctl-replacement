@@ -6150,7 +6150,7 @@ class Systemctl:
     def _ignored_unit(self, unit, igno):
         is_ignored = False
         because_of = ""
-        in_section = ""
+        in_section = "[default]"
         if not self._show_all:
             self.load_sysinit_modules()
             if self._sysinit_modules:
@@ -6184,7 +6184,9 @@ class Systemctl:
                 dbg_("Unit {unit} ignored because of {because_of}".format(**locals()))
             elif because_of:
                 dbg_("Unit {unit} allowed because of {because_of}".format(**locals()))
-        return is_ignored
+        if is_ignored:
+            return because_of
+        return None
     def default_services_modules(self, *modules):
         """ -- show the default services (started by 'default')
             This is used internally to know the list of service to be started in the 'get-default'
