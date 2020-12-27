@@ -5785,8 +5785,12 @@ class Systemctl:
                 warning_("while reading {filename}: {e}".format(**locals()))
         return None
     def load_sysinit_cache(self):
-        if self._deps_modules is None:
+        if self._sysinit_modules is None:
             self._sysinit_modules = self.read_sysinit_cache()
+    def load_sysinit_modules(self, unit = None):
+        unit = unit or SysInitTarget
+        if self._sysinit_modules is None:
+            self._sysinit_modules = self.get_sysinit_deps(unit)
     def syntax_check_from(self, conf):
         filename = conf.filename()
         if filename and filename.endswith(".service"):
