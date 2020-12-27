@@ -1672,6 +1672,7 @@ class Systemctl:
         self._alias_modules = None       # name.service => real.name.service
         self._deps_modules = None        # name.service => Dict[dep,why]
         self._sysinit_modules = None     # name.service => Dict[dep,why]
+        self._ignored_modules = None     # text
         self._preset_file_list = None  # /etc/systemd/system-preset/* => file content
         self._default_target = DefaultTarget
         self._sysinit_target = None  # stores a UnitConf()
@@ -5742,7 +5743,7 @@ class Systemctl:
                     units = self.get_wants_unit(dep)
                     if dep not in result:
                         newresults[dep] = units
-                    # dbg_("wants for {dep} -> {units}".format(**locals()))
+                    # dbg_("wants for {dep} -> {units}".format(**locals())) # internal
             if not newresults:
                 break
             result.update(newresults)
@@ -6111,7 +6112,7 @@ class Systemctl:
         result = self.ignore_units(units)
         return result
     def ignore_units(self, units):
-        filename = os_path(self._root, IgnoredServicesFile)
+        filename = os_path(self._root, self.expand_path(IgnoredServicesFile))
         try:
             if os.path.exists(filename):
                 text = open(filename, "rb").read()
@@ -6133,6 +6134,18 @@ class Systemctl:
         except Exception as e:
             error_("while append to {filename}: {e}".format(**locals()))
             return False
+    def read_ignored_modules(self):
+        filename = os_path(self._root, self.expand_path(IgnoredServicesFile))
+        try:
+            if os.path.exists(filename):
+                content = open(filename, "r").read()
+                return content
+        except Exception as e:
+            warning_("while reading {filename}: {e}")
+        return ""
+    def load_ignored_modules(self):
+        if self._ignored_modules is None:
+            self._ignored_modues = self.read_ignored_modules()
     def get_ignored_services(self):
         igno = _ignored_services
         filename = os_path(self._root, IgnoredServicesFile)
@@ -6147,7 +6160,7 @@ class Systemctl:
             except Exception as e:
                 error_("while reading from {filename}: {e}".format(**locals()))
         return igno
-    def _ignored_unit(self, unit, igno):
+    def _ignored_unit(self, unit, ignored):
         is_ignored = False
         because_of = ""
         in_section = "[default]"
@@ -6157,7 +6170,9 @@ class Systemctl:
                 if unit in self._sysinit_modules:
                     is_ignored = True
                     because_of = "sysinit.target"
-        if igno:
+        self.load_ignored_modules()
+        for igno in (ignored, self._ignored_modules):
+            if not igno: continue
             for line in igno.splitlines():
                 if not line.strip():
                     continue
