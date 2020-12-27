@@ -6151,27 +6151,34 @@ class Systemctl:
         is_ignored = False
         because_of = ""
         in_section = ""
-        for line in igno.splitlines():
-            if not line.strip():
-                continue
-            if line.startswith("["):
-                in_section = line.strip()
-            ignore = line.strip()
-            if ignore.startswith("!"):
-                ignore = ignore[1:].strip()
-                if fnmatch.fnmatchcase(unit, ignore):
-                    is_ignored = False
-                    because_of = in_section
-                if fnmatch.fnmatchcase(unit, ignore+".service"):
-                    is_ignored = False
-                    because_of = in_section
-            else:
-                if fnmatch.fnmatchcase(unit, ignore):
+        if not self._show_all:
+            self.load_sysinit_modules()
+            if self._sysinit_modules:
+                if unit in self._sysinit_modules:
                     is_ignored = True
-                    because_of = in_section
-                if fnmatch.fnmatchcase(unit, ignore+".service"):
-                    is_ignored = True
-                    because_of = in_section
+                    because_of = "sysinit.target"
+        if igno:
+            for line in igno.splitlines():
+                if not line.strip():
+                    continue
+                if line.startswith("["):
+                    in_section = line.strip()
+                ignore = line.strip()
+                if ignore.startswith("!"):
+                    ignore = ignore[1:].strip()
+                    if fnmatch.fnmatchcase(unit, ignore):
+                        is_ignored = False
+                        because_of = in_section
+                    if fnmatch.fnmatchcase(unit, ignore+".service"):
+                        is_ignored = False
+                        because_of = in_section
+                else:
+                    if fnmatch.fnmatchcase(unit, ignore):
+                        is_ignored = True
+                        because_of = in_section
+                    if fnmatch.fnmatchcase(unit, ignore+".service"):
+                        is_ignored = True
+                        because_of = in_section
         if DebugIgnoredServices:
             if is_ignored:
                 dbg_("Unit {unit} ignored because of {because_of}".format(**locals()))
