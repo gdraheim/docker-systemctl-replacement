@@ -5735,10 +5735,10 @@ class Systemctl:
             if errors:
                 some = len(errors)
                 more = len(problems)
-                warn_(" found {some} errors in {more} problems in unit definitions.".format(**locals()))
+                error_("* found {some} errors in {more} problems in unit definitions. (use -vv to see more)".format(**locals()))
             else:
                 some = len(problems)
-                info_(" found {some} problems in unit definitions. (may be ignored)".format(**locals()))
+                info_(" * found {some} problems in unit definitions. (may be ignored - use -vv to see more)".format(**locals()))
         return True  # errors
     def get_alias_from(self, conf):
         result = {}
@@ -5881,8 +5881,8 @@ class Systemctl:
         unit = conf.name()
         if not conf.data.has_section(section):
             service = section.lower()
-            error_(" {unit}: found a .{service} file without a [{section}] section".format(**locals()))
-            debug_(" {unit}: E00 which does render the unit definition pretty useless".format(**locals()))
+            error_("  {unit}: found a .{service} file without a [{section}] section".format(**locals()))
+            debug_("  {unit}: E00 which does render the unit definition pretty useless".format(**locals()))
             return ["E00"]
         errors = []
         haveType = conf.get(section, "Type", "simple")
@@ -5939,63 +5939,63 @@ class Systemctl:
             usedExecReload.append(execline)
         if haveType in ["simple", "notify", "forking", "idle"]:
             if not usedExecStart and not usedExecStop:
-                error_(" {unit}: {section} lacks both ExecStart and ExecStop= setting. Refusing.".format(**locals()))
-                debug_(" {unit}: E31 without start/stop the {section} type={haveType} is just useless.".format(**locals()))
+                error_("  {unit}: {section} lacks both ExecStart and ExecStop= setting. Refusing.".format(**locals()))
+                debug_("  {unit}: E31 without start/stop the {section} type={haveType} is just useless.".format(**locals()))
                 errors += ["E31"]
             elif not usedExecStart and haveType != "oneshot":
-                error_(" {unit}: {section} has no ExecStart= setting, which is only allowed for Type=oneshot services. Refusing.".format(**locals()))
-                debug_(" {unit}: E32 without a MainPID the {section} type={haveType} can not control anything.".format(**locals()))
+                error_("  {unit}: {section} has no ExecStart= setting, which is only allowed for Type=oneshot services. Refusing.".format(**locals()))
+                debug_("  {unit}: E32 without a MainPID the {section} type={haveType} can not control anything.".format(**locals()))
                 errors += ["E32"]
         if len(usedExecStart) > 1 and haveType != "oneshot":
-            error_(" {unit}: There may be only one {section} ExecStart statement (unless for 'oneshot' services).".format(**locals()))
-            debug_(" {unit}: W41 You should use ExecStartPre / ExecStartPost to add additional commands.".format(**locals()))
+            error_("  {unit}: There may be only one {section} ExecStart statement (unless for 'oneshot' services).".format(**locals()))
+            debug_("  {unit}: W41 You should use ExecStartPre / ExecStartPost to add additional commands.".format(**locals()))
             errors += ["W41"]
         if len(usedExecStop) > 1 and haveType != "oneshot":
-            info_("  {unit}: There should be only one {section} ExecStop statement (unless for 'oneshot' services)".format(**locals()))
-            debug_(" {unit}: W42 You can use ExecStopPost to add additional commands (also executed on failed Start).".format(**locals()))
+            info_("   {unit}: There should be only one {section} ExecStop statement (unless for 'oneshot' services)".format(**locals()))
+            debug_("  {unit}: W42 You can use ExecStopPost to add additional commands (also executed on failed Start).".format(**locals()))
             errors += ["W42"]
         if len(usedExecReload) > 1:
-            info_("  {unit}: There should be only one {section} ExecReload statement.".format(**locals()))
-            debug_(" {unit}: W43 Use ' ; ' for multiple commands (ExecReloadPost or ExedReloadPre do not exist)".format(**locals()))
+            info_("   {unit}: There should be only one {section} ExecReload statement.".format(**locals()))
+            debug_("  {unit}: W43 Use ' ; ' for multiple commands (ExecReloadPost or ExedReloadPre do not exist)".format(**locals()))
             errors += ["W43"]
         if len(usedExecReload) > 0 and "/bin/kill " in usedExecReload[0]:
-            warn_("  {unit}: The use of /bin/kill is not recommended for {section} ExecReload as it is asychronous.".format(**locals()))
-            debug_(" {unit}: W44 That means all the dependencies will perform the reload simultanously / out of order.".format(**locals()))
+            warning_("{unit}: The use of /bin/kill is not recommended for {section} ExecReload as it is asychronous.".format(**locals()))
+            debug_("  {unit}: W44 That means all the dependencies will perform the reload simultanously / out of order.".format(**locals()))
             errors += ["W44"]
         if conf.getlist(Service, "ExecRestart", []):  # pragma: no cover
-            error_(" {unit}: there no such thing as a {section} ExecRestart (ignored)".format(**locals()))
-            debug_(" {unit}: W51 might be a bit unexpected but no.".format(**locals()))
+            error_("  {unit}: there no such thing as a {section} ExecRestart (ignored)".format(**locals()))
+            debug_("  {unit}: W51 might be a bit unexpected but no.".format(**locals()))
             errors += ["W51"]
         if conf.getlist(Service, "ExecRestartPre", []):  # pragma: no cover
-            error_(" {unit}: there no such thing as a {section} ExecRestartPre (ignored)".format(**locals()))
-            debug_(" {unit}: W52 might be a bit unexpected but no.".format(**locals()))
+            error_("  {unit}: there no such thing as a {section} ExecRestartPre (ignored)".format(**locals()))
+            debug_("  {unit}: W52 might be a bit unexpected but no.".format(**locals()))
             errors += ["W52"]
         if conf.getlist(Service, "ExecRestartPost", []):  # pragma: no cover
-            error_(" {unit}: there no such thing as a {section} ExecRestartPost (ignored)".format(**locals()))
-            debug_(" {unit}: W53 might be a bit unexpected but no.".format(**locals()))
+            error_("  {unit}: there no such thing as a {section} ExecRestartPost (ignored)".format(**locals()))
+            debug_("  {unit}: W53 might be a bit unexpected but no.".format(**locals()))
             errors += ["W53"]
         if conf.getlist(Service, "ExecReloadPre", []):  # pragma: no cover
-            error_(" {unit}: there no such thing as a {section} ExecReloadPre (ignored)".format(**locals()))
-            debug_(" {unit}: W54 might be a bit unexpected but no.".format(**locals()))
+            error_("  {unit}: there no such thing as a {section} ExecReloadPre (ignored)".format(**locals()))
+            debug_("  {unit}: W54 might be a bit unexpected but no.".format(**locals()))
             errors += ["W54"]
         if conf.getlist(Service, "ExecReloadPost", []):  # pragma: no cover
-            error_(" {unit}: there no such thing as a {section} ExecReloadPost (ignored)".format(**locals()))
-            debug_(" {unit}: W55 might be a bit unexpected but no.".format(**locals()))
+            error_("  {unit}: there no such thing as a {section} ExecReloadPost (ignored)".format(**locals()))
+            debug_("  {unit}: W55 might be a bit unexpected but no.".format(**locals()))
             errors += ["W55"]
         if conf.getlist(Service, "ExecStopPre", []):  # pragma: no cover
-            error_(" {unit}: there no such thing as a {section} ExecStopPre (ignored)".format(**locals()))
-            debug_(" {unit}: W57 might be a bit unexpected but no.".format(**locals()))
+            error_("  {unit}: there no such thing as a {section} ExecStopPre (ignored)".format(**locals()))
+            debug_("  {unit}: W57 might be a bit unexpected but no.".format(**locals()))
             errors += ["W56"]
         for env_file in conf.getlist(section, "EnvironmentFile", []):
             skipping, filename = checkprefix(env_file)
             if not os.path.isfile(os_path(self._root, filename)):
                 if not skipping:
-                    error_(" {unit}: {section} did not find mandatory environment file: {filename}".format(**locals()))
-                    debug_(" {unit}: E77 the environment variable expansions will probably fail.".format(**locals()))
+                    error_("  {unit}: {section} did not find mandatory environment file: {filename}".format(**locals()))
+                    debug_("  {unit}: E77 the environment variable expansions will probably fail.".format(**locals()))
                     errors += ["E77"]
                 else:
-                    info_("  {unit}: {section} did not find optional environment file: {filename}".format(**locals()))
-                    debug_(" {unit}: W77 the environment variable expansions must not depend on it.".format(**locals()))
+                    info_("   {unit}: {section} did not find optional environment file: {filename}".format(**locals()))
+                    debug_("  {unit}: W77 the environment variable expansions must not depend on it.".format(**locals()))
                     errors += ["W77"]
         return errors
     def exec_check_unit(self, conf, env, section=Service, exectype=""):
@@ -6009,7 +6009,7 @@ class Systemctl:
             return True  # we don't care about that
         havePIDFile = conf.get(section, "PIDFile", "")
         if haveType in ["notify", "forking"] and not havePIDFile:
-            info_("{unit}: {section} type={haveType} does not provide a {section} PIDFile.".format(**locals()))
+            info_("   {unit}: {section} type={haveType} does not provide a {section} PIDFile.".format(**locals()))
             doGuessMainPID = conf.getbool(section, "GuessMainPID", "no")
             if doGuessMainPID and haveType in ["forking"]:
                 warn_("{unit}: {section} type={haveType} without PIDFile can not be fixed with GuessMainPID.".format(**locals()))
@@ -6032,19 +6032,19 @@ class Systemctl:
                 if not exe:
                     continue
                 if exe[0] != "/":
-                    error_(" {unit}: Exec is not an absolute path:  {execs}={cmd}".format(**locals()))
+                    error_("  {unit}: Exec is not an absolute path:  {execs}={cmd}".format(**locals()))
                     abspath += 1
                 if not os.path.isfile(exe):
-                    error_(" {unit}: Exec command does not exist: ({execs}) {exe}".format(**locals()))
+                    error_("  {unit}: Exec command does not exist: ({execs}) {exe}".format(**locals()))
                     if mode.check:
                         notexists += 1
                     newexe1 = os.path.join("/usr/bin", exe)
                     newexe2 = os.path.join("/bin", exe)
                     indent = " " * len(execs)
                     if os.path.exists(newexe1):
-                        error_(" {unit}: but this does exist: {indent}  {newexe1}".format(**locals()))
+                        error_("  {unit}: but this does exist: {indent}  {newexe1}".format(**locals()))
                     elif os.path.exists(newexe2):
-                        error_(" {unit}: but this does exist: {indent}      {newexe2}".format(**locals()))
+                        error_("  {unit}: but this does exist: {indent}      {newexe2}".format(**locals()))
         users = [ conf.get(section, "User", ""), conf.get(section, "SocketUser", "") ]
         groups = [ conf.get(section, "Group", ""), conf.get(section, "SocketGroup", "") ] + conf.getlist(section, "SupplementaryGroups")
         for user in users:
@@ -6052,45 +6052,45 @@ class Systemctl:
                 try: pwd.getpwnam(user)
                 except Exception as e:
                     info = getattr(e, "__doc__", "")
-                    error_(" {unit}: User does not exist: {user} ({info})".format(**locals()))
+                    error_("  {unit}: User does not exist: {user} ({info})".format(**locals()))
                     badusers += 1
         for group in groups:
             if group:
                 try: grp.getgrnam(group)
                 except Exception as e:
                     info = getattr(e, "__doc__", "")
-                    error_(" {unit}: Group does not exist: {group} ({info})".format(**locals()))
+                    error_("  {unit}: Group does not exist: {group} ({info})".format(**locals()))
                     badgroups += 1
         tmpproblems = 0
         for setting in ("RootDirectory", "RootImage", "BindPaths", "BindReadOnlyPaths",
                         "ReadWritePaths", "ReadOnlyPaths", "TemporaryFileSystem"):
             setting_value = conf.get(section, setting, "")
             if setting_value:
-                info_("{unit}: {section} private directory remounts ignored: {setting}={setting_value}".format(**locals()))
+                info_("   {unit}: {section} private directory remounts ignored: {setting}={setting_value}".format(**locals()))
                 tmpproblems += 1
         for setting in ("PrivateTmp", "PrivateDevices", "PrivateNetwork", "PrivateUsers", "DynamicUser",
                         "ProtectSystem", "ProjectHome", "ProtectHostname", "PrivateMounts", "MountAPIVFS"):
             setting_yes = conf.getbool(section, setting, "no")
             if setting_yes:
-                info_("{unit}: {section} private directory option is ignored: {setting}=yes".format(**locals()))
+                info_("   {unit}: {section} private directory option is ignored: {setting}=yes".format(**locals()))
                 tmpproblems += 1
         if not abspath and not notexists and not badusers and not badgroups:
             return True
         if True:
-            error_(" !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+            error_("  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
             if abspath:
-                error_(" The SystemD ExecXY commands must always be absolute paths by definition.")
+                error_("  The SystemD ExecXY commands must always be absolute paths by definition.")
                 time.sleep(1)
             if notexists:
-                error_(" Oops, {notexists} executable paths were not found in the current environment. Refusing.".format(**locals()))
+                error_("  Oops, {notexists} executable paths were not found in the current environment. Refusing.".format(**locals()))
                 time.sleep(1)
             if badusers or badgroups:
-                error_(" Oops, {badusers} user names and {badgroups} group names were not found. Refusing.".format(**locals()))
+                error_("  Oops, {badusers} user names and {badgroups} group names were not found. Refusing.".format(**locals()))
                 time.sleep(1)
             if tmpproblems:
-                info_("  Note, {tmpproblems} private directory settings are ignored. The application should not depend on it.".format(**locals()))
+                info_("   Note, {tmpproblems} private directory settings are ignored. The application should not depend on it.".format(**locals()))
                 time.sleep(1)
-            error_(" !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+            error_("  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         return False
     def show_modules(self, *modules):
         """ [PATTERN]... -- Show properties of one or more units
