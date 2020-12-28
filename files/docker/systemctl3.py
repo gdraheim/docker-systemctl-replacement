@@ -3091,7 +3091,7 @@ class Systemctl:
                 found_all = False
                 continue
             for unit in matched:
-                ignored = self._ignored_unit(unit, _ignored_services)
+                ignored = self.ignored_unit(unit, _ignored_services)
                 if ignored:
                     info_("Unit {unit} ignored in {ignored} (use --all to pass)".format(**locals()))
                     continue
@@ -3875,7 +3875,7 @@ class Systemctl:
                 found_all = False
                 continue
             for unit in matched:
-                ignored = self._ignored_unit(unit, _ignored_services)
+                ignored = self.ignored_unit(unit, _ignored_services)
                 if ignored:
                     info_("Unit {unit} ignored in {ignored} (use --all to pass)".format(**locals()))
                     continue
@@ -4113,7 +4113,7 @@ class Systemctl:
                 found_all = False
                 continue
             for unit in matched:
-                ignored = self._ignored_unit(unit, _ignored_services)
+                ignored = self.ignored_unit(unit, _ignored_services)
                 if ignored:
                     info_("Unit {unit} ignored in {ignored} (use --all to pass)".format(**locals()))
                     continue
@@ -4232,7 +4232,7 @@ class Systemctl:
                 found_all = False
                 continue
             for unit in matched:
-                ignored = self._ignored_unit(unit, _ignored_services)
+                ignored = self.ignored_unit(unit, _ignored_services)
                 if ignored:
                     info_("Unit {unit} ignored in {ignored} (use --all to pass)".format(**locals()))
                     continue
@@ -4287,7 +4287,7 @@ class Systemctl:
                 found_all = False
                 continue
             for unit in matched:
-                ignored = self._ignored_unit(unit, _ignored_services)
+                ignored = self.ignored_unit(unit, _ignored_services)
                 if ignored:
                     info_("Unit {unit} ignored in {ignored} (use --all to pass)".format(**locals()))
                     continue
@@ -4332,7 +4332,7 @@ class Systemctl:
                 found_all = False
                 continue
             for unit in matched:
-                ignored = self._ignored_unit(unit, _ignored_services)
+                ignored = self.ignored_unit(unit, _ignored_services)
                 if ignored:
                     info_("Unit {unit} ignored in {ignored} (use --all to pass)".format(**locals()))
                     continue
@@ -4388,7 +4388,7 @@ class Systemctl:
                 found_all = False
                 continue
             for unit in matched:
-                ignored = self._ignored_unit(unit, _ignored_services)
+                ignored = self.ignored_unit(unit, _ignored_services)
                 if ignored:
                     info_("Unit {unit} ignored in {ignored} (use --all to pass)".format(**locals()))
                     continue
@@ -4437,7 +4437,7 @@ class Systemctl:
                 found_all = False
                 continue
             for unit in matched:
-                ignored = self._ignored_unit(unit, _ignored_services)
+                ignored = self.ignored_unit(unit, _ignored_services)
                 if ignored:
                     info_("Unit {unit} ignored in {ignored} (use --all to pass)".format(**locals()))
                     continue
@@ -5050,7 +5050,7 @@ class Systemctl:
                 found_all = False
                 continue
             for unit in matched:
-                ignored = self._ignored_unit(unit, _ignored_services)
+                ignored = self.ignored_unit(unit, _ignored_services)
                 if ignored:
                     info_("Unit {unit} ignored in {ignored} (use --all to pass)".format(**locals()))
                     continue
@@ -5166,7 +5166,7 @@ class Systemctl:
                 found_all = False
                 continue
             for unit in matched:
-                ignored = self._ignored_unit(unit, _ignored_services)
+                ignored = self.ignored_unit(unit, _ignored_services)
                 if ignored:
                     info_("Unit {unit} ignored in {ignored} (use --all to pass)".format(**locals()))
                     continue
@@ -5331,7 +5331,7 @@ class Systemctl:
                 found_all = False
                 continue
             for unit in matched:
-                ignored = self._ignored_unit(unit, _ignored_services)
+                ignored = self.ignored_unit(unit, _ignored_services)
                 if ignored:
                     info_("Unit {unit} ignored in {ignored} (use --all to pass)".format(**locals()))
                     continue
@@ -5403,7 +5403,7 @@ class Systemctl:
                 found_all = False
                 continue
             for unit in matched:
-                ignored = self._ignored_unit(unit, _ignored_services)
+                ignored = self.ignored_unit(unit, _ignored_services)
                 if ignored:
                     info_("Unit {unit} ignored in {ignored} (use --all to pass)".format(**locals()))
                     continue
@@ -6208,16 +6208,19 @@ class Systemctl:
             except Exception as e:
                 error_("while reading from {filename}: {e}".format(**locals()))
         return igno
+    def ignored_unit(self, unit, ignored):
+        if self._show_all:
+           return []
+        return self._ignored_unit(unit, ignored)
     def _ignored_unit(self, unit, ignored):
         is_ignored = False
         because_of = []
         in_section = "[...]"
-        if not self._show_all:
-            self.load_sysinit_modules()
-            if self._sysinit_modules:
-                if unit in self._sysinit_modules:
-                    is_ignored = True
-                    because_of.append("sysinit.target")
+        self.load_sysinit_modules()
+        if self._sysinit_modules:
+            if unit in self._sysinit_modules:
+                is_ignored = True
+                because_of.append("sysinit.target")
         self.load_ignored_modules()
         for igno in (ignored, self._ignored_modules):
             if not igno: continue
@@ -6618,7 +6621,7 @@ class Systemctl:
                 found_all = False
                 continue
             for unit in matched:
-                ignored = self._ignored_unit(unit, _ignored_services)
+                ignored = self.ignored_unit(unit, _ignored_services)
                 if ignored:
                     info_("Unit {unit} ignored in {ignored} (use --all to pass)".format(**locals()))
                     continue
