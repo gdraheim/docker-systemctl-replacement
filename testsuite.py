@@ -6417,12 +6417,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         #
-        cmd = "{systemctl} --no-legend enable mount-invented.service --all -vv"
+        cmd = "{systemctl} --no-legend enable mount-invented.service --force -vv"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         #
-        cmd = "{systemctl} --no-legend enable network-extra.service --all -vv"
+        cmd = "{systemctl} --no-legend enable network-extra.service --force -vv"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
@@ -9638,7 +9638,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(lines(out)), 2)
         self.assertEqual(end, 0)
         #
-        cmd = "{systemctl} --no-legend enable systemd-zzz.service --all"
+        cmd = "{systemctl} --no-legend enable systemd-zzz.service --force"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
@@ -9752,7 +9752,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(lines(out)), 2)
         self.assertEqual(end, 0)
         #
-        cmd = "{systemctl} --no-legend enable systemd-zzz.service --all"
+        cmd = "{systemctl} --no-legend enable systemd-zzz.service --force"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
@@ -9889,7 +9889,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(lines(out)), 2)
         self.assertEqual(end, 0)
         #
-        cmd = "{systemctl} --no-legend enable systemd-zzz.service --all"
+        cmd = "{systemctl} --no-legend enable systemd-zzz.service --force"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
@@ -9938,7 +9938,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(lines(out)), 3)
         self.assertEqual(end, 0)
         #
-        cmd = "{systemctl} --no-legend enable zzze.service --all"
+        cmd = "{systemctl} --no-legend enable zzze.service --force"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
@@ -9976,7 +9976,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(lines(out)), 4)  # again
         self.assertEqual(end, 0)
         #
-        cmd = "{systemctl} --no-legend enable zzzf.service --all"
+        cmd = "{systemctl} --no-legend enable zzzf.service --force"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
