@@ -9,12 +9,9 @@ from typing import Callable, Dict, Iterable, List, NoReturn, Optional, TextIO, T
 from typing import NamedTuple, Match, TextIO, BinaryIO, Sequence, overload, Generator
 from types import TracebackType
 
-_extra_vars: List[str]
-_system_folder1: Optional[str]
-_all_common_enabled: List[str]
+__copyright__: str = ...
+__version__: str = ...
 basestring: Type[str]
-__copyright__: str
-__version__: str
 logg: logging.Logger
 HINT: int
 NOTE: int
@@ -32,6 +29,11 @@ NOT_A_PROBLEM: int
 NOT_OK: int
 NOT_ACTIVE: int
 NOT_FOUND: int
+
+_extra_vars: List[str] = ...
+_system_folder1: Optional[str]
+_all_common_enabled: List[str]
+
 _force: bool
 _full: bool
 _now: bool
@@ -376,8 +378,7 @@ class Systemctl:
     def get_StatusFile(self, conf : SystemctlConf) -> str: ... # -> text
     def clean_status_from(self, conf : SystemctlConf) -> None: ...
     def write_status_from(self, conf : SystemctlConf, **status : Union[str, int, None]) -> bool: ... # -> bool(written)
-    def read_status_from(self, conf : SystemctlConf) -> Dict[str, str]:
-        status: Dict[str, str]
+    def read_status_from(self, conf : SystemctlConf) -> Dict[str, str]: ...
     def get_status_from(self, conf : SystemctlConf, name : str, default: Optional[str] = None) -> Optional[str]: ...
     def set_status_from(self, conf : SystemctlConf, name : str, value : Optional[str]) -> None: ...
     def set_status_code_from(self, conf : SystemctlConf, execs : str, run : Optional[waitpid_result] = None) -> None: ...
@@ -647,13 +648,36 @@ class Systemctl:
         result: Dict[str, Dict[str, str]] = ...
     def load_sysinit_cache(self) -> None: ...
     def load_sysinit_modules(self, unit: Optional[str] = None) -> None: ...
-    def syntax_check_from(self, conf: SystemctlConf) -> List[str]: ...
-    def syntax_check_unit(self, conf: SystemctlConf, section: str = "Service") -> List[str]:
-        errors: List[str]
+    def check_syntax_from(self, conf: SystemctlConf) -> List[str]:
+        warnings: List[str]
+    def check_socket_syntax(self, conf: SystemctlConf, section: str = "Service") -> List[str]:
+        warnings: List[str]
+    def check_service_syntax(self, conf: SystemctlConf, section: str = "Service") -> List[str]:
+        warnings: List[str]
+    def check_environment_file_settings(self, conf: SystemctlConf, section: str = "Service") -> List[str]:
+        warnings: List[str]
+    def check_service_type_settings(self, conf: SystemctlConf, section: str = "Service") -> List[str]:
+        warnings: List[str]
+    def check_service_mainpid_settings(self, conf: SystemctlConf, section: str = "Service") -> List[str]:
+        warnings: List[str]
+    def check_exec_format_settings(self, conf: SystemctlConf, section: str = "Service") -> List[str]:
+        warnings: List[str]
         usedExecStart: List[str]
         usedExecStop: List[str]
         usedExecReload: List[str]
-    def exec_check_unit(self, conf: SystemctlConf, env: Dict[str,str], section: str = "Service", exectype: str = "") -> bool: ...
+    def check_exec_unknown_settings(self, conf: SystemctlConf, section: str = "Service") -> List[str]:
+        warnings: List[str]
+    def check_exec_type_settings(self, conf: SystemctlConf, section: str = "Service") -> List[str]:
+        warnings: List[str]
+    def check_exec_path_settings(self, conf: SystemctlConf, env: Dict[str,str], section: str = "Service", exectype: str = "") -> List[str]:
+        warnings: List[str]
+    def check_user_group_settings(self, conf: SystemctlConf, section: str = "Service") -> List[str]:
+        warnings: List[str]
+    def check_directory_settings(self, conf: SystemctlConf, section: str = "Service") -> List[str]:
+        warnings: List[str]
+    def check_exec_from(self, conf: SystemctlConf, env: Dict[str,str], section: str = "Service", exectype: str = "") -> bool: ...
+    def check_exec_service_from(self, conf: SystemctlConf, env: Dict[str,str], section: str = "Service", exectype: str = "") -> List[str]:
+        warnings: List[str]
     def show_modules(self, *modules: str) -> List[str]:
         notfound: List[str]
         units: List[str]

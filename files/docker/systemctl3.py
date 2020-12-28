@@ -6,6 +6,24 @@ from __future__ import print_function
 __copyright__ = "(C) 2016-2020 Guido U. Draheim, licensed under the EUPL"
 __version__ = "1.6.4516"
 
+# |
+# |
+# |
+# |
+# |
+# |
+# |
+# |
+# |
+# |
+# |
+# |
+# |
+# |
+# |
+# |
+
+
 import logging
 logg = logging.getLogger("systemctl")
 
@@ -43,6 +61,9 @@ DebugExpandVars = False
 DebugPrintResult = False
 DebugSocketFile = True
 DebugIgnoredServices = False
+IgnoreSyntaxWarnings = ""
+IgnoreExecWarnings = ""
+IgnoreWarnings = ""
 TestSocketListen = False
 TestSocketAccept = False
 ActiveWhileStarting = True
@@ -789,6 +810,12 @@ class SystemctlConfData:
         that data is structured in sections and values. Actually the
         values are lists - the raw data is in .getlist(). Otherwise
         .get() will return the first line that was encountered. """
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
     def __init__(self, defaults=None, dict_type=None, conf_type=None, allow_no_value=False):
         self._defaults = defaults or {}
         self._conf_type = conf_type or _default_conf_type
@@ -1008,6 +1035,15 @@ class SystemctlSocket:
         self.sock.close()
 
 class SystemctlConf:
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
     def __init__(self, data, module=None):
         self.data = data  # UnitConfParser
         self.env = {}
@@ -1158,6 +1194,8 @@ class SystemctlConf:
             self.status[name] = value
 
 class PresetFile:
+    # |
+    # |
     def __init__(self):
         self._files = []
         self._lines = []
@@ -1322,6 +1360,9 @@ def path_getsize(filename):
 
 ## with waitlock(conf): self.start()
 class waitlock:
+    # |
+    # |
+    # |
     def __init__(self, conf):
         self.conf = conf  # currently unused
         self.opened = -1
@@ -1653,6 +1694,48 @@ class SystemctlListenThread(threading.Thread):
         return
 
 class Systemctl:
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
     def __init__(self):
         self.error = NOT_A_PROBLEM  # program exitcode or process returncode
         # from command line options or the defaults
@@ -3144,7 +3227,7 @@ class Systemctl:
         return conf.getbool(Service, "RemainAfterExit", "no")
     def start_unit_from(self, conf):
         if not conf: return False
-        problems = self.syntax_check_from(conf)
+        problems = self.check_syntax_from(conf)
         errors = [ problem for problem in problems if problem.startswith("E") ]
         if errors and not self._force:
             some = len(errors)
@@ -3171,7 +3254,7 @@ class Systemctl:
         runs = conf.get(Service, "Type", "simple").lower()
         env = self.get_env(conf)
         if not self._quiet:
-            okee = self.exec_check_unit(conf, env, Service, "Exec")  # all...
+            okee = self.check_exec_from(conf, env, Service, "Exec")  # all...
             if not okee and _no_reload: return False
         service_directories = self.create_service_directories(conf)
         env.update(service_directories)  # atleast sshd did check for /run/sshd
@@ -3521,7 +3604,7 @@ class Systemctl:
             return False
         env = self.get_env(conf)
         if not self._quiet:
-            okee = self.exec_check_unit(conf, env, Socket, "Exec")  # all...
+            okee = self.check_exec_from(conf, env, Socket, "Exec")  # all...
             if not okee and _no_reload: return False
         if True:
             for cmd in conf.getlist(Socket, "ExecStartPre", []):
@@ -3917,7 +4000,7 @@ class Systemctl:
         return time_to_seconds(timeout, DefaultMaximumTimeout)
     def stop_unit_from(self, conf):
         if not conf: return False
-        problems = self.syntax_check_from(conf)
+        problems = self.check_syntax_from(conf)
         errors = [ problem for problem in problems if problem.startswith("E") ]
         if errors and not self._force:
             some = len(errors)
@@ -3943,7 +4026,7 @@ class Systemctl:
         runs = conf.get(Service, "Type", "simple").lower()
         env = self.get_env(conf)
         if not self._quiet:
-            okee = self.exec_check_unit(conf, env, Service, "ExecStop")
+            okee = self.check_exec_from(conf, env, Service, "ExecStop")
             if not okee and _no_reload: return False
         service_directories = self.env_service_directories(conf)
         env.update(service_directories)
@@ -4080,7 +4163,7 @@ class Systemctl:
             return False
         env = self.get_env(conf)
         if not self._quiet:
-            okee = self.exec_check_unit(conf, env, Socket, "ExecStop")
+            okee = self.check_exec_from(conf, env, Socket, "ExecStop")
             if not okee and _no_reload: return False
         if not accept:
             # we do not listen but have the service started right away
@@ -4155,7 +4238,7 @@ class Systemctl:
         return self.reload_unit_from(conf)
     def reload_unit_from(self, conf):
         if not conf: return False
-        problems = self.syntax_check_from(conf)
+        problems = self.check_syntax_from(conf)
         errors = [ problem for problem in problems if problem.startswith("E") ]
         if errors and not self._force:
             some = len(errors)
@@ -4186,7 +4269,7 @@ class Systemctl:
         runs = conf.get(Service, "Type", "simple").lower()
         env = self.get_env(conf)
         if not self._quiet:
-            okee = self.exec_check_unit(conf, env, Service, "ExecReload")
+            okee = self.check_exec_from(conf, env, Service, "ExecReload")
             if not okee and _no_reload: return False
         self.set_status_code_from(conf, "reloading", None)
         #
@@ -4279,7 +4362,7 @@ class Systemctl:
         return self.restart_unit_from(conf)
     def restart_unit_from(self, conf):
         if not conf: return False
-        problems = self.syntax_check_from(conf)
+        problems = self.check_syntax_from(conf)
         errors = [ problem for problem in problems if problem.startswith("E") ]
         if errors and not self._force:
             some = len(errors)
@@ -5709,7 +5792,7 @@ class Systemctl:
                 filename44 = path44(conf.filename())
                 error_("{unit}: can not read unit file {filename44}\n\t{e}".format(**locals()))
                 continue
-            problems = self.syntax_check_from(conf)
+            problems = self.check_syntax_from(conf)
             if CacheAlias:
                 aliases.update(self.get_alias_from(conf))
             if CacheDeps:
@@ -5872,41 +5955,98 @@ class Systemctl:
         unit = unit or SysInitTarget
         if self._sysinit_modules is None:
             self._sysinit_modules = self.get_sysinit_deps(unit)
-    def syntax_check_from(self, conf):
+    def check_syntax_from(self, conf):
         filename = conf.filename()
+        warnings = []
         if filename and filename.endswith(".service"):
-            return self.syntax_check_unit(conf, Service)
-        return []
-    def syntax_check_unit(self, conf, section=Service):
+            warnings += self.check_service_syntax(conf, Service)
+        if filename and filename.endswith(".socket"):
+            warnings += self.check_socket_syntax(conf, Socket)
+        badwarnings = []
+        for problem in warnings:
+            for ignore in IgnoreSyntaxWarnings.split(","):
+                if ignore and problem.startswith(ignore):
+                    continue
+            for ignore in IgnoreWarnings.split(","):
+                if ignore and problem.startswith(ignore):
+                    continue
+            badwarnings.append(problem)
+        return badwarnings
+    def check_socket_syntax(self, conf, section=Service):
         unit = conf.name()
         if not conf.data.has_section(section):
-            service = section.lower()
-            error_("  {unit}: found a .{service} file without a [{section}] section".format(**locals()))
+            definition = section.lower()
+            error_("  {unit}: found a .{definition} file without a [{section}] section".format(**locals()))
+            debug_("  {unit}:  (E01) which does render the unit definition pretty useless".format(**locals()))
+            return ["E01"]
+        warnings = []
+        warnings += self.check_exec_unknown_settings(conf, section)
+        warnings += self.check_environment_file_settings(conf, section)
+        return warnings
+    def check_service_syntax(self, conf, section=Service):
+        unit = conf.name()
+        if not conf.data.has_section(section):
+            definition = section.lower()
+            error_("  {unit}: found a .{definition} file without a [{section}] section".format(**locals()))
             debug_("  {unit}:  (E00) which does render the unit definition pretty useless".format(**locals()))
             return ["E00"]
-        errors = []
+        warnings = []
+        warnings += self.check_service_type_settings(conf, section)
+        warnings += self.check_service_mainpid_settings(conf, section)
+        warnings += self.check_exec_format_settings(conf, section)
+        warnings += self.check_exec_unknown_settings(conf, section)
+        warnings += self.check_environment_file_settings(conf, section)
+        return warnings
+    def check_environment_file_settings(self, conf, section=Service):
+        warnings = []
+        unit = conf.name()
+        for env_file in conf.getlist(section, "EnvironmentFile", []):
+            skipping, filename = checkprefix(env_file)
+            if not os.path.isfile(os_path(self._root, filename)):
+                if not skipping:
+                    error_("  {unit}: {section} did not find mandatory environment file: {filename}".format(**locals()))
+                    debug_("  {unit}:  (E77) the environment variable expansions will probably fail.".format(**locals()))
+                    warnings += ["E77"]
+                else:
+                    info_("   {unit}: {section} did not find optional environment file: {filename}".format(**locals()))
+                    debug_("  {unit}:  (W77) the environment variable expansions must not depend on it.".format(**locals()))
+                    warnings += ["W77"]
+        return warnings
+    def check_service_type_settings(self, conf, section=Service):
+        warnings = []
+        unit = conf.name()
         haveType = conf.get(section, "Type", "simple")
-        haveExecStart = conf.getlist(section, "ExecStart", [])
-        haveExecStop = conf.getlist(section, "ExecStop", [])
-        haveExecReload = conf.getlist(section, "ExecReload", [])
-        havePIDFile = conf.get(section, "PIDFile", "")
-        usedExecStart = []
-        usedExecStop = []
-        usedExecReload = []
         if haveType not in [ "simple", "forking", "notify", "oneshot", "dbus", "idle"]:
             error_("  {unit}: Failed to parse service type, ignoring: {haveType}".format(**locals()))
             debug_("  {unit}:  (W01) systemctl can only handle simple|forking|notify|oneshot/idle (no dbus)".format(**locals()))
-            errors += ["W01"]
+            warnings += ["W01"]
+        return warnings
+    def check_service_mainpid_settings(self, conf, section=Service):
+        warnings = []
+        unit = conf.name()
+        haveType = conf.get(section, "Type", "simple")
+        havePIDFile = conf.get(section, "PIDFile", "")
         if haveType in ["notify"]:
             if not havePIDFile:
                 info_("   {unit}: {section} type={haveType} does not provide a {section} PIDFile.".format(**locals()))
                 debug_("  {unit}:  (W11) this will make systemctl to wait for MAINPID (expect timeout problems)".format(**locals()))
-                errors += ["W11"]
+                warnings += ["W11"]
         if haveType in ["forking"]:
             if not havePIDFile:
                 warning_("{unit}: {section} type={haveType} does not provide a {section} PIDFile.".format(**locals()))
                 debug_("  {unit}:  (W12) this will not allow sending signals to the MainPID (expect restart problems)".format(**locals()))
-                errors += ["W12"]
+                warnings += ["W12"]
+        return warnings
+    def check_exec_format_settings(self, conf, section=Service):
+        warnings = []
+        unit = conf.name()
+        haveType = conf.get(section, "Type", "simple")
+        haveExecStart = conf.getlist(section, "ExecStart", [])
+        haveExecStop = conf.getlist(section, "ExecStop", [])
+        haveExecReload = conf.getlist(section, "ExecReload", [])
+        usedExecStart = []
+        usedExecStop = []
+        usedExecReload = []
         for line in haveExecStart:
             execmode, execline = exec_mode(line)
             if not execline.startswith("/"):
@@ -5915,7 +6055,7 @@ class Systemctl:
                 else:
                     warning_("{unit}: {section} Executable path is not absolute.".format(**locals()))
                 debug_("  {unit}:  (W21) ignoring {execline}".format(**locals()))
-                errors += ["W21"]
+                warnings += ["W21"]
             usedExecStart.append(line)
         for line in haveExecStop:
             execmode, execline = exec_mode(line)
@@ -5925,7 +6065,7 @@ class Systemctl:
                 else:
                     warning_("{unit}: {section} Executable path is not absolute.".format(**locals()))
                 debug_("  {unit}:  (W22) ignoring {execline}".format(**locals()))
-                errors += ["W22"]
+                warnings += ["W22"]
             usedExecStop.append(execline)
         for line in haveExecReload:
             execmode, execline = exec_mode(line)
@@ -5935,92 +6075,83 @@ class Systemctl:
                 else:
                     warning_("{unit}: {section} Executable path is not absolute.".format(**locals()))
                 debug_("  {unit}:  (W23) ignoring {execline}".format(**locals()))
-                errors += ["W23"]
+                warnings += ["W23"]
             usedExecReload.append(execline)
         if haveType in ["simple", "notify", "forking", "idle"]:
             if not usedExecStart and not usedExecStop:
                 error_("  {unit}: {section} lacks both ExecStart and ExecStop= setting. Refusing.".format(**locals()))
                 debug_("  {unit}:  (E31) without start/stop the {section} type={haveType} is just useless.".format(**locals()))
-                errors += ["E31"]
+                warnings += ["E31"]
             elif not usedExecStart and haveType != "oneshot":
                 error_("  {unit}: {section} has no ExecStart= setting, which is only allowed for Type=oneshot services. Refusing.".format(**locals()))
                 debug_("  {unit}:  (E32) without a MainPID the {section} type={haveType} can not control anything.".format(**locals()))
-                errors += ["E32"]
+                warnings += ["E32"]
         if len(usedExecStart) > 1 and haveType != "oneshot":
             error_("  {unit}: There may be only one {section} ExecStart statement (unless for 'oneshot' services).".format(**locals()))
             debug_("  {unit}:  (W41) You should use ExecStartPre / ExecStartPost to add additional commands.".format(**locals()))
-            errors += ["W41"]
+            warnings += ["W41"]
         if len(usedExecStop) > 1 and haveType != "oneshot":
             info_("   {unit}: There should be only one {section} ExecStop statement (unless for 'oneshot' services)".format(**locals()))
             debug_("  {unit}:  (W42) You can use ExecStopPost to add additional commands (also executed on failed Start).".format(**locals()))
-            errors += ["W42"]
+            warnings += ["W42"]
         if len(usedExecReload) > 1:
             info_("   {unit}: There should be only one {section} ExecReload statement.".format(**locals()))
             debug_("  {unit}:  (W43) Use ' ; ' for multiple commands (ExecReloadPost or ExedReloadPre do not exist)".format(**locals()))
-            errors += ["W43"]
+            warnings += ["W43"]
         if len(usedExecReload) > 0 and "/bin/kill " in usedExecReload[0]:
             warning_("{unit}: The use of /bin/kill is not recommended for {section} ExecReload as it is asychronous.".format(**locals()))
             debug_("  {unit}:  (W44) That means all the dependencies will perform the reload simultanously / out of order.".format(**locals()))
-            errors += ["W44"]
+            warnings += ["W44"]
+        return warnings
+    def check_exec_unknown_settings(self, conf, section=Service):
+        warnings = []
+        unit = conf.name()
         if conf.getlist(Service, "ExecRestart", []):  # pragma: no cover
             error_("  {unit}: there no such thing as a {section} ExecRestart (ignored)".format(**locals()))
             debug_("  {unit}:  (W51) might be a bit unexpected but no.".format(**locals()))
-            errors += ["W51"]
+            warnings += ["W51"]
         if conf.getlist(Service, "ExecRestartPre", []):  # pragma: no cover
             error_("  {unit}: there no such thing as a {section} ExecRestartPre (ignored)".format(**locals()))
             debug_("  {unit}:  (W52) might be a bit unexpected but no.".format(**locals()))
-            errors += ["W52"]
+            warnings += ["W52"]
         if conf.getlist(Service, "ExecRestartPost", []):  # pragma: no cover
             error_("  {unit}: there no such thing as a {section} ExecRestartPost (ignored)".format(**locals()))
             debug_("  {unit}:  (W53) might be a bit unexpected but no.".format(**locals()))
-            errors += ["W53"]
+            warnings += ["W53"]
         if conf.getlist(Service, "ExecReloadPre", []):  # pragma: no cover
             error_("  {unit}: there no such thing as a {section} ExecReloadPre (ignored)".format(**locals()))
             debug_("  {unit}:  (W54) might be a bit unexpected but no.".format(**locals()))
-            errors += ["W54"]
+            warnings += ["W54"]
         if conf.getlist(Service, "ExecReloadPost", []):  # pragma: no cover
             error_("  {unit}: there no such thing as a {section} ExecReloadPost (ignored)".format(**locals()))
             debug_("  {unit}:  (W55) might be a bit unexpected but no.".format(**locals()))
-            errors += ["W55"]
+            warnings += ["W55"]
         if conf.getlist(Service, "ExecStopPre", []):  # pragma: no cover
             error_("  {unit}: there no such thing as a {section} ExecStopPre (ignored)".format(**locals()))
             debug_("  {unit}:  (W56) might be a bit unexpected but no.".format(**locals()))
-            errors += ["W56"]
-        for env_file in conf.getlist(section, "EnvironmentFile", []):
-            skipping, filename = checkprefix(env_file)
-            if not os.path.isfile(os_path(self._root, filename)):
-                if not skipping:
-                    error_("  {unit}: {section} did not find mandatory environment file: {filename}".format(**locals()))
-                    debug_("  {unit}:  (E77) the environment variable expansions will probably fail.".format(**locals()))
-                    errors += ["E77"]
-                else:
-                    info_("   {unit}: {section} did not find optional environment file: {filename}".format(**locals()))
-                    debug_("  {unit}:  (W77) the environment variable expansions must not depend on it.".format(**locals()))
-                    errors += ["W77"]
-        return errors
-    def exec_check_unit(self, conf, env, section=Service, exectype=""):
-        if conf is None:  # pragma: no cover (is never null)
-            return True
-        if not conf.data.has_section(section):
-            return True  # pragma: no cover
+            warnings += ["W56"]
+        return warnings
+    def check_exec_type_settings(self, conf, section=Service):
+        warnings = []
         unit = conf.name()
         haveType = conf.get(section, "Type", "simple")
-        if self.is_sysv_file(conf.filename()):
-            return True  # we don't care about that
         havePIDFile = conf.get(section, "PIDFile", "")
         if haveType in ["notify", "forking"] and not havePIDFile:
             info_("   {unit}: {section} type={haveType} does not provide a {section} PIDFile.".format(**locals()))
+            warnings += [ "W19"]
             doGuessMainPID = conf.getbool(section, "GuessMainPID", "no")
             if doGuessMainPID and haveType in ["forking"]:
                 warn_("{unit}: {section} type={haveType} without PIDFile can not be fixed with GuessMainPID.".format(**locals()))
+                warnings += [ "W09" ]
         if haveType in ["oneshot"]:
             doRemainAfterExit = self.get_RemainAfterExit(conf)
             if not doRemainAfterExit:
                 warn_("{unit}: {section} type={haveType} requires RemainAfterExit=yes to be 'active' after start.".format(**locals()))
-        abspath = 0
-        notexists = 0
-        badusers = 0
-        badgroups = 0
+                warnings += [ "W39" ]
+        return warnings
+    def check_exec_path_settings(self, conf, env, section=Service, exectype=""):
+        warnings = []
+        unit = conf.name()
         for execs in [ "ExecStartPre", "ExecStart", "ExecStartPost", "ExecStop", "ExecStopPost", "ExecReload" ]:
             if not execs.startswith(exectype):
                 continue
@@ -6033,11 +6164,13 @@ class Systemctl:
                     continue
                 if exe[0] != "/":
                     error_("  {unit}: Exec is not an absolute path:  {execs}={cmd}".format(**locals()))
-                    abspath += 1
+                    warnings += ["E29"]
                 if not os.path.isfile(exe):
                     error_("  {unit}: Exec command does not exist: ({execs}) {exe}".format(**locals()))
                     if mode.check:
-                        notexists += 1
+                        warnings += ["E49"]
+                    else:
+                        warnings += ["W49"]
                     newexe1 = os.path.join("/usr/bin", exe)
                     newexe2 = os.path.join("/bin", exe)
                     indent = " " * len(execs)
@@ -6045,6 +6178,10 @@ class Systemctl:
                         error_("  {unit}: but this does exist: {indent}  {newexe1}".format(**locals()))
                     elif os.path.exists(newexe2):
                         error_("  {unit}: but this does exist: {indent}      {newexe2}".format(**locals()))
+        return warnings
+    def check_user_group_settings(self, conf, section=Service):
+        warnings = []
+        unit = conf.name()
         users = [ conf.get(section, "User", ""), conf.get(section, "SocketUser", "") ]
         groups = [ conf.get(section, "Group", ""), conf.get(section, "SocketGroup", "") ] + conf.getlist(section, "SupplementaryGroups")
         for user in users:
@@ -6053,45 +6190,80 @@ class Systemctl:
                 except Exception as e:
                     info = getattr(e, "__doc__", "")
                     error_("  {unit}: User does not exist: {user} ({info})".format(**locals()))
-                    badusers += 1
+                    warnings += ["E91"]
         for group in groups:
             if group:
                 try: grp.getgrnam(group)
                 except Exception as e:
                     info = getattr(e, "__doc__", "")
                     error_("  {unit}: Group does not exist: {group} ({info})".format(**locals()))
-                    badgroups += 1
-        tmpproblems = 0
+                    warnings += ["E92"]
+        return warnings
+    def check_directory_settings(self, conf, section=Service):
+        warnings = []
+        unit = conf.name()
         for setting in ("RootDirectory", "RootImage", "BindPaths", "BindReadOnlyPaths",
                         "ReadWritePaths", "ReadOnlyPaths", "TemporaryFileSystem"):
             setting_value = conf.get(section, setting, "")
             if setting_value:
                 info_("   {unit}: {section} private directory remounts ignored: {setting}={setting_value}".format(**locals()))
-                tmpproblems += 1
+                warnings += ["W61"]
         for setting in ("PrivateTmp", "PrivateDevices", "PrivateNetwork", "PrivateUsers", "DynamicUser",
                         "ProtectSystem", "ProjectHome", "ProtectHostname", "PrivateMounts", "MountAPIVFS"):
             setting_yes = conf.getbool(section, setting, "no")
             if setting_yes:
                 info_("   {unit}: {section} private directory option is ignored: {setting}=yes".format(**locals()))
-                tmpproblems += 1
-        if not abspath and not notexists and not badusers and not badgroups:
-            return True
+                warnings += ["W62"]
+        return warnings
+    def check_exec_from(self, conf, env, section=Service, exectype=""):
+        if conf is None:
+            return []  # pragma: no cover (is never null)
+        badwarnings = self.check_exec_service_from(conf, env, section, exectype)
+        return not badwarnings # okee
+    def check_exec_service_from(self, conf, env, section=Service, exectype=""):
+        if conf is None:
+            return []  # pragma: no cover (is never null)
+        if not conf.data.has_section(section):
+            return []  # pragma: no cover (ignored here)
+        warnings = []
+        unit = conf.name()
+        if self.is_sysv_file(conf.filename()):
+            return []  # we don't care about that
+        badtypes = self.check_exec_type_settings(conf, section)
+        badpaths = self.check_exec_path_settings(conf, env, section, exectype)
+        badusers = self.check_user_group_settings(conf, section)
+        baddirs = self.check_directory_settings(conf, section)
+        warnings = badtypes + badpaths + badusers + baddirs
+        badwarnings = []
+        for problem in warnings:
+            for ignore in IgnoreExecWarnings.split(","):
+                if ignore and problem.startswith(ignore):
+                    continue
+            for ignore in IgnoreWarnings.split(","):
+                if ignore and problem.startswith(ignore):
+                    continue
+            badwarnings.append(problem)
+        errors = [ problem for problem in badwarnings if problem.startswith("E") ]
+        if not errors:
+            return [] # only warnings - no errors
         if True:
             error_("  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+            abspath = [ problem for problem in badpaths if problem.startswith("E2") ]
+            notexists = [ problem for problem in badpaths if problem.startswith("E4") ]
             if abspath:
                 error_("  The SystemD ExecXY commands must always be absolute paths by definition.")
                 time.sleep(1)
             if notexists:
                 error_("  Oops, {notexists} executable paths were not found in the current environment. Refusing.".format(**locals()))
                 time.sleep(1)
-            if badusers or badgroups:
-                error_("  Oops, {badusers} user names and {badgroups} group names were not found. Refusing.".format(**locals()))
+            if badusers:
+                error_("  Oops, {badusers} user names or group names were not found. Refusing.".format(**locals()))
                 time.sleep(1)
-            if tmpproblems:
-                info_("   Note, {tmpproblems} private directory settings are ignored. The application should not depend on it.".format(**locals()))
+            if baddirs:
+                info_("   Note, {baddirs} private directory settings are ignored. The application should not depend on it.".format(**locals()))
                 time.sleep(1)
             error_("  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-        return False
+        return badwarnings
     def show_modules(self, *modules):
         """ [PATTERN]... -- Show properties of one or more units
            Show properties of one or more units (or the manager itself).
