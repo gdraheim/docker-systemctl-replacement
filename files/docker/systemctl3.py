@@ -6251,16 +6251,20 @@ class Systemctl:
             abspath = [ problem for problem in badpaths if problem.startswith("E2") ]
             notexists = [ problem for problem in badpaths if problem.startswith("E4") ]
             if abspath:
-                error_("  The SystemD ExecXY commands must always be absolute paths by definition.")
+                some = len(abspath)
+                error_("  Note, {some} executable paths were not absolute but they must always be by definition.".format(**locals()))
                 time.sleep(1)
             if notexists:
-                error_("  Oops, {notexists} executable paths were not found in the current environment. Refusing.".format(**locals()))
+                some = len(notexists)
+                error_("  Oops, {some} executable paths were not found in the current environment. Refusing.".format(**locals()))
                 time.sleep(1)
             if badusers:
-                error_("  Oops, {badusers} user names or group names were not found. Refusing.".format(**locals()))
+                some = len(badusers)
+                error_("  Oops, {some} user names or group names were not found. Refusing.".format(**locals()))
                 time.sleep(1)
             if baddirs:
-                info_("   Note, {baddirs} private directory settings are ignored. The application should not depend on it.".format(**locals()))
+                some = len(baddirs)
+                info_("   Note, {some} private directory settings are ignored. The application should not depend on it.".format(**locals()))
                 time.sleep(1)
             error_("  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         return badwarnings
