@@ -16,8 +16,12 @@ def run(filename):
     changes = 0
     lines = []
     srctext = open(filename).read()
+    linenum = 0
     for line0 in srctext.splitlines():
         line = line0
+        linenum += 1
+        if re.match("^\\s*# [|]", line):
+            continue # do not append 
         if re.match("^\\s*#", line):
             lines.append(line)
             continue
