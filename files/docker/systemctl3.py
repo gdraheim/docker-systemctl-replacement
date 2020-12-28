@@ -5735,10 +5735,10 @@ class Systemctl:
             if errors:
                 some = len(errors)
                 more = len(problems)
-                error_("* found {some} errors in {more} problems in unit definitions. (use -vv to see more)".format(**locals()))
+                error_("* found {some} errors in {more} problems in unit definitions. (use -vvv to see more)".format(**locals()))
             else:
                 some = len(problems)
-                info_(" * found {some} problems in unit definitions. (may be ignored - use -vv to see more)".format(**locals()))
+                info_(" * found {some} problems in unit definitions. (may be ignored - use -vvv to see more)".format(**locals()))
         return True  # errors
     def get_alias_from(self, conf):
         result = {}
