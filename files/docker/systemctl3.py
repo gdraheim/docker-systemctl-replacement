@@ -5735,10 +5735,10 @@ class Systemctl:
             if errors:
                 some = len(errors)
                 more = len(problems)
-                error_("* found {some} errors in {more} problems in unit definitions. (use -vvv to see more)".format(**locals()))
+                error_("* found {some} errors in {more} problems in unit definitions. (use -vvvv to see more)".format(**locals()))
             else:
                 some = len(problems)
-                info_(" * found {some} problems in unit definitions. (may be ignored - use -vvv to see more)".format(**locals()))
+                info_(" * found {some} problems in unit definitions. (may be ignored - use -vvvv to see more)".format(**locals()))
         return True  # errors
     def get_alias_from(self, conf):
         result = {}
@@ -5882,7 +5882,7 @@ class Systemctl:
         if not conf.data.has_section(section):
             service = section.lower()
             error_("  {unit}: found a .{service} file without a [{section}] section".format(**locals()))
-            debug_("  {unit}: E00 which does render the unit definition pretty useless".format(**locals()))
+            debug_("  {unit}:  (E00) which does render the unit definition pretty useless".format(**locals()))
             return ["E00"]
         errors = []
         haveType = conf.get(section, "Type", "simple")
@@ -5895,17 +5895,17 @@ class Systemctl:
         usedExecReload = []
         if haveType not in [ "simple", "forking", "notify", "oneshot", "dbus", "idle"]:
             error_("  {unit}: Failed to parse service type, ignoring: {haveType}".format(**locals()))
-            debug_("  {unit}: W01 systemctl can only handle simple|forking|notify|oneshot/idle (no dbus)".format(**locals()))
+            debug_("  {unit}:  (W01) systemctl can only handle simple|forking|notify|oneshot/idle (no dbus)".format(**locals()))
             errors += ["W01"]
         if haveType in ["notify"]:
             if not havePIDFile:
                 info_("   {unit}: {section} type={haveType} does not provide a {section} PIDFile.".format(**locals()))
-                debug_("  {unit}: W11 this will make systemctl to wait for MAINPID (expect timeout problems)".format(**locals()))
+                debug_("  {unit}:  (W11) this will make systemctl to wait for MAINPID (expect timeout problems)".format(**locals()))
                 errors += ["W11"]
         if haveType in ["forking"]:
             if not havePIDFile:
                 warning_("{unit}: {section} type={haveType} does not provide a {section} PIDFile.".format(**locals()))
-                debug_("  {unit}: W12 this will not allow sending signals to the MainPID (expect restart problems)".format(**locals()))
+                debug_("  {unit}:  (W12) this will not allow sending signals to the MainPID (expect restart problems)".format(**locals()))
                 errors += ["W12"]
         for line in haveExecStart:
             execmode, execline = exec_mode(line)
@@ -5914,7 +5914,7 @@ class Systemctl:
                     error_("  {unit}: {section} Executable path is not absolute.".format(**locals()))
                 else:
                     warning_("{unit}: {section} Executable path is not absolute.".format(**locals()))
-                debug_("  {unit}: W21 ignoring {execline}".format(**locals()))
+                debug_("  {unit}:  (W21) ignoring {execline}".format(**locals()))
                 errors += ["W21"]
             usedExecStart.append(line)
         for line in haveExecStop:
@@ -5924,7 +5924,7 @@ class Systemctl:
                     error_("  {unit}: {section} Executable path is not absolute.".format(**locals()))
                 else:
                     warning_("{unit}: {section} Executable path is not absolute.".format(**locals()))
-                debug_("  {unit}: W22 ignoring {execline}".format(**locals()))
+                debug_("  {unit}:  (W22) ignoring {execline}".format(**locals()))
                 errors += ["W22"]
             usedExecStop.append(execline)
         for line in haveExecReload:
@@ -5934,68 +5934,68 @@ class Systemctl:
                     error_("  {unit}: {section} Executable path is not absolute.".format(**locals()))
                 else:
                     warning_("{unit}: {section} Executable path is not absolute.".format(**locals()))
-                debug_("  {unit}: W22 ignoring {execline}".format(**locals()))
+                debug_("  {unit}:  (W23) ignoring {execline}".format(**locals()))
                 errors += ["W23"]
             usedExecReload.append(execline)
         if haveType in ["simple", "notify", "forking", "idle"]:
             if not usedExecStart and not usedExecStop:
                 error_("  {unit}: {section} lacks both ExecStart and ExecStop= setting. Refusing.".format(**locals()))
-                debug_("  {unit}: E31 without start/stop the {section} type={haveType} is just useless.".format(**locals()))
+                debug_("  {unit}:  (E31) without start/stop the {section} type={haveType} is just useless.".format(**locals()))
                 errors += ["E31"]
             elif not usedExecStart and haveType != "oneshot":
                 error_("  {unit}: {section} has no ExecStart= setting, which is only allowed for Type=oneshot services. Refusing.".format(**locals()))
-                debug_("  {unit}: E32 without a MainPID the {section} type={haveType} can not control anything.".format(**locals()))
+                debug_("  {unit}:  (E32) without a MainPID the {section} type={haveType} can not control anything.".format(**locals()))
                 errors += ["E32"]
         if len(usedExecStart) > 1 and haveType != "oneshot":
             error_("  {unit}: There may be only one {section} ExecStart statement (unless for 'oneshot' services).".format(**locals()))
-            debug_("  {unit}: W41 You should use ExecStartPre / ExecStartPost to add additional commands.".format(**locals()))
+            debug_("  {unit}:  (W41) You should use ExecStartPre / ExecStartPost to add additional commands.".format(**locals()))
             errors += ["W41"]
         if len(usedExecStop) > 1 and haveType != "oneshot":
             info_("   {unit}: There should be only one {section} ExecStop statement (unless for 'oneshot' services)".format(**locals()))
-            debug_("  {unit}: W42 You can use ExecStopPost to add additional commands (also executed on failed Start).".format(**locals()))
+            debug_("  {unit}:  (W42) You can use ExecStopPost to add additional commands (also executed on failed Start).".format(**locals()))
             errors += ["W42"]
         if len(usedExecReload) > 1:
             info_("   {unit}: There should be only one {section} ExecReload statement.".format(**locals()))
-            debug_("  {unit}: W43 Use ' ; ' for multiple commands (ExecReloadPost or ExedReloadPre do not exist)".format(**locals()))
+            debug_("  {unit}:  (W43) Use ' ; ' for multiple commands (ExecReloadPost or ExedReloadPre do not exist)".format(**locals()))
             errors += ["W43"]
         if len(usedExecReload) > 0 and "/bin/kill " in usedExecReload[0]:
             warning_("{unit}: The use of /bin/kill is not recommended for {section} ExecReload as it is asychronous.".format(**locals()))
-            debug_("  {unit}: W44 That means all the dependencies will perform the reload simultanously / out of order.".format(**locals()))
+            debug_("  {unit}:  (W44) That means all the dependencies will perform the reload simultanously / out of order.".format(**locals()))
             errors += ["W44"]
         if conf.getlist(Service, "ExecRestart", []):  # pragma: no cover
             error_("  {unit}: there no such thing as a {section} ExecRestart (ignored)".format(**locals()))
-            debug_("  {unit}: W51 might be a bit unexpected but no.".format(**locals()))
+            debug_("  {unit}:  (W51) might be a bit unexpected but no.".format(**locals()))
             errors += ["W51"]
         if conf.getlist(Service, "ExecRestartPre", []):  # pragma: no cover
             error_("  {unit}: there no such thing as a {section} ExecRestartPre (ignored)".format(**locals()))
-            debug_("  {unit}: W52 might be a bit unexpected but no.".format(**locals()))
+            debug_("  {unit}:  (W52) might be a bit unexpected but no.".format(**locals()))
             errors += ["W52"]
         if conf.getlist(Service, "ExecRestartPost", []):  # pragma: no cover
             error_("  {unit}: there no such thing as a {section} ExecRestartPost (ignored)".format(**locals()))
-            debug_("  {unit}: W53 might be a bit unexpected but no.".format(**locals()))
+            debug_("  {unit}:  (W53) might be a bit unexpected but no.".format(**locals()))
             errors += ["W53"]
         if conf.getlist(Service, "ExecReloadPre", []):  # pragma: no cover
             error_("  {unit}: there no such thing as a {section} ExecReloadPre (ignored)".format(**locals()))
-            debug_("  {unit}: W54 might be a bit unexpected but no.".format(**locals()))
+            debug_("  {unit}:  (W54) might be a bit unexpected but no.".format(**locals()))
             errors += ["W54"]
         if conf.getlist(Service, "ExecReloadPost", []):  # pragma: no cover
             error_("  {unit}: there no such thing as a {section} ExecReloadPost (ignored)".format(**locals()))
-            debug_("  {unit}: W55 might be a bit unexpected but no.".format(**locals()))
+            debug_("  {unit}:  (W55) might be a bit unexpected but no.".format(**locals()))
             errors += ["W55"]
         if conf.getlist(Service, "ExecStopPre", []):  # pragma: no cover
             error_("  {unit}: there no such thing as a {section} ExecStopPre (ignored)".format(**locals()))
-            debug_("  {unit}: W57 might be a bit unexpected but no.".format(**locals()))
+            debug_("  {unit}:  (W56) might be a bit unexpected but no.".format(**locals()))
             errors += ["W56"]
         for env_file in conf.getlist(section, "EnvironmentFile", []):
             skipping, filename = checkprefix(env_file)
             if not os.path.isfile(os_path(self._root, filename)):
                 if not skipping:
                     error_("  {unit}: {section} did not find mandatory environment file: {filename}".format(**locals()))
-                    debug_("  {unit}: E77 the environment variable expansions will probably fail.".format(**locals()))
+                    debug_("  {unit}:  (E77) the environment variable expansions will probably fail.".format(**locals()))
                     errors += ["E77"]
                 else:
                     info_("   {unit}: {section} did not find optional environment file: {filename}".format(**locals()))
-                    debug_("  {unit}: W77 the environment variable expansions must not depend on it.".format(**locals()))
+                    debug_("  {unit}:  (W77) the environment variable expansions must not depend on it.".format(**locals()))
                     errors += ["W77"]
         return errors
     def exec_check_unit(self, conf, env, section=Service, exectype=""):
