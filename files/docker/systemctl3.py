@@ -7245,12 +7245,12 @@ class Systemctl:
     def is_running_unit(self, unit):
         conf = self.get_unit_conf(unit)
         return self.is_running_unit_from(conf)
-    def kill_children_pidlist_of(self, pid):
-        if not pid:
+    def kill_children_pidlist_of(self, mainpid):
+        if not mainpid:
             return []
         proc = DefaultProcDir
-        pidlist = [ pid ]
-        pids = [ pid ]
+        pidlist = [ mainpid ]
+        pids = [ mainpid ]
         ppid_of = {}
         for depth in xrange(KillChildrenMaxDepth):
             for pid_entry in os.listdir(proc):
@@ -7265,18 +7265,22 @@ class Systemctl:
                                 if line.startswith("PPid:"):
                                     ppid_text = line[len("PPid:"):].strip()
                                     ppid = int(ppid_text)
-                                    ppid_of[pid] = pid
+                                    ppid_of[pid] = ppid
                                     break
                         except IOError as e:
                             warn_("{pid_status} : {e}".format(**locals()))
                             continue
-                ppid = ppid_of[pid]
-                if ppid in pidlist and pid not in pids:
-                    pids += [ pid ]
+                ppid = ppid_of.get(pid, 0)
+                if ppid and ppid in pidlist:
+                    if ppid not in pids:
+                        pids += [ pid ]
+                    if pid not in pids:
+                        pids += [ pid ]
             if len(pids) <= len(pidlist):
                 break
             pidlist = pids[:]
             continue
+        debug_(".... mainpid {mainpid} to pid list {pidlist}".format(**locals()))
         return pids
     def killall(self, *targets):
         """ --- explicitly kill processes (internal) """
