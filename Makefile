@@ -331,6 +331,12 @@ type:
 	python3 format3.py -i tmp.files/docker/systemctl3.py
 	@ grep -w format tmp.files/docker/systemctl3.py | grep -v internal | sed -e "s|^|ERROR: |"; true
 	mypy --strict tmp.files/docker/systemctl3.py # --new-semantic-analyzer --show-traceback
+type33:
+	test -d tmp.types || mkdir tmp.types ; cp types/systemctl3.pyi tmp.types/systemctl33.pyi
+	python3 ../retype/retype.py files/docker/systemctl33.py -t tmp.files/docker -p tmp.types
+	python3 format3.py -i tmp.files/docker/systemctl33.py
+	@ grep -w format tmp.files/docker/systemctl33.py | grep -v internal | sed -e "s|^|ERROR: |"; true
+	mypy --strict tmp.files/docker/systemctl33.py # --new-semantic-analyzer --show-traceback
 type.t type.testsuite:
 	mypy --strict testsuite.py # --new-semantic-analyzer --show-traceback
 
