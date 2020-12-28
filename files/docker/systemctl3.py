@@ -6994,27 +6994,32 @@ class Systemctl:
         proc = DefaultProcDir
         pidlist = [ pid ]
         pids = [ pid ]
+        ppid_of = {}
         for depth in xrange(KillChildrenMaxDepth):
             for pid_entry in os.listdir(proc):
                 pid = to_intN(pid_entry)
                 if pid is None:
                     continue
-                pid_status = "{proc}/{pid}/status".format(**locals())
-                if os.path.isfile(pid_status):
-                    try:
-                        for line in open(pid_status):
-                            if line.startswith("PPid:"):
-                                ppid_text = line[len("PPid:"):].strip()
-                                try: ppid = int(ppid_text)
-                                except: continue
-                                if ppid in pidlist and pid not in pids:
-                                    pids += [ pid ]
-                    except IOError as e:
-                        warn_("{pid_status} : {e}".format(**locals()))
-                        continue
-            if len(pids) != len(pidlist):
-                pidlist = pids[:]
-                continue
+                if pid not in ppid_of:
+                    pid_status = "{proc}/{pid}/status".format(**locals())
+                    if os.path.isfile(pid_status):
+                        try:
+                            for line in open(pid_status):
+                                if line.startswith("PPid:"):
+                                    ppid_text = line[len("PPid:"):].strip()
+                                    ppid = int(ppid_text)
+                                    ppid_of[pid] = pid
+                                    break
+                        except IOError as e:
+                            warn_("{pid_status} : {e}".format(**locals()))
+                            continue
+                ppid = ppid_of[pid]
+                if ppid in pidlist and pid not in pids:
+                    pids += [ pid ]
+            if len(pids) <= len(pidlist):
+                break
+            pidlist = pids[:]
+            continue
         return pids
     def killall(self, *targets):
         """ --- explicitly kill processes (internal) """
