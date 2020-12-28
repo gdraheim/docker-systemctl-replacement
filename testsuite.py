@@ -9675,7 +9675,132 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
-    def test_3132_default_services_force_ignores(self, real: bool = False) -> None:
+    def test_3132_default_services_with_ignores_has_blocked_enables(self, real: bool = False) -> None:
+        """ check that 'default-services' changes when modifing default-target """
+        self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        testsleep=self.testname("sleep")
+        text_file(os_path(root, "/etc/systemd/system/zza.service"), """
+            [Unit]
+            Description=Testing A""")
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"), """
+            [Unit]
+            Description=Testing B
+            [Service]
+            ExecStart={root}/bin/{testsleep} 4
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        text_file(os_path(root, "/etc/systemd/system/zzc.service"), """
+            [Unit]
+            Description=Testing C
+            [Service]
+            ExecStart={root}/bin/{testsleep} 4
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        text_file(os_path(root, "/etc/systemd/system/systemd-zzz.service"), """
+            [Unit]
+            Description=Testing ZZZ
+            [Service]
+            ExecStart={root}/bin/{testsleep} 4
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        copy_tool(_bin_sleep, "{root}/bin/{testsleep}".format(**locals()))
+        #
+        cmd = "{systemctl} list-unit-files --type=service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertGreater(len(lines(out)), 3)
+        self.assertEqual(end, 0)
+        self.assertTrue(greps(out, "systemd-zzz.service"))
+        #
+        cmd = "{systemctl} default-services"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 0)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} --no-legend enable zza.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 1)
+        #
+        cmd = "{systemctl} default-services"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 0)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} --no-legend enable zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} --no-legend enable zzc.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} default-services"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 2)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} --no-legend enable systemd-zzz.service"  # "--force" !!!
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} default-services"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 2)  # not-ignored
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} default-services --all"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 2)  # systemd-zzz was not enabled in fact
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} --no-legend ignore zzc.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} default-services -vvvv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 1)  # one less
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} default-services --all -vvvv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 2)  # systemd-zzz still not there
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} --no-legend enable systemd-zzz.service --force" # !!!
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} default-services --all -vvvv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 3)  # but we can now
+        self.assertEqual(end, 0)
+        #
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def test_3133_default_services_force_ignores(self, real: bool = False) -> None:
         """ check that 'default-services' changes when modifing default-target """
         self.begin()
         testname = self.testname()
@@ -9804,7 +9929,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
-    def test_3133_default_services_force_ignores_later(self, real: bool = False) -> None:
+    def test_3134_default_services_force_ignores_later(self, real: bool = False) -> None:
         """ check that 'default-services' changes when modifing default-target """
         self.begin()
         testname = self.testname()
