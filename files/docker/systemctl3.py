@@ -3385,7 +3385,7 @@ class Systemctl:
             else:
                 self.clean_status_from(conf)  # active comes from PIDFile alone
         else:
-            error_("unsupported run type '{runs}'".format(**locals()))
+            error_("  unsupported run type '{runs}' (not implemented)".format(**locals()))
             self.clean_status_from(conf)  # "inactive"
             return False
         # POST sequence
@@ -4049,7 +4049,7 @@ class Systemctl:
             else:
                 self.clean_status_from(conf)  # "inactive"
         else:
-            error_("unsupported run type '{runs}'".format(**locals()))
+            error_("  unsupported run type '{runs}' (not implemented)".format(**locals()))
             self.clean_status_from(conf)  # "inactive"
             return False
         # POST sequence
@@ -4237,7 +4237,7 @@ class Systemctl:
             dbg_("ignored run type '{runs}' for reload".format(**locals()))
             return True
         else:
-            error_("unsupported run type '{runs}'".format(**locals()))
+            error_("  unsupported run type '{runs}' (not implemented)".format(**locals()))
             self.clean_status_from(conf)  # "inactive"
             return False
     def restart_modules(self, *modules):
@@ -5895,8 +5895,8 @@ class Systemctl:
         usedExecReload = []
         if haveType not in [ "simple", "forking", "notify", "oneshot", "dbus", "idle"]:
             error_("  {unit}: Failed to parse service type, ignoring: {haveType}".format(**locals()))
-            debug_("  {unit}: E01 systemctl can only handle simple|forking|notify|oneshot/idle (no dbus)".format(**locals()))
-            errors += ["E01"]
+            debug_("  {unit}: W01 systemctl can only handle simple|forking|notify|oneshot/idle (no dbus)".format(**locals()))
+            errors += ["W01"]
         if haveType in ["notify"]:
             if not havePIDFile:
                 info_("   {unit}: {section} type={haveType} does not provide a {section} PIDFile.".format(**locals()))
