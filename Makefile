@@ -48,6 +48,8 @@ test_%: ; ./testsuite.py "$@" -vv
 real_%: ; ./testsuite.py "$@" -vv
 st_%: ; $(MAKE) 2 && ./testsuite.py "te$@" -vv $(WITH2)
 
+keep/test_%: ; ./testsuite.py "$(notdir $@)" -vvv --keep
+
 test: ; $(MAKE) type && $(MAKE) tests && $(MAKE) coverage
 
 WITH2 = --python=/usr/bin/python2 --with=files/docker/systemctl.py
