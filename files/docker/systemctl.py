@@ -226,7 +226,13 @@ JournalLogFolder = "{VARLOG}/journal"
 SystemctlDebugLog = "{VARLOG}/systemctl.debug.log"
 SystemctlExtraLog = "{VARLOG}/systemctl.log"
 
-IgnoredServicesFile="/etc/systemd/services.ignore"
+CacheDeps=False
+CacheAlias=True
+DepsMaxDepth=9
+CacheDepsFile="${XDG_CONFIG_HOME}/systemd/systemctl.deps.cache"
+CacheAliasFile="${XDG_CONFIG_HOME}/systemd/systemctl.alias.cache"
+CacheSysinitFile="${XDG_CONFIG_HOME}/systemd/systemctl.sysinit.cache"
+IgnoredServicesFile="${XDG_CONFIG_HOME}/systemd/systemctl.services.ignore"
 _ignored_services = """
 [centos]
 netconsole
@@ -234,27 +240,24 @@ network
 [opensuse]
 raw
 pppoe
-boot.*
 rpmconf*
 postfix*
 purge-kernels.service
 after-local.service
-dm-event.*
 [ubuntu]
 mount*
 umount*
 ondemand
-[always]
-*.local
-network*
+[systemd]
 dbus*
 systemd-*
+[kernel]
+network*
 kdump*
-dm-event
-"""
-
-_ignored_targets = """
-[always]
+dm-event.*
+[boot]
+boot.*
+*.local
 remote-fs.target
 """
 
@@ -616,14 +619,14 @@ def get_VARLIB_HOME(root=False):
     if root: return VARLIB
     CONFIG = get_CONFIG_HOME(root)
     return CONFIG
-def expand_path(path, root=False):
+def expand_path(filepath, root=False):
     HOME = get_HOME(root)
     VARRUN = get_RUN(root)
     VARLOG = get_LOG_DIR(root)
     XDG_DATA_HOME=get_DATA_HOME(root)
     XDG_CONFIG_HOME=get_CONFIG_HOME(root)
     XDG_RUNTIME_DIR=get_RUNTIME_DIR(root)
-    return os.path.expanduser(path.replace("${", "{").format(**locals()))  # internal
+    return os.path.expanduser(filepath.replace("${", "{").format(**locals()))  # internal
 
 def shutil_chown(path, user, group):
     if user or group:
@@ -1663,6 +1666,10 @@ class Systemctl:
         self._loaded_file_sysd = {}  # /etc/systemd/system/name.service => config data
         self._file_for_unit_sysv = None  # name.service => /etc/init.d/name
         self._file_for_unit_sysd = None  # name.service => /etc/systemd/system/name.service
+        self._alias_modules = None       # name.service => real.name.service
+        self._deps_modules = None        # name.service => Dict[dep,why]
+        self._sysinit_modules = None     # name.service => Dict[dep,why]
+        self._ignored_modules = None     # text
         self._preset_file_list = None  # /etc/systemd/system-preset/* => file content
         self._default_target = DefaultTarget
         self._sysinit_target = None  # stores a UnitConf()
@@ -1683,6 +1690,8 @@ class Systemctl:
         return self._user_getlogin
     def user_mode(self):
         return self._user_mode
+    def expand_path(self, filepath):
+        return expand_path(filepath, not self.user_mode())
     def user_folder(self):
         for folder in self.user_folders():
             if folder: return folder
@@ -1804,25 +1813,31 @@ class Systemctl:
         return list(self._file_for_unit_sysv.keys())
     def unit_sysd_file(self, module=None):  # -> filename?
         """ file path for the given module (systemd) """
-        self.scan_unit_sysd_files()
-        assert self._file_for_unit_sysd is not None
-        if module and module in self._file_for_unit_sysd:
-            return self._file_for_unit_sysd[module]
-        if module and unit_of(module) in self._file_for_unit_sysd:
-            return self._file_for_unit_sysd[unit_of(module)]
+        # this file is scanned upon self.load_sysd_unit_conf(name) -> load_unit_conf(conf)
+        self.load_sysd_units()
+        if self._alias_modules:
+            if module and self._alias_modules and module in self._alias_modules:
+                module = self._alias_modules[module]
+        if self._file_for_unit_sysd:
+            if module and self._file_for_unit_sysd and module in self._file_for_unit_sysd:
+                return self._file_for_unit_sysd[module]
+            if module and unit_of(module) in self._file_for_unit_sysd:
+                return self._file_for_unit_sysd[unit_of(module)]
         return None
     def unit_sysv_file(self, module=None):  # -> filename?
         """ file path for the given module (sysv) """
-        self.scan_unit_sysv_files()
-        assert self._file_for_unit_sysv is not None
-        if module and module in self._file_for_unit_sysv:
-            return self._file_for_unit_sysv[module]
-        if module and unit_of(module) in self._file_for_unit_sysv:
-            return self._file_for_unit_sysv[unit_of(module)]
+        # this file is scanned upon self.load_sysv_unit_conf(name) -> load_unit_conf(name)
+        self.load_sysv_units()
+        if self._file_for_unit_sysv:
+            if module and module in self._file_for_unit_sysv:
+                return self._file_for_unit_sysv[module]
+            if module and unit_of(module) in self._file_for_unit_sysv:
+                return self._file_for_unit_sysv[unit_of(module)]
         return None
     def unit_file(self, module=None):  # -> filename?
         """ file path for the given module (sysv or systemd) """
-        path = self.unit_sysd_file(module)
+        # this is commonly used through enable/disable - to be similar to load_unit_conf(name)
+        path = self.unit_sysd_file(module)  # does also check .alias_modules
         if path is not None: return path
         path = self.unit_sysv_file(module)
         if path is not None: return path
@@ -1912,6 +1927,9 @@ class Systemctl:
             for name in sorted(drop_in_files):
                 path = drop_in_files[name]
                 data.read_sysd(path)
+        if self._alias_modules:
+            if module in self._alias_modules:
+                module = self._alias_modules[module]
         conf = SystemctlConf(data, module)
         conf.masked = masked
         conf.nonloaded_path = path  # if masked
@@ -1972,6 +1990,11 @@ class Systemctl:
         return string.capwords(self.get_unit_type(module) or default)
     def get_unit_section_from(self, conf, default=Service):
         return self.get_unit_section(conf.name(), default)
+    def load_sysv_units(self):
+        self.scan_unit_sysv_files()
+    def load_sysd_units(self):
+        self.scan_unit_sysd_files()
+        self.load_alias_cache()
     def match_sysd_templates(self, modules=None, suffix=".service"):  # -> generate[ unit ]
         """ make a file glob on all known template units (systemd areas).
             It returns no modules (!!) if no modules pattern were given.
@@ -1979,7 +2002,7 @@ class Systemctl:
         modules = to_list(modules)
         if not modules:
             return
-        self.scan_unit_sysd_files()
+        self.load_sysd_units()
         assert self._file_for_unit_sysd is not None
         for item in sorted(self._file_for_unit_sysd.keys()):
             if "@" not in item:
@@ -1997,21 +2020,31 @@ class Systemctl:
             It returns all modules if no modules pattern were given.
             Also a single string as one module pattern may be given. """
         modules = to_list(modules)
-        self.scan_unit_sysd_files()
-        assert self._file_for_unit_sysd is not None
-        for item in sorted(self._file_for_unit_sysd.keys()):
-            if not modules:
-                yield item
-            elif [ module for module in modules if fnmatch.fnmatchcase(item, module) ]:
-                yield item
-            elif [ module for module in modules if module+suffix == item ]:
-                yield item
+        self.load_sysd_units()
+        if self._file_for_unit_sysd:
+            for item in sorted(self._file_for_unit_sysd.keys()):
+                if not modules:
+                    yield item
+                elif [ module for module in modules if fnmatch.fnmatchcase(item, module) ]:
+                    yield item
+                elif [ module for module in modules if module+suffix == item ]:
+                    yield item
+        if self._alias_modules:
+            for item in sorted(self._alias_modules.keys()):
+                if self._file_for_unit_sysd:
+                    if item in self._file_for_unit_sysd: continue  # already matched
+                if not modules:
+                    yield item
+                elif [ module for module in modules if fnmatch.fnmatchcase(item, module) ]:
+                    yield item
+                elif [ module for module in modules if module+suffix == item ]:
+                    yield item
     def match_sysv_units(self, modules=None, suffix=".service"):  # -> generate[ unit ]
         """ make a file glob on all known units (sysv areas).
             It returns all modules if no modules pattern were given.
             Also a single string as one module pattern may be given. """
         modules = to_list(modules)
-        self.scan_unit_sysv_files()
+        self.load_sysv_units()
         assert self._file_for_unit_sysv is not None
         for item in sorted(self._file_for_unit_sysv.keys()):
             if not modules:
@@ -3054,6 +3087,10 @@ class Systemctl:
                 found_all = False
                 continue
             for unit in matched:
+                ignored = self.ignored_unit(unit, _ignored_services)
+                if ignored and not self._force:
+                    warn_("Unit {unit} ignored in {ignored} (use --force to pass)".format(**locals()))
+                    continue
                 if unit not in units:
                     units += [ unit ]
         init = self._now or self._init
@@ -3834,6 +3871,10 @@ class Systemctl:
                 found_all = False
                 continue
             for unit in matched:
+                ignored = self.ignored_unit(unit, _ignored_services)
+                if ignored and not self._force:
+                    warn_("Unit {unit} ignored in {ignored} (use --force to pass)".format(**locals()))
+                    continue
                 if unit not in units:
                     units += [ unit ]
         return self.stop_units(units) and found_all
@@ -4068,6 +4109,10 @@ class Systemctl:
                 found_all = False
                 continue
             for unit in matched:
+                ignored = self.ignored_unit(unit, _ignored_services)
+                if ignored and not self._force:
+                    warn_("Unit {unit} ignored in {ignored} (use --force to pass)".format(**locals()))
+                    continue
                 if unit not in units:
                     units += [ unit ]
         return self.reload_units(units) and found_all
@@ -4183,6 +4228,10 @@ class Systemctl:
                 found_all = False
                 continue
             for unit in matched:
+                ignored = self.ignored_unit(unit, _ignored_services)
+                if ignored and not self._force:
+                    warn_("Unit {unit} ignored in {ignored} (use --force to pass)".format(**locals()))
+                    continue
                 if unit not in units:
                     units += [ unit ]
         return self.restart_units(units) and found_all
@@ -4234,6 +4283,10 @@ class Systemctl:
                 found_all = False
                 continue
             for unit in matched:
+                ignored = self.ignored_unit(unit, _ignored_services)
+                if ignored and not self._force:
+                    warn_("Unit {unit} ignored in {ignored} (use --force to pass)".format(**locals()))
+                    continue
                 if unit not in units:
                     units += [ unit ]
         return self.try_restart_units(units) and found_all
@@ -4275,6 +4328,10 @@ class Systemctl:
                 found_all = False
                 continue
             for unit in matched:
+                ignored = self.ignored_unit(unit, _ignored_services)
+                if ignored and not self._force:
+                    warn_("Unit {unit} ignored in {ignored} (use --force to pass)".format(**locals()))
+                    continue
                 if unit not in units:
                     units += [ unit ]
         return self.reload_or_restart_units(units) and found_all
@@ -4327,6 +4384,10 @@ class Systemctl:
                 found_all = False
                 continue
             for unit in matched:
+                ignored = self.ignored_unit(unit, _ignored_services)
+                if ignored and not self._force:
+                    warn_("Unit {unit} ignored in {ignored} (use --force to pass)".format(**locals()))
+                    continue
                 if unit not in units:
                     units += [ unit ]
         return self.reload_or_try_restart_units(units) and found_all
@@ -4372,6 +4433,10 @@ class Systemctl:
                 found_all = False
                 continue
             for unit in matched:
+                ignored = self.ignored_unit(unit, _ignored_services)
+                if ignored and not self._force:
+                    warn_("Unit {unit} ignored in {ignored} (use --force to pass)".format(**locals()))
+                    continue
                 if unit not in units:
                     units += [ unit ]
         return self.kill_units(units) and found_all
@@ -4981,7 +5046,10 @@ class Systemctl:
                 found_all = False
                 continue
             for unit in matched:
-                info_("matched {unit}".format(**locals()))  # ++
+                ignored = self.ignored_unit(unit, _ignored_services)
+                if ignored and not self._force:
+                    warn_("Unit {unit} ignored in {ignored} (use --force to pass)".format(**locals()))
+                    continue
                 if unit not in units:
                     units += [ unit ]
         return self.enable_units(units) and found_all
@@ -5094,6 +5162,10 @@ class Systemctl:
                 found_all = False
                 continue
             for unit in matched:
+                ignored = self.ignored_unit(unit, _ignored_services)
+                if ignored and not self._force:
+                    warn_("Unit {unit} ignored in {ignored} (use --force to pass)".format(**locals()))
+                    continue
                 if unit not in units:
                     units += [ unit ]
         return self.disable_units(units) and found_all
@@ -5255,6 +5327,10 @@ class Systemctl:
                 found_all = False
                 continue
             for unit in matched:
+                ignored = self.ignored_unit(unit, _ignored_services)
+                if ignored and not self._force:
+                    warn_("Unit {unit} ignored in {ignored} (use --force to pass)".format(**locals()))
+                    continue
                 if unit not in units:
                     units += [ unit ]
         return self.mask_units(units) and found_all
@@ -5323,6 +5399,10 @@ class Systemctl:
                 found_all = False
                 continue
             for unit in matched:
+                ignored = self.ignored_unit(unit, _ignored_services)
+                if ignored and not self._force:
+                    warn_("Unit {unit} ignored in {ignored} (use --force to pass)".format(**locals()))
+                    continue
                 if unit not in units:
                     units += [ unit ]
         return self.unmask_units(units) and found_all
@@ -5450,26 +5530,53 @@ class Systemctl:
                 for line in self.list_dependencies(dep, new_indent, new_mark, new_loop):
                     yield line
     def get_dependencies_unit(self, unit, styles=None):
+        """ scans both systemd folders and unit conf for dependency relations """
         styles = styles or [ "Requires", "Wants", "Requisite", "BindsTo", "PartOf", "ConsistsOf",
                              ".requires", ".wants", "PropagateReloadTo", "Conflicts", ]
         conf = self.get_unit_conf(unit)
         deps = {}
         for style in styles:
             if style.startswith("."):
-                for folder in self.sysd_folders():
-                    if not folder:
-                        continue
-                    require_path = os.path.join(folder, unit + style)
-                    if self._root:
-                        require_path = os_path(self._root, require_path)
-                    if os.path.isdir(require_path):
-                        for required in os.listdir(require_path):
-                            if required not in deps:
-                                deps[required] = style
+                deps.update(self.get_wants_unit(unit, [ style ]))
             else:
-                for requirelist in conf.getlist(Unit, style, []):
-                    for required in requirelist.strip().split(" "):
-                        deps[required.strip()] = style
+                deps.update(self.get_deps_unit(unit, [ style ]))
+        return deps
+    def get_wants_unit(self, unit, styles=None):
+        """ scans the systemd folders for unit.service.wants subfolders """
+        styles = styles or [ ".requires", ".wants" ]
+        deps = {}
+        for style in styles:
+            if not style.startswith("."): continue
+            for folder in self.sysd_folders():
+                if not folder:
+                    continue
+                require_path = os.path.join(folder, unit + style)
+                if self._root:
+                    require_path = os_path(self._root, require_path)
+                if os.path.isdir(require_path):
+                    for required in os.listdir(require_path):
+                        if required not in deps:
+                            deps[required] = style
+        return deps
+    def get_deps_unit(self, unit, styles=None):
+        """ scans the unit conf for Requires= or Wants= settings - can use the cache file """
+        if self._deps_modules:
+            if unit in self._deps_modules:
+                return self._deps_modules[unit]
+        dbg_("scanning Unit {unit} for Requuires".format(**locals()))
+        conf = self.get_unit_conf(unit)
+        return self.get_deps_from(conf, styles)
+    def get_deps_from(self, conf, styles=None):
+        """ scans the unit conf for Requires= or Wants= settings in the [Unit] section """
+        # shall not use the cache file as it is called from cache creation in daemon-reload
+        deps = {}
+        styles = styles or [ "Requires", "Wants", "Requisite", "BindsTo", "PartOf", "ConsistsOf",
+                             "PropagateReloadTo", "Conflicts", ]
+        for style in styles:
+            if style.startswith("."): continue
+            for requirelist in conf.getlist(Unit, style, []):
+                for required in requirelist.strip().split(" "):
+                    deps[required.strip()] = style
         return deps
     def get_required_dependencies(self, unit, styles=None):
         styles = styles or [ "Requires", "Wants", "Requisite", "BindsTo",
@@ -5562,6 +5669,9 @@ class Systemctl:
             and it is over 100 if it can not continue even
             for the relaxed systemctl.py style of execution. """
         errors = 0
+        aliases = {}
+        unit_deps = {}
+        sysinit_deps = {}
         for unit in self.match_units():
             try:
                 conf = self.get_unit_conf(unit)
@@ -5570,10 +5680,162 @@ class Systemctl:
                 error_("{unit}: can not read unit file {filename44}\n\t{e}".format(**locals()))
                 continue
             errors += self.syntax_check_from(conf)
+            if CacheAlias:
+                aliases.update(self.get_alias_from(conf))
+            if CacheDeps:
+                found = self.get_deps_from(conf)
+                if found:
+                    unit_deps[unit] = found
+        if CacheDeps:
+            sysinit_deps = self.get_sysinit_deps(SysInitTarget)
+        if sysinit_deps:
+            some_sysinit = len(sysinit_deps) - 1  # do not count sysinit.target itself
+            info_(" found {some_sysinit} sysinit.target deps".format(**locals()))
+            self.write_sysinit_cache(sysinit_deps)
+        if unit_deps:
+            some_unit = len(unit_deps)
+            info_(" found {some_unit} dependencies for units".format(**locals()))
+            self.write_deps_cache(unit_deps)
+        if aliases:
+            some_given = len(aliases)
+            info_(" found {some_given} alias units".format(**locals()))
+            self.write_alias_cache(aliases)
         if errors:
             problems = errors % 100
             warn_(" ({errors}) found {problems} problems".format(**locals()))
         return True  # errors
+    def get_alias_from(self, conf):
+        result = {}
+        for defs in conf.getlist("Install", "Alias"):
+            for unit_def in defs.split(" "):
+                unit = unit_def.strip()
+                if not unit: continue
+                name = conf.name()
+                result[unit] = name
+        return result
+    def write_alias_cache(self, aliases):
+        filename = os_path(self._root, self.expand_path(CacheAliasFile))
+        try:
+            with open(filename, "w") as f:
+                for unit in sorted(aliases):
+                    name = aliases[unit]
+                    f.write("{unit} {name}\n".format(**locals()))
+            debug_("written aliases to {filename}".format(**locals()))
+            return True
+        except Exception as e:
+            warning_("while writing {filename}: {e}".format(**locals()))
+        return False
+    def read_alias_cache(self):
+        filename = os_path(self._root, self.expand_path(CacheAliasFile))
+        if os.path.exists(filename):
+            try:
+                result = {}
+                text = open(filename).read()
+                for line in text.splitlines():
+                    if line.startswith("#"): continue
+                    unit, name = line.split(" ", 1)
+                    result[unit] = name
+                return result
+            except Exception as e:
+                warning_("while reading {filename}: {e}".format(**locals()))
+        return None
+    def load_alias_cache(self):
+        if self._alias_modules is None:
+            self._alias_modules = self.read_alias_cache()
+    def write_deps_cache(self, deps):
+        filename = os_path(self._root, self.expand_path(CacheDepsFile))
+        try:
+            with open(filename, "w") as f:
+                for unit in sorted(deps):
+                    sets = deps[unit]
+                    for name in sorted(sets):
+                        requires = sets[name]
+                        f.write("{unit} {requires} {name}\n".format(**locals()))
+            debug_("written unit deps to {filename}".format(**locals()))
+            return True
+        except Exception as e:
+            warning_("while writing {filename}: {e}".format(**locals()))
+        return False
+    def read_deps_cache(self):
+        filename = os_path(self._root, self.expand_path(CacheDepsFile))
+        if os.path.exists(filename):
+            try:
+                result = {}
+                text = open(filename).read()
+                for line in text.splitlines():
+                    if line.startswith("#"): continue
+                    unit, requires, name = line.split(" ", 2)
+                    if unit not in result:
+                        result[unit] = {}
+                    result[unit][name] = requires
+                return result
+            except Exception as e:
+                warning_("while reading {filename}: {e}".format(**locals()))
+        return None
+    def load_deps_cache(self):
+        if self._deps_modules is None:
+            self._deps_modules = self.read_deps_cache()
+    def get_sysinit_deps(self, unit):
+        result = {}
+        deps = self.get_wants_unit(unit)
+        result[unit] = deps
+        newresults = {}
+        for depth in xrange(DepsMaxDepth):
+            newresults = {}
+            for name, deps in result.items():
+                for dep in deps:
+                    units = self.get_wants_unit(dep)
+                    if dep not in result:
+                        newresults[dep] = units
+                    # dbg_("wants for {dep} -> {units}".format(**locals())) # internal
+            if not newresults:
+                break
+            result.update(newresults)
+        result_units = list(result)
+        dbg_("found sysinit deps = {result_units} # after {depth} rounds".format(**locals()))
+        if len(result) == 1:
+            if not result[unit]:
+                return {}
+        return result
+    def write_sysinit_cache(self, deps):
+        filename = os_path(self._root, self.expand_path(CacheSysinitFile))
+        try:
+            with open(filename, "w") as f:
+                for unit in sorted(deps):
+                    sets = deps[unit]
+                    for name in sorted(sets):
+                        requires = sets[name]
+                        f.write("{unit} {requires} {name}\n".format(**locals()))
+                    if not sets:
+                        f.write("{unit} .required\n".format(**locals()))
+            debug_("written sysinit deps to {filename}".format(**locals()))
+            return True
+        except Exception as e:
+            warning_("while writing {filename}: {e}".format(**locals()))
+        return False
+    def read_sysinit_cache(self):
+        filename = os_path(self._root, self.expand_path(CacheSysinitFile))
+        if os.path.exists(filename):
+            try:
+                result = {}
+                text = open(filename).read()
+                for line in text.splitlines():
+                    if line.startswith("#"): continue
+                    unit, requires, name = line.split(" ", 2)
+                    if unit not in result:
+                        result[unit] = {}
+                    result[unit][name] = requires
+                return result
+            except Exception as e:
+                warning_("while reading {filename}: {e}".format(**locals()))
+        return None
+    def load_sysinit_cache(self):
+        if self._sysinit_modules is None:
+            self._sysinit_modules = self.read_sysinit_cache()
+    def load_sysinit_modules(self, unit=None):
+        unit = unit or SysInitTarget
+        if self._sysinit_modules is None:
+            self._sysinit_modules = self.get_sysinit_deps(unit)
     def syntax_check_from(self, conf):
         filename = conf.filename()
         if filename and filename.endswith(".service"):
@@ -5873,6 +6135,10 @@ class Systemctl:
             if _force:
                 units += to_list(module)
                 continue
+            prefix = ""
+            if module.startswith("!"):
+                prefix = "!"
+                module = module[1:]
             matched = self.match_units(to_list(module))
             if not matched:
                 unit_ = unit_of(module)
@@ -5882,7 +6148,7 @@ class Systemctl:
                 continue
             for unit in matched:
                 if unit not in units:
-                    units += [ unit ]
+                    units += [ prefix + unit ]
         if not found_all and not _force:
             error_("Use --force to append the pattern as text (to be evaluated later)")
             self.error |= NOT_OK
@@ -5890,7 +6156,7 @@ class Systemctl:
         result = self.ignore_units(units)
         return result
     def ignore_units(self, units):
-        filename = os_path(self._root, IgnoredServicesFile)
+        filename = os_path(self._root, self.expand_path(IgnoredServicesFile))
         try:
             if os.path.exists(filename):
                 text = open(filename, "rb").read()
@@ -5912,6 +6178,18 @@ class Systemctl:
         except Exception as e:
             error_("while append to {filename}: {e}".format(**locals()))
             return False
+    def read_ignored_modules(self):
+        filename = os_path(self._root, self.expand_path(IgnoredServicesFile))
+        try:
+            if os.path.exists(filename):
+                content = open(filename, "r").read()
+                return content
+        except Exception as e:
+            warning_("while reading {filename}: {e}")
+        return ""
+    def load_ignored_modules(self):
+        if self._ignored_modules is None:
+            self._ignored_modules = self.read_ignored_modules()
     def get_ignored_services(self):
         igno = _ignored_services
         filename = os_path(self._root, IgnoredServicesFile)
@@ -5926,37 +6204,51 @@ class Systemctl:
             except Exception as e:
                 error_("while reading from {filename}: {e}".format(**locals()))
         return igno
-    def _ignored_unit(self, unit, igno):
+    def ignored_unit(self, unit, ignored):
+        if self._show_all:
+            return []
+        return self._ignored_unit(unit, ignored)
+    def _ignored_unit(self, unit, ignored):
         is_ignored = False
-        because_of = ""
-        in_section = ""
-        for line in igno.splitlines():
-            if not line.strip():
-                continue
-            if line.startswith("["):
-                in_section = line.strip()
-            ignore = line.strip()
-            if ignore.startswith("!"):
-                ignore = ignore[1:].strip()
-                if fnmatch.fnmatchcase(unit, ignore):
-                    is_ignored = False
-                    because_of = in_section
-                if fnmatch.fnmatchcase(unit, ignore+".service"):
-                    is_ignored = False
-                    because_of = in_section
-            else:
-                if fnmatch.fnmatchcase(unit, ignore):
-                    is_ignored = True
-                    because_of = in_section
-                if fnmatch.fnmatchcase(unit, ignore+".service"):
-                    is_ignored = True
-                    because_of = in_section
+        because_of = []
+        in_section = "[...]"
+        self.load_sysinit_modules()
+        if self._sysinit_modules:
+            if unit in self._sysinit_modules:
+                is_ignored = True
+                because_of.append("sysinit.target")
+        self.load_ignored_modules()
+        for igno in (ignored, self._ignored_modules):
+            if not igno: continue
+            for line in igno.splitlines():
+                if not line.strip():
+                    continue
+                if line.startswith("["):
+                    in_section = line.strip()
+                ignore = line.strip()
+                if ignore.startswith("!"):
+                    ignore = ignore[1:].strip()
+                    if fnmatch.fnmatchcase(unit, ignore):
+                        is_ignored = False
+                        because_of.append("!" + in_section)
+                    if fnmatch.fnmatchcase(unit, ignore+".service"):
+                        is_ignored = False
+                        because_of.append("!" + in_section)
+                else:
+                    if fnmatch.fnmatchcase(unit, ignore):
+                        is_ignored = True
+                        because_of.append(in_section)
+                    if fnmatch.fnmatchcase(unit, ignore+".service"):
+                        is_ignored = True
+                        because_of.append(in_section)
         if DebugIgnoredServices:
             if is_ignored:
                 dbg_("Unit {unit} ignored because of {because_of}".format(**locals()))
             elif because_of:
                 dbg_("Unit {unit} allowed because of {because_of}".format(**locals()))
-        return is_ignored
+        if is_ignored:
+            return because_of
+        return []
     def default_services_modules(self, *modules):
         """ -- show the default services (started by 'default')
             This is used internally to know the list of service to be started in the 'get-default'
@@ -5986,63 +6278,75 @@ class Systemctl:
         default_target = target or self.get_default_target()
         return self.enabled_target_services(default_target, sysv, igno)
     def enabled_target_services(self, target, sysv="S", igno=""):
+        result = []
+        units = self._enabled_target_services(target, sysv)
+        if self._show_all:
+            return units
+        for unit in units:
+            ignored = self._ignored_unit(unit, igno)
+            if ignored:
+                dbg_("Unit {unit} ignored in {ignored} for target services".format(**locals()))
+            else:
+                result.append(unit)
+        return result
+    def _enabled_target_services(self, target, sysv="S"):
         units = []
         if self.user_mode():
             targetlist = self.get_target_list(target)
             dbg_("check for {target} user services : {targetlist}".format(**locals()))
             for targets in targetlist:
-                for unit in self.enabled_target_user_local_units(targets, ".target", igno):
+                for unit in self._enabled_target_user_local_units(targets, ".target"):
                     if unit not in units:
                         units.append(unit)
             for targets in targetlist:
-                for unit in self.required_target_units(targets, ".socket", igno):
+                for unit in self._required_target_units(targets, ".socket"):
                     if unit not in units:
                         units.append(unit)
             for targets in targetlist:
-                for unit in self.enabled_target_user_local_units(targets, ".socket", igno):
+                for unit in self._enabled_target_user_local_units(targets, ".socket"):
                     if unit not in units:
                         units.append(unit)
             for targets in targetlist:
-                for unit in self.required_target_units(targets, ".service", igno):
+                for unit in self._required_target_units(targets, ".service"):
                     if unit not in units:
                         units.append(unit)
             for targets in targetlist:
-                for unit in self.enabled_target_user_local_units(targets, ".service", igno):
+                for unit in self._enabled_target_user_local_units(targets, ".service"):
                     if unit not in units:
                         units.append(unit)
             for targets in targetlist:
-                for unit in self.enabled_target_user_system_units(targets, ".service", igno):
+                for unit in self._enabled_target_user_system_units(targets, ".service"):
                     if unit not in units:
                         units.append(unit)
         else:
             targetlist = self.get_target_list(target)
             dbg_("check for {target} system services: {targetlist}".format(**locals()))
             for targets in targetlist:
-                for unit in self.enabled_target_configured_system_units(targets, ".target", igno + _ignored_targets):
+                for unit in self._enabled_target_configured_system_units(targets, ".target"):
                     if unit not in units:
                         units.append(unit)
             for targets in targetlist:
-                for unit in self.required_target_units(targets, ".socket", igno):
+                for unit in self._required_target_units(targets, ".socket"):
                     if unit not in units:
                         units.append(unit)
             for targets in targetlist:
-                for unit in self.enabled_target_installed_system_units(targets, ".socket", igno):
+                for unit in self._enabled_target_installed_system_units(targets, ".socket"):
                     if unit not in units:
                         units.append(unit)
             for targets in targetlist:
-                for unit in self.required_target_units(targets, ".service", igno):
+                for unit in self._required_target_units(targets, ".service"):
                     if unit not in units:
                         units.append(unit)
             for targets in targetlist:
-                for unit in self.enabled_target_installed_system_units(targets, ".service", igno):
+                for unit in self._enabled_target_installed_system_units(targets, ".service"):
                     if unit not in units:
                         units.append(unit)
             for targets in targetlist:
-                for unit in self.enabled_target_sysv_units(targets, sysv, igno):
+                for unit in self._enabled_target_sysv_units(targets, sysv):
                     if unit not in units:
                         units.append(unit)
         return units
-    def enabled_target_user_local_units(self, target, unit_kind=".service", igno=""):
+    def _enabled_target_user_local_units(self, target, unit_kind=".service"):
         units = []
         for basefolder in self.user_folders():
             if not basefolder:
@@ -6054,12 +6358,10 @@ class Systemctl:
                 for unit in sorted(os.listdir(folder)):
                     path = os.path.join(folder, unit)
                     if os.path.isdir(path): continue
-                    if self._ignored_unit(unit, igno):
-                        continue  # ignore
                     if unit.endswith(unit_kind):
                         units.append(unit)
         return units
-    def enabled_target_user_system_units(self, target, unit_kind=".service", igno=""):
+    def _enabled_target_user_system_units(self, target, unit_kind=".service"):
         units = []
         for basefolder in self.system_folders():
             if not basefolder:
@@ -6071,8 +6373,6 @@ class Systemctl:
                 for unit in sorted(os.listdir(folder)):
                     path = os.path.join(folder, unit)
                     if os.path.isdir(path): continue
-                    if self._ignored_unit(unit, igno):
-                        continue  # ignore
                     if unit.endswith(unit_kind):
                         conf = self.load_unit_conf(unit)
                         if conf is None:
@@ -6082,7 +6382,7 @@ class Systemctl:
                         else:
                             units.append(unit)
         return units
-    def enabled_target_installed_system_units(self, target, unit_type=".service", igno=""):
+    def _enabled_target_installed_system_units(self, target, unit_type=".service"):
         units = []
         for basefolder in self.system_folders():
             if not basefolder:
@@ -6094,12 +6394,10 @@ class Systemctl:
                 for unit in sorted(os.listdir(folder)):
                     path = os.path.join(folder, unit)
                     if os.path.isdir(path): continue
-                    if self._ignored_unit(unit, igno):
-                        continue  # ignore
                     if unit.endswith(unit_type):
                         units.append(unit)
         return units
-    def enabled_target_configured_system_units(self, target, unit_type=".service", igno=""):
+    def _enabled_target_configured_system_units(self, target, unit_type=".service"):
         units = []
         if True:
             folder = self.default_enablefolder(target)
@@ -6109,12 +6407,10 @@ class Systemctl:
                 for unit in sorted(os.listdir(folder)):
                     path = os.path.join(folder, unit)
                     if os.path.isdir(path): continue
-                    if self._ignored_unit(unit, igno):
-                        continue  # ignore
                     if unit.endswith(unit_type):
                         units.append(unit)
         return units
-    def enabled_target_sysv_units(self, target, sysv="S", igno=""):
+    def _enabled_target_sysv_units(self, target, sysv="S"):
         units = []
         folders = []
         if target in [ "multi-user.target", DefaultUnit ]:
@@ -6132,16 +6428,24 @@ class Systemctl:
                 if m:
                     service = m.group(1)
                     unit = service + ".service"
-                    if self._ignored_unit(unit, igno):
-                        continue  # ignore
                     units.append(unit)
         return units
     def required_target_units(self, target, unit_type, igno=""):
+        units = self._required_target_units(target, unit_type)
+        if self._show_all:
+            return units
+        result = []
+        for unit in units:
+            ignored = self._ignored_unit(unit, igno)
+            if ignored:
+                dbg_("Unit {unit} ignored in {ignored} for required target units".format(**locals()))
+            else:
+                result.append(unit)
+        return result
+    def _required_target_units(self, target, unit_type):
         units = []
         deps = self.get_required_dependencies(target)
         for unit in sorted(deps):
-            if self._ignored_unit(unit, igno):
-                continue  # ignore
             if unit.endswith(unit_type):
                 if unit not in units:
                     units.append(unit)
@@ -6325,6 +6629,10 @@ class Systemctl:
                 found_all = False
                 continue
             for unit in matched:
+                ignored = self.ignored_unit(unit, _ignored_services)
+                if ignored and not self._force:
+                    warn_("Unit {unit} ignored in {ignored} (use --force to pass)".format(**locals()))
+                    continue
                 if unit not in units:
                     units += [ unit ]
         modulelist, unitlist = " ".join(modules), " ".join(units)
@@ -6686,27 +6994,32 @@ class Systemctl:
         proc = DefaultProcDir
         pidlist = [ pid ]
         pids = [ pid ]
+        ppid_of = {}
         for depth in xrange(KillChildrenMaxDepth):
             for pid_entry in os.listdir(proc):
                 pid = to_intN(pid_entry)
                 if pid is None:
                     continue
-                pid_status = "{proc}/{pid}/status".format(**locals())
-                if os.path.isfile(pid_status):
-                    try:
-                        for line in open(pid_status):
-                            if line.startswith("PPid:"):
-                                ppid_text = line[len("PPid:"):].strip()
-                                try: ppid = int(ppid_text)
-                                except: continue
-                                if ppid in pidlist and pid not in pids:
-                                    pids += [ pid ]
-                    except IOError as e:
-                        warn_("{pid_status} : {e}".format(**locals()))
-                        continue
-            if len(pids) != len(pidlist):
-                pidlist = pids[:]
-                continue
+                if pid not in ppid_of:
+                    pid_status = "{proc}/{pid}/status".format(**locals())
+                    if os.path.isfile(pid_status):
+                        try:
+                            for line in open(pid_status):
+                                if line.startswith("PPid:"):
+                                    ppid_text = line[len("PPid:"):].strip()
+                                    ppid = int(ppid_text)
+                                    ppid_of[pid] = pid
+                                    break
+                        except IOError as e:
+                            warn_("{pid_status} : {e}".format(**locals()))
+                            continue
+                ppid = ppid_of[pid]
+                if ppid in pidlist and pid not in pids:
+                    pids += [ pid ]
+            if len(pids) <= len(pidlist):
+                break
+            pidlist = pids[:]
+            continue
         return pids
     def killall(self, *targets):
         """ --- explicitly kill processes (internal) """
