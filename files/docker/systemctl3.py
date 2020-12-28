@@ -6193,7 +6193,7 @@ class Systemctl:
         return ""
     def load_ignored_modules(self):
         if self._ignored_modules is None:
-            self._ignored_modues = self.read_ignored_modules()
+            self._ignored_modules = self.read_ignored_modules()
     def get_ignored_services(self):
         igno = _ignored_services
         filename = os_path(self._root, IgnoredServicesFile)
