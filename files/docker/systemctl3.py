@@ -3088,8 +3088,8 @@ class Systemctl:
                 continue
             for unit in matched:
                 ignored = self.ignored_unit(unit, _ignored_services)
-                if ignored:
-                    info_("Unit {unit} ignored in {ignored} (use --all to pass)".format(**locals()))
+                if ignored and not self._force:
+                    warn_("Unit {unit} ignored in {ignored} (use --force to pass)".format(**locals()))
                     continue
                 if unit not in units:
                     units += [ unit ]
@@ -3872,8 +3872,8 @@ class Systemctl:
                 continue
             for unit in matched:
                 ignored = self.ignored_unit(unit, _ignored_services)
-                if ignored:
-                    info_("Unit {unit} ignored in {ignored} (use --all to pass)".format(**locals()))
+                if ignored and not self._force:
+                    warn_("Unit {unit} ignored in {ignored} (use --force to pass)".format(**locals()))
                     continue
                 if unit not in units:
                     units += [ unit ]
@@ -4110,8 +4110,8 @@ class Systemctl:
                 continue
             for unit in matched:
                 ignored = self.ignored_unit(unit, _ignored_services)
-                if ignored:
-                    info_("Unit {unit} ignored in {ignored} (use --all to pass)".format(**locals()))
+                if ignored and not self._force:
+                    warn_("Unit {unit} ignored in {ignored} (use --force to pass)".format(**locals()))
                     continue
                 if unit not in units:
                     units += [ unit ]
@@ -4229,8 +4229,8 @@ class Systemctl:
                 continue
             for unit in matched:
                 ignored = self.ignored_unit(unit, _ignored_services)
-                if ignored:
-                    info_("Unit {unit} ignored in {ignored} (use --all to pass)".format(**locals()))
+                if ignored and not self._force:
+                    warn_("Unit {unit} ignored in {ignored} (use --force to pass)".format(**locals()))
                     continue
                 if unit not in units:
                     units += [ unit ]
@@ -4284,8 +4284,8 @@ class Systemctl:
                 continue
             for unit in matched:
                 ignored = self.ignored_unit(unit, _ignored_services)
-                if ignored:
-                    info_("Unit {unit} ignored in {ignored} (use --all to pass)".format(**locals()))
+                if ignored and not self._force:
+                    warn_("Unit {unit} ignored in {ignored} (use --force to pass)".format(**locals()))
                     continue
                 if unit not in units:
                     units += [ unit ]
@@ -4329,8 +4329,8 @@ class Systemctl:
                 continue
             for unit in matched:
                 ignored = self.ignored_unit(unit, _ignored_services)
-                if ignored:
-                    info_("Unit {unit} ignored in {ignored} (use --all to pass)".format(**locals()))
+                if ignored and not self._force:
+                    warn_("Unit {unit} ignored in {ignored} (use --force to pass)".format(**locals()))
                     continue
                 if unit not in units:
                     units += [ unit ]
@@ -4385,8 +4385,8 @@ class Systemctl:
                 continue
             for unit in matched:
                 ignored = self.ignored_unit(unit, _ignored_services)
-                if ignored:
-                    info_("Unit {unit} ignored in {ignored} (use --all to pass)".format(**locals()))
+                if ignored and not self._force:
+                    warn_("Unit {unit} ignored in {ignored} (use --force to pass)".format(**locals()))
                     continue
                 if unit not in units:
                     units += [ unit ]
@@ -4434,8 +4434,8 @@ class Systemctl:
                 continue
             for unit in matched:
                 ignored = self.ignored_unit(unit, _ignored_services)
-                if ignored:
-                    info_("Unit {unit} ignored in {ignored} (use --all to pass)".format(**locals()))
+                if ignored and not self._force:
+                    warn_("Unit {unit} ignored in {ignored} (use --force to pass)".format(**locals()))
                     continue
                 if unit not in units:
                     units += [ unit ]
@@ -5047,8 +5047,8 @@ class Systemctl:
                 continue
             for unit in matched:
                 ignored = self.ignored_unit(unit, _ignored_services)
-                if ignored:
-                    info_("Unit {unit} ignored in {ignored} (use --all to pass)".format(**locals()))
+                if ignored and not self._force:
+                    warn_("Unit {unit} ignored in {ignored} (use --force to pass)".format(**locals()))
                     continue
                 if unit not in units:
                     units += [ unit ]
@@ -5163,8 +5163,8 @@ class Systemctl:
                 continue
             for unit in matched:
                 ignored = self.ignored_unit(unit, _ignored_services)
-                if ignored:
-                    info_("Unit {unit} ignored in {ignored} (use --all to pass)".format(**locals()))
+                if ignored and not self._force:
+                    warn_("Unit {unit} ignored in {ignored} (use --force to pass)".format(**locals()))
                     continue
                 if unit not in units:
                     units += [ unit ]
@@ -5328,8 +5328,8 @@ class Systemctl:
                 continue
             for unit in matched:
                 ignored = self.ignored_unit(unit, _ignored_services)
-                if ignored:
-                    info_("Unit {unit} ignored in {ignored} (use --all to pass)".format(**locals()))
+                if ignored and not self._force:
+                    warn_("Unit {unit} ignored in {ignored} (use --force to pass)".format(**locals()))
                     continue
                 if unit not in units:
                     units += [ unit ]
@@ -5400,8 +5400,8 @@ class Systemctl:
                 continue
             for unit in matched:
                 ignored = self.ignored_unit(unit, _ignored_services)
-                if ignored:
-                    info_("Unit {unit} ignored in {ignored} (use --all to pass)".format(**locals()))
+                if ignored and not self._force:
+                    warn_("Unit {unit} ignored in {ignored} (use --force to pass)".format(**locals()))
                     continue
                 if unit not in units:
                     units += [ unit ]
@@ -6630,8 +6630,8 @@ class Systemctl:
                 continue
             for unit in matched:
                 ignored = self.ignored_unit(unit, _ignored_services)
-                if ignored:
-                    info_("Unit {unit} ignored in {ignored} (use --all to pass)".format(**locals()))
+                if ignored and not self._force:
+                    warn_("Unit {unit} ignored in {ignored} (use --force to pass)".format(**locals()))
                     continue
                 if unit not in units:
                     units += [ unit ]
