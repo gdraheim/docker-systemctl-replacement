@@ -2372,7 +2372,7 @@ class Systemctl:
         return conf.get_status(name, default)
     def set_status_from(self, conf, name, value):
         conf.set_status(name, value)
-    def set_status_code_from(self, conf, execs, run=None):
+    def set_status_code_from(self, conf, execs, run=None, dbg = None, dbgcheck = False):
         if execs in ["ExecStart", "oneshot", "idle", "simple", "forking", "notify"]:
             pref = "ExecMain"
         else:
@@ -2393,6 +2393,11 @@ class Systemctl:
         else:
             self.set_status_from(conf, pref+"Code", "0")
             self.set_status_from(conf, pref+"Status", "0")
+        if dbg:
+            returncodeOK, signalEE = exitOK(run.returncode), run.signal or ""
+            done = "done"
+            if run.returncode and dbgcheck: done = "failed"
+            dbg_("{dbg} {done} ({returncodeOK}) <-{signalEE}>".format(**locals()))
     #
     #
     def read_env_file(self, env_file):  # -> generate[ (name,value) ]
@@ -3274,9 +3279,7 @@ class Systemctl:
                 if not forkpid:
                     self.execve_from(conf, newcmd, env)  # pragma: no cover
                 run = subprocess_waitpid(forkpid)
-                self.set_status_code_from(conf, "ExecStartPre", run)
-                returncodeOK, signalEE = exitOK(run.returncode), run.signal or ""
-                dbg_(" pre-start done ({returncodeOK}) <-{signalEE}>".format(**locals()))
+                self.set_status_code_from(conf, "ExecStartPre", run, "pre-start", exe.check)
                 if run.returncode and exe.check:
                     error_("the ExecStartPre control process exited with error code")
                     active = "failed"
@@ -3301,16 +3304,11 @@ class Systemctl:
                     os.setsid()  # detach child process from parent
                     self.execve_from(conf, newcmd, env)
                 run = subprocess_waitpid(forkpid)
-                self.set_status_code_from(conf, "ExecStart", run)
+                self.set_status_code_from(conf, "ExecStart", run, runs+" start", exe.check)
                 if run.returncode and exe.check:
                     returncode = run.returncode
                     service_result = "failed"
-                    returncodeOK, signalEE = exitOK(run.returncode), run.signal or ""
-                    error_("{runs} start {service_result} ({returncodeOK}) <-{signalEE}>".format(**locals()))
                     break
-                else:
-                    returncodeOK, signalEE = exitOK(run.returncode), run.signal or ""
-                    info_("{runs} start done ({returncodeOK}) <-{signalEE}>".format(**locals()))
             if doRemainAfterExit:
                 active = run.returncode and "failed" or "active"
                 self.write_status_from(conf, AS=active)
@@ -3348,10 +3346,8 @@ class Systemctl:
                 env["MAINPID"] = strE(forkpid)
                 time.sleep(MinimumYield)
                 run = subprocess_testpid(forkpid)
-                self.set_status_code_from(conf, "ExecStart", run)
+                self.set_status_code_from(conf, "ExecStart", run, runs+" start", exe.check)
                 if run.returncode is not None:
-                    returncodeOK, signalEE, fork_pid = exitOK(run.returncode), run.signal or "", run.pid
-                    info_("{runs} stopped PID {fork_pid} ({returncodeOK}) <-{signalEE}>".format(**locals()))
                     if run.returncode and exe.check:
                         returncode = run.returncode
                         service_result = "failed"
@@ -3401,10 +3397,8 @@ class Systemctl:
                 env["MAINPID"] = strE(mainpid)
                 time.sleep(MinimumYield)
                 run = subprocess_testpid(forkpid)
-                self.set_status_code_from(conf, "ExecStart", run)
+                self.set_status_code_from(conf, "ExecStart", run, runs+" start", exe.check)
                 if run.returncode is not None:
-                    returncodeOK, signalEE, fork_pid = exitOK(run.returncode), run.signal or "", run.pid
-                    info_("{runs} stopped PID {fork_pid} ({returncodeOK}) <-{signalEE}>".format(**locals()))
                     if run.returncode and exe.check:
                         returncode = run.returncode
                         service_result = "failed"
@@ -3445,12 +3439,10 @@ class Systemctl:
                     self.execve_from(conf, newcmd, env)
                 info_("{runs} started PID {forkpid}".format(**locals()))
                 run = subprocess_waitpid(forkpid)
-                self.set_status_code_from(conf, "ExecStart", run)
+                self.set_status_code_from(conf, "ExecStart", run, runs+" start", exe.check)
                 if run.returncode and exe.check:
                     returncode = run.returncode
                     service_result = "failed"
-                returncodeOK, signalEE, fork_pid = exitOK(run.returncode), run.signal or "", run.pid
-                info_("{runs} stopped PID {fork_pid} ({returncodeOK}) <-{signalEE}>".format(**locals()))
             if pid_file and service_result in [ "success" ]:
                 pid = self.wait_pid_file(pid_file)  # application PIDFile
                 info_("{runs} start done PID {pid} [{pid_file}]".format(**locals()))
@@ -3484,9 +3476,7 @@ class Systemctl:
                 if not forkpid:
                     self.execve_from(conf, newcmd, env)  # pragma: no cover
                 run = subprocess_waitpid(forkpid)
-                self.set_status_code_from(conf, "ExecStopPost", run)
-                returncodeOK, signalEE, fork_pid = exitOK(run.returncode), run.signal or "", run.pid
-                dbg_("post-fail done ({returncodeOK}) <-{signalEE}>".format(**locals()))
+                self.set_status_code_from(conf, "ExecStopPost", run, "post-fail")
             if _what_kind not in ["none", "keep"]:
                 self.remove_service_directories(conf)
             return False
@@ -3498,9 +3488,7 @@ class Systemctl:
                 if not forkpid:
                     self.execve_from(conf, newcmd, env)  # pragma: no cover
                 run = subprocess_waitpid(forkpid)
-                self.set_status_code_from(conf, "ExecStartPost", run)
-                returncodeOK, signalEE, fork_pid = exitOK(run.returncode), run.signal or "", run.pid
-                dbg_("post-start done ({returncodeOK}) <-{signalEE}>".format(**locals()))
+                self.set_status_code_from(conf, "ExecStartPost", run, "post-start")
             return True
     def listen_modules(self, *modules):
         """ [UNIT]... -- listen socket units"""
@@ -3606,6 +3594,7 @@ class Systemctl:
         if not self._quiet:
             okee = self.check_exec_from(conf, env, Socket, "Exec")  # all...
             if not okee and _no_reload: return False
+        self.set_status_code_from(conf, "starting", None)
         if True:
             for cmd in conf.getlist(Socket, "ExecStartPre", []):
                 exe, newcmd = self.exec_newcmd(cmd, env, conf)
@@ -3614,8 +3603,7 @@ class Systemctl:
                 if not forkpid:
                     self.execve_from(conf, newcmd, env)  # pragma: no cover
                 run = subprocess_waitpid(forkpid)
-                returncodeOK, signalEE, fork_pid = exitOK(run.returncode), run.signal or "", run.pid
-                dbg_(" pre-start done ({returncodeOK}) <-{signalEE}>".format(**locals()))
+                self.set_status_code_from(conf, "ExecStartPre", run, "pre-start", exe.check)
                 if run.returncode and exe.check:
                     error_("the ExecStartPre control process exited with error code")
                     active = "failed"
@@ -3654,8 +3642,7 @@ class Systemctl:
                 if not forkpid:
                     self.execve_from(conf, newcmd, env)  # pragma: no cover
                 run = subprocess_waitpid(forkpid)
-                returncodeOK, signalEE, fork_pid = exitOK(run.returncode), run.signal or "", run.pid
-                dbg_("post-fail done ({returncodeOK}) <-{signalEE}>".format(**locals()))
+                self.set_status_code_from(conf, "ExecStopPost", run, "post-fail")
             return False
         else:
             for cmd in conf.getlist(Socket, "ExecStartPost", []):
@@ -3665,8 +3652,7 @@ class Systemctl:
                 if not forkpid:
                     self.execve_from(conf, newcmd, env)  # pragma: no cover
                 run = subprocess_waitpid(forkpid)
-                returncodeOK, signalEE, fork_pid = exitOK(run.returncode), run.signal or "", run.pid
-                dbg_("post-start done ({returncodeOK}) <-{signalEE}>".format(**locals()))
+                self.set_status_code_from(conf, "ExecStartPost", run, "post-start")
             return True
     def create_socket(self, conf):
         unit = conf.name()
@@ -4047,7 +4033,7 @@ class Systemctl:
                 if not forkpid:
                     self.execve_from(conf, newcmd, env)  # pragma: no cover
                 run = subprocess_waitpid(forkpid)
-                self.set_status_code_from(conf, "ExecStop", run)
+                self.set_status_code_from(conf, "ExecStop", run, runs+" stop", exe.check)
                 if run.returncode and exe.check:
                     returncode = run.returncode
                     service_result = "failed"
@@ -4075,7 +4061,7 @@ class Systemctl:
                 if not forkpid:
                     self.execve_from(conf, newcmd, env)  # pragma: no cover
                 run = subprocess_waitpid(forkpid)
-                self.set_status_code_from(conf, "ExecStop", run)
+                self.set_status_code_from(conf, "ExecStop", run, runs+" stop", exe.check)
                 run = must_have_failed(run, newcmd)  # TODO: a workaround for Ubuntu 16.04
                 # self.write_status_from(conf, MainPID=run.pid) # no ExecStop
                 if run.returncode and exe.check:
@@ -4110,7 +4096,7 @@ class Systemctl:
                 if not forkpid:
                     self.execve_from(conf, newcmd, env)  # pragma: no cover
                 run = subprocess_waitpid(forkpid)
-                self.set_status_code_from(conf, "ExecStop", run)
+                self.set_status_code_from(conf, "ExecStop", run, runs+" stop", exe.check)
                 if run.returncode and exe.check:
                     returncode = run.returncode
                     service_result = "failed"
@@ -4145,9 +4131,7 @@ class Systemctl:
                 if not forkpid:
                     self.execve_from(conf, newcmd, env)  # pragma: no cover
                 run = subprocess_waitpid(forkpid)
-                self.set_status_code_from(conf, "ExecStopPost", run)
-                returncodeOK, signalEE, fork_pid = exitOK(run.returncode), run.signal or "", run.pid
-                dbg_("post-stop done ({returncodeOK}) <-{signalEE}>".format(**locals()))
+                self.set_status_code_from(conf, "ExecStopPost", run, "post-stop")
         if _what_kind not in ["none", "keep"]:
             self.remove_service_directories(conf)
         return service_result == "success"
@@ -4165,13 +4149,17 @@ class Systemctl:
         if not self._quiet:
             okee = self.check_exec_from(conf, env, Socket, "ExecStop")
             if not okee and _no_reload: return False
+        self.set_status_code_from(conf, "stopping", None)
         if not accept:
             # we do not listen but have the service started right away
             done = self.do_stop_service_from(service_conf)
             service_result = done and "success" or "failed"
+            status_result = done and "stopped" or "failed"
         else:
             done = self.do_stop_service_from(service_conf)
             service_result = done and "success" or "failed"
+            status_result = done and "stopped" or "failed"
+        self.set_status_code_from(conf, service_result, None)
         # service_directories = self.env_service_directories(conf)
         # env.update(service_directories)
         # POST sequence
@@ -4184,8 +4172,11 @@ class Systemctl:
                 if not forkpid:
                     self.execve_from(conf, newcmd, env)  # pragma: no cover
                 run = subprocess_waitpid(forkpid)
-                returncodeOK, signalEE, fork_pid = exitOK(run.returncode), run.signal or "", run.pid
-                dbg_("post-stop done ({returncodeOK}) <-{signalEE}>".format(**locals()))
+                self.set_status_code_from(conf, "ExecStop", run, "post-stop")
+        if service_result in ["failed"]:
+            self.write_status_from(conf, AS="failed")
+        else:
+            self.clean_status_from(conf)  # "inactive"
         return service_result == "success"
     def wait_vanished_pid(self, pid, timeout):
         if not pid:
@@ -4307,10 +4298,9 @@ class Systemctl:
                 if not forkpid:
                     self.execve_from(conf, newcmd, env)  # pragma: no cover
                 run = subprocess_waitpid(forkpid)
-                self.set_status_code_from(conf, "ExecReload", run)
+                self.set_status_code_from(conf, "ExecReload", run, "reload", exe.check)
                 if run.returncode and exe.check:
                     returncodeOK = exitOK(run.returncode)
-                    error_("Job for {unit} failed because the control process exited with error code. ({returncodeOK})".format(**locals()))
                     self.write_status_from(conf, AS="failed")
                     return False
             time.sleep(MinimumYield)
