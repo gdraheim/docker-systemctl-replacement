@@ -11351,6 +11351,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "running testsleepA"))
         self.assertTrue(greps(out, "starts testsleepA"))
         #
+        cmd = "export SYSTEMD_PAGER=/bin/cat; {systemctl} logs zza.service -vv"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s \n%s", cmd, end, out)
+        self.assertEqual(end, 0)  # file not found
+        self.assertTrue(greps(out, "running testsleepA"))
+        self.assertTrue(greps(out, "starts testsleepA"))
+        #
         self.rm_killall()
         self.rm_testdir()
         self.coverage()
