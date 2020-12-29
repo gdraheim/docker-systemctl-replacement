@@ -11996,10 +11996,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         #
-        cmd = "{systemctl} reload zzz.service {vv}"
+        cmd = "{systemctl} reload zzz.service {vv} {vv}"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        self.assertTrue(greps(err, "Job for zzz.service failed because the control process exited with error code."))
+        if not real:
+            # self.assertTrue(greps(err, "Job for zzz.service failed because the control process exited with error code."))
+            self.assertTrue(greps(err, "reload failed .1/FAILURE. <->"))
         #
         cmd = "{systemctl} is-active zzz.service {vv}"
         out, err, end = output3(cmd.format(**locals()))
