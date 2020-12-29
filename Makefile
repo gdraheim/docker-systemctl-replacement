@@ -290,7 +290,13 @@ dockerfiles:
 	; wc -l test-$$dockerfile \
 	; done
 
+####### autoflakes
+autoflakes: ; $${PKG:-zypper} install -y python3-autoflake
+flake: flake.s.i
+flake.s.i: ; autoflake files/docker/systemctl3.py
+
 ####### autopep8
+autopep8: ; $${PKG:-zypper} install -y python3-autopep8
 pep style: 
 	$(MAKE) pep.s pep.t
 pep.i style.i: 
