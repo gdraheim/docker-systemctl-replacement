@@ -3868,6 +3868,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             Alias=zzzfoo.service""")
+        cmd = "{systemctl} stop zzzfoo {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 5)
+        #
         cmd = "{systemctl} daemon-reload {vv}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
@@ -3881,11 +3886,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(found, "zzzfoo.service"))
         self.assertEqual(len(lines(found)), 1)
         #
+        cmd = "{systemctl} stop zzzfoo {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0) # it is found now
+        #
         self.rm_testdir()
         self.rm_zzfiles(root)
         self.coverage()
         self.end()
-    def test_2403_daemon_reload_deps_cache(self, real: bool = False) -> None:
+    def test_2409_daemon_reload_deps_cache(self, real: bool = False) -> None:
         """ check that daemon-relaod creates cache files """
         vv = self.begin()
         testname = self.testname()
@@ -3974,12 +3984,309 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(found, "zza.service"))
         self.assertEqual(len(lines(found)), 2)
         #
-        # self.rm_testdir()
-        # self.rm_zzfiles(root)
+        self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
-    def test_2411_daemon_reload_sysinit_cache_recurse(self, real: bool = False) -> None:
+    def test_2411_daemon_reload_sysinit_cache_includes_wants(self, real: bool = False) -> None:
         """ check that daemon-relaod creates cache files """
+        vv = self.begin()
+        self.rm_testdir()
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir, real)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        systemctl += " -c CacheDeps"
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
+        text_file(os_path(root, "/usr/lib/systemd/system/zzb.service"), """
+            [Unit]
+            Description=Testing B
+            # Requires=zza.service
+            [Service]
+            ExecStart=/usr/bin/sleep 3
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/system/zzz.service"), """
+            [Unit]
+            Description=Testing Z
+            [Service]
+            ExecStart=/usr/bin/sleep 3
+            [Install]
+            WantedBy=sysinit.target""")
+        sysinit_wants = os_path(root, "/etc/systemd/system/sysinit.target.wants")
+        cmd = "{systemctl} enable zzz.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "ls {sysinit_wants}"
+        sh____(cmd.format(**locals()))
+        self.assertTrue(os.path.exists(sysinit_wants + "/zzz.service"))
+        #
+        zzz_service_wants = os_path(root, "/etc/systemd/system/zzz.service.wants")
+        if not os.path.isdir(zzz_service_wants):
+            os.makedirs(zzz_service_wants)
+        os.link(os_path(root, "/usr/lib/systemd/system/zzb.service"), zzz_service_wants + "/zzb.service")
+        cmd = "ls {zzz_service_wants}"
+        sh____(cmd.format(**locals()))
+        #
+        cmd = "{systemctl} daemon-reload {vv} {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        alias_cache = os_path(root, "/etc/systemd/systemctl.alias.cache")
+        deps_cache = os_path(root, "/etc/systemd/systemctl.deps.cache")
+        sysinit_cache = os_path(root, "/etc/systemd/systemctl.sysinit.cache")
+        self.assertFalse(os.path.exists(alias_cache))
+        self.assertFalse(os.path.exists(deps_cache))
+        self.assertTrue(os.path.exists(sysinit_cache))
+        # found = open(deps_cache).read()
+        # self.assertTrue(greps(found, "zzz.service"))
+        # self.assertEqual(len(lines(found)), 1)
+        found = open(sysinit_cache).read()
+        self.assertTrue(greps(found, "zzz.service"))
+        self.assertEqual(len(lines(found)), 3)
+        logg.info("sysinit.cache =\n%s", i2(found))
+        #
+        self.rm_testdir()
+        self.rm_zzfiles(root)
+        self.coverage()
+        self.end()
+    def test_2412_daemon_reload_sysinit_cache_includes_wants_and_requires(self, real: bool = False) -> None:
+        """ check that daemon-relaod creates cache files """
+        vv = self.begin()
+        self.rm_testdir()
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir, real)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        systemctl += " -c CacheDeps"
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
+        text_file(os_path(root, "/usr/lib/systemd/system/zza.service"), """
+            [Unit]
+            Description=Testing A
+            # Requires=zza.service
+            [Service]
+            ExecStart=/usr/bin/sleep 3
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/usr/lib/systemd/system/zzb.service"), """
+            [Unit]
+            Description=Testing B
+            Requires=zza.service
+            [Service]
+            ExecStart=/usr/bin/sleep 3
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/system/zzz.service"), """
+            [Unit]
+            Description=Testing Z
+            [Service]
+            ExecStart=/usr/bin/sleep 3
+            [Install]
+            WantedBy=sysinit.target""")
+        sysinit_wants = os_path(root, "/etc/systemd/system/sysinit.target.wants")
+        cmd = "{systemctl} enable zzz.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "ls {sysinit_wants}"
+        sh____(cmd.format(**locals()))
+        self.assertTrue(os.path.exists(sysinit_wants + "/zzz.service"))
+        #
+        zzz_service_wants = os_path(root, "/etc/systemd/system/zzz.service.wants")
+        if not os.path.isdir(zzz_service_wants):
+            os.makedirs(zzz_service_wants)
+        os.link(os_path(root, "/usr/lib/systemd/system/zzb.service"), zzz_service_wants + "/zzb.service")
+        cmd = "ls {zzz_service_wants}"
+        sh____(cmd.format(**locals()))
+        #
+        cmd = "{systemctl} daemon-reload {vv} {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        alias_cache = os_path(root, "/etc/systemd/systemctl.alias.cache")
+        deps_cache = os_path(root, "/etc/systemd/systemctl.deps.cache")
+        sysinit_cache = os_path(root, "/etc/systemd/systemctl.sysinit.cache")
+        self.assertFalse(os.path.exists(alias_cache))
+        self.assertTrue(os.path.exists(deps_cache))
+        self.assertTrue(os.path.exists(sysinit_cache))
+        found = open(deps_cache).read()
+        logg.info("deps.cache =\n%s", i2(found))
+        self.assertTrue(greps(found, "zzb.service.*zza.service"))
+        self.assertEqual(len(lines(found)), 1)
+        found = open(sysinit_cache).read()
+        logg.info("sysinit.cache =\n%s", i2(found))
+        self.assertTrue(greps(found, "zzz.service"))
+        self.assertEqual(len(lines(found)), 4)
+        #
+        self.rm_testdir()
+        self.rm_zzfiles(root)
+        self.coverage()
+        self.end()
+    def test_2413_daemon_reload_sysinit_cache_includes_wants_and_requires_and_requires(self, real: bool = False) -> None:
+        """ check that daemon-relaod creates cache files """
+        vv = self.begin()
+        self.rm_testdir()
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir, real)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        systemctl += " -c CacheDeps"
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
+        text_file(os_path(root, "/usr/lib/systemd/system/zza.service"), """
+            [Unit]
+            Description=Testing A
+            # Requires=zza.service
+            [Service]
+            ExecStart=/usr/bin/sleep 3
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/usr/lib/systemd/system/zzb.service"), """
+            [Unit]
+            Description=Testing B
+            Requires=zza.service
+            [Service]
+            ExecStart=/usr/bin/sleep 3
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/usr/lib/systemd/system/zzc.service"), """
+            [Unit]
+            Description=Testing C
+            Requires=zzb.service
+            [Service]
+            ExecStart=/usr/bin/sleep 3
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/system/zzz.service"), """
+            [Unit]
+            Description=Testing Z
+            [Service]
+            ExecStart=/usr/bin/sleep 3
+            [Install]
+            WantedBy=sysinit.target""")
+        sysinit_wants = os_path(root, "/etc/systemd/system/sysinit.target.wants")
+        cmd = "{systemctl} enable zzz.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "ls {sysinit_wants}"
+        sh____(cmd.format(**locals()))
+        self.assertTrue(os.path.exists(sysinit_wants + "/zzz.service"))
+        #
+        zzz_service_wants = os_path(root, "/etc/systemd/system/zzz.service.wants")
+        if not os.path.isdir(zzz_service_wants):
+            os.makedirs(zzz_service_wants)
+        os.link(os_path(root, "/usr/lib/systemd/system/zzc.service"), zzz_service_wants + "/zzc.service")
+        cmd = "ls {zzz_service_wants}"
+        sh____(cmd.format(**locals()))
+        #
+        cmd = "{systemctl} daemon-reload {vv} {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        alias_cache = os_path(root, "/etc/systemd/systemctl.alias.cache")
+        deps_cache = os_path(root, "/etc/systemd/systemctl.deps.cache")
+        sysinit_cache = os_path(root, "/etc/systemd/systemctl.sysinit.cache")
+        self.assertFalse(os.path.exists(alias_cache))
+        self.assertTrue(os.path.exists(deps_cache))
+        self.assertTrue(os.path.exists(sysinit_cache))
+        found = open(deps_cache).read()
+        logg.info("deps.cache =\n%s", i2(found))
+        self.assertTrue(greps(found, "zzb.service.*zza.service"))
+        self.assertTrue(greps(found, "zzc.service.*zzb.service"))
+        self.assertEqual(len(lines(found)), 2)
+        found = open(sysinit_cache).read()
+        logg.info("sysinit.cache =\n%s", i2(found))
+        self.assertTrue(greps(found, "zzz.service"))
+        self.assertEqual(len(lines(found)), 5)
+        #
+        self.rm_testdir()
+        self.rm_zzfiles(root)
+        self.coverage()
+        self.end()
+    def test_2414_daemon_reload_sysinit_cache_includes_wants_and_requires_and_partof(self, real: bool = False) -> None:
+        """ check that daemon-relaod creates cache files """
+        vv = self.begin()
+        self.rm_testdir()
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir, real)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        systemctl += " -c CacheDeps"
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
+        text_file(os_path(root, "/usr/lib/systemd/system/zza.service"), """
+            [Unit]
+            Description=Testing A
+            # Requires=zza.service
+            [Service]
+            ExecStart=/usr/bin/sleep 3
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/usr/lib/systemd/system/zzb.service"), """
+            [Unit]
+            Description=Testing B
+            Requires=zza.service
+            [Service]
+            ExecStart=/usr/bin/sleep 3
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/usr/lib/systemd/system/zzc.service"), """
+            [Unit]
+            Description=Testing C
+            Requires=zzb.service
+            [Service]
+            ExecStart=/usr/bin/sleep 3
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/usr/lib/systemd/system/zzd.service"), """
+            [Unit]
+            Description=Testing D
+            PartOf=zzb.service
+            [Service]
+            ExecStart=/usr/bin/sleep 3
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/system/zzz.service"), """
+            [Unit]
+            Description=Testing Z
+            [Service]
+            ExecStart=/usr/bin/sleep 3
+            [Install]
+            WantedBy=sysinit.target""")
+        sysinit_wants = os_path(root, "/etc/systemd/system/sysinit.target.wants")
+        cmd = "{systemctl} enable zzz.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "ls {sysinit_wants}"
+        sh____(cmd.format(**locals()))
+        self.assertTrue(os.path.exists(sysinit_wants + "/zzz.service"))
+        #
+        zzz_service_wants = os_path(root, "/etc/systemd/system/zzz.service.wants")
+        if not os.path.isdir(zzz_service_wants):
+            os.makedirs(zzz_service_wants)
+        os.link(os_path(root, "/usr/lib/systemd/system/zzc.service"), zzz_service_wants + "/zzc.service")
+        cmd = "ls {zzz_service_wants}"
+        sh____(cmd.format(**locals()))
+        #
+        cmd = "{systemctl} daemon-reload {vv} {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        alias_cache = os_path(root, "/etc/systemd/systemctl.alias.cache")
+        deps_cache = os_path(root, "/etc/systemd/systemctl.deps.cache")
+        sysinit_cache = os_path(root, "/etc/systemd/systemctl.sysinit.cache")
+        self.assertFalse(os.path.exists(alias_cache))
+        self.assertTrue(os.path.exists(deps_cache))
+        self.assertTrue(os.path.exists(sysinit_cache))
+        found = open(deps_cache).read()
+        logg.info("deps.cache =\n%s", i2(found))
+        self.assertTrue(greps(found, "zzb.service.*zza.service"))
+        self.assertTrue(greps(found, "zzc.service.*zzb.service"))
+        self.assertEqual(len(lines(found)), 4)
+        found = open(sysinit_cache).read()
+        logg.info("sysinit.cache =\n%s", i2(found))
+        self.assertTrue(greps(found, "zzz.service"))
+        self.assertEqual(len(lines(found)), 7)
+        #
+        self.rm_testdir()
+        self.rm_zzfiles(root)
+        self.coverage()
+        self.end()
+    def test_2420_daemon_ingore_sysinit_cache(self, real: bool = False) -> None:
+        """ check that daemon-relaod creates cache files that make the services ignored """
         vv = self.begin()
         testname = self.testname()
         testdir = self.testdir()
@@ -4002,40 +4309,409 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart=/usr/bin/sleep 3
             [Install]
             WantedBy=multi-user.target""")
-        sysinit_wants = os_path(root, "/etc/systemd/system/sysinit.target.wants")
         cmd = "{systemctl} enable zza.service {vv}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        cmd = "ls {sysinit_wants}"
-        sh____(cmd.format(**locals()))
-        self.assertTrue(os.path.exists(sysinit_wants + "/zza.service"))
         #
-        zza_service_wants = os_path(root, "/etc/systemd/system/zza.service.wants")
-        if not os.path.isdir(zza_service_wants):
-            os.makedirs(zza_service_wants)
-        os.link(os_path(root, "/usr/lib/systemd/system/zzb.service"), zza_service_wants + "/zzb.service")
-        cmd = "ls {zza_service_wants}"
-        sh____(cmd.format(**locals()))
+        cmd = "{systemctl} default-services {vv} {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 0)
         #
         cmd = "{systemctl} daemon-reload {vv} {vv}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        alias_cache = os_path(root, "/etc/systemd/systemctl.alias.cache")
-        deps_cache = os_path(root, "/etc/systemd/systemctl.deps.cache")
-        sysinit_cache = os_path(root, "/etc/systemd/systemctl.sysinit.cache")
-        self.assertFalse(os.path.exists(alias_cache))
-        self.assertTrue(os.path.exists(deps_cache))
-        self.assertTrue(os.path.exists(sysinit_cache))
-        found = open(deps_cache).read()
-        self.assertTrue(greps(found, "zza.service"))
-        self.assertEqual(len(lines(found)), 1)
-        found = open(sysinit_cache).read()
-        self.assertTrue(greps(found, "zza.service"))
-        self.assertEqual(len(lines(found)), 3)
-        logg.info("sysinit = %s", found)
         #
-        # self.rm_testdir()
-        # self.rm_zzfiles(root)
+        cmd = "{systemctl} default-services {vv} {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 0)
+        #
+        cmd = "{systemctl} enable zzb.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        #
+        cmd = "{systemctl} daemon-reload {vv} {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        #
+        cmd = "{systemctl} default-services {vv} {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 1)
+        self.assertFalse(greps(out, "zza.service"))
+        self.assertTrue(greps(out, "zzb.service"))
+        #
+        sysinit_cache = os_path(root, "/etc/systemd/systemctl.sysinit.cache")
+        found = open(sysinit_cache).read()
+        logg.info("sysinit.cache =\n%s", i2(found))
+        #
+        self.rm_testdir()
+        self.rm_zzfiles(root)
+        self.coverage()
+        self.end()
+    def test_2421_daemon_ignore_sysinit_cache_includes_wants(self, real: bool = False) -> None:
+        """ check that daemon-relaod creates cache files that make the services ignored"""
+        vv = self.begin()
+        self.rm_testdir()
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir, real)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        systemctl += " -c CacheDeps"
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
+        text_file(os_path(root, "/usr/lib/systemd/system/zzb.service"), """
+            [Unit]
+            Description=Testing B
+            # Requires=zza.service
+            [Service]
+            ExecStart=/usr/bin/sleep 3
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/system/zzz.service"), """
+            [Unit]
+            Description=Testing Z
+            [Service]
+            ExecStart=/usr/bin/sleep 3
+            [Install]
+            WantedBy=sysinit.target""")
+        cmd = "{systemctl} enable zzz.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        #
+        cmd = "{systemctl} default-services {vv} {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 0)
+        #
+        cmd = "{systemctl} daemon-reload {vv} {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        #
+        cmd = "{systemctl} default-services {vv} {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 0)
+        #
+        cmd = "{systemctl} enable zzb.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        #
+        cmd = "{systemctl} default-services {vv} {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 1)
+        self.assertFalse(greps(out, "zza.service"))
+        self.assertTrue(greps(out, "zzb.service"))
+        #
+        cmd = "{systemctl} daemon-reload {vv} {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        #
+        cmd = "{systemctl} default-services {vv} {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 1)
+        self.assertFalse(greps(out, "zza.service"))
+        self.assertTrue(greps(out, "zzb.service"))
+        #
+        sysinit_cache = os_path(root, "/etc/systemd/systemctl.sysinit.cache")
+        found = open(sysinit_cache).read()
+        logg.info("sysinit.cache =\n%s", i2(found))
+        #
+        zzz_service_wants = os_path(root, "/etc/systemd/system/zzz.service.wants")
+        if not os.path.isdir(zzz_service_wants):
+            os.makedirs(zzz_service_wants)
+        os.link(os_path(root, "/usr/lib/systemd/system/zzb.service"), zzz_service_wants + "/zzb.service")
+        cmd = "ls {zzz_service_wants}"
+        sh____(cmd.format(**locals()))
+        #
+        cmd = "{systemctl} default-services {vv} {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 0)        # found via .wants
+        self.assertFalse(greps(out, "zza.service"))
+        self.assertFalse(greps(out, "zzb.service"))
+        #
+        self.rm_testdir()
+        self.rm_zzfiles(root)
+        self.coverage()
+        self.end()
+    def test_2422_daemon_ignore_sysinit_cache_includes_wants_and_requires(self, real: bool = False) -> None:
+        """ check that daemon-relaod creates cache files that make the services ignored """
+        vv = self.begin()
+        self.rm_testdir()
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir, real)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        systemctl += " -c CacheDeps"
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
+        text_file(os_path(root, "/usr/lib/systemd/system/zza.service"), """
+            [Unit]
+            Description=Testing A
+            # Requires=zza.service
+            [Service]
+            ExecStart=/usr/bin/sleep 3
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/usr/lib/systemd/system/zzb.service"), """
+            [Unit]
+            Description=Testing B
+            Requires=zza.service
+            [Service]
+            ExecStart=/usr/bin/sleep 3
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/system/zzz.service"), """
+            [Unit]
+            Description=Testing Z
+            [Service]
+            ExecStart=/usr/bin/sleep 3
+            [Install]
+            WantedBy=sysinit.target""")
+        cmd = "{systemctl} enable zzz.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        #
+        cmd = "{systemctl} default-services {vv} {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 0)
+        #
+        cmd = "{systemctl} daemon-reload {vv} {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        #
+        cmd = "{systemctl} default-services {vv} {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 0)
+        #
+        cmd = "{systemctl} enable zzb.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        #
+        cmd = "{systemctl} default-services {vv} {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 1)  # added here
+        self.assertTrue(greps(out, "zzb.service"))
+        #
+        sysinit_cache = os_path(root, "/etc/systemd/systemctl.sysinit.cache")
+        found = open(sysinit_cache).read()
+        logg.info("sysinit.cache =\n%s", i2(found))
+        #
+        zzz_service_wants = os_path(root, "/etc/systemd/system/zzz.service.wants")
+        if not os.path.isdir(zzz_service_wants):
+            os.makedirs(zzz_service_wants)
+        os.link(os_path(root, "/usr/lib/systemd/system/zzb.service"), zzz_service_wants + "/zzb.service")
+        cmd = "ls {zzz_service_wants}"
+        sh____(cmd.format(**locals()))
+        #
+        cmd = "{systemctl} default-services {vv} {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 0)  # found via .wants
+        self.assertFalse(greps(out, "zza.service"))
+        self.assertFalse(greps(out, "zzb.service"))
+        #
+        self.rm_testdir()
+        self.rm_zzfiles(root)
+        self.coverage()
+        self.end()
+    def test_2423_daemon_ignore_sysinit_cache_includes_wants_and_requires_and_requires(self, real: bool = False) -> None:
+        """ check that daemon-relaod creates cache files that make the services ignored """
+        vv = self.begin()
+        self.rm_testdir()
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir, real)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        systemctl += " -c CacheDeps"
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
+        text_file(os_path(root, "/usr/lib/systemd/system/zza.service"), """
+            [Unit]
+            Description=Testing A
+            # Requires=zza.service
+            [Service]
+            ExecStart=/usr/bin/sleep 3
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/usr/lib/systemd/system/zzb.service"), """
+            [Unit]
+            Description=Testing B
+            Requires=zza.service
+            [Service]
+            ExecStart=/usr/bin/sleep 3
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/usr/lib/systemd/system/zzc.service"), """
+            [Unit]
+            Description=Testing C
+            Requires=zzb.service
+            [Service]
+            ExecStart=/usr/bin/sleep 3
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/system/zzz.service"), """
+            [Unit]
+            Description=Testing Z
+            [Service]
+            ExecStart=/usr/bin/sleep 3
+            [Install]
+            WantedBy=sysinit.target""")
+        cmd = "{systemctl} enable zzz.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "ls {sysinit_wants}"
+        sh____(cmd.format(**locals()))
+        self.assertTrue(os.path.exists(sysinit_wants + "/zzz.service"))
+        #
+        cmd = "{systemctl} default-services {vv} {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 0)
+        #
+        cmd = "{systemctl} daemon-reload {vv} {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        #
+        cmd = "{systemctl} default-services {vv} {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 0)
+        #
+        cmd = "{systemctl} enable zzc.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        #
+        cmd = "{systemctl} default-services {vv} {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 1)  # added here
+        self.assertTrue(greps(out, "zzc.service"))
+        #
+        sysinit_cache = os_path(root, "/etc/systemd/systemctl.sysinit.cache")
+        found = open(sysinit_cache).read()
+        logg.info("sysinit.cache =\n%s", i2(found))
+        #
+        zzz_service_wants = os_path(root, "/etc/systemd/system/zzz.service.wants")
+        if not os.path.isdir(zzz_service_wants):
+            os.makedirs(zzz_service_wants)
+        os.link(os_path(root, "/usr/lib/systemd/system/zzc.service"), zzz_service_wants + "/zzc.service")
+        cmd = "ls {zzz_service_wants}"
+        sh____(cmd.format(**locals()))
+        #
+        cmd = "{systemctl} default-services {vv} {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 0)  # found via .wants
+        self.assertFalse(greps(out, "zza.service"))
+        self.assertFalse(greps(out, "zzb.service"))
+        #
+        self.rm_testdir()
+        self.rm_zzfiles(root)
+        self.coverage()
+        self.end()
+    def test_2424_daemon_ignore_sysinit_cache_includes_wants_and_requires_and_partof(self, real: bool = False) -> None:
+        """ check that daemon-relaod creates cache files that make the services ignored """
+        vv = self.begin()
+        self.rm_testdir()
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir, real)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        systemctl += " -c CacheDeps"
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
+        text_file(os_path(root, "/usr/lib/systemd/system/zza.service"), """
+            [Unit]
+            Description=Testing A
+            # Requires=zza.service
+            [Service]
+            ExecStart=/usr/bin/sleep 3
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/usr/lib/systemd/system/zzb.service"), """
+            [Unit]
+            Description=Testing B
+            Requires=zza.service
+            [Service]
+            ExecStart=/usr/bin/sleep 3
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/usr/lib/systemd/system/zzc.service"), """
+            [Unit]
+            Description=Testing C
+            Requires=zzb.service
+            [Service]
+            ExecStart=/usr/bin/sleep 3
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/usr/lib/systemd/system/zzd.service"), """
+            [Unit]
+            Description=Testing D
+            PartOf=zzb.service
+            [Service]
+            ExecStart=/usr/bin/sleep 3
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/system/zzz.service"), """
+            [Unit]
+            Description=Testing Z
+            [Service]
+            ExecStart=/usr/bin/sleep 3
+            [Install]
+            WantedBy=sysinit.target""")
+        cmd = "{systemctl} enable zzz.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        #
+        cmd = "{systemctl} default-services {vv} {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 0)
+        #
+        cmd = "{systemctl} daemon-reload {vv} {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        #
+        cmd = "{systemctl} default-services {vv} {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 0)
+        #
+        cmd = "{systemctl} enable zzd.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        #
+        cmd = "{systemctl} default-services {vv} {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 1)  # added here
+        self.assertTrue(greps(out, "zzd.service"))
+        #
+        sysinit_cache = os_path(root, "/etc/systemd/systemctl.sysinit.cache")
+        found = open(sysinit_cache).read()
+        logg.info("sysinit.cache =\n%s", i2(found))
+        #
+        zzz_service_wants = os_path(root, "/etc/systemd/system/zzz.service.wants")
+        if not os.path.isdir(zzz_service_wants):
+            os.makedirs(zzz_service_wants)
+        os.link(os_path(root, "/usr/lib/systemd/system/zzd.service"), zzz_service_wants + "/zzd.service")
+        cmd = "ls {zzz_service_wants}"
+        sh____(cmd.format(**locals()))
+        #
+        cmd = "{systemctl} default-services {vv} {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 0)  # found via .wants
+        self.assertFalse(greps(out, "zza.service"))
+        self.assertFalse(greps(out, "zzb.service"))
+        #
+        #
+        self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         self.end()
     def test_2610_show_unit_not_found(self) -> None:
