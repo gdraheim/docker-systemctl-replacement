@@ -5970,23 +5970,24 @@ class Systemctl:
             for item in deps_cache:
                  units = self.get_cache_deps_unit(item, deps_modules)
                  newresults[item] = only_wants_deps(units)
-            changed = 0
+            changed = []
             for name, deps in newresults.items():
                 if name not in deps_cache:
                     deps_cache[name] = {}
                 old = len(deps_cache[name])
                 deps_cache[name].update(deps)
                 if old < len(deps_cache[name]):
-                    changed += 1
+                    changed.append(name)
                 for dep in deps:
                     if dep not in deps_cache:
                         deps_cache[dep] = {}
-                        changed += 1
+                        changed.append(dep)
             if not changed:
                 debug_("sysinit_deps resolved at depth {depth}".format(**locals()))
                 break
             else:
-                debug_("sysinit_deps changed {changed} at depth {depth}".format(**locals()))
+                some = len(changed)
+                debug_("sysinit_deps changed {some} at depth {depth} : {changed}".format(**locals()))
         return deps_cache
     def get_sysinit_wants(self, unit):
         result = {}
@@ -6001,23 +6002,24 @@ class Systemctl:
                     if dep not in result:
                         newresults[dep] = units
                     # dbg_("wants for {dep} -> {units}".format(**locals())) # internal
-            changed = 0
+            changed = []
             for name, deps in newresults.items():
                 if name not in result: 
                     result[name] = {}
                 old = len(result[name])
                 result[name].update(deps)
                 if old < len(result[name]):
-                    changed += 1
+                    changed.append(name)
                 for dep in deps:
                     if dep not in result:
                         result[dep] = {}
-                        changed += 1
+                        changed.append(name)
             if not changed:
                 debug_("sysinit_wants resolved at depth {depth}".format(**locals()))
                 break
             else:
-                debug_("sysinit_wants changed {changed} at depth {depth}".format(**locals()))
+                some = len(changed)
+                debug_("sysinit_wants changed {some} at depth {depth} : {changed}".format(**locals()))
         result_units = list(result)
         dbg_("found sysinit deps = {result_units} # after {depth} rounds".format(**locals()))
         if len(result) == 1:
