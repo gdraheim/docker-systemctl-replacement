@@ -290,7 +290,10 @@ _all_common_targets = [ "default.target" ] + _default_targets + _feature_targets
 _all_common_enabled = [ "default.target", "multi-user.target", "remote-fs.target" ]
 _all_common_disabled = [ "graphical.target", "resue.target", "nfs-client.target" ]
 
-target_requires = { "graphical.target": "multi-user.target", "multi-user.target": "basic.target", "basic.target": "sockets.target" }
+_target_requires = {}
+_target_requires["graphical.target"] = "multi-user.target"
+_target_requires["multi-user.target"] = "basic.target"
+_target_requires["basic.target"] = "sockets.target"
 
 _runlevel_mappings = {}  # the official list
 _runlevel_mappings["0"] = "poweroff.target"
@@ -312,6 +315,53 @@ Unit = "Unit"
 Service = "Service"
 Socket = "Socket"
 Install = "Install"
+
+# dependencies
+UnitRequires = "Requires"
+UnitWants = "Wants"
+UnitRequisite ="Requisite"
+UnitBindsTo = "BindsTo"
+UnitPartOf = "PartOf"
+Unit_requires = ".requires"
+Unit_wants = ".wants"
+UnitPropagateReloadTo = "PropagateReloadTo"
+UnitConflicts = "Conflicts"
+
+InstallWantedBy = "WantedBy"
+Install_wants = ".wants"
+
+_unit_inter_dependencies = {}
+_unit_inter_dependencies[UnitRequires] = "required to start"
+_unit_inter_dependencies[UnitWants] = "wanted to start"
+_unit_inter_dependencies[UnitRequisite] = "required started"
+_unit_inter_dependencies[Unit_requires] = ".required to start"
+_unit_inter_dependencies[Unit_wants] = ".wanted to start"
+_unit_inter_dependencies[UnitBindsTo] = "binds to start"
+_unit_inter_dependencies[UnitPartOf] = "part of started"
+_unit_inter_dependencies[UnitPropagateReloadTo] = "(to be reloaded as well)"
+_unit_inter_dependencies[UnitConflicts] = "(to be stopped on conflict)"
+
+_unit_binds_dependencies = {}
+_unit_binds_dependencies[UnitRequires] = "required to start"
+_unit_binds_dependencies[UnitWants] = "wanted to start"
+_unit_binds_dependencies[UnitRequisite] = "required started"
+_unit_binds_dependencies[Unit_requires] = ".required to start"
+_unit_binds_dependencies[Unit_wants] = ".wanted to start"
+_unit_binds_dependencies[UnitBindsTo] = "binds to start"
+_unit_binds_dependencies[UnitPartOf] = "part of started"
+# _unit_wants_dependencies[UnitPropagateReloadTo] = "(to be reloaded as well)"
+# _unit_wants_dependencies[UnitConflicts] = "(to be stopped on conflict)"
+
+_unit_wants_dependencies = {}
+_unit_wants_dependencies[UnitRequires] = "required to start"
+_unit_wants_dependencies[UnitWants] = "wanted to start"
+_unit_wants_dependencies[UnitRequisite] = "required started"
+_unit_wants_dependencies[Unit_requires] = ".required to start"
+_unit_wants_dependencies[Unit_wants] = ".wanted to start"
+# _unit_wants_dependencies[UnitBindsTo] = "binds to start"
+# _unit_wants_dependencies[UnitPartOf] = "part of started"
+# _unit_wants_dependencies[UnitPropagateReloadTo] = "(to be reloaded as well)"
+# _unit_wants_dependencies[UnitConflicts] = "(to be stopped on conflict)"
 
 # https://tldp.org/LDP/abs/html/exitcodes.html
 # https://freedesktop.org/software/systemd/man/systemd.exec.html#id-1.20.8
@@ -5591,18 +5641,9 @@ class Systemctl:
             result += [ line ]
         return result
     def list_dependencies(self, unit, indent=None, mark=None, loop=[]):
-        mapping = {}
-        mapping["Requires"] = "required to start"
-        mapping["Wants"] = "wanted to start"
-        mapping["Requisite"] = "required started"
-        mapping["Bindsto"] = "binds to start"
-        mapping["PartOf"] = "part of started"
-        mapping[".requires"] = ".required to start"
-        mapping[".wants"] = ".wanted to start"
-        mapping["PropagateReloadTo"] = "(to be reloaded as well)"
-        mapping["Conflicts"] = "(to be stopped on conflict)"
-        restrict = ["Requires", "Requisite", "ConsistsOf", "Wants",
-                    "BindsTo", ".requires", ".wants"]
+        mapping = _unit_inter_dependencies
+        restrict = list(_unit_wants_dependencies)
+        stoppers = ["Conflict", "conflict", "reloaded", "Propagate"]
         indent = indent or ""
         mark = mark or ""
         deps = self.get_dependencies_unit(unit)
@@ -5613,7 +5654,7 @@ class Systemctl:
             yield "{indent}({unit}): {mark}".format(**locals())
         else:
             yield "{indent}{unit}: {mark}".format(**locals())
-            for stop_recursion in [ "Conflict", "conflict", "reloaded", "Propagate" ]:
+            for stop_recursion in stoppers:
                 if stop_recursion in mark:
                     return
             for dep in deps:
@@ -5627,15 +5668,13 @@ class Systemctl:
                     if new_mark not in restrict:
                         continue
                 if new_mark in mapping:
-                    new_mark = mapping[new_mark]
-                restrict = ["Requires", "Wants", "Requisite", "BindsTo", "PartOf", "ConsistsOf",
-                            ".requires", ".wants"]
+                    new_mark = mapping[new_mark] # TODO ????
+                restrict = list(_unit_binds_dependencies)
                 for line in self.list_dependencies(dep, new_indent, new_mark, new_loop):
                     yield line
     def get_dependencies_unit(self, unit, styles=None):
         """ scans both systemd folders and unit conf for dependency relations """
-        styles = styles or [ "Requires", "Wants", "Requisite", "BindsTo", "PartOf", "ConsistsOf",
-                             ".requires", ".wants", "PropagateReloadTo", "Conflicts", ]
+        styles = styles or list(_unit_inter_dependencies)
         conf = self.get_unit_conf(unit)
         deps = {}
         for style in styles:
@@ -5646,7 +5685,7 @@ class Systemctl:
         return deps
     def get_wants_unit(self, unit, styles=None):
         """ scans the systemd folders for unit.service.wants subfolders """
-        styles = styles or [ ".requires", ".wants" ]
+        styles = styles or [ ".requires", ".wants" ]  # list(_unit_inter_dependencies)
         deps = {}
         for style in styles:
             if not style.startswith("."): continue
@@ -5673,8 +5712,7 @@ class Systemctl:
         """ scans the unit conf for Requires= or Wants= settings in the [Unit] section """
         # shall not use the cache file as it is called from cache creation in daemon-reload
         deps = {}
-        styles = styles or [ "Requires", "Wants", "Requisite", "BindsTo", "PartOf", "ConsistsOf",
-                             "PropagateReloadTo", "Conflicts", ]
+        styles = styles or list(_unit_inter_dependencies)
         for style in styles:
             if style.startswith("."): continue
             for requirelist in conf.getlist(Unit, style, []):
@@ -5682,13 +5720,11 @@ class Systemctl:
                     deps[required.strip()] = style
         return deps
     def get_required_dependencies(self, unit, styles=None):
-        styles = styles or [ "Requires", "Wants", "Requisite", "BindsTo",
-                             ".requires", ".wants"  ]
+        styles = styles or list(_unit_wants_dependencies)
         return self.get_dependencies_unit(unit, styles)
     def get_start_dependencies(self, unit, styles=None):  # pragma: no cover
         """ the list of services to be started as well / TODO: unused """
-        styles = styles or ["Requires", "Wants", "Requisite", "BindsTo", "PartOf", "ConsistsOf",
-                            ".requires", ".wants"]
+        styles = styles or list(_unit_binds_dependencies)
         deps = {}
         unit_deps = self.get_dependencies_unit(unit)
         for dep_unit, dep_style in unit_deps.items():
@@ -6704,8 +6740,8 @@ class Systemctl:
         if conf is not None:
             return conf
         target_conf = self.default_unit_conf(module)
-        if module in target_requires:
-            target_conf.set(Unit, "Requires", target_requires[module])
+        if module in _target_requires:
+            target_conf.set(Unit, UnitRequires, _target_requires[module])
         return target_conf
     def get_target_list(self, module):
         """ the Requires= in target units are only accepted if known """
@@ -6713,10 +6749,10 @@ class Systemctl:
         if "." not in target: target += ".target"
         targets = [ target ]
         conf = self.get_target_conf(module)
-        requires = conf.get(Unit, "Requires", "")
-        while requires in target_requires:
+        requires = conf.get(Unit, UnitRequires, "")
+        while requires in _target_requires:
             targets = [ requires ] + targets
-            requires = target_requires[requires]
+            requires = _target_requires[requires]
         dbg_("the {module} requires {targets}".format(**locals()))
         return targets
     def default_target(self, *modules):

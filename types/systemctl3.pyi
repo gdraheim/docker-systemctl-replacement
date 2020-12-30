@@ -95,8 +95,13 @@ _feature_targets: List[str]
 _all_common_targets: List[str]
 _all_common_enabled: List[str]
 _all_common_disabled: List[str]
+_target_requires: Dict[str, str]
 _runlevel_mappings: Dict[str, str]
 _sysv_mappings: Dict[str, str]
+
+_unit_inter_dependencies: Dict[str, str]
+_unit_binds_dependencies: Dict[str, str]
+_unit_wants_dependencies: Dict[str, str]
 
 def boolOK(returnvalue: Optional[bool]) -> str: ...
 def exitOK(returncode: Optional[int]) -> str: ...
