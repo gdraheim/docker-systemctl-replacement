@@ -290,6 +290,9 @@ dockerfiles:
 	; wc -l test-$$dockerfile \
 	; done
 
+syswants:
+	./files/docker/systemctl3.py -c CacheDepsSysInit -c CacheDepsFile=tmp.deps.cache -c CacheSysinitFile=tmp.sysinit.cache daemon-reload -vvv
+
 ####### autoflakes
 autoflakes: ; $${PKG:-zypper} install -y python3-autoflake
 flake: flake.s.i
