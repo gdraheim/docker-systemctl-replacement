@@ -253,6 +253,7 @@ CacheAlias=True
 DepsMaxDepth=9
 CacheDepsFile="${XDG_CONFIG_HOME}/systemd/systemctl.deps.cache"
 CacheAliasFile="${XDG_CONFIG_HOME}/systemd/systemctl.alias.cache"
+IgnoredTargets="sysinit.target,basic.target,remote-fs.target,getty.target"
 IgnoredServicesFile="${XDG_CONFIG_HOME}/systemd/systemctl.services.ignore"
 _ignored_services = """
 [centos]
@@ -309,6 +310,7 @@ _sysv_mappings["$local_fs"] = "local-fs.target"
 _sysv_mappings["$network"] = "network.target"
 _sysv_mappings["$remote_fs"] = "remote-fs.target"
 _sysv_mappings["$timer"] = "timers.target"
+
 
 # sections from conf
 Unit = "Unit"
@@ -5784,10 +5786,21 @@ class Systemctl:
             if not changed:
                 break
         return result
-    def list_deps_for_unit(self, unit, deps_modules = None):
+    def list_deps(self, unit, deps_modules = None):
+        """ Unit - show the dependencies that will be handled for a unit.
+            Use --force to rebuild the DepsCache and use --all to allow
+            ignored dependencies to be included in the list. (where
+            the sysinit.target  dependencies are ignored by default.)"""
         if self._force:
             self.make_deps_cache()
         result = self.deps_for_unit(unit, deps_modules)
+        if not self._show_all:
+            clean = []
+            for name in result:
+                if self._ignored_unit(name):
+                    clean.append(name)
+            for name in clean:
+                del result[name]
         if len(result) == 1:
             if unit in result:
                 return {}
@@ -6560,18 +6573,22 @@ class Systemctl:
             except Exception as e:
                 error_("while reading from {filename}: {e}".format(**locals()))
         return igno
-    def ignored_unit(self, unit, ignored):
+    def ignored_unit(self, unit, ignored = None):
         if self._show_all:
             return []
         return self._ignored_unit(unit, ignored)
-    def _ignored_unit(self, unit, ignored):
+    def _ignored_unit(self, unit, ignored = None):
+        ignored = ignored or _ignored_services
         is_ignored = False
         because_of = []
         in_section = "[...]"
-        sysinit_deps = self.deps_for_unit(SysInitTarget)
-        if unit in sysinit_deps:
-            is_ignored = True
-            because_of.append(SysInitTarget)
+        for nexttarget in IgnoredTargets.split(","):
+            target = nexttarget.strip()
+            if target:
+                target_deps = self.deps_for_unit(target)
+                if unit in target_deps:
+                    is_ignored = True
+                    because_of.append(target)
         self.load_ignored_modules()
         for igno in (ignored, self._ignored_modules):
             if not igno: continue
@@ -7729,7 +7746,7 @@ def run(command, *modules):
         print_str_dict_dict({unit : systemctl.get_deps_unit(unit) })
     elif command in ["list-deps"]:
         unit = modules[0]
-        print_str_dict_dict(systemctl.list_deps_for_unit(unit))
+        print_str_dict_dict(systemctl.list_deps(unit))
     elif command in ["list-dependencies"]:
         print_str_list(systemctl.list_dependencies_modules(*modules))
     elif command in ["list-unit-files"]:
