@@ -1002,7 +1002,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("systemctl.log>>\n%s", log)
         self.assertEqual(end, 0)
         self.assertEqual(len(greps(log, " INFO ")), 1)
-        self.assertEqual(len(greps(log, " DEBUG ")), 3)
+        self.assertGreater(len(greps(log, " DEBUG ")), 2)
         self.rm_testdir()
         self.coverage()
     def test_1022_systemctl_with_systemctl_debug_level(self) -> None:
@@ -1021,7 +1021,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         log = lines(open(logfile))
         logg.info("LOG=>\n %s", "\n ".join(log))
         self.assertEqual(len(greps(open(logfile), " INFO ")), 1)
-        self.assertEqual(len(greps(open(logfile), " DEBUG ")), 3)
+        self.assertGreater(len(greps(open(logfile), " DEBUG ")), 2)
         self.rm_testdir()
         self.coverage()
     def test_1030_systemctl_force_ipv4(self) -> None:
