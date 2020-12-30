@@ -61,6 +61,7 @@ DebugExpandVars = False
 DebugPrintResult = False
 DebugSocketFile = True
 DebugIgnoredServices = False
+DebugDeps = False
 IgnoreSyntaxWarnings = ""
 IgnoreExecWarnings = ""
 IgnoreWarnings = ""
@@ -248,13 +249,10 @@ SystemctlDebugLog = "{VARLOG}/systemctl.debug.log"
 SystemctlExtraLog = "{VARLOG}/systemctl.log"
 
 CacheDeps=False
-CacheDepsModules = False
-CacheDepsSysInit = True
 CacheAlias=True
 DepsMaxDepth=9
 CacheDepsFile="${XDG_CONFIG_HOME}/systemd/systemctl.deps.cache"
 CacheAliasFile="${XDG_CONFIG_HOME}/systemd/systemctl.alias.cache"
-CacheSysinitFile="${XDG_CONFIG_HOME}/systemd/systemctl.sysinit.cache"
 IgnoredServicesFile="${XDG_CONFIG_HOME}/systemd/systemctl.services.ignore"
 _ignored_services = """
 [centos]
@@ -331,6 +329,20 @@ UnitConflicts = "Conflicts"
 
 InstallWantedBy = "WantedBy"
 Install_wants = ".wants"
+
+_unit_dep_from = {}  # showing the inverse
+_unit_dep_from[UnitRequires] = "isRequiredFrom"
+_unit_dep_from[UnitWants] = "isWantedFrom"
+_unit_dep_from[UnitRequisite] = "isRequestFrom"
+_unit_dep_from[Unit_requires] = "is.requires.from"
+_unit_dep_from[Unit_wants] = "is.wants.from"
+_unit_dep_from[UnitBindsTo] = "isBoundFrom"
+_unit_dep_from[UnitPartOf] = "isParentOf"
+_unit_dep_from[UnitPropagateReloadTo] = "isAlsoReladedWhen"
+_unit_dep_from[UnitConflicts] = "isConflictOf"
+_unit_dep_from["Has"+UnitConflicts] = "isConflictTo"
+_unit_dep_from["Has"+UnitBindsTo] = "isBindsTo"
+_unit_dep_from["Has"+UnitPartOf] = "isPartOf"
 
 _unit_inter_dependencies = {}
 _unit_inter_dependencies[UnitRequires] = "required to start"
@@ -1831,7 +1843,6 @@ class Systemctl:
         self._file_for_unit_sysd = None  # name.service => /etc/systemd/system/name.service
         self._alias_modules = None       # name.service => real.name.service
         self._deps_modules = None        # name.service => Dict[dep,why]
-        self._sysinit_modules = None     # name.service => Dict[dep,why]
         self._ignored_modules = None     # text
         self._preset_file_list = None  # /etc/systemd/system-preset/* => file content
         self._default_target = DefaultTarget
@@ -5743,6 +5754,78 @@ class Systemctl:
                 for required in requirelist.strip().split(" "):
                     deps[required.strip()] = style
         return deps
+    def get_wanted_for_unit(self, unit):
+        result = { unit : { "": "isWanted" }}
+        return self.get_wanted_for_units(result)
+    def get_wanted_for_units(self, existing):
+        """ this works by only looking at the disk for .wants (through "systemctl enable")
+            directory entries. No CacheDeps is needed here - but a loop will recurse through
+            the dependencies to resolve more dependencies. """
+        result = existing.copy()
+        for depth in xrange(DepsMaxDepth):
+            newresults = {}
+            for name in result:
+                deps = self.get_wants_unit(name)  # Dict[name,style]
+                for dep, style in deps.items():
+                    newresults[name] = deps
+            changed = []
+            for name, deps in newresults.items():
+                for dep, style in deps.items():
+                    if dep not in result:
+                        result[dep] = {}
+                    old = len(result[dep])
+                    if name not in result[dep]:  # keep the first style
+                        result[dep][name] = _unit_dep_from[style]
+                    if old < len(result[dep]):
+                        changed.append(dep)
+            if DebugDeps:
+                some = len(changed)
+                debug_("wants changed {some} at depth {depth} : {changed}".format(**locals()))
+            if not changed:
+                break
+        return result
+    def list_deps_for_unit(self, unit, deps_modules = None):
+        if self._force:
+            self.make_deps_cache()
+        result = self.deps_for_unit(unit, deps_modules)
+        if len(result) == 1:
+            if unit in result:
+                return {}
+        return result
+    def deps_for_unit(self, unit, deps_modules = None):
+        self.load_deps_cache()
+        result = self.get_wanted_for_unit(unit)
+        resultdeps = self.get_required_for_units(result, deps_modules)
+        return resultdeps
+    def get_required_for_unit(self, unit, deps_modules = None):
+        result = { unit : { "": "isRequired" }}
+        return self.get_required_for_units(result, deps_modules)
+    def get_required_for_units(self, existing, deps_modules = None):
+        """ after getting the .wants for sysinit.target we can also resolve the 
+            declared the dependencies in the unit files - but only when they are
+            in the CacheDeps module list already. """
+        result = existing.copy()
+        for depth in xrange(DepsMaxDepth):
+            newresults = {}
+            for item in result:
+                 units = self.get_cache_deps_unit(item, deps_modules)
+                 newresults[item] = only_wants_deps(units)
+            changed = []
+            for name, deps in newresults.items():
+                for dep, style in deps.items():
+                    if dep not in result:
+                        result[dep] = {}
+                    old = len(result[dep])
+                    if name not in result[dep]:  # keep the first style
+                        result[dep][name] = _unit_dep_from[style]
+                    if old < len(result[dep]):
+                        changed.append(dep)
+            if DebugDeps:
+                some = len(changed)
+                debug_("deps changed {some} at depth {depth} : {changed}".format(**locals()))
+            if not changed:
+                break
+        return result
     def get_required_dependencies(self, unit, styles=None):
         styles = styles or list(_unit_wants_dependencies)
         return self.get_dependencies_unit(unit, styles)
@@ -5834,11 +5917,6 @@ class Systemctl:
         problems = []
         aliases = {}
         unit_deps = {}
-        sysinit_deps = {}
-        makeSysInitCache = CacheDepsSysInit or CacheDeps
-        makeDepsCache = CacheDepsModules or CacheDeps or makeSysInitCache
-        saveSysInitCache = CacheDepsSysInit or CacheDeps
-        saveDepsCache = CacheDepsModules or CacheDeps
         for unit in self.match_units():
             try:
                 conf = self.get_unit_conf(unit)
@@ -5849,22 +5927,16 @@ class Systemctl:
             problems = self.check_syntax_from(conf)
             if CacheAlias:
                 aliases.update(self.get_alias_from(conf))
-            if makeDepsCache:
+            if CacheDeps:
                 found = self.get_deps_from(conf)
                 if found:
                     unit_deps[unit] = found
-        if makeDepsCache:
+        if CacheDeps:
             unit_deps = self.resolve_deps(unit_deps)
-        if saveDepsCache:
+        if unit_deps and CacheDeps:
             some_unit = len(unit_deps)
             info_(" found {some_unit} dependencies for units".format(**locals()))
             self.write_deps_cache(unit_deps)
-        if makeSysInitCache:
-            sysinit_deps = self.get_sysinit_deps(SysInitTarget, unit_deps) # may use deps_cache
-        if saveSysInitCache:
-            some_sysinit = len(sysinit_deps) - 1  # do not count sysinit.target itself
-            info_(" found {some_sysinit} sysinit.target deps".format(**locals()))
-            self.write_sysinit_cache(sysinit_deps)
         if aliases:
             some_given = len(aliases)
             info_(" found {some_given} alias units".format(**locals()))
@@ -5969,107 +6041,19 @@ class Systemctl:
     def load_deps_cache(self):
         if self._deps_modules is None:
             self._deps_modules = self.read_deps_cache()
-    def get_sysinit_deps(self, unit, deps_modules = None):
-        deps_cache = self.get_sysinit_wants(unit)
-        for depth in xrange(DepsMaxDepth):
-            newresults = {}
-            for item in deps_cache:
-                 units = self.get_cache_deps_unit(item, deps_modules)
-                 newresults[item] = only_wants_deps(units)
-            changed = []
-            for name, deps in newresults.items():
-                if name not in deps_cache:
-                    deps_cache[name] = {}
-                old = len(deps_cache[name])
-                deps_cache[name].update(deps)
-                if old < len(deps_cache[name]):
-                    changed.append(name)
-                for dep in deps:
-                    if dep not in deps_cache:
-                        deps_cache[dep] = {}
-                        changed.append(dep)
-            if not changed:
-                debug_("sysinit_deps resolved at depth {depth}".format(**locals()))
-                break
-            else:
-                some = len(changed)
-                debug_("sysinit_deps changed {some} at depth {depth} : {changed}".format(**locals()))
-        return deps_cache
-    def get_sysinit_wants(self, unit):
-        result = {}
-        deps = self.get_wants_unit(unit)
-        result[unit] = deps
-        for depth in xrange(DepsMaxDepth):
-            newresults = {}
-            for name, deps in result.items():
-                for dep in deps:
-                    units = self.get_wants_unit(dep)
-                    if dep not in result:
-                        newresults[dep] = units
-                    # dbg_("wants for {dep} -> {units}".format(**locals())) # internal
-            changed = []
-            for name, deps in newresults.items():
-                if name not in result: 
-                    result[name] = {}
-                old = len(result[name])
-                result[name].update(deps)
-                if old < len(result[name]):
-                    changed.append(name)
-                for dep in deps:
-                    if dep not in result:
-                        result[dep] = {}
-                        changed.append(name)
-            if not changed:
-                debug_("sysinit_wants resolved at depth {depth}".format(**locals()))
-                break
-            else:
-                some = len(changed)
-                debug_("sysinit_wants changed {some} at depth {depth} : {changed}".format(**locals()))
-        result_units = list(result)
-        dbg_("found sysinit deps = {result_units} # after {depth} rounds".format(**locals()))
-        if len(result) == 1:
-            if not result[unit]:
-                return {}
-        return result
-    def write_sysinit_cache(self, deps):
-        filename = os_path(self._root, self.expand_path(CacheSysinitFile))
-        try:
-            with open(filename, "w") as f:
-                for unit in sorted(deps):
-                    sets = deps[unit]
-                    for name in sorted(sets):
-                        requires = sets[name]
-                        f.write("{unit} {requires} {name}\n".format(**locals()))
-                    if not sets:
-                        f.write("{unit} .required\n".format(**locals()))
-            debug_("written sysinit deps to {filename}".format(**locals()))
-            return True
-        except Exception as e:
-            warning_("while writing {filename}: {e}".format(**locals()))
-        return False
-    def read_sysinit_cache(self):
-        filename = os_path(self._root, self.expand_path(CacheSysinitFile))
-        if os.path.exists(filename):
+    def make_deps_cache(self):
+        unit_deps = {}
+        for unit in self.match_units():
             try:
-                result = {}
-                text = open(filename).read()
-                for line in text.splitlines():
-                    if line.startswith("#"): continue
-                    unit, requires, name = line.split(" ", 2)
-                    if unit not in result:
-                        result[unit] = {}
-                    result[unit][name] = requires
-                return result
+                conf = self.get_unit_conf(unit)
             except Exception as e:
-                warning_("while reading {filename}: {e}".format(**locals()))
-        return None
-    def load_sysinit_cache(self):
-        if self._sysinit_modules is None:
-            self._sysinit_modules = self.read_sysinit_cache()
-    def load_sysinit_modules(self, unit=None):
-        unit = unit or SysInitTarget
-        if self._sysinit_modules is None:
-            self._sysinit_modules = self.get_sysinit_deps(unit)
+                filename44 = path44(conf.filename())
+                error_("{unit}: can not read unit file {filename44}\n\t{e}".format(**locals()))
+                continue
+            found = self.get_deps_from(conf)
+            if found:
+                unit_deps[unit] = found
+        self._deps_modules = self.resolve_deps(unit_deps)
     def check_syntax_from(self, conf):
         filename = conf.filename()
         warnings = []
@@ -6584,11 +6568,10 @@ class Systemctl:
         is_ignored = False
         because_of = []
         in_section = "[...]"
-        self.load_sysinit_modules()
-        if self._sysinit_modules:
-            if unit in self._sysinit_modules:
-                is_ignored = True
-                because_of.append("sysinit.target")
+        sysinit_deps = self.deps_for_unit(SysInitTarget)
+        if unit in sysinit_deps:
+            is_ignored = True
+            because_of.append(SysInitTarget)
         self.load_ignored_modules()
         for igno in (ignored, self._ignored_modules):
             if not igno: continue
@@ -7643,6 +7626,19 @@ def print_str_dict(result):
         shown += 1
     hint_result_("EXEC END {shown} items".format(**locals()))
     debug_result_("    END {result}".format(**locals()))
+def print_str_dict_dict(result):
+    if result is None:
+        debug_result_("    END {result}")
+        return
+    shown = 0
+    for key in sorted(result.keys()):
+        element = result[key]
+        for name in sorted(element):
+            value = element[name]
+            print("%s [%s] %s" % (key, value, name))
+        shown += 1
+    hint_result_("EXEC END {shown} items".format(**locals()))
+    debug_result_("    END {result}".format(**locals()))
 
 def config_globals(settings):
     for setting in settings:
@@ -7725,6 +7721,15 @@ def run(command, *modules):
         exitcode = is_not_ok(systemctl.kill_modules(*modules))
     elif command in ["list-start-dependencies"]:
         print_str_list_list(systemctl.list_start_dependencies_modules(*modules))
+    elif command in ["get-wants-unit"]:
+        unit = modules[0]
+        print_str_dict_dict({unit : systemctl.get_wants_unit(unit) })
+    elif command in ["get-deps-unit"]:
+        unit = modules[0]
+        print_str_dict_dict({unit : systemctl.get_deps_unit(unit) })
+    elif command in ["list-deps"]:
+        unit = modules[0]
+        print_str_dict_dict(systemctl.list_deps_for_unit(unit))
     elif command in ["list-dependencies"]:
         print_str_list(systemctl.list_dependencies_modules(*modules))
     elif command in ["list-unit-files"]:
