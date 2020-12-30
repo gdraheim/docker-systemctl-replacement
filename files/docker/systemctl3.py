@@ -6335,14 +6335,14 @@ class Systemctl:
         groups = [ conf.get(section, "Group", ""), conf.get(section, "SocketGroup", "") ] + conf.getlist(section, "SupplementaryGroups")
         for user in users:
             if user:
-                try: pwd.getpwnam(user)
+                try: pwd.getpwnam(self.expand_special(user, conf))
                 except Exception as e:
                     info = getattr(e, "__doc__", "")
                     error_("  {unit}: User does not exist: {user} ({info})".format(**locals()))
                     warnings += ["E91"]
         for group in groups:
             if group:
-                try: grp.getgrnam(group)
+                try: grp.getgrnam(self.expand_special(group, conf))
                 except Exception as e:
                     info = getattr(e, "__doc__", "")
                     error_("  {unit}: Group does not exist: {group} ({info})".format(**locals()))
