@@ -5835,11 +5835,10 @@ class Systemctl:
         aliases = {}
         unit_deps = {}
         sysinit_deps = {}
-        sysinit_cache = CacheDepsSysInit
-        modules_cache = CacheDepsModules
-        if CacheDeps:
-            sysinit_cache = True
-            modules_cache = True
+        makeSysInitCache = CacheDepsSysInit or CacheDeps
+        makeDepsCache = CacheDepsModules or CacheDeps or makeSysInitCache
+        saveSysInitCache = CacheDepsSysInit or CacheDeps
+        saveDepsCache = CacheDepsModules or CacheDeps
         for unit in self.match_units():
             try:
                 conf = self.get_unit_conf(unit)
@@ -5850,19 +5849,19 @@ class Systemctl:
             problems = self.check_syntax_from(conf)
             if CacheAlias:
                 aliases.update(self.get_alias_from(conf))
-            if modules_cache or sysinit_cache:
+            if makeDepsCache:
                 found = self.get_deps_from(conf)
                 if found:
                     unit_deps[unit] = found
-        if modules_cache or sysinit_cache:
+        if makeDepsCache:
             unit_deps = self.resolve_deps(unit_deps)
-        if unit_deps and modules_cache:
+        if saveDepsCache:
             some_unit = len(unit_deps)
             info_(" found {some_unit} dependencies for units".format(**locals()))
             self.write_deps_cache(unit_deps)
-        if sysinit_cache:
+        if makeSysInitCache:
             sysinit_deps = self.get_sysinit_deps(SysInitTarget, unit_deps) # may use deps_cache
-        if sysinit_deps and sysinit_cache:
+        if saveSysInitCache:
             some_sysinit = len(sysinit_deps) - 1  # do not count sysinit.target itself
             info_(" found {some_sysinit} sysinit.target deps".format(**locals()))
             self.write_sysinit_cache(sysinit_deps)
