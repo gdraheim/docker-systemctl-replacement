@@ -6004,7 +6004,6 @@ class Systemctl:
             newresults = {}
             for name, deps in result.items():
                 for dep in deps:
-                    # debug_("sysinit_wants - checking {dep}".format(**locals()))
                     units = self.get_wants_unit(dep)
                     if dep not in result:
                         newresults[dep] = units
