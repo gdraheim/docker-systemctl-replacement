@@ -249,7 +249,7 @@ SystemctlExtraLog = "{VARLOG}/systemctl.log"
 
 CacheDeps=False
 CacheDepsModules = False
-CacheDepsSysInit = False
+CacheDepsSysInit = True
 CacheAlias=True
 DepsMaxDepth=9
 CacheDepsFile="${XDG_CONFIG_HOME}/systemd/systemctl.deps.cache"
