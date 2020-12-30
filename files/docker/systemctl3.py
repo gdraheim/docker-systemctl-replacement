@@ -340,6 +340,9 @@ _unit_inter_dependencies[UnitBindsTo] = "binds to start"
 _unit_inter_dependencies[UnitPartOf] = "part of started"
 _unit_inter_dependencies[UnitPropagateReloadTo] = "(to be reloaded as well)"
 _unit_inter_dependencies[UnitConflicts] = "(to be stopped on conflict)"
+# _unit_inter_dependencies["Has"+UnitConflicts] = "(to be stopped on conflict)"
+# _unit_inter_dependencies["Has"+UnitBindsTo] = "has binds for start"
+# _unit_inter_dependencies["Has"+UnitPartOf] = "has part for start"
 
 _unit_binds_dependencies = {}
 _unit_binds_dependencies[UnitRequires] = "required to start"
@@ -349,8 +352,11 @@ _unit_binds_dependencies[Unit_requires] = ".required to start"
 _unit_binds_dependencies[Unit_wants] = ".wanted to start"
 _unit_binds_dependencies[UnitBindsTo] = "binds to start"
 _unit_binds_dependencies[UnitPartOf] = "part of started"
-# _unit_wants_dependencies[UnitPropagateReloadTo] = "(to be reloaded as well)"
-# _unit_wants_dependencies[UnitConflicts] = "(to be stopped on conflict)"
+# _unit_binds_dependencies[UnitPropagateReloadTo] = "(to be reloaded as well)"
+# _unit_binds_dependencies[UnitConflicts] = "(to be stopped on conflict)"
+# _unit_binds_dependencies["Has"+UnitConflicts] = "(to be stopped on conflict)"
+# _unit_binds_dependencies["Has"+UnitBindsTo] = "has binds for start"
+# _unit_binds_dependencies["Has"+UnitPartOf] = "has part for start"
 
 _unit_wants_dependencies = {}
 _unit_wants_dependencies[UnitRequires] = "required to start"
@@ -362,6 +368,9 @@ _unit_wants_dependencies[Unit_wants] = ".wanted to start"
 # _unit_wants_dependencies[UnitPartOf] = "part of started"
 # _unit_wants_dependencies[UnitPropagateReloadTo] = "(to be reloaded as well)"
 # _unit_wants_dependencies[UnitConflicts] = "(to be stopped on conflict)"
+# _unit_wants_dependencies["Has"+UnitConflicts] = "(to be stopped on conflict)"
+_unit_wants_dependencies["Has"+UnitBindsTo] = "has binds for start"
+_unit_wants_dependencies["Has"+UnitPartOf] = "has part for start"
 
 # https://tldp.org/LDP/abs/html/exitcodes.html
 # https://freedesktop.org/software/systemd/man/systemd.exec.html#id-1.20.8
@@ -827,6 +836,13 @@ def _pid_zombie(pid):
             error_("{pid_status} ({err}): {e}".format(**locals()))
         return False
     return False
+
+def only_wants_deps(deps):
+    newdeps = {}
+    for dep, requires in deps.items():
+        if requires in _unit_wants_dependencies:
+            newdeps[dep] = requires
+    return newdeps
 
 def checkprefix(cmd):
     prefix = ""
@@ -5700,12 +5716,18 @@ class Systemctl:
                         if required not in deps:
                             deps[required] = style
         return deps
+    def get_cache_deps_unit(self, unit, deps_modules = None):
+        deps_modules = deps_modules or self._deps_modules
+        if deps_modules:
+            if unit in deps_modules:
+                return deps_modules[unit]
+        return {}
     def get_deps_unit(self, unit, styles=None):
         """ scans the unit conf for Requires= or Wants= settings - can use the cache file """
         if self._deps_modules:
             if unit in self._deps_modules:
                 return self._deps_modules[unit]
-        dbg_("scanning Unit {unit} for Requuires".format(**locals()))
+        dbg_("scanning Unit {unit} for Requires".format(**locals()))
         conf = self.get_unit_conf(unit)
         return self.get_deps_from(conf, styles)
     def get_deps_from(self, conf, styles=None):
@@ -5826,15 +5848,17 @@ class Systemctl:
                 if found:
                     unit_deps[unit] = found
         if CacheDeps:
-            sysinit_deps = self.get_sysinit_deps(SysInitTarget)
-        if sysinit_deps:
-            some_sysinit = len(sysinit_deps) - 1  # do not count sysinit.target itself
-            info_(" found {some_sysinit} sysinit.target deps".format(**locals()))
-            self.write_sysinit_cache(sysinit_deps)
+            unit_deps = self.resolve_deps(unit_deps)
         if unit_deps:
             some_unit = len(unit_deps)
             info_(" found {some_unit} dependencies for units".format(**locals()))
             self.write_deps_cache(unit_deps)
+        if CacheDeps:
+            sysinit_deps = self.get_sysinit_deps(SysInitTarget, unit_deps) # may use deps_cache
+        if sysinit_deps:
+            some_sysinit = len(sysinit_deps) - 1  # do not count sysinit.target itself
+            info_(" found {some_sysinit} sysinit.target deps".format(**locals()))
+            self.write_sysinit_cache(sysinit_deps)
         if aliases:
             some_given = len(aliases)
             info_(" found {some_given} alias units".format(**locals()))
@@ -5887,14 +5911,33 @@ class Systemctl:
     def load_alias_cache(self):
         if self._alias_modules is None:
             self._alias_modules = self.read_alias_cache()
-    def write_deps_cache(self, deps):
+    def resolve_deps_cache(self):
+        """ ensure that a child unit can declare a Requires/Conflicts on a parent unit """
+        if self._deps_modules:
+            self._deps_modules = self.resolve_deps(self._deps_modules)
+    def resolve_deps(self, deps_modules):
+        """ a child PartOf becomes HasPartOf on the parent (same for BindsTo -> HasBindsTo)
+            and similarly a Conflicts clause shows up as HasConflicts on the parent unit."""
+        deps_cache = deps_modules.copy()
+        # info_(f"... resolve {len(deps_cache)} items in deps_modules")
+        for unit in sorted(deps_modules):
+            deps = deps_modules[unit]
+            for name in sorted(deps):
+                requires = deps[name]
+                if requires in [UnitPartOf, UnitBindsTo, UnitConflicts]:
+                    if name not in deps_cache:
+                        deps_cache[name] = {}
+                    deps_cache[name][unit] = "Has"+requires
+        # info_(f"... having {len(deps_cache)} items in deps_modules now")
+        return deps_cache
+    def write_deps_cache(self, deps_modules):
         filename = os_path(self._root, self.expand_path(CacheDepsFile))
         try:
             with open(filename, "w") as f:
-                for unit in sorted(deps):
-                    sets = deps[unit]
-                    for name in sorted(sets):
-                        requires = sets[name]
+                for unit in sorted(deps_modules):
+                    deps = deps_modules[unit]
+                    for name in sorted(deps):
+                        requires = deps[name]
                         f.write("{unit} {requires} {name}\n".format(**locals()))
             debug_("written unit deps to {filename}".format(**locals()))
             return True
@@ -5920,22 +5963,61 @@ class Systemctl:
     def load_deps_cache(self):
         if self._deps_modules is None:
             self._deps_modules = self.read_deps_cache()
-    def get_sysinit_deps(self, unit):
+    def get_sysinit_deps(self, unit, deps_modules = None):
+        deps_cache = self.get_sysinit_wants(unit)
+        for depth in xrange(DepsMaxDepth):
+            newresults = {}
+            for item in deps_cache:
+                 units = self.get_cache_deps_unit(item, deps_modules)
+                 newresults[item] = only_wants_deps(units)
+            changed = 0
+            for name, deps in newresults.items():
+                if name not in deps_cache:
+                    deps_cache[name] = {}
+                old = len(deps_cache[name])
+                deps_cache[name].update(deps)
+                if old < len(deps_cache[name]):
+                    changed += 1
+                for dep in deps:
+                    if dep not in deps_cache:
+                        deps_cache[dep] = {}
+                        changed += 1
+            if not changed:
+                debug_("sysinit_deps resolved at depth {depth}".format(**locals()))
+                break
+            else:
+                debug_("sysinit_deps changed {changed} at depth {depth}".format(**locals()))
+        return deps_cache
+    def get_sysinit_wants(self, unit):
         result = {}
         deps = self.get_wants_unit(unit)
         result[unit] = deps
-        newresults = {}
         for depth in xrange(DepsMaxDepth):
             newresults = {}
             for name, deps in result.items():
                 for dep in deps:
+                    # debug_("sysinit_wants - checking {dep}".format(**locals()))
                     units = self.get_wants_unit(dep)
                     if dep not in result:
                         newresults[dep] = units
                     # dbg_("wants for {dep} -> {units}".format(**locals())) # internal
-            if not newresults:
+            changed = 0
+            for name, deps in newresults.items():
+                if name not in result: 
+                    result[name] = {}
+                old = len(result[name])
+                result[name].update(deps)
+                if old < len(result[name]):
+                    changed += 1
+                for dep in deps:
+                    if dep not in result:
+                        result[dep] = {}
+                        changed += 1
+            if not changed:
+                debug_("sysinit_wants resolved at depth {depth}".format(**locals()))
                 break
-            result.update(newresults)
+            else:
+                debug_("sysinit_wants changed {changed} at depth {depth}".format(**locals()))
         result_units = list(result)
         dbg_("found sysinit deps = {result_units} # after {depth} rounds".format(**locals()))
         if len(result) == 1:
