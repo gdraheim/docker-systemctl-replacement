@@ -76,47 +76,47 @@ logging.addLevelName(NOTE, "NOTE")
 logging.addLevelName(DONE, "DONE")
 
 
-def dbg_(msg, note=None):
+def dbg_(msg, note=None):  # pragma: no cover
     if note is None:
         logg.debug("%s", msg)
     else:
         logg.debug("%s %s", msg, note)
-def debug_(msg, note=None):
+def debug_(msg, note=None):  # pragma: no cover
     if note is None:
         logg.debug("%s", msg)
     else:
         logg.debug("%s %s", msg, note)
-def hint_(msg, note=None):
+def hint_(msg, note=None):  # pragma: no cover
     if note is None:
         logg.log(HINT, "%s", msg)
     else:
         logg.log(HINT, "%s %s", msg, note)
-def info_(msg, note=None):
+def info_(msg, note=None):  # pragma: no cover
     if note is None:
         logg.info("%s", msg)
     else:
         logg.info("%s %s", msg, note)
-def note_(msg, note=None):
+def note_(msg, note=None):  # pragma: no cover
     if note is None:
         logg.log(NOTE, "%s", msg)
     else:
         logg.log(NOTE, "%s %s", msg, note)
-def warn_(msg, note=None):
+def warn_(msg, note=None):  # pragma: no cover
     if note is None:
         logg.warning("%s", msg)
     else:
         logg.warning("%s %s", msg, note)
-def warning_(msg, note=None):
+def warning_(msg, note=None):  # pragma: no cover
     if note is None:
         logg.warning("%s", msg)
     else:
         logg.warning("%s %s", msg, note)
-def done_(msg, note=None):
+def done_(msg, note=None):  # pragma: no cover
     if note is None:
         logg.log(DONE, "%s", msg)
     else:
         logg.log(DONE, "%s %s", msg, note)
-def error_(msg, note=None):
+def error_(msg, note=None):  # pragma: no cover
     if note is None:
         logg.error("%s", msg)
     else:
@@ -1618,14 +1618,14 @@ def conf_sortedAfter(conflist, cmp=compareAfter):
             break
             # because Requires is almost always the same as the After clauses
             # we are mostly done in round 1 as the list is in required order
-    if DebugSortedAfter:
+    if DebugSortedAfter:  # pragma: no cover
         for conf in conflist:
             dbg_(".. " + conf.name())
         for item in sortlist:
             rank, name = item.rank, item.conf.name()
             dbg_("({rank}) {name}".format(**locals()))
     sortedlist = sorted(sortlist, key=lambda item: -item.rank)
-    if DebugSortedAfter:
+    if DebugSortedAfter:  # pragma: no cover
         for item in sortedlist:
             rank, name = item.rank, item.conf.name()
             dbg_("[{rank}] {name}".format(**locals()))
@@ -2372,7 +2372,7 @@ class Systemctl:
         return conf.get_status(name, default)
     def set_status_from(self, conf, name, value):
         conf.set_status(name, value)
-    def set_status_code_from(self, conf, execs, run=None, dbg = None, dbgcheck = False):
+    def set_status_code_from(self, conf, execs, run=None, dbg=None, dbgcheck=False):
         if execs in ["ExecStart", "oneshot", "idle", "simple", "forking", "notify"]:
             pref = "ExecMain"
         else:
@@ -6209,7 +6209,7 @@ class Systemctl:
         if conf is None:
             return []  # pragma: no cover (is never null)
         badwarnings = self.check_exec_service_from(conf, env, section, exectype)
-        return not badwarnings # okee
+        return not badwarnings  # okee
     def check_exec_service_from(self, conf, env, section=Service, exectype=""):
         if conf is None:
             return []  # pragma: no cover (is never null)
@@ -6235,7 +6235,7 @@ class Systemctl:
             badwarnings.append(problem)
         errors = [ problem for problem in badwarnings if problem.startswith("E") ]
         if not errors:
-            return [] # only warnings - no errors
+            return []  # only warnings - no errors
         if True:
             error_("  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
             abspath = [ problem for problem in badpaths if problem.startswith("E2") ]
