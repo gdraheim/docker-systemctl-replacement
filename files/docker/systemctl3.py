@@ -6698,26 +6698,6 @@ class Systemctl:
         if default_target in deps:
             del deps[default_target]
         return list(deps) # this includes the 'default_target'
-    def required_target_units(self, target, unit_type, igno=""):
-        units = self._required_target_units(target, unit_type)
-        if self._show_all:
-            return units
-        result = []
-        for unit in units:
-            ignored = self._ignored_unit(unit, igno)
-            if ignored:
-                dbg_("Unit {unit} ignored in {ignored} for required target units".format(**locals()))
-            else:
-                result.append(unit)
-        return result
-    def _required_target_units(self, target, unit_type):
-        units = []
-        deps = self.get_required_dependencies(target)
-        for unit in sorted(deps):
-            if unit.endswith(unit_type):
-                if unit not in units:
-                    units.append(unit)
-        return units
     def get_target_conf(self, module):  # -> conf (conf | default-conf)
         """ accept that a unit does not exist 
             and return a unit conf that says 'not-loaded' """
