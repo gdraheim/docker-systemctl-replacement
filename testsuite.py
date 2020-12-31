@@ -3968,21 +3968,26 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         self.assertTrue(os.path.exists(sysinit_wants + "/zza.service"))
         #
+        cmd = "{systemctl} list-deps sysinit.target {vv} {vv} --all"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 2) # the target and its 1 dep
+        #
         cmd = "{systemctl} daemon-reload {vv} {vv}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         alias_cache = os_path(root, "/etc/systemd/systemctl.alias.cache")
         deps_cache = os_path(root, "/etc/systemd/systemctl.deps.cache")
-        sysinit_cache = os_path(root, "/etc/systemd/systemctl.sysinit.cache")
         self.assertFalse(os.path.exists(alias_cache))
         self.assertTrue(os.path.exists(deps_cache))
-        self.assertTrue(os.path.exists(sysinit_cache))
         found = open(deps_cache).read()
         self.assertTrue(greps(found, "zza.service"))
         self.assertEqual(len(lines(found)), 1)
-        found = open(sysinit_cache).read()
-        self.assertTrue(greps(found, "zza.service"))
-        self.assertEqual(len(lines(found)), 2)
+        #
+        cmd = "{systemctl} list-deps sysinit.target {vv} {vv} --all"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 2) # the target and its 1 dep
         #
         self.rm_testdir()
         self.rm_zzfiles(root)
@@ -4021,6 +4026,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         self.assertTrue(os.path.exists(sysinit_wants + "/zzz.service"))
         #
+        cmd = "{systemctl} list-deps sysinit.target {vv} {vv} --all"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 2) # the target and its 1 dep
+        #
         zzz_service_wants = os_path(root, "/etc/systemd/system/zzz.service.wants")
         if not os.path.isdir(zzz_service_wants):
             os.makedirs(zzz_service_wants)
@@ -4033,17 +4043,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s", cmd, end, out)
         alias_cache = os_path(root, "/etc/systemd/systemctl.alias.cache")
         deps_cache = os_path(root, "/etc/systemd/systemctl.deps.cache")
-        sysinit_cache = os_path(root, "/etc/systemd/systemctl.sysinit.cache")
         self.assertFalse(os.path.exists(alias_cache))
         self.assertFalse(os.path.exists(deps_cache))
-        self.assertTrue(os.path.exists(sysinit_cache))
-        # found = open(deps_cache).read()
-        # self.assertTrue(greps(found, "zzz.service"))
-        # self.assertEqual(len(lines(found)), 1)
-        found = open(sysinit_cache).read()
-        self.assertTrue(greps(found, "zzz.service"))
-        self.assertEqual(len(lines(found)), 3)
-        logg.info("sysinit.cache =\n%s", i2(found))
+        #
+        cmd = "{systemctl} list-deps sysinit.target {vv} {vv} --all"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 3) # the target and its 2 deps
         #
         self.rm_testdir()
         self.rm_zzfiles(root)
@@ -4097,23 +4103,27 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "ls {zzz_service_wants}"
         sh____(cmd.format(**locals()))
         #
+        cmd = "{systemctl} list-deps sysinit.target {vv} {vv} --all"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 3) # the target and its 2 dep
+        #
         cmd = "{systemctl} daemon-reload {vv} {vv}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         alias_cache = os_path(root, "/etc/systemd/systemctl.alias.cache")
         deps_cache = os_path(root, "/etc/systemd/systemctl.deps.cache")
-        sysinit_cache = os_path(root, "/etc/systemd/systemctl.sysinit.cache")
         self.assertFalse(os.path.exists(alias_cache))
         self.assertTrue(os.path.exists(deps_cache))
-        self.assertTrue(os.path.exists(sysinit_cache))
         found = open(deps_cache).read()
         logg.info("deps.cache =\n%s", i2(found))
         self.assertTrue(greps(found, "zzb.service.*zza.service"))
         self.assertEqual(len(lines(found)), 1)
-        found = open(sysinit_cache).read()
-        logg.info("sysinit.cache =\n%s", i2(found))
-        self.assertTrue(greps(found, "zzz.service"))
-        self.assertEqual(len(lines(found)), 4)
+        #
+        cmd = "{systemctl} list-deps sysinit.target {vv} {vv} --all"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 4) # the target and its 3 dep
         #
         self.rm_testdir()
         self.rm_zzfiles(root)
@@ -4175,24 +4185,28 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "ls {zzz_service_wants}"
         sh____(cmd.format(**locals()))
         #
+        cmd = "{systemctl} list-deps sysinit.target {vv} {vv} --all"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 3) # the target and its 2 dep
+        #
         cmd = "{systemctl} daemon-reload {vv} {vv}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         alias_cache = os_path(root, "/etc/systemd/systemctl.alias.cache")
         deps_cache = os_path(root, "/etc/systemd/systemctl.deps.cache")
-        sysinit_cache = os_path(root, "/etc/systemd/systemctl.sysinit.cache")
         self.assertFalse(os.path.exists(alias_cache))
         self.assertTrue(os.path.exists(deps_cache))
-        self.assertTrue(os.path.exists(sysinit_cache))
         found = open(deps_cache).read()
         logg.info("deps.cache =\n%s", i2(found))
         self.assertTrue(greps(found, "zzb.service.*zza.service"))
         self.assertTrue(greps(found, "zzc.service.*zzb.service"))
         self.assertEqual(len(lines(found)), 2)
-        found = open(sysinit_cache).read()
-        logg.info("sysinit.cache =\n%s", i2(found))
-        self.assertTrue(greps(found, "zzz.service"))
-        self.assertEqual(len(lines(found)), 5)
+        #
+        cmd = "{systemctl} list-deps sysinit.target {vv} {vv} --all"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 5) # <<< filled up from DepsCache
         #
         self.rm_testdir()
         self.rm_zzfiles(root)
@@ -4262,24 +4276,28 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "ls {zzz_service_wants}"
         sh____(cmd.format(**locals()))
         #
+        cmd = "{systemctl} list-deps sysinit.target {vv} {vv} --all"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 3) # the target and its 2 dep
+        #
         cmd = "{systemctl} daemon-reload {vv} {vv}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         alias_cache = os_path(root, "/etc/systemd/systemctl.alias.cache")
         deps_cache = os_path(root, "/etc/systemd/systemctl.deps.cache")
-        sysinit_cache = os_path(root, "/etc/systemd/systemctl.sysinit.cache")
         self.assertFalse(os.path.exists(alias_cache))
         self.assertTrue(os.path.exists(deps_cache))
-        self.assertTrue(os.path.exists(sysinit_cache))
         found = open(deps_cache).read()
         logg.info("deps.cache =\n%s", i2(found))
         self.assertTrue(greps(found, "zzb.service.*zza.service"))
         self.assertTrue(greps(found, "zzc.service.*zzb.service"))
         self.assertEqual(len(lines(found)), 4)
-        found = open(sysinit_cache).read()
-        logg.info("sysinit.cache =\n%s", i2(found))
-        self.assertTrue(greps(found, "zzz.service"))
-        self.assertEqual(len(lines(found)), 7)
+        #
+        cmd = "{systemctl} list-deps sysinit.target {vv} {vv} --all"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 6) # <<< filled up from DepsCache
         #
         self.rm_testdir()
         self.rm_zzfiles(root)
@@ -4342,9 +4360,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(out, "zza.service"))
         self.assertTrue(greps(out, "zzb.service"))
         #
-        sysinit_cache = os_path(root, "/etc/systemd/systemctl.sysinit.cache")
-        found = open(sysinit_cache).read()
-        logg.info("sysinit.cache =\n%s", i2(found))
+        cmd = "{systemctl} list-deps sysinit.target {vv} {vv} --all"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 2)
         #
         self.rm_testdir()
         self.rm_zzfiles(root)
@@ -4415,9 +4434,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(out, "zza.service"))
         self.assertTrue(greps(out, "zzb.service"))
         #
-        sysinit_cache = os_path(root, "/etc/systemd/systemctl.sysinit.cache")
-        found = open(sysinit_cache).read()
-        logg.info("sysinit.cache =\n%s", i2(found))
+        cmd = "{systemctl} list-deps sysinit.target {vv} {vv} --all"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 2)
         #
         zzz_service_wants = os_path(root, "/etc/systemd/system/zzz.service.wants")
         if not os.path.isdir(zzz_service_wants):
@@ -4498,9 +4518,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(lines(out)), 1)  # added here
         self.assertTrue(greps(out, "zzb.service"))
         #
-        sysinit_cache = os_path(root, "/etc/systemd/systemctl.sysinit.cache")
-        found = open(sysinit_cache).read()
-        logg.info("sysinit.cache =\n%s", i2(found))
+        cmd = "{systemctl} list-deps sysinit.target {vv} {vv} --all"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 2)
         #
         zzz_service_wants = os_path(root, "/etc/systemd/system/zzz.service.wants")
         if not os.path.isdir(zzz_service_wants):
@@ -4564,9 +4585,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} enable zzz.service {vv}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        cmd = "ls {sysinit_wants}"
-        sh____(cmd.format(**locals()))
-        self.assertTrue(os.path.exists(sysinit_wants + "/zzz.service"))
         #
         cmd = "{systemctl} default-services {vv} {vv}"
         out, end = output2(cmd.format(**locals()))
@@ -4592,9 +4610,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(lines(out)), 1)  # added here
         self.assertTrue(greps(out, "zzc.service"))
         #
-        sysinit_cache = os_path(root, "/etc/systemd/systemctl.sysinit.cache")
-        found = open(sysinit_cache).read()
-        logg.info("sysinit.cache =\n%s", i2(found))
+        cmd = "{systemctl} list-deps sysinit.target {vv} {vv} --all"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 2)
         #
         zzz_service_wants = os_path(root, "/etc/systemd/system/zzz.service.wants")
         if not os.path.isdir(zzz_service_wants):
@@ -4691,9 +4710,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(lines(out)), 1)  # added here
         self.assertTrue(greps(out, "zzd.service"))
         #
-        sysinit_cache = os_path(root, "/etc/systemd/systemctl.sysinit.cache")
-        found = open(sysinit_cache).read()
-        logg.info("sysinit.cache =\n%s", i2(found))
+        cmd = "{systemctl} list-deps sysinit.target {vv} {vv} --all"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 2)
         #
         zzz_service_wants = os_path(root, "/etc/systemd/system/zzz.service.wants")
         if not os.path.isdir(zzz_service_wants):
