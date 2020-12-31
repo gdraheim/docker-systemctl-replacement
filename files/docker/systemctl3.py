@@ -5743,7 +5743,8 @@ class Systemctl:
         if self._deps_modules:
             if unit in self._deps_modules:
                 return self._deps_modules[unit]
-        dbg_("scanning Unit {unit} for Requires".format(**locals()))
+        if DebugDeps:
+            dbg_("scanning Unit {unit} for Requires".format(**locals()))
         conf = self.get_unit_conf(unit)
         return self.get_deps_from(conf, styles)
     def get_deps_from(self, conf, styles=None):
