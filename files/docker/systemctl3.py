@@ -59,7 +59,8 @@ DebugKillAll = False
 DebugLockFile = False
 DebugExpandVars = False
 DebugPrintResult = False
-DebugSocketFile = True
+DebugSocketFile = False
+DebugGlobals = False
 DebugIgnoredServices = False
 DebugDeps = False
 IgnoreSyntaxWarnings = ""
@@ -7680,25 +7681,33 @@ def config_globals(settings):
         if nam in globals():
             old = globals()[nam]
             if old is False or old is True:
-                dbg_("yes {nam}={val}".format(**locals()))
+                if DebugGlobals:
+                    dbg_("yes {nam}={val}".format(**locals()))
                 globals()[nam] = (val in ("true", "True", "TRUE", "yes", "y", "Y", "YES", "1"))
-                v_show_all = _show_all
-                dbg_("... _show_all={v_show_all}".format(**locals()))
+                if DebugGlobals:
+                    v_show_all = _show_all
+                    dbg_("... _show_all={v_show_all}".format(**locals()))
             elif isinstance(old, float):
-                dbg_("num {nam}={val}".format(**locals()))
+                if DebugGlobals:
+                    dbg_("num {nam}={val}".format(**locals()))
                 globals()[nam] = float(val)
-                vMinimumYield = MinimumYield
-                dbg_("... MinimumYield={vMinimumYield}".format(**locals()))
+                if DebugGlobals:
+                    vMinimumYield = MinimumYield
+                    dbg_("... MinimumYield={vMinimumYield}".format(**locals()))
             elif isinstance(old, int):
-                dbg_("int {nam}={val}".format(**locals()))
+                if DebugGlobals:
+                    dbg_("int {nam}={val}".format(**locals()))
                 globals()[nam] = int(val)
-                vInitLoopSleep = InitLoopSleep
-                dbg_("... InitLoopSleep={vInitLoopSleep}".format(**locals()))
+                if DebugGlobals:
+                    vInitLoopSleep = InitLoopSleep
+                    dbg_("... InitLoopSleep={vInitLoopSleep}".format(**locals()))
             elif isinstance(old, basestring):
-                dbg_("str {nam}={val}".format(**locals()))
+                if DebugGlobals:
+                    dbg_("str {nam}={val}".format(**locals()))
                 globals()[nam] = val.strip()
-                vSysInitTarget = SysInitTarget
-                dbg_("... SysInitTarget={vSysInitTarget}".format(**locals()))
+                if DebugGlobals:
+                    vSysInitTarget = SysInitTarget
+                    dbg_("... SysInitTarget={vSysInitTarget}".format(**locals()))
             else:
                 nam_type = type(old)
                 warn_("(ignored) unknown target type -c '{nam}' : {nam_type}".format(**locals()))

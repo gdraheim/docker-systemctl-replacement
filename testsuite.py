@@ -1092,7 +1092,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart=/bin/sleep 3
         """)
         #
-        cmd = "{systemctl} daemon-reload -c SysInitTarget=network.target -vvv"
+        cmd = "{systemctl} daemon-reload -c DebugGlobals=y -c SysInitTarget=network.target -vvv"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
         self.assertEqual(lines(out), [])
@@ -1113,7 +1113,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart=/bin/sleep 3
         """)
         #
-        cmd = "{systemctl} daemon-reload -c InitLoopSleep=1 -vvv"
+        cmd = "{systemctl} daemon-reload -c DebugGlobals=y -c InitLoopSleep=1 -vvv"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
         self.assertEqual(lines(out), [])
@@ -1134,7 +1134,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart=/bin/sleep 3
         """)
         #
-        cmd = "{systemctl} daemon-reload -c MinimumYield=0.7 -vvv"
+        cmd = "{systemctl} daemon-reload -c DebugGlobals=y -c MinimumYield=0.7 -vvv"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
         self.assertEqual(lines(out), [])
@@ -1155,7 +1155,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart=/bin/sleep 3
         """)
         #
-        cmd = "{systemctl} daemon-reload -c _show_all=True -vvv"
+        cmd = "{systemctl} daemon-reload -c DebugGlobals=y -c _show_all=True -vvv"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
         self.assertEqual(lines(out), [])
@@ -1176,7 +1176,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart=/bin/sleep 3
         """)
         #
-        cmd = "{systemctl} daemon-reload -c FooBar=1 -vvv"
+        cmd = "{systemctl} daemon-reload -c DebugGlobals=y -c FooBar=1 -vvv"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
         self.assertEqual(lines(out), [])
@@ -1197,7 +1197,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart=/bin/sleep 3
         """)
         #
-        cmd = "{systemctl} daemon-reload -c _extra_vars=1 -vvv"
+        cmd = "{systemctl} daemon-reload -c DebugGlobals=y -c _extra_vars=1 -vvv"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
         self.assertEqual(lines(out), [])
@@ -1218,7 +1218,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart=/bin/sleep 3
         """)
         #
-        cmd = "{systemctl} daemon-reload -c SomeNonsenseHere -vvv"
+        cmd = "{systemctl} daemon-reload -c DebugGlobals=y -c SomeNonsenseHere -vvv"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
         self.assertEqual(lines(out), [])
