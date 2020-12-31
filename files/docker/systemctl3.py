@@ -1845,6 +1845,7 @@ class Systemctl:
         self._file_for_unit_sysd = None  # name.service => /etc/systemd/system/name.service
         self._alias_modules = None       # name.service => real.name.service
         self._deps_modules = None        # name.service => Dict[dep,why]
+        self._ignored_target_units = None # Dict[unit,why]
         self._ignored_modules = None     # text
         self._preset_file_list = None  # /etc/systemd/system-preset/* => file content
         self._default_target = DefaultTarget
@@ -6573,6 +6574,18 @@ class Systemctl:
             except Exception as e:
                 error_("while reading from {filename}: {e}".format(**locals()))
         return igno
+    def ignored_target_units(self):
+        if self._ignored_target_units is not None:
+            return self._ignored_target_units
+        units = {}
+        for nexttarget in IgnoredTargets.split(","):
+            target = nexttarget.strip()
+            if target:
+                target_deps = self.deps_for_unit(target)
+                for unit in target_deps:
+                    units[unit] = target
+        self._ignored_target_units = units
+        return units
     def ignored_unit(self, unit, ignored = None):
         if self._show_all:
             return []
@@ -6582,13 +6595,10 @@ class Systemctl:
         is_ignored = False
         because_of = []
         in_section = "[...]"
-        for nexttarget in IgnoredTargets.split(","):
-            target = nexttarget.strip()
-            if target:
-                target_deps = self.deps_for_unit(target)
-                if unit in target_deps:
-                    is_ignored = True
-                    because_of.append(target)
+        units_of_IgnoredTargets = self.ignored_target_units()
+        if unit in units_of_IgnoredTargets:
+            is_ignored = True
+            because_of.append(units_of_IgnoredTargets[unit])
         self.load_ignored_modules()
         for igno in (ignored, self._ignored_modules):
             if not igno: continue
