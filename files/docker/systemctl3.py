@@ -6694,10 +6694,11 @@ class Systemctl:
         if DebugIgnoredServices:
             dbg_("ignored services filter for default.target:\n\t{igno}".format(**locals()))
         default_target = target or self.get_default_target()
-        deps = self.list_deps(default_target) # new style in v1.6
+        self.make_deps_cache() # ensure the deps.cache is scanned (without --force)
+        deps = self.list_deps(default_target) # new style in v1.6 using deps.cache
         if default_target in deps:
             del deps[default_target]
-        return list(deps) # this includes the 'default_target'
+        return list(deps)
     def get_target_conf(self, module):  # -> conf (conf | default-conf)
         """ accept that a unit does not exist 
             and return a unit conf that says 'not-loaded' """
