@@ -261,7 +261,8 @@ _ignored_services = """
 netconsole
 network
 [opensuse]
-raw
+kbdsettings.service
+raw.service
 pppoe
 rpmconf*
 postfix*
