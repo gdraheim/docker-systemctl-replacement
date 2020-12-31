@@ -620,6 +620,9 @@ class Systemctl:
         deps: Dict[str,str]
     def get_wants_unit(self, unit: str, styles: Optional[List[str]] = None) -> Dict[str,str]:
         deps: Dict[str,str]
+    def get_wants_sysv_target(self, target: str, sysv: str = "S") -> Dict[str,str]:
+        deps: Dict[str,str]
+        folders: List[str]
     def get_cache_deps_unit(self, unit: str, deps_modules: Optional[Dict[str, Dict[str,str]]] = None) -> Dict[str,str]: ...
     def get_deps_unit(self, unit: str, styles: Optional[List[str]] = None) -> Dict[str,str]:
         deps: Dict[str,str]
@@ -716,20 +719,6 @@ class Systemctl:
     def default_services_modules(self, *modules: str) -> List[str]:
         results: List[str]
     def target_default_services(self, target: Optional[str] = None, sysv: str = "S") -> List[str]: ...
-    def enabled_target_services(self, target: str, sysv: str = "S", igno: str = "") -> List[str]: ...
-    def _enabled_target_services(self, target: str, sysv: str = "S") -> List[str]:
-        units: List[str]
-    def _enabled_target_user_local_units(self, target: str, unit_kind: str = ".service") -> List[str]:
-        units: List[str]
-    def _enabled_target_user_system_units(self, target: str, unit_kind: str = ".service") -> List[str]:
-        units: List[str]
-    def _enabled_target_installed_system_units(self, target: str, unit_type: str = ".service") -> List[str]:
-        units: List[str]
-    def _enabled_target_configured_system_units(self, target: str, unit_type: str = ".service") -> List[str]:
-        units: List[str]
-    def _enabled_target_sysv_units(self, target: str, sysv: str = "S") -> List[str]:
-        units: List[str]
-        folders: List[str]
     def required_target_units(self, target: str, unit_type: str, igno: str = "") -> List[str]:
         units: List[str]
     def _required_target_units(self, target: str, unit_type: str) -> List[str]:

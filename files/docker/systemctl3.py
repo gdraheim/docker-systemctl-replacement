@@ -249,7 +249,7 @@ JournalLogFolder = "{VARLOG}/journal"
 SystemctlDebugLog = "{VARLOG}/systemctl.debug.log"
 SystemctlExtraLog = "{VARLOG}/systemctl.log"
 
-CacheDeps=False
+CacheDeps=True
 CacheAlias=True
 DepsMaxDepth=9
 CacheDepsFile="${XDG_CONFIG_HOME}/systemd/systemctl.deps.cache"
@@ -260,6 +260,7 @@ _ignored_services = """
 [centos]
 netconsole
 network
+dnf-makecache.*
 [opensuse]
 kbdsettings.service
 raw.service
@@ -347,6 +348,8 @@ _unit_dep_from[UnitConflicts] = "isConflictOf"
 _unit_dep_from["Has"+UnitConflicts] = "isConflictTo"
 _unit_dep_from["Has"+UnitBindsTo] = "isBindsTo"
 _unit_dep_from["Has"+UnitPartOf] = "isPartOf"
+_unit_dep_from[".init.S"] = "init.S.from"
+_unit_dep_from[".init.K"] = "init.K.from"
 
 _unit_inter_dependencies = {}
 _unit_inter_dependencies[UnitRequires] = "required to start"
@@ -5734,6 +5737,31 @@ class Systemctl:
                         if required not in deps:
                             deps[required] = style
         return deps
+    def get_wants_sysv_target(self, target, sysv="S"):
+        deps = {}
+        folders = []
+        if target in [ "multi-user.target", DefaultUnit ]:
+            folders += [ self.rc3_root_folder() ]
+        if target in [ "graphical.target" ]:
+            folders += [ self.rc5_root_folder() ]
+        if folders:
+            debug_("for sysv {target} using {folders}".format(**locals()))
+        for folder in folders:
+            if not os.path.isdir(folder):
+                debug_("non-existant {folder}".format(**locals()))
+                continue
+            for unit in os.listdir(folder):
+                path = os.path.join(folder, unit)
+                if os.path.isdir(path): continue
+                m = re.match(sysv+r"\d\d(.*)", unit)
+                if m:
+                    service = m.group(1)
+                    unit = service + ".service"
+                    if unit not in deps:
+                         deps[unit] = ".init."+sysv
+        if folders:
+            debug_("for sysv {target} found {deps}".format(**locals()))
+        return deps
     def get_cache_deps_unit(self, unit, deps_modules = None):
         deps_modules = deps_modules or self._deps_modules
         if deps_modules:
@@ -5812,6 +5840,11 @@ class Systemctl:
     def deps_for_unit(self, unit, deps_modules = None):
         self.load_deps_cache()
         result = self.get_wanted_for_unit(unit)
+        initmodules = self.get_wants_sysv_target(unit) # adding sysv units
+        if initmodules:
+            for name, style in initmodules.items():
+                if name not in result:
+                    result[name] = { unit: _unit_dep_from[style] }
         resultdeps = self.get_required_for_units(result, deps_modules)
         return resultdeps
     def get_required_for_unit(self, unit, deps_modules = None):
@@ -6661,160 +6694,10 @@ class Systemctl:
         if DebugIgnoredServices:
             dbg_("ignored services filter for default.target:\n\t{igno}".format(**locals()))
         default_target = target or self.get_default_target()
-        return self.enabled_target_services(default_target, sysv, igno)
-    def enabled_target_services(self, target, sysv="S", igno=""):
-        result = []
-        units = self._enabled_target_services(target, sysv)
-        if self._show_all:
-            return units
-        for unit in units:
-            ignored = self._ignored_unit(unit, igno)
-            if ignored:
-                dbg_("Unit {unit} ignored in {ignored} for target services".format(**locals()))
-            else:
-                result.append(unit)
-        return result
-    def _enabled_target_services(self, target, sysv="S"):
-        units = []
-        if self.user_mode():
-            targetlist = self.get_target_list(target)
-            dbg_("check for {target} user services : {targetlist}".format(**locals()))
-            for targets in targetlist:
-                for unit in self._enabled_target_user_local_units(targets, ".target"):
-                    if unit not in units:
-                        units.append(unit)
-            for targets in targetlist:
-                for unit in self._required_target_units(targets, ".socket"):
-                    if unit not in units:
-                        units.append(unit)
-            for targets in targetlist:
-                for unit in self._enabled_target_user_local_units(targets, ".socket"):
-                    if unit not in units:
-                        units.append(unit)
-            for targets in targetlist:
-                for unit in self._required_target_units(targets, ".service"):
-                    if unit not in units:
-                        units.append(unit)
-            for targets in targetlist:
-                for unit in self._enabled_target_user_local_units(targets, ".service"):
-                    if unit not in units:
-                        units.append(unit)
-            for targets in targetlist:
-                for unit in self._enabled_target_user_system_units(targets, ".service"):
-                    if unit not in units:
-                        units.append(unit)
-        else:
-            targetlist = self.get_target_list(target)
-            dbg_("check for {target} system services: {targetlist}".format(**locals()))
-            for targets in targetlist:
-                for unit in self._enabled_target_configured_system_units(targets, ".target"):
-                    if unit not in units:
-                        units.append(unit)
-            for targets in targetlist:
-                for unit in self._required_target_units(targets, ".socket"):
-                    if unit not in units:
-                        units.append(unit)
-            for targets in targetlist:
-                for unit in self._enabled_target_installed_system_units(targets, ".socket"):
-                    if unit not in units:
-                        units.append(unit)
-            for targets in targetlist:
-                for unit in self._required_target_units(targets, ".service"):
-                    if unit not in units:
-                        units.append(unit)
-            for targets in targetlist:
-                for unit in self._enabled_target_installed_system_units(targets, ".service"):
-                    if unit not in units:
-                        units.append(unit)
-            for targets in targetlist:
-                for unit in self._enabled_target_sysv_units(targets, sysv):
-                    if unit not in units:
-                        units.append(unit)
-        return units
-    def _enabled_target_user_local_units(self, target, unit_kind=".service"):
-        units = []
-        for basefolder in self.user_folders():
-            if not basefolder:
-                continue
-            folder = self.default_enablefolder(target, basefolder)
-            if self._root:
-                folder = os_path(self._root, folder)
-            if os.path.isdir(folder):
-                for unit in sorted(os.listdir(folder)):
-                    path = os.path.join(folder, unit)
-                    if os.path.isdir(path): continue
-                    if unit.endswith(unit_kind):
-                        units.append(unit)
-        return units
-    def _enabled_target_user_system_units(self, target, unit_kind=".service"):
-        units = []
-        for basefolder in self.system_folders():
-            if not basefolder:
-                continue
-            folder = self.default_enablefolder(target, basefolder)
-            if self._root:
-                folder = os_path(self._root, folder)
-            if os.path.isdir(folder):
-                for unit in sorted(os.listdir(folder)):
-                    path = os.path.join(folder, unit)
-                    if os.path.isdir(path): continue
-                    if unit.endswith(unit_kind):
-                        conf = self.load_unit_conf(unit)
-                        if conf is None:
-                            pass
-                        elif self.not_user_conf(conf):
-                            pass
-                        else:
-                            units.append(unit)
-        return units
-    def _enabled_target_installed_system_units(self, target, unit_type=".service"):
-        units = []
-        for basefolder in self.system_folders():
-            if not basefolder:
-                continue
-            folder = self.default_enablefolder(target, basefolder)
-            if self._root:
-                folder = os_path(self._root, folder)
-            if os.path.isdir(folder):
-                for unit in sorted(os.listdir(folder)):
-                    path = os.path.join(folder, unit)
-                    if os.path.isdir(path): continue
-                    if unit.endswith(unit_type):
-                        units.append(unit)
-        return units
-    def _enabled_target_configured_system_units(self, target, unit_type=".service"):
-        units = []
-        if True:
-            folder = self.default_enablefolder(target)
-            if self._root:
-                folder = os_path(self._root, folder)
-            if os.path.isdir(folder):
-                for unit in sorted(os.listdir(folder)):
-                    path = os.path.join(folder, unit)
-                    if os.path.isdir(path): continue
-                    if unit.endswith(unit_type):
-                        units.append(unit)
-        return units
-    def _enabled_target_sysv_units(self, target, sysv="S"):
-        units = []
-        folders = []
-        if target in [ "multi-user.target", DefaultUnit ]:
-            folders += [ self.rc3_root_folder() ]
-        if target in [ "graphical.target" ]:
-            folders += [ self.rc5_root_folder() ]
-        for folder in folders:
-            if not os.path.isdir(folder):
-                warn_("non-existant {folder}".format(**locals()))
-                continue
-            for unit in sorted(os.listdir(folder)):
-                path = os.path.join(folder, unit)
-                if os.path.isdir(path): continue
-                m = re.match(sysv+r"\d\d(.*)", unit)
-                if m:
-                    service = m.group(1)
-                    unit = service + ".service"
-                    units.append(unit)
-        return units
+        deps = self.list_deps(default_target) # new style in v1.6
+        if default_target in deps:
+            del deps[default_target]
+        return list(deps) # this includes the 'default_target'
     def required_target_units(self, target, unit_type, igno=""):
         units = self._required_target_units(target, unit_type)
         if self._show_all:
