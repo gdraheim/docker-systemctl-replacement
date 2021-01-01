@@ -6734,7 +6734,7 @@ class Systemctl:
                     del deps[system_target]
             if SysInitTarget in deps:
                del deps[SysInitTarget]
-        return list(deps)
+        return list(reversed(deps))
     def get_target_conf(self, module):  # -> conf (conf | default-conf)
         """ accept that a unit does not exist 
             and return a unit conf that says 'not-loaded' """
