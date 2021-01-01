@@ -293,11 +293,11 @@ _all_common_targets = [ "default.target" ] + _default_targets + _feature_targets
 _all_common_enabled = [ "default.target", "multi-user.target", "remote-fs.target" ]
 _all_common_disabled = [ "graphical.target", "resue.target", "nfs-client.target" ]
 
-_target_requires = OrderedDict()
-_target_requires["graphical.target"] = "multi-user.target"
-_target_requires["multi-user.target"] = "basic.target"
-_target_requires["basic.target"] = "sockets.target"
-_target_requires["sockets.target"] = "sysinit.target"
+_system_targets = OrderedDict()
+_system_targets["graphical.target"] = "multi-user.target"
+_system_targets["multi-user.target"] = "basic.target"
+_system_targets["basic.target"] = "sockets.target"
+_system_targets["sockets.target"] = "sysinit.target"
 
 _runlevel_mappings = OrderedDict()  # the official list
 _runlevel_mappings["0"] = "poweroff.target"
@@ -350,7 +350,7 @@ _unit_dep_from["Has"+UnitBindsTo] = "isBindsTo"
 _unit_dep_from["Has"+UnitPartOf] = "isPartOf"
 _unit_dep_from[".init.S"] = "init.S.from"
 _unit_dep_from[".init.K"] = "init.K.from"
-_unit_dep_from[".required"] = "is.required.from"
+_unit_dep_from[".required.target"] = "is.required.target.from"
 
 _unit_inter_dependencies = {}
 _unit_inter_dependencies[UnitRequires] = "required to start"
@@ -5810,9 +5810,9 @@ class Systemctl:
             newresults = OrderedDict()
             for name in result:
                 newresults[name] = {}
-                if name in _target_requires:
-                    base = _target_requires[name]
-                    newresults[name][base] = ".required"
+                if name in _system_targets:
+                    base = _system_targets[name]
+                    newresults[name][base] = ".required.target"
                 deps = self.get_wants_sysv_target(name)
                 for dep, style in deps.items():
                     newresults[name].update(deps)
@@ -6706,8 +6706,8 @@ class Systemctl:
         if conf is not None:
             return conf
         target_conf = self.default_unit_conf(module)
-        if module in _target_requires:
-            target_conf.set(Unit, UnitRequires, _target_requires[module])
+        if module in _system_targets:
+            target_conf.set(Unit, UnitRequires, _system_target[module])
         return target_conf
     def get_target_list(self, module):
         """ the Requires= in target units are only accepted if known """
@@ -6716,9 +6716,9 @@ class Systemctl:
         targets = [ target ]
         conf = self.get_target_conf(module)
         requires = conf.get(Unit, UnitRequires, "")
-        while requires in _target_requires:
+        while requires in _system_targets:
             targets = [ requires ] + targets
-            requires = _target_requires[requires]
+            requires = _system_targets[requires]
         dbg_("the {module} requires {targets}".format(**locals()))
         return targets
     def default_target(self, *modules):
