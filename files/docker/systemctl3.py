@@ -541,6 +541,19 @@ def to_list(value):
     if isinstance(value, tuple):
         return list(value)
     return str(value or "").split(",")
+def namelist(value):
+    if not value:
+        return []
+    if isinstance(value, list):
+        return value
+    if isinstance(value, tuple):
+        return list(value)
+    result = []
+    for item in str(value or "").split(" "):
+        name = item.strip()
+        if name and name not in result:
+            result.append(name)
+    return result
 def int_mode(value):
     try: return int(value, 8)
     except: return None  # pragma: no cover
@@ -1074,17 +1087,17 @@ class SystemctlConfigParser(SystemctlConfData):
             self.set(Unit, "Description", description)
         check = self.get("init.d", "Required-Start", "")
         if check:
-            for item in check.split(" "):
-                if item.strip() in _sysv_mappings:
-                    self.set(Unit, "Requires", _sysv_mappings[item.strip()])
+            for item in namelist(check):
+                if item in _sysv_mappings:
+                    self.set(Unit, "Requires", _sysv_mappings[item])
         provides = self.get("init.d", "Provides", "")
         if provides:
             self.set(Install, "Alias", provides)
         # if already in multi-user.target then start it there.
         runlevels = self.getstr("init.d", "Default-Start", "3 5")
-        for item in runlevels.split(" "):
-            if item.strip() in _runlevel_mappings:
-                self.set(Install, "WantedBy", _runlevel_mappings[item.strip()])
+        for item in namelist(runlevels):
+            if item in _runlevel_mappings:
+                self.set(Install, "WantedBy", _runlevel_mappings[item])
         self.set(Service, "Restart", "no")
         self.set(Service, "TimeoutSec", strE(DefaultMaximumTimeout))
         self.set(Service, "KillMode", "process")
@@ -1173,6 +1186,11 @@ class SystemctlConf:
         return self.data.getstr(section, name, default, allow_no_value)
     def getlist(self, section, name, default=None, allow_no_value=False):
         return self.data.getlist(section, name, default or [], allow_no_value)
+    def getnamelist(self, section, name, default=None, allow_no_value=False):
+        result = []
+        for item in self.getlist(section, name, default, allow_no_value):
+            result += namelist(item)
+        return result
     def getbool(self, section, name, default=None):
         value = self.data.get(section, name, default or "no")
         if value:
@@ -1622,42 +1640,22 @@ def seconds_to_time(seconds):
     else:
         return "%ss" % (secs)
 
-def getBefore(conf):
-    result = []
-    beforelist = conf.getlist(Unit, "Before", [])
-    for befores in beforelist:
-        for before in befores.split(" "):
-            name = before.strip()
-            if name and name not in result:
-                result.append(name)
-    return result
-
-def getAfter(conf):
-    result = []
-    afterlist = conf.getlist(Unit, "After", [])
-    for afters in afterlist:
-        for after in afters.split(" "):
-            name = after.strip()
-            if name and name not in result:
-                result.append(name)
-    return result
-
 def compareAfter(confA, confB):
     idA = confA.name()
     idB = confB.name()
-    for after in getAfter(confA):
+    for after in confA.getnamelist(Unit, "After", []):
         if after == idB:
             dbg_("{idA} After {idB}".format(**locals()))
             return -1
-    for after in getAfter(confB):
+    for after in confB.getnamelist(Unit, "After", []):
         if after == idA:
             dbg_("{idB} After {idA}".format(**locals()))
             return 1
-    for before in getBefore(confA):
+    for before in confA.getnamelist(Unit, "Before", []):
         if before == idB:
             dbg_("{idA} Before {idB}".format(**locals()))
             return 1
-    for before in getBefore(confB):
+    for before in confB.getnamelist(Unit, "Before", []):
         if before == idA:
             dbg_("{idB} Before {idA}".format(**locals()))
             return -1
@@ -2741,14 +2739,24 @@ class Systemctl:
         return ok
     def get_RuntimeDirectoryPreserve(self, conf, section=Service):
         return conf.getbool(section, "RuntimeDirectoryPreserve", "no")
+    def get_RuntimeDirectory_list(self, conf, section=Service):
+        return [ self.expand_special(item, conf) for item in conf.getnamelist(section, "RuntimeDirectory") ]
     def get_RuntimeDirectory(self, conf, section=Service):
         return self.expand_special(conf.get(section, "RuntimeDirectory", ""), conf)
+    def get_StateDirectory_list(self, conf, section=Service):
+        return [ self.expand_special(item, conf) for item in conf.getnamelist(section, "StateDirectory") ]
     def get_StateDirectory(self, conf, section=Service):
         return self.expand_special(conf.get(section, "StateDirectory", ""), conf)
+    def get_CacheDirectory_list(self, conf, section=Service):
+        return [ self.expand_special(item, conf) for item in conf.getnamelist(section, "CacheDirectory") ]
     def get_CacheDirectory(self, conf, section=Service):
         return self.expand_special(conf.get(section, "CacheDirectory", ""), conf)
+    def get_LogsDirectory_list(self, conf, section=Service):
+        return [ self.expand_special(item, conf) for item in conf.getnamelist(section, "LogsDirectory") ]
     def get_LogsDirectory(self, conf, section=Service):
         return self.expand_special(conf.get(section, "LogsDirectory", ""), conf)
+    def get_ConfigurationDirectory_list(self, conf, section=Service):
+        return [ self.expand_special(item, conf) for item in conf.getnamelist(section, "ConfigurationDirectory") ]
     def get_ConfigurationDirectory(self, conf, section=Service):
         return self.expand_special(conf.get(section, "ConfigurationDirectory", ""), conf)
     def get_RuntimeDirectoryMode(self, conf, section=Service):
@@ -2764,14 +2772,13 @@ class Systemctl:
     def clean_service_directories(self, conf, which=""):
         ok = True
         section = self.get_unit_section_from(conf)
-        nameRuntimeDirectory = self.get_RuntimeDirectory(conf, section)
-        nameStateDirectory = self.get_StateDirectory(conf, section)
-        nameCacheDirectory = self.get_CacheDirectory(conf, section)
-        nameLogsDirectory = self.get_LogsDirectory(conf, section)
-        nameConfigurationDirectory = self.get_ConfigurationDirectory(conf, section)
+        listRuntimeDirectory = self.get_RuntimeDirectory_list(conf, section)
+        listStateDirectory = self.get_StateDirectory_list(conf, section)
+        listCacheDirectory = self.get_CacheDirectory_list(conf, section)
+        listLogsDirectory = self.get_LogsDirectory_list(conf, section)
+        listConfigurationDirectory = self.get_ConfigurationDirectory_list(conf, section)
         root = conf.root_mode()
-        for name in nameRuntimeDirectory.split(" "):
-            if not name.strip(): continue
+        for name in listRuntimeDirectory:
             RUN = get_RUNTIME_DIR(root)
             path = os.path.join(RUN, name)
             if which in ["all", "runtime", ""]:
@@ -2782,29 +2789,25 @@ class Systemctl:
                         var_path = os.path.join(var_run, name)
                         var_dirpath = os_path(self._root, var_path)
                         self.do_rm_tree(var_dirpath)
-        for name in nameStateDirectory.split(" "):
-            if not name.strip(): continue
+        for name in listStateDirectory:
             DAT = get_VARLIB_HOME(root)
             path = os.path.join(DAT, name)
             if which in ["all", "state"]:
                 dirpath = os_path(self._root, path)
                 ok = self.do_rm_tree(dirpath) and ok
-        for name in nameCacheDirectory.split(" "):
-            if not name.strip(): continue
+        for name in listCacheDirectory:
             CACHE = get_CACHE_HOME(root)
             path = os.path.join(CACHE, name)
             if which in ["all", "cache", ""]:
                 dirpath = os_path(self._root, path)
                 ok = self.do_rm_tree(dirpath) and ok
-        for name in nameLogsDirectory.split(" "):
-            if not name.strip(): continue
+        for name in listLogsDirectory:
             LOGS = get_LOG_DIR(root)
             path = os.path.join(LOGS, name)
             if which in ["all", "logs"]:
                 dirpath = os_path(self._root, path)
                 ok = self.do_rm_tree(dirpath) and ok
-        for name in nameConfigurationDirectory.split(" "):
-            if not name.strip(): continue
+        for name in listConfigurationDirectory:
             CONFIG = get_CONFIG_HOME(root)
             path = os.path.join(CONFIG, name)
             if which in ["all", "configuration", ""]:
@@ -2814,34 +2817,29 @@ class Systemctl:
     def env_service_directories(self, conf):
         envs = {}
         section = self.get_unit_section_from(conf)
-        nameRuntimeDirectory = self.get_RuntimeDirectory(conf, section)
-        nameStateDirectory = self.get_StateDirectory(conf, section)
-        nameCacheDirectory = self.get_CacheDirectory(conf, section)
-        nameLogsDirectory = self.get_LogsDirectory(conf, section)
-        nameConfigurationDirectory = self.get_ConfigurationDirectory(conf, section)
+        listRuntimeDirectory = self.get_RuntimeDirectory_list(conf, section)
+        listStateDirectory = self.get_StateDirectory_list(conf, section)
+        listCacheDirectory = self.get_CacheDirectory_list(conf, section)
+        listLogsDirectory = self.get_LogsDirectory_list(conf, section)
+        listConfigurationDirectory = self.get_ConfigurationDirectory_list(conf, section)
         root = conf.root_mode()
-        for name in nameRuntimeDirectory.split(" "):
-            if not name.strip(): continue
+        for name in listRuntimeDirectory:
             RUN = get_RUNTIME_DIR(root)
             path = os.path.join(RUN, name)
             envs["RUNTIME_DIRECTORY"] = path
-        for name in nameStateDirectory.split(" "):
-            if not name.strip(): continue
+        for name in listStateDirectory:
             DAT = get_VARLIB_HOME(root)
             path = os.path.join(DAT, name)
             envs["STATE_DIRECTORY"] = path
-        for name in nameCacheDirectory.split(" "):
-            if not name.strip(): continue
+        for name in listCacheDirectory:
             CACHE = get_CACHE_HOME(root)
             path = os.path.join(CACHE, name)
             envs["CACHE_DIRECTORY"] = path
-        for name in nameLogsDirectory.split(" "):
-            if not name.strip(): continue
+        for name in listLogsDirectory:
             LOGS = get_LOG_DIR(root)
             path = os.path.join(LOGS, name)
             envs["LOGS_DIRECTORY"] = path
-        for name in nameConfigurationDirectory.split(" "):
-            if not name.strip(): continue
+        for name in listConfigurationDirectory:
             CONFIG = get_CONFIG_HOME(root)
             path = os.path.join(CONFIG, name)
             envs["CONFIGURATION_DIRECTORY"] = path
@@ -2849,21 +2847,20 @@ class Systemctl:
     def create_service_directories(self, conf):
         envs = {}
         section = self.get_unit_section_from(conf)
-        nameRuntimeDirectory = self.get_RuntimeDirectory(conf, section)
+        listRuntimeDirectory = self.get_RuntimeDirectory_list(conf, section)
         modeRuntimeDirectory = self.get_RuntimeDirectoryMode(conf, section)
-        nameStateDirectory = self.get_StateDirectory(conf, section)
+        listStateDirectory = self.get_StateDirectory_list(conf, section)
         modeStateDirectory = self.get_StateDirectoryMode(conf, section)
-        nameCacheDirectory = self.get_CacheDirectory(conf, section)
+        listCacheDirectory = self.get_CacheDirectory_list(conf, section)
         modeCacheDirectory = self.get_CacheDirectoryMode(conf, section)
-        nameLogsDirectory = self.get_LogsDirectory(conf, section)
+        listLogsDirectory = self.get_LogsDirectory_list(conf, section)
         modeLogsDirectory = self.get_LogsDirectoryMode(conf, section)
-        nameConfigurationDirectory = self.get_ConfigurationDirectory(conf, section)
+        listConfigurationDirectory = self.get_ConfigurationDirectory_list(conf, section)
         modeConfigurationDirectory = self.get_ConfigurationDirectoryMode(conf, section)
         root = conf.root_mode()
         user = self.get_User(conf)
         group = self.get_Group(conf)
-        for name in nameRuntimeDirectory.split(" "):
-            if not name.strip(): continue
+        for name in listRuntimeDirectory:
             RUN = get_RUNTIME_DIR(root)
             path = os.path.join(RUN, name)
             dbg_("RuntimeDirectory {path}".format(**locals()))
@@ -2887,32 +2884,28 @@ class Systemctl:
                             os.symlink(dirpath, var_dirpath)
                         except Exception as e:
                             dbg_("var symlink {var_dirpath}\n\t{e}".format(**locals()))
-        for name in nameStateDirectory.split(" "):
-            if not name.strip(): continue
+        for name in listStateDirectory:
             DAT = get_VARLIB_HOME(root)
             path = os.path.join(DAT, name)
             dbg_("StateDirectory {path}".format(**locals()))
             self.make_service_directory(path, modeStateDirectory)
             self.chown_service_directory(path, user, group)
             envs["STATE_DIRECTORY"] = path
-        for name in nameCacheDirectory.split(" "):
-            if not name.strip(): continue
+        for name in listCacheDirectory:
             CACHE = get_CACHE_HOME(root)
             path = os.path.join(CACHE, name)
             dbg_("CacheDirectory {path}".format(**locals()))
             self.make_service_directory(path, modeCacheDirectory)
             self.chown_service_directory(path, user, group)
             envs["CACHE_DIRECTORY"] = path
-        for name in nameLogsDirectory.split(" "):
-            if not name.strip(): continue
+        for name in listLogsDirectory:
             LOGS = get_LOG_DIR(root)
             path = os.path.join(LOGS, name)
             dbg_("LogsDirectory {path}".format(**locals()))
             self.make_service_directory(path, modeLogsDirectory)
             self.chown_service_directory(path, user, group)
             envs["LOGS_DIRECTORY"] = path
-        for name in nameConfigurationDirectory.split(" "):
-            if not name.strip(): continue
+        for name in listConfigurationDirectory:
             CONFIG = get_CONFIG_HOME(root)
             path = os.path.join(CONFIG, name)
             dbg_("ConfigurationDirectory {path}".format(**locals()))
