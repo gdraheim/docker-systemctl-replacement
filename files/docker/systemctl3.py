@@ -5788,10 +5788,10 @@ class Systemctl:
                 for required in requirelist.strip().split(" "):
                     deps[required.strip()] = style
         return deps
-    def get_wanted_for_unit(self, unit):
+    def deps_for_unit(self, unit, deep = False):
         result = { unit: { "": "isWanted" }}
-        return self.get_wanted_for_units(result)
-    def get_wanted_for_units(self, existing):
+        return self.deps_for_units(result, deep=deep)
+    def deps_for_units(self, existing, deep = False):
         """ this works by only looking at the disk for .wants (through "systemctl enable")
             directory entries. No CacheDeps is needed here - but a loop will recurse through
             the dependencies to resolve more dependencies. """
@@ -5799,12 +5799,20 @@ class Systemctl:
         for depth in xrange(DepsMaxDepth):
             newresults = {}
             for name in result:
+                deps = self.get_wants_sysv_target(name)
+                for dep, style in deps.items():
+                    newresults[name] = deps
                 deps = self.get_wants_sysd_unit(name)  # Dict[name,style]
+                for dep, style in deps.items():
+                    newresults[name] = deps
+                deps = self.get_wants_deps_unit(name)  # Dict[name,style]
                 for dep, style in deps.items():
                     newresults[name] = deps
             changed = []
             for name, deps in newresults.items():
                 for dep, style in deps.items():
+                    if self.ignored_unit(dep, deep=deep):
+                        continue
                     if dep not in result:
                         result[dep] = {}
                     old = len(result[dep])
@@ -5820,12 +5828,14 @@ class Systemctl:
         return result
     def list_deps(self, unit, deps_modules=None):
         """ Unit - show the dependencies that will be handled for a unit.
-            Use --force to rebuild the DepsCache and use --all to allow
+            Use --force to rebuild the deps.cache and use --all to allow
             ignored dependencies to be included in the list. (where
-            the sysinit.target  dependencies are ignored by default.)"""
+            the sysinit.target dependencies are ignored by default.)"""
         if self._force:
             self.make_deps_cache()
-        result = self.deps_for_unit(unit, deps_modules)
+        else:
+            self.load_deps_cache()
+        result = self.deps_for_unit(unit)
         if not self._show_all:
             clean = []
             for name in result:
@@ -5836,45 +5846,6 @@ class Systemctl:
         if len(result) == 1:
             if unit in result:
                 return {}
-        return result
-    def deps_for_unit(self, unit, deps_modules=None):
-        self.load_deps_cache()
-        result = self.get_wanted_for_unit(unit)
-        initmodules = self.get_wants_sysv_target(unit)  # adding sysv units
-        if initmodules:
-            for name, style in initmodules.items():
-                if name not in result:
-                    result[name] = { unit: _unit_dep_from[style] }
-        resultdeps = self.get_required_for_units(result, deps_modules)
-        return resultdeps
-    def get_required_for_unit(self, unit, deps_modules=None):
-        result = { unit: { "": "isRequired" }}
-        return self.get_required_for_units(result, deps_modules)
-    def get_required_for_units(self, existing, deps_modules=None):
-        """ after getting the .wants for sysinit.target we can also resolve the 
-            declared the dependencies in the unit files - but only when they are
-            in the CacheDeps module list already. """
-        result = existing.copy()
-        for depth in xrange(DepsMaxDepth):
-            newresults = {}
-            for item in result:
-                units = self.get_cache_deps_unit(item, deps_modules)
-                newresults[item] = only_wants_deps(units)
-            changed = []
-            for name, deps in newresults.items():
-                for dep, style in deps.items():
-                    if dep not in result:
-                        result[dep] = {}
-                    old = len(result[dep])
-                    if name not in result[dep]:  # keep the first style
-                        result[dep][name] = _unit_dep_from[style]
-                    if old < len(result[dep]):
-                        changed.append(dep)
-            if DebugDeps:
-                some = len(changed)
-                debug_("deps changed {some} at depth {depth} : {changed}".format(**locals()))
-            if not changed:
-                break
         return result
     def get_required_dependencies(self, unit, styles=None):
         styles = styles or list(_unit_wants_dependencies)
@@ -6622,8 +6593,8 @@ class Systemctl:
                     units[unit] = target
         self._ignored_target_units = units
         return units
-    def ignored_unit(self, unit, ignored=None):
-        if self._show_all:
+    def ignored_unit(self, unit, ignored=None, deep=False):
+        if deep or self._show_all:
             return []
         return self._ignored_unit(unit, ignored)
     def _ignored_unit(self, unit, ignored=None):

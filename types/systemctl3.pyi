@@ -628,16 +628,11 @@ class Systemctl:
         deps: Dict[str,str]
     def get_deps_from(self, conf: SystemctlConf, styles: Optional[List[str]] = None) -> Dict[str,str]:
         result: Dict[str,Dict[str, str]]
-    def get_wanted_for_unit(self, unit: str) -> Dict[str,Dict[str, str]]:
+    def deps_for_unit(self, unit: str, deep: bool = False) -> Dict[str,Dict[str, str]]:
         deps: Dict[str,str]
-    def get_wanted_for_units(self, existing: Dict[str,Dict[str, str]]) -> Dict[str,Dict[str, str]]:
+    def deps_for_units(self, existing: Dict[str,Dict[str, str]], deep: bool = False) -> Dict[str,Dict[str, str]]:
         deps: Dict[str,str]
     def list_deps(self, unit: str, deps_modules: Optional[Dict[str, Dict[str,str]]] = None) -> Dict[str,Dict[str, str]]: ...
-    def deps_for_unit(self, unit: str, deps_modules: Optional[Dict[str, Dict[str,str]]] = None) -> Dict[str,Dict[str, str]]: ...
-    def get_required_for_unit(self, unit: str, deps_modules: Optional[Dict[str, Dict[str,str]]] = None) -> Dict[str,Dict[str, str]]:
-        deps: Dict[str,str]
-    def get_required_for_units(self, existing: Dict[str,Dict[str, str]], deps_modules: Optional[Dict[str, Dict[str,str]]] = None) -> Dict[str,Dict[str, str]]:
-        deps: Dict[str,str]
     def get_required_dependencies(self, unit: str, styles: Optional[List[str]] = None) -> Dict[str,str]:
         deps: Dict[str,str]
     def get_start_dependencies(self, unit: str, styles: Optional[List[str]] = None) -> Dict[str,List[str]]: # pragma: no cover
@@ -713,7 +708,7 @@ class Systemctl:
     def get_ignored_services(self) -> str: ...
     def ignored_target_units(self) -> Dict[str, str]:
         units: Dict[str, str]
-    def ignored_unit(self, unit: str, ignored: Optional[str] = None) -> List[str]: ...
+    def ignored_unit(self, unit: str, ignored: Optional[str] = None, deep: bool = False) -> List[str]: ...
     def _ignored_unit(self, unit: str, ignored: Optional[str] = None) -> List[str]:
         because_of: List[str]
     def default_services_modules(self, *modules: str) -> List[str]:
