@@ -7016,7 +7016,7 @@ class Systemctl:
                     minSleep = 1
                     if minSleep < InitLoopSleep:
                         oldSleep = InitLoopSleep
-                        warn_("[{me}] [{unit}] set InitLoopSleep from {oldSleep}s to {minSleep} (caused by RestartSec=0!)".format(**locals()))
+                        warn_("[{me}] [{unit}] set InitLoopSleep from {oldSleep}s to {minSleep} : (caused by RestartSec=0!)".format(**locals()))
                         InitLoopSleep = minSleep
                 elif restartSec > 0.9 and restartSec < InitLoopSleep:
                     restartSleep = int(restartSec + 0.2)
