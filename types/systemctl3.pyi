@@ -618,13 +618,13 @@ class Systemctl:
         mapping: Dict[str,str]
     def get_dependencies_unit(self, unit: str, styles: Optional[List[str]] = None) -> Dict[str,str]:
         deps: Dict[str,str]
-    def get_wants_unit(self, unit: str, styles: Optional[List[str]] = None) -> Dict[str,str]:
+    def get_wants_sysd_unit(self, unit: str, styles: Optional[List[str]] = None) -> Dict[str,str]:
         deps: Dict[str,str]
     def get_wants_sysv_target(self, target: str, sysv: str = "S") -> Dict[str,str]:
         deps: Dict[str,str]
         folders: List[str]
     def get_cache_deps_unit(self, unit: str, deps_modules: Optional[Dict[str, Dict[str,str]]] = None) -> Dict[str,str]: ...
-    def get_deps_unit(self, unit: str, styles: Optional[List[str]] = None) -> Dict[str,str]:
+    def get_wants_deps_unit(self, unit: str, styles: Optional[List[str]] = None) -> Dict[str,str]:
         deps: Dict[str,str]
     def get_deps_from(self, conf: SystemctlConf, styles: Optional[List[str]] = None) -> Dict[str,str]:
         result: Dict[str,Dict[str, str]]

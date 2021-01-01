@@ -5716,11 +5716,11 @@ class Systemctl:
         deps = {}
         for style in styles:
             if style.startswith("."):
-                deps.update(self.get_wants_unit(unit, [ style ]))
+                deps.update(self.get_wants_sysd_unit(unit, [ style ]))
             else:
-                deps.update(self.get_deps_unit(unit, [ style ]))
+                deps.update(self.get_wants_deps_unit(unit, [ style ]))
         return deps
-    def get_wants_unit(self, unit, styles=None):
+    def get_wants_sysd_unit(self, unit, styles=None):
         """ scans the systemd folders for unit.service.wants subfolders """
         styles = styles or [ ".requires", ".wants" ]  # list(_unit_inter_dependencies)
         deps = {}
@@ -5768,7 +5768,7 @@ class Systemctl:
             if unit in deps_modules:
                 return deps_modules[unit]
         return {}
-    def get_deps_unit(self, unit, styles=None):
+    def get_wants_deps_unit(self, unit, styles=None):
         """ scans the unit conf for Requires= or Wants= settings - can use the cache file """
         if self._deps_modules:
             if unit in self._deps_modules:
@@ -5799,7 +5799,7 @@ class Systemctl:
         for depth in xrange(DepsMaxDepth):
             newresults = {}
             for name in result:
-                deps = self.get_wants_unit(name)  # Dict[name,style]
+                deps = self.get_wants_sysd_unit(name)  # Dict[name,style]
                 for dep, style in deps.items():
                     newresults[name] = deps
             changed = []
@@ -7625,10 +7625,10 @@ def run(command, *modules):
         print_str_list_list(systemctl.list_start_dependencies_modules(*modules))
     elif command in ["get-wants-unit"]:
         unit = modules[0]
-        print_str_dict_dict({unit: systemctl.get_wants_unit(unit) })
+        print_str_dict_dict({unit: systemctl.get_wants_sysd_unit(unit) })
     elif command in ["get-deps-unit"]:
         unit = modules[0]
-        print_str_dict_dict({unit: systemctl.get_deps_unit(unit) })
+        print_str_dict_dict({unit: systemctl.get_wants_deps_unit(unit) })
     elif command in ["list-deps"]:
         unit = modules[0]
         print_str_dict_dict(systemctl.list_deps(unit))
