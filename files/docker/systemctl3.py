@@ -211,6 +211,7 @@ ResetLocale = ["LANG", "LANGUAGE", "LC_CTYPE", "LC_NUMERIC", "LC_TIME", "LC_COLL
 LocaleConf="/etc/locale.conf"
 DefaultListenBacklog=2
 
+InitRunsInitLoop = True
 ExitWhenNoMoreServices = False
 ExitWhenNoMoreProcs = False
 DefaultUnit = os.environ.get("SYSTEMD_DEFAULT_UNIT", "default.target")  # systemd.exe --unit=default.target
@@ -6895,19 +6896,14 @@ class Systemctl:
         if self._now:
             result = self.init_loop_until_stop([])
             return not not result
+        if self._now or self._show_all:
+            dbg_("init default --now --all => no_more_procs")
+            self.doExitWhenNoMoreProcs = True
         if not modules:
-            # like 'systemctl --init default'
-            if self._now or self._show_all:
-                dbg_("init default --now --all => no_more_procs")
-                self.doExitWhenNoMoreProcs = True
             target = self.get_default_target()
-            return self.start_target_system(target, init=True)
+            return self.init_target(target, init = InitRunsInitLoop)
         #
         # otherwise quit when all the init-services have died
-        self.doExitWhenNoMoreServices = True
-        if self._now or self._show_all:
-            dbg_("init services --now --all => no_more_procs")
-            self.doExitWhenNoMoreProcs = True
         found_all = True
         units = []
         for module in modules:
@@ -6926,9 +6922,15 @@ class Systemctl:
                     units += [ unit ]
         modulelist, unitlist = " ".join(modules), " ".join(units)
         info_("init {modulelist} -> start {unitlist}".format(**locals()))
-        done = self.start_units(units, init=True)
+        done = self.init_units(units, init = InitRunsInitLoop)
         info_("-- init is done")
-        return done  # and found_all
+        return done
+    def init_units(self, units, init = True):
+        self.doExitWhenNoMoreServices = True
+        return self.start_units(units, init=init)
+    def init_target(self, target, init = True):
+        # like 'systemctl --init default' = it will never exit
+        return self.start_target_system(target, init=True)
     def start_log_files(self, units):
         self._log_file = {}
         self._log_hold = {}
