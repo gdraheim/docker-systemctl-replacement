@@ -5145,13 +5145,13 @@ class Systemctl:
         groups = [ conf.get(section, "Group", ""), conf.get(section, "SocketGroup", "") ] + conf.getlist(section, "SupplementaryGroups")
         for user in users:
             if user:
-                try: pwd.getpwnam(user)
+                try: pwd.getpwnam(self.expand_special(user, conf))
                 except Exception as e:
                     logg.error(" %s: User does not exist: %s (%s)", unit, user, getattr(e, "__doc__", ""))
                     badusers += 1
         for group in groups:
             if group: 
-                try: grp.getgrnam(group)
+                try: grp.getgrnam(self.expand_special(group, conf))
                 except Exception as e:
                     logg.error(" %s: Group does not exist: %s (%s)", unit, group, getattr(e, "__doc__", ""))
                     badgroups += 1
