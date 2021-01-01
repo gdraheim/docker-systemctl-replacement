@@ -2692,12 +2692,11 @@ class Systemctl:
         return newcmd
     def remove_service_directories(self, conf, section=Service):
         ok = True
-        nameRuntimeDirectory = self.get_RuntimeDirectory(conf, section)
+        nameRuntimeDirectory = self.get_RuntimeDirectory_list(conf, section)
         keepRuntimeDirectory = self.get_RuntimeDirectoryPreserve(conf, section)
         if not keepRuntimeDirectory:
             root = conf.root_mode()
-            for name in nameRuntimeDirectory.split(" "):
-                if not name.strip(): continue
+            for name in nameRuntimeDirectory_list:
                 RUN = get_RUNTIME_DIR(root)
                 path = os.path.join(RUN, name)
                 dirpath = os_path(self._root, path)
