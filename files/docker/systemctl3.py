@@ -5775,9 +5775,8 @@ class Systemctl:
         styles = styles or list(_unit_inter_dependencies)
         for style in styles:
             if style.startswith("."): continue
-            for requirelist in conf.getlist(Unit, style, []):
-                for required in requirelist.strip().split(" "):
-                    deps[required.strip()] = style
+            for required in conf.getnamelist(Unit, style, []):
+                deps[required.strip()] = style
         return deps
     def deps_for_unit(self, unit, deep = False):
         """ Use deep=--wall to include units that are otherwise ignored. 
@@ -5970,12 +5969,10 @@ class Systemctl:
         return True  # errors
     def get_alias_from(self, conf):
         result = {}
-        for defs in conf.getlist("Install", "Alias"):
-            for unit_def in defs.split(" "):
-                unit = unit_def.strip()
-                if not unit: continue
-                name = conf.name()
-                result[unit] = name
+        for unit in conf.getnamelist("Install", "Alias"):
+            if not unit: continue
+            name = conf.name()
+            result[unit] = name
         return result
     def write_alias_cache(self, aliases):
         filename = os_path(self._root, self.expand_path(CacheAliasFile))
