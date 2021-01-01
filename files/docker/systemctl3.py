@@ -133,7 +133,6 @@ NOT_FOUND = 4       # FOUND_UNKNOWN
 # defaults for options
 _extra_vars = []
 _force = False
-_full = False
 _log_lines = 0
 _no_pager = False
 _now = False
@@ -148,6 +147,7 @@ _unit_state = None
 _unit_property = None
 _what_kind = ""
 _show_all = False
+_show_full = False
 _user_mode = False
 
 # common default paths
@@ -1830,7 +1830,6 @@ class Systemctl:
         # from command line options or the defaults
         self._extra_vars = _extra_vars
         self._force = _force
-        self._full = _full
         self._init = _init
         self._no_ask_password = _no_ask_password
         self._no_legend = _no_legend
@@ -1839,6 +1838,7 @@ class Systemctl:
         self._quiet = _quiet
         self._root = _root
         self._show_all = _show_all
+        self._show_full = _show_full
         self._unit_property = _unit_property
         self._unit_state = _unit_state
         self._unit_type = _unit_type
@@ -5738,6 +5738,9 @@ class Systemctl:
                     for required in os.listdir(require_path):
                         if required not in deps:
                             deps[required] = style
+        if DebugDeps:
+            if unit in ["multi-user.target"]:
+                debug_("Unit {unit} sysv {styles} has {deps}".format(**locals()))
         return deps
     def get_wants_sysv_target(self, target, sysv="S"):
         deps = {}
@@ -5746,11 +5749,10 @@ class Systemctl:
             folders += [ self.rc3_root_folder() ]
         if target in [ "graphical.target" ]:
             folders += [ self.rc5_root_folder() ]
-        if folders:
-            debug_("for sysv {target} using {folders}".format(**locals()))
+        if folders and DebugDeps:
+            debug_("  for sysv {target} using {folders}".format(**locals()))
         for folder in folders:
             if not os.path.isdir(folder):
-                debug_("non-existant {folder}".format(**locals()))
                 continue
             for unit in os.listdir(folder):
                 path = os.path.join(folder, unit)
@@ -5761,8 +5763,8 @@ class Systemctl:
                     unit = service + ".service"
                     if unit not in deps:
                         deps[unit] = ".init."+sysv
-        if folders:
-            debug_("for sysv {target} found {deps}".format(**locals()))
+        if folders and DebugDeps:
+            debug_("  for sysv {target} found {deps}".format(**locals()))
         return deps
     def get_cache_deps_unit(self, unit, deps_modules=None):
         deps_modules = deps_modules or self._deps_modules
@@ -5776,7 +5778,7 @@ class Systemctl:
             if unit in self._deps_modules:
                 return self._deps_modules[unit]
         if DebugDeps:
-            dbg_("scanning Unit {unit} for Requires".format(**locals()))
+            dbg_("  scanning Unit {unit} for Requires".format(**locals()))
         conf = self.get_unit_conf(unit)
         return self.get_deps_from(conf, styles)
     def get_deps_from(self, conf, styles=None):
@@ -5807,19 +5809,24 @@ class Systemctl:
         for depth in xrange(DepsMaxDepth):
             newresults = {}
             for name in result:
+                newresults[name] = {}
                 deps = self.get_wants_sysv_target(name)
                 for dep, style in deps.items():
-                    newresults[name] = deps
+                    newresults[name].update(deps)
                 deps = self.get_wants_sysd_unit(name)  # Dict[name,style]
                 for dep, style in deps.items():
-                    newresults[name] = deps
+                    newresults[name].update(deps)
                 deps = self.get_wants_deps_unit(name)  # Dict[name,style]
                 for dep, style in deps.items():
-                    newresults[name] = deps
+                    newresults[name].update(deps)
             changed = []
             for name, deps in newresults.items():
                 for dep, style in deps.items():
-                    if self.ignored_unit(dep, deep=deep):
+                    ignored = self.ignored_unit(dep, deep=deep)
+                    if ignored:
+                        if DebugDeps:
+                            ignored_list = " and ".join(ignored)
+                            debug_("+ ignored {dep} because of {ignored_list}".format(**locals()))
                         continue
                     if dep not in result:
                         result[dep] = {}
@@ -5830,7 +5837,7 @@ class Systemctl:
                         changed.append(dep)
             if DebugDeps:
                 some = len(changed)
-                debug_("wants changed {some} at depth {depth} : {changed}".format(**locals()))
+                debug_("++ wants changed {some} at depth {depth} : {changed}".format(**locals()))
             if not changed:
                 break
         return result
@@ -6604,6 +6611,8 @@ class Systemctl:
         return units
     def ignored_unit(self, unit, ignored=None, deep=False):
         if deep or self._show_all:
+            if self._show_full:
+                return []
             for nexttarget in ConflictTargets.split(","):
                 target = nexttarget.strip()
                 if target == unit:
@@ -7743,7 +7752,7 @@ if __name__ == "__main__":
                   help="Defines the service directories to be cleaned (configuration, state, cache, logs, runtime)")
     _o.add_option("-a", "--all", action="store_true", dest="show_all", default=_show_all,
                   help="Show all loaded units/properties, including dead empty ones. To list all units installed on the system, use the 'list-unit-files' command instead")
-    _o.add_option("-l", "--full", action="store_true", default=_full,
+    _o.add_option("-l", "--full", action="store_true", dest="show_full", default=_show_full,
                   help="Don't ellipsize unit names on output (never ellipsized)")
     _o.add_option("--reverse", action="store_true",
                   help="Show reverse dependencies with 'list-dependencies' (ignored)")
@@ -7808,7 +7817,6 @@ if __name__ == "__main__":
     #
     _extra_vars = opt.extra_vars
     _force = opt.force
-    _full = opt.full
     _log_lines = opt.lines
     _no_pager = opt.no_pager
     _no_reload = opt.no_reload
@@ -7819,6 +7827,7 @@ if __name__ == "__main__":
     _quiet = opt.quiet
     _root = opt.root
     _show_all = opt.show_all
+    _show_full = opt.show_full
     _unit_state = opt.state
     _unit_type = opt.unit_type
     _unit_property = opt.unit_property
