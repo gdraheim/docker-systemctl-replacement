@@ -7231,6 +7231,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Testing X
             """)
+        text_file(os_path(root, "/etc/systemd/system/zzz.service"), """
+            [Unit]
+            Description=Testing Z
+            Requires=zzx.target
+            [Service]
+            ExecStart=/bin/sleep 2
+            [Install]
+            WantedBy=zzx.target""")
         #
         cmd = "{systemctl} default-services"
         out, end = output2(cmd.format(**locals()))
@@ -7308,7 +7316,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} default-services"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(len(lines(out)), 4)
+        self.assertEqual(len(lines(out)), 3) # a new target does not count
         self.assertEqual(end, 0)
         #
         cmd = "{systemctl} is-enabled zza.service"
@@ -7321,6 +7329,17 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(out.strip(), "enabled")
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} --no-legend enable zzz.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        #
+        cmd = "{systemctl} default-services"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 4) # a new service via zzx.target
         self.assertEqual(end, 0)
         #
         self.rm_testdir()
