@@ -123,7 +123,6 @@ def error_(msg, note=None):  # pragma: no cover
     else:
         logg.error("%s %s", msg, note)
 
-
 NOT_A_PROBLEM = 0   # FOUND_OK
 NOT_OK = 1          # FOUND_ERROR
 NOT_ACTIVE = 2      # FOUND_INACTIVE
@@ -7522,7 +7521,7 @@ def print_str_dict_dict(result):
         debug_result_("    END {result}")
         return
     shown = 0
-    for key in sorted(result.keys()):
+    for key in sorted(result):
         element = result[key]
         for name in sorted(element):
             value = element[name]
