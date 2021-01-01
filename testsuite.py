@@ -2,7 +2,7 @@
 """ Testcases for docker-systemctl-replacement functionality """
 
 __copyright__ = "(C) Guido Draheim, licensed under the EUPL"""
-__version__ = "1.5.4523"
+__version__ = "1.5.4524"
 
 # NOTE:
 # The testcases 1000...4999 are using a --root=subdir environment
@@ -27781,7 +27781,82 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(top, "sleepB"))
         #
         logg.info("===============SLEEP")
-        time.sleep(6)
+        for attempt in xrange(9):
+            log = lines(open(debug_log))
+            if greps(log, "InitLoopSleep"): break
+            time.sleep(1)
+            logg.info("=========== %s", attempt)
+        #
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        logg.info("==============>>")
+        #
+        log = lines(open(debug_log))
+        logg.info("systemctl.debug.log>\n\t%s", "\n\t".join(log[-20:]))
+        #
+        self.assertTrue(greps(log, "set InitLoopSleep"))
+        #
+        logg.info("kill daemon at %s", init.pid)
+        self.assertTrue(self.kill(init.pid))
+        #
+        self.rm_killall()
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def test_4771_systemctl_py_restart_sec_shortens_interval(self) -> None:
+        """ check that we can enable services in a docker container to be run as default-services
+            and RestartSec shortes the InitLoop interval"""
+        self.begin()
+        self.rm_testdir()
+        self.rm_killall()
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        logfile = os_path(root, "/var/log/"+testname+".log")
+        testsleepA = self.testname("sleepA")
+        testsleepB = self.testname("sleepB")
+        bindir = os_path(root, "/usr/bin")
+        text_file(os_path(testdir, "zza.service"), """
+            [Unit]
+            Description=Testing A
+            [Service]
+            Type=simple
+            ExecStart={bindir}/{testsleepA} 2
+            Restart=on-failure
+            RestartSec=2
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        #
+        copy_tool(_bin_sleep, os_path(bindir, testsleepA))
+        copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
+        cmd = "{systemctl} enable zza.service"
+        sh____(cmd.format(**locals()))
+        cmd = "{systemctl} default-services -v"
+        sh____(cmd.format(**locals()))
+        # sh____(cmd.format(**locals()))
+        out2 = output(cmd.format(**locals()))
+        logg.info("\n>\n%s", out2)
+        #
+        debug_log = os_path(root, expand_path(SystemctlDebugLog))
+        os_remove(debug_log)
+        text_file(debug_log, "")
+        cmd = "{systemctl} -1"
+        init = background(cmd.format(**locals()))
+        time.sleep(2)
+        #
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, "sleepA"))
+        #
+        logg.info("===============SLEEP")
+        for attempt in xrange(9):
+            log = lines(open(debug_log))
+            if greps(log, "InitLoopSleep"): break
+            time.sleep(1)
+            logg.info("=========== %s", attempt)
         #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
@@ -27791,7 +27866,76 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("systemctl.debug.log>\n\t%s", "\n\t".join(log[-20:]))
         #
         self.assertTrue(greps(log, ".zza.service. set InitLoopSleep from 5s to 2"))
-        self.assertTrue(greps(log, ".zzb.service. set InitLoopSleep from 2s to 1 .caused by RestartSec=0!"))
+        #
+        logg.info("kill daemon at %s", init.pid)
+        self.assertTrue(self.kill(init.pid))
+        #
+        self.rm_killall()
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def test_4772_systemctl_py_restart_sec_shortens_interval(self) -> None:
+        """ check that we can enable services in a docker container to be run as default-services
+            and RestartSec shortes the InitLoop interval"""
+        self.begin()
+        self.rm_testdir()
+        self.rm_killall()
+        testname = self.testname()
+        testdir = self.testdir()
+        user = self.user()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        logfile = os_path(root, "/var/log/"+testname+".log")
+        testsleepB = self.testname("sleepB")
+        bindir = os_path(root, "/usr/bin")
+        text_file(os_path(testdir, "zzb.service"), """
+            [Unit]
+            Description=Testing B
+            [Service]
+            Type=simple
+            ExecStart={bindir}/{testsleepB} 6
+            Restart=on-failure
+            RestartSec=0
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        #
+        copy_tool(_bin_sleep, os_path(bindir, testsleepB))
+        copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
+        cmd = "{systemctl} enable zzb.service"
+        sh____(cmd.format(**locals()))
+        cmd = "{systemctl} default-services -v"
+        sh____(cmd.format(**locals()))
+        # sh____(cmd.format(**locals()))
+        out2 = output(cmd.format(**locals()))
+        logg.info("\n>\n%s", out2)
+        #
+        debug_log = os_path(root, expand_path(SystemctlDebugLog))
+        os_remove(debug_log)
+        text_file(debug_log, "")
+        cmd = "{systemctl} -1"
+        init = background(cmd.format(**locals()))
+        time.sleep(2)
+        #
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, "sleepB"))
+        #
+        logg.info("===============SLEEP")
+        for attempt in xrange(9):
+            log = lines(open(debug_log))
+            if greps(log, "InitLoopSleep"): break
+            time.sleep(1)
+            logg.info("=========== %s", attempt)
+        #
+        top = _recent(output(_top_list))
+        logg.info("\n>>>\n%s", top)
+        logg.info("==============>>")
+        #
+        log = lines(open(debug_log))
+        logg.info("systemctl.debug.log>\n\t%s", "\n\t".join(log[-20:]))
+        #
+        self.assertTrue(greps(log, ".zzb.service. set InitLoopSleep from 5s to 1 : .caused by RestartSec=0!"))
         #
         logg.info("kill daemon at %s", init.pid)
         self.assertTrue(self.kill(init.pid))
