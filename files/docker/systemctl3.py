@@ -6752,7 +6752,7 @@ class Systemctl:
         target = self.get_default_target()
         self.write_target_status(target, ActiveState=None, SubState="initializing")
         self._no_wait_system = True
-        services = self.start_target_system(target, init)
+        done, services = self.do_start_target_services(target, system=True)
         info_("{target} system is up".format(**locals()))
         if init:
             info_("{target} init-loop start".format(**locals()))
@@ -6760,49 +6760,58 @@ class Systemctl:
             info_("{target} init-loop {sig}".format(**locals()))
             self.stop_system_default()
             self.clean_target_status(target)
-        return not not services
-    def start_target_system(self, target, init=False):
-        services = self.target_default_services(target, "S")
-        self.write_target_status(target, ActiveState="starting")
-        self.start_units(services)
-        return services
+        return done
     def do_start_target_from(self, conf):
         target = conf.name()
-        # services = self.start_target_system(target)
+        done, services = self.do_start_target_services(target, system = self._now)
+        return done
+    def do_start_target_services(self, target, system = False):
         services = self.target_default_services(target, "S")
         self.write_target_status(target, ActiveState="starting")
-        units = [service for service in services if not self.is_running_unit(service)]
+        if not system:
+            units = [service for service in services if not self.is_running_unit(service)]
+        else:
+            units = services
+            self._no_wait_system = True
         dbg_("start {target} is starting {units} from {services}".format(**locals()))
-        return self.start_units(units)
+        done = self.start_units(units)
+        return done, units
     def stop_system_default(self):
         """ detect the default.target services and stop them.
             This is commonly run through 'systemctl halt' or
             at the end of a 'systemctl --init default' loop."""
         target = self.get_default_target()
-        services = self.stop_target_system(target)
+        done, services = self.do_stop_target_services(target, system=True)
         info_("{target} system is down".format(**locals()))
-        return not not services
-    def stop_target_system(self, target):
-        self.write_target_status(target, ActiveState="stopping")
-        self._no_wait_system = True
-        services = self.target_default_services(target, "K")
-        self.stop_units(services)
-        return services
+        return done
     def do_stop_target_from(self, conf):
         target = conf.name()
+        done, services = self.do_stop_target_services(target, system = self._now)
+        return done
+    def do_stop_target_services(self, target, system = False):
         self.write_target_status(target, ActiveState="stopping")
-        # services = self.stop_target_system(target)
         services = self.target_default_services(target, "K")
-        units = [service for service in services if self.is_running_unit(service)]
+        if not system:
+            units = [service for service in services if self.is_running_unit(service)]
+        else:
+            units = services
+            self._no_wait_system = True
         dbg_("stop {target} is stopping {units} from {services}".format(**locals()))
-        return self.stop_units(units)
+        done = self.stop_units(units)
+        return done, units
     def do_reload_target_from(self, conf):
         target = conf.name()
-        return self.reload_target_system(target)
-    def reload_target_system(self, target):
+        done, services = self.do_reload_target_services(target, system = self._now)
+        return done
+    def do_reload_target_services(self, target, system = False):
         services = self.target_default_services(target, "S")
-        units = [service for service in services if self.is_running_unit(service)]
-        return self.reload_units(units)
+        if not system:
+            units = [service for service in services if self.is_running_unit(service)]
+        else:
+            units = services
+            self._no_wait_system = True
+        done = self.reload_units(units)
+        return done, units
     def halt_target(self, *modules):
         """ -- stop units from default system level """
         return self.halt_system()
