@@ -68,6 +68,7 @@ IgnoreWarnings = ""
 TestSocketListen = False
 TestSocketAccept = False
 ActiveWhileStarting = True
+ActiveRemainOneshot = "yes"
 
 HINT = (logging.DEBUG + logging.INFO) // 2
 NOTE = (logging.WARNING + logging.INFO) // 2
@@ -3304,8 +3305,8 @@ class Systemctl:
     def get_SocketTimeoutSec(self, conf):
         timeout = conf.get(Socket, "TimeoutSec", strE(DefaultTimeoutStartSec))
         return time_to_seconds(timeout, DefaultMaximumTimeout)
-    def get_RemainAfterExit(self, conf):
-        return conf.getbool(Service, "RemainAfterExit", "no")
+    def get_RemainAfterExit(self, conf, default = "no"):
+        return conf.getbool(Service, "RemainAfterExit", default)
     def start_unit_from(self, conf):
         if not conf: return False
         problems = self.check_syntax_from(conf)
@@ -3331,7 +3332,6 @@ class Systemctl:
             return False
     def do_start_service_from(self, conf):
         timeout = self.get_TimeoutStartSec(conf)
-        doRemainAfterExit = self.get_RemainAfterExit(conf)
         runs = conf.get(Service, "Type", "simple").lower()
         env = self.get_env(conf)
         if not self._quiet:
@@ -3368,6 +3368,8 @@ class Systemctl:
                 warn_("the service was already up once")
                 self.write_status_from(conf, AS=oldstatus)
                 return True
+            doRemainAfterExit = self.get_RemainAfterExit(conf, ActiveRemainOneshot)
+            dbg_("{runs} RemainAfterExit={doRemainAfterExit}".format(**locals()))
             self.set_status_code_from(conf, runs, None)
             if doRemainAfterExit and ActiveWhileStarting:
                 dbg_("{runs} RemainAfterExit -> AS=active".format(**locals()))
@@ -3401,6 +3403,7 @@ class Systemctl:
             if self.is_active_pid(pid):
                 warn_("the service is already running on PID {pid}".format(**locals()))
                 return True
+            doRemainAfterExit = self.get_RemainAfterExit(conf)
             self.set_status_code_from(conf, runs, None)
             if doRemainAfterExit and ActiveWhileStarting:
                 dbg_("{runs} RemainAfterExit -> AS=active".format(**locals()))
@@ -3444,6 +3447,7 @@ class Systemctl:
             if self.is_active_pid(pid):
                 error_("the service is already running on PID {pid}".format(**locals()))
                 return False
+            doRemainAfterExit = self.get_RemainAfterExit(conf)
             self.set_status_code_from(conf, runs, None)
             notify = self.notify_socket_from(conf)
             if notify:
@@ -3504,6 +3508,7 @@ class Systemctl:
                 self.write_status_from(conf, AS=None)  # active comes from PID
         elif runs in [ "forking" ]:
             pid_file = self.pid_file_from(conf)
+            doRemainAfterExit = self.get_RemainAfterExit(conf)
             self.set_status_code_from(conf, runs, None)
             for cmd in conf.getlist(Service, "ExecStart", []):
                 exe, newcmd = self.exec_newcmd(cmd, env, conf)
@@ -5787,7 +5792,17 @@ class Systemctl:
         if DebugDeps:
             dbg_("  scanning Unit {unit} for Requires".format(**locals()))
         conf = self.get_unit_conf(unit)
-        return self.get_deps_from(conf, styles)
+        deps = self.get_deps_from(conf, styles)
+        if get_unit_type(unit) in [ "target" ]:
+            after = conf.getnamelist(Unit, "After")
+            if not after:
+                conf.set(Unit, "After", " ".join(after))
+        if get_unit_type(unit) in [ "socket" ]:
+            before = conf.getnamelist(Unit, "Before")
+            if not before:
+                service_unit = self.get_socket_service_from(conf)
+                conf.set(Unit, "Before", service_unit)
+        return deps
     def get_deps_from(self, conf, styles=None):
         """ scans the unit conf for Requires= or Wants= settings in the [Unit] section """
         # shall not use the cache file as it is called from cache creation in daemon-reload
