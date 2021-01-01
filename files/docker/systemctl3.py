@@ -1867,6 +1867,7 @@ class Systemctl:
         self._restarted_unit = {}
         self._restart_failed_units = {}
         self._sockets = {}
+        self._no_wait_system = False
         self.loop = threading.Lock()
     def user(self):
         return self._user_getlogin
@@ -6741,7 +6742,6 @@ class Systemctl:
                 a system_halt is performed with the enabled services to be stopped."""
         return self.default_system()
     def default_system(self, arg=True):
-        self.sysinit_status(SubState="initializing")
         info_("system default requested - {arg}".format(**locals()))
         init = self._now or self._init
         return self.start_system_default(init=init)
@@ -6750,23 +6750,27 @@ class Systemctl:
             When --init is given then the init-loop is run and
             the services are stopped again by 'systemctl halt'."""
         target = self.get_default_target()
+        self.write_target_status(target, ActiveState=None, SubState="initializing")
+        self._no_wait_system = True
         services = self.start_target_system(target, init)
         info_("{target} system is up".format(**locals()))
         if init:
-            info_("init-loop start")
-            sig = self.init_loop_until_stop(services)
-            info_("init-loop {sig}".format(**locals()))
+            info_("{target} init-loop start".format(**locals()))
+            sig = self.init_loop_until_stop(services, target)
+            info_("{target} init-loop {sig}".format(**locals()))
             self.stop_system_default()
+            self.clean_target_status(target)
         return not not services
     def start_target_system(self, target, init=False):
         services = self.target_default_services(target, "S")
-        self.sysinit_status(SubState="starting")
+        self.write_target_status(target, ActiveState="starting")
         self.start_units(services)
         return services
     def do_start_target_from(self, conf):
         target = conf.name()
         # services = self.start_target_system(target)
         services = self.target_default_services(target, "S")
+        self.write_target_status(target, ActiveState="starting")
         units = [service for service in services if not self.is_running_unit(service)]
         dbg_("start {target} is starting {units} from {services}".format(**locals()))
         return self.start_units(units)
@@ -6779,12 +6783,14 @@ class Systemctl:
         info_("{target} system is down".format(**locals()))
         return not not services
     def stop_target_system(self, target):
+        self.write_target_status(target, ActiveState="stopping")
+        self._no_wait_system = True
         services = self.target_default_services(target, "K")
-        self.sysinit_status(SubState="stopping")
         self.stop_units(services)
         return services
     def do_stop_target_from(self, conf):
         target = conf.name()
+        self.write_target_status(target, ActiveState="stopping")
         # services = self.stop_target_system(target)
         services = self.target_default_services(target, "K")
         units = [service for service in services if self.is_running_unit(service)]
@@ -7076,7 +7082,7 @@ class Systemctl:
         dbg_("[{me}] Restart remaining {remaininglist}".format(**locals()))
         return restart_done
 
-    def init_loop_until_stop(self, units):
+    def init_loop_until_stop(self, units, target = None):
         """ this is the init-loop - it checks for any zombies to be reaped and
             waits for an interrupt. When a SIGTERM /SIGINT /Control-C signal
             is received then the signal name is returned. Any other signal will 
@@ -7086,13 +7092,17 @@ class Systemctl:
         signal.signal(signal.SIGINT, lambda signum, frame: ignore_signals_and_raise_keyboard_interrupt("SIGINT"))
         signal.signal(signal.SIGTERM, lambda signum, frame: ignore_signals_and_raise_keyboard_interrupt("SIGTERM"))
         #
+        system = target or "init"
         self.start_log_files(units)
-        dbg_("start listen")
+        dbg_("{system} listen thread".format(**locals()))
         listen = SystemctlListenThread(self)
-        dbg_("starts listen")
+        dbg_("{system} listen start".format(**locals()))
         listen.start()
-        dbg_("started listen")
-        self.sysinit_status(ActiveState="active", SubState="running")
+        dbg_("{system} listen is started".format(**locals()))
+        if target:
+            self.write_target_status(target, ActiveState="active", SubState="running")
+            dbg_("{target} is running (active)".format(**locals()))
+        dbg_("{system} is running".format(**locals()))
         timestamp = time.time()
         result = None
         while True:
@@ -7114,13 +7124,13 @@ class Systemctl:
                 timestamp = time.time()
                 self.loop.acquire()
                 if DebugInitLoop:  # pragma: no cover
-                    dbg_("NEXT InitLoop (after {sleep_sec}s)".format(**locals()))
+                    dbg_("{system} NEXT InitLoop (after {sleep_sec}s)".format(**locals()))
                 self.read_log_files(units)
                 if DebugInitLoop:  # pragma: no cover
-                    dbg_("reap zombies - check current processes")
+                    dbg_("{system} reap zombies - check current processes".format(**locals()))
                 running = self.reap_zombies()
                 if DebugInitLoop:  # pragma: no cover
-                    dbg_("reap zombies - init-loop found {running} running procs".format(**locals()))
+                    dbg_("{system} reap zombies - init-loop found {running} running procs".format(**locals()))
                 if self.doExitWhenNoMoreServices:
                     active = False
                     for unit in units:
@@ -7129,11 +7139,11 @@ class Systemctl:
                         if self.is_active_from(conf):
                             active = True
                     if not active:
-                        info_("no more services - exit init-loop")
+                        info_("{system} - no more services - exit init-loop".format(**locals()))
                         break
                 if self.doExitWhenNoMoreProcs:
                     if not running:
-                        info_("no more procs - exit init-loop")
+                        info_("{system} - no more procs - exit init-loop".format(**locals()))
                         break
                 if RestartOnFailure:
                     self.restart_failed_units(units)
@@ -7141,18 +7151,19 @@ class Systemctl:
             except KeyboardInterrupt as e:
                 if e.args and e.args[0] == "SIGQUIT":
                     # the original systemd puts a coredump on that signal.
-                    info_("SIGQUIT - switch to no more procs check")
+                    info_("{system} SIGQUIT - switch to no more procs check".format(**locals()))
                     self.doExitWhenNoMoreProcs = True
                     continue
                 signal.signal(signal.SIGTERM, signal.SIG_DFL)
                 signal.signal(signal.SIGINT, signal.SIG_DFL)
-                info_("interrupted - exit init-loop")
+                info_("{system} interrupted - exit init-loop".format(**locals()))
                 result = str(e) or "STOPPED"
                 break
             except Exception as e:
-                info_("interrupted - exception {e}".format(**locals()))
+                info_("{system} interrupted - exception {e}".format(**locals()))
                 raise
-        self.sysinit_status(ActiveState=None, SubState="degraded")
+        if target:
+            self.write_target_status(target, ActiveState=None, SubState="degraded")
         try: self.loop.release()
         except: pass
         listen.stop()
@@ -7160,7 +7171,7 @@ class Systemctl:
         self.read_log_files(units)
         self.read_log_files(units)
         self.stop_log_files(units)
-        dbg_("done - init loop")
+        dbg_("{system} down - end of init loop".format(**locals()))
         return result
     def reap_zombies_target(self):
         """ -- check to reap children (internal) """
@@ -7200,22 +7211,26 @@ class Systemctl:
                 if pid > 1:
                     running += 1
         return running  # except PID 0 and PID 1
-    def sysinit_status(self, **status):
-        conf = self.sysinit_target_conf()
+    def write_target_status(self, target, **status):
+        conf = self.get_unit_conf(target)
         self.write_status_from(conf, **status)
-    def sysinit_target_conf(self):
-        if not self._sysinit_target:
-            self._sysinit_target = self.default_unit_conf(SysInitTarget, "System Initialization")
-        assert self._sysinit_target is not None
-        return self._sysinit_target
-    def is_system_running(self):
-        conf = self.sysinit_target_conf()
+    def clean_target_status(self, target):
+        conf = self.get_unit_conf(target)
+        self.clean_status_from(conf)
+    def is_system_running(self, target=None):
+        target = target or self.get_default_target()
+        dbg_("{target} system is-running?".format(**locals()))
+        conf = self.get_unit_conf(target)
         if not self.is_running_unit_from(conf):
             time.sleep(MinimumYield)
         if not self.is_running_unit_from(conf):
             return "offline"
         status = self.read_status_from(conf)
-        return status.get("SubState", "unknown")
+        result1 = status.get("SubState", "unknown")
+        result2 = status.get("ActiveState", "unknown")
+        # result3 = self.get_active_from(conf)
+        info_("{target} system = {result1} {result2} ".format(**locals()))
+        return result1
     def is_system_running_info(self):
         """ -- return status while running 'default' services """
         state = self.is_system_running()
@@ -7225,9 +7240,11 @@ class Systemctl:
             return None
         return state
     def wait_system(self, target=None):
-        target = target or SysInitTarget
+        if self._no_wait_system:
+            return
+        target = target or self.get_default_target()
         for attempt in xrange(int(SysInitWait)):
-            state = self.is_system_running()
+            state = self.is_system_running(target)
             if "init" in state:
                 if target in [ SysInitTarget, "basic.target" ]:
                     info_("system not initialized - wait {target}".format(**locals()))
