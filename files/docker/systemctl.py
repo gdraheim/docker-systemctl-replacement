@@ -27,11 +27,10 @@ __version__ = "1.6.4524"
 import logging
 logg = logging.getLogger("systemctl")
 
-from types import GeneratorType
+from collections import (namedtuple, OrderedDict)
 import re
 import fnmatch
 import shlex
-import collections
 import errno
 import os
 import sys
@@ -124,7 +123,6 @@ def error_(msg, note=None):  # pragma: no cover
     else:
         logg.error("%s %s", msg, note)
 
-
 NOT_A_PROBLEM = 0   # FOUND_OK
 NOT_OK = 1          # FOUND_ERROR
 NOT_ACTIVE = 2      # FOUND_INACTIVE
@@ -133,7 +131,6 @@ NOT_FOUND = 4       # FOUND_UNKNOWN
 # defaults for options
 _extra_vars = []
 _force = False
-_full = False
 _log_lines = 0
 _no_pager = False
 _now = False
@@ -148,6 +145,7 @@ _unit_state = None
 _unit_property = None
 _what_kind = ""
 _show_all = False
+_show_full = False
 _user_mode = False
 
 # common default paths
@@ -213,6 +211,7 @@ ResetLocale = ["LANG", "LANGUAGE", "LC_CTYPE", "LC_NUMERIC", "LC_TIME", "LC_COLL
 LocaleConf="/etc/locale.conf"
 DefaultListenBacklog=2
 
+InitRunsInitLoop = True
 ExitWhenNoMoreServices = False
 ExitWhenNoMoreProcs = False
 DefaultUnit = os.environ.get("SYSTEMD_DEFAULT_UNIT", "default.target")  # systemd.exe --unit=default.target
@@ -249,17 +248,20 @@ JournalLogFolder = "{VARLOG}/journal"
 SystemctlDebugLog = "{VARLOG}/systemctl.debug.log"
 SystemctlExtraLog = "{VARLOG}/systemctl.log"
 
-CacheDeps=False
+CacheDeps=True
 CacheAlias=True
 DepsMaxDepth=9
 CacheDepsFile="${XDG_CONFIG_HOME}/systemd/systemctl.deps.cache"
 CacheAliasFile="${XDG_CONFIG_HOME}/systemd/systemctl.alias.cache"
-IgnoredTargets="sysinit.target,basic.target,remote-fs.target,getty.target"
+IgnoredTargets="sysinit.target,basic.target,remote-fs.target,local-fs.target"
+UselessTargets="slices.target,timers.target,paths.target,tmp.mount,swap.target,getty.target"
+ConflictTargets="shutdown.target,rescue.target,rescue.service,emergency.target,emergency.service"
 IgnoredServicesFile="${XDG_CONFIG_HOME}/systemd/systemctl.services.ignore"
 _ignored_services = """
 [centos]
 netconsole
 network
+dnf-makecache.*
 [opensuse]
 kbdsettings.service
 raw.service
@@ -282,7 +284,6 @@ dm-event.*
 [boot]
 boot.*
 *.local
-remote-fs.target
 """
 
 _default_targets = [ "poweroff.target", "rescue.target", "sysinit.target", "basic.target", "multi-user.target", "graphical.target", "reboot.target" ]
@@ -293,12 +294,13 @@ _all_common_targets = [ "default.target" ] + _default_targets + _feature_targets
 _all_common_enabled = [ "default.target", "multi-user.target", "remote-fs.target" ]
 _all_common_disabled = [ "graphical.target", "resue.target", "nfs-client.target" ]
 
-_target_requires = {}
-_target_requires["graphical.target"] = "multi-user.target"
-_target_requires["multi-user.target"] = "basic.target"
-_target_requires["basic.target"] = "sockets.target"
+_system_targets = OrderedDict()
+_system_targets["graphical.target"] = "multi-user.target"
+_system_targets["multi-user.target"] = "basic.target"
+_system_targets["basic.target"] = "sockets.target"
+_system_targets["sockets.target"] = "sysinit.target"
 
-_runlevel_mappings = {}  # the official list
+_runlevel_mappings = OrderedDict()  # the official list
 _runlevel_mappings["0"] = "poweroff.target"
 _runlevel_mappings["1"] = "rescue.target"
 _runlevel_mappings["2"] = "multi-user.target"
@@ -347,6 +349,9 @@ _unit_dep_from[UnitConflicts] = "isConflictOf"
 _unit_dep_from["Has"+UnitConflicts] = "isConflictTo"
 _unit_dep_from["Has"+UnitBindsTo] = "isBindsTo"
 _unit_dep_from["Has"+UnitPartOf] = "isPartOf"
+_unit_dep_from[".init.S"] = "init.S.from"
+_unit_dep_from[".init.K"] = "init.K.from"
+_unit_dep_from[".required.target"] = "is.required.target.from"
 
 _unit_inter_dependencies = {}
 _unit_inter_dependencies[UnitRequires] = "required to start"
@@ -855,12 +860,11 @@ def _pid_zombie(pid):
         return False
     return False
 
-def only_wants_deps(deps):
-    newdeps = {}
-    for dep, requires in deps.items():
-        if requires in _unit_wants_dependencies:
-            newdeps[dep] = requires
-    return newdeps
+def get_unit_type(module, default = None):
+    name, ext = os.path.splitext(module)
+    if ext in [".service", ".socket", ".target"]:
+        return ext[1:]
+    return default
 
 def checkprefix(cmd):
     prefix = ""
@@ -871,7 +875,7 @@ def checkprefix(cmd):
             return prefix, cmd[i:]
     return prefix, ""
 
-ExecMode = collections.namedtuple("ExecMode", ["mode", "check", "nouser", "noexpand"])
+ExecMode = namedtuple("ExecMode", ["mode", "check", "nouser", "noexpand"])
 def exec_mode(cmd):
     prefix, newcmd = checkprefix(cmd)
     check = "-" not in prefix
@@ -886,8 +890,8 @@ def ignore_signals_and_raise_keyboard_interrupt(signame):
     signal.signal(signal.SIGINT, signal.SIG_IGN)
     raise KeyboardInterrupt(signame)
 
-_default_dict_type = collections.OrderedDict
-_default_conf_type = collections.OrderedDict
+_default_dict_type = OrderedDict
+_default_conf_type = OrderedDict
 
 class SystemctlConfData:
     """ A *.service files has a structure similar to an *.ini file so
@@ -1521,7 +1525,7 @@ class waitlock:
         except Exception as e:
             warn_("[{me}] oops, {e}".format(**locals()))
 
-waitpid_result = collections.namedtuple("waitpid", ["pid", "returncode", "signal" ])
+waitpid_result = namedtuple("waitpid", ["pid", "returncode", "signal" ])
 
 def must_have_failed(waitpid, cmd):
     # found to be needed on ubuntu:16.04 to match test result from ubuntu:18.04 and other distros
@@ -1553,7 +1557,7 @@ def subprocess_testpid(pid):
     else:
         return waitpid_result(pid, None, 0)
 
-parse_result = collections.namedtuple("UnitName", ["fullname", "name", "prefix", "instance", "suffix", "component" ])
+parse_result = namedtuple("UnitName", ["fullname", "name", "prefix", "instance", "suffix", "component" ])
 
 def parse_unit(fullname):  # -> object(prefix, instance, suffix, ...., name, component)
     name, suffix = fullname, ""
@@ -1825,7 +1829,6 @@ class Systemctl:
         # from command line options or the defaults
         self._extra_vars = _extra_vars
         self._force = _force
-        self._full = _full
         self._init = _init
         self._no_ask_password = _no_ask_password
         self._no_legend = _no_legend
@@ -1834,6 +1837,7 @@ class Systemctl:
         self._quiet = _quiet
         self._root = _root
         self._show_all = _show_all
+        self._show_full = _show_full
         self._unit_property = _unit_property
         self._unit_state = _unit_state
         self._unit_type = _unit_type
@@ -1847,7 +1851,7 @@ class Systemctl:
         self._file_for_unit_sysd = None  # name.service => /etc/systemd/system/name.service
         self._alias_modules = None       # name.service => real.name.service
         self._deps_modules = None        # name.service => Dict[dep,why]
-        self._ignored_target_units = None # Dict[unit,why]
+        self._ignored_target_units = None  # Dict[unit,why]
         self._ignored_modules = None     # text
         self._preset_file_list = None  # /etc/systemd/system-preset/* => file content
         self._default_target = DefaultTarget
@@ -1864,6 +1868,7 @@ class Systemctl:
         self._restarted_unit = {}
         self._restart_failed_units = {}
         self._sockets = {}
+        self._no_wait_system = False
         self.loop = threading.Lock()
     def user(self):
         return self._user_getlogin
@@ -2160,13 +2165,8 @@ class Systemctl:
         if conf is not None:
             return conf
         return self.default_unit_conf(module)
-    def get_unit_type(self, module):
-        name, ext = os.path.splitext(module)
-        if ext in [".service", ".socket", ".target"]:
-            return ext[1:]
-        return None
     def get_unit_section(self, module, default=Service):
-        return string.capwords(self.get_unit_type(module) or default)
+        return string.capwords(get_unit_type(module) or default)
     def get_unit_section_from(self, conf, default=Service):
         return self.get_unit_section(conf.name(), default)
     def load_sysv_units(self):
@@ -2299,7 +2299,7 @@ class Systemctl:
         result = {}
         enabled = {}
         for unit in self.match_units(to_list(modules)):
-            if _unit_type and self.get_unit_type(unit) not in _unit_type.split(","):
+            if _unit_type and get_unit_type(unit) not in _unit_type.split(","):
                 continue
             result[unit] = None
             enabled[unit] = ""
@@ -3137,7 +3137,7 @@ class Systemctl:
                     dbg_("chdir workingdir '{into}': {e}".format(**locals()))
                     return None
         return None
-    NotifySocket = collections.namedtuple("NotifySocket", ["socket", "socketfile" ])
+    NotifySocket = namedtuple("NotifySocket", ["socket", "socketfile" ])
     def get_notify_socket_from(self, conf, socketfile=None, debug=False):
         """ creates a notify-socket for the (non-privileged) user """
         notify_socket_folder = expand_path(NotifySocketFolder, conf.root_mode())
@@ -3887,7 +3887,7 @@ class Systemctl:
     def get_SupplementaryGroups(self, conf):
         return self.expand_list(conf.getlist(Service, "SupplementaryGroups", []), conf)
     def skip_journal_log(self, conf):
-        if self.get_unit_type(conf.name()) not in [ "service" ]:
+        if get_unit_type(conf.name()) not in [ "service" ]:
             return True
         std_out = conf.get(Service, "StandardOutput", DefaultStandardOutput)
         std_err = conf.get(Service, "StandardError", DefaultStandardError)
@@ -5702,7 +5702,7 @@ class Systemctl:
                     if new_mark not in restrict:
                         continue
                 if new_mark in mapping:
-                    new_mark = mapping[new_mark] # TODO ????
+                    new_mark = mapping[new_mark]  # TODO ????
                 restrict = list(_unit_binds_dependencies)
                 for line in self.list_dependencies(dep, new_indent, new_mark, new_loop):
                     yield line
@@ -5713,11 +5713,11 @@ class Systemctl:
         deps = {}
         for style in styles:
             if style.startswith("."):
-                deps.update(self.get_wants_unit(unit, [ style ]))
+                deps.update(self.get_wants_sysd_unit(unit, [ style ]))
             else:
-                deps.update(self.get_deps_unit(unit, [ style ]))
+                deps.update(self.get_wants_deps_unit(unit, [ style ]))
         return deps
-    def get_wants_unit(self, unit, styles=None):
+    def get_wants_sysd_unit(self, unit, styles=None):
         """ scans the systemd folders for unit.service.wants subfolders """
         styles = styles or [ ".requires", ".wants" ]  # list(_unit_inter_dependencies)
         deps = {}
@@ -5733,20 +5733,47 @@ class Systemctl:
                     for required in os.listdir(require_path):
                         if required not in deps:
                             deps[required] = style
+        if DebugDeps:
+            if unit in ["multi-user.target"]:
+                debug_("Unit {unit} sysv {styles} has {deps}".format(**locals()))
         return deps
-    def get_cache_deps_unit(self, unit, deps_modules = None):
+    def get_wants_sysv_target(self, target, sysv="S"):
+        deps = {}
+        folders = []
+        if target in [ "multi-user.target", DefaultUnit ]:
+            folders += [ self.rc3_root_folder() ]
+        if target in [ "graphical.target" ]:
+            folders += [ self.rc5_root_folder() ]
+        if folders and DebugDeps:
+            debug_("  for sysv {target} using {folders}".format(**locals()))
+        for folder in folders:
+            if not os.path.isdir(folder):
+                continue
+            for unit in os.listdir(folder):
+                path = os.path.join(folder, unit)
+                if os.path.isdir(path): continue
+                m = re.match(sysv+r"\d\d(.*)", unit)
+                if m:
+                    service = m.group(1)
+                    unit = service + ".service"
+                    if unit not in deps:
+                        deps[unit] = ".init."+sysv
+        if folders and DebugDeps:
+            debug_("  for sysv {target} found {deps}".format(**locals()))
+        return deps
+    def get_cache_deps_unit(self, unit, deps_modules=None):
         deps_modules = deps_modules or self._deps_modules
         if deps_modules:
             if unit in deps_modules:
                 return deps_modules[unit]
         return {}
-    def get_deps_unit(self, unit, styles=None):
+    def get_wants_deps_unit(self, unit, styles=None):
         """ scans the unit conf for Requires= or Wants= settings - can use the cache file """
         if self._deps_modules:
             if unit in self._deps_modules:
                 return self._deps_modules[unit]
         if DebugDeps:
-            dbg_("scanning Unit {unit} for Requires".format(**locals()))
+            dbg_("  scanning Unit {unit} for Requires".format(**locals()))
         conf = self.get_unit_conf(unit)
         return self.get_deps_from(conf, styles)
     def get_deps_from(self, conf, styles=None):
@@ -5760,23 +5787,46 @@ class Systemctl:
                 for required in requirelist.strip().split(" "):
                     deps[required.strip()] = style
         return deps
-    def get_wanted_for_unit(self, unit):
-        result = { unit : { "": "isWanted" }}
-        return self.get_wanted_for_units(result)
-    def get_wanted_for_units(self, existing):
-        """ this works by only looking at the disk for .wants (through "systemctl enable")
-            directory entries. No CacheDeps is needed here - but a loop will recurse through
-            the dependencies to resolve more dependencies. """
+    def deps_for_unit(self, unit, deep = False):
+        """ Use deep=--wall to include units that are otherwise ignored. 
+            Note that this function does already delete the 'unit' as a result."""
+        units = OrderedDict()
+        units[unit] = { "": "isWanted" }
+        result = self.deps_for_units(units, deep=deep)
+        if unit in result:
+            del result[unit]
+        return result
+    def deps_for_units(self, existing, deep = False):
+        """ this will use the deps.cache if it exists but otherwise the conf is scanned.
+            The returned deps include the .wants on the disk for both systemd and sysv.
+            Use deep=--wall to return also sysinit and other otherwise ignored units as
+            this function will recurse through the dependencies to resolve more dependencies. """
         result = existing.copy()
         for depth in xrange(DepsMaxDepth):
-            newresults = {}
+            newresults = OrderedDict()
             for name in result:
-                deps = self.get_wants_unit(name)  # Dict[name,style]
+                newresults[name] = {}
+                if name in _system_targets:
+                    base = _system_targets[name]
+                    newresults[name][base] = ".required.target"
+                deps = self.get_wants_sysv_target(name)
                 for dep, style in deps.items():
-                    newresults[name] = deps
+                    newresults[name].update(deps)
+                deps = self.get_wants_sysd_unit(name)  # Dict[name,style]
+                for dep, style in deps.items():
+                    newresults[name].update(deps)
+                deps = self.get_wants_deps_unit(name)  # Dict[name,style]
+                for dep, style in deps.items():
+                    newresults[name].update(deps)
             changed = []
             for name, deps in newresults.items():
                 for dep, style in deps.items():
+                    ignored = self.ignored_unit(dep, deep=deep)
+                    if ignored:
+                        if DebugDeps:
+                            ignored_list = " and ".join(ignored)
+                            debug_("+ ignored {dep} because of {ignored_list}".format(**locals()))
+                        continue
                     if dep not in result:
                         result[dep] = {}
                     old = len(result[dep])
@@ -5786,62 +5836,20 @@ class Systemctl:
                         changed.append(dep)
             if DebugDeps:
                 some = len(changed)
-                debug_("wants changed {some} at depth {depth} : {changed}".format(**locals()))
+                debug_("++ wants changed {some} at depth {depth} : {changed}".format(**locals()))
             if not changed:
                 break
         return result
-    def list_deps(self, unit, deps_modules = None):
+    def list_deps(self, unit):
         """ Unit - show the dependencies that will be handled for a unit.
-            Use --force to rebuild the DepsCache and use --all to allow
+            Use --force to rebuild the deps.cache and use --all to allow
             ignored dependencies to be included in the list. (where
-            the sysinit.target  dependencies are ignored by default.)"""
+            the sysinit.target dependencies are ignored by default.)"""
         if self._force:
             self.make_deps_cache()
-        result = self.deps_for_unit(unit, deps_modules)
-        if not self._show_all:
-            clean = []
-            for name in result:
-                if self._ignored_unit(name):
-                    clean.append(name)
-            for name in clean:
-                del result[name]
-        if len(result) == 1:
-            if unit in result:
-                return {}
-        return result
-    def deps_for_unit(self, unit, deps_modules = None):
-        self.load_deps_cache()
-        result = self.get_wanted_for_unit(unit)
-        resultdeps = self.get_required_for_units(result, deps_modules)
-        return resultdeps
-    def get_required_for_unit(self, unit, deps_modules = None):
-        result = { unit : { "": "isRequired" }}
-        return self.get_required_for_units(result, deps_modules)
-    def get_required_for_units(self, existing, deps_modules = None):
-        """ after getting the .wants for sysinit.target we can also resolve the 
-            declared the dependencies in the unit files - but only when they are
-            in the CacheDeps module list already. """
-        result = existing.copy()
-        for depth in xrange(DepsMaxDepth):
-            newresults = {}
-            for item in result:
-                 units = self.get_cache_deps_unit(item, deps_modules)
-                 newresults[item] = only_wants_deps(units)
-            changed = []
-            for name, deps in newresults.items():
-                for dep, style in deps.items():
-                    if dep not in result:
-                        result[dep] = {}
-                    old = len(result[dep])
-                    if name not in result[dep]:  # keep the first style
-                        result[dep][name] = _unit_dep_from[style]
-                    if old < len(result[dep]):
-                        changed.append(dep)
-            if DebugDeps:
-                some = len(changed)
-                debug_("deps changed {some} at depth {depth} : {changed}".format(**locals()))
-            if not changed:
-                break
+        else:
+            self.load_deps_cache()
+        result = self.deps_for_unit(unit, deep = self._show_all)
         return result
     def get_required_dependencies(self, unit, styles=None):
         styles = styles or list(_unit_wants_dependencies)
@@ -6302,14 +6310,14 @@ class Systemctl:
         groups = [ conf.get(section, "Group", ""), conf.get(section, "SocketGroup", "") ] + conf.getlist(section, "SupplementaryGroups")
         for user in users:
             if user:
-                try: pwd.getpwnam(user)
+                try: pwd.getpwnam(self.expand_special(user, conf))
                 except Exception as e:
                     info = getattr(e, "__doc__", "")
                     error_("  {unit}: User does not exist: {user} ({info})".format(**locals()))
                     warnings += ["E91"]
         for group in groups:
             if group:
-                try: grp.getgrnam(group)
+                try: grp.getgrnam(self.expand_special(group, conf))
                 except Exception as e:
                     info = getattr(e, "__doc__", "")
                     error_("  {unit}: Group does not exist: {group} ({info})".format(**locals()))
@@ -6577,23 +6585,44 @@ class Systemctl:
             except Exception as e:
                 error_("while reading from {filename}: {e}".format(**locals()))
         return igno
-    def ignored_target_units(self):
+    def ignored_target_units(self, deep=True):
         if self._ignored_target_units is not None:
             return self._ignored_target_units
         units = {}
+        for nexttarget in ConflictTargets.split(","):
+            target = nexttarget.strip()
+            if target:
+                units[target] = "ConflictTargets"
+        for nexttarget in UselessTargets.split(","):
+            target = nexttarget.strip()
+            if target:
+                units[target] = "UselessTargets" 
         for nexttarget in IgnoredTargets.split(","):
             target = nexttarget.strip()
             if target:
-                target_deps = self.deps_for_unit(target)
-                for unit in target_deps:
-                    units[unit] = target
+                units[target] = target # ignored itself
+                if deep:
+                    # deeps=True makes sure we do not recurse to this ignored-function
+                    target_deps = self.deps_for_unit(target, deep=deep)
+                    for unit in target_deps:
+                        units[unit] = target
         self._ignored_target_units = units
         return units
-    def ignored_unit(self, unit, ignored = None):
-        if self._show_all:
+    def ignored_unit(self, unit, ignored=None, deep=False):
+        if deep or self._show_all:
+            if self._show_full:
+                return []
+            for nexttarget in ConflictTargets.split(","):
+                target = nexttarget.strip()
+                if target == unit:
+                    return ["ConflictTargets"]
+            for nexttarget in UselessTargets.split(","):
+                target = nexttarget.strip()
+                if target == unit:
+                    return ["UselessTargets"]
             return []
         return self._ignored_unit(unit, ignored)
-    def _ignored_unit(self, unit, ignored = None):
+    def _ignored_unit(self, unit, ignored=None):
         ignored = ignored or _ignored_services
         is_ignored = False
         because_of = []
@@ -6654,6 +6683,16 @@ class Systemctl:
         """ get the default services for a target - this will ignore a number of services,
             use '--all' see the original list as systemd would see them.
         """
+        units = self.target_default_units(target, sysv)
+        result = []
+        for unit in units:
+            if get_unit_type(unit) in ["service", "socket"]:
+                result.append(unit)
+        return result
+    def target_default_units(self, target=None, sysv="S"):
+        """ get the default services for a target - this will ignore a number of services,
+            use '--all' see the original list as systemd would see them.
+        """
         if self._show_all:
             igno = ""
         else:
@@ -6661,180 +6700,17 @@ class Systemctl:
         if DebugIgnoredServices:
             dbg_("ignored services filter for default.target:\n\t{igno}".format(**locals()))
         default_target = target or self.get_default_target()
-        return self.enabled_target_services(default_target, sysv, igno)
-    def enabled_target_services(self, target, sysv="S", igno=""):
-        result = []
-        units = self._enabled_target_services(target, sysv)
-        if self._show_all:
-            return units
-        for unit in units:
-            ignored = self._ignored_unit(unit, igno)
-            if ignored:
-                dbg_("Unit {unit} ignored in {ignored} for target services".format(**locals()))
-            else:
-                result.append(unit)
-        return result
-    def _enabled_target_services(self, target, sysv="S"):
-        units = []
-        if self.user_mode():
-            targetlist = self.get_target_list(target)
-            dbg_("check for {target} user services : {targetlist}".format(**locals()))
-            for targets in targetlist:
-                for unit in self._enabled_target_user_local_units(targets, ".target"):
-                    if unit not in units:
-                        units.append(unit)
-            for targets in targetlist:
-                for unit in self._required_target_units(targets, ".socket"):
-                    if unit not in units:
-                        units.append(unit)
-            for targets in targetlist:
-                for unit in self._enabled_target_user_local_units(targets, ".socket"):
-                    if unit not in units:
-                        units.append(unit)
-            for targets in targetlist:
-                for unit in self._required_target_units(targets, ".service"):
-                    if unit not in units:
-                        units.append(unit)
-            for targets in targetlist:
-                for unit in self._enabled_target_user_local_units(targets, ".service"):
-                    if unit not in units:
-                        units.append(unit)
-            for targets in targetlist:
-                for unit in self._enabled_target_user_system_units(targets, ".service"):
-                    if unit not in units:
-                        units.append(unit)
-        else:
-            targetlist = self.get_target_list(target)
-            dbg_("check for {target} system services: {targetlist}".format(**locals()))
-            for targets in targetlist:
-                for unit in self._enabled_target_configured_system_units(targets, ".target"):
-                    if unit not in units:
-                        units.append(unit)
-            for targets in targetlist:
-                for unit in self._required_target_units(targets, ".socket"):
-                    if unit not in units:
-                        units.append(unit)
-            for targets in targetlist:
-                for unit in self._enabled_target_installed_system_units(targets, ".socket"):
-                    if unit not in units:
-                        units.append(unit)
-            for targets in targetlist:
-                for unit in self._required_target_units(targets, ".service"):
-                    if unit not in units:
-                        units.append(unit)
-            for targets in targetlist:
-                for unit in self._enabled_target_installed_system_units(targets, ".service"):
-                    if unit not in units:
-                        units.append(unit)
-            for targets in targetlist:
-                for unit in self._enabled_target_sysv_units(targets, sysv):
-                    if unit not in units:
-                        units.append(unit)
-        return units
-    def _enabled_target_user_local_units(self, target, unit_kind=".service"):
-        units = []
-        for basefolder in self.user_folders():
-            if not basefolder:
-                continue
-            folder = self.default_enablefolder(target, basefolder)
-            if self._root:
-                folder = os_path(self._root, folder)
-            if os.path.isdir(folder):
-                for unit in sorted(os.listdir(folder)):
-                    path = os.path.join(folder, unit)
-                    if os.path.isdir(path): continue
-                    if unit.endswith(unit_kind):
-                        units.append(unit)
-        return units
-    def _enabled_target_user_system_units(self, target, unit_kind=".service"):
-        units = []
-        for basefolder in self.system_folders():
-            if not basefolder:
-                continue
-            folder = self.default_enablefolder(target, basefolder)
-            if self._root:
-                folder = os_path(self._root, folder)
-            if os.path.isdir(folder):
-                for unit in sorted(os.listdir(folder)):
-                    path = os.path.join(folder, unit)
-                    if os.path.isdir(path): continue
-                    if unit.endswith(unit_kind):
-                        conf = self.load_unit_conf(unit)
-                        if conf is None:
-                            pass
-                        elif self.not_user_conf(conf):
-                            pass
-                        else:
-                            units.append(unit)
-        return units
-    def _enabled_target_installed_system_units(self, target, unit_type=".service"):
-        units = []
-        for basefolder in self.system_folders():
-            if not basefolder:
-                continue
-            folder = self.default_enablefolder(target, basefolder)
-            if self._root:
-                folder = os_path(self._root, folder)
-            if os.path.isdir(folder):
-                for unit in sorted(os.listdir(folder)):
-                    path = os.path.join(folder, unit)
-                    if os.path.isdir(path): continue
-                    if unit.endswith(unit_type):
-                        units.append(unit)
-        return units
-    def _enabled_target_configured_system_units(self, target, unit_type=".service"):
-        units = []
-        if True:
-            folder = self.default_enablefolder(target)
-            if self._root:
-                folder = os_path(self._root, folder)
-            if os.path.isdir(folder):
-                for unit in sorted(os.listdir(folder)):
-                    path = os.path.join(folder, unit)
-                    if os.path.isdir(path): continue
-                    if unit.endswith(unit_type):
-                        units.append(unit)
-        return units
-    def _enabled_target_sysv_units(self, target, sysv="S"):
-        units = []
-        folders = []
-        if target in [ "multi-user.target", DefaultUnit ]:
-            folders += [ self.rc3_root_folder() ]
-        if target in [ "graphical.target" ]:
-            folders += [ self.rc5_root_folder() ]
-        for folder in folders:
-            if not os.path.isdir(folder):
-                warn_("non-existant {folder}".format(**locals()))
-                continue
-            for unit in sorted(os.listdir(folder)):
-                path = os.path.join(folder, unit)
-                if os.path.isdir(path): continue
-                m = re.match(sysv+r"\d\d(.*)", unit)
-                if m:
-                    service = m.group(1)
-                    unit = service + ".service"
-                    units.append(unit)
-        return units
-    def required_target_units(self, target, unit_type, igno=""):
-        units = self._required_target_units(target, unit_type)
-        if self._show_all:
-            return units
-        result = []
-        for unit in units:
-            ignored = self._ignored_unit(unit, igno)
-            if ignored:
-                dbg_("Unit {unit} ignored in {ignored} for required target units".format(**locals()))
-            else:
-                result.append(unit)
-        return result
-    def _required_target_units(self, target, unit_type):
-        units = []
-        deps = self.get_required_dependencies(target)
-        for unit in sorted(deps):
-            if unit.endswith(unit_type):
-                if unit not in units:
-                    units.append(unit)
-        return units
+        self.make_deps_cache()  # ensure the deps.cache is scanned (without --force)
+        deps = self.list_deps(default_target)  # new style in v1.6 using deps.cache
+        if default_target in deps:
+            del deps[default_target]
+        if not self._show_all:
+            for system_target in _system_targets:
+                if system_target in deps:
+                    del deps[system_target]
+            if SysInitTarget in deps:
+               del deps[SysInitTarget]
+        return list(deps)
     def get_target_conf(self, module):  # -> conf (conf | default-conf)
         """ accept that a unit does not exist 
             and return a unit conf that says 'not-loaded' """
@@ -6842,8 +6718,8 @@ class Systemctl:
         if conf is not None:
             return conf
         target_conf = self.default_unit_conf(module)
-        if module in _target_requires:
-            target_conf.set(Unit, UnitRequires, _target_requires[module])
+        if module in _system_targets:
+            target_conf.set(Unit, UnitRequires, _system_targets[module])
         return target_conf
     def get_target_list(self, module):
         """ the Requires= in target units are only accepted if known """
@@ -6852,9 +6728,9 @@ class Systemctl:
         targets = [ target ]
         conf = self.get_target_conf(module)
         requires = conf.get(Unit, UnitRequires, "")
-        while requires in _target_requires:
+        while requires in _system_targets:
             targets = [ requires ] + targets
-            requires = _target_requires[requires]
+            requires = _system_targets[requires]
         dbg_("the {module} requires {targets}".format(**locals()))
         return targets
     def default_target(self, *modules):
@@ -6867,69 +6743,97 @@ class Systemctl:
                 a system_halt is performed with the enabled services to be stopped."""
         return self.default_system()
     def default_system(self, arg=True):
-        self.sysinit_status(SubState="initializing")
         info_("system default requested - {arg}".format(**locals()))
         init = self._now or self._init
-        return self.start_system_default(init=init)
-    def start_system_default(self, init=False):
+        target = self.get_default_target()
+        self.write_target_status(target, ActiveState=None, SubState="initializing")
+        return self.start_target_system(target, init=init)
+    def start_target_system(self, target, init=False):
         """ detect the default.target services and start them.
             When --init is given then the init-loop is run and
             the services are stopped again by 'systemctl halt'."""
-        target = self.get_default_target()
-        services = self.start_target_system(target, init)
+        # similar to "systemctl stop multi-user.target --now"
+        done, services = self.do_start_target_services(target, system=True)
         info_("{target} system is up".format(**locals()))
         if init:
-            info_("init-loop start")
-            sig = self.init_loop_until_stop(services)
-            info_("init-loop {sig}".format(**locals()))
-            self.stop_system_default()
-        return not not services
-    def start_target_system(self, target, init=False):
-        services = self.target_default_services(target, "S")
-        self.sysinit_status(SubState="starting")
-        self.start_units(services)
-        return services
+            info_("{target} init-loop start".format(**locals()))
+            sig = self.init_loop_until_stop(services, target)
+            info_("{target} init-loop {sig}".format(**locals()))
+            self.stop_target_system(target)
+        return done
     def do_start_target_from(self, conf):
         target = conf.name()
-        # services = self.start_target_system(target)
+        done, services = self.do_start_target_services(target, system = self._now)
+        return done
+    def do_start_target_services(self, target, system = False):
         services = self.target_default_services(target, "S")
-        units = [service for service in services if not self.is_running_unit(service)]
+        self.write_target_status(target, ActiveState="starting")
+        if not system:
+            units = [service for service in services if not self.is_running_unit(service)]
+        else:
+            units = services
+            self._no_wait_system = True
         dbg_("start {target} is starting {units} from {services}".format(**locals()))
-        return self.start_units(units)
-    def stop_system_default(self):
+        done = self.start_units(units)
+        self.write_target_status(target, ActiveState="active", SubState="started")
+        # SubState="starting" will be turned into SubState="running" in initloop
+        return done, units
+    def stop_target_system(self, target):
         """ detect the default.target services and stop them.
             This is commonly run through 'systemctl halt' or
             at the end of a 'systemctl --init default' loop."""
-        target = self.get_default_target()
-        services = self.stop_target_system(target)
+        # similar to "systemctl stop multi-user.target --now"
+        done, services = self.do_stop_target_services(target, system=True)
         info_("{target} system is down".format(**locals()))
-        return not not services
-    def stop_target_system(self, target):
-        services = self.target_default_services(target, "K")
-        self.sysinit_status(SubState="stopping")
-        self.stop_units(services)
-        return services
+        return done
     def do_stop_target_from(self, conf):
         target = conf.name()
-        # services = self.stop_target_system(target)
+        done, services = self.do_stop_target_services(target, system = self._now)
+        return done
+    def do_stop_target_services(self, target, system = False):
+        self.write_target_status(target, ActiveState="stopping")
         services = self.target_default_services(target, "K")
-        units = [service for service in services if self.is_running_unit(service)]
+        if not system:
+            units = [service for service in services if self.is_running_unit(service)]
+        else:
+            units = services
+            self._no_wait_system = True
         dbg_("stop {target} is stopping {units} from {services}".format(**locals()))
-        return self.stop_units(units)
+        done = self.stop_units(units)
+        self.clean_target_status(target) # is down (we do not record "failed" here)
+        return done, units
     def do_reload_target_from(self, conf):
         target = conf.name()
-        return self.reload_target_system(target)
-    def reload_target_system(self, target):
+        done, services = self.do_reload_target_services(target, system = self._now)
+        return done
+    def do_reload_target_services(self, target, system = False):
         services = self.target_default_services(target, "S")
-        units = [service for service in services if self.is_running_unit(service)]
-        return self.reload_units(units)
+        oldstatus = None
+        try:
+            conf = self.load_unit_conf(target)
+            if conf:
+                oldstatus = self.get_status_from(conf, "ActiveState", None)
+        except Exception as e:
+            debug_("problem getting oldstatus in reloading: {e}".format(**locals()))
+        if oldstatus:
+            self.write_target_status(target, ActiveState="reloading")
+        if not system:
+            units = [service for service in services if self.is_running_unit(service)]
+        else:
+            units = services
+            self._no_wait_system = True
+        done = self.reload_units(units)
+        if oldstatus:
+            self.write_target_status(target, ActiveState=oldstatus)
+        return done, units
     def halt_target(self, *modules):
         """ -- stop units from default system level """
         return self.halt_system()
     def halt_system(self, arg=True):
         """ -- stop units from default system level """
         info_("system halt requested - {arg}".format(**locals()))
-        done = self.stop_system_default()
+        target = self.get_default_target()
+        done = self.stop_target_system(target)
         try:
             os.kill(1, signal.SIGQUIT)  # exit init-loop on no_more_procs
         except Exception as e:
@@ -6992,18 +6896,15 @@ class Systemctl:
         if self._now:
             result = self.init_loop_until_stop([])
             return not not result
+        if self._now or self._show_all:
+            dbg_("init default --now --all => no_more_procs")
+            self.doExitWhenNoMoreProcs = True
         if not modules:
-            # like 'systemctl --init default'
-            if self._now or self._show_all:
-                dbg_("init default --now --all => no_more_procs")
-                self.doExitWhenNoMoreProcs = True
-            return self.start_system_default(init=True)
+            target = self.get_default_target()
+            # like 'systemctl --init default' = it will never exit
+            return self.start_target_system(target, init = InitRunsInitLoop)
         #
         # otherwise quit when all the init-services have died
-        self.doExitWhenNoMoreServices = True
-        if self._now or self._show_all:
-            dbg_("init services --now --all => no_more_procs")
-            self.doExitWhenNoMoreProcs = True
         found_all = True
         units = []
         for module in modules:
@@ -7022,9 +6923,12 @@ class Systemctl:
                     units += [ unit ]
         modulelist, unitlist = " ".join(modules), " ".join(units)
         info_("init {modulelist} -> start {unitlist}".format(**locals()))
-        done = self.start_units(units, init=True)
+        done = self.init_units(units, init = InitRunsInitLoop)
         info_("-- init is done")
-        return done  # and found_all
+        return done
+    def init_units(self, units, init = True):
+        self.doExitWhenNoMoreServices = True
+        return self.start_units(units, init=init)
     def start_log_files(self, units):
         self._log_file = {}
         self._log_hold = {}
@@ -7112,7 +7016,7 @@ class Systemctl:
                     minSleep = 1
                     if minSleep < InitLoopSleep:
                         oldSleep = InitLoopSleep
-                        warn_("[{me}] [{unit}] set InitLoopSleep from {oldSleep}s to {minSleep} (caused by RestartSec=0!)".format(**locals()))
+                        warn_("[{me}] [{unit}] set InitLoopSleep from {oldSleep}s to {minSleep} : (caused by RestartSec=0!)".format(**locals()))
                         InitLoopSleep = minSleep
                 elif restartSec > 0.9 and restartSec < InitLoopSleep:
                     restartSleep = int(restartSec + 0.2)
@@ -7202,7 +7106,7 @@ class Systemctl:
         dbg_("[{me}] Restart remaining {remaininglist}".format(**locals()))
         return restart_done
 
-    def init_loop_until_stop(self, units):
+    def init_loop_until_stop(self, units, target = None):
         """ this is the init-loop - it checks for any zombies to be reaped and
             waits for an interrupt. When a SIGTERM /SIGINT /Control-C signal
             is received then the signal name is returned. Any other signal will 
@@ -7212,13 +7116,17 @@ class Systemctl:
         signal.signal(signal.SIGINT, lambda signum, frame: ignore_signals_and_raise_keyboard_interrupt("SIGINT"))
         signal.signal(signal.SIGTERM, lambda signum, frame: ignore_signals_and_raise_keyboard_interrupt("SIGTERM"))
         #
+        system = target or "init"
         self.start_log_files(units)
-        dbg_("start listen")
+        dbg_("{system} listen thread".format(**locals()))
         listen = SystemctlListenThread(self)
-        dbg_("starts listen")
+        dbg_("{system} listen start".format(**locals()))
         listen.start()
-        dbg_("started listen")
-        self.sysinit_status(ActiveState="active", SubState="running")
+        dbg_("{system} listen is started".format(**locals()))
+        if target:
+            self.write_target_status(target, ActiveState="active", SubState="running")
+            dbg_("{target} is running (active)".format(**locals()))
+        dbg_("{system} is running".format(**locals()))
         timestamp = time.time()
         result = None
         while True:
@@ -7240,13 +7148,13 @@ class Systemctl:
                 timestamp = time.time()
                 self.loop.acquire()
                 if DebugInitLoop:  # pragma: no cover
-                    dbg_("NEXT InitLoop (after {sleep_sec}s)".format(**locals()))
+                    dbg_("{system} NEXT InitLoop (after {sleep_sec}s)".format(**locals()))
                 self.read_log_files(units)
                 if DebugInitLoop:  # pragma: no cover
-                    dbg_("reap zombies - check current processes")
+                    dbg_("{system} reap zombies - check current processes".format(**locals()))
                 running = self.reap_zombies()
                 if DebugInitLoop:  # pragma: no cover
-                    dbg_("reap zombies - init-loop found {running} running procs".format(**locals()))
+                    dbg_("{system} reap zombies - init-loop found {running} running procs".format(**locals()))
                 if self.doExitWhenNoMoreServices:
                     active = False
                     for unit in units:
@@ -7255,11 +7163,11 @@ class Systemctl:
                         if self.is_active_from(conf):
                             active = True
                     if not active:
-                        info_("no more services - exit init-loop")
+                        info_("{system} - no more services - exit init-loop".format(**locals()))
                         break
                 if self.doExitWhenNoMoreProcs:
                     if not running:
-                        info_("no more procs - exit init-loop")
+                        info_("{system} - no more procs - exit init-loop".format(**locals()))
                         break
                 if RestartOnFailure:
                     self.restart_failed_units(units)
@@ -7267,18 +7175,19 @@ class Systemctl:
             except KeyboardInterrupt as e:
                 if e.args and e.args[0] == "SIGQUIT":
                     # the original systemd puts a coredump on that signal.
-                    info_("SIGQUIT - switch to no more procs check")
+                    info_("{system} SIGQUIT - switch to no more procs check".format(**locals()))
                     self.doExitWhenNoMoreProcs = True
                     continue
                 signal.signal(signal.SIGTERM, signal.SIG_DFL)
                 signal.signal(signal.SIGINT, signal.SIG_DFL)
-                info_("interrupted - exit init-loop")
+                info_("{system} interrupted - exit init-loop".format(**locals()))
                 result = str(e) or "STOPPED"
                 break
             except Exception as e:
-                info_("interrupted - exception {e}".format(**locals()))
+                info_("{system} interrupted - exception {e}".format(**locals()))
                 raise
-        self.sysinit_status(ActiveState=None, SubState="degraded")
+        if target:
+            self.write_target_status(target, ActiveState=None, SubState="degraded")
         try: self.loop.release()
         except: pass
         listen.stop()
@@ -7286,7 +7195,7 @@ class Systemctl:
         self.read_log_files(units)
         self.read_log_files(units)
         self.stop_log_files(units)
-        dbg_("done - init loop")
+        dbg_("{system} down - end of init loop".format(**locals()))
         return result
     def reap_zombies_target(self):
         """ -- check to reap children (internal) """
@@ -7326,22 +7235,26 @@ class Systemctl:
                 if pid > 1:
                     running += 1
         return running  # except PID 0 and PID 1
-    def sysinit_status(self, **status):
-        conf = self.sysinit_target_conf()
+    def write_target_status(self, target, **status):
+        conf = self.get_unit_conf(target)
         self.write_status_from(conf, **status)
-    def sysinit_target_conf(self):
-        if not self._sysinit_target:
-            self._sysinit_target = self.default_unit_conf(SysInitTarget, "System Initialization")
-        assert self._sysinit_target is not None
-        return self._sysinit_target
-    def is_system_running(self):
-        conf = self.sysinit_target_conf()
+    def clean_target_status(self, target):
+        conf = self.get_unit_conf(target)
+        self.clean_status_from(conf)
+    def is_system_running(self, target=None):
+        target = target or self.get_default_target()
+        dbg_("{target} system is-running?".format(**locals()))
+        conf = self.get_unit_conf(target)
         if not self.is_running_unit_from(conf):
             time.sleep(MinimumYield)
         if not self.is_running_unit_from(conf):
             return "offline"
         status = self.read_status_from(conf)
-        return status.get("SubState", "unknown")
+        result1 = status.get("SubState", "unknown")
+        result2 = status.get("ActiveState", "unknown")
+        # result3 = self.get_active_from(conf)
+        info_("{target} system = {result1} {result2} ".format(**locals()))
+        return result1
     def is_system_running_info(self):
         """ -- return status while running 'default' services """
         state = self.is_system_running()
@@ -7351,9 +7264,11 @@ class Systemctl:
             return None
         return state
     def wait_system(self, target=None):
-        target = target or SysInitTarget
+        if self._no_wait_system:
+            return
+        target = target or self.get_default_target()
         for attempt in xrange(int(SysInitWait)):
-            state = self.is_system_running()
+            state = self.is_system_running(target)
             if "init" in state:
                 if target in [ SysInitTarget, "basic.target" ]:
                     info_("system not initialized - wait {target}".format(**locals()))
@@ -7661,7 +7576,7 @@ def print_str_dict_dict(result):
         debug_result_("    END {result}")
         return
     shown = 0
-    for key in sorted(result.keys()):
+    for key in sorted(result):
         element = result[key]
         for name in sorted(element):
             value = element[name]
@@ -7761,10 +7676,10 @@ def run(command, *modules):
         print_str_list_list(systemctl.list_start_dependencies_modules(*modules))
     elif command in ["get-wants-unit"]:
         unit = modules[0]
-        print_str_dict_dict({unit : systemctl.get_wants_unit(unit) })
+        print_str_dict_dict({unit: systemctl.get_wants_sysd_unit(unit) })
     elif command in ["get-deps-unit"]:
         unit = modules[0]
-        print_str_dict_dict({unit : systemctl.get_deps_unit(unit) })
+        print_str_dict_dict({unit: systemctl.get_wants_deps_unit(unit) })
     elif command in ["list-deps"]:
         unit = modules[0]
         print_str_dict_dict(systemctl.list_deps(unit))
@@ -7891,7 +7806,7 @@ if __name__ == "__main__":
                   help="Defines the service directories to be cleaned (configuration, state, cache, logs, runtime)")
     _o.add_option("-a", "--all", action="store_true", dest="show_all", default=_show_all,
                   help="Show all loaded units/properties, including dead empty ones. To list all units installed on the system, use the 'list-unit-files' command instead")
-    _o.add_option("-l", "--full", action="store_true", default=_full,
+    _o.add_option("-l", "--full", action="store_true", dest="show_full", default=_show_full,
                   help="Don't ellipsize unit names on output (never ellipsized)")
     _o.add_option("--reverse", action="store_true",
                   help="Show reverse dependencies with 'list-dependencies' (ignored)")
@@ -7956,7 +7871,6 @@ if __name__ == "__main__":
     #
     _extra_vars = opt.extra_vars
     _force = opt.force
-    _full = opt.full
     _log_lines = opt.lines
     _no_pager = opt.no_pager
     _no_reload = opt.no_reload
@@ -7967,6 +7881,7 @@ if __name__ == "__main__":
     _quiet = opt.quiet
     _root = opt.root
     _show_all = opt.show_all
+    _show_full = opt.show_full
     _unit_state = opt.state
     _unit_type = opt.unit_type
     _unit_property = opt.unit_property
