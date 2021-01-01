@@ -302,16 +302,16 @@ flake.s.i: ; autoflake files/docker/systemctl3.py
 autopep8: ; $${PKG:-zypper} install -y python3-autopep8
 pep style: 
 	$(MAKE) pep.s pep.t
-pep.i style.i: 
-	$(MAKE) pep.s.i pep.t.i
-pep.s style.s     pep.s.diff style.s.diff:
+pep.d style.d: 
+	$(MAKE) pep.s.d pep.t.d
+pep.s.d style.s.d     pep.s.diff style.s.diff:
 	autopep8 files/docker/systemctl3.py --diff
-pep.s.i style.s.i pep.s.apply style.s.apply:
+pep.s style.s pep.s.apply style.s.apply:
 	autopep8 files/docker/systemctl3.py --in-place
 	git --no-pager diff files/docker/systemctl3.py
-pep.t style.t     pep.t.diff style.t.diff:
+pep.t.d style.t.d     pep.t.diff style.t.diff:
 	autopep8 testsuite.py --diff
-pep.t.i style.t.i pep.t.apply style.t.apply:
+pep.t style.t pep.t.apply style.t.apply:
 	autopep8 testsuite.py --in-place
 	git --no-pager diff testsuite.py
 
@@ -340,6 +340,9 @@ type:
 	python3 format3.py -i tmp.files/docker/systemctl3.py
 	@ grep -w format tmp.files/docker/systemctl3.py | grep -v internal | sed -e "s|^|ERROR: |"; true
 	mypy --strict tmp.files/docker/systemctl3.py # --new-semantic-analyzer --show-traceback
+re: ; git checkout HEAD files/docker/systemctl3.py
+33: ; cp files/docker/systemctl3.py files/docker/systemctl33.py
+333: ; cp files/docker/systemctl33.py files/docker/systemctl3.py
 type33:
 	test -d tmp.types || mkdir tmp.types ; cp types/systemctl3.pyi tmp.types/systemctl33.pyi
 	python3 ../retype/retype.py files/docker/systemctl33.py -t tmp.files/docker -p tmp.types
