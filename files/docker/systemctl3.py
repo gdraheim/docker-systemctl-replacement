@@ -6744,21 +6744,21 @@ class Systemctl:
     def default_system(self, arg=True):
         info_("system default requested - {arg}".format(**locals()))
         init = self._now or self._init
-        return self.start_system_default(init=init)
-    def start_system_default(self, init=False):
+        target = self.get_default_target()
+        self.write_target_status(target, ActiveState=None, SubState="initializing")
+        return self.start_target_system(target, init=init)
+    def start_target_system(self, target, init=False):
         """ detect the default.target services and start them.
             When --init is given then the init-loop is run and
             the services are stopped again by 'systemctl halt'."""
-        target = self.get_default_target()
-        self.write_target_status(target, ActiveState=None, SubState="initializing")
-        self._no_wait_system = True
+        # similar to "systemctl stop multi-user.target --now"
         done, services = self.do_start_target_services(target, system=True)
         info_("{target} system is up".format(**locals()))
         if init:
             info_("{target} init-loop start".format(**locals()))
             sig = self.init_loop_until_stop(services, target)
             info_("{target} init-loop {sig}".format(**locals()))
-            self.stop_system_default()
+            self.stop_target_system(target)
         return done
     def do_start_target_from(self, conf):
         target = conf.name()
@@ -6777,11 +6777,11 @@ class Systemctl:
         self.write_target_status(target, ActiveState="active", SubState="started")
         # SubState="starting" will be turned into SubState="running" in initloop
         return done, units
-    def stop_system_default(self):
+    def stop_target_system(self, target):
         """ detect the default.target services and stop them.
             This is commonly run through 'systemctl halt' or
             at the end of a 'systemctl --init default' loop."""
-        target = self.get_default_target()
+        # similar to "systemctl stop multi-user.target --now"
         done, services = self.do_stop_target_services(target, system=True)
         info_("{target} system is down".format(**locals()))
         return done
@@ -6831,7 +6831,8 @@ class Systemctl:
     def halt_system(self, arg=True):
         """ -- stop units from default system level """
         info_("system halt requested - {arg}".format(**locals()))
-        done = self.stop_system_default()
+        target = self.get_default_target()
+        done = self.stop_target_system(target)
         try:
             os.kill(1, signal.SIGQUIT)  # exit init-loop on no_more_procs
         except Exception as e:
@@ -6899,7 +6900,8 @@ class Systemctl:
             if self._now or self._show_all:
                 dbg_("init default --now --all => no_more_procs")
                 self.doExitWhenNoMoreProcs = True
-            return self.start_system_default(init=True)
+            target = self.get_default_target()
+            return self.start_target_system(target, init=True)
         #
         # otherwise quit when all the init-services have died
         self.doExitWhenNoMoreServices = True
