@@ -5191,7 +5191,7 @@ class Systemctl:
         return self.preset_units(units) and found_all
     def get_WantedBy_list(self, conf, default=[]):
         if not conf: return default
-        return conf.getnamelist(Install, "WantedBy", default, True)
+        return [ self.expand_special(item, conf) for item in conf.getnamelist(Install, "WantedBy", default, True) ]
     def enablefolders(self, wanted):
         if self.user_mode():
             for folder in self.user_folders():
