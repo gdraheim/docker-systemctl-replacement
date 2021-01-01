@@ -859,12 +859,11 @@ def _pid_zombie(pid):
         return False
     return False
 
-def only_wants_deps(deps):
-    newdeps = {}
-    for dep, requires in deps.items():
-        if requires in _unit_wants_dependencies:
-            newdeps[dep] = requires
-    return newdeps
+def get_unit_type(module, default = None):
+    name, ext = os.path.splitext(module)
+    if ext in [".service", ".socket", ".target"]:
+        return ext[1:]
+    return default
 
 def checkprefix(cmd):
     prefix = ""
@@ -2164,13 +2163,8 @@ class Systemctl:
         if conf is not None:
             return conf
         return self.default_unit_conf(module)
-    def get_unit_type(self, module):
-        name, ext = os.path.splitext(module)
-        if ext in [".service", ".socket", ".target"]:
-            return ext[1:]
-        return None
     def get_unit_section(self, module, default=Service):
-        return string.capwords(self.get_unit_type(module) or default)
+        return string.capwords(get_unit_type(module) or default)
     def get_unit_section_from(self, conf, default=Service):
         return self.get_unit_section(conf.name(), default)
     def load_sysv_units(self):
@@ -2303,7 +2297,7 @@ class Systemctl:
         result = {}
         enabled = {}
         for unit in self.match_units(to_list(modules)):
-            if _unit_type and self.get_unit_type(unit) not in _unit_type.split(","):
+            if _unit_type and get_unit_type(unit) not in _unit_type.split(","):
                 continue
             result[unit] = None
             enabled[unit] = ""
@@ -3891,7 +3885,7 @@ class Systemctl:
     def get_SupplementaryGroups(self, conf):
         return self.expand_list(conf.getlist(Service, "SupplementaryGroups", []), conf)
     def skip_journal_log(self, conf):
-        if self.get_unit_type(conf.name()) not in [ "service" ]:
+        if get_unit_type(conf.name()) not in [ "service" ]:
             return True
         std_out = conf.get(Service, "StandardOutput", DefaultStandardOutput)
         std_err = conf.get(Service, "StandardError", DefaultStandardError)
@@ -6698,6 +6692,12 @@ class Systemctl:
         deps = self.list_deps(default_target)  # new style in v1.6 using deps.cache
         if default_target in deps:
             del deps[default_target]
+        if not self._show_all:
+            for system_target in _system_targets:
+                if system_target in deps:
+                    del deps[system_target]
+            if SysInitTarget in deps:
+               del deps[SysInitTarget]
         return list(deps)
     def get_target_conf(self, module):  # -> conf (conf | default-conf)
         """ accept that a unit does not exist 
@@ -6707,7 +6707,7 @@ class Systemctl:
             return conf
         target_conf = self.default_unit_conf(module)
         if module in _system_targets:
-            target_conf.set(Unit, UnitRequires, _system_target[module])
+            target_conf.set(Unit, UnitRequires, _system_targets[module])
         return target_conf
     def get_target_list(self, module):
         """ the Requires= in target units are only accepted if known """
