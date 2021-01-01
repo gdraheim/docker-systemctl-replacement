@@ -1850,7 +1850,7 @@ class Systemctl:
         self._file_for_unit_sysd = None  # name.service => /etc/systemd/system/name.service
         self._alias_modules = None       # name.service => real.name.service
         self._deps_modules = None        # name.service => Dict[dep,why]
-        self._ignored_target_units = None # Dict[unit,why]
+        self._ignored_target_units = None  # Dict[unit,why]
         self._ignored_modules = None     # text
         self._preset_file_list = None  # /etc/systemd/system-preset/* => file content
         self._default_target = DefaultTarget
@@ -5705,7 +5705,7 @@ class Systemctl:
                     if new_mark not in restrict:
                         continue
                 if new_mark in mapping:
-                    new_mark = mapping[new_mark] # TODO ????
+                    new_mark = mapping[new_mark]  # TODO ????
                 restrict = list(_unit_binds_dependencies)
                 for line in self.list_dependencies(dep, new_indent, new_mark, new_loop):
                     yield line
@@ -5758,11 +5758,11 @@ class Systemctl:
                     service = m.group(1)
                     unit = service + ".service"
                     if unit not in deps:
-                         deps[unit] = ".init."+sysv
+                        deps[unit] = ".init."+sysv
         if folders:
             debug_("for sysv {target} found {deps}".format(**locals()))
         return deps
-    def get_cache_deps_unit(self, unit, deps_modules = None):
+    def get_cache_deps_unit(self, unit, deps_modules=None):
         deps_modules = deps_modules or self._deps_modules
         if deps_modules:
             if unit in deps_modules:
@@ -5789,7 +5789,7 @@ class Systemctl:
                     deps[required.strip()] = style
         return deps
     def get_wanted_for_unit(self, unit):
-        result = { unit : { "": "isWanted" }}
+        result = { unit: { "": "isWanted" }}
         return self.get_wanted_for_units(result)
     def get_wanted_for_units(self, existing):
         """ this works by only looking at the disk for .wants (through "systemctl enable")
@@ -5818,7 +5818,7 @@ class Systemctl:
             if not changed:
                 break
         return result
-    def list_deps(self, unit, deps_modules = None):
+    def list_deps(self, unit, deps_modules=None):
         """ Unit - show the dependencies that will be handled for a unit.
             Use --force to rebuild the DepsCache and use --all to allow
             ignored dependencies to be included in the list. (where
@@ -5837,20 +5837,20 @@ class Systemctl:
             if unit in result:
                 return {}
         return result
-    def deps_for_unit(self, unit, deps_modules = None):
+    def deps_for_unit(self, unit, deps_modules=None):
         self.load_deps_cache()
         result = self.get_wanted_for_unit(unit)
-        initmodules = self.get_wants_sysv_target(unit) # adding sysv units
+        initmodules = self.get_wants_sysv_target(unit)  # adding sysv units
         if initmodules:
             for name, style in initmodules.items():
                 if name not in result:
                     result[name] = { unit: _unit_dep_from[style] }
         resultdeps = self.get_required_for_units(result, deps_modules)
         return resultdeps
-    def get_required_for_unit(self, unit, deps_modules = None):
-        result = { unit : { "": "isRequired" }}
+    def get_required_for_unit(self, unit, deps_modules=None):
+        result = { unit: { "": "isRequired" }}
         return self.get_required_for_units(result, deps_modules)
-    def get_required_for_units(self, existing, deps_modules = None):
+    def get_required_for_units(self, existing, deps_modules=None):
         """ after getting the .wants for sysinit.target we can also resolve the 
             declared the dependencies in the unit files - but only when they are
             in the CacheDeps module list already. """
@@ -5858,8 +5858,8 @@ class Systemctl:
         for depth in xrange(DepsMaxDepth):
             newresults = {}
             for item in result:
-                 units = self.get_cache_deps_unit(item, deps_modules)
-                 newresults[item] = only_wants_deps(units)
+                units = self.get_cache_deps_unit(item, deps_modules)
+                newresults[item] = only_wants_deps(units)
             changed = []
             for name, deps in newresults.items():
                 for dep, style in deps.items():
@@ -6622,11 +6622,11 @@ class Systemctl:
                     units[unit] = target
         self._ignored_target_units = units
         return units
-    def ignored_unit(self, unit, ignored = None):
+    def ignored_unit(self, unit, ignored=None):
         if self._show_all:
             return []
         return self._ignored_unit(unit, ignored)
-    def _ignored_unit(self, unit, ignored = None):
+    def _ignored_unit(self, unit, ignored=None):
         ignored = ignored or _ignored_services
         is_ignored = False
         because_of = []
@@ -6694,8 +6694,8 @@ class Systemctl:
         if DebugIgnoredServices:
             dbg_("ignored services filter for default.target:\n\t{igno}".format(**locals()))
         default_target = target or self.get_default_target()
-        self.make_deps_cache() # ensure the deps.cache is scanned (without --force)
-        deps = self.list_deps(default_target) # new style in v1.6 using deps.cache
+        self.make_deps_cache()  # ensure the deps.cache is scanned (without --force)
+        deps = self.list_deps(default_target)  # new style in v1.6 using deps.cache
         if default_target in deps:
             del deps[default_target]
         return list(deps)
@@ -7625,10 +7625,10 @@ def run(command, *modules):
         print_str_list_list(systemctl.list_start_dependencies_modules(*modules))
     elif command in ["get-wants-unit"]:
         unit = modules[0]
-        print_str_dict_dict({unit : systemctl.get_wants_unit(unit) })
+        print_str_dict_dict({unit: systemctl.get_wants_unit(unit) })
     elif command in ["get-deps-unit"]:
         unit = modules[0]
-        print_str_dict_dict({unit : systemctl.get_deps_unit(unit) })
+        print_str_dict_dict({unit: systemctl.get_deps_unit(unit) })
     elif command in ["list-deps"]:
         unit = modules[0]
         print_str_dict_dict(systemctl.list_deps(unit))
