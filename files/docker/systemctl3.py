@@ -254,7 +254,9 @@ CacheAlias=True
 DepsMaxDepth=9
 CacheDepsFile="${XDG_CONFIG_HOME}/systemd/systemctl.deps.cache"
 CacheAliasFile="${XDG_CONFIG_HOME}/systemd/systemctl.alias.cache"
-IgnoredTargets="sysinit.target,basic.target,remote-fs.target,getty.target"
+IgnoredTargets="sysinit.target,basic.target,remote-fs.target"
+UselessTargets="slices.target,timers.target,paths.target,tmp.mount,swap.target,getty.target"
+ConflictTargets="shutdown.target,rescue.target,rescue.service,emergency.target,emergency.service"
 IgnoredServicesFile="${XDG_CONFIG_HOME}/systemd/systemctl.services.ignore"
 _ignored_services = """
 [centos]
@@ -5789,12 +5791,18 @@ class Systemctl:
                     deps[required.strip()] = style
         return deps
     def deps_for_unit(self, unit, deep = False):
-        result = { unit: { "": "isWanted" }}
-        return self.deps_for_units(result, deep=deep)
+        """ Use deep=--wall to include units that are otherwise ignored. 
+            Note that this function does already delete the 'unit' as a result."""
+        units = { unit: { "": "isWanted" }}
+        result = self.deps_for_units(units, deep=deep)
+        if unit in result:
+            del result[unit]
+        return result
     def deps_for_units(self, existing, deep = False):
-        """ this works by only looking at the disk for .wants (through "systemctl enable")
-            directory entries. No CacheDeps is needed here - but a loop will recurse through
-            the dependencies to resolve more dependencies. """
+        """ this will use the deps.cache if it exists but otherwise the conf is scanned.
+            The returned deps include the .wants on the disk for both systemd and sysv.
+            Use deep=--wall to return also sysinit and other otherwise ignored units as
+            this function will recurse through the dependencies to resolve more dependencies. """
         result = existing.copy()
         for depth in xrange(DepsMaxDepth):
             newresults = {}
@@ -5835,17 +5843,7 @@ class Systemctl:
             self.make_deps_cache()
         else:
             self.load_deps_cache()
-        result = self.deps_for_unit(unit)
-        if not self._show_all:
-            clean = []
-            for name in result:
-                if self._ignored_unit(name):
-                    clean.append(name)
-            for name in clean:
-                del result[name]
-        if len(result) == 1:
-            if unit in result:
-                return {}
+        result = self.deps_for_unit(unit, deep = self._show_all)
         return result
     def get_required_dependencies(self, unit, styles=None):
         styles = styles or list(_unit_wants_dependencies)
@@ -6581,20 +6579,39 @@ class Systemctl:
             except Exception as e:
                 error_("while reading from {filename}: {e}".format(**locals()))
         return igno
-    def ignored_target_units(self):
+    def ignored_target_units(self, deep=True):
         if self._ignored_target_units is not None:
             return self._ignored_target_units
         units = {}
+        for nexttarget in ConflictTargets.split(","):
+            target = nexttarget.strip()
+            if target:
+                units[target] = "ConflictTargets"
+        for nexttarget in UselessTargets.split(","):
+            target = nexttarget.strip()
+            if target:
+                units[target] = "UselessTargets" 
         for nexttarget in IgnoredTargets.split(","):
             target = nexttarget.strip()
             if target:
-                target_deps = self.deps_for_unit(target)
-                for unit in target_deps:
-                    units[unit] = target
+                units[target] = target # ignored itself
+                if deep:
+                    # deeps=True makes sure we do not recurse to this ignored-function
+                    target_deps = self.deps_for_unit(target, deep=deep)
+                    for unit in target_deps:
+                        units[unit] = target
         self._ignored_target_units = units
         return units
     def ignored_unit(self, unit, ignored=None, deep=False):
         if deep or self._show_all:
+            for nexttarget in ConflictTargets.split(","):
+                target = nexttarget.strip()
+                if target == unit:
+                    return ["ConflictTargets"]
+            for nexttarget in UselessTargets.split(","):
+                target = nexttarget.strip()
+                if target == unit:
+                    return ["UselessTargets"]
             return []
         return self._ignored_unit(unit, ignored)
     def _ignored_unit(self, unit, ignored=None):
