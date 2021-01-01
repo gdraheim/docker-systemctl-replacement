@@ -295,12 +295,12 @@ _all_common_targets = [ "default.target" ] + _default_targets + _feature_targets
 _all_common_enabled = [ "default.target", "multi-user.target", "remote-fs.target" ]
 _all_common_disabled = [ "graphical.target", "resue.target", "nfs-client.target" ]
 
-_target_requires = {}
+_target_requires = OrderedDict()
 _target_requires["graphical.target"] = "multi-user.target"
 _target_requires["multi-user.target"] = "basic.target"
 _target_requires["basic.target"] = "sockets.target"
 
-_runlevel_mappings = {}  # the official list
+_runlevel_mappings = OrderedDict()  # the official list
 _runlevel_mappings["0"] = "poweroff.target"
 _runlevel_mappings["1"] = "rescue.target"
 _runlevel_mappings["2"] = "multi-user.target"
@@ -5794,7 +5794,8 @@ class Systemctl:
     def deps_for_unit(self, unit, deep = False):
         """ Use deep=--wall to include units that are otherwise ignored. 
             Note that this function does already delete the 'unit' as a result."""
-        units = { unit: { "": "isWanted" }}
+        units = OrderedDict()
+        units[unit] = { "": "isWanted" }
         result = self.deps_for_units(units, deep=deep)
         if unit in result:
             del result[unit]
@@ -5806,7 +5807,7 @@ class Systemctl:
             this function will recurse through the dependencies to resolve more dependencies. """
         result = existing.copy()
         for depth in xrange(DepsMaxDepth):
-            newresults = {}
+            newresults = OrderedDict()
             for name in result:
                 newresults[name] = {}
                 deps = self.get_wants_sysv_target(name)
@@ -5840,7 +5841,7 @@ class Systemctl:
             if not changed:
                 break
         return result
-    def list_deps(self, unit, deps_modules=None):
+    def list_deps(self, unit):
         """ Unit - show the dependencies that will be handled for a unit.
             Use --force to rebuild the deps.cache and use --all to allow
             ignored dependencies to be included in the list. (where
