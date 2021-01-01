@@ -6681,6 +6681,16 @@ class Systemctl:
         """ get the default services for a target - this will ignore a number of services,
             use '--all' see the original list as systemd would see them.
         """
+        units = self.target_default_units(target, sysv)
+        result = []
+        for unit in units:
+            if get_unit_type(unit) in ["service", "socket"]:
+                result.append(unit)
+        return result
+    def target_default_units(self, target=None, sysv="S"):
+        """ get the default services for a target - this will ignore a number of services,
+            use '--all' see the original list as systemd would see them.
+        """
         if self._show_all:
             igno = ""
         else:
