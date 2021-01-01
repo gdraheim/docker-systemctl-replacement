@@ -252,7 +252,7 @@ CacheAlias=True
 DepsMaxDepth=9
 CacheDepsFile="${XDG_CONFIG_HOME}/systemd/systemctl.deps.cache"
 CacheAliasFile="${XDG_CONFIG_HOME}/systemd/systemctl.alias.cache"
-IgnoredTargets="sysinit.target,basic.target,remote-fs.target"
+IgnoredTargets="sysinit.target,basic.target,remote-fs.target,local-fs.target"
 UselessTargets="slices.target,timers.target,paths.target,tmp.mount,swap.target,getty.target"
 ConflictTargets="shutdown.target,rescue.target,rescue.service,emergency.target,emergency.service"
 IgnoredServicesFile="${XDG_CONFIG_HOME}/systemd/systemctl.services.ignore"
@@ -283,7 +283,6 @@ dm-event.*
 [boot]
 boot.*
 *.local
-remote-fs.target
 """
 
 _default_targets = [ "poweroff.target", "rescue.target", "sysinit.target", "basic.target", "multi-user.target", "graphical.target", "reboot.target" ]
@@ -298,6 +297,7 @@ _target_requires = OrderedDict()
 _target_requires["graphical.target"] = "multi-user.target"
 _target_requires["multi-user.target"] = "basic.target"
 _target_requires["basic.target"] = "sockets.target"
+_target_requires["sockets.target"] = "sysinit.target"
 
 _runlevel_mappings = OrderedDict()  # the official list
 _runlevel_mappings["0"] = "poweroff.target"
@@ -350,6 +350,7 @@ _unit_dep_from["Has"+UnitBindsTo] = "isBindsTo"
 _unit_dep_from["Has"+UnitPartOf] = "isPartOf"
 _unit_dep_from[".init.S"] = "init.S.from"
 _unit_dep_from[".init.K"] = "init.K.from"
+_unit_dep_from[".required"] = "is.required.from"
 
 _unit_inter_dependencies = {}
 _unit_inter_dependencies[UnitRequires] = "required to start"
@@ -5809,6 +5810,9 @@ class Systemctl:
             newresults = OrderedDict()
             for name in result:
                 newresults[name] = {}
+                if name in _target_requires:
+                    base = _target_requires[name]
+                    newresults[name][base] = ".required"
                 deps = self.get_wants_sysv_target(name)
                 for dep, style in deps.items():
                     newresults[name].update(deps)
