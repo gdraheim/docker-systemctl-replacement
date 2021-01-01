@@ -12,3 +12,6 @@ tmp.*
 *.e
 *.bak
 .mypy_cache
+files/docker/systemctl33.py
+files/docker/systemctlX.py
+files/docker/systemctlXX.py
