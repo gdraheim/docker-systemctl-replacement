@@ -6901,7 +6901,8 @@ class Systemctl:
             self.doExitWhenNoMoreProcs = True
         if not modules:
             target = self.get_default_target()
-            return self.init_target(target, init = InitRunsInitLoop)
+            # like 'systemctl --init default' = it will never exit
+            return self.start_target_system(target, init = InitRunsInitLoop)
         #
         # otherwise quit when all the init-services have died
         found_all = True
@@ -6928,9 +6929,6 @@ class Systemctl:
     def init_units(self, units, init = True):
         self.doExitWhenNoMoreServices = True
         return self.start_units(units, init=init)
-    def init_target(self, target, init = True):
-        # like 'systemctl --init default' = it will never exit
-        return self.start_target_system(target, init=True)
     def start_log_files(self, units):
         self._log_file = {}
         self._log_hold = {}
