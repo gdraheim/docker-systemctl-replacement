@@ -6759,7 +6759,6 @@ class Systemctl:
             sig = self.init_loop_until_stop(services, target)
             info_("{target} init-loop {sig}".format(**locals()))
             self.stop_system_default()
-            self.clean_target_status(target)
         return done
     def do_start_target_from(self, conf):
         target = conf.name()
@@ -6775,6 +6774,8 @@ class Systemctl:
             self._no_wait_system = True
         dbg_("start {target} is starting {units} from {services}".format(**locals()))
         done = self.start_units(units)
+        self.write_target_status(target, ActiveState="active", SubState="started")
+        # SubState="starting" will be turned into SubState="running" in initloop
         return done, units
     def stop_system_default(self):
         """ detect the default.target services and stop them.
@@ -6798,6 +6799,7 @@ class Systemctl:
             self._no_wait_system = True
         dbg_("stop {target} is stopping {units} from {services}".format(**locals()))
         done = self.stop_units(units)
+        self.clean_target_status(target) # is down (we do not record "failed" here)
         return done, units
     def do_reload_target_from(self, conf):
         target = conf.name()
@@ -6805,12 +6807,23 @@ class Systemctl:
         return done
     def do_reload_target_services(self, target, system = False):
         services = self.target_default_services(target, "S")
+        oldstatus = None
+        try:
+            conf = self.load_unit_conf(target)
+            if conf:
+                oldstatus = self.get_status_from(conf, "ActiveState", None)
+        except Exception as e:
+            debug_("problem getting oldstatus in reloading: {e}".format(**locals()))
+        if oldstatus:
+            self.write_target_status(target, ActiveState="reloading")
         if not system:
             units = [service for service in services if self.is_running_unit(service)]
         else:
             units = services
             self._no_wait_system = True
         done = self.reload_units(units)
+        if oldstatus:
+            self.write_target_status(target, ActiveState=oldstatus)
         return done, units
     def halt_target(self, *modules):
         """ -- stop units from default system level """
