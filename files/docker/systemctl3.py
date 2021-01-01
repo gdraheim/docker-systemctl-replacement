@@ -27,11 +27,10 @@ __version__ = "1.6.4523"
 import logging
 logg = logging.getLogger("systemctl")
 
-from types import GeneratorType
+from collections import (namedtuple, OrderedDict)
 import re
 import fnmatch
 import shlex
-import collections
 import errno
 import os
 import sys
@@ -876,7 +875,7 @@ def checkprefix(cmd):
             return prefix, cmd[i:]
     return prefix, ""
 
-ExecMode = collections.namedtuple("ExecMode", ["mode", "check", "nouser", "noexpand"])
+ExecMode = namedtuple("ExecMode", ["mode", "check", "nouser", "noexpand"])
 def exec_mode(cmd):
     prefix, newcmd = checkprefix(cmd)
     check = "-" not in prefix
@@ -891,8 +890,8 @@ def ignore_signals_and_raise_keyboard_interrupt(signame):
     signal.signal(signal.SIGINT, signal.SIG_IGN)
     raise KeyboardInterrupt(signame)
 
-_default_dict_type = collections.OrderedDict
-_default_conf_type = collections.OrderedDict
+_default_dict_type = OrderedDict
+_default_conf_type = OrderedDict
 
 class SystemctlConfData:
     """ A *.service files has a structure similar to an *.ini file so
@@ -1526,7 +1525,7 @@ class waitlock:
         except Exception as e:
             warn_("[{me}] oops, {e}".format(**locals()))
 
-waitpid_result = collections.namedtuple("waitpid", ["pid", "returncode", "signal" ])
+waitpid_result = namedtuple("waitpid", ["pid", "returncode", "signal" ])
 
 def must_have_failed(waitpid, cmd):
     # found to be needed on ubuntu:16.04 to match test result from ubuntu:18.04 and other distros
@@ -1558,7 +1557,7 @@ def subprocess_testpid(pid):
     else:
         return waitpid_result(pid, None, 0)
 
-parse_result = collections.namedtuple("UnitName", ["fullname", "name", "prefix", "instance", "suffix", "component" ])
+parse_result = namedtuple("UnitName", ["fullname", "name", "prefix", "instance", "suffix", "component" ])
 
 def parse_unit(fullname):  # -> object(prefix, instance, suffix, ...., name, component)
     name, suffix = fullname, ""
@@ -3142,7 +3141,7 @@ class Systemctl:
                     dbg_("chdir workingdir '{into}': {e}".format(**locals()))
                     return None
         return None
-    NotifySocket = collections.namedtuple("NotifySocket", ["socket", "socketfile" ])
+    NotifySocket = namedtuple("NotifySocket", ["socket", "socketfile" ])
     def get_notify_socket_from(self, conf, socketfile=None, debug=False):
         """ creates a notify-socket for the (non-privileged) user """
         notify_socket_folder = expand_path(NotifySocketFolder, conf.root_mode())

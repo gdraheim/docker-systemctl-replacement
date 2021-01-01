@@ -4,7 +4,7 @@
 
 import collections
 import logging
-from collections import namedtuple
+from collections import namedtuple, OrderedDict
 from typing import Callable, Dict, Iterable, List, NoReturn, Optional, TextIO, Tuple, Type, Union
 from typing import NamedTuple, Match, TextIO, BinaryIO, Sequence, overload, Generator
 from types import TracebackType
