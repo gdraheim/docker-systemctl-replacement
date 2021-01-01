@@ -9858,7 +9858,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Testing B
             [Service]
-            ExecStart={root}/bin/{testsleep} 2
+            ExecStart={root}/bin/{testsleep} 4
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
@@ -9866,7 +9866,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Testing C
             [Service]
-            ExecStart={root}/bin/{testsleep} 2
+            ExecStart={root}/bin/{testsleep} 5
             [Install]
             WantedBy=multi-user.target
             """.format(**locals()))
@@ -9874,7 +9874,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Testing D
             [Service]
-            ExecStart={root}/bin/{testsleep} 2
+            ExecStart={root}/bin/{testsleep} 6
             [Install]
             WantedBy=graphical.target
             """.format(**locals()))
@@ -9937,7 +9937,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         #
-        cmd = "{systemctl} default-services -vvvv"
+        cmd = "{systemctl} default-services"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(len(lines(out)), 3)
@@ -10018,7 +10018,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("top>>>\n| %s", "\n| ".join(top))
         self.assertEqual(len(greps(top, testsleep)), 3)
         #
-        cmd = "{systemctl} stop multi-user.target"
+        cmd = "{systemctl} stop multi-user.target -vvvv"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
@@ -27831,6 +27831,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(os_path(testdir, "zzb.service"), """
             [Unit]
             Description=Testing B
+            After=zza.service
             [Service]
             Type=simple
             ExecStart={bindir}/{testsleepB} 16
@@ -27850,9 +27851,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{systemctl} default-services -v"
         sh____(cmd.format(**locals()))
-        # sh____(cmd.format(**locals()))
         out2 = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out2)
+        #
         #
         debug_log = os_path(root, expand_path(SystemctlDebugLog))
         os_remove(debug_log)
@@ -27860,25 +27861,28 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} -1"  # init
         init = background(cmd.format(**locals()))
         #
-        time.sleep(1)
+        time.sleep(2)
         cmd = "{systemctl} is-system-running"
         out, err, rc = output3(cmd.format(**locals()))
         logg.info("\n>>>(%s)\n%s\n%s", rc, i2(err), out)
         # self.assertEqual(out, "starting\n")
-        # self.assertEqual(rc, 1)
+        self.assertEqual(rc, 1)
+        #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "sleepA 4"))
         self.assertFalse(greps(top, "sleepB"))  # we do not start in parallel
         #
-        cmd = "{systemctl} is-system-running --quiet"
-        out, err, rc = output3(cmd.format(**locals()))
-        logg.info("\n>>>(%s)\n%s\n%s", rc, i2(err), out)
-        self.assertEqual(out, "")
-        self.assertEqual(rc, 1)
+        for attempt in xrange(9):
+            cmd = "{systemctl} is-system-running --quiet"
+            out, err, rc = output3(cmd.format(**locals()))
+            if not rc: break
+            logg.info("\n>>>(%s)\n%s\n%s", rc, i2(err), out)
+            self.assertEqual(out, "")
+            self.assertEqual(rc, 1)
+            time.sleep(1)
         #
-        time.sleep(4)
-        cmd = "{systemctl} is-system-running"
+        cmd = "{systemctl} is-system-running -vvvv"
         out, err, rc = output3(cmd.format(**locals()))
         logg.info("\n>>>(%s)\n%s\n%s", rc, i2(err), out)
         self.assertEqual(out, "running\n")
@@ -27900,13 +27904,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         #
         log = reads(debug_log)
-        logg.info("systemctl.debug.log>\n\t%s", oi22(log))
+        # logg.info("systemctl.debug.log>\n\t%s", oi22(log))
         self.assertTrue(greps(log, "interrupted - exit init-loop"))
         #
         cmd = "{systemctl} is-system-running"
         out, err, rc = output3(cmd.format(**locals()))
         logg.info("\n>>>(%s)\n%s\n%s", rc, i2(err), out)
-        self.assertEqual(out, "stopping\n")
+        self.assertEqual(out, "offline\n")
         self.assertEqual(rc, 1)
         #
         for attempt in xrange(10):
