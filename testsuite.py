@@ -3971,7 +3971,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} list-deps sysinit.target {vv} {vv} --all"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(len(lines(out)), 2) # the target and its 1 dep
+        self.assertEqual(len(lines(out)), 1) # 1 dep
         #
         cmd = "{systemctl} daemon-reload {vv} {vv}"
         out, end = output2(cmd.format(**locals()))
@@ -3987,7 +3987,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} list-deps sysinit.target {vv} {vv} --all"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(len(lines(out)), 2) # the target and its 1 dep
+        self.assertEqual(len(lines(out)), 1) # 1 dep
         #
         self.rm_testdir()
         self.rm_zzfiles(root)
@@ -4029,7 +4029,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} list-deps sysinit.target {vv} {vv} --all"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(len(lines(out)), 2) # the target and its 1 dep
+        self.assertEqual(len(lines(out)), 1) # 1 dep
         #
         zzz_service_wants = os_path(root, "/etc/systemd/system/zzz.service.wants")
         if not os.path.isdir(zzz_service_wants):
@@ -4049,7 +4049,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} list-deps sysinit.target {vv} {vv} --all"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(len(lines(out)), 3) # the target and its 2 deps
+        self.assertEqual(len(lines(out)), 2) # 2 deps
         #
         self.rm_testdir()
         self.rm_zzfiles(root)
@@ -4106,7 +4106,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} list-deps sysinit.target {vv} {vv} --all"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(len(lines(out)), 3) # the target and its 2 dep
+        self.assertEqual(len(lines(out)), 3) # 3 dep (new style finds them all)
         #
         cmd = "{systemctl} daemon-reload {vv} {vv}"
         out, end = output2(cmd.format(**locals()))
@@ -4123,7 +4123,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} list-deps sysinit.target {vv} {vv} --all"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(len(lines(out)), 4) # the target and its 3 dep
+        self.assertEqual(len(lines(out)), 3) # 3 dep (still found)
         #
         self.rm_testdir()
         self.rm_zzfiles(root)
@@ -4188,7 +4188,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} list-deps sysinit.target {vv} {vv} --all"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(len(lines(out)), 3) # the target and its 2 dep
+        self.assertEqual(len(lines(out)), 4) # (new style finds them all)
         #
         cmd = "{systemctl} daemon-reload {vv} {vv}"
         out, end = output2(cmd.format(**locals()))
@@ -4206,7 +4206,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} list-deps sysinit.target {vv} {vv} --all"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(len(lines(out)), 5) # <<< filled up from DepsCache
+        self.assertEqual(len(lines(out)), 4) # (still found)
         #
         self.rm_testdir()
         self.rm_zzfiles(root)
@@ -4279,7 +4279,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} list-deps sysinit.target {vv} {vv} --all"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(len(lines(out)), 3) # the target and its 2 dep
+        self.assertEqual(len(lines(out)), 4) # found all but the indirect PartOf
         #
         cmd = "{systemctl} daemon-reload {vv} {vv}"
         out, end = output2(cmd.format(**locals()))
@@ -4363,7 +4363,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} list-deps sysinit.target {vv} {vv} --all"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(len(lines(out)), 2)
+        self.assertEqual(len(lines(out)), 1)
         #
         self.rm_testdir()
         self.rm_zzfiles(root)
@@ -4437,7 +4437,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} list-deps sysinit.target {vv} {vv} --all"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(len(lines(out)), 2)
+        self.assertEqual(len(lines(out)), 1)
+        #
+        cmd = "{systemctl} list-deps multi-user.target {vv} {vv} --all"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(greps(out, ".service")), 2)
         #
         zzz_service_wants = os_path(root, "/etc/systemd/system/zzz.service.wants")
         if not os.path.isdir(zzz_service_wants):
@@ -4452,6 +4457,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(lines(out)), 0)        # found via .wants
         self.assertFalse(greps(out, "zza.service"))
         self.assertFalse(greps(out, "zzb.service"))
+        #
+        cmd = "{systemctl} list-deps multi-user.target {vv} {vv} --all"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(greps(out, ".service")), 3)
         #
         self.rm_testdir()
         self.rm_zzfiles(root)
@@ -4515,13 +4525,19 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} default-services {vv} {vv}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(len(lines(out)), 1)  # added here
+        self.assertEqual(len(lines(out)), 2)  # added here
         self.assertTrue(greps(out, "zzb.service"))
+        self.assertTrue(greps(out, "zza.service")) # found as-deps
         #
         cmd = "{systemctl} list-deps sysinit.target {vv} {vv} --all"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(len(lines(out)), 2)
+        self.assertEqual(len(lines(out)), 1) # only zzz here
+        #
+        cmd = "{systemctl} list-deps multi-user.target {vv} {vv} --all"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(greps(out, ".service")), 3)
         #
         zzz_service_wants = os_path(root, "/etc/systemd/system/zzz.service.wants")
         if not os.path.isdir(zzz_service_wants):
@@ -4536,6 +4552,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(lines(out)), 0)  # found via .wants
         self.assertFalse(greps(out, "zza.service"))
         self.assertFalse(greps(out, "zzb.service"))
+        #
+        cmd = "{systemctl} list-deps sysinit.target {vv} {vv} --all"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 3) # with zzz and deps
+        #
+        cmd = "{systemctl} list-deps multi-user.target {vv} {vv} --all"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(greps(out, ".service")), 4)
         #
         self.rm_testdir()
         self.rm_zzfiles(root)
@@ -4607,13 +4633,20 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} default-services {vv} {vv}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(len(lines(out)), 1)  # added here
+        self.assertEqual(len(lines(out)), 3)  # found the deps as well
+        self.assertTrue(greps(out, "zza.service"))
+        self.assertTrue(greps(out, "zzb.service"))
         self.assertTrue(greps(out, "zzc.service"))
         #
         cmd = "{systemctl} list-deps sysinit.target {vv} {vv} --all"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(len(lines(out)), 2)
+        self.assertEqual(len(lines(out)), 1) # only zzz
+        #
+        cmd = "{systemctl} list-deps multi-user.target {vv} {vv} --all"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(greps(out, ".service")), 4)
         #
         zzz_service_wants = os_path(root, "/etc/systemd/system/zzz.service.wants")
         if not os.path.isdir(zzz_service_wants):
@@ -4628,6 +4661,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(lines(out)), 0)  # found via .wants
         self.assertFalse(greps(out, "zza.service"))
         self.assertFalse(greps(out, "zzb.service"))
+        #
+        cmd = "{systemctl} list-deps sysinit.target {vv} {vv} --all"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 4) # with zzz and deps
+        #
+        cmd = "{systemctl} list-deps multi-user.target {vv} {vv} --all"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(greps(out, ".service")), 5)
         #
         self.rm_testdir()
         self.rm_zzfiles(root)
@@ -4707,13 +4750,20 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} default-services {vv} {vv}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(len(lines(out)), 1)  # added here
+        self.assertEqual(len(lines(out)), 3)  # deps found except PartOf
+        self.assertTrue(greps(out, "zza.service"))
+        self.assertTrue(greps(out, "zzb.service"))
         self.assertTrue(greps(out, "zzd.service"))
         #
         cmd = "{systemctl} list-deps sysinit.target {vv} {vv} --all"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(len(lines(out)), 2)
+        self.assertEqual(len(lines(out)), 1) # only zzz
+        #
+        cmd = "{systemctl} list-deps multi-user.target {vv} {vv} --all"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(greps(out, ".service")), 5)
         #
         zzz_service_wants = os_path(root, "/etc/systemd/system/zzz.service.wants")
         if not os.path.isdir(zzz_service_wants):
@@ -4728,6 +4778,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(lines(out)), 0)  # found via .wants
         self.assertFalse(greps(out, "zza.service"))
         self.assertFalse(greps(out, "zzb.service"))
+        #
+        cmd = "{systemctl} list-deps sysinit.target {vv} {vv} --all"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 5) # with deps of d
+        #
+        cmd = "{systemctl} list-deps multi-user.target {vv} {vv} --all"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(greps(out, ".service")), 6)
         #
         #
         self.rm_testdir()
