@@ -5189,9 +5189,9 @@ class Systemctl:
         found_all = True
         units = self.match_units()  # TODO: how to handle module arguments
         return self.preset_units(units) and found_all
-    def wanted_from(self, conf, default=None):
+    def get_WantedBy_list(self, conf, default=[]):
         if not conf: return default
-        return conf.get(Install, "WantedBy", default, True)
+        return conf.getnamelist(Install, "WantedBy", default, True)
     def enablefolders(self, wanted):
         if self.user_mode():
             for folder in self.user_folders():
@@ -5260,12 +5260,19 @@ class Systemctl:
             return False
         return self.enable_unit_from(conf)
     def enable_unit_from(self, conf):
-        unit = conf.name()
-        wanted = self.wanted_from(conf)
+        wanted = self.get_WantedBy_list(conf)
         if not wanted and not self._force:
+            unit = conf.name()
             dbg_("{unit} has no target".format(**locals()))
             return False  # "static" is-enabled
-        target = wanted or self.get_default_target()
+        targets = wanted or [ self.get_default_target() ]
+        done = True
+        for target in targets:
+            if not self.do_enable_unit_from(conf, target):
+                done = False
+        return done
+    def do_enable_unit_from(self, conf, target):
+        unit = conf.name()
         folder = self.enablefolder(target)
         if self._root:
             folder = os_path(self._root, folder)
@@ -5374,12 +5381,19 @@ class Systemctl:
             return False
         return self.disable_unit_from(conf)
     def disable_unit_from(self, conf):
-        wanted = self.wanted_from(conf)
+        wanted = self.get_WantedBy_list(conf)
         if not wanted and not self._force:
             unit = conf.name()
             dbg_("{unit} has no target".format(**locals()))
             return False  # "static" is-enabled
-        target = wanted or self.get_default_target()
+        targets = wanted or [ self.get_default_target() ]
+        done = True
+        for target in targets:
+            if not self.do_disable_unit_from(conf, target):
+                done = False
+        return done
+    def do_disable_unit_from(self, conf, target):
+        unit = conf.name()
         for folder in self.enablefolders(target):
             if self._root:
                 folder = os_path(self._root, folder)
@@ -5482,17 +5496,23 @@ class Systemctl:
     def get_enabled_from(self, conf):
         if conf.masked:
             return "masked"
-        wanted = self.wanted_from(conf)
-        target = wanted or self.get_default_target()
+        wanted = self.get_WantedBy_list(conf)
+        targets = wanted or [ self.get_default_target() ]
+        for target in targets:
+            enabled = self.do_get_enabled_from(conf, target)
+            if enabled:
+                return enabled
+        if not wanted:
+            return "static"
+        return "disabled"
+    def do_get_enabled_from(self, conf, target):
         for folder in self.enablefolders(target):
             if self._root:
                 folder = os_path(self._root, folder)
             target = os.path.join(folder, conf.name())
             if os.path.isfile(target):
                 return "enabled"
-        if not wanted:
-            return "static"
-        return "disabled"
+        return ""
     def mask_modules(self, *modules):
         """ [UNIT]... -- mask non-startable units """
         found_all = True
