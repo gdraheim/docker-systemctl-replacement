@@ -4297,7 +4297,21 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} list-deps sysinit.target {vv} {vv} --all"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(len(lines(out)), 6) # <<< filled up from DepsCache
+        self.assertEqual(len(lines(out)), 4) # <<< new 1.6.5 is disabling PartOf as well (if not enabled)
+        #
+        cmd = "{systemctl} list-deps multi-user.target {vv} {vv} --all"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 7) # excluding PartOf
+        #
+        cmd = "{systemctl} enable zzd.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        #
+        cmd = "{systemctl} list-deps multi-user.target {vv} {vv} --all"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 8) # including PartOf
         #
         self.rm_testdir()
         self.rm_zzfiles(root)
@@ -4750,9 +4764,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} default-services {vv} {vv}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(len(lines(out)), 3)  # deps found except PartOf
-        self.assertTrue(greps(out, "zza.service"))
-        self.assertTrue(greps(out, "zzb.service"))
+        self.assertEqual(len(lines(out)), 1)  # new in 1.6.5 does only have enabled and not the ParentOf
+        self.assertFalse(greps(out, "zza.service"))
+        self.assertFalse(greps(out, "zzb.service"))
         self.assertTrue(greps(out, "zzd.service"))
         #
         cmd = "{systemctl} list-deps sysinit.target {vv} {vv} --all"
@@ -4763,7 +4777,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} list-deps multi-user.target {vv} {vv} --all"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(len(greps(out, ".service")), 5)
+        self.assertEqual(len(greps(out, ".service")), 2)  # just zzz and d
+        self.assertFalse(greps(out, "zza.service"))
+        self.assertFalse(greps(out, "zzb.service"))
+        self.assertTrue(greps(out, "zzz.service"))
+        self.assertTrue(greps(out, "zzd.service"))
         #
         zzz_service_wants = os_path(root, "/etc/systemd/system/zzz.service.wants")
         if not os.path.isdir(zzz_service_wants):
@@ -4778,17 +4796,26 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(lines(out)), 0)  # found via .wants
         self.assertFalse(greps(out, "zza.service"))
         self.assertFalse(greps(out, "zzb.service"))
+        self.assertFalse(greps(out, "zzz.service"))
+        self.assertFalse(greps(out, "zzd.service"))
         #
         cmd = "{systemctl} list-deps sysinit.target {vv} {vv} --all"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(len(lines(out)), 5) # with deps of d
+        self.assertEqual(len(lines(out)), 2) # just zzd and zzz
+        self.assertFalse(greps(out, "zza.service"))
+        self.assertFalse(greps(out, "zzb.service"))
+        self.assertTrue(greps(out, "zzz.service"))
+        self.assertTrue(greps(out, "zzd.service"))
         #
         cmd = "{systemctl} list-deps multi-user.target {vv} {vv} --all"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(len(greps(out, ".service")), 6)
-        #
+        self.assertEqual(len(greps(out, ".service")), 3) # zzd is doubled here
+        self.assertFalse(greps(out, "zza.service"))
+        self.assertFalse(greps(out, "zzb.service"))
+        self.assertTrue(greps(out, "zzz.service"))
+        self.assertTrue(greps(out, "zzd.service"))
         #
         self.rm_testdir()
         self.rm_zzfiles(root)
