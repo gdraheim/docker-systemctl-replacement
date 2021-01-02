@@ -5835,6 +5835,7 @@ class Systemctl:
             Use deep=--wall to return also sysinit and other otherwise ignored units as
             this function will recurse through the dependencies to resolve more dependencies. """
         result = existing.copy()
+        assert isinstance(result, OrderedDict)
         for depth in xrange(DepsMaxDepth):
             newresults = OrderedDict()
             for name in result:

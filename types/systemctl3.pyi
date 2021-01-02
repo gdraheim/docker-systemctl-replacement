@@ -641,7 +641,6 @@ class Systemctl:
         result: OrderedDict[str, Dict[str, str]]
     def deps_for_units(self, existing: OrderedDict[str,Dict[str, str]], deep: bool = False) -> OrderedDict[str,Dict[str, str]]:
         deps: Dict[str,str]
-        result: OrderedDict[str, Dict[str, str]]
         newresults: OrderedDict[str, Dict[str, str]]
     def list_deps(self, unit: str) -> OrderedDict[str,Dict[str, str]]: ...
     def get_required_dependencies(self, unit: str, styles: Optional[List[str]] = None) -> Dict[str,str]:
