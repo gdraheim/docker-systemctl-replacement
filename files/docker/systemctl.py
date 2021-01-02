@@ -68,6 +68,7 @@ IgnoreWarnings = ""
 TestSocketListen = False
 TestSocketAccept = False
 ActiveWhileStarting = True
+ActiveRemainOneshot = "yes"
 
 HINT = (logging.DEBUG + logging.INFO) // 2
 NOTE = (logging.WARNING + logging.INFO) // 2
@@ -541,6 +542,19 @@ def to_list(value):
     if isinstance(value, tuple):
         return list(value)
     return str(value or "").split(",")
+def namelist(value):
+    if not value:
+        return []
+    if isinstance(value, list):
+        return value
+    if isinstance(value, tuple):
+        return list(value)
+    result = []
+    for item in str(value or "").split(" "):
+        name = item.strip()
+        if name and name not in result:
+            result.append(name)
+    return result
 def int_mode(value):
     try: return int(value, 8)
     except: return None  # pragma: no cover
@@ -1074,17 +1088,17 @@ class SystemctlConfigParser(SystemctlConfData):
             self.set(Unit, "Description", description)
         check = self.get("init.d", "Required-Start", "")
         if check:
-            for item in check.split(" "):
-                if item.strip() in _sysv_mappings:
-                    self.set(Unit, "Requires", _sysv_mappings[item.strip()])
+            for item in namelist(check):
+                if item in _sysv_mappings:
+                    self.set(Unit, "Requires", _sysv_mappings[item])
         provides = self.get("init.d", "Provides", "")
         if provides:
             self.set(Install, "Alias", provides)
         # if already in multi-user.target then start it there.
         runlevels = self.getstr("init.d", "Default-Start", "3 5")
-        for item in runlevels.split(" "):
-            if item.strip() in _runlevel_mappings:
-                self.set(Install, "WantedBy", _runlevel_mappings[item.strip()])
+        for item in namelist(runlevels):
+            if item in _runlevel_mappings:
+                self.set(Install, "WantedBy", _runlevel_mappings[item])
         self.set(Service, "Restart", "no")
         self.set(Service, "TimeoutSec", strE(DefaultMaximumTimeout))
         self.set(Service, "KillMode", "process")
@@ -1173,6 +1187,11 @@ class SystemctlConf:
         return self.data.getstr(section, name, default, allow_no_value)
     def getlist(self, section, name, default=None, allow_no_value=False):
         return self.data.getlist(section, name, default or [], allow_no_value)
+    def getnamelist(self, section, name, default=None, allow_no_value=False):
+        result = []
+        for item in self.getlist(section, name, default, allow_no_value):
+            result += namelist(item)
+        return result
     def getbool(self, section, name, default=None):
         value = self.data.get(section, name, default or "no")
         if value:
@@ -1622,42 +1641,22 @@ def seconds_to_time(seconds):
     else:
         return "%ss" % (secs)
 
-def getBefore(conf):
-    result = []
-    beforelist = conf.getlist(Unit, "Before", [])
-    for befores in beforelist:
-        for before in befores.split(" "):
-            name = before.strip()
-            if name and name not in result:
-                result.append(name)
-    return result
-
-def getAfter(conf):
-    result = []
-    afterlist = conf.getlist(Unit, "After", [])
-    for afters in afterlist:
-        for after in afters.split(" "):
-            name = after.strip()
-            if name and name not in result:
-                result.append(name)
-    return result
-
 def compareAfter(confA, confB):
     idA = confA.name()
     idB = confB.name()
-    for after in getAfter(confA):
+    for after in confA.getnamelist(Unit, "After", []):
         if after == idB:
             dbg_("{idA} After {idB}".format(**locals()))
             return -1
-    for after in getAfter(confB):
+    for after in confB.getnamelist(Unit, "After", []):
         if after == idA:
             dbg_("{idB} After {idA}".format(**locals()))
             return 1
-    for before in getBefore(confA):
+    for before in confA.getnamelist(Unit, "Before", []):
         if before == idB:
             dbg_("{idA} Before {idB}".format(**locals()))
             return 1
-    for before in getBefore(confB):
+    for before in confB.getnamelist(Unit, "Before", []):
         if before == idA:
             dbg_("{idB} Before {idA}".format(**locals()))
             return -1
@@ -2694,12 +2693,11 @@ class Systemctl:
         return newcmd
     def remove_service_directories(self, conf, section=Service):
         ok = True
-        nameRuntimeDirectory = self.get_RuntimeDirectory(conf, section)
+        listRuntimeDirectory = self.get_RuntimeDirectory_list(conf, section)
         keepRuntimeDirectory = self.get_RuntimeDirectoryPreserve(conf, section)
         if not keepRuntimeDirectory:
             root = conf.root_mode()
-            for name in nameRuntimeDirectory.split(" "):
-                if not name.strip(): continue
+            for name in listRuntimeDirectory:
                 RUN = get_RUNTIME_DIR(root)
                 path = os.path.join(RUN, name)
                 dirpath = os_path(self._root, path)
@@ -2741,14 +2739,24 @@ class Systemctl:
         return ok
     def get_RuntimeDirectoryPreserve(self, conf, section=Service):
         return conf.getbool(section, "RuntimeDirectoryPreserve", "no")
+    def get_RuntimeDirectory_list(self, conf, section=Service):
+        return [ self.expand_special(item, conf) for item in conf.getnamelist(section, "RuntimeDirectory") ]
     def get_RuntimeDirectory(self, conf, section=Service):
         return self.expand_special(conf.get(section, "RuntimeDirectory", ""), conf)
+    def get_StateDirectory_list(self, conf, section=Service):
+        return [ self.expand_special(item, conf) for item in conf.getnamelist(section, "StateDirectory") ]
     def get_StateDirectory(self, conf, section=Service):
         return self.expand_special(conf.get(section, "StateDirectory", ""), conf)
+    def get_CacheDirectory_list(self, conf, section=Service):
+        return [ self.expand_special(item, conf) for item in conf.getnamelist(section, "CacheDirectory") ]
     def get_CacheDirectory(self, conf, section=Service):
         return self.expand_special(conf.get(section, "CacheDirectory", ""), conf)
+    def get_LogsDirectory_list(self, conf, section=Service):
+        return [ self.expand_special(item, conf) for item in conf.getnamelist(section, "LogsDirectory") ]
     def get_LogsDirectory(self, conf, section=Service):
         return self.expand_special(conf.get(section, "LogsDirectory", ""), conf)
+    def get_ConfigurationDirectory_list(self, conf, section=Service):
+        return [ self.expand_special(item, conf) for item in conf.getnamelist(section, "ConfigurationDirectory") ]
     def get_ConfigurationDirectory(self, conf, section=Service):
         return self.expand_special(conf.get(section, "ConfigurationDirectory", ""), conf)
     def get_RuntimeDirectoryMode(self, conf, section=Service):
@@ -2764,14 +2772,13 @@ class Systemctl:
     def clean_service_directories(self, conf, which=""):
         ok = True
         section = self.get_unit_section_from(conf)
-        nameRuntimeDirectory = self.get_RuntimeDirectory(conf, section)
-        nameStateDirectory = self.get_StateDirectory(conf, section)
-        nameCacheDirectory = self.get_CacheDirectory(conf, section)
-        nameLogsDirectory = self.get_LogsDirectory(conf, section)
-        nameConfigurationDirectory = self.get_ConfigurationDirectory(conf, section)
+        listRuntimeDirectory = self.get_RuntimeDirectory_list(conf, section)
+        listStateDirectory = self.get_StateDirectory_list(conf, section)
+        listCacheDirectory = self.get_CacheDirectory_list(conf, section)
+        listLogsDirectory = self.get_LogsDirectory_list(conf, section)
+        listConfigurationDirectory = self.get_ConfigurationDirectory_list(conf, section)
         root = conf.root_mode()
-        for name in nameRuntimeDirectory.split(" "):
-            if not name.strip(): continue
+        for name in listRuntimeDirectory:
             RUN = get_RUNTIME_DIR(root)
             path = os.path.join(RUN, name)
             if which in ["all", "runtime", ""]:
@@ -2782,29 +2789,25 @@ class Systemctl:
                         var_path = os.path.join(var_run, name)
                         var_dirpath = os_path(self._root, var_path)
                         self.do_rm_tree(var_dirpath)
-        for name in nameStateDirectory.split(" "):
-            if not name.strip(): continue
+        for name in listStateDirectory:
             DAT = get_VARLIB_HOME(root)
             path = os.path.join(DAT, name)
             if which in ["all", "state"]:
                 dirpath = os_path(self._root, path)
                 ok = self.do_rm_tree(dirpath) and ok
-        for name in nameCacheDirectory.split(" "):
-            if not name.strip(): continue
+        for name in listCacheDirectory:
             CACHE = get_CACHE_HOME(root)
             path = os.path.join(CACHE, name)
             if which in ["all", "cache", ""]:
                 dirpath = os_path(self._root, path)
                 ok = self.do_rm_tree(dirpath) and ok
-        for name in nameLogsDirectory.split(" "):
-            if not name.strip(): continue
+        for name in listLogsDirectory:
             LOGS = get_LOG_DIR(root)
             path = os.path.join(LOGS, name)
             if which in ["all", "logs"]:
                 dirpath = os_path(self._root, path)
                 ok = self.do_rm_tree(dirpath) and ok
-        for name in nameConfigurationDirectory.split(" "):
-            if not name.strip(): continue
+        for name in listConfigurationDirectory:
             CONFIG = get_CONFIG_HOME(root)
             path = os.path.join(CONFIG, name)
             if which in ["all", "configuration", ""]:
@@ -2814,34 +2817,29 @@ class Systemctl:
     def env_service_directories(self, conf):
         envs = {}
         section = self.get_unit_section_from(conf)
-        nameRuntimeDirectory = self.get_RuntimeDirectory(conf, section)
-        nameStateDirectory = self.get_StateDirectory(conf, section)
-        nameCacheDirectory = self.get_CacheDirectory(conf, section)
-        nameLogsDirectory = self.get_LogsDirectory(conf, section)
-        nameConfigurationDirectory = self.get_ConfigurationDirectory(conf, section)
+        listRuntimeDirectory = self.get_RuntimeDirectory_list(conf, section)
+        listStateDirectory = self.get_StateDirectory_list(conf, section)
+        listCacheDirectory = self.get_CacheDirectory_list(conf, section)
+        listLogsDirectory = self.get_LogsDirectory_list(conf, section)
+        listConfigurationDirectory = self.get_ConfigurationDirectory_list(conf, section)
         root = conf.root_mode()
-        for name in nameRuntimeDirectory.split(" "):
-            if not name.strip(): continue
+        for name in listRuntimeDirectory:
             RUN = get_RUNTIME_DIR(root)
             path = os.path.join(RUN, name)
             envs["RUNTIME_DIRECTORY"] = path
-        for name in nameStateDirectory.split(" "):
-            if not name.strip(): continue
+        for name in listStateDirectory:
             DAT = get_VARLIB_HOME(root)
             path = os.path.join(DAT, name)
             envs["STATE_DIRECTORY"] = path
-        for name in nameCacheDirectory.split(" "):
-            if not name.strip(): continue
+        for name in listCacheDirectory:
             CACHE = get_CACHE_HOME(root)
             path = os.path.join(CACHE, name)
             envs["CACHE_DIRECTORY"] = path
-        for name in nameLogsDirectory.split(" "):
-            if not name.strip(): continue
+        for name in listLogsDirectory:
             LOGS = get_LOG_DIR(root)
             path = os.path.join(LOGS, name)
             envs["LOGS_DIRECTORY"] = path
-        for name in nameConfigurationDirectory.split(" "):
-            if not name.strip(): continue
+        for name in listConfigurationDirectory:
             CONFIG = get_CONFIG_HOME(root)
             path = os.path.join(CONFIG, name)
             envs["CONFIGURATION_DIRECTORY"] = path
@@ -2849,21 +2847,20 @@ class Systemctl:
     def create_service_directories(self, conf):
         envs = {}
         section = self.get_unit_section_from(conf)
-        nameRuntimeDirectory = self.get_RuntimeDirectory(conf, section)
+        listRuntimeDirectory = self.get_RuntimeDirectory_list(conf, section)
         modeRuntimeDirectory = self.get_RuntimeDirectoryMode(conf, section)
-        nameStateDirectory = self.get_StateDirectory(conf, section)
+        listStateDirectory = self.get_StateDirectory_list(conf, section)
         modeStateDirectory = self.get_StateDirectoryMode(conf, section)
-        nameCacheDirectory = self.get_CacheDirectory(conf, section)
+        listCacheDirectory = self.get_CacheDirectory_list(conf, section)
         modeCacheDirectory = self.get_CacheDirectoryMode(conf, section)
-        nameLogsDirectory = self.get_LogsDirectory(conf, section)
+        listLogsDirectory = self.get_LogsDirectory_list(conf, section)
         modeLogsDirectory = self.get_LogsDirectoryMode(conf, section)
-        nameConfigurationDirectory = self.get_ConfigurationDirectory(conf, section)
+        listConfigurationDirectory = self.get_ConfigurationDirectory_list(conf, section)
         modeConfigurationDirectory = self.get_ConfigurationDirectoryMode(conf, section)
         root = conf.root_mode()
         user = self.get_User(conf)
         group = self.get_Group(conf)
-        for name in nameRuntimeDirectory.split(" "):
-            if not name.strip(): continue
+        for name in listRuntimeDirectory:
             RUN = get_RUNTIME_DIR(root)
             path = os.path.join(RUN, name)
             dbg_("RuntimeDirectory {path}".format(**locals()))
@@ -2887,32 +2884,28 @@ class Systemctl:
                             os.symlink(dirpath, var_dirpath)
                         except Exception as e:
                             dbg_("var symlink {var_dirpath}\n\t{e}".format(**locals()))
-        for name in nameStateDirectory.split(" "):
-            if not name.strip(): continue
+        for name in listStateDirectory:
             DAT = get_VARLIB_HOME(root)
             path = os.path.join(DAT, name)
             dbg_("StateDirectory {path}".format(**locals()))
             self.make_service_directory(path, modeStateDirectory)
             self.chown_service_directory(path, user, group)
             envs["STATE_DIRECTORY"] = path
-        for name in nameCacheDirectory.split(" "):
-            if not name.strip(): continue
+        for name in listCacheDirectory:
             CACHE = get_CACHE_HOME(root)
             path = os.path.join(CACHE, name)
             dbg_("CacheDirectory {path}".format(**locals()))
             self.make_service_directory(path, modeCacheDirectory)
             self.chown_service_directory(path, user, group)
             envs["CACHE_DIRECTORY"] = path
-        for name in nameLogsDirectory.split(" "):
-            if not name.strip(): continue
+        for name in listLogsDirectory:
             LOGS = get_LOG_DIR(root)
             path = os.path.join(LOGS, name)
             dbg_("LogsDirectory {path}".format(**locals()))
             self.make_service_directory(path, modeLogsDirectory)
             self.chown_service_directory(path, user, group)
             envs["LOGS_DIRECTORY"] = path
-        for name in nameConfigurationDirectory.split(" "):
-            if not name.strip(): continue
+        for name in listConfigurationDirectory:
             CONFIG = get_CONFIG_HOME(root)
             path = os.path.join(CONFIG, name)
             dbg_("ConfigurationDirectory {path}".format(**locals()))
@@ -3312,8 +3305,8 @@ class Systemctl:
     def get_SocketTimeoutSec(self, conf):
         timeout = conf.get(Socket, "TimeoutSec", strE(DefaultTimeoutStartSec))
         return time_to_seconds(timeout, DefaultMaximumTimeout)
-    def get_RemainAfterExit(self, conf):
-        return conf.getbool(Service, "RemainAfterExit", "no")
+    def get_RemainAfterExit(self, conf, default = "no"):
+        return conf.getbool(Service, "RemainAfterExit", default)
     def start_unit_from(self, conf):
         if not conf: return False
         problems = self.check_syntax_from(conf)
@@ -3339,7 +3332,6 @@ class Systemctl:
             return False
     def do_start_service_from(self, conf):
         timeout = self.get_TimeoutStartSec(conf)
-        doRemainAfterExit = self.get_RemainAfterExit(conf)
         runs = conf.get(Service, "Type", "simple").lower()
         env = self.get_env(conf)
         if not self._quiet:
@@ -3376,6 +3368,8 @@ class Systemctl:
                 warn_("the service was already up once")
                 self.write_status_from(conf, AS=oldstatus)
                 return True
+            doRemainAfterExit = self.get_RemainAfterExit(conf, ActiveRemainOneshot)
+            dbg_("{runs} RemainAfterExit={doRemainAfterExit}".format(**locals()))
             self.set_status_code_from(conf, runs, None)
             if doRemainAfterExit and ActiveWhileStarting:
                 dbg_("{runs} RemainAfterExit -> AS=active".format(**locals()))
@@ -3409,6 +3403,7 @@ class Systemctl:
             if self.is_active_pid(pid):
                 warn_("the service is already running on PID {pid}".format(**locals()))
                 return True
+            doRemainAfterExit = self.get_RemainAfterExit(conf)
             self.set_status_code_from(conf, runs, None)
             if doRemainAfterExit and ActiveWhileStarting:
                 dbg_("{runs} RemainAfterExit -> AS=active".format(**locals()))
@@ -3452,6 +3447,7 @@ class Systemctl:
             if self.is_active_pid(pid):
                 error_("the service is already running on PID {pid}".format(**locals()))
                 return False
+            doRemainAfterExit = self.get_RemainAfterExit(conf)
             self.set_status_code_from(conf, runs, None)
             notify = self.notify_socket_from(conf)
             if notify:
@@ -3512,6 +3508,7 @@ class Systemctl:
                 self.write_status_from(conf, AS=None)  # active comes from PID
         elif runs in [ "forking" ]:
             pid_file = self.pid_file_from(conf)
+            doRemainAfterExit = self.get_RemainAfterExit(conf)
             self.set_status_code_from(conf, runs, None)
             for cmd in conf.getlist(Service, "ExecStart", []):
                 exe, newcmd = self.exec_newcmd(cmd, env, conf)
@@ -5197,9 +5194,9 @@ class Systemctl:
         found_all = True
         units = self.match_units()  # TODO: how to handle module arguments
         return self.preset_units(units) and found_all
-    def wanted_from(self, conf, default=None):
+    def get_WantedBy_list(self, conf, default=[]):
         if not conf: return default
-        return conf.get(Install, "WantedBy", default, True)
+        return [ self.expand_special(item, conf) for item in conf.getnamelist(Install, "WantedBy", default, True) ]
     def enablefolders(self, wanted):
         if self.user_mode():
             for folder in self.user_folders():
@@ -5268,12 +5265,19 @@ class Systemctl:
             return False
         return self.enable_unit_from(conf)
     def enable_unit_from(self, conf):
-        unit = conf.name()
-        wanted = self.wanted_from(conf)
+        wanted = self.get_WantedBy_list(conf)
         if not wanted and not self._force:
+            unit = conf.name()
             dbg_("{unit} has no target".format(**locals()))
             return False  # "static" is-enabled
-        target = wanted or self.get_default_target()
+        targets = wanted or [ self.get_default_target() ]
+        done = True
+        for target in targets:
+            if not self.do_enable_unit_from(conf, target):
+                done = False
+        return done
+    def do_enable_unit_from(self, conf, target):
+        unit = conf.name()
         folder = self.enablefolder(target)
         if self._root:
             folder = os_path(self._root, folder)
@@ -5382,12 +5386,19 @@ class Systemctl:
             return False
         return self.disable_unit_from(conf)
     def disable_unit_from(self, conf):
-        wanted = self.wanted_from(conf)
+        wanted = self.get_WantedBy_list(conf)
         if not wanted and not self._force:
             unit = conf.name()
             dbg_("{unit} has no target".format(**locals()))
             return False  # "static" is-enabled
-        target = wanted or self.get_default_target()
+        targets = wanted or [ self.get_default_target() ]
+        done = True
+        for target in targets:
+            if not self.do_disable_unit_from(conf, target):
+                done = False
+        return done
+    def do_disable_unit_from(self, conf, target):
+        unit = conf.name()
         for folder in self.enablefolders(target):
             if self._root:
                 folder = os_path(self._root, folder)
@@ -5490,17 +5501,23 @@ class Systemctl:
     def get_enabled_from(self, conf):
         if conf.masked:
             return "masked"
-        wanted = self.wanted_from(conf)
-        target = wanted or self.get_default_target()
+        wanted = self.get_WantedBy_list(conf)
+        targets = wanted or [ self.get_default_target() ]
+        for target in targets:
+            enabled = self.do_get_enabled_from(conf, target)
+            if enabled:
+                return enabled
+        if not wanted:
+            return "static"
+        return "disabled"
+    def do_get_enabled_from(self, conf, target):
         for folder in self.enablefolders(target):
             if self._root:
                 folder = os_path(self._root, folder)
             target = os.path.join(folder, conf.name())
             if os.path.isfile(target):
                 return "enabled"
-        if not wanted:
-            return "static"
-        return "disabled"
+        return ""
     def mask_modules(self, *modules):
         """ [UNIT]... -- mask non-startable units """
         found_all = True
@@ -5761,21 +5778,38 @@ class Systemctl:
         if folders and DebugDeps:
             debug_("  for sysv {target} found {deps}".format(**locals()))
         return deps
-    def get_cache_deps_unit(self, unit, deps_modules=None):
-        deps_modules = deps_modules or self._deps_modules
+    def get_cache_deps_unit(self, unit, styles=None):
+        deps_modules = self._deps_modules
         if deps_modules:
             if unit in deps_modules:
-                return deps_modules[unit]
+                found = deps_modules[unit]
+                if not styles:
+                    return found
+                result = {}
+                for name, style in found.items():
+                    if style in styles:
+                        result[name] = style
+                return result
         return {}
     def get_wants_deps_unit(self, unit, styles=None):
         """ scans the unit conf for Requires= or Wants= settings - can use the cache file """
         if self._deps_modules:
             if unit in self._deps_modules:
-                return self._deps_modules[unit]
+                return self.get_cache_deps_unit(unit, styles)
         if DebugDeps:
             dbg_("  scanning Unit {unit} for Requires".format(**locals()))
         conf = self.get_unit_conf(unit)
-        return self.get_deps_from(conf, styles)
+        deps = self.get_deps_from(conf, styles)
+        if get_unit_type(unit) in [ "target" ]:
+            after = conf.getnamelist(Unit, "After")
+            if not after:
+                conf.set(Unit, "After", " ".join(after))
+        if get_unit_type(unit) in [ "socket" ]:
+            before = conf.getnamelist(Unit, "Before")
+            if not before:
+                service_unit = self.get_socket_service_from(conf)
+                conf.set(Unit, "Before", service_unit)
+        return deps
     def get_deps_from(self, conf, styles=None):
         """ scans the unit conf for Requires= or Wants= settings in the [Unit] section """
         # shall not use the cache file as it is called from cache creation in daemon-reload
@@ -5783,9 +5817,8 @@ class Systemctl:
         styles = styles or list(_unit_inter_dependencies)
         for style in styles:
             if style.startswith("."): continue
-            for requirelist in conf.getlist(Unit, style, []):
-                for required in requirelist.strip().split(" "):
-                    deps[required.strip()] = style
+            for required in conf.getnamelist(Unit, style, []):
+                deps[required.strip()] = style
         return deps
     def deps_for_unit(self, unit, deep = False):
         """ Use deep=--wall to include units that are otherwise ignored. 
@@ -5815,9 +5848,13 @@ class Systemctl:
                 deps = self.get_wants_sysd_unit(name)  # Dict[name,style]
                 for dep, style in deps.items():
                     newresults[name].update(deps)
-                deps = self.get_wants_deps_unit(name)  # Dict[name,style]
+                deps = self.get_wants_deps_unit(name, ["Requires", "Wants"])  # Dict[name,style]
                 for dep, style in deps.items():
                     newresults[name].update(deps)
+                deps = self.get_wants_deps_unit(name, ["isParentOf"])  # Dict[name,style]
+                for dep, style in deps.items():
+                    if self.is_enabled(dep):
+                        newresults[name].update(deps)
             changed = []
             for name, deps in newresults.items():
                 for dep, style in deps.items():
@@ -5978,12 +6015,10 @@ class Systemctl:
         return True  # errors
     def get_alias_from(self, conf):
         result = {}
-        for defs in conf.getlist("Install", "Alias"):
-            for unit_def in defs.split(" "):
-                unit = unit_def.strip()
-                if not unit: continue
-                name = conf.name()
-                result[unit] = name
+        for unit in conf.getnamelist("Install", "Alias"):
+            if not unit: continue
+            name = conf.name()
+            result[unit] = name
         return result
     def write_alias_cache(self, aliases):
         filename = os_path(self._root, self.expand_path(CacheAliasFile))
@@ -6710,7 +6745,7 @@ class Systemctl:
                     del deps[system_target]
             if SysInitTarget in deps:
                del deps[SysInitTarget]
-        return list(deps)
+        return list(reversed(deps))
     def get_target_conf(self, module):  # -> conf (conf | default-conf)
         """ accept that a unit does not exist 
             and return a unit conf that says 'not-loaded' """
