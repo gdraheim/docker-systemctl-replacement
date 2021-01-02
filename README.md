@@ -2,22 +2,24 @@
 
 # docker systemctl replacement
 
-This script may be used to overwrite "/usr/bin/systemctl".   
+This script may be used to overwrite "/usr/bin/systemctl".
 It will execute the systemctl commands without SystemD!
 
-This is used to test deployment of services with a docker
-container as the target host. Just as on a real machine you 
-can use "systemctl start" and "systemctl enable" and other 
-commands to bring up services for further configuration and 
-testing. Information from "systemctl show" allows deployment
-automation tools to work seemlessly.
+As a result you can start multiple systemd services in one
+container just like they would be on a virtual machine.
+This makes testing phases much more lightweight and it
+allows code to be packaged in docker images which are not
+prepared to run in containers or any container cloud. It
+helps your organization to embrace a cloud-only strategy.
 
-This script can also be run as docker-init of a docker container
-(i.e. the main "CMD" on PID 1) where it will automatically bring 
-up all enabled services in the "multi-user.target" and where it 
-will reap all zombies from background processes in the container.
-When running a "docker stop" on such a container it will also 
-bring down all configured services correctly before exit.
+Here is an example of a LAMP stack (Linux, Apache, MySQL
+and PHP) running in a single container. Note that the
+systemctl3.py scripts runs on PID-1 (instead of /sbin/init)
+which has spawned the processes of the two main services.
+No changes to the original rpm/deb packages are needed and
+no extra docker-entrypoint script is required. You can find
+more real world scenarios in a seperate GitHub project
+at [gdraheim/docker-systemctl-images](https://github.com/gdraheim/docker-systemctl-images).
 
     ## docker exec lamp-stack-container systemctl list-units --state=running
     httpd.service     loaded active running   The Apache HTTP Server
@@ -33,183 +35,101 @@ bring down all configured services correctly before exit.
               |-{mysqld},191
               |-{mysqld},192
 
-## Problems with SystemD in Docker
+## Features
 
-The background for this script is the inability to run a
-SystemD daemon easily inside a docker container. There have
-been multiple workarounds with varying complexity and actual
-functionality. (The systemd-nsspawn tool is supposed to help 
-with  running systemd in a container but only rkt with CoreOs 
-is using it so far).
+The systemctl replacement script is a service manager to
+support start/stop/status as well as enable/disable commands.
+The implementation is correct as much that the "ansible service"
+module is happy. Hence ansible scripts written to deploy to a
+a virtual machine may be reused to prepare a docker image 
+instead. (Actually that was the original motivation).
 
-Most people have come to take the easy path and to create a
-startup shell script for the docker container that will
-bring up the service processes one by one. Essentially one would
-read the documentation or the SystemD `*.service` scripts of the
-application to see how that would be done. By using this
-replacement script a programmer can skip that step.
+* See [SERVICE-MANAGER](SERVICE-MANAGER.md) for more details.
 
-## Service Manager
+The systemctl replacement script is an init daemon to support
+booting services in a container and to propagate docker-stop
+signals to the processes inside the container. Just like
+the "systemd" daemon had replaced /sbin/init on PID-1 this
+systemctl3.py script will replace those when set in the
+CMD / ENTRYPOINT of a docker image. (That's how it makes
+a docker-entrypoint script to be not needed).
 
-The systemctl-replacement script does cover the functionality
-of a service manager where commands like `systemctl start xx`
-are executed. This is achieved by parsing the `*.service`
-files that are installed by the standard application packages 
-(rpm, deb) in the container. These service unit descriptors
-define the actual commands to start/stop a service in their
-ExecStart/ExecStop settings.
+* See [INIT-DAEMON](INIT-DAEMON.md) for more details.
 
-When installing systemctl.py as /usr/bin/systemctl in a
-container then it provides enough functionality that
-deployment scripts for virtual machines continue to
-work unchanged when trying to start/stop, enable/disable
-or mask/unmask a service in a container.
+The systemctl replacement supports an extra usermode setup
+where the init daemon does not run as UID 0 (root) but with
+a  normal user account (e.g. 1001). It will then limit the
+commands to only start services with a matching `User=` in
+the descriptor. That is a very good match for modern cloud
+deployments which dislike UID 0 as to have better monitoring
+and to enhance security with non-priviledged processes.
 
-This is also true for deployment tools like Ansible. As of 
-version 2.0 and later Ansible is able to connect to docker 
-containers directly without the help of a ssh-daemon in 
-the container. Just make your inventory look like
+* See [USERMODE](USERMODE.md) for more details.
 
-    [frontend]
-    my_frontend_1 ansible_connection=docker
+The systemctl replacement script can be used in parallel
+with a real systemd daemon running a system. It does not
+require a central daemon to be around. Instead it creates
+some xy.service.status files to store runtime information.
+As the "daemon-reload" command is a no-op it was reused to
+analyze the service descriptors of the target system which
+can show problems that the original systemd will not warn about.
 
-Based on that `ansible_connection` one can enable the
-systemctl-replacement to intercept subsequent calls
-to `"service:"` steps. Effectivly Ansible scripts that 
-shall be run on real virtual machines can be tested 
-with docker containers. However in newer centos/ubuntu
-images you need to check for python first.
+* See [ARCHITECTURE](ARCHITECTURE.md) to see the differences.
 
-    - copy: src="files/docker/systemctl.py" dest="/usr/bin/systemctl"
-    - package: name="python"
-    - file: name="/run/systemd/system/" state="directory"
-    - service: name="dbus.service" state="stopped"
+## Examples
 
-See [SERVICE-MANAGER](SERVICE-MANAGER.md) for more details.
+There is an extensive testsuite to show a lot of features of
+systemd and to even compare the result of the replacement
+script with the original implementation. Note however that no
+full compatibility is intended and for the architecture 
+differences it is not even possible.
 
----
+* See [TESTSUITE](TESTUITE.md) for more details.
 
-## Problems with PID 1 in Docker
+The testsuite is also an example to test setup code with package
+installations (apt-get install / yum install / zypper install)
+in an air-gap situation - with no internet access or without
+the required bandwith to download rpm/deb packages. It makes
+use of a package mirror wrapped again in a container for a
+cloud-only approach.
 
-The command listed as "CMD" in the docker image properties
-or being given as docker-run argument will become the PID-1
-of a new container. Actually it takes the place that would
-traditionally be used by the /sbin/init process which has
-a special functionality in unix'ish operating systems.
+* See [gdraheim/docker-mirror-packages-repo](https://github.com/gdraheim/docker-mirror-packages-repo) for details.
 
-The docker-stop command will send a SIGTERM to PID-1 in
-the container - but NOT to any other process. If the CMD
-is the actual application (exec java -jar whatever) then 
-this works fine as it will also clean up its subprocesses. 
-In many other cases it is not sufficient leaving 
-[zombie processes](https://www.howtogeek.com/119815/) 
-around.
+Note that the testsuite in this GitHub project uses mostly 
+synthetic test cases (run `make check` for that). However 
+the replacement script has been already used in a number of 
+real world scenarios - have a look at the sister project to
+see examples of that in [gdraheim/docker-systemctl-images](https://github.com/gdraheim/docker-systemctl-images).
+To help with details you should use systemd extra-configs
+instead of writing a docker-entrypoint script.
 
-Zombie processes may also occur when a master process does 
-not do a `wait` for its children or the children were
-explicitly "disown"ed to run as a daemon themselves. The
-systemctl replacment script can help here as it implements 
-the "zombie reaper" functionality that the standard unix
-init daemon would provide. Otherwise the zombie PIDs would
-continue to live forever (as long as the container is
-running) filling also the process table of the docker host
-as the init daemon of the host does not reap them.
-
-## Init Daemon
-
-Another function of the init daemon is to startup the
-default system services. What has been known as runlevel
-in SystemV is now "multi-user.target" or "graphical.target"
-in a SystemD environment.
-
-Let's assume that a system has been configured with some
-"systemctl enable xx" services. When a virtual machine
-starts then these services are started as well. The
-systemctl-replacement script does provide this functionality
-for a docker container, thereby implementing
-"systemctl default" for usage in inside a container.
-
-The "systemctl halt" command is also implemented
-allowing to stop all services that are found as
-"is-enabled" services that have been run upon container
-start. It does execute all the "systemctl stop xx"
-commands to bring down the enabled services correctly.
-
-This is most useful when the systemctl replacement script 
-has been run as the entrypoint of a container - so when a 
-"docker stop" sends a SIGTERM to the container's PID-1 then 
-all the services are shut down before exiting the container.
-This can be permanently achieved by registering the
-systemctl replacement script  as the CMD attribute of an 
-image, perhaps by a "docker commit" like this:
-
-    docker commit -c "CMD ['/usr/bin/systemctl']" \
-        -m "<comment>" <container> <new-image>
-
-After all it allows to use a docker container to be
-more like a virtual machine with multiple services
-running at the same time in the same context.
-
-See [INIT-DAEMON](INIT-DAEMON.md) for more details.
-
----
-
-## Testsuite and Examples
-
-There is an extensive testsuite in the project that allows
-for a high line coverage of the tool. All the major functionality
-of the systemctl replacement script is being tested so that its 
-usage in continuous development pipeline will no break on updates 
-of the script. If the systemctl.py script has some important
-changes in the implementation details it will be marked with
-an update of the major version.
-
-Please run the `testsuite.py` or `make check` upon providing
-a patch. It takes a couple of minutes because it may download
-a number of packages during provisioning - but with the help of the
-[docker-mirror-packages-repo](https://github.com/gdraheim/docker-mirror-packages-repo)
-scripting this can be reduced a lot (it even runs without internet connection).
-
-Some real world examples have been cut out into a seperate
-project. This includes dockerfile and ansible based tests
-to provide common applications like webservers, databases
-and even a Jenkins application. You may want to have a look
-at [gdraheim/docker-systemctl-images](https://github.com/gdraheim/docker-systemctl-images)
-list.
-
-
-See [TESTSUITE](TESTUITE.md) for more details.
+* See [EXTRA-CONFIGS](EXTRA-CONFIGS.md) for that option.
 
 ## Development
 
 Although this script has been developed for quite a while,
 it does only implement a limited number of commands. It
-does not cover all commands of "systemctl" and it will not
-cover all the functionality of SystemD. The implementation
-tries to align with SystemD's systemctl commands as close
-as possible as quite some third party tools are interpreting
-the output of it. However the implemented software 
-[ARCHITECTURE](ARCHITECTURE.md) is very different.
+was created a number of problems that were encounted when
+moving from a world of systemd in virtual machines to a
+world with docker and containers.
+
+* See [SYSTEMD-PROBLEMS](SYSTEMD-PROBLEMS.md) for an overview
 
 The systemctl replacement script has a long [HISTORY](HISTORY.md)
-now with over a [thousand commits on github](https://github.com/gdraheim/docker-systemctl-replacement/tree/master)
-(mostly for the testsuite). It has also garnered some additional 
-functionality like the [USERMODE](USERMODE.md) which is 
-specifically targeted at running docker containers. See the 
-[RELEASENOTES](RELEASENOTES.md) for the latest achievements.
-The choice of the [EUPL-LICENSE](EUPL-LICENSE.md) is intentionally
-permissive to allow you to copy the script to your project.
+now with [thousands of commits on github](https://github.com/gdraheim/docker-systemctl-replacement/tree/master)
+the current implementation is done by trial and fixing the errors.
+Some [BUGS](BUGS.md) are actually in other tools and need to be
+circumvented. The choice of the [EUPL-LICENSE](EUPL-LICENSE.md) is
+intentionally permissive to allow you to copy the script to your project.
 
-Sadly the functionality of SystemD's systemctl is badly 
-documented so that much of the current implementation is 
-done by trial and fixing the errors. Some [BUGS](BUGS.md)
-are actually in other tools and need to be circumvented. As 
-most programmers tend to write very simple `*.service` files 
-it works in a surprising number of cases however. But definitly 
+* See the [RELEASENOTES](RELEASENOTES.md) for the latest achievements.
+
+Sadly the functionality of SystemD's systemctl is badly documented.
+As most programmers tend to write very simple `*.service` files
+it works in a surprising number of cases however. But definitly
 not all. So if there is a problem, use the
 [github issue tracker](https://github.com/gdraheim/docker-systemctl-replacement/issues)
-to make me aware of it. In general it is not needed to emulate
-every feature as [EXTRA-CONFIGS](EXTRA-CONFIGS.md) can help.
+to make me aware of it.
 
 And I take patches. ;)
 
