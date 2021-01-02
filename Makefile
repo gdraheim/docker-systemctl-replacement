@@ -315,6 +315,16 @@ pep.t style.t pep.t.apply style.t.apply:
 	autopep8 testsuite.py --in-place
 	git --no-pager diff testsuite.py
 
+####### strip-hints
+STRIP_HINTS = ../strip-hints
+strip-hints:
+	set -ex ; if test -d $(STRIP_HINTS); then cd $(STRIP_HINTS) && git pull; else \
+	cd $(dir $(STRIP_HINTS)) && git clone git@github.com:abarker/strip-hints.git $(notdir $(STRIP_HINTS)) ; fi
+	python3 $(STRIP_HINTS)/bin/strip_hints.py --only-test-for-changes files/docker/systemctl3.py
+st strip:
+	python3 $(STRIP_HINTS)/bin/strip_hints.py --to-empty tmp.files/docker/systemctl3.py > tmp.files/docker/systemctl.py
+	diff -U0 files/docker/systemctl.py tmp.files/docker/systemctl.py
+
 ####### retype + stubgen
 mypy:
 	zypper install -y mypy
@@ -333,6 +343,7 @@ type.:
 	stubgen -o tmp.types --include-private tmp.files/docker/systemctl3.py
 	sed -i -e "/^basestring = str/d" -e "/xrange = range/d" tmp.types/systemctl3.pyi
 	sed -i -e "/^EXEC_SPAWN/d" -e "/^_notify_socket_folder/d" tmp.types/systemctl3.pyi
+	sed -i -e "s/^existing.copy()/existing # &/" tmp.types/systemctl3.pyi
 	diff -U1 types/systemctl3.pyi tmp.types/systemctl3.pyi | head -20
 	mypy --strict tmp.files/docker/systemctl3.py 2>&1 | head -20
 type:
