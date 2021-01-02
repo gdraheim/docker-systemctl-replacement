@@ -76,6 +76,20 @@ can show problems that the original systemd will not warn about.
 
 * See [ARCHITECTURE](ARCHITECTURE.md) to see the differences.
 
+The complete implementation is wrapped in a single file. That
+makes it every easy to have it pushed to a target system or
+to COPY it into a container image in some dockerfile script.
+You can also just download the script directly to check your
+current system for details. Try it out like this:
+
+```bash
+wget https://raw.githubusercontent.com/gdraheim/docker-systemctl-replacement/master/files/docker/systemctl3.py \
+  --output-document /usr/bin/systemctl.py \
+  --no-clobber
+chmod +x /usr/bin/systemctl.py
+systemctl.py list-units
+```
+
 ## Examples
 
 There is an extensive testsuite to show a lot of features of
