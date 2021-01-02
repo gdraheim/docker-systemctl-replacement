@@ -68,6 +68,8 @@ So just like with the notify-socket files there are
 multiple service-lock files around. They are created
 just next to notify-socket files, so you can see them
 popping up as `/var/run/systemd/httpd.service.lock`.
+(New in v1.6 and later the flock is done on the status
+file in `/var/run/systemd/httpd.service.status`.)
 There is nothing similar with the original systemd
 daemon as all actions are run by the single process
 on PID-1 which can do the serialisation through its
