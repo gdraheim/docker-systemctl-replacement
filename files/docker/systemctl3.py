@@ -5778,17 +5778,24 @@ class Systemctl:
         if folders and DebugDeps:
             debug_("  for sysv {target} found {deps}".format(**locals()))
         return deps
-    def get_cache_deps_unit(self, unit, deps_modules=None):
-        deps_modules = deps_modules or self._deps_modules
+    def get_cache_deps_unit(self, unit, styles=None):
+        deps_modules = self._deps_modules
         if deps_modules:
             if unit in deps_modules:
-                return deps_modules[unit]
+                found = deps_modules[unit]
+                if not styles:
+                    return found
+                result = {}
+                for name, style in found.items():
+                    if style in styles:
+                        result[name] = style
+                return result
         return {}
     def get_wants_deps_unit(self, unit, styles=None):
         """ scans the unit conf for Requires= or Wants= settings - can use the cache file """
         if self._deps_modules:
             if unit in self._deps_modules:
-                return self._deps_modules[unit]
+                return self.get_cache_deps_unit(unit, styles)
         if DebugDeps:
             dbg_("  scanning Unit {unit} for Requires".format(**locals()))
         conf = self.get_unit_conf(unit)
@@ -5841,9 +5848,13 @@ class Systemctl:
                 deps = self.get_wants_sysd_unit(name)  # Dict[name,style]
                 for dep, style in deps.items():
                     newresults[name].update(deps)
-                deps = self.get_wants_deps_unit(name)  # Dict[name,style]
+                deps = self.get_wants_deps_unit(name, ["Requires", "Wants"])  # Dict[name,style]
                 for dep, style in deps.items():
                     newresults[name].update(deps)
+                deps = self.get_wants_deps_unit(name, ["isParentOf"])  # Dict[name,style]
+                for dep, style in deps.items():
+                    if self.is_enabled(dep):
+                        newresults[name].update(deps)
             changed = []
             for name, deps in newresults.items():
                 for dep, style in deps.items():
