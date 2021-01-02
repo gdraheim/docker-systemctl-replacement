@@ -2,7 +2,7 @@
 """ Testcases for docker-systemctl-replacement functionality """
 
 __copyright__ = "(C) Guido Draheim, licensed under the EUPL"""
-__version__ = "1.5.4524"
+__version__ = "1.5.5005"
 
 # NOTE:
 # The testcases 1000...4999 are using a --root=subdir environment
@@ -19247,7 +19247,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         #
         logg.info("== 'start' will run a later exiting service ")
-        cmd = "{systemctl} start zze.service {vv}"
+        cmd = "{systemctl} start zze.service {vv} -c ActiveRemainOneshot=no"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 1)
