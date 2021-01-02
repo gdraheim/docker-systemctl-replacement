@@ -638,6 +638,7 @@ class Systemctl:
         result: Dict[str,Dict[str, str]]
     def deps_for_unit(self, unit: str, deep: bool = False) -> OrderedDict[str,Dict[str, str]]:
         units: OrderedDict[str, Dict[str, str]]
+        result: OrderedDict[str, Dict[str, str]]
     def deps_for_units(self, existing: OrderedDict[str,Dict[str, str]], deep: bool = False) -> OrderedDict[str,Dict[str, str]]:
         deps: Dict[str,str]
         newresults: OrderedDict[str, Dict[str, str]]
