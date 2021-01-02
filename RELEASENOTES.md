@@ -1,62 +1,61 @@
-RELEASE 1.5
+RELEASE 1.6
 
-The release branch 1.4 has been stable for a long time. Nethertheless there
-is still much room for improvement which is also shown by the hundreds of
-commits that went into this release.
-
-Most prominently, Python 3 is the default variant now. Just as in the previous
-release branch there is only one code basis for python2 and python3 but the
+Just as with v1.5, Python 3 is the default variant now. Just as in the previous
+release branches there is only one code basis for python2 and python3 but the
 primary test target has changed. If you run "make test_1000" then you see
 the result from systemctl3.py now, and "make 2" will derive systemctl.py
 from it. The testsuite.py itself is also run by a python3 interpreter now.
+And a types/systemctl3.pyi file provides optional strict type checking.
 
-The systemctl3.py script is accompanied by a systemctl3.pyi script with type 
-hints to allow for strict type checking. Static code analysis is a big
-advantage. Not only for nullable types but also for mere typos that can not 
-be missed anymore when the testsuite does not touch that line. Still the 
-testsuite has a line code coverage of 94% for this release.
+The v1.6 will be the last branch to support 2and3 code compatibility. A new
+tool format3.py has been added to convert `format(**locals())` into proper
+python3 f-strings for mypy checks. All debug-loggers were wrapped to use
+format-strings as the input already. The next release branch will go to use
+python3 f-strings and inline type hints using `strip-hints` to create a
+python2 variant from it. Actually only the rhel/centos 7.x series may need
+extended python2 support with an end-of-life by 2024. With older Ubuntu
+and Opensuse support being discontinued we can assume Python 3.6 as the
+minimal supported version by mid of 2021 in all common Linux distributions.
 
-There are some breaking changes though. Especially the variable expansion 
-has changed which was wrong in 1.4 but some scripts may already rely on the
-way it worked. Some of the root/user directories have changed in their real
-locations as well. And the computation for the default-services and starting
-order has been improved as well.
+The biggest functional change in v1.6 is the service dependencies discovery.
+Up to v1.5 the 'default-services' deduction was only based on the enabled
+.service and .target which got a bit of complicated code in the range of
+"works most of the time". The new style can see the full set of Wants and
+Requires around - use "systemctl.py daemon-reload" to create a deps.cache
+that makes the logic to see indirect relations like "Alias" and "PartOf"
+entries in the service descriptor files.
 
-The new socket support may be a reason for problems in old code as well.
-Actually, the release 1.5 does only implement non-accept units where the
-xy.service is directly started when the xy.socket is started. The
-accept-listeners code can be tested with "-c TestAccept=yes" as seen in
-the testsuite, and the listeners themselves have a "systemctl listen"
-command. But it is incomplete beyond repair. In the real world however
-it was all sufficient to support sshd and cvsd in containers.
+While compatibility with an original systemd got a lot better by that, it
+does also have the downside that startup time got slower. Also be aware
+that missing "After" entries in the modules will lead to subtle problems 
+with the start order. Remember that a "Wants" does not imply "After" and
+that makes a dependency to be possibly be started later which is often
+unintended. The original systemd seems to follow some undocumented heuristic
+guidelines - please provide patches if you find another one.
 
-As a consequence, the support for xy.target units was improved as well,
-and multi instance template services have much wider support in their
-features. The logging features implement a number of redirects for the
-service stdout/stderr as well. Because of that, check the JournalFilePath
-property when looking for the place where the logs from the service go.
+The v1.6 will still not start dependencies automatically on "systemctl start"
+but it will do it now on "systemctl default". It is not anymore required
+to enable all dependencies for that case. But the .target unit support was
+enhanced to changed to honour all dependencies (except for sysinit.arget 
+and basic.target services). On the other hand, the socket support is still 
+minimal as it has been in v1.6 so there is no change for that either.
 
-As mentioned already, there is a new commandline feature in the 1.5 
-release branch which did not exist in 1.4: you can enable/disable internal
-options and defaults via "--config Feature=xy" on the commandline. Some of
-the environment variables are still supported (atleast when the 
-original systemd does as well) but a "-c DefaultUnit=your.target" 
-will override them. Any global variable in the systemctl3.py code is 
-generically accessible through that commandline option.
+Internally, there were quite some changes to support more "-c XyOption=yes"
+variable which is in the process of changing the testsuite.py. The default
+info/debug messages will consequently be lowered. Please remember that if
+you are going to analyze problems as you may need to enable some DebugXY
+channels to get more details as to what has gone wrong.
 
-You will need those when you like to finetune the support for service
-that can automatically restart themselves when they fail. The timeout
-variables have a default so that it is not enabled by default - but 
-some services have explicit values in their unit file which will promptly
-enable that feature now. Note however that only very simple strategies
-are supported here and we ask you to use the HealthCheck features of 
-your docker environment to get things right.
+For some people it may count that the ActiveState support was extended
+so that you can now see "starting" and "stopping" phases as well as the
+is-system-ready to show more details. It comes with an internal cleanup
+where seperate xy.lock files are not used anymore and the LockFile support 
+was transferred to the xy.status files. These will be created more often 
+and they will stay longer around - specifically "failed" services will 
+show more information on the "status" screen about the exit code of the 
+processes and steps involved. And remember to use "systemctl logs" as
+a tool to find the partial journal implementation results more easily.
 
-Internally, there are a number of changes as well. One important thing
-was the original start of the 1.5 branch where the exit-code of the
-program is not derived from just the return value of a function but
-it also checks for the ".error" bitmask. That's in preperation of some
-C99 implementation in the feature/cplusplus branch of this project. It 
-will not be merged soon but the foundation is there where the Python code
-and C/C++ code represent the same logic with the same variables and
-the same function names and types.
+Last not least: the support for testing in an air-gap situation was 
+enhanced with a copy of the new generation "docker_mirror.py" script
+that comes from https://github.com/gdraheim/docker-mirror-packages-repo
