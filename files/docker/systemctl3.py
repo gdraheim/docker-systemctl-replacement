@@ -890,13 +890,24 @@ def checkprefix(cmd):
     return prefix, ""
 
 ExecMode = namedtuple("ExecMode", ["mode", "check", "nouser", "noexpand"])
-def exec_mode(cmd):
+def exec_path(cmd):
+    """ Hint: exec_path values are usually not moved by --root (while load_path are)"""
     prefix, newcmd = checkprefix(cmd)
     check = "-" not in prefix
     nouser = "+" in prefix or "!" in prefix
     noexpand = ":" in prefix
     mode = ExecMode(prefix, check, nouser, noexpand)
     return mode, newcmd
+LoadMode = namedtuple("LoadMode", ["mode", "check"])
+def load_path(ref):
+    """ Hint: load_path values are usually moved by --root (while exec_path are not)"""
+    prefix, filename = "", ref
+    while filename.startswith("-"):
+        prefix = prefix + filename[0]
+        filename = filename[1:]
+    check = "-" not in prefix
+    mode = LoadMode(prefix, check)
+    return mode, filename
 
 # https://github.com/phusion/baseimage-docker/blob/rel-0.9.16/image/bin/my_init
 def ignore_signals_and_raise_keyboard_interrupt(signame):
@@ -2485,12 +2496,17 @@ class Systemctl:
     #
     def read_env_file(self, env_file):  # -> generate[ (name,value) ]
         """ EnvironmentFile=<name> is being scanned """
-        if env_file.startswith("-"):
-            env_file = env_file[1:]
-            if not os.path.isfile(os_path(self._root, env_file)):
-                return
+        # does not do expand_special here (must be done before)
+        mode, env_file = load_path(env_file)
+        real_file = os_path(self._root, env_file)
+        if not os.path.exists(real_file):
+            if mode.check:
+                logg.error("file does not exist: %s", real_file)
+            else:
+                logg.debug("file does not exist: %s", real_file)
+            return
         try:
-            for real_line in open(os_path(self._root, env_file)):
+            for real_line in open(real_file):
                 line = real_line.strip()
                 if not line or line.startswith("#"):
                     continue
@@ -2664,9 +2680,9 @@ class Systemctl:
                 dbg_("expanded => {result}".format(**locals()))
         return result
     def exec_newcmd(self, cmd, env, conf):
-        execmode, execline = exec_mode(cmd)
-        newcmd = self.exec_cmd(execline, env, conf)
-        return execmode, newcmd
+        mode, exe = exec_path(cmd)
+        newcmd = self.exec_cmd(exe, env, conf)
+        return mode, newcmd
     def exec_cmd(self, cmd, env, conf):
         """ expand ExecCmd statements including %i and $MAINPID """
         cmd2 = cmd.replace("\\\n", "")
@@ -3112,18 +3128,15 @@ class Systemctl:
         if self._root:
             os.chdir(self._root)
         workingdir = self.get_WorkingDirectory(conf)
+        mode, workingdir = load_path(workingdir)
         if workingdir:
-            ignore = False
-            if workingdir.startswith("-"):
-                workingdir = workingdir[1:]
-                ignore = True
             into = os_path(self._root, self.expand_special(workingdir, conf))
             try:
                 dbg_("chdir workingdir '{into}'".format(**locals()))
                 os.chdir(into)
                 return None
             except Exception as e:
-                if not ignore:
+                if mode.check:
                     error_("chdir workingdir '{into}': {e}".format(**locals()))
                     return "{into} : {e}".format(**locals())
                 else:
@@ -6207,35 +6220,35 @@ class Systemctl:
         usedExecStop = []
         usedExecReload = []
         for line in haveExecStart:
-            execmode, execline = exec_mode(line)
-            if not execline.startswith("/"):
-                if execmode.check:
+            mode, exe = exec_path(line)
+            if not exe.startswith("/"):
+                if mode.check:
                     error_("  {unit}: {section} Executable path is not absolute.".format(**locals()))
                 else:
                     warning_("{unit}: {section} Executable path is not absolute.".format(**locals()))
-                debug_("  {unit}:  (W21) ignoring {execline}".format(**locals()))
+                debug_("  {unit}:  (W21) ignoring {exe}".format(**locals()))
                 warnings += ["W21"]
-            usedExecStart.append(line)
+            usedExecStart.append(exe)
         for line in haveExecStop:
-            execmode, execline = exec_mode(line)
-            if not execline.startswith("/"):
-                if execmode.check:
+            mode, exe = exec_path(line)
+            if not exe.startswith("/"):
+                if mode.check:
                     error_("  {unit}: {section} Executable path is not absolute.".format(**locals()))
                 else:
                     warning_("{unit}: {section} Executable path is not absolute.".format(**locals()))
-                debug_("  {unit}:  (W22) ignoring {execline}".format(**locals()))
+                debug_("  {unit}:  (W22) ignoring {exe}".format(**locals()))
                 warnings += ["W22"]
-            usedExecStop.append(execline)
+            usedExecStop.append(exe)
         for line in haveExecReload:
-            execmode, execline = exec_mode(line)
-            if not execline.startswith("/"):
-                if execmode.check:
+            mode, exe = exec_path(line)
+            if not exe.startswith("/"):
+                if mode.check:
                     error_("  {unit}: {section} Executable path is not absolute.".format(**locals()))
                 else:
                     warning_("{unit}: {section} Executable path is not absolute.".format(**locals()))
-                debug_("  {unit}:  (W23) ignoring {execline}".format(**locals()))
+                debug_("  {unit}:  (W23) ignoring {exe}".format(**locals()))
                 warnings += ["W23"]
-            usedExecReload.append(execline)
+            usedExecReload.append(exe)
         if haveType in ["simple", "notify", "forking", "idle"]:
             if not usedExecStart and not usedExecStop:
                 error_("  {unit}: {section} lacks both ExecStart and ExecStop= setting. Refusing.".format(**locals()))
