@@ -325,12 +325,27 @@ st strip:
 	python3 $(STRIP_HINTS)/bin/strip_hints.py --to-empty tmp.files/docker/systemctl3.py > tmp.files/docker/systemctl.py
 	diff -U0 files/docker/systemctl.py tmp.files/docker/systemctl.py
 
+PY_BACKWARDS = ../py-backwards
+py-backwards:
+	set -ex ; if test -d $(PY_BACKWARDS); then cd $(PY_BACKWARDS) && git pull; else \
+	cd $(dir $(PY_BACKWARDS)) && git clone git@github.com:nvbn/py-backwards.git $(notdir $(PY_BACKWARDS)) ; fi
+	python3 $(PY_BACKWARDS)/py_backwards/main.py -e main --version
+
+https://github.com/nvbn/py-backwards
+
 ####### retype + stubgen
+PY_RETYPE = ../retype
+py-retype:
+	set -ex ; if test -d $(PY_RETYPE); then cd $(PY_RETYPE) && git pull; else : \
+	; cd $(dir $(PY_RETYPE)) && git clone git@github.com:ambv/retype.git $(notdir $(PY_RETYPE)) \
+	; cd $(PY_RETYPE) && git checkout 17.12.0 ; fi
+	python3 $(PY_RETYPE)/retype.py --version
+
+PY_MYPY = mypy
 mypy:
 	zypper install -y mypy
 	zypper install -y python3-click python3-pathspec
-	cd .. && git clone git@github.com:ambv/retype.git
-	cd ../retype && git checkout 17.12.0
+	$(MAKE) py-retype
 stub:
 	stubgen -o tmp.types --include-private files/docker/systemctl3.py
 stub.:
@@ -339,18 +354,18 @@ stub.:
 	sed -i -e "/^EXEC_SPAWN/d" -e "/^_notify_socket_folder/d" tmp.types/systemctl3.pyi
 	diff -U1 types/systemctl3.pyi tmp.types/systemctl3.pyi | head -20
 type.:
-	python3 ../retype/retype.py files/docker/systemctl3.py -t tmp.files/docker
+	python3 $(PY_RETYPE)/retype.py files/docker/systemctl3.py -t tmp.files/docker
 	stubgen -o tmp.types --include-private tmp.files/docker/systemctl3.py
 	sed -i -e "/^basestring = str/d" -e "/xrange = range/d" tmp.types/systemctl3.pyi
 	sed -i -e "/^EXEC_SPAWN/d" -e "/^_notify_socket_folder/d" tmp.types/systemctl3.pyi
 	sed -i -e "s/^existing.copy()/existing # &/" tmp.types/systemctl3.pyi
 	diff -U1 types/systemctl3.pyi tmp.types/systemctl3.pyi | head -20
-	mypy --strict tmp.files/docker/systemctl3.py 2>&1 | head -20
+	$(PY_MYPY) --strict tmp.files/docker/systemctl3.py 2>&1 | head -20
 type:
-	python3 ../retype/retype.py files/docker/systemctl3.py -t tmp.files/docker
+	python3 $(PY_RETYPE)/retype.py files/docker/systemctl3.py -t tmp.files/docker
 	python3 format3.py -i tmp.files/docker/systemctl3.py
 	@ grep -w format tmp.files/docker/systemctl3.py | grep -v internal | sed -e "s|^|ERROR: |"; true
-	mypy --strict tmp.files/docker/systemctl3.py # --new-semantic-analyzer --show-traceback
+	$(PY_MYPY) --strict tmp.files/docker/systemctl3.py # --new-semantic-analyzer --show-traceback
 re: ; git checkout HEAD files/docker/systemctl3.py
 33: ; cp files/docker/systemctl3.py files/docker/systemctl33.py
 333: ; cp files/docker/systemctl33.py files/docker/systemctl3.py
