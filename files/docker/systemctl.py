@@ -5101,7 +5101,7 @@ class Systemctl:
             logg.error(" %s: there no such thing as an ExecStopPre (ignored)", unit)
         for env_file in conf.getlist("Service", "EnvironmentFile", []):
             if env_file.startswith("-"): continue
-            if not os.path.isfile(os_path(self._root, env_file)):
+            if not os.path.isfile(os_path(self._root, self.expand_special(env_file, conf))):
                 logg.error(" %s: Failed to load environment files: %s", unit, env_file)
                 errors += 101
         return errors
@@ -5145,13 +5145,13 @@ class Systemctl:
         groups = [ conf.get(section, "Group", ""), conf.get(section, "SocketGroup", "") ] + conf.getlist(section, "SupplementaryGroups")
         for user in users:
             if user:
-                try: pwd.getpwnam(user)
+                try: pwd.getpwnam(self.expand_special(user, conf))
                 except Exception as e:
                     logg.error(" %s: User does not exist: %s (%s)", unit, user, getattr(e, "__doc__", ""))
                     badusers += 1
         for group in groups:
             if group: 
-                try: grp.getgrnam(group)
+                try: grp.getgrnam(self.expand_special(group, conf))
                 except Exception as e:
                     logg.error(" %s: Group does not exist: %s (%s)", unit, group, getattr(e, "__doc__", ""))
                     badgroups += 1
