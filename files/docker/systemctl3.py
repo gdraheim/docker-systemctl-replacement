@@ -5101,7 +5101,7 @@ class Systemctl:
             logg.error(" %s: there no such thing as an ExecStopPre (ignored)", unit)
         for env_file in conf.getlist("Service", "EnvironmentFile", []):
             if env_file.startswith("-"): continue
-            if not os.path.isfile(os_path(self._root, env_file)):
+            if not os.path.isfile(os_path(self._root, self.expand_special(env_file, conf))):
                 logg.error(" %s: Failed to load environment files: %s", unit, env_file)
                 errors += 101
         return errors
