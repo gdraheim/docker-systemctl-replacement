@@ -3620,10 +3620,10 @@ class Systemctl:
         logg.info("wait for PID %s to vanish (%ss)", pid, timeout)
         for x in xrange(int(timeout)):
             if not self.is_active_pid(pid):
-                logg.info("wait for PID %s is done (%s.)", pid, x)
+                logg.info("wait for PID %s is done (%ss)", pid, x)
                 return True
             time.sleep(1) # until TimeoutStopSec
-        logg.info("wait for PID %s failed (%s.)", pid, x)
+        logg.info("wait for PID %s failed (%ss)", pid, timeout)
         return False
     def reload_modules(self, *modules):
         """ [UNIT]... -- reload these units """
