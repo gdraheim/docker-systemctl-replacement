@@ -1,7 +1,7 @@
 #! /usr/bin/python3
 # from __future__ import print_function
 
-__copyright__ = "(C) 2020 Guido Draheim"
+__copyright__ = "(C) 2021 Guido Draheim"
 __contact__ = "https://github.com/gdraheim/docker-mirror-packages-repo"
 __license__ = "CC0 Creative Commons Zero (Public Domain)"
 __version__ = "1.6.2504"
@@ -78,7 +78,7 @@ class DockerMirrorPackagesRepo:
     def __init__(self, image=None):
         self._image = image
     def host_system_image(self):
-        """ returns the docker image name which corresponds to the 
+        """ returns the docker image name which corresponds to the
             operating system distribution of the host system. This
             image name is the key for the other mirror functions. """
         distro, version = self.detect_etc_image("/etc")
@@ -128,7 +128,7 @@ class DockerMirrorPackagesRepo:
                     version = m.group(1)
         return distro, version
     def detect_base_image(self, image):
-        """ returns the docker image name which corresponds to the 
+        """ returns the docker image name which corresponds to the
             operating system distribution of the image provided. This
             image name is the key for the other mirror functions. """
         docker = DOCKER
@@ -208,7 +208,7 @@ class DockerMirrorPackagesRepo:
     def get_docker_mirror(self, image):
         """ attach local centos-repo / opensuse-repo to docker-start enviroment.
             Effectivly when it is required to 'docker start centos:x.y' then do
-            'docker start centos-repo:x.y' before and extend the original to 
+            'docker start centos-repo:x.y' before and extend the original to
             'docker start --add-host mirror...:centos-repo centos:x.y'. """
         if image.startswith("centos:"):
             return self.get_centos_docker_mirror(image)
@@ -222,7 +222,7 @@ class DockerMirrorPackagesRepo:
     def get_docker_mirrors(self, image):
         """ attach local centos-repo / opensuse-repo to docker-start enviroment.
             Effectivly when it is required to 'docker start centos:x.y' then do
-            'docker start centos-repo:x.y' before and extend the original to 
+            'docker start centos-repo:x.y' before and extend the original to
             'docker start --add-host mirror...:centos-repo centos:x.y'. """
         mirrors = []
         if image.startswith("centos:"):
@@ -626,7 +626,7 @@ class DockerMirrorPackagesRepo:
 
 if __name__ == "__main__":
     from argparse import ArgumentParser
-    _o = ArgumentParser(description="""starts local containers representing mirrors of package repo repositories 
+    _o = ArgumentParser(description="""starts local containers representing mirrors of package repo repositories
         which are required by a container type. Subsequent 'docker run' can use the '--add-hosts' from this
         helper script to divert 'pkg install' calls to a local docker container as the real source.""")
     _o.add_argument("-v", "--verbose", action="count", default=0, help="more logging")
