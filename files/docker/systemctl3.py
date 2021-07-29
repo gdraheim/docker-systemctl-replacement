@@ -6644,7 +6644,7 @@ class Systemctl:
         for nexttarget in UselessTargets.split(","):
             target = nexttarget.strip()
             if target:
-                units[target] = "UselessTargets" 
+                units[target] = "UselessTargets"
         for nexttarget in IgnoredTargets.split(","):
             target = nexttarget.strip()
             if target:
@@ -6757,7 +6757,7 @@ class Systemctl:
                 if system_target in deps:
                     del deps[system_target]
             if SysInitTarget in deps:
-               del deps[SysInitTarget]
+                del deps[SysInitTarget]
         return list(reversed(deps))
     def get_target_conf(self, module):  # -> conf (conf | default-conf)
         """ accept that a unit does not exist 
