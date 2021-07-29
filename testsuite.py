@@ -50,10 +50,10 @@ LONGER = 2
 
 TestSocketListen = False
 
-CENTOSVER = { "7.3": "7.3.1611", "7.4": "7.4.1708", "7.5": "7.5.1804", "7.6": "7.6.1810", "7.7": "7.7.1908", "7.9": "7.9.2009", "8.0": "8.0.1905", "8.1": "8.1.1911", "8.3": "8.3.2011" }
-TESTED_OS = [ "centos:7.3.1611", "centos:7.4.1708", "centos:7.5.1804", "centos:7.6.1810", "centos:7.7.1908", "centos:7.9.2009", "centos:8.0.1905", "centos:8.1.1911", "centos:8.3.2011" ]
-TESTED_OS += [ "opensuse:42.2", "opensuse:42.3", "opensuse/leap:15.0", "opensuse/leap:15.1", "opensuse/leap:15.2" ]
-TESTED_OS += [ "ubuntu:14.04", "ubuntu:16.04", "ubuntu:18.04" ]
+CENTOSVER = {"7.3": "7.3.1611", "7.4": "7.4.1708", "7.5": "7.5.1804", "7.6": "7.6.1810", "7.7": "7.7.1908", "7.9": "7.9.2009", "8.0": "8.0.1905", "8.1": "8.1.1911", "8.3": "8.3.2011"}
+TESTED_OS = ["centos:7.3.1611", "centos:7.4.1708", "centos:7.5.1804", "centos:7.6.1810", "centos:7.7.1908", "centos:7.9.2009", "centos:8.0.1905", "centos:8.1.1911", "centos:8.3.2011"]
+TESTED_OS += ["opensuse:42.2", "opensuse:42.3", "opensuse/leap:15.0", "opensuse/leap:15.1", "opensuse/leap:15.2"]
+TESTED_OS += ["ubuntu:14.04", "ubuntu:16.04", "ubuntu:18.04"]
 
 SAVETO = "localhost:5000/systemctl"
 IMAGES = "localhost:5000/systemctl/testing"
@@ -137,12 +137,12 @@ def refresh_tool(image: str, checks: bool = False) -> str:
     if "opensuse:42.3" in image:
         cmds = [
             "zypper mr --no-gpgcheck oss-update",
-            "zypper refresh" ]
+            "zypper refresh"]
         return "bash -c '%s'" % (" && ".join(cmds))
     if "opensuse/leap:15." in image:
         cmds = [
             "zypper mr --no-gpgcheck --all",
-            "zypper refresh" ]
+            "zypper refresh"]
         return "bash -c '%s'" % (" && ".join(cmds))
     if "opensuse" in image:
         return "zypper refresh"
@@ -235,7 +235,7 @@ def output3(cmd: Union[str, List[str]], shell: bool = True) -> Tuple[str, str, i
     out, err = run.communicate()
     return decodes(out), decodes(err), run.returncode
 
-BackgroundProcess = collections.namedtuple("BackgroundProcess", ["pid", "run", "log" ])
+BackgroundProcess = collections.namedtuple("BackgroundProcess", ["pid", "run", "log"])
 def background(cmd: str, shell: bool = True) -> BackgroundProcess:
     log = open(os.devnull, "wb")
     exe = list(shlex.split(cmd))
@@ -607,7 +607,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 try:
                     cmd = open(cmdline).read().replace("\0", " ")
                     if fnmatch(cmd, what):
-                        found = [ name for name in (but or []) if name in cmd]
+                        found = [name for name in (but or []) if name in cmd]
                         if found: continue
                         logg.info(" kill {pid} # {cmd}".format(**locals()))
                         os.kill(pid, sig or signal.SIGINT)
@@ -626,7 +626,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 try:
                     cmd = open(cmdline).read().replace("\0", " ")
                     if fnmatch(cmd, what):
-                        found = [ name for name in (but or []) if name in cmd]
+                        found = [name for name in (but or []) if name in cmd]
                         if found: continue
                         remaining += 1
                 except IOError as e:
@@ -645,7 +645,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 try:
                     cmd = open(cmdline).read().replace("\0", " ")
                     if fnmatch(cmd, what):
-                        found = [ name for name in (but or []) if name in cmd]
+                        found = [name for name in (but or []) if name in cmd]
                         if found: continue
                         logg.info(" kill {pid} # {cmd}".format(**locals()))
                         os.kill(pid, sig or signal.SIGKILL)
@@ -2951,7 +2951,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, r"^PIDFile="))
         self.assertEqual(len(lines(out)), 1)
         #
-        self.assertEqual(lines(out), [ "PIDFile=" ])
+        self.assertEqual(lines(out), ["PIDFile="])
         self.rm_testdir()
         self.coverage()
     def test_2225_show_unit_for_multiple_matches(self) -> None:
@@ -8501,8 +8501,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         actBD, exitBD = output2(is_active_BD.format(**locals()))
         actBCD, exitBCD = output2(is_active_BCD.format(**locals()))
         self.assertEqual(actBC.split("\n"), ["active", "inactive", ""])
-        self.assertEqual(actCD.split("\n"), [ "inactive", "inactive", ""])
-        self.assertEqual(actBD.split("\n"), [ "active", "inactive", ""])
+        self.assertEqual(actCD.split("\n"), ["inactive", "inactive", ""])
+        self.assertEqual(actBD.split("\n"), ["active", "inactive", ""])
         self.assertEqual(actBCD.split("\n"), ["active", "inactive", "inactive", ""])
         if not real:
             self.assertNotEqual(exitBC, 0)  # TODO
@@ -8654,8 +8654,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         actBCD, exitBCD = output2(is_active_BCD.format(**locals()))
         actBCDX, exitBCDX = output2(is_active_BCDX.format(**locals()))
         self.assertEqual(actBC.split("\n"), ["active", "inactive", ""])
-        self.assertEqual(actCD.split("\n"), [ "inactive", "inactive", ""])
-        self.assertEqual(actBD.split("\n"), [ "active", "inactive", ""])
+        self.assertEqual(actCD.split("\n"), ["inactive", "inactive", ""])
+        self.assertEqual(actBD.split("\n"), ["active", "inactive", ""])
         self.assertEqual(actBCD.split("\n"), ["active", "inactive", "inactive", ""])
         self.assertEqual(actBCDX.split("\n"), [""])
         if not real:
@@ -12980,9 +12980,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             new_stderr = os.open(log_stderr, os.O_WRONLY |os.O_CREAT |os.O_TRUNC)
             os.dup2(new_stdout, 1)
             os.dup2(new_stderr, 2)
-            systemctl_cmd = [ _systemctl_py, "--root="+root, "--init", "default", "-vv" ]
+            systemctl_cmd = [_systemctl_py, "--root="+root, "--init", "default", "-vv"]
             env = os.environ.copy()
-            systemctl_cmd += ["-c", "ExitWhenNoMoreServices=yes" ]
+            systemctl_cmd += ["-c", "ExitWhenNoMoreServices=yes"]
             systemctl_cmd += ["-c", "InitLoopSleep=2"]
             os.execve(_systemctl_py, systemctl_cmd, env)
         time.sleep(2)
@@ -13107,7 +13107,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             new_stderr = os.open(log_stderr, os.O_WRONLY |os.O_CREAT |os.O_TRUNC)
             os.dup2(new_stdout, 1)
             os.dup2(new_stderr, 2)
-            systemctl_cmd = [ _systemctl_py, "--root="+root, "init", "zzb.service", "zzc.service", "-vv" ]
+            systemctl_cmd = [_systemctl_py, "--root="+root, "init", "zzb.service", "zzc.service", "-vv"]
             env = os.environ.copy()
             systemctl_cmd += ["-c", "InitLoopSleep=2"]
             os.execve(_systemctl_py, systemctl_cmd, env)
@@ -18497,7 +18497,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("LOG\n %s", "\n ".join(log))
         os.remove(logfile)
         self.assertEqual(log[:2], [
-            "run-stop", "STOP-IT" ])
+            "run-stop", "STOP-IT"])
         self.assertEqual(log[-2:], [
             "run-stop-post", "STOP-POST"])
         #
@@ -40518,7 +40518,7 @@ if __name__ == "__main__":
                 os.remove(".coverage")
     # unittest.main()
     suite = unittest.TestSuite()
-    if not args: args = [ "test_*" ]
+    if not args: args = ["test_*"]
     for arg in args:
         for classname in sorted(globals()):
             if not classname.endswith("Test"):
