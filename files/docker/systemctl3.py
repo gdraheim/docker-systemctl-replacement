@@ -23,10 +23,6 @@ __version__ = "1.6.5005"
 # |
 # |
 
-
-import logging
-logg = logging.getLogger("systemctl")
-
 from collections import (namedtuple, OrderedDict)
 import re
 import fnmatch
@@ -45,6 +41,8 @@ import hashlib
 import pwd
 import grp
 import threading
+import logging
+logg = logging.getLogger("systemctl")
 
 if sys.version[0] == '3':
     basestring = str
