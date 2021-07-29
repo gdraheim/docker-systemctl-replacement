@@ -9741,34 +9741,34 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # .........................................
         cmd = "{systemctl} mask zzb.service {vv} {vv}"
         out, err, end = output3(cmd.format(**locals()))
-        logg.info(" %s =>%s\n%s\%s", cmd, end, out, err)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
         self.assertEqual(end, 0)
         self.assertTrue(greps(err, "mask symlink does already exist"))
         cmd = "{systemctl} mask -f zzb.service {vv} {vv}"
         out, err, end = output3(cmd.format(**locals()))
-        logg.info(" %s =>%s\n%s\%s", cmd, end, out, err)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
         self.assertEqual(end, 0)
         self.assertFalse(greps(err, "mask symlink does already exist"))
         #
         cmd = "{systemctl} unmask zzb.service {vv} {vv}"
         out, err, end = output3(cmd.format(**locals()))
-        logg.info(" %s =>%s\n%s\%s", cmd, end, out, err)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
         self.assertEqual(end, 0)
         cmd = "{systemctl} unmask zzb.service {vv} {vv}"
         out, err, end = output3(cmd.format(**locals()))
-        logg.info(" %s =>%s\n%s\%s", cmd, end, out, err)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
         self.assertEqual(end, 0)
         self.assertTrue(greps(err, "Symlink did not exist anymore"))
         #
         text_file(mask_file, "#")
         cmd = "{systemctl} mask zzb.service {vv} {vv}"
         out, err, end = output3(cmd.format(**locals()))
-        logg.info(" %s =>%s\n%s\%s", cmd, end, out, err)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
         self.assertEqual(end, 1)
         self.assertTrue(greps(err, "mask target does already exist"))
         cmd = "{systemctl} unmask zzb.service {vv} {vv}"
         out, err, end = output3(cmd.format(**locals()))
-        logg.info(" %s =>%s\n%s\%s", cmd, end, out, err)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
         self.assertEqual(end, 0)
         self.assertTrue(greps(err, "target is not a symlink"))
         #
@@ -12872,7 +12872,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = "{systemctl} start zzt.timer {vv}"
         out, err, end = output3(cmd.format(**locals()))
-        logg.info(" %s =>%s\n%s\%s", cmd, end, out, err)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
         if real:
             self.assertEqual(end, 0)
         else:
@@ -24054,7 +24054,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
         #
         oo = reads(debug_log.format(**locals()))
-        logg.info("debug.log>>\%s", oo)
+        logg.info("debug.log>>\n%s", oo)
         #
         cmd = "./reply.py sendUNIX -d foo -f {sockfile}"
         out, end = output2(cmd.format(**locals()))
@@ -24145,7 +24145,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
         #
         oo = reads(debug_log.format(**locals()))
-        logg.info("debug.log>>\%s", oo)
+        logg.info("debug.log>>\n%s", oo)
         #
         cmd = "./reply.py sendUNIX -d foo -f {sockfile}"
         out, end = output2(cmd.format(**locals()))
@@ -24262,7 +24262,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
         #
         oo = reads(debug_log.format(**locals()))
-        logg.info("debug.log>>\%s", oo)
+        logg.info("debug.log>>\n%s", oo)
         #
         cmd = "./reply.py sendUNIX -d foo -f {sockfile}"
         out, end = output2(cmd.format(**locals()))
@@ -24394,7 +24394,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
         #
         oo = reads(debug_log.format(**locals()))
-        logg.info("debug.log>>\%s", i2(oo))
+        logg.info("debug.log>>\n%s", i2(oo))
         #
         sx____("ls -l {root}/var/run/zz*".format(**locals()))
         zza_pre = os_path(root, "/var/run/zza.socket.pre.txt")
@@ -24513,7 +24513,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
         #
         oo = reads(debug_log.format(**locals()))
-        logg.info("debug.log>>\%s", oo)
+        logg.info("debug.log>>\n%s", oo)
         #
         cmd = "./reply.py sendUNIX -d foo -f {sockfile}"
         out, end = output2(cmd.format(**locals()))
@@ -24634,7 +24634,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
         #
         oo = reads(debug_log.format(**locals()))
-        logg.info("debug.log>>\%s", oo)
+        logg.info("debug.log>>\n%s", oo)
         #
         zza_pre = os_path(root, "/var/run/zza.socket.pre.txt")
         zza_post = os_path(root, "/var/run/zza.socket.post.txt")
@@ -24749,7 +24749,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
         #
         oo = reads(debug_log.format(**locals()))
-        logg.info("debug.log>>\%s", oo)
+        logg.info("debug.log>>\n%s", oo)
         #
         cmd = "./reply.py sendUNIX -d foo -f {sockfile}"
         out, end = output2(cmd.format(**locals()))
@@ -24878,7 +24878,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
         #
         oo = reads(debug_log.format(**locals()))
-        logg.info("debug.log>>\%s", oo)
+        logg.info("debug.log>>\n%s", oo)
         #
         cmd = "./reply.py sendUNIX -d foo -f {sockfile}"
         out, end = output2(cmd.format(**locals()))
@@ -25005,7 +25005,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
         #
         oo = reads(debug_log.format(**locals()))
-        logg.info("debug.log>>\%s", oo)
+        logg.info("debug.log>>\n%s", oo)
         #
         cmd = "./reply.py sendUNIX -d foo -f {sockfile}"
         out, end = output2(cmd.format(**locals()))
@@ -25132,7 +25132,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
         #
         oo = reads(debug_log.format(**locals()))
-        logg.info("debug.log>>\%s", oo)
+        logg.info("debug.log>>\n%s", oo)
         #
         zza_pre = os_path(root, "/var/run/zza.socket.pre.txt")
         zza_post = os_path(root, "/var/run/zza.socket.post.txt")
@@ -25246,7 +25246,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
         #
         oo = reads(debug_log.format(**locals()))
-        logg.info("debug.log>>\%s", oo)
+        logg.info("debug.log>>\n%s", oo)
         #
         zza_pre = os_path(root, "/var/run/zza.socket.pre.txt")
         zza_post = os_path(root, "/var/run/zza.socket.post.txt")
@@ -25358,7 +25358,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
         #
         oo = reads(debug_log.format(**locals()))
-        logg.info("debug.log>>\%s", oo)
+        logg.info("debug.log>>\n%s", oo)
         #
         zza_pre = os_path(root, "/var/run/zza.socket.pre.txt")
         zza_post = os_path(root, "/var/run/zza.socket.post.txt")
