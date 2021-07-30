@@ -367,7 +367,7 @@ def beep() -> None:
         import winsound  # type: ignore
         frequency = 2500
         duration = 1000
-        winsound.Beep(frequency, duration)
+        winsound.Beep(frequency, duration) # type: ignore[attr-defined]
     else:
         # using 'sox' on Linux as "\a" is usually disabled
         # sx___("play -n synth 0.1 tri  1000.0")
@@ -475,13 +475,27 @@ def copy_tool(filename: str, target: str) -> None:
 
 def get_caller_name() -> str:
     currentframe = inspect.currentframe()
-    if not currentframe: return "global"
-    frame = currentframe.f_back.f_back
+    if not currentframe:
+        return "global"
+    if not currentframe.f_back:
+        frame = currentframe
+    elif not currentframe.f_back.f_back:
+        frame = currentframe.f_back
+    else:
+        frame = currentframe.f_back.f_back
     return frame.f_code.co_name
 def get_caller_caller_name() -> str:
     currentframe = inspect.currentframe()
-    if not currentframe: return "global"
-    frame = currentframe.f_back.f_back.f_back
+    if not currentframe:
+        return "global"
+    if not currentframe.f_back:
+        frame = currentframe
+    elif not currentframe.f_back.f_back:
+        frame = currentframe.f_back
+    elif not currentframe.f_back.f_back.f_back:
+        frame = currentframe.f_back.f_back
+    else:
+        frame = currentframe.f_back.f_back.f_back
     return frame.f_code.co_name
 # def os_path(root: Optional[str], path: Optional[str]) -> Optional[str]:
 def os_path(root: Optional[str], path: str) -> str:
