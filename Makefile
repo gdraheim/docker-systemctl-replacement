@@ -342,7 +342,7 @@ py-retype:
 	python3 $(PY_RETYPE)/retype.py --version
 
 PY_MYPY = mypy
-PY_STRICT = --strict --show-error-codes --show-error-context
+PY_STRICT = --strict --show-error-codes --show-error-context --no-warn-unused-ignores
 mypy:
 	zypper install -y mypy
 	zypper install -y python3-click python3-pathspec
