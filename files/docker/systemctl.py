@@ -23,10 +23,6 @@ __version__ = "1.6.5005"
 # |
 # |
 
-
-import logging
-logg = logging.getLogger("systemctl")
-
 from collections import (namedtuple, OrderedDict)
 import re
 import fnmatch
@@ -45,6 +41,8 @@ import hashlib
 import pwd
 import grp
 import threading
+import logging
+logg = logging.getLogger("systemctl")
 
 if sys.version[0] == '3':
     basestring = str
@@ -3652,13 +3650,13 @@ class Systemctl:
             if sock.type == socket.SOCK_STREAM:
                 conn, addr = sock.accept()
                 data = conn.recv(1024)
-                dbg_("{unit}: '{data}'".format(**locals()))
+                dbg_("{unit}: '{data!s}'".format(**locals()))
                 conn.send(b"ERROR: "+data.upper())
                 conn.close()
                 return False
             if sock.type == socket.SOCK_DGRAM:
                 data, sender = sock.recvfrom(1024)
-                dbg_("{unit}: '{data}'".format(**locals()))
+                dbg_("{unit}: '{data!s}'".format(**locals()))
                 sock.sendto(b"ERROR: "+data.upper(), sender)
                 return False
             socktype = strINET(sock.type)
