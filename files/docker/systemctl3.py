@@ -3650,13 +3650,13 @@ class Systemctl:
             if sock.type == socket.SOCK_STREAM:
                 conn, addr = sock.accept()
                 data = conn.recv(1024)
-                dbg_("{unit}: '{data}'".format(**locals()))
+                dbg_("{unit}: '{data!s}'".format(**locals()))
                 conn.send(b"ERROR: "+data.upper())
                 conn.close()
                 return False
             if sock.type == socket.SOCK_DGRAM:
                 data, sender = sock.recvfrom(1024)
-                dbg_("{unit}: '{data}'".format(**locals()))
+                dbg_("{unit}: '{data!s}'".format(**locals()))
                 sock.sendto(b"ERROR: "+data.upper(), sender)
                 return False
             socktype = strINET(sock.type)
