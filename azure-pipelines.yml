@@ -39,7 +39,7 @@ steps:
   displayName: 'patch unittest-xml-reporting'
 - script: |
     find . -type d
-  displayName: 'make type (mypy strict type checking)'
+  displayName: 'show directories'
 - script: |
     make type -C docker-systemctl-replacement
   displayName: 'make type (mypy strict type checking)'
