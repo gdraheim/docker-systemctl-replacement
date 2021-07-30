@@ -3099,7 +3099,7 @@ class Systemctl:
         elif lines:
             cmd = [DefaultTail, "-n", str(lines or 10), filename]
         dbg_("{msg} -> {cmd}".format(**locals()))
-        return os.spawnvp(os.P_WAIT, cmd[0], cmd)
+        return os.spawnvp(os.P_WAIT, cmd[0], cmd) # type: ignore[arg-type]
     def get_journal_log_from(self, conf):
         return os_path(self._root, self.get_journal_log(conf))
     def get_journal_log(self, conf):
