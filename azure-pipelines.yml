@@ -33,7 +33,9 @@ steps:
   displayName: 'install unittest-xml-reporting'
 - script: |
     pwd
-    sed -i -e "s:test_runner.output.write(xml_content):test_runner.output.write(xml_content.decode('utf-8')):"  $HOME/.local/lib/python3.6/site-packages/xmlrunner/result.py
+    xml=`find $HOME/.local/lib -name xmlrunner`
+    echo "xml=$xml"
+    sed -i -e "s:test_runner.output.write(xml_content):test_runner.output.write(xml_content.decode('utf-8')):"  $xml/result.py
   displayName: 'patch unittest-xml-reporting'
 - script: |
     find . -type d
