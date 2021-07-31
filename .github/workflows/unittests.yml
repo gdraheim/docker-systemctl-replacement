@@ -31,23 +31,24 @@ jobs:
       run: |
         pwd
         xml=`find $HOME/.local/lib -name xmlrunner`
-        echo "xml=$xml"
-        sed -i -e "s:test_runner.output.write(xml_content):test_runner.output.write(xml_content.decode('utf-8')):"  $xml/result.py
-     - name: 'show mypy directories'
-       run: |
-         find . -type d
-         mypy --version
-     - name: 'make coverage (testsuite.py with coverage)'
-       run: |
-         make coverage -C docker-systemctl-replacement || true
-     - name: 'find xml'
-       run: |
-         find . -name '*.xml'
-     - name: 'publish testresults'
-       uses: EnricoMi/publish-unit-test-result-action@v1
-       if: false
-       with:
-         commit: ${{ github.event.workflow_run.head_sha }}
-         files: '**/TEST-*.xml'
-         check_title: 'Basic Code Coverage (python3) without docker-based tests'
-         report_individual_runs: "true"
+        echo "found xml=$xml"
+        sed -i -e "s:test_runner.output.write(xml_content):test_runner.output.write(xml_content.decode('utf-8')):"  "$xml/result.py"
+    - name: 'show mypy directories'
+      run: |
+        find . -type d
+        mypy --version
+    - name: 'make tests (testsuite.py without coverage)'
+      if: false
+      run: |
+        make coverage -C docker-systemctl-replacement || true
+    - name: 'find xml'
+      run: |
+        find . -name '*.xml'
+    - name: 'publish testresults'
+      uses: EnricoMi/publish-unit-test-result-action@v1
+      if: false
+      with:
+        commit: ${{ github.event.workflow_run.head_sha }}
+        files: '**/TEST-*.xml'
+        check_title: 'Unit tests without docker-based tests'
+        report_individual_runs: "true"
