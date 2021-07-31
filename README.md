@@ -3,9 +3,7 @@
 ![Type Check](https://github.com/gdraheim/docker-systemctl-replacement/actions/workflows/typecheck.yml/badge.svg?event=push&branch=develop)
 ![Unit Tests](https://github.com/gdraheim/docker-systemctl-replacement/actions/workflows/unittests.yml/badge.svg?event=push&branch=develop)
 [![Build Status](https://dev.azure.com/gdraheim/gdraheim/_apis/build/status/gdraheim.docker-systemctl-replacement?branchName=develop)](https://dev.azure.com/gdraheim/gdraheim/_build/latest?definitionId=5&branchName=develop) 
-<p align="right"><small>
-. . . _(combined make checks show a code coverage of 93% from more than 400 test cases)_
-</small></p>
+<p align="right"><small><i>(combined make checks show a code coverage of 93% from more than 400 test cases)</i></small></p>
 
 # docker systemctl replacement
 
