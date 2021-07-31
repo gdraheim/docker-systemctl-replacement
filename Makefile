@@ -348,8 +348,8 @@ py-retype:
 	; cd $(PY_RETYPE) && git checkout 17.12.0 ; fi
 	python3 $(PY_RETYPE)/retype.py --version
 
-PY_MYPY = mypy
-PY_STRICT = --strict --show-error-codes --show-error-context --no-warn-unused-ignores
+MYPY = mypy
+MYPY_STRICT = --strict --show-error-codes --show-error-context --no-warn-unused-ignores
 mypy:
 	zypper install -y mypy
 	zypper install -y python3-click python3-pathspec
@@ -368,23 +368,23 @@ type.:
 	sed -i -e "/^EXEC_SPAWN/d" -e "/^_notify_socket_folder/d" tmp.types/systemctl3.pyi
 	sed -i -e "s/^existing.copy()/existing # &/" tmp.types/systemctl3.pyi
 	diff -U1 types/systemctl3.pyi tmp.types/systemctl3.pyi | head -20
-	$(PY_MYPY) $(PY_STRICT) tmp.files/docker/systemctl3.py 2>&1 | head -20
+	$(MYPY) $(MYPY_STRICT) tmp.files/docker/systemctl3.py 2>&1 | head -20
 type:
 	python3 $(PY_RETYPE)/retype.py files/docker/systemctl3.py -t tmp.files/docker
 	python3 format3.py -i tmp.files/docker/systemctl3.py
 	@ grep -w format tmp.files/docker/systemctl3.py | grep -v internal | sed -e "s|^|ERROR: |"; true
-	$(PY_MYPY) $(PY_STRICT) tmp.files/docker/systemctl3.py # --new-semantic-analyzer --show-traceback
+	$(MYPY) $(MYPY_STRICT) tmp.files/docker/systemctl3.py # --new-semantic-analyzer --show-traceback
 re: ; git checkout HEAD files/docker/systemctl3.py
 33: ; cp files/docker/systemctl3.py files/docker/systemctl33.py
 333: ; cp files/docker/systemctl33.py files/docker/systemctl3.py
 type33:
 	test -d tmp.types || mkdir tmp.types ; cp types/systemctl3.pyi tmp.types/systemctl33.pyi
-	python3 ../retype/retype.py files/docker/systemctl33.py -t tmp.files/docker -p tmp.types
+	python3 $(PY_RETYPE)/retype.py files/docker/systemctl33.py -t tmp.files/docker -p tmp.types
 	python3 format3.py -i tmp.files/docker/systemctl33.py
 	@ grep -w format tmp.files/docker/systemctl33.py | grep -v internal | sed -e "s|^|ERROR: |"; true
-	$(PY_MYPY) $(PY_STRICT) tmp.files/docker/systemctl33.py # --new-semantic-analyzer --show-traceback
+	$(MYPY) $(MYPY_STRICT) tmp.files/docker/systemctl33.py # --new-semantic-analyzer --show-traceback
 type.t type.testsuite:
-	$(PY_MYPY) $(PY_STRICT) --strict testsuite.py # --new-semantic-analyzer --show-traceback
+	$(MYPY) $(MYPY_STRICT) --strict testsuite.py # --new-semantic-analyzer --show-traceback
 
 ####### box test
 box:
