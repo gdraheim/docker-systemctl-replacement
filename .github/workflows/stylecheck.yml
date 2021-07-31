@@ -15,7 +15,7 @@ jobs:
     - name: checkout docker-systemctl-replacement
       uses: actions/checkout@v2
       with:
-        path: docker-systemctl-replacement
+        path: software
     - name: 'refresh install'
       run: |
         sudo apt-get update --fix-missing
@@ -25,4 +25,4 @@ jobs:
     - name: 'make pep (autopep8 style check)'
       id: check
       run: |
-        make pep -C docker-systemctl-replacement
+        make pep -C software

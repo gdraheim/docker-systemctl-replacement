@@ -15,7 +15,7 @@ jobs:
     - name: checkout docker-systemctl-replacement
       uses: actions/checkout@v2
       with:
-        path: docker-systemctl-replacement
+        path: software
     - name: checkout retype
       uses: actions/checkout@v2
       with:
@@ -36,4 +36,4 @@ jobs:
     - name: 'make type (mypy strict type checking)'
       id: check
       run: |
-        make type -C docker-systemctl-replacement
+        make type -C software
