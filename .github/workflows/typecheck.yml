@@ -1,0 +1,46 @@
+name: check
+
+on:
+  push:
+    branches: [ develop, master ]
+  pull_request:
+    branches: [ develop, master ]
+
+jobs:
+  typehints:
+    runs-on: 'ubuntu-latest'
+    steps:
+    - name: checkout docker-systemctl-replacement
+      uses: actions/checkout@v2
+      with:
+        path: docker-systemctl-replacement
+    - name: checkout retype
+      uses: actions/checkout@v2
+      with:
+        path: retype
+        repository: ambv/retype
+        ref: 04978c6f7dcedb76ff334da8d5be734d3a4ce4b4
+      # ref: 17.12.0
+    - name: 'refresh install'
+      run: |
+        sudo apt-get update --fix-missing
+    - name: 'install python3 mypy'
+      run: |
+        sudo apt-get install --fix-broken --ignore-missing python3-typed-ast mypy
+    - name: 'show mypy directories'
+      run: |
+        find . -type d
+        mypy --version
+    - name: 'make type (mypy strict type checking)'
+      run: |
+        make type -C docker-systemctl-replacement
+  style:
+    runs-on: 'ubuntu-latest'
+    steps:
+    - name: checkout docker-systemctl-replacement
+      uses: actions/checkout@v2
+      with:
+        path: docker-systemctl-replacement
+    - name: 'make pep (autopep8 style check)'
+      run: |
+        make pep -C docker-systemctl-replacement
