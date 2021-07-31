@@ -2679,9 +2679,18 @@ class Systemctl:
         return result
     def exec_newcmd(self, cmd, env, conf):
         mode, exe = exec_path(cmd)
-        newcmd = self.exec_cmd(exe, env, conf)
+        if mode.noexpand:
+            newcmd = self.split_cmd(cmd)
+        else:
+            newcmd = self.expand_cmd(exe, env, conf)
         return mode, newcmd
-    def exec_cmd(self, cmd, env, conf):
+    def split_cmd(self, cmd):
+        cmd2 = cmd.replace("\\\n", "")
+        newcmd = []
+        for part in shlex.split(cmd2):
+            newcmd += [part]
+        return newcmd
+    def expand_cmd(self, cmd, env, conf):
         """ expand ExecCmd statements including %i and $MAINPID """
         cmd2 = cmd.replace("\\\n", "")
         # according to documentation, when bar="one two" then the expansion
@@ -3364,7 +3373,7 @@ class Systemctl:
                 info_(" pre-start", shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
-                    self.execve_from(conf, newcmd, env)  # pragma: no cover
+                    self.execve_from(conf, newcmd, env, exe.nouser)  # pragma: no cover
                 run = subprocess_waitpid(forkpid)
                 self.set_status_code_from(conf, "ExecStartPre", run, "pre-start", exe.check)
                 if run.returncode and exe.check:
@@ -3391,7 +3400,7 @@ class Systemctl:
                 forkpid = os.fork()
                 if not forkpid:  # pragma: no cover
                     os.setsid()  # detach child process from parent
-                    self.execve_from(conf, newcmd, env)
+                    self.execve_from(conf, newcmd, env, exe.nouser)
                 run = subprocess_waitpid(forkpid)
                 self.set_status_code_from(conf, "ExecStart", run, runs+" start", exe.check)
                 if run.returncode and exe.check:
@@ -3430,7 +3439,7 @@ class Systemctl:
                 forkpid = os.fork()
                 if not forkpid:  # pragma: no cover
                     os.setsid()  # detach child process from parent
-                    self.execve_from(conf, newcmd, env)
+                    self.execve_from(conf, newcmd, env, exe.nouser)
                 self.write_status_from(conf, MainPID=forkpid)
                 info_("{runs} started PID {forkpid}".format(**locals()))
                 env["MAINPID"] = strE(forkpid)
@@ -3480,7 +3489,7 @@ class Systemctl:
                 forkpid = os.fork()
                 if not forkpid:  # pragma: no cover
                     os.setsid()  # detach child process from parent
-                    self.execve_from(conf, newcmd, env)
+                    self.execve_from(conf, newcmd, env, exe.nouser)
                 # via NOTIFY # self.write_status_from(conf, MainPID=forkpid)
                 info_("{runs} started PID {forkpid}".format(**locals()))
                 mainpid = forkpid
@@ -3528,7 +3537,7 @@ class Systemctl:
                 forkpid = os.fork()
                 if not forkpid:  # pragma: no cover
                     os.setsid()  # detach child process from parent
-                    self.execve_from(conf, newcmd, env)
+                    self.execve_from(conf, newcmd, env, exe.nouser)
                 info_("{runs} started PID {forkpid}".format(**locals()))
                 run = subprocess_waitpid(forkpid)
                 self.set_status_code_from(conf, "ExecStart", run, runs+" start", exe.check)
@@ -3566,7 +3575,7 @@ class Systemctl:
                 info_("post-fail", shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
-                    self.execve_from(conf, newcmd, env)  # pragma: no cover
+                    self.execve_from(conf, newcmd, env, exe.nouser)  # pragma: no cover
                 run = subprocess_waitpid(forkpid)
                 self.set_status_code_from(conf, "ExecStopPost", run, "post-fail")
             if _what_kind not in ["none", "keep"]:
@@ -3578,7 +3587,7 @@ class Systemctl:
                 info_("post-start", shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
-                    self.execve_from(conf, newcmd, env)  # pragma: no cover
+                    self.execve_from(conf, newcmd, env, exe.nouser)  # pragma: no cover
                 run = subprocess_waitpid(forkpid)
                 self.set_status_code_from(conf, "ExecStartPost", run, "post-start")
             return True
@@ -3693,7 +3702,7 @@ class Systemctl:
                 info_(" pre-start", shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
-                    self.execve_from(conf, newcmd, env)  # pragma: no cover
+                    self.execve_from(conf, newcmd, env, exe.nouser)  # pragma: no cover
                 run = subprocess_waitpid(forkpid)
                 self.set_status_code_from(conf, "ExecStartPre", run, "pre-start", exe.check)
                 if run.returncode and exe.check:
@@ -3732,7 +3741,7 @@ class Systemctl:
                 info_("post-fail", shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
-                    self.execve_from(conf, newcmd, env)  # pragma: no cover
+                    self.execve_from(conf, newcmd, env, exe.nouser)  # pragma: no cover
                 run = subprocess_waitpid(forkpid)
                 self.set_status_code_from(conf, "ExecStopPost", run, "post-fail")
             return False
@@ -3742,7 +3751,7 @@ class Systemctl:
                 info_("post-start", shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
-                    self.execve_from(conf, newcmd, env)  # pragma: no cover
+                    self.execve_from(conf, newcmd, env, exe.nouser)  # pragma: no cover
                 run = subprocess_waitpid(forkpid)
                 self.set_status_code_from(conf, "ExecStartPost", run, "post-start")
             return True
@@ -3989,7 +3998,7 @@ class Systemctl:
             os.dup2(out.fileno(), sys.stdout.fileno())
             os.dup2(err.fileno(), sys.stderr.fileno())
         return ret, msg
-    def execve_from(self, conf, cmd, env):
+    def execve_from(self, conf, cmd, env, nouser = False):
         """ this code is commonly run in a child process // returns exit-code"""
         runs = conf.get(Service, "Type", "simple").lower()
         # nameE, filename44 = strE(conf.name(), path44(conf.filename())
@@ -4001,10 +4010,13 @@ class Systemctl:
             if not ExecIgnoreErrors:
                 sys.exit(retcode)
         #
-        runuser = self.get_User(conf)
-        rungroup = self.get_Group(conf)
-        xgroups = self.get_SupplementaryGroups(conf)
-        envs = shutil_setuid(runuser, rungroup, xgroups)
+        if nouser:
+            envs = {} # no change to $HOME and $USER
+        else:
+            runuser = self.get_User(conf)
+            rungroup = self.get_Group(conf)
+            xgroups = self.get_SupplementaryGroups(conf)
+            envs = shutil_setuid(runuser, rungroup, xgroups)
         badpath = self.chdir_workingdir(conf)  # some dirs need setuid before
         if badpath:
             cmdline44 = o44(shell_cmd(cmd))
@@ -4032,7 +4044,7 @@ class Systemctl:
         env = self.get_env(conf)
         for cmd in conf.getlist(Service, "ExecStart", []):
             exe, newcmd = self.exec_newcmd(cmd, env, conf)
-            self.execve_from(conf, newcmd, env)
+            self.execve_from(conf, newcmd, env, exe.nouser)
         return None
     def stop_modules(self, *modules):
         """ [UNIT]... -- stop these units """
@@ -4123,7 +4135,7 @@ class Systemctl:
                 info_("{runs} stop".format(**locals()), shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
-                    self.execve_from(conf, newcmd, env)  # pragma: no cover
+                    self.execve_from(conf, newcmd, env, exe.nouser)  # pragma: no cover
                 run = subprocess_waitpid(forkpid)
                 self.set_status_code_from(conf, "ExecStop", run, runs+" stop", exe.check)
                 if run.returncode and exe.check:
@@ -4151,7 +4163,7 @@ class Systemctl:
                 info_("{runs} stop".format(**locals()), shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
-                    self.execve_from(conf, newcmd, env)  # pragma: no cover
+                    self.execve_from(conf, newcmd, env, exe.nouser)  # pragma: no cover
                 run = subprocess_waitpid(forkpid)
                 self.set_status_code_from(conf, "ExecStop", run, runs+" stop", exe.check)
                 run = must_have_failed(run, newcmd)  # TODO: a workaround for Ubuntu 16.04
@@ -4186,7 +4198,7 @@ class Systemctl:
                 info_("fork stop", shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
-                    self.execve_from(conf, newcmd, env)  # pragma: no cover
+                    self.execve_from(conf, newcmd, env, exe.nouser)  # pragma: no cover
                 run = subprocess_waitpid(forkpid)
                 self.set_status_code_from(conf, "ExecStop", run, runs+" stop", exe.check)
                 if run.returncode and exe.check:
@@ -4221,7 +4233,7 @@ class Systemctl:
                 info_("post-stop", shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
-                    self.execve_from(conf, newcmd, env)  # pragma: no cover
+                    self.execve_from(conf, newcmd, env, exe.nouser)  # pragma: no cover
                 run = subprocess_waitpid(forkpid)
                 self.set_status_code_from(conf, "ExecStopPost", run, "post-stop")
         if _what_kind not in ["none", "keep"]:
@@ -4262,7 +4274,7 @@ class Systemctl:
                 info_("post-stop", shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
-                    self.execve_from(conf, newcmd, env)  # pragma: no cover
+                    self.execve_from(conf, newcmd, env, exe.nouser)  # pragma: no cover
                 run = subprocess_waitpid(forkpid)
                 self.set_status_code_from(conf, "ExecStop", run, "post-stop")
         if service_result in ["failed"]:
@@ -4388,7 +4400,7 @@ class Systemctl:
                 info_("{runs} reload".format(**locals()), shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
-                    self.execve_from(conf, newcmd, env)  # pragma: no cover
+                    self.execve_from(conf, newcmd, env, exe.nouser)  # pragma: no cover
                 run = subprocess_waitpid(forkpid)
                 self.set_status_code_from(conf, "ExecReload", run, "reload", exe.check)
                 if run.returncode and exe.check:
