@@ -8,6 +8,7 @@ on:
 
 jobs:
   typehints:
+    name: mypy typehints check
     runs-on: 'ubuntu-latest'
     steps:
     - name: checkout docker-systemctl-replacement
@@ -32,9 +33,11 @@ jobs:
         find . -type d
         mypy --version
     - name: 'make type (mypy strict type checking)'
+      id: check
       run: |
         make type -C docker-systemctl-replacement
-  style:
+  autopep8:
+    name: autopep8 style check
     runs-on: 'ubuntu-latest'
     steps:
     - name: checkout docker-systemctl-replacement
@@ -48,5 +51,6 @@ jobs:
       run: |
         sudo apt-get install --fix-broken --ignore-missing python3-autopep8
     - name: 'make pep (autopep8 style check)'
+      id: check
       run: |
         make pep -C docker-systemctl-replacement
