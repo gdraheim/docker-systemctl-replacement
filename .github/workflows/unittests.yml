@@ -14,7 +14,7 @@ jobs:
     - name: checkout docker-systemctl-replacement
       uses: actions/checkout@v2
       with:
-        path: src
+        path: docker-systemctl-replacement
     - name: 'refresh install'
       run: |
         sudo apt-get update --fix-missing
