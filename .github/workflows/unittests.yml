@@ -44,5 +44,5 @@ jobs:
       with:
         commit: ${{ github.event.workflow_run.head_sha }}
         files: '**/TEST-*.xml'
-        check_title: 'Unit tests without docker-based tests'
+        check_name: 'Unit tests without docker-based tests'
         report_individual_runs: "true"
