@@ -1,7 +1,8 @@
 [![Build Status](https://dev.azure.com/gdraheim/gdraheim/_apis/build/status/gdraheim.docker-systemctl-replacement?branchName=develop)](https://dev.azure.com/gdraheim/gdraheim/_build/latest?definitionId=5&branchName=develop) . . . _(make checks : code coverage 93% from more than 400 test cases)_
 
-[![Type Check](https://github.com/gdraheim/docker-systemctl-replacement/actions/workflows/typecheck.yml/badge.svg?event=push&branch=develop)
-[![Style Check](https://github.com/gdraheim/docker-systemctl-replacement/actions/workflows/stylecheck.yml/badge.svg?event=push&branch=develop)
+![Style Check](https://github.com/gdraheim/docker-systemctl-replacement/actions/workflows/stylecheck.yml/badge.svg?event=push&branch=develop)
+![Type Check](https://github.com/gdraheim/docker-systemctl-replacement/actions/workflows/typecheck.yml/badge.svg?event=push&branch=develop)
+![Unit Tests](https://github.com/gdraheim/docker-systemctl-replacement/actions/workflows/unittests.yml/badge.svg?event=push&branch=develop)
 
 # docker systemctl replacement
 
