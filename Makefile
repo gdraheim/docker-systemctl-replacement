@@ -301,7 +301,7 @@ flake.s.i: ; autoflake files/docker/systemctl3.py
 ####### autopep8
 autopep8: ; $${PKG:-zypper} install -y python3-autopep8
 pep style: 
-	$(MAKE) pep.s pep.t
+	$(MAKE) pep.s pep.t pep.i
 pep.d style.d: 
 	$(MAKE) pep.s.d pep.t.d
 pep.s.d style.s.d     pep.s.diff style.s.diff:
@@ -313,6 +313,11 @@ pep.t.d style.t.d     pep.t.diff style.t.diff:
 	autopep8 testsuite.py --diff
 pep.t style.t pep.t.apply style.t.apply:
 	autopep8 testsuite.py --in-place
+	git --no-pager diff testsuite.py
+pep.i.d style.i.d     pep.i.diff style.i.diff:
+	autopep8 types/systemctl3.pyi --diff
+pep.i style.i pep.i.apply style.i.apply:
+	autopep8 types/systemctl3.pyi --in-place
 	git --no-pager diff testsuite.py
 
 ####### strip-hints
