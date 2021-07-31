@@ -1,4 +1,4 @@
-name: unit tests
+name: basic unit tests
 
 on:
   push:
@@ -34,7 +34,6 @@ jobs:
         echo "found xml=$xml"
         sed -i -e "s:test_runner.output.write(xml_content):test_runner.output.write(xml_content.decode('utf-8')):"  "$xml/result.py"
     - name: 'make tests (testsuite.py without coverage)'
-      if: false
       run: |
         make tests -C docker-systemctl-replacement || true
     - name: 'find xml'

@@ -1,4 +1,4 @@
-name: style check
+name: pep8 style check
 
 on:
   push:
