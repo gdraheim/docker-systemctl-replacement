@@ -1,4 +1,4 @@
-name: check
+name: typehints check
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  typehints:
+  mypy:
     name: mypy typehints check
     runs-on: 'ubuntu-latest'
     steps:
@@ -37,21 +37,3 @@ jobs:
       id: check
       run: |
         make type -C docker-systemctl-replacement
-  autopep8:
-    name: autopep8 style check
-    runs-on: 'ubuntu-latest'
-    steps:
-    - name: checkout docker-systemctl-replacement
-      uses: actions/checkout@v2
-      with:
-        path: docker-systemctl-replacement
-    - name: 'refresh install'
-      run: |
-        sudo apt-get update --fix-missing
-    - name: 'install python3 autopep8'
-      run: |
-        sudo apt-get install --fix-broken --ignore-missing python3-autopep8
-    - name: 'make pep (autopep8 style check)'
-      id: check
-      run: |
-        make pep -C docker-systemctl-replacement
