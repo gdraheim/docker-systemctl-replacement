@@ -46,7 +46,7 @@ jobs:
         sudo apt-get update --fix-missing
     - name: 'install python3 autopep8'
       run: |
-        sudo apt-get install --fix-broken --ignore-missing python-autopep8
+        sudo apt-get install --fix-broken --ignore-missing python3-autopep8
     - name: 'make pep (autopep8 style check)'
       run: |
         make pep -C docker-systemctl-replacement
