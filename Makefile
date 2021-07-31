@@ -43,10 +43,11 @@ UA ubuntu-apache2.dockerfile: ; ./testsuite.py test_6005
 DJ docker-jenkins: ; ./testsuite.py test_900*
 
 COVERAGE=--coverage
+OUTPUT=
 est_%: ; rm .coverage*; rm -rf tmp/tmp.t$@ ; ./testsuite.py "t$@" -vv --coverage --keep
-test_%: ; ./testsuite.py "$@" -vv
-real_%: ; ./testsuite.py "$@" -vv
-st_%: ; $(MAKE) 2 && ./testsuite.py "te$@" -vv $(WITH2)
+test_%: ; ./testsuite.py "$@" -vv $(OUTPUT)
+real_%: ; ./testsuite.py "$@" -vv $(OUTPUT)
+st_%: ; $(MAKE) 2 && ./testsuite.py "te$@" -vv $(WITH2) $(OUTPUT)
 
 keep/test_%: ; ./testsuite.py "$(notdir $@)" -vvv --keep
 
@@ -93,7 +94,8 @@ todo/test_%:             ; ./testsuite.py   "$(notdir $@)" -vv --todo
 basetests = test_[1234]
 test2list = st_[567]
 testslist = test_[567]
-tests: ; $(MAKE) "${basetests}"
+tests: basetests
+basetests: ; $(MAKE) "${basetests}" OUTPUT=--xmlresults=TEST-systemctl-basetests.xml
 .PHONY: tests
 15.3/tests:  ; $(MAKE) "15.3/$(testslist)"
 15.2/tests:  ; $(MAKE) "15.2/$(testslist)"
