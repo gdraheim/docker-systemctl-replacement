@@ -41,7 +41,6 @@ jobs:
         find . -name '*.xml'
     - name: 'publish testresults'
       uses: EnricoMi/publish-unit-test-result-action@v1
-      if: false
       with:
         commit: ${{ github.event.workflow_run.head_sha }}
         files: '**/TEST-*.xml'
