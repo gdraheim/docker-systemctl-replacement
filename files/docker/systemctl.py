@@ -3617,13 +3617,15 @@ class Systemctl:
     def wait_vanished_pid(self, pid, timeout):
         if not pid:
             return True
+        if not self.is_active_pid(pid):
+            return True
         logg.info("wait for PID %s to vanish (%ss)", pid, timeout)
         for x in xrange(int(timeout)):
+            time.sleep(1) # until TimeoutStopSec
             if not self.is_active_pid(pid):
                 logg.info("wait for PID %s is done (%s.)", pid, x)
                 return True
-            time.sleep(1) # until TimeoutStopSec
-        logg.info("wait for PID %s failed (%s.)", pid, x)
+        logg.info("wait for PID %s failed (%s.)", pid, timeout)
         return False
     def reload_modules(self, *modules):
         """ [UNIT]... -- reload these units """
