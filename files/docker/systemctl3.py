@@ -2087,12 +2087,14 @@ class Systemctl:
     def wait_vanished_pid(self, pid, timeout):
         if not pid:
             return True
+        if not self.is_active_pid(pid):
+            return True
         logg.info("wait for PID %s to vanish", pid)
         for x in xrange(int(timeout)):
+            self.sleep() # until TimeoutStopSec
             if not self.is_active_pid(pid):
                 logg.info("wait for PID %s is done (%s.)", pid, x)
                 return True
-            self.sleep()
         logg.info("wait for PID %s failed (%s.)", pid, x)
         return False
     def reload_modules(self, *modules):
