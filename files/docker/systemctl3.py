@@ -2095,7 +2095,7 @@ class Systemctl:
             if not self.is_active_pid(pid):
                 logg.info("wait for PID %s is done (%s.)", pid, x)
                 return True
-        logg.info("wait for PID %s failed (%s.)", pid, x)
+        logg.info("wait for PID %s failed (%s.)", pid, timeout)
         return False
     def reload_modules(self, *modules):
         """ [UNIT]... -- reload these units """
