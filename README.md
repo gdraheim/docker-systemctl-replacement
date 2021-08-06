@@ -2,8 +2,7 @@
 [![Style Check](https://github.com/gdraheim/docker-systemctl-replacement/actions/workflows/stylecheck.yml/badge.svg?event=push&branch=develop)](https://github.com/gdraheim/docker-systemctl-replacement/actions/workflows/stylecheck.yml)
 [![Type Check](https://github.com/gdraheim/docker-systemctl-replacement/actions/workflows/typecheck.yml/badge.svg?event=push&branch=develop)](https://github.com/gdraheim/docker-systemctl-replacement/actions/workflows/typecheck.yml)
 [![Unit Tests](https://github.com/gdraheim/docker-systemctl-replacement/actions/workflows/unittests.yml/badge.svg?event=push&branch=develop)](https://github.com/gdraheim/docker-systemctl-replacement/actions/workflows/unittests.yml)
-[![Build Status](https://dev.azure.com/gdraheim/gdraheim/_apis/build/status/gdraheim.docker-systemctl-replacement?branchName=develop)](https://dev.azure.com/gdraheim/gdraheim/_build/latest?definitionId=5&branchName=develop) 
-<p align="right"><small><i>(combined `make checks` show a code coverage of 93% from more than 400 test cases)</i></small></p>
+[![Code Coverage](https://img.shields.io/badge/400%20test-93%25%20coverage-brightgreen)](https://github.com/gdraheim/docker-systemctl-replacement/blob/master/testsuite.py)
 
 # docker systemctl replacement
 
