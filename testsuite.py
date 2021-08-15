@@ -11274,7 +11274,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             A="'A' 'def1' 'def2' 'def3' ''"   # A $DEF1 $DEF2
             B="'B' 'def1' 'def2 def3' '' ''"  # B ${DEF1} ${DEF2}
             C="'C' '' '' '' ''"   # C $DEF1$DEF2 # TODO!
-            D="'D' 'def1def2 def3' '' '' ''"  # D ${DEF1}${DEF2} 
+            D="'D' 'def1def2 def3' '' '' ''"  # D ${DEF1}${DEF2}
             E="'E' '$DEF1 ${DEF2}' '' '' ''"  # E ${DEF4} # TODO!
             # F="'F' ' def5 ' '' '' ''"       # F ${DEF5}
             F="'F' '$DEF1111 def5 ${DEF2222}' '' '' ''"
@@ -11286,6 +11286,84 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             E="'E' 'def1 def2 def3' '' '' ''"  # E ${DEF4}
             # F="'F' ' def5 ' '' '' ''"       # F ${DEF5}
             F="'F' '$DEF1111 def5 ${DEF2222}' '' '' ''"
+        self.assertIn(A, log)
+        self.assertIn(B, log)
+        self.assertIn(C, log)
+        self.assertIn(D, log)
+        self.assertIn(E, log)
+        self.assertIn(F, log)
+        #
+        self.rm_zzfiles(root)
+        self.rm_testdir()
+        self.coverage()
+        self.end()
+    def real_3245_may_noexpand_environment_variables(self) -> None:
+        self.test_3245_may_noexpand_environment_variables(True)
+    def test_3245_may_noexpand_environment_variables(self, real: bool = False) -> None:
+        """ check that different styles of environment
+            variables get expanded."""
+        vv = self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir, real)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
+        print_sh = os_path(root, "/usr/bin/print.sh")
+        logfile = os_path(root, "/var/log/print_sh.log")
+        text_file(os_path(root, "/etc/sysconfig/b.conf"), """
+            DEF1='def1'
+            DEF2="def2 def3"
+            DEF4="$DEF1 ${DEF2}"
+            DEF5="$DEF1111 def5 ${DEF2222}"
+            """)
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"), """
+            [Unit]
+            Description=Testing B
+            [Service]
+            Environment=DEF2=foo
+            EnvironmentFile=/etc/sysconfig/b.conf
+            ExecStart=/bin/sleep 3
+            ExecStartPost=:%s A $DEF1 $DEF2
+            ExecStartPost=:%s B ${DEF1} ${DEF2}
+            ExecStartPost=:%s C $DEF1$DEF2
+            ExecStartPost=:%s D ${DEF1}${DEF2}
+            ExecStartPost=:%s E ${DEF4}
+            ExecStartPost=:%s F ${DEF5}
+            [Install]
+            WantedBy=multi-user.target"""
+                  % (print_sh, print_sh, print_sh, print_sh,
+                     print_sh, print_sh,))
+        text_file(logfile, "")
+        shell_file(print_sh, """
+            #! /bin/sh
+            logfile='{logfile}'
+            echo "'$1' '$2' '$3' '$4' '$5'" >> "$logfile"
+            """.format(**locals()))
+        if not real:
+            cmd = "{systemctl} environment zzb.service {vv}"
+            out, end = output2(cmd.format(**locals()))
+            logg.info(" %s =>%s\n%s", cmd, end, out)
+            self.assertEqual(end, 0)
+            self.assertTrue(greps(out, r"^DEF1=def1"))
+            self.assertTrue(greps(out, r"^DEF2=def2 def3"))
+        else:
+            cmd = "{systemctl} daemon-reload"
+            out, end = output2(cmd.format(**locals()))
+            logg.info(" %s =>%s\n%s", cmd, end, out)
+        #
+        cmd = "{systemctl} start zzb.service {vv}"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        log = lines(open(logfile))
+        logg.info("LOG \n%s", log)
+        # if real:
+        A="'A' '$DEF1' '$DEF2' '' ''"   # A $DEF1 $DEF2
+        B="'B' '${DEF1}' '${DEF2}' '' ''"  # B ${DEF1} ${DEF2}
+        C="'C' '$DEF1$DEF2' '' '' ''"   # C $DEF1$DEF2 # TODO!
+        D="'D' '${DEF1}${DEF2}' '' '' ''"  # D ${DEF1}${DEF2}
+        E="'E' '${DEF4}' '' '' ''"  # E ${DEF4} # TODO!
+        F="'F' '${DEF5}' '' '' ''" # F ${DEF5}
         self.assertIn(A, log)
         self.assertIn(B, log)
         self.assertIn(C, log)
