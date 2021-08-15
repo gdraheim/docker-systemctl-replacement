@@ -38260,6 +38260,384 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_docker(testname)
         self.rm_testdir()
         self.end()
+    def test_5901_skip_user_gets_its_group(self) -> None:
+        """ check that we can ignore User= settings for an ExecX  with '+' or '!'"""
+        global COVERAGE
+        if not COVERAGE: self.skipTest("ok")
+        old = COVERAGE
+        try:
+            COVERAGE = ""
+            self.test_5901_skip_user_gets_its_group()
+        finally:
+            COVERAGE = old
+    def test_5901_skip_user_gets_its_group(self) -> None:
+        """ check that we can ignore User= settings for an ExecX  with '+' or '!'"""
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        images = IMAGES
+        image = self.local_image(COVERAGE or IMAGE or CENTOS)
+        if _python.endswith("python3") and "centos:7" in image:
+            if SKIP: self.skipTest("no python3 on centos:7")
+        self.begin()
+        self.rm_testdir()
+        testname = self.testname()
+        testdir = self.testdir()
+        docker = _docker
+        package = package_tool(image)
+        refresh = refresh_tool(image)
+        python = os.path.basename(_python)
+        python_x = python_package(_python, image)
+        python_coverage = coverage_package(image)
+        systemctl_py = _systemctl_py
+        sometime = SOMETIME or 188
+        cov_option = "--system"
+        if COVERAGE:
+            cov_option = "-c ExecSpawn=True -c ExecRedirectLogs=False"
+        testsleepA = self.testname("sleepA")
+        bindir="/usr/bin"
+        this_user="somebody"
+        this_group="nobody"
+        text_file(os_path(testdir, "zza.service"), """
+            [Unit]
+            Description=Testing A
+            [Service]
+            Type=simple
+            ExecStartPre=/bin/touch /tmp/pre-user.txt
+            ExecStartPre=+/bin/touch /tmp/pre-plus.txt
+            ExecStartPre=!/bin/touch /tmp/pre-bang.txt
+            ExecStartPre=!!/bin/touch /tmp/pre-bangbang.txt
+            ExecStart=!{bindir}/{testsleepA} 3
+            ExecStartPost=/bin/touch /tmp/post-user.txt
+            ExecStartPost=+/bin/touch /tmp/post-plus.txt
+            ExecStartPost=!/bin/touch /tmp/post-bang.txt
+            ExecStartPost=!!/bin/touch /tmp/post-bangbang.txt
+            ExecStopPost=/bin/touch /tmp/stop-user.txt
+            ExecStopPost=+/bin/touch /tmp/stop-plus.txt
+            ExecStopPost=!/bin/touch /tmp/stop-bang.txt
+            ExecStopPost=!!/bin/touch /tmp/stop-bangbang.txt
+            User={this_user}
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        #
+        cmd = "{docker} rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} {refresh}"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+        sx____(cmd.format(**locals()))
+        if COVERAGE:
+            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+            sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} sed -i 's/raise *$/pass/' /usr/lib64/python3.6/site-packages/coverage/misc.py"
+            sx____(cmd.format(**locals()))
+        self.prep_coverage(image, testname, cov_option)
+        #
+        cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
+        sx____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} cp /bin/sleep /usr/bin/{testsleepA}"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} cp {testdir}/zza.service {testname}:/etc/systemd/system/zza.service"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} systemctl --version"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'grep nobody /etc/group || groupadd -g 65533 nobody'"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} useradd -u 1001 somebody -g nobody -m"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} touch /var/log/systemctl.debug.log"
+        sh____(cmd.format(**locals()))
+        #
+        cmd = "{docker} exec {testname} systemctl start zza.service -vvvv"
+        out, err, rc = output3(cmd.format(**locals()))
+        logg.info("\n>>>(%s)\n%s\n%s", rc, i2(err), out)
+        if not COVERAGE:
+            self.assertEqual(rc, 0)
+        #
+        cmd = "{docker} exec -u somebody {testname} ps -eo pid,ppid,euser,egroup,supgrp,args"
+        top = clean(output(cmd.format(**locals())))
+        logg.info("\n>>>\n%s", top)
+        if not COVERAGE:
+            self.assertFalse(greps(top, "somebody *nobody *nobody .*{testsleepA}".format(**locals())))
+            # see test_5801
+            self.assertTrue(greps(top, "root *root .*{testsleepA}".format(**locals())))
+        cmd = "{docker} exec {testname} ls -l /tmp/pre-user.txt"
+        out, err = output2(cmd.format(**locals()))
+        logg.info("[%02i] %s", err, out)
+        self.assertTrue(greps(out, ".* somebody *nobody .*/tmp/.*".format(**locals())))
+        self.assertFalse(greps(out, ".* root *root .*/tmp/.*".format(**locals())))
+        cmd = "{docker} exec {testname} ls -l /tmp/pre-plus.txt"
+        out, err = output2(cmd.format(**locals()))
+        logg.info("[%02i] %s", err, out)
+        self.assertFalse(greps(out, ".* somebody *nobody .*/tmp/.*".format(**locals())))
+        self.assertTrue(greps(out, ".* root *root .*/tmp/.*".format(**locals())))
+        cmd = "{docker} exec {testname} ls -l /tmp/pre-bang.txt"
+        out, err = output2(cmd.format(**locals()))
+        logg.info("[%02i] %s", err, out)
+        self.assertFalse(greps(out, ".* somebody *nobody .*/tmp/.*".format(**locals())))
+        self.assertTrue(greps(out, ".* root *root .*/tmp/.*".format(**locals())))
+        cmd = "{docker} exec {testname} ls -l /tmp/pre-bangbang.txt"
+        out, err = output2(cmd.format(**locals()))
+        logg.info("[%02i] %s", err, out)
+        self.assertFalse(greps(out, ".* somebody *nobody .*/tmp/.*".format(**locals())))
+        self.assertTrue(greps(out, ".* root *root .*/tmp/.*".format(**locals())))
+        cmd = "{docker} exec {testname} ls -l /tmp/post-user.txt"
+        out, err = output2(cmd.format(**locals()))
+        logg.info("[%02i] %s", err, out)
+        self.assertTrue(greps(out, ".* somebody *nobody .*/tmp/.*".format(**locals())))
+        self.assertFalse(greps(out, ".* root *root .*/tmp/.*".format(**locals())))
+        cmd = "{docker} exec {testname} ls -l /tmp/post-plus.txt"
+        out, err = output2(cmd.format(**locals()))
+        logg.info("[%02i] %s", err, out)
+        self.assertFalse(greps(out, ".* somebody *nobody .*/tmp/.*".format(**locals())))
+        self.assertTrue(greps(out, ".* root *root .*/tmp/.*".format(**locals())))
+        cmd = "{docker} exec {testname} ls -l /tmp/post-bang.txt"
+        out, err = output2(cmd.format(**locals()))
+        logg.info("[%02i] %s", err, out)
+        self.assertFalse(greps(out, ".* somebody *nobody .*/tmp/.*".format(**locals())))
+        self.assertTrue(greps(out, ".* root *root .*/tmp/.*".format(**locals())))
+        cmd = "{docker} exec {testname} ls -l /tmp/post-bangbang.txt"
+        out, err = output2(cmd.format(**locals()))
+        logg.info("[%02i] %s", err, out)
+        self.assertFalse(greps(out, ".* somebody *nobody .*/tmp/.*".format(**locals())))
+        self.assertTrue(greps(out, ".* root *root .*/tmp/.*".format(**locals())))
+        cmd = "{docker} exec {testname} ls -l /tmp/stop-user.txt"
+        out, err = output2(cmd.format(**locals()))
+        logg.info("[%02i] %s", err, out)
+        self.assertGreater(err, 0)
+        #
+        ############
+        #
+        cmd = "{docker} exec {testname} systemctl stop zza.service -vvvv"
+        out, err, rc = output3(cmd.format(**locals()))
+        logg.info("\n>>>(%s)\n%s\n%s", rc, i2(err), out)
+        if not COVERAGE:
+            self.assertEqual(rc, 0)
+        cmd = "{docker} exec -u somebody {testname} ps -eo pid,ppid,euser,egroup,supgrp,args"
+        top = clean(output(cmd.format(**locals())))
+        logg.info("\n>>>\n%s", top)
+        if not COVERAGE:
+            self.assertFalse(greps(top, ".*{testsleepA}".format(**locals())))
+        cmd = "{docker} exec {testname} ls -l /tmp/stop-user.txt"
+        out, err = output2(cmd.format(**locals()))
+        logg.info("[%02i] %s", err, out)
+        self.assertTrue(greps(out, ".* somebody *nobody .*/tmp/.*".format(**locals())))
+        self.assertFalse(greps(out, ".* root *root .*/tmp/.*".format(**locals())))
+        cmd = "{docker} exec {testname} ls -l /tmp/stop-plus.txt"
+        out, err = output2(cmd.format(**locals()))
+        logg.info("[%02i] %s", err, out)
+        self.assertFalse(greps(out, ".* somebody *nobody .*/tmp/.*".format(**locals())))
+        self.assertTrue(greps(out, ".* root *root .*/tmp/.*".format(**locals())))
+        cmd = "{docker} exec {testname} ls -l /tmp/stop-bang.txt"
+        out, err = output2(cmd.format(**locals()))
+        logg.info("[%02i] %s", err, out)
+        self.assertFalse(greps(out, ".* somebody *nobody .*/tmp/.*".format(**locals())))
+        self.assertTrue(greps(out, ".* root *root .*/tmp/.*".format(**locals())))
+        cmd = "{docker} exec {testname} ls -l /tmp/stop-bangbang.txt"
+        out, err = output2(cmd.format(**locals()))
+        logg.info("[%02i] %s", err, out)
+        self.assertFalse(greps(out, ".* somebody *nobody .*/tmp/.*".format(**locals())))
+        self.assertTrue(greps(out, ".* root *root .*/tmp/.*".format(**locals())))
+        #
+        cmd = "{docker} exec {testname} find /tmp/ -name '.coverage*'"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} stop {testname}"
+        sh____(cmd.format(**locals()))
+        self.save_coverage(testname)
+        #
+        cmd = "{docker} rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
+        self.rm_testdir()
+        self.end()
+    def test_5904_skip_group_for_default_root(self) -> None:
+        """ check that we can ingore Group= settings for ExecX with '+' or '!' (for function) """
+        global COVERAGE
+        if not COVERAGE: self.skipTest("ok")
+        old = COVERAGE
+        try:
+            COVERAGE = ""
+            self.test_5905_skip_group_for_default_root()
+        finally:
+            COVERAGE = old
+    def test_5905_skip_group_for_default_root(self) -> None:
+        """ check that we can ignore Group= settings ExecX with '+' or '!' (for coverage) """
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        images = IMAGES
+        image = self.local_image(COVERAGE or IMAGE or CENTOS)
+        if _python.endswith("python3") and "centos:7" in image:
+            if SKIP: self.skipTest("no python3 on centos:7")
+        self.begin()
+        self.rm_testdir()
+        testname = self.testname()
+        testdir = self.testdir()
+        docker = _docker
+        package = package_tool(image)
+        refresh = refresh_tool(image)
+        python = os.path.basename(_python)
+        python_x = python_package(_python, image)
+        python_coverage = coverage_package(image)
+        systemctl_py = _systemctl_py
+        sometime = SOMETIME or 188
+        cov_option = "--system"
+        if COVERAGE:
+            cov_option = "-c ExecSpawn=True -c ExecRedirectLogs=False"
+        testsleepA = self.testname("sleepA")
+        bindir="/usr/bin"
+        this_user="somebody"
+        this_group="nobody"
+        text_file(os_path(testdir, "zza.service"), """
+            [Unit]
+            Description=Testing A
+            [Service]
+            Type=simple
+            ExecStartPre=/bin/touch /tmp/pre-user.txt
+            ExecStartPre=+/bin/touch /tmp/pre-plus.txt
+            ExecStartPre=!/bin/touch /tmp/pre-bang.txt
+            ExecStartPre=!!/bin/touch /tmp/pre-bangbang.txt
+            ExecStart=!{bindir}/{testsleepA} 1
+            Group={this_group}
+            ExecStartPost=/bin/touch /tmp/post-user.txt
+            ExecStartPost=+/bin/touch /tmp/post-plus.txt
+            ExecStartPost=!/bin/touch /tmp/post-bang.txt
+            ExecStartPost=!!/bin/touch /tmp/post-bangbang.txt
+            ExecStopPost=/bin/touch /tmp/stop-user.txt
+            ExecStopPost=+/bin/touch /tmp/stop-plus.txt
+            ExecStopPost=!/bin/touch /tmp/stop-bang.txt
+            ExecStopPost=!!/bin/touch /tmp/stop-bangbang.txt
+            [Install]
+            WantedBy=multi-user.target
+            """.format(**locals()))
+        #
+        cmd = "{docker} rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "{docker} run --detach --name={testname} {image} sleep {sometime}"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} {refresh}"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+        sx____(cmd.format(**locals()))
+        if COVERAGE:
+            cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
+            sx____(cmd.format(**locals()))
+        self.prep_coverage(image, testname)
+        #
+        cmd = "{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
+        sx____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} cp /bin/sleep /usr/bin/{testsleepA}"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} cp {testdir}/zza.service {testname}:/etc/systemd/system/zza.service"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} systemctl --version"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'grep nobody /etc/group || groupadd -g 65533 nobody'"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} useradd -u 1001 somebody -g nobody -m"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} touch /var/log/systemctl.debug.log"
+        sh____(cmd.format(**locals()))
+        #
+        cmd = "{docker} exec {testname} systemctl  start zza.service -vvvv"
+        out, err, rc = output3(cmd.format(**locals()))
+        logg.info("\n>>>(%s)\n%s\n%s", rc, i2(err), out)
+        if not COVERAGE:
+            self.assertEqual(rc, 0)
+        #
+        cmd = "{docker} exec -u somebody {testname} ps -eo pid,ppid,euser,egroup,supgrp,args"
+        top = clean(output(cmd.format(**locals())))
+        logg.info("\n>>>\n%s", top)
+        if not COVERAGE:
+            self.assertFalse(greps(top, "root *nobody *nobody .*{testsleepA}".format(**locals())))
+            # see test_5805
+            self.assertTrue(greps(top, "root *root .*{testsleepA}".format(**locals())))
+        cmd = "{docker} exec {testname} ls -l /tmp/pre-user.txt"
+        out, err = output2(cmd.format(**locals()))
+        logg.info("[%02i] %s", err, out)
+        self.assertTrue(greps(out, ".* root *nobody .*/tmp/.*".format(**locals())))
+        self.assertFalse(greps(out, ".* root *root .*/tmp/.*".format(**locals())))
+        cmd = "{docker} exec {testname} ls -l /tmp/pre-plus.txt"
+        out, err = output2(cmd.format(**locals()))
+        logg.info("[%02i] %s", err, out)
+        self.assertFalse(greps(out, ".* root *nobody .*/tmp/.*".format(**locals())))
+        self.assertTrue(greps(out, ".* root *root .*/tmp/.*".format(**locals())))
+        cmd = "{docker} exec {testname} ls -l /tmp/pre-bang.txt"
+        out, err = output2(cmd.format(**locals()))
+        logg.info("[%02i] %s", err, out)
+        self.assertFalse(greps(out, ".* root *nobody .*/tmp/.*".format(**locals())))
+        self.assertTrue(greps(out, ".* root *root .*/tmp/.*".format(**locals())))
+        cmd = "{docker} exec {testname} ls -l /tmp/pre-bangbang.txt"
+        out, err = output2(cmd.format(**locals()))
+        logg.info("[%02i] %s", err, out)
+        self.assertFalse(greps(out, ".* root *nobody .*/tmp/.*".format(**locals())))
+        self.assertTrue(greps(out, ".* root *root .*/tmp/.*".format(**locals())))
+        cmd = "{docker} exec {testname} ls -l /tmp/post-user.txt"
+        out, err = output2(cmd.format(**locals()))
+        logg.info("[%02i] %s", err, out)
+        self.assertTrue(greps(out, ".* root *nobody .*/tmp/.*".format(**locals())))
+        self.assertFalse(greps(out, ".* root *root .*/tmp/.*".format(**locals())))
+        cmd = "{docker} exec {testname} ls -l /tmp/post-plus.txt"
+        out, err = output2(cmd.format(**locals()))
+        logg.info("[%02i] %s", err, out)
+        self.assertFalse(greps(out, ".* root *nobody .*/tmp/.*".format(**locals())))
+        self.assertTrue(greps(out, ".* root *root .*/tmp/.*".format(**locals())))
+        cmd = "{docker} exec {testname} ls -l /tmp/post-bang.txt"
+        out, err = output2(cmd.format(**locals()))
+        logg.info("[%02i] %s", err, out)
+        self.assertFalse(greps(out, ".* root *nobody .*/tmp/.*".format(**locals())))
+        self.assertTrue(greps(out, ".* root *root .*/tmp/.*".format(**locals())))
+        cmd = "{docker} exec {testname} ls -l /tmp/post-bangbang.txt"
+        out, err = output2(cmd.format(**locals()))
+        logg.info("[%02i] %s", err, out)
+        self.assertFalse(greps(out, ".* root *nobody .*/tmp/.*".format(**locals())))
+        self.assertTrue(greps(out, ".* root *root .*/tmp/.*".format(**locals())))
+        cmd = "{docker} exec {testname} ls -l /tmp/stop-user.txt"
+        out, err = output2(cmd.format(**locals()))
+        logg.info("[%02i] %s", err, out)
+        self.assertGreater(err, 0)
+        #
+        ############
+        #
+        cmd = "{docker} exec {testname} systemctl stop zza.service -vvvv"
+        out, err, rc = output3(cmd.format(**locals()))
+        logg.info("\n>>>(%s)\n%s\n%s", rc, i2(err), out)
+        if not COVERAGE:
+            self.assertEqual(rc, 0)
+        cmd = "{docker} exec -u somebody {testname} ps -eo pid,ppid,euser,egroup,supgrp,args"
+        top = clean(output(cmd.format(**locals())))
+        logg.info("\n>>>\n%s", top)
+        if not COVERAGE:
+            self.assertFalse(greps(top, ".*{testsleepA}".format(**locals())))
+        cmd = "{docker} exec {testname} ls -l /tmp/stop-user.txt"
+        out, err = output2(cmd.format(**locals()))
+        logg.info("[%02i] %s", err, out)
+        self.assertTrue(greps(out, ".* root *nobody .*/tmp/.*".format(**locals())))
+        self.assertFalse(greps(out, ".* root *root .*/tmp/.*".format(**locals())))
+        cmd = "{docker} exec {testname} ls -l /tmp/stop-plus.txt"
+        out, err = output2(cmd.format(**locals()))
+        logg.info("[%02i] %s", err, out)
+        self.assertFalse(greps(out, ".* root *nobody .*/tmp/.*".format(**locals())))
+        self.assertTrue(greps(out, ".* root *root .*/tmp/.*".format(**locals())))
+        cmd = "{docker} exec {testname} ls -l /tmp/stop-bang.txt"
+        out, err = output2(cmd.format(**locals()))
+        logg.info("[%02i] %s", err, out)
+        self.assertFalse(greps(out, ".* root *nobody .*/tmp/.*".format(**locals())))
+        self.assertTrue(greps(out, ".* root *root .*/tmp/.*".format(**locals())))
+        cmd = "{docker} exec {testname} ls -l /tmp/stop-bangbang.txt"
+        out, err = output2(cmd.format(**locals()))
+        logg.info("[%02i] %s", err, out)
+        self.assertFalse(greps(out, ".* root *nobody .*/tmp/.*".format(**locals())))
+        self.assertTrue(greps(out, ".* root *root .*/tmp/.*".format(**locals())))
+        #
+        cmd = "{docker} stop {testname}"
+        sh____(cmd.format(**locals()))
+        self.save_coverage(testname)
+        #
+        cmd = "{docker} rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
+        self.rm_docker(testname)
+        self.rm_testdir()
+        self.end()
 
     def test_6130_run_default_services_from_simple_saved_container(self) -> None:
         """ check that we can enable services in a docker container to be run as default-services
