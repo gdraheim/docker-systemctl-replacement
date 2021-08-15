@@ -301,25 +301,27 @@ flake: flake.s.i
 flake.s.i: ; autoflake files/docker/systemctl3.py
 
 ####### autopep8
+AUTOPEP8=autopep8
+AUTOPEP8_WITH=
 autopep8: ; $${PKG:-zypper} install -y python3-autopep8
 pep style: 
 	$(MAKE) pep.s pep.t pep.i
 pep.d style.d: 
 	$(MAKE) pep.s.d pep.t.d
 pep.s.d style.s.d     pep.s.diff style.s.diff:
-	autopep8 files/docker/systemctl3.py --diff
+	$(AUTOPEP8) $(AUTOPEP8_WITH) files/docker/systemctl3.py --diff
 pep.s style.s pep.s.apply style.s.apply:
-	autopep8 files/docker/systemctl3.py --in-place
+	$(AUTOPEP8) $(AUTOPEP8_WITH) files/docker/systemctl3.py --in-place
 	git --no-pager diff files/docker/systemctl3.py
 pep.t.d style.t.d     pep.t.diff style.t.diff:
-	autopep8 testsuite.py --diff
+	$(AUTOPEP8) $(AUTOPEP8_WITH) testsuite.py --diff
 pep.t style.t pep.t.apply style.t.apply:
-	autopep8 testsuite.py --in-place
+	$(AUTOPEP8) $(AUTOPEP8_WITH) testsuite.py --in-place
 	git --no-pager diff testsuite.py
 pep.i.d style.i.d     pep.i.diff style.i.diff:
-	autopep8 types/systemctl3.pyi --diff
+	$(AUTOPEP8) $(AUTOPEP8_WITH) types/systemctl3.pyi --diff
 pep.i style.i pep.i.apply style.i.apply:
-	autopep8 types/systemctl3.pyi --in-place
+	$(AUTOPEP8) $(AUTOPEP8_WITH) types/systemctl3.pyi --in-place
 	git --no-pager diff testsuite.py
 
 ####### strip-hints
