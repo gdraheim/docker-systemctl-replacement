@@ -3998,7 +3998,7 @@ class Systemctl:
             os.dup2(out.fileno(), sys.stdout.fileno())
             os.dup2(err.fileno(), sys.stderr.fileno())
         return ret, msg
-    def execve_from(self, conf, cmd, env, nouser = False):
+    def execve_from(self, conf, cmd, env, nouser):
         """ this code is commonly run in a child process // returns exit-code"""
         runs = conf.get(Service, "Type", "simple").lower()
         # nameE, filename44 = strE(conf.name(), path44(conf.filename())
@@ -4373,12 +4373,13 @@ class Systemctl:
         initscript = conf.filename()
         if initscript and self.is_sysv_file(initscript):
             for cmd in [initscript]:
+                exe_nouser = False
                 newcmd = [initscript, "reload"]
                 env["SYSTEMCTL_SKIP_REDIRECT"] = "yes"
                 info_("{runs} reload".format(**locals()), shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
-                    self.execve_from(conf, newcmd, env)  # pragma: no cover
+                    self.execve_from(conf, newcmd, env, exe_nouser)  # pragma: no cover
                 run = subprocess_waitpid(forkpid)
                 self.set_status_code_from(conf, "initscript", run)
                 if run.returncode:
