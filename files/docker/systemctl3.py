@@ -884,7 +884,8 @@ def checkprefix(cmd):
         if c in "-+!@:":
             prefix = prefix + c
         else:
-            return prefix, cmd[i:]
+            newcmd = cmd[i:]
+            return prefix, newcmd
     return prefix, ""
 
 ExecMode = namedtuple("ExecMode", ["mode", "check", "nouser", "noexpand"])
@@ -2680,7 +2681,7 @@ class Systemctl:
     def exec_newcmd(self, cmd, env, conf):
         mode, exe = exec_path(cmd)
         if mode.noexpand:
-            newcmd = self.split_cmd(cmd)
+            newcmd = self.split_cmd(exe)
         else:
             newcmd = self.expand_cmd(exe, env, conf)
         return mode, newcmd
