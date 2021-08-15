@@ -36474,6 +36474,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         self.rm_docker(testname)
         self.rm_testdir()
+    def test_5800_set_user_gets_its_group(self) -> None:
+        """ check that we can run a service with User= settings (for coverage) """
+        global COVERAGE
+        if not COVERAGE: self.skipTest("ok")
+        old = COVERAGE
+        try:
+            COVERAGE = ""
+            self.test_5801_set_user_gets_its_group()
+        finally:
+            COVERAGE = old
     def test_5801_set_user_gets_its_group(self) -> None:
         """ check that we can run a service with User= settings (for coverage) """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -36564,6 +36574,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_docker(testname)
         self.rm_testdir()
         self.end()
+    def test_5802_set_user_and_set_same_group(self) -> None:
+        """ check that we can run a service with User= Group= settings (for function) """
+        global COVERAGE
+        if not COVERAGE: self.skipTest("ok")
+        old = COVERAGE
+        try:
+            COVERAGE = ""
+            self.test_5803_set_user_and_set_same_group()
+        finally:
+            COVERAGE = old
     def test_5803_set_user_and_set_same_group(self) -> None:
         """ check that we can run a service with User= Group= settings (for coverage) """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -36651,6 +36671,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_docker(testname)
         self.rm_testdir()
         self.end()
+    def test_5804_set_group_for_default_root(self) -> None:
+        """ check that we can run a service with Group= settings (for function) """
+        global COVERAGE
+        if not COVERAGE: self.skipTest("ok")
+        old = COVERAGE
+        try:
+            COVERAGE = ""
+            self.test_5805_set_group_for_default_root()
+        finally:
+            COVERAGE = old
     def test_5805_set_group_for_default_root(self) -> None:
         """ check that we can run a service with Group= settings (for coverage) """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -36737,6 +36767,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_docker(testname)
         self.rm_testdir()
         self.end()
+    def test_5806_set_user_and_set_same_group_and_set_same_supp_group(self) -> None:
+        """ check that we can run a service with User= Group= SupplementaryGroups= settings (for function) """
+        global COVERAGE
+        if not COVERAGE: self.skipTest("ok")
+        old = COVERAGE
+        try:
+            COVERAGE = ""
+            self.test_5807_set_user_and_set_same_group_and_set_same_supp_group()
+        finally:
+            COVERAGE = old
     def test_5807_set_user_and_set_same_group_and_set_same_supp_group(self) -> None:
         """ check that we can run a service with User= Group= SupplementaryGroups= settings (for coverage) """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -36825,6 +36865,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_docker(testname)
         self.rm_testdir()
         self.end()
+    def test_5808_set_user_and_set_same_supp_group(self) -> None:
+        """ check that we can run a service with User= SupplementaryGroups= extra (for function) """
+        global COVERAGE
+        if not COVERAGE: self.skipTest("ok")
+        old = COVERAGE
+        try:
+            COVERAGE = ""
+            self.test_5809_set_user_and_set_same_supp_group()
+        finally:
+            COVERAGE = old
     def test_5809_set_user_and_set_same_supp_group(self) -> None:
         """ check that we can run a service with User= SupplementaryGroups= extra (for coverage) """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -36912,6 +36962,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_docker(testname)
         self.rm_testdir()
         self.end()
+    def test_5820_set_user_and_set_new_group(self) -> None:
+        """ check that we can run a service with User= Group= settings (for function) """
+        global COVERAGE
+        if not COVERAGE: self.skipTest("ok")
+        old = COVERAGE
+        try:
+            COVERAGE = ""
+            self.test_5821_set_user_and_set_new_group()
+        finally:
+            COVERAGE = old
     def test_5821_set_user_and_set_new_group(self) -> None:
         """ check that we can run a service with User= Group= settings (for coverage) """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -37001,6 +37061,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_docker(testname)
         self.rm_testdir()
         self.end()
+    def test_5822_set_new_group_for_default_root(self) -> None:
+        """ check that we can run a service with Group= settings (for function) """
+        global COVERAGE
+        if not COVERAGE: self.skipTest("ok")
+        old = COVERAGE
+        try:
+            COVERAGE = ""
+            self.test_5823_set_new_group_for_default_root()
+        finally:
+            COVERAGE = old
     def test_5823_set_new_group_for_default_root(self) -> None:
         """ check that we can run a service with Group= settings (for coverage) """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -37089,6 +37159,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_docker(testname)
         self.rm_testdir()
         self.end()
+    def test_5824_set_user_and_set_new_group_but_set_to_same_supp_group(self) -> None:
+        """ check that we can run a service with User= Group= SupplementaryGroups= settings (for function) """
+        global COVERAGE
+        if not COVERAGE: self.skipTest("ok")
+        old = COVERAGE
+        try:
+            COVERAGE = ""
+            self.test_5825_set_user_and_set_new_group_but_set_to_same_supp_group()
+        finally:
+            COVERAGE = old
     def test_5825_set_user_and_set_new_group_but_set_to_same_supp_group(self) -> None:
         """ check that we can run a service with User= Group= SupplementaryGroups= settings (for coverage) """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -37179,6 +37259,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_docker(testname)
         self.rm_testdir()
         self.end()
+    def test_5830_set_user_and_set_new_supp_group_but_keep_group_default(self) -> None:
+        """ check that we can run a service with User= SupplementaryGroups= extra (for function) """
+        global COVERAGE
+        if not COVERAGE: self.skipTest("ok")
+        old = COVERAGE
+        try:
+            COVERAGE = ""
+            self.test_5831_set_user_and_set_new_supp_group_but_keep_group_default()
+        finally:
+            COVERAGE = old
     def test_5831_set_user_and_set_new_supp_group_but_keep_group_default(self) -> None:
         """ check that we can run a service with User= SupplementaryGroups= extra (for coverage) """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -37268,6 +37358,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_docker(testname)
         self.rm_testdir()
         self.end()
+    def test_5832_set_user_with_extra_group(self) -> None:
+        """ check that we can run a service with User= settings (for function) """
+        global COVERAGE
+        if not COVERAGE: self.skipTest("ok")
+        old = COVERAGE
+        try:
+            COVERAGE = ""
+            self.test_5833_set_user_with_extra_group()
+        finally:
+            COVERAGE = old
     def test_5833_set_user_with_extra_group(self) -> None:
         """ check that we can run a service with User= settings (for coverage) """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -37360,6 +37460,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_docker(testname)
         self.rm_testdir()
         self.end()
+    def test_5834_set_user_and_set_same_group_and_keep_extra_group(self) -> None:
+        """ check that we can run a service with User= Group= settings (for function) """
+        global COVERAGE
+        if not COVERAGE: self.skipTest("ok")
+        old = COVERAGE
+        try:
+            COVERAGE = ""
+            self.test_5835_set_user_and_set_same_group_and_keep_extra_group()
+        finally:
+            COVERAGE = old
     def test_5835_set_user_and_set_same_group_and_keep_extra_group(self) -> None:
         """ check that we can run a service with User= Group= settings (for coverage) """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -37449,6 +37559,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_docker(testname)
         self.rm_testdir()
         self.end()
+    def test_5836_set_same_group_and_keep_extra_group(self) -> None:
+        """ check that we can run a service with Group= settings (for function) """
+        global COVERAGE
+        if not COVERAGE: self.skipTest("ok")
+        old = COVERAGE
+        try:
+            COVERAGE = ""
+            self.test_5837_set_same_group_and_keep_extra_group()
+        finally:
+            COVERAGE = old
     def test_5837_set_same_group_and_keep_extra_group(self) -> None:
         """ check that we can run a service with Group= settings (for coverage) """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -37537,7 +37657,17 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_docker(testname)
         self.rm_testdir()
         self.end()
-    def test_5831_set_user_and_set_same_group_and_set_same_extra_supp_group(self) -> None:
+    def test_5840_set_user_and_set_same_group_and_set_same_extra_supp_group(self) -> None:
+        """ check that we can run a service with User= Group= SupplementaryGroups= settings (for function) """
+        global COVERAGE
+        if not COVERAGE: self.skipTest("ok")
+        old = COVERAGE
+        try:
+            COVERAGE = ""
+            self.test_5841_set_user_and_set_same_group_and_set_same_extra_supp_group()
+        finally:
+            COVERAGE = old
+    def test_5841_set_user_and_set_same_group_and_set_same_extra_supp_group(self) -> None:
         """ check that we can run a service with User= Group= SupplementaryGroups= settings (for coverage) """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -37627,6 +37757,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_docker(testname)
         self.rm_testdir()
         self.end()
+    def test_5852_set_user_and_set_same_extra_supp_group(self) -> None:
+        """ check that we can run a service with User= SupplementaryGroups= extra (for function) """
+        global COVERAGE
+        if not COVERAGE: self.skipTest("ok")
+        old = COVERAGE
+        try:
+            COVERAGE = ""
+            self.test_5853_set_user_and_set_same_extra_supp_group()
+        finally:
+            COVERAGE = old
     def test_5853_set_user_and_set_same_extra_supp_group(self) -> None:
         """ check that we can run a service with User= SupplementaryGroups= extra (for coverage) """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -37716,6 +37856,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_docker(testname)
         self.rm_testdir()
         self.end()
+    def test_5854_set_user_and_set_new_group_and_keep_extra_group(self) -> None:
+        """ check that we can run a service with User= Group= settings (for function) """
+        global COVERAGE
+        if not COVERAGE: self.skipTest("ok")
+        old = COVERAGE
+        try:
+            COVERAGE = ""
+            self.test_5855_set_user_and_set_new_group_and_keep_extra_group()
+        finally:
+            COVERAGE = old
     def test_5855_set_user_and_set_new_group_and_keep_extra_group(self) -> None:
         """ check that we can run a service with User= Group= settings (for coverage) """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -37807,6 +37957,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_docker(testname)
         self.rm_testdir()
         self.end()
+    def test_5872_set_new_group_and_no_extra_group(self) -> None:
+        """ check that we can run a service with Group= settings (for function) """
+        global COVERAGE
+        if not COVERAGE: self.skipTest("ok")
+        old = COVERAGE
+        try:
+            COVERAGE = ""
+            self.test_5873_set_new_group_and_no_extra_group()
+        finally:
+            COVERAGE = old
     def test_5873_set_new_group_and_no_extra_group(self) -> None:
         """ check that we can run a service with Group= settings (for coverage) """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -37897,6 +38057,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_docker(testname)
         self.rm_testdir()
         self.end()
+    def test_5876_set_user_and_set_new_group_and_set_same_extra_supp_group(self) -> None:
+        """ check that we can run a service with User= Group= SupplementaryGroups= settings (for function) """
+        global COVERAGE
+        if not COVERAGE: self.skipTest("ok")
+        old = COVERAGE
+        try:
+            COVERAGE = ""
+            self.test_5877_set_user_and_set_new_group_and_set_same_extra_supp_group()
+        finally:
+            COVERAGE = old
     def test_5877_set_user_and_set_new_group_and_set_same_extra_supp_group(self) -> None:
         """ check that we can run a service with User= Group= SupplementaryGroups= settings (for coverage) """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -37989,6 +38159,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_docker(testname)
         self.rm_testdir()
         self.end()
+    def test_5878_set_user_and_set_new_supp_group(self) -> None:
+        """ check that we can run a service with User= SupplementaryGroups= extra (for function) """
+        global COVERAGE
+        if not COVERAGE: self.skipTest("ok")
+        old = COVERAGE
+        try:
+            COVERAGE = ""
+            self.test_5879_set_user_and_set_new_supp_group()
+        finally:
+            COVERAGE = old
     def test_5879_set_user_and_set_new_supp_group(self) -> None:
         """ check that we can run a service with User= SupplementaryGroups= extra (for coverage) """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
