@@ -11210,14 +11210,17 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
-    def test_3240_may_expand_environment_variables(self) -> None:
+    def real_3240_may_expand_environment_variables(self) -> None:
+        self.test_3240_may_expand_environment_variables(True)
+    def test_3240_may_expand_environment_variables(self, real: bool = False) -> None:
         """ check that different styles of environment
             variables get expanded."""
-        self.begin()
+        vv = self.begin()
         testname = self.testname()
         testdir = self.testdir()
-        root = self.root(testdir)
+        root = self.root(testdir, real)
         systemctl = cover() + _systemctl_py + " --root=" + root
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
         print_sh = os_path(root, "/usr/bin/print.sh")
         logfile = os_path(root, "/var/log/print_sh.log")
         text_file(os_path(root, "/etc/sysconfig/b.conf"), """
@@ -11249,26 +11252,40 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             logfile='{logfile}'
             echo "'$1' '$2' '$3' '$4' '$5'" >> "$logfile"
             """.format(**locals()))
-        cmd = "{systemctl} environment zzb.service -vv"
-        out, end = output2(cmd.format(**locals()))
-        logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(end, 0)
-        self.assertTrue(greps(out, r"^DEF1=def1"))
-        self.assertTrue(greps(out, r"^DEF2=def2 def3"))
+        if not real:
+            cmd = "{systemctl} environment zzb.service {vv}"
+            out, end = output2(cmd.format(**locals()))
+            logg.info(" %s =>%s\n%s", cmd, end, out)
+            self.assertEqual(end, 0)
+            self.assertTrue(greps(out, r"^DEF1=def1"))
+            self.assertTrue(greps(out, r"^DEF2=def2 def3"))
+        else:
+            cmd = "{systemctl} daemon-reload"
+            out, end = output2(cmd.format(**locals()))
+            logg.info(" %s =>%s\n%s", cmd, end, out)
         #
-        cmd = "{systemctl} start zzb.service -vv"
+        cmd = "{systemctl} start zzb.service {vv}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         log = lines(open(logfile))
         logg.info("LOG \n%s", log)
-        A="'A' 'def1' 'def2' 'def3' ''"   # A $DEF1 $DEF2
-        B="'B' 'def1' 'def2 def3' '' ''"  # B ${DEF1} ${DEF2}
-        C="'C' 'def1def2' 'def3' '' ''"   # C $DEF1$DEF2
-        D="'D' 'def1def2 def3' '' '' ''"  # D ${DEF1}${DEF2} ??TODO??
-        E="'E' 'def1 def2 def3' '' '' ''"  # E ${DEF4}
-        # F="'F' ' def5 ' '' '' ''"       # F ${DEF5}
-        F="'F' '$DEF1111 def5 ${DEF2222}' '' '' ''"
+        if real:
+            A="'A' 'def1' 'def2' 'def3' ''"   # A $DEF1 $DEF2
+            B="'B' 'def1' 'def2 def3' '' ''"  # B ${DEF1} ${DEF2}
+            C="'C' '' '' '' ''"   # C $DEF1$DEF2 # TODO!
+            D="'D' 'def1def2 def3' '' '' ''"  # D ${DEF1}${DEF2} 
+            E="'E' '$DEF1 ${DEF2}' '' '' ''"  # E ${DEF4} # TODO!
+            # F="'F' ' def5 ' '' '' ''"       # F ${DEF5}
+            F="'F' '$DEF1111 def5 ${DEF2222}' '' '' ''"
+        else:
+            A="'A' 'def1' 'def2' 'def3' ''"   # A $DEF1 $DEF2
+            B="'B' 'def1' 'def2 def3' '' ''"  # B ${DEF1} ${DEF2}
+            C="'C' 'def1def2' 'def3' '' ''"   # C $DEF1$DEF2
+            D="'D' 'def1def2 def3' '' '' ''"  # D ${DEF1}${DEF2} ??TODO??
+            E="'E' 'def1 def2 def3' '' '' ''"  # E ${DEF4}
+            # F="'F' ' def5 ' '' '' ''"       # F ${DEF5}
+            F="'F' '$DEF1111 def5 ${DEF2222}' '' '' ''"
         self.assertIn(A, log)
         self.assertIn(B, log)
         self.assertIn(C, log)
@@ -11276,6 +11293,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertIn(E, log)
         self.assertIn(F, log)
         #
+        self.rm_zzfiles(root)
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -11351,6 +11369,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertIn(E, log)
         self.assertIn(F, log)
         #
+        self.rm_zzfiles(root)
         self.rm_testdir()
         self.coverage()
         self.end()
