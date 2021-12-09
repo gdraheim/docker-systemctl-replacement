@@ -199,7 +199,8 @@ DefaultTimeoutAbortSec = 3600  # officially it none (usually larget than StopSec
 DefaultMaximumTimeout = 200   # overrides all other
 DefaultRestartSec = 0.1       # official value of 100ms
 DefaultStartLimitIntervalSec = 10  # official value
-DefaultStartLimitBurst = 5        # official value
+DefaultStartLimitBurst = 5         # official value
+MaximumStartLimitIntervalSec = 999
 InitLoopSleep = 5
 TestLockSleep = 1
 MaxLockWait = 0  # equals DefaultMaximumTimeout
@@ -7042,7 +7043,7 @@ class Systemctl:
         defaults = DefaultStartLimitBurst
         return to_int(conf.get(Service, "StartLimitBurst", strE(defaults)), defaults)  # 5
     def get_StartLimitIntervalSec(self, conf, maximum=None):
-        maximum = maximum or 999
+        maximum = maximum or MaximumStartLimitIntervalSec
         defaults = DefaultStartLimitIntervalSec
         interval = conf.get(Service, "StartLimitIntervalSec", strE(defaults))  # 10s
         return time_to_seconds(interval, maximum)
