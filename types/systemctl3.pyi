@@ -702,6 +702,8 @@ class Systemctl:
         warnings: List[str]
     def check_directory_settings(self, conf: SystemctlConf, section: str = "Service") -> List[str]:
         warnings: List[str]
+    def check_timeout_settings(self, conf: SystemctlConf, section: str = "Service") -> List[str]:
+        warnings: List[str]
     def check_exec_from(self, conf: SystemctlConf, env: Dict[str, str], section: str = "Service", exectype: str = "") -> bool: ...
     def check_exec_service_from(self, conf: SystemctlConf, env: Dict[str, str], section: str = "Service", exectype: str = "") -> List[str]:
         warnings: List[str]

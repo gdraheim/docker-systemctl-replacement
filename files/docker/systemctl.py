@@ -6183,6 +6183,7 @@ class Systemctl:
         warnings += self.check_exec_format_settings(conf, section)
         warnings += self.check_exec_unknown_settings(conf, section)
         warnings += self.check_environment_file_settings(conf, section)
+        warnings += self.check_timeout_settings(conf, section)
         return warnings
     def check_environment_file_settings(self, conf, section=Service):
         warnings = []
@@ -6401,6 +6402,20 @@ class Systemctl:
             if setting_yes:
                 info_("   {unit}: {section} private directory option is ignored: {setting}=yes".format(**locals()))
                 warnings += ["W62"]
+        return warnings
+    def check_timeout_settings(self, conf, section=Service):
+        warnings = []
+        unit = conf.name()
+        for setting in ("TimeoutSec", "TimeoutStartSec", "TimeoutStopSec", "RestartSec"):
+            setting_value = conf.get(section, setting, "")
+            if not setting_value or setting_value.strip() == "0":
+                info_("   {unit}: {section} use {setting}=infinity instead of ={setting_value}".format(**locals()))
+                warnings += ["W66"]
+        for setting in ("RuntimeMaxSec", "WatchdogSec"):
+            setting_value = conf.get(section, setting, "")
+            if setting_value:
+                info_("   {unit}: {section} watchdog option is ignored: {setting}={setting_value}".format(**locals()))
+                warnings += ["W67"]
         return warnings
     def check_exec_from(self, conf, env, section=Service, exectype=""):
         if conf is None:
