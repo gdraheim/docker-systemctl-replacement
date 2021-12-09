@@ -884,7 +884,8 @@ def checkprefix(cmd):
         if c in "-+!@:":
             prefix = prefix + c
         else:
-            return prefix, cmd[i:]
+            newcmd = cmd[i:]
+            return prefix, newcmd
     return prefix, ""
 
 ExecMode = namedtuple("ExecMode", ["mode", "check", "nouser", "noexpand"])
@@ -1604,7 +1605,7 @@ def parse_unit(fullname):  # -> object(prefix, instance, suffix, ...., name, com
         component = prefix[has_component+1:]
     return parse_result(fullname, name, prefix, instance, suffix, component)
 
-def time_to_seconds(text, maximum):
+def time_to_seconds(text, maximum, disabled = 0.):
     value = 0.
     for part in str(text).split(" "):
         item = part.strip()
@@ -1628,7 +1629,7 @@ def time_to_seconds(text, maximum):
     if value > maximum:
         return maximum
     if not value and text.strip() == "0":
-        return 0.
+        return disabled
     if not value:
         return 1.
     return value
@@ -2680,7 +2681,7 @@ class Systemctl:
     def exec_newcmd(self, cmd, env, conf):
         mode, exe = exec_path(cmd)
         if mode.noexpand:
-            newcmd = self.split_cmd(cmd)
+            newcmd = self.split_cmd(exe)
         else:
             newcmd = self.expand_cmd(exe, env, conf)
         return mode, newcmd
@@ -3321,10 +3322,10 @@ class Systemctl:
     def get_TimeoutStartSec(self, conf):
         timeout = conf.get(Service, "TimeoutSec", strE(DefaultTimeoutStartSec))
         timeout = conf.get(Service, "TimeoutStartSec", timeout)
-        return time_to_seconds(timeout, DefaultMaximumTimeout)
+        return time_to_seconds(timeout, DefaultMaximumTimeout, DefaultMaximumTimeout)
     def get_SocketTimeoutSec(self, conf):
         timeout = conf.get(Socket, "TimeoutSec", strE(DefaultTimeoutStartSec))
-        return time_to_seconds(timeout, DefaultMaximumTimeout)
+        return time_to_seconds(timeout, DefaultMaximumTimeout, DefaultMaximumTimeout)
     def get_RemainAfterExit(self, conf, default = "no"):
         return conf.getbool(Service, "RemainAfterExit", default)
     def start_unit_from(self, conf):
@@ -4087,7 +4088,7 @@ class Systemctl:
     def get_TimeoutStopSec(self, conf):
         timeout = conf.get(Service, "TimeoutSec", strE(DefaultTimeoutStartSec))
         timeout = conf.get(Service, "TimeoutStopSec", timeout)
-        return time_to_seconds(timeout, DefaultMaximumTimeout)
+        return time_to_seconds(timeout, DefaultMaximumTimeout, DefaultMaximumTimeout)
     def stop_unit_from(self, conf):
         if not conf: return False
         problems = self.check_syntax_from(conf)
