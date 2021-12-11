@@ -6318,6 +6318,10 @@ class Systemctl:
             error_("  {unit}: there no such thing as a {section} ExecStopPre (ignored)".format(**locals()))
             debug_("  {unit}:  (W56) might be a bit unexpected but no.".format(**locals()))
             warnings += ["W56"]
+        if conf.getlist(Service, "PermissionsStartOnly", []):  # pragma: no cover
+            error_("  {unit}: {section} PermissionsStartOnly is a deprecated feature (ignored)".format(**locals()))
+            debug_("  {unit}:  (W57) the undocumented feature will never be implemented.".format(**locals()))
+            warnings += ["W57"]
         return warnings
     def check_exec_type_settings(self, conf, section=Service):
         warnings = []
