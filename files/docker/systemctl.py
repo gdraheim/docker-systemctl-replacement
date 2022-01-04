@@ -3287,7 +3287,8 @@ class Systemctl:
             for unit in matched:
                 ignored = self.ignored_unit(unit, _ignored_services)
                 if ignored and not self._force:
-                    warn_("Unit {unit} ignored in {ignored} (use --force to pass)".format(**locals()))
+                    systempart = " ".join(ignored)
+                    warn_("Unit {unit} ignored in {systempart} (use --force to pass)".format(**locals()))
                     continue
                 if unit not in units:
                     units += [unit]
@@ -6412,7 +6413,7 @@ class Systemctl:
         warnings = []
         unit = conf.name()
         for setting in ("TimeoutSec", "TimeoutStartSec", "TimeoutStopSec", "RestartSec"):
-            setting_value = conf.get(section, setting, "")
+            setting_value = conf.get(section, setting, "<none>")
             if not setting_value or setting_value.strip() == "0":
                 info_("   {unit}: {section} use {setting}=infinity instead of ={setting_value}".format(**locals()))
                 warnings += ["W66"]
