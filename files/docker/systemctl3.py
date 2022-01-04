@@ -1996,6 +1996,7 @@ class Systemctl:
                 if not os.path.isdir(folder):
                     continue
                 for name in os.listdir(folder):
+                    if name.isupper(): continue # ignore README
                     path = os.path.join(folder, name)
                     if os.path.isdir(path):
                         continue
