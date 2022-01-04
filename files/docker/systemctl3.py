@@ -2139,11 +2139,17 @@ class Systemctl:
         assert self._loaded_file_sysv is not None
         if path in self._loaded_file_sysv:
             return self._loaded_file_sysv[path]
+        logg.warning("loading %s", path)
         data = UnitConfParser()
         data.read_sysv(path)
         conf = SystemctlConf(data, module)
         conf._root = self._root
         self._loaded_file_sysv[path] = conf
+        #
+        if self._loaded_file_sysd:
+            mask_file = self.mask_folder() + "/" + conf.name()
+            if mask_file in self._loaded_file_sysd:
+                conf.masked = self._loaded_file_sysd[mask_file].masked
         return conf
     def load_unit_conf(self, module):  # -> conf | None(not-found)
         """ read the unit file with a UnitConfParser (sysv or systemd) """
@@ -5580,9 +5586,6 @@ class Systemctl:
         if not unit_file:
             error_("Unit {unit} not found.".format(**locals()))
             return False
-        if self.is_sysv_file(unit_file):
-            error_("Initscript {unit} can not be masked".format(**locals()))
-            return False
         conf = self.get_unit_conf(unit)
         if self.not_user_conf(conf):
             error_("Unit {unit} not for --user mode".format(**locals()))
@@ -5592,7 +5595,8 @@ class Systemctl:
             folder = os_path(self._root, folder)
         if not os.path.isdir(folder):
             os.makedirs(folder)
-        target = os.path.join(folder, os.path.basename(unit_file))
+        service_file = unit_of(os.path.basename(unit_file))
+        target = os.path.join(folder, service_file)
         dev_null = _dev_null
         if True:
             _f = self._force and "-f" or ""
@@ -5652,9 +5656,6 @@ class Systemctl:
         if not unit_file:
             error_("Unit {unit} not found.".format(**locals()))
             return False
-        if self.is_sysv_file(unit_file):
-            error_("Initscript {unit} can not be un/masked".format(**locals()))
-            return False
         conf = self.get_unit_conf(unit)
         if self.not_user_conf(conf):
             error_("Unit {unit} not for --user mode".format(**locals()))
@@ -5662,7 +5663,8 @@ class Systemctl:
         folder = self.mask_folder()
         if self._root:
             folder = os_path(self._root, folder)
-        target = os.path.join(folder, os.path.basename(unit_file))
+        service_file = unit_of(os.path.basename(unit_file))
+        target = os.path.join(folder, service_file)
         if True:
             _f = self._force and "-f" or ""
             info_("rm {_f} '{target}'".format(**locals()))
@@ -5670,7 +5672,7 @@ class Systemctl:
             os.remove(target)
             return True
         elif not os.path.exists(target):
-            dbg_("Symlink did not exist anymore: {target}".format(**locals()))
+            dbg_("ok, symlink did not exist anymore: {target}".format(**locals()))
             return True
         else:
             warn_("target is not a symlink: {target}".format(**locals()))
