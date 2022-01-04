@@ -56,6 +56,7 @@ test: ; $(MAKE) type && $(MAKE) tests && $(MAKE) coverage
 WITH2 = --python=/usr/bin/python2 --with=files/docker/systemctl.py
 WITH3 = --python=/usr/bin/python3 --with=files/docker/systemctl3.py
 todo/test_%:             ; ./testsuite.py   "$(notdir $@)" -vv --todo
+15.3/test_%:             ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=opensuse/leap:15.3
 15.2/test_%:             ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=opensuse/leap:15.2
 15.1/test_%:             ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=opensuse/leap:15.1
 15.0/test_%:             ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=opensuse/leap:15.0
@@ -73,6 +74,7 @@ todo/test_%:             ; ./testsuite.py   "$(notdir $@)" -vv --todo
 7.5/test_%:              ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=centos:7.5.1804
 7.4/test_%:              ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=centos:7.4.1708
 7.3/test_%:              ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=centos:7.3.1611
+15.3/st_%:  ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv $(FORCE) --image=opensuse/leap:15.3 $(WITH2)
 15.2/st_%:  ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv $(FORCE) --image=opensuse/leap:15.2 $(WITH2)
 15.1/st_%:  ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv $(FORCE) --image=opensuse/leap:15.1 $(WITH2)
 15.0/st_%:  ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv $(FORCE) --image=opensuse/leap:15.0 $(WITH2)
@@ -103,7 +105,7 @@ basetests: ; $(MAKE) "${basetests}" OUTPUT=--xmlresults=TEST-systemctl-basetests
 15.0/tests:  ; $(MAKE) "15.0/$(testslist)"
 42.3/tests:  ; $(MAKE) "42.3/$(testslist)"
 42.2/tests:  ; $(MAKE) "42.2/$(testslist)"
-20.04/tests: ; $(MAKE) "20.14/$(testslist)"
+20.04/tests: ; $(MAKE) "20.04/$(testslist)"
 18.04/tests: ; $(MAKE) "18.04/$(testslist)"
 16.04/tests: ; $(MAKE) "16.04/$(testslist)"
 8.3/tests:   ; $(MAKE) "8.3/$(testslist)"
@@ -158,8 +160,9 @@ checkall2020.2:
 	$(MAKE) -j1 20.04/tests 18.04/test2
 	$(MAKE) -j1 15.2/test2
 
-check: check2018
+check: check2020
 	@ echo please run 'make checks' now
+20 check2020: ; ./testsuite.py -vv --opensuse=15.3 --centos=8.3 --ubuntu=20.04
 19 check2019: ; ./testsuite.py -vv --opensuse=15.1 --centos=7.7 --ubuntu=18.04
 18 check2018: ; ./testsuite.py -vv --opensuse=15.0 --centos=7.5 --ubuntu=18.04
 17 check2017: ; ./testsuite.py -vv --opensuse=42.3 --centos=7.4 --ubuntu=16.04
