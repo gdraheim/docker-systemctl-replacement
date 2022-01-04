@@ -28707,7 +28707,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ check that we can run systemctl.py with coverage inside a docker container """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
-        image = self.local_image(COVERAGE or IMAGE or CENTOS)  # <<<< need to use COVERAGE image here
+        image = self.local_image(COVERAGE or IMAGE or CENTOS)  # <<<< when using COVERAGE image...
         if _python.endswith("python3") and "centos:7" in image:
             if SKIP: self.skipTest("no python3 on centos:7")
         docker = _docker
@@ -28717,7 +28717,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         refresh = refresh_tool(image)
         python = os.path.basename(_python)
         python_x = python_package(_python, image)
-        python_coverage = coverage_package(image)  # <<<< and install the tool for the COVERAGE image
+        python_coverage = coverage_package(image)  # <<<< install the tool for the COVERAGE image
         systemctl_py = _systemctl_py
         sometime = SOMETIME or 188
         #
