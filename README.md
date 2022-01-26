@@ -178,7 +178,7 @@ at [gdraheim/docker-systemctl-images](https://github.com/gdraheim/docker-systemc
 list.
 
 
-See [TESTSUITE](TESTUITE.md) for more details.
+See [TESTSUITE](TESTSUITE.md) for more details.
 
 ## Development
 
