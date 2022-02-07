@@ -229,6 +229,7 @@ ExecRedirectLogs = True
 ExecIgnoreErrors = False
 RemoveLockFile = False
 ForceLockFile = False
+BootTimeCheck = 2
 BootTimeMinPID = 0
 BootTimeMaxPID = -9
 KillChildrenMaxDepth = 100
@@ -262,6 +263,7 @@ _ignored_services = """
 netconsole
 network
 dnf-makecache.*
+rhel-configure
 [opensuse]
 kbdsettings.service
 raw.service
@@ -1344,11 +1346,43 @@ _boottime = None
 def get_boottime():
     """ detects the boot time of the container - in general the start time of PID 1 """
     global _boottime
-    if _boottime is None:
-        _boottime = get_boottime_from_proc()
+    if _boottime is None and BootTimeCheck >= 4: # this had too many problems
+        _boottime = get_boottime_from_proc_mtime()
+    if _boottime is None and BootTimeCheck >= 3: # newest implementation
+        _boottime = get_boottime_from_proc_bus()
+    if _boottime is None and BootTimeCheck >= 2:  # latest kernels have a tick to much
+        _boottime = get_boottime_from_proc_starttime()
+    if _boottime is None and BootTimeCheck >= 1:
+        _boottime = get_boottime_from_old_proc_starttime()
     assert _boottime is not None
     return _boottime
-def get_boottime_from_proc():
+
+def get_boottime_from_proc_bus():
+    """ detects the latest boot time by looking at the /proc/bus folder"""
+    proc = DefaultProcDir
+    proc_bus = "{proc}/bus".format(**locals())
+    if os.path.exists(proc_bus):
+        return os.path.getmtime(proc_bus)
+    return None
+
+def get_boottime_from_proc_mtime():  # pragma: no cover
+    """ detects the latest boot time by looking at the start time of available process"""
+    pid_min = BootTimeMinPID or 0
+    pid_max = BootTimeMaxPID
+    if pid_max < 0:
+        pid_max = pid_min - pid_max
+    for pid in xrange(pid_min, pid_max):
+        proc = DefaultProcDir
+        pid_stat = "{proc}/{pid}/stat".format(**locals())
+        try:
+            if os.path.exists(pid_stat):
+                return os.path.getmtime(pid_stat) # did sometimes change
+        except Exception as e:  # pragma: no cover
+            warn_("boottime - could not access {pid_stat}: {e}".format(**locals()))
+    if DebugBootTime:
+        dbg_(" boottime from the oldest entry in /proc [nothing in {pid_min}..{pid_max}]".format(**locals()))
+    return None
+def get_boottime_from_proc_starttime():
     """ detects the latest boot time by looking at the start time of available process"""
     pid_min = BootTimeMinPID or 0
     pid_max = BootTimeMaxPID
@@ -1360,13 +1394,13 @@ def get_boottime_from_proc():
         try:
             if os.path.exists(pid_stat):
                 # return os.path.getmtime(pid_stat) # did sometimes change
-                return path_proc_started(pid_stat)
+                return path_proc_starttime(pid_stat)
         except Exception as e:  # pragma: no cover
             warn_("boottime - could not access {pid_stat}: {e}".format(**locals()))
     if DebugBootTime:
         dbg_(" boottime from the oldest entry in /proc [nothing in {pid_min}..{pid_max}]".format(**locals()))
-    return get_boottime_from_old_proc()
-def get_boottime_from_old_proc():
+    return None
+def get_boottime_from_old_proc_starttime():
     proc = DefaultProcDir
     booted = time.time()
     for pid in os.listdir(proc):
@@ -1374,7 +1408,7 @@ def get_boottime_from_old_proc():
         try:
             if os.path.exists(pid_stat):
                 # ctime = os.path.getmtime(pid_stat)
-                ctime = path_proc_started(pid_stat)
+                ctime = path_proc_starttime(pid_stat)
                 if ctime < booted:
                     booted = ctime
         except Exception as e:  # pragma: no cover
@@ -1384,7 +1418,7 @@ def get_boottime_from_old_proc():
 # Use uptime, time process running in ticks, and current time to determine process boot time
 # You can't use the modified timestamp of the status file because it isn't static.
 # ... using clock ticks it is known to be a linear time on Linux
-def path_proc_started(proc):
+def path_proc_starttime(proc):
     # get time process started after boot in clock ticks
     with open(proc) as file_stat:
         data_stat = file_stat.readline()
@@ -1555,7 +1589,7 @@ class waitlock:
         except Exception as e:
             warn_("[{me}] oops, {e}".format(**locals()))
 
-waitpid_result = namedtuple("waitpid", ["pid", "returncode", "signal"])
+SystemctlWaitPID = namedtuple("SystemctlWaitPID", ["pid", "returncode", "signal"])
 
 def must_have_failed(waitpid, cmd):
     # found to be needed on ubuntu:16.04 to match test result from ubuntu:18.04 and other distros
@@ -1574,20 +1608,20 @@ def must_have_failed(waitpid, cmd):
                 command = shell_cmd(cmd)
                 returncode = waitpid.returncode
                 error_("waitpid {command} did return {returncode} => correcting as {exitcode}".format(**locals()))
-            waitpid = waitpid_result(waitpid.pid, exitcode, waitpid.signal)
+            waitpid = SystemctlWaitPID(waitpid.pid, exitcode, waitpid.signal)
     return waitpid
 
 def subprocess_waitpid(pid):
     run_pid, run_stat = os.waitpid(pid, 0)
-    return waitpid_result(run_pid, os.WEXITSTATUS(run_stat), os.WTERMSIG(run_stat))
+    return SystemctlWaitPID(run_pid, os.WEXITSTATUS(run_stat), os.WTERMSIG(run_stat))
 def subprocess_testpid(pid):
     run_pid, run_stat = os.waitpid(pid, os.WNOHANG)
     if run_pid:
-        return waitpid_result(run_pid, os.WEXITSTATUS(run_stat), os.WTERMSIG(run_stat))
+        return SystemctlWaitPID(run_pid, os.WEXITSTATUS(run_stat), os.WTERMSIG(run_stat))
     else:
-        return waitpid_result(pid, None, 0)
+        return SystemctlWaitPID(pid, None, 0)
 
-parse_result = namedtuple("UnitName", ["fullname", "name", "prefix", "instance", "suffix", "component"])
+SystemctlUnitName = namedtuple("SystemctlUnitName", ["fullname", "name", "prefix", "instance", "suffix", "component"])
 
 def parse_unit(fullname):  # -> object(prefix, instance, suffix, ...., name, component)
     name, suffix = fullname, ""
@@ -1604,7 +1638,7 @@ def parse_unit(fullname):  # -> object(prefix, instance, suffix, ...., name, com
     has_component = prefix.rfind("-")
     if has_component > 0:
         component = prefix[has_component+1:]
-    return parse_result(fullname, name, prefix, instance, suffix, component)
+    return SystemctlUnitName(fullname, name, prefix, instance, suffix, component)
 
 def time_to_seconds(text, maximum, disabled = 0.):
     value = 0.

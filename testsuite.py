@@ -50,10 +50,12 @@ LONGER = 2
 
 TestSocketListen = False
 
-CENTOSVER = {"7.3": "7.3.1611", "7.4": "7.4.1708", "7.5": "7.5.1804", "7.6": "7.6.1810", "7.7": "7.7.1908", "7.9": "7.9.2009", "8.0": "8.0.1905", "8.1": "8.1.1911", "8.3": "8.3.2011"}
-TESTED_OS = ["centos:7.3.1611", "centos:7.4.1708", "centos:7.5.1804", "centos:7.6.1810", "centos:7.7.1908", "centos:7.9.2009", "centos:8.0.1905", "centos:8.1.1911", "centos:8.3.2011"]
-TESTED_OS += ["opensuse:42.2", "opensuse:42.3", "opensuse/leap:15.0", "opensuse/leap:15.1", "opensuse/leap:15.2"]
-TESTED_OS += ["ubuntu:14.04", "ubuntu:16.04", "ubuntu:18.04"]
+CENTOSVER = {"7.3": "7.3.1611", "7.4": "7.4.1708", "7.5": "7.5.1804", "7.6": "7.6.1810", "7.7": "7.7.1908",
+             "7.9": "7.9.2009", "8.0": "8.0.1905", "8.1": "8.1.1911", "8.3": "8.3.2011", "8.4": "8.4.2105", "8.5": "8.5.2111"}
+TESTED_OS = ["centos:7.3.1611", "centos:7.4.1708", "centos:7.5.1804", "centos:7.6.1810", "centos:7.7.1908",
+             "centos:7.9.2009", "centos:8.0.1905", "centos:8.1.1911", "centos:8.3.2011", "centos:8.4.2105"]
+TESTED_OS += ["opensuse:42.2", "opensuse:42.3", "opensuse/leap:15.0", "opensuse/leap:15.1", "opensuse/leap:15.2", "opensuse/leap:15.3"]
+TESTED_OS += ["ubuntu:14.04", "ubuntu:16.04", "ubuntu:18.04", "ubuntu:20.04"]
 
 SAVETO = "localhost:5000/systemctl"
 IMAGES = "localhost:5000/systemctl/testing"
@@ -39141,7 +39143,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sh____(cmd.format(**locals()))
         self.prep_coverage(image, testname, cov_option)
-        cmd = "{docker} exec {testname} bash -c 'test -f /etc/init.d/ondemand && systemctl disable ondemand'"  # ubuntu:16.04
+        cmd = "{docker} exec {testname} bash -c 'test -f /etc/init.d/ondemand && systemctl mask ondemand --all'"  # ubuntu:16.04
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
@@ -39169,6 +39171,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} run --detach --name {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         time.sleep(2)
+        cmd = "{docker} exec {testname} systemctl default-services --all -vv"
+        err = sx____(cmd.format(**locals()))
+        #
+        for attempt in xrange(5):
+            cmd = "{docker} exec {testname} systemctl is-system-running -vv"
+            err = sx____(cmd.format(**locals()))
+            logg.info("[%i] is-system-running -%s", attempt, err)
+            if not err: break
+            time.sleep(2)
         #
         cmd = "{docker} exec {testname} ps -eo pid,ppid,user,args"
         top = output(cmd.format(**locals()))
