@@ -55,7 +55,7 @@ expect that it indirectly runs "systemctl halt" to shut
 down the running services. The docker-systemctl-replacement
 does implement that function - so where "systemctl default"
 will run a "systemctl start" on all "is-enabled" services, 
-the inverse "system halt" command will run a "systemctl stop"
+the inverse "systemctl halt" command will run a "systemctl stop"
 on all those services.
 
 Of course it would be possible to write a second script to
