@@ -552,7 +552,13 @@ def _pid_zombie(pid):
     return False
 
 def checkstatus(cmd):
-    if cmd.startswith("-"):
+    if cmd.startswith("@"):
+        cmd = cmd[1:]
+        cmd = cmd.split(' ')
+        del cmd[1]
+        cmd = ' '.join(cmd)
+        return True, cmd
+    elif cmd.startswith("-"):
         return False, cmd[1:]
     else:
         return True, cmd
@@ -5055,17 +5061,17 @@ class Systemctl:
             logg.error(" %s: Failed to parse service type, ignoring: %s", unit, haveType)
             errors += 100
         for line in haveExecStart:
-            if not line.startswith("/") and not line.startswith("-/"):
+            if not line.startswith("/") and not line.startswith("-/") and not line.startswith("@"):
                 logg.error(" %s: Executable path is not absolute, ignoring: %s", unit, line.strip())
                 errors += 1
             usedExecStart.append(line)
         for line in haveExecStop:
-            if not line.startswith("/") and not line.startswith("-/"):
+            if not line.startswith("/") and not line.startswith("-/") and not line.startswith("@"):
                 logg.error(" %s: Executable path is not absolute, ignoring: %s", unit, line.strip())
                 errors += 1
             usedExecStop.append(line)
         for line in haveExecReload:
-            if not line.startswith("/") and not line.startswith("-/"):
+            if not line.startswith("/") and not line.startswith("-/") and not line.startswith("@"):
                 logg.error(" %s: Executable path is not absolute, ignoring: %s", unit, line.strip())
                 errors += 1
             usedExecReload.append(line)
