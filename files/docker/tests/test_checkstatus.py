@@ -1,5 +1,5 @@
 import unittest
-from files.docker.systemctl import checkstatus
+from files.docker.systemctl3 import checkstatus
 
 
 class TestCheckStatus(unittest.TestCase):
