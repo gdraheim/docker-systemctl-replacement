@@ -2804,7 +2804,6 @@ class Systemctl:
                         self.remove_service_directories(conf) # cleanup that /run/sshd
                     return False
         if runs in [ "oneshot" ]:
-            self.do_start_target_from(conf)
             status_file = self.get_status_file_from(conf)
             if self.get_status_from(conf, "ActiveState", "unknown") == "active":
                 logg.warning("the service was already up once")
@@ -3467,7 +3466,6 @@ class Systemctl:
         returncode = 0
         service_result = "success"
         if runs in [ "oneshot" ]:
-            self.do_stop_target_from(conf)
             status_file = self.get_status_file_from(conf)
             if self.get_status_from(conf, "ActiveState", "unknown") == "inactive":
                 logg.warning("the service is already down once")
@@ -5574,7 +5572,7 @@ class Systemctl:
         target = conf.name()
         # services = self.stop_target_system(target)
         services = self.target_default_services(target, "K")
-        units = [service for service in services]
+        units = [service for service in services if self.is_running_unit(service)]
         logg.debug("stop %s is stopping %s from %s", target, units, services)
         return self.stop_units(units)
     def do_reload_target_from(self, conf):

@@ -2784,6 +2784,7 @@ class Systemctl:
         # for StopPost on failure:
         returncode = 0
         service_result = "success"
+        self.do_start_target_from(conf)
         if True:
             if runs in [ "simple", "forking", "notify", "idle" ]:
                 env["MAINPID"] = strE(self.read_mainpid_from(conf))
@@ -3465,6 +3466,7 @@ class Systemctl:
         env.update(service_directories)
         returncode = 0
         service_result = "success"
+        self.do_stop_target_from(conf)
         if runs in [ "oneshot" ]:
             status_file = self.get_status_file_from(conf)
             if self.get_status_from(conf, "ActiveState", "unknown") == "inactive":
@@ -6015,7 +6017,8 @@ class Systemctl:
             break
     def is_running_unit_from(self, conf):
         status_file = self.get_status_file_from(conf)
-        return self.getsize(status_file) > 0
+        pid_file = self.pid_file_from(conf)
+        return self.getsize(status_file) > 0 or self.getsize(pid_file) > 0
     def is_running_unit(self, unit):
         conf = self.get_unit_conf(unit)
         return self.is_running_unit_from(conf)
