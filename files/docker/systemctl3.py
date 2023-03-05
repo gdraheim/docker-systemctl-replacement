@@ -75,34 +75,38 @@ _show_all = False
 _user_mode = False
 
 # common default paths
-_system_folder1 = "/etc/systemd/system"
-_system_folder2 = "/run/systemd/system"
-_system_folder3 = "/var/run/systemd/system"
-_system_folder4 = "/usr/local/lib/systemd/system"
-_system_folder5 = "/usr/lib/systemd/system"
-_system_folder6 = "/lib/systemd/system"
-_system_folderX = None
-_user_folder1 = "{XDG_CONFIG_HOME}/systemd/user"
-_user_folder2 = "/etc/systemd/user"
-_user_folder3 = "{XDG_RUNTIME_DIR}/systemd/user"
-_user_folder4 = "/run/systemd/user"
-_user_folder5 = "/var/run/systemd/user"
-_user_folder6 = "{XDG_DATA_HOME}/systemd/user"
-_user_folder7 = "/usr/local/lib/systemd/user"
-_user_folder8 = "/usr/lib/systemd/user"
-_user_folder9 = "/lib/systemd/user"
-_user_folderX = None
-_init_folder1 = "/etc/init.d"
-_init_folder2 = "/run/init.d"
-_init_folder3 = "/var/run/init.d"
-_init_folderX = None
-_preset_folder1 = "/etc/systemd/system-preset"
-_preset_folder2 = "/run/systemd/system-preset"
-_preset_folder3 = "/var/run/systemd/system-preset"
-_preset_folder4 = "/usr/local/lib/systemd/system-preset"
-_preset_folder5 = "/usr/lib/systemd/system-preset"
-_preset_folder6 = "/lib/systemd/system-preset"
-_preset_folderX = None
+_system_folders = [
+    "/etc/systemd/system",
+    "/run/systemd/system",
+    "/var/run/systemd/system",
+    "/usr/local/lib/systemd/system",
+    "/usr/lib/systemd/system",
+    "/lib/systemd/system",
+]
+_user_folders = [
+    "{XDG_CONFIG_HOME}/systemd/user",
+    "/etc/systemd/user",
+    "{XDG_RUNTIME_DIR}/systemd/user",
+    "/run/systemd/user",
+    "/var/run/systemd/user",
+    "{XDG_DATA_HOME}/systemd/user",
+    "/usr/local/lib/systemd/user",
+    "/usr/lib/systemd/user",
+    "/lib/systemd/user",
+]
+_init_folders = [
+    "/etc/init.d",
+    "/run/init.d",
+    "/var/run/init.d",
+]
+_preset_folders = [
+    "/etc/systemd/system-preset",
+    "/run/systemd/system-preset",
+    "/var/run/systemd/system-preset",
+    "/usr/local/lib/systemd/system-preset",
+    "/usr/lib/systemd/system-preset",
+    "/lib/systemd/system-preset",
+]
 
 # standard paths
 _dev_null = "/dev/null"
@@ -1222,49 +1226,29 @@ class Systemctl:
         for path in SYSTEMD_PRESET_PATH.split(":"):
             if path.strip(): yield expand_path(path.strip())
         if SYSTEMD_PRESET_PATH.endswith(":"):
-            if _preset_folder1: yield _preset_folder1
-            if _preset_folder2: yield _preset_folder2
-            if _preset_folder3: yield _preset_folder3
-            if _preset_folder4: yield _preset_folder4
-            if _preset_folder5: yield _preset_folder5
-            if _preset_folder6: yield _preset_folder6
-            if _preset_folderX: yield _preset_folderX
+            for p in _preset_folders:
+                yield p
     def init_folders(self):
         SYSTEMD_SYSVINIT_PATH = self.get_SYSTEMD_SYSVINIT_PATH()
         for path in SYSTEMD_SYSVINIT_PATH.split(":"):
             if path.strip(): yield expand_path(path.strip())
         if SYSTEMD_SYSVINIT_PATH.endswith(":"):
-            if _init_folder1: yield _init_folder1
-            if _init_folder2: yield _init_folder2
-            if _init_folder3: yield _init_folder3
-            if _init_folderX: yield _init_folderX
+            for p in _init_folders:
+                yield p
     def user_folders(self):
         SYSTEMD_UNIT_PATH = self.get_SYSTEMD_UNIT_PATH()
         for path in SYSTEMD_UNIT_PATH.split(":"):
             if path.strip(): yield expand_path(path.strip())
         if SYSTEMD_UNIT_PATH.endswith(":"):
-            if _user_folder1: yield expand_path(_user_folder1)
-            if _user_folder2: yield expand_path(_user_folder2)
-            if _user_folder3: yield expand_path(_user_folder3)
-            if _user_folder4: yield expand_path(_user_folder4)
-            if _user_folder5: yield expand_path(_user_folder5)
-            if _user_folder6: yield expand_path(_user_folder6)
-            if _user_folder7: yield expand_path(_user_folder7)
-            if _user_folder8: yield expand_path(_user_folder8)
-            if _user_folder9: yield expand_path(_user_folder9)
-            if _user_folderX: yield expand_path(_user_folderX)
+            for p in _user_folders:
+                yield p
     def system_folders(self):
         SYSTEMD_UNIT_PATH = self.get_SYSTEMD_UNIT_PATH()
         for path in SYSTEMD_UNIT_PATH.split(":"):
             if path.strip(): yield expand_path(path.strip())
         if SYSTEMD_UNIT_PATH.endswith(":"):
-            if _system_folder1: yield _system_folder1
-            if _system_folder2: yield _system_folder2
-            if _system_folder3: yield _system_folder3
-            if _system_folder4: yield _system_folder4
-            if _system_folder5: yield _system_folder5
-            if _system_folder6: yield _system_folder6
-            if _system_folderX: yield _system_folderX
+            for p in _system_folders:
+                yield p
     def get_SYSTEMD_UNIT_PATH(self):
         if self._SYSTEMD_UNIT_PATH is None:
             self._SYSTEMD_UNIT_PATH = os.environ.get("SYSTEMD_UNIT_PATH", ":")
