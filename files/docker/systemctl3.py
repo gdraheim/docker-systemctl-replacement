@@ -5236,29 +5236,32 @@ class Systemctl:
                     logg.error("  %s: %s Executable path is not absolute.", unit, section)
                 else:
                     logg.warning("%s: %s Executable path is not absolute.", unit, section)
+                logg.info("%s: %s exe = %s", unit, section, exe)
                 errors += 1
             usedExecStart.append(line)
         for line in haveExecStop:
             mode, exe = exec_path(line)
-            if not line.startswith("/"):
+            if not exe.startswith("/"):
                 if mode.check:
                     logg.error("  %s: %s Executable path is not absolute.", unit, section)
                 else:
                     logg.warning("%s: %s Executable path is not absolute.", unit, section)
+                logg.info("%s: %s exe = %s", unit, section, exe)
                 errors += 1
             usedExecStop.append(line)
         for line in haveExecReload:
             mode, exe = exec_path(line)
-            if not line.startswith("/"):
+            if not exe.startswith("/"):
                 if mode.check:
                     logg.error("  %s: %s Executable path is not absolute.", unit, section)
                 else:
                     logg.warning("%s: %s Executable path is not absolute.", unit, section)
+                logg.info("%s: %s exe = %s", unit, section, exe)
                 errors += 1
             usedExecReload.append(line)
         if haveType in ["simple", "notify", "forking", "idle"]:
             if not usedExecStart and not usedExecStop:
-                logg.error(" %s: $s lacks both ExecStart and ExecStop= setting. Refusing.", unit, section)
+                logg.error(" %s: %s lacks both ExecStart and ExecStop= setting. Refusing.", unit, section)
                 errors += 101
             elif not usedExecStart and haveType != "oneshot":
                 logg.error(" %s: %s has no ExecStart= setting, which is only allowed for Type=oneshot services. Refusing.", unit, section)
