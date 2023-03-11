@@ -1823,8 +1823,8 @@ class Systemctl:
                 continue
             return pid
         return None
-    def test_pid_file(self, unit): # -> text
-        """ support for the testsuite.py """
+    def get_status_pid_file(self, unit):
+        """ actual file path of pid file (internal) """
         conf = self.get_unit_conf(unit)
         return self.pid_file_from(conf) or self.get_status_file_from(conf)
     def pid_file_from(self, conf, default = ""):
@@ -5643,7 +5643,7 @@ class Systemctl:
              requires = target_requires[requires]
         logg.debug("the %s requires %s", module, targets)
         return targets
-    def system_default(self, arg = True):
+    def default_system(self, arg = True):
         """ start units for default system level
             This will go through the enabled services in the default 'multi-user.target'.
             However some services are ignored as being known to be installation garbage
@@ -6433,6 +6433,8 @@ def run(command, *modules):
         print_str_list(systemctl.command_of_unit(*modules))
     elif command in ["daemon-reload"]:
         exitcode = is_not_ok(systemctl.daemon_reload_target())
+    elif command in ["default"]:
+        exitcode = is_not_ok(systemctl.default_system())
     elif command in ["default-services"]:
         print_str_list(systemctl.default_services_modules(*modules))
     elif command in ["disable"]:
@@ -6511,6 +6513,10 @@ def run(command, *modules):
         print_str(systemctl.get_active_unit(*modules))
     elif command in ["__get_description"]:
         print_str(systemctl.get_description(*modules))
+    elif command in ["__get_status_file"]:
+        print_str(systemctl.get_status_file(modules[0]))
+    elif command in ["__get_status_pid_file", "__get_pid_file"]:
+        print_str(systemctl.get_status_pid_file(modules[0]))
     elif command in ["__disable_unit"]:
         exitcode = is_not_ok(systemctl.disable_unit(*modules))
     elif command in ["__enable_unit"]:
