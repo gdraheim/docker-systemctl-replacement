@@ -6259,7 +6259,7 @@ class Systemctl:
                 okay = False
             else:
                 doc_text = "..."
-                doc = getattr(func, "__doc__", None)
+                doc = getattr(func, "__doc__", "")
                 if doc:
                     doc_text = doc.replace("\n","\n\n", 1).strip()
                     if "--" not in doc_text:
