@@ -86,21 +86,11 @@ def debug_(msg, note=None):  # pragma: no cover
         logg.debug("%s", msg)
     else:
         logg.debug("%s %s", msg, note)
-def hint_(msg, note=None):  # pragma: no cover
-    if note is None:
-        logg.log(HINT, "%s", msg)
-    else:
-        logg.log(HINT, "%s %s", msg, note)
 def info_(msg, note=None):  # pragma: no cover
     if note is None:
         logg.info("%s", msg)
     else:
         logg.info("%s %s", msg, note)
-def note_(msg, note=None):  # pragma: no cover
-    if note is None:
-        logg.log(NOTE, "%s", msg)
-    else:
-        logg.log(NOTE, "%s %s", msg, note)
 def warn_(msg, note=None):  # pragma: no cover
     if note is None:
         logg.warning("%s", msg)
@@ -7623,16 +7613,6 @@ class Systemctl:
     def version_info(self):
         return [self.systemd_version(), self.systemd_features()]
 
-def debug_result_(msg):
-    if DebugPrintResult:  # pragma: no cover
-        logg.debug("%s", msg)
-def hint_result_(msg):
-    if DebugPrintResult:  # pragma: no cover
-        logg.info("%s", msg)
-def note_result_(msg):
-    if DebugPrintResult:  # pragma: no cover
-        logg.warning("%s", msg)
-
 def print_begin(argv, args):
     script = os.path.realpath(argv[0])
     command = " ".join(args)
@@ -7644,56 +7624,65 @@ def print_begin(argv, args):
         warn_("the --root={root44} should have alteast three levels /tmp/test_123/root")
 
 def print_begin2(args):
-    dbg_("======= systemctl.py " + " ".join(args))
+    logg.debug("======= systemctl.py %s", " ".join(args))
 
 def is_not_ok(result):
-    hint_result_("EXEC END {result}")
+    if DebugPrintResult:
+        logg.log(HINT, "EXEC END %s", result)
     if result is False:
         return NOT_OK
     return 0
 
 def print_str(result):
     if result is None:
-        debug_result_("    END {result}")
+        if DebugPrintResult:
+            logg.debug("    END %s", result)
         return
     print(result)
-    result1 = result.split("\n")[0][:-20]
-    if result == result1:
-        hint_result_("EXEC END '{result}'".format(**locals()))
-    else:
-        hint_result_("EXEC END '{result1}...'".format(**locals()))
-        debug_result_("    END '{result}'".format(**locals()))
+    if DebugPrintResult:
+        result1 = result.split("\n")[0][:-20]
+        if result == result1:
+            logg.log(HINT, "EXEC END '%s'", result)
+        else:
+            logg.log(HINT, "EXEC END '%s...'", result1)
+            logg.debug("    END '%s'", result)
 def print_str_list(result):
     if result is None:
-        debug_result_("    END {result}")
+        if DebugPrintResult:
+            logg.debug("    END %s", result)
         return
     shown = 0
     for element in result:
         print(element)
         shown += 1
-    hint_result_("EXEC END {shown} items".format(**locals()))
-    debug_result_("    END {result}".format(**locals()))
+    if DebugPrintResult:
+        logg.log(HINT, "EXEC END %i items", shown)
+        logg.debug("    END %s", result)
 def print_str_list_list(result):
     shown = 0
     for element in result:
         print("\t".join([str(elem) for elem in element]))
         shown += 1
-    hint_result_("EXEC END {shown} items".format(**locals()))
-    debug_result_("    END {result}".format(**locals()))
+    if DebugPrintResult:
+        logg.log(HINT, "EXEC END %i items", shown)
+        logg.debug("    END %s", result)
 def print_str_dict(result):
     if result is None:
-        debug_result_("    END {result}")
+        if DebugPrintResult:
+            logg.debug("    END %s", result)
         return
     shown = 0
     for key in sorted(result.keys()):
         element = result[key]
         print("%s=%s" % (key, element))
         shown += 1
-    hint_result_("EXEC END {shown} items".format(**locals()))
-    debug_result_("    END {result}".format(**locals()))
+    if DebugPrintResult:
+        logg.log(HINT, "EXEC END %i items", shown)
+        logg.debug("    END %s", result)
 def print_str_dict_dict(result):
     if result is None:
-        debug_result_("    END {result}")
+        if DebugPrintResult:
+            logg.debug("    END %s", result)
         return
     shown = 0
     for key in sorted(result):
@@ -7702,8 +7691,9 @@ def print_str_dict_dict(result):
             value = element[name]
             print("%s [%s] %s" % (key, value, name))
         shown += 1
-    hint_result_("EXEC END {shown} items".format(**locals()))
-    debug_result_("    END {result}".format(**locals()))
+    if DebugPrintResult:
+        logg.log(HINT, "EXEC END %i items", shown)
+        logg.debug("    END %s", result)
 
 def config_globals(settings):
     for setting in settings:
