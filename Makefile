@@ -376,8 +376,8 @@ type.:
 	$(MYPY) $(MYPY_STRICT) tmp.files/docker/systemctl3.py 2>&1 | head -20
 type:
 	python3 $(PY_RETYPE)/retype.py files/docker/systemctl3.py -t tmp.files/docker
-	python3 format3.py -i tmp.files/docker/systemctl3.py
-	@ grep -w format tmp.files/docker/systemctl3.py | grep -v internal | sed -e "s|^|ERROR: |"; true
+	: python3 format3.py -i tmp.files/docker/systemctl3.py
+	: @ grep -w format tmp.files/docker/systemctl3.py | grep -v internal | sed -e "s|^|ERROR: |"; true
 	$(MYPY) $(MYPY_STRICT) tmp.files/docker/systemctl3.py # --new-semantic-analyzer --show-traceback
 re: ; git checkout HEAD files/docker/systemctl3.py
 33: ; cp files/docker/systemctl3.py files/docker/systemctl33.py
