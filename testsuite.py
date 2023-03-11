@@ -2,7 +2,7 @@
 """ Testcases for docker-systemctl-replacement functionality """
 
 __copyright__ = "(C) Guido Draheim, licensed under the EUPL"""
-__version__ = "1.5.4505"
+__version__ = "1.5.7106"
 
 # NOTE:
 # The testcases 1000...4999 are using a --root=subdir environment
@@ -1547,7 +1547,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, r"b.service:.* Executable path is not absolute"))
         self.assertTrue(greps(out, r"c.service: Service has no ExecStart"))
         self.assertTrue(greps(out, r"d.service: Service lacks both ExecStart and ExecStop"))
-        self.assertTrue(greps(out, r"g.service: there may be only one ExecStart statement"))
+        self.assertTrue(greps(out, r"g.service: there may be only one Service ExecStart statement"))
         self.assertTrue(greps(out, r"c.service: the use of /bin/kill is not recommended"))
         self.rm_testdir()
         self.coverage()
@@ -1630,9 +1630,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, r"b.service:.* Executable path is not absolute"))
         self.assertTrue(greps(out, r"c.service:.* Service has no ExecStart"))
         self.assertTrue(greps(out, r"d.service:.* Service lacks both ExecStart= and ExecStop="))
-        self.assertFalse(greps(out, r"g.service:.* there may be only one ExecStart statement")) # systemctl.py special
-        self.assertFalse(greps(out, r"g.service:.* there may be only one ExecStop statement")) # systemctl.py special
-        self.assertFalse(greps(out, r"g.service:.* there may be only one ExecReload statement")) # systemctl.py special
+        self.assertFalse(greps(out, r"g.service:.* there may be only one Service ExecStart statement")) # systemctl.py special
+        self.assertFalse(greps(out, r"g.service:.* there may be only one Service ExecStop statement")) # systemctl.py special
+        self.assertFalse(greps(out, r"g.service:.* there may be only one Service ExecReload statement")) # systemctl.py special
         self.assertFalse(greps(out, r"c.service:.* the use of /bin/kill is not recommended")) # systemctl.py special
         sh____("rm /etc/systemd/system/zz*")
     def test_1091_check_syntax_errors_on_start_service(self) -> None:
@@ -1694,7 +1694,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, r"b.service:.* Executable path is not absolute"))
         self.assertTrue(greps(out, r"c.service: Service has no ExecStart"))
         self.assertTrue(greps(out, r"d.service: Service lacks both ExecStart and ExecStop"))
-        self.assertTrue(greps(out, r"g.service: there may be only one ExecStart statement"))
+        self.assertTrue(greps(out, r"g.service: there may be only one Service ExecStart statement"))
         self.assertTrue(greps(out, r"c.service: the use of /bin/kill is not recommended"))
         #
         cmd = "{systemctl} start --no-reload zza zzb zzc zzd zzg -vv 2>&1"
@@ -1706,7 +1706,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, r"b.service:.* Executable path is not absolute"))
         self.assertTrue(greps(out, r"c.service: Service has no ExecStart"))
         self.assertTrue(greps(out, r"d.service: Service lacks both ExecStart and ExecStop"))
-        self.assertTrue(greps(out, r"g.service: there may be only one ExecStart statement"))
+        self.assertTrue(greps(out, r"g.service: there may be only one Service ExecStart statement"))
         self.assertTrue(greps(out, r"c.service: the use of /bin/kill is not recommended"))
         self.rm_testdir()
         self.coverage()
