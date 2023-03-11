@@ -10,9 +10,9 @@ on:
 jobs:
   mypy:
     name: mypy typehints check
-    runs-on: 'ubuntu-latest'
+    runs-on: 'ubuntu-20.04'
     steps:
-    - name: checkout docker-systemctl-replacement
+    - name: checkout software
       uses: actions/checkout@v2
       with:
         path: software
