@@ -35,7 +35,7 @@ jobs:
         mypy --version
     - name: 'workaround mypy bug'
       run: |
-        sed -i -e "/spawnvp/s|.*|& # type: ignore[arg-type]|" files/docker/systemctl3.py
+        sed -i -e "/spawnvp/s|.*|& # type: ignore[arg-type]|" software/files/docker/systemctl3.py
     - name: 'make type (mypy strict type checking)'
       id: check
       run: |
