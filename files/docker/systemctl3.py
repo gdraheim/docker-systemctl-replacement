@@ -291,6 +291,29 @@ def o77(part):
             return part
         return part[:20] + "..." + part[-54:]
     return part # pragma: no cover (is always str)
+def path44(filename):
+    if not filename:
+        return "<none>"
+    x = filename.find("/", 8)
+    if len(filename) <= 40:
+        if "/" not in filename:
+            return ".../" + filename
+    elif len(filename) <= 44:
+        return filename
+    if 0 < x and x < 14:
+        out = filename[:x+1]
+        out += "..."
+    else:
+        out = filename[:10]
+        out += "..."
+    remain = len(filename) - len(out)
+    y = filename.find("/", remain)
+    if 0 < y and y < remain+5:
+        out += filename[y:]
+    else:
+        out += filename[remain:]
+    return out
+
 def unit_name_escape(text):
     # https://www.freedesktop.org/software/systemd/man/systemd.unit.html#id-1.6
     esc = re.sub("([^a-z-AZ.-/])", lambda m: "\\x%02x" % ord(m.group(1)[0]), text)
@@ -6288,6 +6311,18 @@ class Systemctl:
     def test_float(self):
         return 0. # "Unknown result type"
 
+def print_begin(argv, args):
+    script = os.path.realpath(argv[0])
+    system = _user_mode and " --user" or " --system"
+    init = _init and " --init" or ""
+    logg.info("EXEC BEGIN %s %s%s%s", script, " ".join(args), system, init)
+    if _root and not is_good_root(_root):
+        root44 = path44(_root)
+        logg.warning("the --root=%s should have alteast three levels /tmp/test_123/root", root44)
+
+def print_begin2(args):
+    logg.debug("======= systemctl.py %s", " ".join(args))
+
 def print_result(result):
     # logg_info = logg.info
     # logg_debug = logg.debug
@@ -6494,11 +6529,8 @@ if __name__ == "__main__":
         loggfile.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
         logg.addHandler(loggfile)
         logg.setLevel(logging.DEBUG)
-    logg.info("EXEC BEGIN %s %s%s%s", os.path.realpath(sys.argv[0]), " ".join(args),
-        _user_mode and " --user" or " --system", _init and " --init" or "", )
-    if _root and not is_good_root(_root):
-        logg.warning("the --root=path should have alteast three levels /tmp/test_123/root")
     #
+    print_begin(sys.argv, args)
     #
     systemctl = Systemctl()
     if opt.version:
@@ -6508,7 +6540,7 @@ if __name__ == "__main__":
             args = [ "default" ]
         else:
             args = [ "list-units" ]
-    logg.debug("======= systemctl.py " + " ".join(args))
+    print_begin2(args)
     command = args[0]
     modules = args[1:]
     try:

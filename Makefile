@@ -295,6 +295,7 @@ type.:
 	mypy --strict tmp.files/docker/systemctl3.py 2>&1 | head -20
 type:
 	python3 ../retype/retype.py files/docker/systemctl3.py -t tmp.files/docker
+	sed -i -e "/# [|]/d" tmp.files/docker/systemctl3.py
 	mypy --strict tmp.files/docker/systemctl3.py
 
 ####### box test
