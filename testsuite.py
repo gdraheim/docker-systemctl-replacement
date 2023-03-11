@@ -939,16 +939,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.rm_zzfiles(root)
         self.coverage()
-    def test_1019_systemctl_test_commands_work(self) -> None:
-        """ some commands are internal for testing only """
-        systemctl = cover() + _systemctl_py
-        cmd = "{systemctl} __test_float -vvvv"
-        out, err, end = output3(cmd.format(**locals()))
-        logg.info("%s\n%s\n%s", cmd, out, err)
-        self.assertEqual(end, 0)
-        self.assertEqual(out.strip(), "")
-        self.assertTrue(greps(err, "Unknown result type <(class|type) 'float'>"))
-        self.coverage()
     def test_1020_systemctl_with_systemctl_log(self) -> None:
         """ when /var/log/systemctl.log exists then print INFO messages into it"""
         testdir = self.testdir()
@@ -1254,7 +1244,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         textA = reads(os_path(root, "/etc/systemd/system/zza.service"))
         self.assertTrue(greps(textA, "Testing A"))
         self.assertTrue(greps(textA, "PIDFile="))
-        cmd = "{systemctl} __test_pid_file zza.service"
+        cmd = "{systemctl} __get_pid_file zza.service"
         out, end = output2(cmd.format(**locals()))
         logg.info("%s => \n%s", cmd, out)
         self.assertEqual(end, 0)
@@ -1276,7 +1266,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         textA = reads(os_path(root, "/etc/systemd/system/zza.service"))
         self.assertTrue(greps(textA, "Testing A"))
         self.assertFalse(greps(textA, "PIDFile="))
-        cmd = "{systemctl} __test_pid_file zza.service"
+        cmd = "{systemctl} __get_pid_file zza.service"
         out, end = output2(cmd.format(**locals()))
         logg.info("%s => \n%s", cmd, out)
         self.assertEqual(end, 0)
@@ -1320,7 +1310,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         textA = reads(os_path(root, "/etc/systemd/system/zza.service"))
         self.assertTrue(greps(textA, "Testing A"))
         self.assertTrue(greps(textA, "PIDFile="))
-        cmd = "{systemctl} __test_pid_file zza.service"
+        cmd = "{systemctl} __get_pid_file zza.service"
         out, end = output2(cmd.format(**locals()))
         logg.info("%s => \n%s", cmd, out)
         self.assertEqual(end, 0)
@@ -1343,7 +1333,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         textA = reads(os_path(root, "/etc/systemd/system/zza.service"))
         self.assertTrue(greps(textA, "Testing A"))
         self.assertTrue(greps(textA, "PIDFile="))
-        cmd = "{systemctl} __test_pid_file zza.service"
+        cmd = "{systemctl} __get_pid_file zza.service"
         out, end = output2(cmd.format(**locals()))
         logg.info("%s => \n%s", cmd, out)
         self.assertEqual(end, 0)
@@ -1374,7 +1364,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 0)
         self.assertTrue(greps(out, "Testing A"))
         self.assertTrue(greps(out, "quite special"))
-        cmd = "{systemctl} __test_pid_file zza.service"
+        cmd = "{systemctl} __get_pid_file zza.service"
         out, end = output2(cmd.format(**locals()))
         logg.info("%s => \n%s", cmd, out)
         self.assertEqual(end, 0)
@@ -1405,7 +1395,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 0)
         self.assertFalse(greps(out, "Testing A"))
         self.assertFalse(greps(out, "quite special"))
-        cmd = "{systemctl} __test_pid_file zza.service"
+        cmd = "{systemctl} __get_pid_file zza.service"
         out, end = output2(cmd.format(**locals()))
         logg.info("%s => \n%s", cmd, out)
         self.assertEqual(end, 0)
@@ -1476,21 +1466,21 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, r"^our.preset"))
         self.assertEqual(len(lines(out)), 1)
         #
-        cmd = "{systemctl} __get_preset_of_unit zza.service"
+        cmd = "{systemctl} get-preset zza.service"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         # self.assertTrue(greps(out, r"^our.preset"))
         self.assertEqual(len(lines(out)), 0)
         #
-        cmd = "{systemctl} __get_preset_of_unit zzb.service"
+        cmd = "{systemctl} get-preset zzb.service"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         self.assertTrue(greps(out, r"^enable"))
         self.assertEqual(len(lines(out)), 1)
         #
-        cmd = "{systemctl} __get_preset_of_unit zzc.service"
+        cmd = "{systemctl} get-preset zzc.service"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
@@ -2026,7 +2016,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} incorrect"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        self.assertTrue(greps(err, "Unknown operation incorrect."))
+        self.assertTrue(greps(err, "Unknown operation incorrect"))
         self.assertFalse(greps(out, "units listed."))
         self.assertEqual(end, 1)
         self.rm_zzfiles(root)
@@ -11569,7 +11559,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} environment zz-unknown.service {vv}"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
-        self.assertEqual(end, 1)
+        self.assertEqual(end, 4)
         if not real:
             self.assertTrue(greps(err, "Unit zz-unknown.service could not be found."))
         #
@@ -18181,7 +18171,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         os.makedirs(os_path(root, "/var/run"))
         os.makedirs(os_path(root, "/var/log"))
         #
-        list_dependencies = "{systemctl} list-dependencies zza.service --now"
+        list_dependencies = "{systemctl} list-start-dependencies zza.service"
         deps_text  = output(list_dependencies.format(**locals()))
         # logg.info("deps \n%s", deps_text)
         #
@@ -18257,7 +18247,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         os.makedirs(os_path(root, "/var/run"))
         os.makedirs(os_path(root, "/var/log"))
         #
-        list_dependencies = "{systemctl} list-dependencies zza.service --now"
+        list_dependencies = "{systemctl} list-start-dependencies zza.service"
         deps_text  = output(list_dependencies.format(**locals()))
         # logg.info("deps \n%s", deps_text)
         #
@@ -18268,7 +18258,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(deps[1], "zza.service\t(Requested)")
         self.assertEqual(len(deps), 2)
         #
-        list_dependencies = "{systemctl} list-dependencies zzb.service --now"
+        list_dependencies = "{systemctl} list-start-dependencies zzb.service"
         deps_text  = output(list_dependencies.format(**locals()))
         # logg.info("deps \n%s", deps_text)
         #
@@ -18279,7 +18269,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(deps), 1)
         #
         #
-        list_dependencies = "{systemctl} list-dependencies zzc.service --now"
+        list_dependencies = "{systemctl} list-start-dependencies zzc.service"
         deps_text  = output(list_dependencies.format(**locals()))
         # logg.info("deps \n%s", deps_text)
         #
@@ -18356,7 +18346,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         os.makedirs(os_path(root, "/var/run"))
         os.makedirs(os_path(root, "/var/log"))
         #
-        list_dependencies = "{systemctl} list-dependencies zza.service --now"
+        list_dependencies = "{systemctl} list-start-dependencies zza.service"
         deps_text  = output(list_dependencies.format(**locals()))
         # logg.info("deps \n%s", deps_text)
         #
@@ -18367,7 +18357,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(deps[1], "zza.service\t(Requested)")
         self.assertEqual(len(deps), 2)
         #
-        list_dependencies = "{systemctl} list-dependencies zzb.service --now"
+        list_dependencies = "{systemctl} list-start-dependencies zzb.service"
         deps_text  = output(list_dependencies.format(**locals()))
         # logg.info("deps \n%s", deps_text)
         #
@@ -18378,7 +18368,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(deps), 1)
         #
         #
-        list_dependencies = "{systemctl} list-dependencies zzc.service --now"
+        list_dependencies = "{systemctl} list-start-dependencies zzc.service"
         deps_text  = output(list_dependencies.format(**locals()))
         # logg.info("deps \n%s", deps_text)
         #
@@ -37088,7 +37078,7 @@ ExecStart=/usr/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_CONFIG_ARGS $KUBELE
         logg.info(" HAVE %s", greps(out, "KUBE"))
         self.assertTrue(greps(out, "KUBELET_CONFIG_ARGS=--config"))
         self.assertEqual(len(greps(out, "KUBE")), 2)
-        cmd = "{systemctl} environment kubelet -vvv -p ExecStart"
+        cmd = "{systemctl} command kubelet -vvv"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(len(lines(out)), 1)
@@ -37110,7 +37100,7 @@ ExecStart=/usr/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_CONFIG_ARGS $KUBELE
         logg.info(" HAVE %s", greps(out, "KUBE"))
         self.assertTrue(greps(out, "KUBELET_CONFIG_ARGS=--config"))
         self.assertEqual(len(greps(out, "KUBE")), 2)
-        cmd = "{systemctl} environment kubelet -vvv -p ExecStart"
+        cmd = "{systemctl} command kubelet -vvv"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(len(lines(out)), 1)
