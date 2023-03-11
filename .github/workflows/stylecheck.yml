@@ -1,0 +1,28 @@
+name: pep8 style check
+
+on:
+  push:
+    branches: [ develop, master ]
+  pull_request:
+    branches: [ develop, master ]
+  workflow_dispatch:
+
+jobs:
+  autopep8:
+    name: autopep8 style check
+    runs-on: 'ubuntu-latest'
+    steps:
+    - name: checkout software
+      uses: actions/checkout@v2
+      with:
+        path: software
+    - name: 'refresh install'
+      run: |
+        sudo apt-get update --fix-missing
+    - name: 'install python3 autopep8'
+      run: |
+        sudo apt-get install --fix-broken --ignore-missing python3-autopep8
+    - name: 'make pep (autopep8 style check)'
+      id: check
+      run: |
+        make pep -C software

@@ -1,0 +1,42 @@
+name: basic unit tests
+
+on:
+  push:
+    branches: [ develop ]
+  pull_request:
+    branches: [ develop, master ]
+
+jobs:
+  tests:
+    name: 'unit tests'
+    runs-on: 'ubuntu-latest'
+    steps:
+    - name: checkout software
+      uses: actions/checkout@v2
+      with:
+        path: software
+    - name: 'refresh install'
+      run: |
+        sudo apt-get update --fix-missing
+    - name: 'install python3 coverage'
+      run: |
+        sudo apt-get install --fix-broken --ignore-missing python3-coverage
+    - name: 'install python3 pip'
+      run: |
+        sudo apt-get install --fix-broken --ignore-missing python3-pip
+    - name: 'install unittest-xml-reporting'
+      run: |
+        pip3 install unittest-xml-reporting
+    - name: 'make tests (testsuite.py without coverage)'
+      run: |
+        make tests -C software || true
+    - name: 'find xml'
+      run: |
+        find . -name '*.xml'
+    - name: 'publish testresults'
+      uses: EnricoMi/publish-unit-test-result-action@v1
+      with:
+        commit: ${{ github.event.workflow_run.head_sha }}
+        files: '**/TEST-*.xml'
+        check_name: 'Unit tests without docker-based tests'
+        report_individual_runs: "true"

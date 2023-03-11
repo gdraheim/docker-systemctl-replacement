@@ -1,0 +1,39 @@
+name: typehints check
+
+on:
+  push:
+    branches: [ develop, master ]
+  pull_request:
+    branches: [ develop, master ]
+  workflow_dispatch:
+
+jobs:
+  mypy:
+    name: mypy typehints check
+    runs-on: 'ubuntu-latest'
+    steps:
+    - name: checkout docker-systemctl-replacement
+      uses: actions/checkout@v2
+      with:
+        path: software
+    - name: checkout retype
+      uses: actions/checkout@v2
+      with:
+        path: retype
+        repository: ambv/retype
+        ref: 04978c6f7dcedb76ff334da8d5be734d3a4ce4b4
+      # ref: 17.12.0
+    - name: 'refresh install'
+      run: |
+        sudo apt-get update --fix-missing
+    - name: 'install python3 mypy'
+      run: |
+        sudo apt-get install --fix-broken --ignore-missing python3-typed-ast mypy
+    - name: 'show mypy directories'
+      run: |
+        find . -type d
+        mypy --version
+    - name: 'make type (mypy strict type checking)'
+      id: check
+      run: |
+        make type -C software
