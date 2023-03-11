@@ -922,7 +922,7 @@ class waitlock:
         except Exception as e:
             logg.warning("oops, %s", e)
 
-waitpid_result = collections.namedtuple("waitpid", ["pid", "returncode", "signal" ])
+SystemctlWaitPID = collections.namedtuple("SystemctlWaitPID", ["pid", "returncode", "signal" ])
 
 def must_have_failed(waitpid, cmd):
     # found to be needed on ubuntu:16.04 to match test result from ubuntu:18.04 and other distros
@@ -938,20 +938,20 @@ def must_have_failed(waitpid, cmd):
         if pid is None: # unknown $MAINPID
             if not waitpid.returncode:
                 logg.error("waitpid %s did return %s => correcting as 11", cmd, waitpid.returncode)
-            waitpid = waitpid_result(waitpid.pid, 11, waitpid.signal)
+            waitpid = SystemctlWaitPID(waitpid.pid, 11, waitpid.signal)
     return waitpid
 
 def subprocess_waitpid(pid):
     run_pid, run_stat = os.waitpid(pid, 0)
-    return waitpid_result(run_pid, os.WEXITSTATUS(run_stat), os.WTERMSIG(run_stat))
+    return SystemctlWaitPID(run_pid, os.WEXITSTATUS(run_stat), os.WTERMSIG(run_stat))
 def subprocess_testpid(pid):
     run_pid, run_stat = os.waitpid(pid, os.WNOHANG)
     if run_pid:
-        return waitpid_result(run_pid, os.WEXITSTATUS(run_stat), os.WTERMSIG(run_stat))
+        return SystemctlWaitPID(run_pid, os.WEXITSTATUS(run_stat), os.WTERMSIG(run_stat))
     else:
-        return waitpid_result(pid, None, 0)
+        return SystemctlWaitPID(pid, None, 0)
 
-parse_result = collections.namedtuple("UnitName", ["fullname", "name", "prefix", "instance", "suffix", "component" ])
+SystemctlUnitName = collections.namedtuple("SystemctlUnitName", ["fullname", "name", "prefix", "instance", "suffix", "component" ])
 
 def parse_unit(fullname): # -> object(prefix, instance, suffix, ...., name, component)
     name, suffix = fullname, ""
@@ -968,7 +968,7 @@ def parse_unit(fullname): # -> object(prefix, instance, suffix, ...., name, comp
     has_component = prefix.rfind("-")
     if has_component > 0: 
         component = prefix[has_component+1:]
-    return parse_result(fullname, name, prefix, instance, suffix, component)
+    return SystemctlUnitName(fullname, name, prefix, instance, suffix, component)
 
 def time_to_seconds(text, maximum):
     value = 0.
