@@ -610,14 +610,15 @@ def checkprefix(cmd):
             return prefix, newcmd
     return prefix, ""
 
-ExecMode = collections.namedtuple("ExecMode", ["mode", "check", "nouser", "noexpand"])
+ExecMode = collections.namedtuple("ExecMode", ["mode", "check", "nouser", "noexpand", "argv0"])
 def exec_path(cmd):
     """ Hint: exec_path values are usually not moved by --root (while load_path are)"""
     prefix, newcmd = checkprefix(cmd)
     check = "-" not in prefix
     nouser = "+" in prefix or "!" in prefix
     noexpand = ":" in prefix
-    mode = ExecMode(prefix, check, nouser, noexpand)
+    argv0 = "@" in prefix
+    mode = ExecMode(prefix, check, nouser, noexpand, argv0)
     return mode, newcmd
 LoadMode = collections.namedtuple("LoadMode", ["mode", "check"])
 def load_path(ref):
@@ -2271,6 +2272,9 @@ class Systemctl:
             newcmd = self.split_cmd(exe)
         else:
             newcmd = self.expand_cmd(exe, env, conf)
+        if mode.argv0:
+            if len(newcmd) > 1:
+                del newcmd[1] # TODO: keep but allow execve calls to pick it up
         return mode, newcmd
     def split_cmd(self, cmd):
         cmd2 = cmd.replace("\\\n", "")
