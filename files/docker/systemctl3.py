@@ -601,11 +601,35 @@ def _pid_zombie(pid):
         return False
     return False
 
-def checkstatus(cmd):
-    if cmd.startswith("-"):
-        return False, cmd[1:]
-    else:
-        return True, cmd
+def checkprefix(cmd):
+    prefix = ""
+    for i, c in enumerate(cmd):
+        if c in "-+!@:":
+            prefix = prefix + c
+        else:
+            newcmd = cmd[i:]
+            return prefix, newcmd
+    return prefix, ""
+
+ExecMode = collections.namedtuple("ExecMode", ["mode", "check", "nouser", "noexpand"])
+def exec_path(cmd):
+    """ Hint: exec_path values are usually not moved by --root (while load_path are)"""
+    prefix, newcmd = checkprefix(cmd)
+    check = "-" not in prefix
+    nouser = "+" in prefix or "!" in prefix
+    noexpand = ":" in prefix
+    mode = ExecMode(prefix, check, nouser, noexpand)
+    return mode, newcmd
+LoadMode = collections.namedtuple("LoadMode", ["mode", "check"])
+def load_path(ref):
+    """ Hint: load_path values are usually moved by --root (while exec_path are not)"""
+    prefix, filename = "", ref
+    while filename.startswith("-"):
+        prefix = prefix + filename[0]
+        filename = filename[1:]
+    check = "-" not in prefix
+    mode = LoadMode(prefix, check)
+    return mode, filename
 
 # https://github.com/phusion/baseimage-docker/blob/rel-0.9.16/image/bin/my_init
 def ignore_signals_and_raise_keyboard_interrupt(signame):
@@ -2068,10 +2092,14 @@ class Systemctl:
     #
     def read_env_file(self, env_file): # -> generate[ (name,value) ]
         """ EnvironmentFile=<name> is being scanned """
-        if env_file.startswith("-"):
-            env_file = env_file[1:]
-            if not os.path.isfile(os_path(self._root, env_file)):
-                return
+        mode, env_file = load_path(env_file)
+        real_file = os_path(self._root, env_file)
+        if not os.path.exists(real_file):
+            if mode.check:
+                logg.error("file does not exist: %s", real_file)
+            else:
+                logg.debug("file does not exist: %s", real_file)
+            return
         try:
             for real_line in open(os_path(self._root, env_file)):
                 line = real_line.strip()
@@ -2238,28 +2266,37 @@ class Systemctl:
             result = re.sub("[%](.)", lambda m: get_conf1(m), cmd)
             # ++# logg.info("expanded => %s", result)
         return result
-    ExecMode = collections.namedtuple("ExecMode", ["check"])
     def exec_newcmd(self, cmd, env, conf):
-        check, cmd = checkstatus(cmd)
-        mode = Systemctl.ExecMode(check)
-        newcmd = self.exec_cmd(cmd, env, conf)
+        mode, exe = exec_path(cmd)
+        if mode.noexpand:
+            newcmd = self.split_cmd(exe)
+        else:
+            newcmd = self.expand_cmd(exe, env, conf)
         return mode, newcmd
-    def exec_cmd(self, cmd, env, conf):
+    def split_cmd(self, cmd):
+        cmd2 = cmd.replace("\\\n", "")
+        newcmd = []
+        for part in shlex.split(cmd2):
+            newcmd += [part]
+        return newcmd
+    def expand_cmd(self, cmd, env, conf):
         """ expand ExecCmd statements including %i and $MAINPID """
         cmd2 = cmd.replace("\\\n", "")
         # according to documentation, when bar="one two" then the expansion
         # of '$bar' is ["one","two"] and '${bar}' becomes ["one two"]. We
         # tackle that by expand $bar before shlex, and the rest thereafter.
         def get_env1(m):
-            if m.group(1) in env:
-                return env[m.group(1)]
-            logg.debug("can not expand $%s", m.group(1))
-            return "" # empty string
+            name = m.group(1)
+            if name in env:
+                return env[name]
+            logg.debug("can not expand $%s", name)
+            return ""  # empty string
         def get_env2(m):
-            if m.group(1) in env:
-                return env[m.group(1)]
-            logg.debug("can not expand ${%s}", m.group(1))
-            return "" # empty string
+            name = m.group(1)
+            if name in env:
+                return env[name]
+            logg.debug("can not expand $%s}}", name)
+            return ""  # empty string
         cmd3 = re.sub("[$](\w+)", lambda m: get_env1(m), cmd2)
         newcmd = []
         for part in shlex.split(cmd3):
@@ -2697,18 +2734,15 @@ class Systemctl:
         if self._root:
             os.chdir(self._root)
         workingdir = self.get_WorkingDirectory(conf)
+        mode, workingdir = load_path(workingdir)
         if workingdir:
-            ignore = False
-            if workingdir.startswith("-"):
-                workingdir = workingdir[1:]
-                ignore = True
             into = os_path(self._root, self.expand_special(workingdir, conf))
             try:
                 logg.debug("chdir workingdir '%s'", into)
                 os.chdir(into)
                 return False
             except Exception as e:
-                if not ignore:
+                if mode.check:
                     logg.error("chdir workingdir '%s': %s", into, e)
                     return into
                 else:
@@ -5169,7 +5203,7 @@ class Systemctl:
         if filename and filename.endswith(".service"):
             return self.syntax_check_service(conf)
         return 0
-    def syntax_check_service(self, conf):
+    def syntax_check_service(self, conf, section = "Service"):
         unit = conf.name()
         if not conf.data.has_section("Service"):
             logg.error(" %s: a .service file without [Service] section", unit)
@@ -5186,18 +5220,30 @@ class Systemctl:
             logg.error(" %s: Failed to parse service type, ignoring: %s", unit, haveType)
             errors += 100
         for line in haveExecStart:
-            if not line.startswith("/") and not line.startswith("-/"):
-                logg.error(" %s: Executable path is not absolute, ignoring: %s", unit, line.strip())
+            mode, exe = exec_path(line)
+            if not exe.startswith("/"):
+                if mode.check:
+                    logg.error("  %s: %s Executable path is not absolute.", unit, section)
+                else:
+                    logg.warning("%s: %s Executable path is not absolute.", unit, section)
                 errors += 1
             usedExecStart.append(line)
         for line in haveExecStop:
-            if not line.startswith("/") and not line.startswith("-/"):
-                logg.error(" %s: Executable path is not absolute, ignoring: %s", unit, line.strip())
+            mode, exe = exec_path(line)
+            if not line.startswith("/"):
+                if mode.check:
+                    logg.error("  %s: %s Executable path is not absolute.", unit, section)
+                else:
+                    logg.warning("%s: %s Executable path is not absolute.", unit, section)
                 errors += 1
             usedExecStop.append(line)
         for line in haveExecReload:
-            if not line.startswith("/") and not line.startswith("-/"):
-                logg.error(" %s: Executable path is not absolute, ignoring: %s", unit, line.strip())
+            mode, exe = exec_path(line)
+            if not line.startswith("/"):
+                if mode.check:
+                    logg.error("  %s: %s Executable path is not absolute.", unit, section)
+                else:
+                    logg.warning("%s: %s Executable path is not absolute.", unit, section)
                 errors += 1
             usedExecReload.append(line)
         if haveType in ["simple", "notify", "forking", "idle"]:
