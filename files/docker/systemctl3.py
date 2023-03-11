@@ -1799,7 +1799,7 @@ class Systemctl:
             result = [(name, sysv + " " + filename) for name, sysv, filename in basics]
         elif self._unit_type == "target":
             result = self.list_target_unit_files()
-        elif self._unit_type == Service:
+        elif self._unit_type == "service":
             result = self.list_service_unit_files()
         elif self._unit_type:
             logg.warning("unsupported unit --type=%s", self._unit_type)
