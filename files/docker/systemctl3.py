@@ -2655,22 +2655,22 @@ class Systemctl:
             cmd = [TAIL_CMD, "-n", str(lines or 10), "-F", log_path]
             logg.debug("journalctl %s -> %s", conf.name(), cmd)
             cmd_args = [arg for arg in cmd] # satisfy mypy
-            return os.spawnvp(os.P_WAIT, cmd_args[0], cmd)
+            return os.spawnvp(os.P_WAIT, cmd_args[0], cmd_args)
         elif lines:
             cmd = [TAIL_CMD, "-n", str(lines or 10), log_path]
             logg.debug("journalctl %s -> %s", conf.name(), cmd)
             cmd_args = [arg for arg in cmd] # satisfy mypy
-            return os.spawnvp(os.P_WAIT, cmd_args[0], cmd)
+            return os.spawnvp(os.P_WAIT, cmd_args[0], cmd_args)
         elif _no_pager:
             cmd = [CAT_CMD, log_path]
             logg.debug("journalctl %s -> %s", conf.name(), cmd)
             cmd_args = [arg for arg in cmd] # satisfy mypy
-            return os.spawnvp(os.P_WAIT, cmd_args[0], cmd)
+            return os.spawnvp(os.P_WAIT, cmd_args[0], cmd_args)
         else:
             cmd = [LESS_CMD, log_path]
             logg.debug("journalctl %s -> %s", conf.name(), cmd)
             cmd_args = [arg for arg in cmd] # satisfy mypy
-            return os.spawnvp(os.P_WAIT, cmd_args[0], cmd)
+            return os.spawnvp(os.P_WAIT, cmd_args[0], cmd_args)
     def get_journal_log_from(self, conf):
         return os_path(self._root, self.get_journal_log(conf))
     def get_journal_log(self, conf):
