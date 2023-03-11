@@ -291,7 +291,7 @@ pep8 style:
 	$(MAKE) files/docker/systemctl3.py.pep8
 	$(MAKE) types/systemctl3.pyi.pep8
 	$(MAKE) testsuite.py.pep8
-pep.d style.d: 
+pep style.d: 
 	$(MAKE) files/docker/systemctl3.py.style
 	$(MAKE) types/systemctl3.pyi.style
 	$(MAKE) testsuite.py.style
