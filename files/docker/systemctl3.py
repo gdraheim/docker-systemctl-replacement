@@ -2607,19 +2607,19 @@ class Systemctl:
         if follow:
             cmd = [ TAIL_CMD, "-n", str(lines or 10), "-F", log_path ]
             logg.debug("journalctl %s -> %s", conf.name(), cmd)
-            return os.spawnvp(os.P_WAIT, cmd[0], cmd) # type: ignore
+            return os.spawnvp(os.P_WAIT, cmd[0], cmd)
         elif lines:
             cmd = [ TAIL_CMD, "-n", str(lines or 10), log_path ]
             logg.debug("journalctl %s -> %s", conf.name(), cmd)
-            return os.spawnvp(os.P_WAIT, cmd[0], cmd) # type: ignore
+            return os.spawnvp(os.P_WAIT, cmd[0], cmd)
         elif _no_pager:
             cmd = [ CAT_CMD, log_path ]
             logg.debug("journalctl %s -> %s", conf.name(), cmd)
-            return os.spawnvp(os.P_WAIT, cmd[0], cmd) # type: ignore
+            return os.spawnvp(os.P_WAIT, cmd[0], cmd)
         else:
             cmd = [ LESS_CMD, log_path ]
             logg.debug("journalctl %s -> %s", conf.name(), cmd)
-            return os.spawnvp(os.P_WAIT, cmd[0], cmd) # type: ignore
+            return os.spawnvp(os.P_WAIT, cmd[0], cmd)
     def get_journal_log_from(self, conf):
         return os_path(self._root, self.get_journal_log(conf))
     def get_journal_log(self, conf):
