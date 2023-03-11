@@ -184,18 +184,21 @@ the dot-zero release had over 90% line coverage already.
 ## Bugs and Features
 
 With release 1.0 to also know about reordering of services, the
-systemctl.py replacement script was about feature complete. After
-that time the changes are tracked using the GitHub issue list
-as well as mentioning the changes in the release notes attached
-to the git tags / github releases.
+systemctl.py replacement script was about feature complete. This 
+was in 2017. After that time the changes are tracked using the GitHub 
+issue list as well as mentioning the changes in the release notes 
+attached to the git tags / github releases.
 
 Be aware that the systemctl replacement does not want to mimic the 
 systemd behaviour in all detail. There had been always the expectation
 that at some point the docker cluster managers will be able to
-run containers with some systemd emulation themselves (atleast
-rkt does). So essentially, the systemctl.py script would become 
-obsolete soon - however, years later the situation has not changed 
-much and the script is even used for other purposes by now.
+run containers with some systemd emulation themselves. So essentially, 
+the systemctl.py script would become obsolete soon - however, it took 
+very long. While rkt was quick, but it was podman in 2019 to be able 
+to attract developers with their systemd emulation. The real change
+came somewhen in 2022 when almost all vendors provided upstream docker 
+images with full support and mostly even upstream helm charts for 
+deployment in a Kubernetes-like cluster.
 
 So let's close this history wrapup with a final remark: most
 Linux distributions are run by systemd at the time of writing
