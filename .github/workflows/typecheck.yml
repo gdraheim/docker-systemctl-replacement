@@ -21,7 +21,7 @@ jobs:
       with:
         path: retype
         repository: ambv/retype
-        ref: 04978c6f7dcedb76ff334da8d5be734d3a4ce4b4
+        ref: fe1a22f31d9a1e84da2311f86830d807015d1bf0
       # ref: 17.12.0
     - name: 'refresh install'
       run: |
