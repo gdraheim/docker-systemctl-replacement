@@ -6,6 +6,20 @@ from __future__ import print_function
 __copyright__ = "(C) 2016-2020 Guido U. Draheim, licensed under the EUPL"
 __version__ = "1.5.4505"
 
+# |
+# |
+# |
+# |
+# |
+# |
+# |
+# |
+# |
+# |
+# |
+# |
+# |
+
 import logging
 logg = logging.getLogger("systemctl")
 
@@ -571,6 +585,12 @@ class SystemctlConfData:
         that data is structured in sections and values. Actually the
         values are lists - the raw data is in .getlist(). Otherwise
         .get() will return the first line that was encountered. """
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
     def __init__(self, defaults=None, dict_type=None, conf_type=None, allow_no_value=False):
         self._defaults = defaults or {}
         self._conf_type = conf_type or _default_conf_type
@@ -788,6 +808,15 @@ class SystemctlSocket:
         self.sock.close()
 
 class SystemctlConf:
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
     def __init__(self, data, module = None):
         self.data = data # UnitConfParser
         self.env = {}
@@ -837,6 +866,8 @@ class SystemctlConf:
         return False
 
 class PresetFile:
+    # |
+    # |
     def __init__(self):
         self._files = []
         self._lines = []
@@ -862,6 +893,9 @@ class PresetFile:
 
 ## with waitlock(conf): self.start()
 class waitlock:
+    # |
+    # |
+    # |
     def __init__(self, conf):
         self.conf = conf # currently unused
         self.opened = -1
@@ -1163,6 +1197,45 @@ class SystemctlListenThread(threading.Thread):
         return
 
 class Systemctl:
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
+    # |
     def __init__(self):
         self.error = NOT_A_PROBLEM # program exitcode or process returncode
         # from command line options or the defaults
@@ -2148,6 +2221,7 @@ class Systemctl:
             newcmd += [ re.sub("[$][{](\w+)[}]", lambda m: get_env2(m), self.expand_special(part, conf)) ]
         return newcmd
     def remove_service_directories(self, conf, section = "Service"):
+        # |
         ok = True
         nameRuntimeDirectory = self.get_RuntimeDirectory(conf, section)
         keepRuntimeDirectory = self.get_RuntimeDirectoryPreserve(conf, section)
@@ -3367,6 +3441,7 @@ class Systemctl:
             os.dup2(err.fileno(), sys.stderr.fileno())
     def execve_from(self, conf, cmd, env):
         """ this code is commonly run in a child process // returns exit-code"""
+        # |
         runs = conf.get("Service", "Type", "simple").lower()
         # logg.debug("%s process for %s => %s", runs, strE(conf.name()), strQ(conf.filename()))
         self.dup2_journal_log(conf)
@@ -3455,6 +3530,7 @@ class Systemctl:
             logg.error("stop not implemented for unit type: %s", conf.name())
             return False
     def do_stop_service_from(self, conf):
+        # |
         timeout = self.get_TimeoutStopSec(conf)
         runs = conf.get("Service", "Type", "simple").lower()
         env = self.get_env(conf)
@@ -4041,6 +4117,7 @@ class Systemctl:
         # However: # TODO! BUG in original systemctl!
         #   documentation says " exit code 0 if at least one is active"
         #   and "Unless --quiet is specified, print the unit state"
+        # |
         units = []
         results = []
         for module in modules:
