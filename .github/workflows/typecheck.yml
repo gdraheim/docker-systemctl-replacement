@@ -10,7 +10,7 @@ on:
 jobs:
   mypy:
     name: mypy typehints check
-    runs-on: 'ubuntu-18.04'
+    runs-on: 'ubuntu-20.04'
     steps:
     - name: checkout software
       uses: actions/checkout@v2
