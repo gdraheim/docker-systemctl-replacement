@@ -2649,23 +2649,28 @@ class Systemctl:
         if not conf: return -1
         return self.log_unit_from(conf, lines, follow)
     def log_unit_from(self, conf, lines = None, follow = False):
+        cmd_args = []
         log_path = self.get_journal_log_from(conf)
         if follow:
             cmd = [TAIL_CMD, "-n", str(lines or 10), "-F", log_path]
             logg.debug("journalctl %s -> %s", conf.name(), cmd)
-            return os.spawnvp(os.P_WAIT, cmd[0], cmd)
+            cmd_args = [arg for arg in cmd] # satisfy mypy
+            return os.spawnvp(os.P_WAIT, cmd_args[0], cmd)
         elif lines:
             cmd = [TAIL_CMD, "-n", str(lines or 10), log_path]
             logg.debug("journalctl %s -> %s", conf.name(), cmd)
-            return os.spawnvp(os.P_WAIT, cmd[0], cmd)
+            cmd_args = [arg for arg in cmd] # satisfy mypy
+            return os.spawnvp(os.P_WAIT, cmd_args[0], cmd)
         elif _no_pager:
             cmd = [CAT_CMD, log_path]
             logg.debug("journalctl %s -> %s", conf.name(), cmd)
-            return os.spawnvp(os.P_WAIT, cmd[0], cmd)
+            cmd_args = [arg for arg in cmd] # satisfy mypy
+            return os.spawnvp(os.P_WAIT, cmd_args[0], cmd)
         else:
             cmd = [LESS_CMD, log_path]
             logg.debug("journalctl %s -> %s", conf.name(), cmd)
-            return os.spawnvp(os.P_WAIT, cmd[0], cmd)
+            cmd_args = [arg for arg in cmd] # satisfy mypy
+            return os.spawnvp(os.P_WAIT, cmd_args[0], cmd)
     def get_journal_log_from(self, conf):
         return os_path(self._root, self.get_journal_log(conf))
     def get_journal_log(self, conf):
@@ -3491,6 +3496,7 @@ class Systemctl:
         runs = conf.get("Service", "Type", "simple").lower()
         # logg.debug("%s process for %s => %s", runs, strE(conf.name()), strQ(conf.filename()))
         self.dup2_journal_log(conf)
+        cmd_args = []
         #
         runuser = self.get_User(conf)
         rungroup = self.get_Group(conf)
@@ -5328,8 +5334,8 @@ class Systemctl:
            /
            NOTE: only a subset of properties is implemented """
         notfound = []
-        found_all = True
         units = []
+        found_all = True
         for module in modules:
             matched = self.match_units(to_list(module))
             if not matched:
@@ -5990,6 +5996,7 @@ class Systemctl:
         signal.signal(signal.SIGQUIT, lambda signum, frame: ignore_signals_and_raise_keyboard_interrupt("SIGQUIT"))
         signal.signal(signal.SIGINT, lambda signum, frame: ignore_signals_and_raise_keyboard_interrupt("SIGINT"))
         signal.signal(signal.SIGTERM, lambda signum, frame: ignore_signals_and_raise_keyboard_interrupt("SIGTERM"))
+        result = None
         #
         self.start_log_files(units)
         logg.debug("start listen")
@@ -5999,7 +6006,6 @@ class Systemctl:
         logg.debug("started listen")
         self.sysinit_status(ActiveState = "active", SubState = "running")
         timestamp = time.time()
-        result = None
         while True:
             try:
                 if DEBUG_INITLOOP: # pragma: no cover
