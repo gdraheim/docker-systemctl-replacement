@@ -2217,8 +2217,8 @@ class Systemctl:
         cmd3 = re.sub("[$](\w+)", lambda m: get_env1(m), cmd2)
         newcmd = []
         for part in shlex.split(cmd3):
-            # newcmd += [ re.sub("[$][{](\w+)[}]", lambda m: get_env2(m), part) ]
-            newcmd += [ re.sub("[$][{](\w+)[}]", lambda m: get_env2(m), self.expand_special(part, conf)) ]
+            part2 = self.expand_special(part, conf)
+            newcmd += [ re.sub("[$][{](\w+)[}]", lambda m: get_env2(m), part2) ] # type: ignore[arg-type]
         return newcmd
     def remove_service_directories(self, conf, section = "Service"):
         # |
