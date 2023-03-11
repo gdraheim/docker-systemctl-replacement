@@ -37342,12 +37342,6 @@ if __name__ == "__main__":
         logfile.setFormatter(logging.Formatter("%(levelname)s:%(relativeCreated)d:%(message)s"))
         logging.getLogger().addHandler(logfile)
         logg.info("log diverted to %s", opt.logfile)
-    xmlresults = None
-    if opt.xmlresults:
-        if os.path.exists(opt.xmlresults):
-            os.remove(opt.xmlresults)
-        xmlresults = open(opt.xmlresults, "w")
-        logg.info("xml results into %s", opt.xmlresults)
     #
     if opt.coverage:
         COVERAGE = detect_local_system() # so that coverage files can be merged
@@ -37369,6 +37363,12 @@ if __name__ == "__main__":
                 if fnmatch(method, arg):
                     suite.addTest(testclass(method))
     # select runner
+    xmlresults = None
+    if opt.xmlresults:
+        if os.path.exists(opt.xmlresults):
+            os.remove(opt.xmlresults)
+        xmlresults = open(opt.xmlresults, "wb")
+        logg.info("xml results into %s", opt.xmlresults)
     if not logfile:
         if xmlresults:
             import xmlrunner # type: ignore
