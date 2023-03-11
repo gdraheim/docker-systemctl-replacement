@@ -7,7 +7,7 @@ DAY=%u
 UBUNTU=ubuntu:18.04
 PYTHON=python3
 GIT=git
-VERFILES = files/docker/systemctl.py files/docker/systemctl3.py testsuite.py
+VERFILES = files/docker/systemctl.py files/docker/systemctl3.py testsuite.py setup.cfg
 
 verfiles:
 	@ grep -l __version__ */*.??* */*/*.??* | { while read f; do echo $$f; done; } 
@@ -16,12 +16,14 @@ version:
 	@ grep -l __version__ $(VERFILES) | { while read f; do : \
 	; Y=`date +%Y -d "$(FOR)"` ; X=$$(expr $$Y - $B) \
 	; D=`date +%W$(DAY) -d "$(FOR)"` ; sed -i \
+	-e "/^ *version = /s/[.]-*[0123456789][0123456789][0123456789]*/.$$X$$D/" \
 	-e "/^ *__version__/s/[.]-*[0123456789][0123456789][0123456789]*\"/.$$X$$D\"/" \
 	-e "/^ *__version__/s/[.]\\([0123456789]\\)\"/.\\1.$$X$$D\"/" \
 	-e "/^ *__copyright__/s/(C) [0123456789]*-[0123456789]*/(C) $B-$$Y/" \
 	-e "/^ *__copyright__/s/(C) [0123456789]* /(C) $$Y /" \
 	$$f; done; }
 	@ grep ^__version__ $(VERFILES)
+	@ grep ^version.= $(VERFILES)
 	@ $(GIT) add $(VERFILES) || true
 	@ ver=`cat files/docker/systemctl3.py | sed -e '/__version__/!d' -e 's/.*= *"//' -e 's/".*//' -e q` \
 	; echo "# $(GIT) commit -m v$$ver"
