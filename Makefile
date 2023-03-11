@@ -273,6 +273,47 @@ dockerfiles:
 	; wc -l test-$$dockerfile \
 	; done
 
+####### autopep8
+AUTOPEP8=autopep8
+AUTOPEP8_WITH=
+autopep8: ; $${PKG:-zypper} install -y python3-autopep8
+%.py.pep8: %.py
+	$(AUTOPEP8) $(AUTOPEP8_WITH) ${@:.pep8=} --in-place
+	git --no-pager diff ${@:.pep8=}
+%.pyi.pep8: %.pyi
+	$(AUTOPEP8) $(AUTOPEP8_WITH) ${@:.pep8=} --in-place
+	git --no-pager diff ${@:.pep8=}
+%.py.style: %.py
+	$(AUTOPEP8) $(AUTOPEP8_WITH) ${@:.style=} --diff
+%.pyi.style: %.pyi
+	$(AUTOPEP8) $(AUTOPEP8_WITH) ${@:.style=} --diff
+pep8 style:
+	$(MAKE) files/docker/systemctl3.py.pep8
+	$(MAKE) types/systemctl3.pyi.pep8
+	$(MAKE) testsuite.py.pep8
+pep.d style.d: 
+	$(MAKE) files/docker/systemctl3.py.style
+	$(MAKE) types/systemctl3.pyi.style
+	$(MAKE) testsuite.py.style
+
+####### strip-hints
+STRIP_HINTS = ../strip-hints
+strip-hints:
+	set -ex ; if test -d $(STRIP_HINTS); then cd $(STRIP_HINTS) && git pull; else \
+	cd $(dir $(STRIP_HINTS)) && git clone git@github.com:abarker/strip-hints.git $(notdir $(STRIP_HINTS)) ; fi
+	python3 $(STRIP_HINTS)/bin/strip_hints.py --only-test-for-changes files/docker/systemctl3.py
+st strip:
+	python3 $(STRIP_HINTS)/bin/strip_hints.py --to-empty tmp.files/docker/systemctl3.py > tmp.files/docker/systemctl.py
+	diff -U0 files/docker/systemctl.py tmp.files/docker/systemctl.py
+
+PY_BACKWARDS = ../py-backwards
+py-backwards:
+	set -ex ; if test -d $(PY_BACKWARDS); then cd $(PY_BACKWARDS) && git pull; else \
+	cd $(dir $(PY_BACKWARDS)) && git clone git@github.com:nvbn/py-backwards.git $(notdir $(PY_BACKWARDS)) ; fi
+	python3 $(PY_BACKWARDS)/py_backwards/main.py -e main --version
+
+https://github.com/nvbn/py-backwards
+
 ####### retype + stubgen
 mypy:
 	zypper install -y mypy
