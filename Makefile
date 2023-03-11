@@ -315,7 +315,15 @@ py-backwards:
 https://github.com/nvbn/py-backwards
 
 ####### retype + stubgen
-RETYPE = ../retype/retype.py
+PY_RETYPE = ../retype
+RETYPE = $(PY_RETYPE)/retype.py
+RETYPE_WITH= --traceback
+py-retype:
+	set -ex ; if test -d $(PY_RETYPE); then cd $(PY_RETYPE) && git pull; else : \
+	; cd $(dir $(PY_RETYPE)) && git clone git@github.com:ambv/retype.git $(notdir $(PY_RETYPE)) \
+	; cd $(PY_RETYPE) && git checkout 17.12.0 ; fi
+	python3 $(PY_RETYPE)/retype.py --version
+
 MYPY = mypy
 MYPY_WITH = --strict --show-error-codes --show-error-context 
 MYPY_OPTIONS = --no-warn-unused-ignores --python-version 3.6
@@ -332,14 +340,14 @@ stub.:
 	sed -i -e "/^EXEC_SPAWN/d" -e "/^_notify_socket_folder/d" tmp.types/systemctl3.pyi
 	diff -U1 types/systemctl3.pyi tmp.types/systemctl3.pyi | head -20
 type.:
-	python3 $(RETYPE) files/docker/systemctl3.py -t tmp.files/docker
+	python3 $(RETYPE) $(RETYPE_WITH) files/docker/systemctl3.py -t tmp.files/docker
 	stubgen -o tmp.types --include-private tmp.files/docker/systemctl3.py
 	sed -i -e "/^basestring = str/d" -e "/xrange = range/d" tmp.types/systemctl3.pyi
 	sed -i -e "/^EXEC_SPAWN/d" -e "/^_notify_socket_folder/d" tmp.types/systemctl3.pyi
 	diff -U1 types/systemctl3.pyi tmp.types/systemctl3.pyi | head -20
 	$(MYPY) $(MYPY_WITH) $(MYPY_OPTIONS) tmp.files/docker/systemctl3.py 2>&1 | head -20
 type:
-	python3 $(RETYPE) files/docker/systemctl3.py -t tmp.files/docker
+	python3 $(RETYPE) $(RETYPE_WITH) files/docker/systemctl3.py -t tmp.files/docker
 	sed -i -e "/# [|]/d" tmp.files/docker/systemctl3.py
 	$(MYPY) $(MYPY_WITH) $(MYPY_OPTIONS) tmp.files/docker/systemctl3.py
 
