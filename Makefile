@@ -4,8 +4,13 @@ FOR=today
 DAY=%u
 # 'make version FOR=yesterday' or 'make version DAY=0'
 
+
 UBUNTU=ubuntu:18.04
 PYTHON=python3
+PYTHON2 = python2
+PYTHON3 = python3
+COVERAGE3 = $(PYTHON3) -m coverage
+TWINE = twine
 GIT=git
 VERFILES = files/docker/systemctl.py files/docker/systemctl3.py testsuite.py setup.cfg
 
@@ -274,6 +279,35 @@ dockerfiles:
 	; cat ../docker-systemctl-images/$$dockerfile >> test-$$dockerfile \
 	; wc -l test-$$dockerfile \
 	; done
+
+############## https://pypi.org/...
+
+src/systemctl.py:
+	test -d $(dir $@) || mkdir -v $(dir $@)
+	cp files/docker/systemctl3.py $@
+src/systemctl.pyi:
+	cp types/systemctl3.pyi $@
+src/README.md: README.md Makefile
+	test -d $(dir $@) || mkdir -v $(dir $@)
+	cat README.md | sed -e "/\\/badge/d" -e /^---/q > $@
+setup.py: Makefile
+	{ echo '#!/usr/bin/env python3' \
+	; echo 'import setuptools' \
+	; echo 'setuptools.setup()' ; } > setup.py
+	chmod +x setup.py
+setup.py.tmp: Makefile
+	echo "import setuptools ; setuptools.setup()" > setup.py
+
+.PHONY: build
+build:
+	rm -rf build dist *.egg-info
+	$(MAKE) $(PARALLEL) setup.py src/README.md src/systemctl.py src/systemctl.pyi
+	# pip install --root=~/local . -v
+	$(PYTHON3) setup.py sdist
+	- rm -v setup.py src/README.md src/systemctl.py src/systemctl.pyi
+	- rmdir src
+	$(TWINE) check dist/*
+	: $(TWINE) upload dist/*
 
 ####### autopep8
 AUTOPEP8=autopep8

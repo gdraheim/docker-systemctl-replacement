@@ -12,3 +12,4 @@ tmp.*
 *.e
 *.bak
 .mypy_cache
+src
