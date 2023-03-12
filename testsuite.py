@@ -37272,6 +37272,8 @@ if __name__ == "__main__":
                   help="additionally save the output log to a file [%default]")
     _o.add_option("--keep", action="count", default=KEEP,
                   help="keep tempdir and other data after testcase [%default]")
+    _o.add_option("--failfast", action="store_true", default=False,
+                  help="Stop the test run on the first error or failure. [%default]")
     _o.add_option("--xmlresults", metavar="FILE", default=None,
                   help="capture results as a junit xml file [%default]")
     _o.add_option("--sometime", metavar="SECONDS", default=SOMETIME,
@@ -37359,7 +37361,8 @@ if __name__ == "__main__":
             testclass = globals()[classname]
             for method in sorted(dir(testclass)):
                 if "*" not in arg: arg += "*"
-                if arg.startswith("_"): arg = arg[1:]
+                if len(arg) > 2 and arg[1] == "_": 
+                    arg = "test" + arg[1:]
                 if fnmatch(method, arg):
                     suite.addTest(testclass(method))
     # select runner
@@ -37376,7 +37379,7 @@ if __name__ == "__main__":
             result = Runner(xmlresults).run(suite)
         else:
             Runner = unittest.TextTestRunner
-            result = Runner(verbosity=opt.verbose).run(suite)
+            result = Runner(verbosity=opt.verbose, failfast=opt.failfast).run(suite)
     else:
         Runner = unittest.TextTestRunner
         if xmlresults:
