@@ -13,3 +13,5 @@ tmp.*
 *.bak
 .mypy_cache
 src
+dist
+*.egg-info
