@@ -60,6 +60,7 @@ test: ; $(MAKE) type && $(MAKE) tests && $(MAKE) coverage
 WITH2 = --python=/usr/bin/python2 --with=files/docker/systemctl.py
 WITH3 = --python=/usr/bin/python3 --with=files/docker/systemctl3.py
 todo/test_%:             ; ./testsuite.py   "$(notdir $@)" -vv --todo
+15.4/test_%:             ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=opensuse/leap:15.4
 15.2/test_%:             ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=opensuse/leap:15.2
 15.1/test_%:             ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=opensuse/leap:15.1
 15.0/test_%:             ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=opensuse/leap:15.0
@@ -68,6 +69,7 @@ todo/test_%:             ; ./testsuite.py   "$(notdir $@)" -vv --todo
 19.10/test_%:            ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=ubuntu:19.10
 18.04/test_%:            ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=ubuntu:18.04
 16.04/test_%:            ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=ubuntu:16.04
+9.1/test_%:              ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=almalinux:9.1
 8.1/test_%:              ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=centos:8.1.1911
 8.0/test_%:              ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=centos:8.0.1905
 7.7/test_%:              ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=centos:7.7.1908
@@ -75,6 +77,7 @@ todo/test_%:             ; ./testsuite.py   "$(notdir $@)" -vv --todo
 7.5/test_%:              ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=centos:7.5.1804
 7.4/test_%:              ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=centos:7.4.1708
 7.3/test_%:              ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=centos:7.3.1611
+15.4/st_%:  ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv $(FORCE) --image=opensuse/leap:15.4 $(WITH2)
 15.2/st_%:  ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv $(FORCE) --image=opensuse/leap:15.2 $(WITH2)
 15.1/st_%:  ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv $(FORCE) --image=opensuse/leap:15.1 $(WITH2)
 15.0/st_%:  ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv $(FORCE) --image=opensuse/leap:15.0 $(WITH2)
@@ -95,6 +98,7 @@ test2list = st_[567]
 testslist = test_[567]
 tests: ; $(MAKE) "${basetests}"
 .PHONY: tests
+15.4/tests:  ; $(MAKE) "15.4/$(testslist)"
 15.2/tests:  ; $(MAKE) "15.2/$(testslist)"
 15.1/tests:  ; $(MAKE) "15.1/$(testslist)"
 15.0/tests:  ; $(MAKE) "15.0/$(testslist)"
@@ -103,6 +107,7 @@ tests: ; $(MAKE) "${basetests}"
 19.10/tests: ; $(MAKE) "19.10/$(testslist)"
 18.04/tests: ; $(MAKE) "18.04/$(testslist)"
 16.04/tests: ; $(MAKE) "16.04/$(testslist)"
+9.1/tests:   ; $(MAKE) "9.1/$(testslist)"
 8.1/tests:   ; $(MAKE) "8.1/$(testslist)"
 8.0/tests:   ; $(MAKE) "8.0/$(testslist)"
 7.7/tests:   ; $(MAKE) "7.7/$(testslist)"
@@ -148,10 +153,11 @@ checkall2019.2:
 
 check: check2018
 	@ echo please run 'make checks' now
-19 check2019: ; ./testsuite.py -vv --opensuse=15.1 --centos=7.7 --ubuntu=18.04
-18 check2018: ; ./testsuite.py -vv --opensuse=15.0 --centos=7.5 --ubuntu=18.04
-17 check2017: ; ./testsuite.py -vv --opensuse=42.3 --centos=7.4 --ubuntu=16.04
-16 check2016: ; ./testsuite.py -vv --opensuse=42.2 --centos=7.3 --ubuntu=16.04
+22 check2022: ; ./testsuite.py -vv --opensuse=15.3 --ubuntu=ubuntu:22.04 --centos=almalinux:9.1
+19 check2019: ; ./testsuite.py -vv --opensuse=15.1 --ubuntu=ubuntu:18.04 --centos=centos:7.7
+18 check2018: ; ./testsuite.py -vv --opensuse=15.0 --ubuntu=ubuntu:18.04 --centos=centos:7.5
+17 check2017: ; ./testsuite.py -vv --opensuse=42.3 --ubuntu=ubuntu:16.04 --centos=centos:7.4
+16 check2016: ; ./testsuite.py -vv --opensuse=42.2 --ubuntu=ubuntu:16.04 --centos=centos:7.3
 
 2/test_%:
 	$(MAKE) tmp_systemctl_py_2
