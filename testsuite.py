@@ -2,7 +2,7 @@
 """ Testcases for docker-systemctl-replacement functionality """
 
 __copyright__ = "(C) Guido Draheim, licensed under the EUPL"""
-__version__ = "1.5.7106"
+__version__ = "1.5.7113"
 
 # NOTE:
 # The testcases 1000...4999 are using a --root=subdir environment
@@ -52,8 +52,9 @@ TestListen = False
 
 CENTOSVER = {"7.3": "7.3.1611", "7.4": "7.4.1708", "7.5": "7.5.1804", "7.6": "7.6.1810", "7.7": "7.7.1908", "7.9": "7.9.2009", "8.0": "8.0.1905", "8.1": "8.1.1911", "8.3": "8.3.2011"}
 TESTED_OS = ["centos:7.3.1611", "centos:7.4.1708", "centos:7.5.1804", "centos:7.6.1810", "centos:7.7.1908", "centos:7.9.2009", "centos:8.0.1905", "centos:8.1.1911", "centos:8.3.2011"]
-TESTED_OS += ["opensuse:42.2", "opensuse:42.3", "opensuse/leap:15.0", "opensuse/leap:15.1", "opensuse/leap:15.2"]
-TESTED_OS += ["ubuntu:14.04", "ubuntu:16.04", "ubuntu:18.04"]
+TESTED_OS += ["almalinux:9.1"]
+TESTED_OS += ["opensuse:42.2", "opensuse:42.3", "opensuse/leap:15.0", "opensuse/leap:15.1", "opensuse/leap:15.2", "opensuse/leap:15.4"]
+TESTED_OS += ["ubuntu:14.04", "ubuntu:16.04", "ubuntu:18.04", "ubuntu:22.04"]
 
 SAVETO = "localhost:5000/systemctl"
 IMAGES = "localhost:5000/systemctl/testing"
@@ -150,6 +151,9 @@ def refresh_tool(image: str, checks = False) -> str:
         if not checks:
             return "apt-get -o Acquire::AllowInsecureRepositories=true update"
         return "apt-get update"
+    if "almalinux" in image:
+        cmds = ["echo sslverify=false >> /etc/yum.conf"]
+        return "bash -c '%s'" % (" && ".join(cmds))
     return "true"
 def python_package(python: str, image: Optional[str] = None) -> str:
     package = os.path.basename(python)
@@ -25672,6 +25676,17 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir = os_path(root, "/usr/bin")
         begin = "{"
         ends = "}"
+        shell_file(os_path(testdir, "binkillall"), """
+            #! /bin/sh
+            ps -eo pid,comm,args | { while read pid comm args; do
+               case "$args" in *"/bin/$1 "*)
+                  echo kill $pid
+                  kill $pid
+               ;; esac
+               if [ "$comm" = "$1" ]; then
+                  echo kill $pid
+                  kill $pid
+               fi done } """)
         text_file(os_path(testdir, "zzz.service"), """
             [Unit]
             Description=Testing Z
@@ -25694,7 +25709,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             date +%T,enter >> {logfile}
             stops () {begin}
               date +%T,stopping >> {logfile}
-              killall {testsleep} >> {logfile} 2>&1
+              binkillall {testsleep} >> {logfile} 2>&1
               date +%T,stopped >> {logfile}
             {ends}
             reload () {begin}
@@ -25723,14 +25738,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sx____(cmd.format(**locals()))
         self.prep_coverage(image, testname)
+        cmd = "{docker} cp {testdir}/binkillall {testname}:/usr/bin/binkillall"
+        sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} cp /bin/sleep {bindir}/{testsleep}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} cp {testdir}/{testscript} {testname}:{bindir}/{testscript}"
@@ -26035,7 +26052,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(len(ps7), 1)
         self.assertNotEqual(ps6[0], ps7[0])
         #
-        kill_testsleep = "killall {testsleep}"
+        kill_testsleep = "{docker} exec {testname} binkillall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         #
         self.save_coverage(testname)
@@ -26142,6 +26159,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
@@ -26514,6 +26533,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
@@ -26902,6 +26923,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
@@ -27247,6 +27270,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
@@ -27512,6 +27537,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
@@ -27793,6 +27820,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
@@ -28113,6 +28142,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
@@ -28122,6 +28153,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             sx____(cmd.format(**locals()))
         self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} cp /bin/sleep {bindir}/{testsleep}"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'test -d /etc/init.d || mkdir -v /etc/init.d'"
         sh____(cmd.format(**locals()))
         cmd = "{docker} cp {testdir}/zzz.init {testname}:/etc/init.d/zzz"
         sh____(cmd.format(**locals()))
@@ -28440,6 +28473,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
@@ -28590,6 +28625,17 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir = os_path(root, "/usr/bin")
         begin = "{"
         ends = "}"
+        shell_file(os_path(testdir, "binkillall"), """
+            #! /bin/sh
+            ps -eo pid,comm,args | { while read pid comm args; do
+               case "$args" in *"/bin/$1 "*)
+                  echo kill $pid
+                  kill $pid
+               ;; esac
+               if [ "$comm" = "$1" ]; then
+                  echo kill $pid
+                  kill $pid
+               fi done } """)
         text_file(os_path(testdir, "zzz.service"), """
             [Unit]
             Description=Testing Z
@@ -28612,7 +28658,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             date +%T,enter >> {logfile}
             stops () {begin}
               date +%T,stopping >> {logfile}
-              killall {testsleep} >> {logfile} 2>&1
+              binkillall {testsleep} >> {logfile} 2>&1
               date +%T,stopped >> {logfile}
             {ends}
             reload () {begin}
@@ -28643,14 +28689,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         if COVERAGE:
             cmd = "{docker} exec {testname} {package} install -y {python_coverage}"
             sx____(cmd.format(**locals()))
         self.prep_coverage(image, testname)
+        cmd = "{docker} cp {testdir}/binkillall {testname}:/usr/bin/binkillall"
+        sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} cp /bin/sleep {bindir}/{testsleep}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} cp {testdir}/{testscript} {testname}:{bindir}/{testscript}"
@@ -28966,7 +29014,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(len(ps7), 1)
         self.assertNotEqual(ps6[0], ps7[0])
         #
-        kill_testsleep = "killall {testsleep}"
+        kill_testsleep = "{docker} exec {testname} binkillall {testsleep}"
         sx____(kill_testsleep.format(**locals()))
         #
         self.save_coverage(testname)
@@ -29078,6 +29126,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
@@ -29467,6 +29517,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
@@ -29874,6 +29926,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
@@ -30235,6 +30289,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
@@ -30517,6 +30573,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
@@ -30829,6 +30887,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
@@ -30838,6 +30898,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             sx____(cmd.format(**locals()))
         self.prep_coverage(image, testname)
         cmd = "{docker} exec {testname} cp /bin/sleep {bindir}/{testsleep}"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'test -d /etc/init.d || mkdir -v /etc/init.d'"
         sh____(cmd.format(**locals()))
         cmd = "{docker} cp {testdir}/zzz.init {testname}:/etc/init.d/zzz"
         sh____(cmd.format(**locals()))
@@ -30977,6 +31039,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
@@ -31190,6 +31254,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
@@ -31411,6 +31477,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
@@ -31643,6 +31711,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
@@ -31831,6 +31901,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
@@ -32010,6 +32082,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
@@ -32143,6 +32217,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
@@ -32220,6 +32296,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/killall || {package} install -y psmisc'"
@@ -32319,6 +32397,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         if COVERAGE:
@@ -32417,6 +32497,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         if COVERAGE:
@@ -32503,6 +32585,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         if COVERAGE:
@@ -32589,6 +32673,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         if COVERAGE:
@@ -32688,6 +32774,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         if COVERAGE:
@@ -32808,6 +32896,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         if COVERAGE:
@@ -32912,6 +33002,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         if COVERAGE:
@@ -33017,6 +33109,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         if COVERAGE:
@@ -33154,6 +33248,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         if COVERAGE:
@@ -33342,6 +33438,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         if COVERAGE:
@@ -33433,6 +33531,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         if COVERAGE:
@@ -33519,6 +33619,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         if COVERAGE:
@@ -33607,6 +33709,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         if COVERAGE:
@@ -33694,6 +33798,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         if COVERAGE:
@@ -33781,6 +33887,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         if COVERAGE:
@@ -33869,6 +33977,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         if COVERAGE:
@@ -33959,6 +34069,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         if COVERAGE:
@@ -34048,6 +34160,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         if COVERAGE:
@@ -34136,6 +34250,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         if COVERAGE:
@@ -34229,6 +34345,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         if COVERAGE:
@@ -34317,6 +34435,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         if COVERAGE:
@@ -34407,6 +34527,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         if COVERAGE:
@@ -34496,6 +34618,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         if COVERAGE:
@@ -34585,6 +34709,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         if COVERAGE:
@@ -34675,6 +34801,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         if COVERAGE:
@@ -34767,6 +34895,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         if COVERAGE:
@@ -34858,6 +34988,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         if COVERAGE:
@@ -34955,6 +35087,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         if COVERAGE:
@@ -35061,6 +35195,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         if COVERAGE:
@@ -35164,6 +35300,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         if COVERAGE:
@@ -35305,6 +35443,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         if COVERAGE:
@@ -35451,6 +35591,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         if COVERAGE:
@@ -35587,6 +35729,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         if COVERAGE:
@@ -35734,6 +35878,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         if COVERAGE:
@@ -35858,6 +36004,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         if COVERAGE:
@@ -36135,6 +36283,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} {refresh}"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/ps || {package} install -y procps'"
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd.format(**locals()))
         if COVERAGE:
