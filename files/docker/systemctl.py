@@ -22,7 +22,7 @@ import re
 from types import GeneratorType
 
 __copyright__ = "(C) 2016-2023 Guido U. Draheim, licensed under the EUPL"
-__version__ = "1.5.7106"
+__version__ = "1.5.7113"
 
 # |
 # |
@@ -5487,7 +5487,7 @@ class Systemctl:
     igno_centos = ["netconsole", "network"]
     igno_opensuse = ["raw", "pppoe", "*.local", "boot.*", "rpmconf*", "postfix*"]
     igno_ubuntu = ["mount*", "umount*", "ondemand", "*.local"]
-    igno_always = ["network*", "dbus*", "systemd-*", "kdump*"]
+    igno_always = ["network*", "dbus*", "systemd-*", "kdump*", "kmod*"]
     igno_always += ["purge-kernels.service", "after-local.service", "dm-event.*"] # as on opensuse
     igno_targets = ["remote-fs.target"]
     def _ignored_unit(self, unit, ignore_list):
