@@ -6195,7 +6195,8 @@ class Systemctl:
             break
     def is_running_unit_from(self, conf):
         status_file = self.get_status_file_from(conf)
-        return self.getsize(status_file) > 0
+        pid_file = self.pid_file_from(conf)
+        return self.getsize(status_file) > 0 or self.getsize(pid_file) > 0
     def is_running_unit(self, unit):
         conf = self.get_unit_conf(unit)
         return self.is_running_unit_from(conf)
