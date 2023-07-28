@@ -4757,6 +4757,8 @@ class Systemctl:
         for unit in units:
             if not self.disable_unit(unit):
                 done = False
+            elif self._now:
+                self.stop_unit(unit)
         return done
     def disable_unit(self, unit):
         conf = self.load_unit_conf(unit)
