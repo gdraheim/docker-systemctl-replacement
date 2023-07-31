@@ -186,7 +186,7 @@ check3:
 	./testsuite.py -vv \
 	  '--with=tmp/systemctl.py' --python=/usr/bin/python3
 
-checks: checks.1 checks.2 checks.3 checks.4
+checks: checks.1 checks.3 checks.4
 checks.1:
 	- rm .coverage* 
 checks.2:
