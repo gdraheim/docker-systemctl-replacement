@@ -2938,7 +2938,7 @@ class Systemctl:
         returncode = 0
         service_result = "success"
         if True:
-            if runs in ["simple", "forking", "notify", "idle"]:
+            if runs in ["simple", "exec", "forking", "notify", "idle"]:
                 env["MAINPID"] = strE(self.read_mainpid_from(conf))
             for cmd in conf.getlist(Service, "ExecStartPre", []):
                 exe, newcmd = self.exec_newcmd(cmd, env, conf)
@@ -2981,7 +2981,7 @@ class Systemctl:
                 self.set_status_from(conf, "ExecMainCode", strE(returncode))
                 active = returncode and "failed" or "active"
                 self.write_status_from(conf, AS=active)
-        elif runs in ["simple", "idle"]:
+        elif runs in ["simple", "exec", "idle"]:
             status_file = self.get_status_file_from(conf)
             pid = self.read_mainpid_from(conf)
             if self.is_active_pid(pid):
@@ -3650,7 +3650,7 @@ class Systemctl:
                 self.do_kill_unit_from(conf)
                 self.clean_pid_file_from(conf)
                 self.clean_status_from(conf) # "inactive"
-        elif runs in ["simple", "notify", "idle"]:
+        elif runs in ["simple", "exec", "notify", "idle"]:
             status_file = self.get_status_file_from(conf)
             size = os.path.exists(status_file) and os.path.getsize(status_file)
             logg.info("STATUS %s %s", status_file, size)
@@ -3864,7 +3864,7 @@ class Systemctl:
                     return True
         service_directories = self.env_service_directories(conf)
         env.update(service_directories)
-        if runs in ["simple", "notify", "forking", "idle"]:
+        if runs in ["simple", "exec", "notify", "forking", "idle"]:
             if not self.is_active_from(conf):
                 logg.info("no reload on inactive service %s", conf.name())
                 return True
@@ -5212,7 +5212,7 @@ class Systemctl:
         usedExecStart = []
         usedExecStop = []
         usedExecReload = []
-        if haveType not in ["simple", "forking", "notify", "oneshot", "dbus", "idle"]:
+        if haveType not in ["simple", "exec", "forking", "notify", "oneshot", "dbus", "idle"]:
             logg.error(" %s: Failed to parse service type, ignoring: %s", unit, haveType)
             errors += 100
         for line in haveExecStart:
@@ -5245,7 +5245,7 @@ class Systemctl:
                 logg.info("%s: %s exe = %s", unit, section, exe)
                 errors += 1
             usedExecReload.append(line)
-        if haveType in ["simple", "notify", "forking", "idle"]:
+        if haveType in ["simple", "exec", "notify", "forking", "idle"]:
             if not usedExecStart and not usedExecStop:
                 logg.error(" %s: %s lacks both ExecStart and ExecStop= setting. Refusing.", unit, section)
                 errors += 101
