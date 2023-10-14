@@ -6684,6 +6684,8 @@ if __name__ == "__main__":
                   help="Print unit dependencies as a list instead of a tree (ignored)")
     _o.add_option("--no-pager", action="store_true",
                   help="Do not pipe output into pager (mostly ignored)")
+    _o.add_option("--no-warn", action="store_true",
+                  help="Do not generate certain warnings (ignored)")
     #
     _o.add_option("-c", "--config", metavar="NAME=VAL", action="append", default=[],
                   help="..override internal variables (InitLoopSleep,SysInitTarget) {%default}")
