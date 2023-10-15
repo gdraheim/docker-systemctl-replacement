@@ -47,12 +47,13 @@ SKIP = True
 TODO = False
 KEEP = 0
 LONGER = 2
+KILLWAIT = 20
 
 TestListen = False
 
 CENTOSVER = {"7.3": "7.3.1611", "7.4": "7.4.1708", "7.5": "7.5.1804", "7.6": "7.6.1810", "7.7": "7.7.1908", "7.9": "7.9.2009", "8.0": "8.0.1905", "8.1": "8.1.1911", "8.3": "8.3.2011"}
 TESTED_OS = ["centos:7.3.1611", "centos:7.4.1708", "centos:7.5.1804", "centos:7.6.1810", "centos:7.7.1908", "centos:7.9.2009", "centos:8.0.1905", "centos:8.1.1911", "centos:8.3.2011"]
-TESTED_OS += ["almalinux:9.1"]
+TESTED_OS += ["almalinux:9.1", "centos:7.5"]
 TESTED_OS += ["opensuse:42.2", "opensuse:42.3", "opensuse/leap:15.0", "opensuse/leap:15.1", "opensuse/leap:15.2", "opensuse/leap:15.4"]
 TESTED_OS += ["ubuntu:14.04", "ubuntu:16.04", "ubuntu:18.04", "ubuntu:22.04"]
 
@@ -610,7 +611,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                         logg.info(" killing %s", e)
                 except Exception as e:
                     logg.info(" killing %s", e)
-        for checking in xrange(int(wait or 1)):
+        for checking in xrange(int(wait or KILLWAIT)):
             remaining = 0
             for nextpid in os.listdir("/proc"):
                 try: pid = int(nextpid)
@@ -629,6 +630,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                     logg.info(" killing %s", e)
             if not remaining:
                 return
+            if checking % 2 == 0:
+                logg.info("[%02is] remaining %s", checking, remaining)
             time.sleep(1)
         if True:
             for nextpid in os.listdir("/proc"):
@@ -667,7 +670,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             except Exception as e:
                 logg.info(" killing %s", e)
         status = "/proc/{pid}/status".format(**locals())
-        for checking in xrange(int(wait or 10)):
+        for checking in xrange(int(wait or KILLWAIT)):
             if not os.path.exists(cmdline):
                 return True
             try:
@@ -677,7 +680,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                             if "(zombie)" in line:
                                 return True
                             if checking % 2 == 0:
-                                logg.info(" wait %s - %s", pid, line.strip())
+                                logg.info("[%02is] wait %s - %s", checking, pid, line.strip())
             except IOError as e:
                 if e.errno != errno.ENOENT:
                     logg.info(" killing %s", e)
@@ -37471,7 +37474,7 @@ if __name__ == "__main__":
         beep()
         time.sleep(2)
     if CENTOS not in TESTED_OS:
-        logg.warning("  --centos '%s' was never TESTED!!!", UBUNTU)
+        logg.warning("  --centos '%s' was never TESTED!!!", CENTOS)
         beep()
         time.sleep(2)
     if IMAGE and IMAGE not in TESTED_OS:
