@@ -112,7 +112,7 @@ DefaultOOMPolicy=
 
  * https://www.freedesktop.org/software/systemd/man/systemd.service.html
 
-It is a good idea to make the default values configurable which will then be overriden in the actual service unit config.
+It is a good idea to make the default values configurable which will then be overridden in the actual service unit config.
 
     GuessMainPID=yes
     TimeoutStartSec

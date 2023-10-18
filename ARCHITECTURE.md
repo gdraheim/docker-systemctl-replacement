@@ -33,7 +33,7 @@ that startup is complete. Apache is one prominent example
 of a notify-service.
 
 The systemctl replacement's notify-socket will only be
-created as soon as the systemctl replacment script runs
+created as soon as the systemctl replacement script runs
 a "start xy.service" and it is closed as soon as the
 startup-wait has completed. Now what if there are multiple
 `systemctl.py start` calls that run in parallel? Well, that
@@ -141,7 +141,7 @@ however.
 ## overwriting /usr/bin/systemctl
 
 The systemctl replacement script is generally shipped
-as the python implemention of it, named "systemctl.py".
+as the python implementation of it, named "systemctl.py".
 You can use the non-installed script right away which is
 no different than the usage of the installed bin/systemctl
 replacement. So `systemctl.py start xy.service` and
@@ -272,7 +272,7 @@ a check on the  boot time of container (or a real system)
 by checking for some files in /proc with hopefully 
 /proc/1 to be around. If any status file has a timestamp 
 that is older than the timestamp of the boot PID then these
-status files are truncated to zero. Effectivly, any
+status files are truncated to zero. Effectively, any
 old PID that was saved in an image will be disregarded
 in a new container.
 

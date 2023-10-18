@@ -80,7 +80,7 @@ that's as much as you can do. And you should leave it alone anyway.
 Quite a number of service unit files however declare dependencies
 on some network feature. We do have to ignore them all. Likewise
 any existing unit file relating to network stuff - including some
-firewall rules - has to be disregarded compeletely.
+firewall rules - has to be disregarded completely.
 
 This however follows some heuristic assumptions. Some unit files
 are skipped.... but may be that will be found to be wrong in the

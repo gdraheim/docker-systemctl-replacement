@@ -42,7 +42,7 @@ Give it a try.
 
 ## User Containers
 
-The existance of a user-level would have been totally
+The existence of a user-level would have been totally
 irrelevant if it would not have been for a rule from
 OpenShift in that processes in a container must not try
 to be run as a virtual root user. In fact, all docker
@@ -62,7 +62,7 @@ Luckily, most modern *.service files do name an explicit
 "User=target". So in a user container, the systemctl
 replacement script can start them when the target user
 is the same as the container has been started under.
-Effectivly, when systemctl script is running as PID-1
+Effectively, when systemctl script is running as PID-1
 it will filter all *.service files to the current user
 of the container.
 
@@ -86,7 +86,7 @@ same running user may be started/stopped. The systemctl
 default-services list of enabled services will only 
 show those.
 
-Adding to that, the systemctl replacment script will 
+Adding to that, the systemctl replacement script will 
 also offer to start/stop systemd/user services as they 
 are naturally designed to be started as non-root 
 processes. And that's the basic difference between 
@@ -129,7 +129,7 @@ directories has the details what to think about.
 
 At the url https://github.com/gdraheim/docker-systemctl-images
 you find a sister project that has examples where the systemctl
-replacment script is used to help creating docker images. Not
+replacement script is used to help creating docker images. Not
 only are there classic images where the systemctl script will
 run as PID-1 in root mode - there are also docker images which
 have a user-mode configuration.
