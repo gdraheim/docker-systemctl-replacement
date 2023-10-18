@@ -1601,7 +1601,7 @@ class Systemctl:
         conf._root = self._root
         return conf
     def get_unit_conf(self, module): # -> conf (conf | default-conf)
-        """ accept that a unit does not exist 
+        """ accept that a unit does not exist
             and return a unit conf that says 'not-loaded' """
         conf = self.load_unit_conf(module)
         if conf is not None:
@@ -1665,7 +1665,7 @@ class Systemctl:
                 yield item
     def match_units(self, modules = None, suffix=".service"): # -> [ units,.. ]
         """ Helper for about any command with multiple units which can
-            actually be glob patterns on their respective unit name. 
+            actually be glob patterns on their respective unit name.
             It returns all modules if no modules pattern were given.
             Also a single string as one module pattern may be given. """
         found = []
@@ -1715,7 +1715,7 @@ class Systemctl:
         return [(unit, result[unit] + " " + active[unit] + " " + substate[unit], description[unit]) for unit in sorted(result)]
     def list_units_modules(self, *modules): # -> [ (unit,loaded,description) ]
         """ [PATTERN]... -- List loaded units.
-        If one or more PATTERNs are specified, only units matching one of 
+        If one or more PATTERNs are specified, only units matching one of
         them are shown. NOTE: This is the default command."""
         hint = "To show all installed unit files use 'systemctl list-unit-files'."
         result = self.list_service_units(*modules)
@@ -2112,7 +2112,7 @@ class Systemctl:
             logg.info("while reading %s: %s", env_file, e)
     def read_env_part(self, env_part): # -> generate[ (name, value) ]
         """ Environment=<name>=<value> is being scanned """
-        # systemd Environment= spec says it is a space-seperated list of
+        # systemd Environment= spec says it is a space-separated list of
         # assignments. In order to use a space or an equals sign in a value
         # one should enclose the whole assignment with double quotes:
         # Environment="VAR1=word word" VAR2=word3 "VAR3=$word 5 6"
@@ -2873,7 +2873,7 @@ class Systemctl:
         return self.start_units(units, init) and found_all
     def start_units(self, units, init = None):
         """ fails if any unit does not start
-        /// SPECIAL: may run the init-loop and 
+        /// SPECIAL: may run the init-loop and
             stop the named units afterwards """
         self.wait_system()
         done = True
@@ -3063,7 +3063,7 @@ class Systemctl:
                         service_result = "failed"
                         break
             if service_result in ["success"] and mainpid:
-                logg.debug("okay, wating on socket for %ss", timeout)
+                logg.debug("okay, waiting on socket for %ss", timeout)
                 results = self.wait_notify_socket(notify, timeout, mainpid, pid_file)
                 if "MAINPID" in results:
                     new_pid = to_intN(results["MAINPID"])
@@ -4814,7 +4814,7 @@ class Systemctl:
             return True
         return False
     def is_enabled_modules(self, *modules):
-        """ [UNIT]... -- check if these units are enabled 
+        """ [UNIT]... -- check if these units are enabled
         returns True if any of them is enabled."""
         found_all = True
         units = []
@@ -5263,8 +5263,8 @@ class Systemctl:
             logg.info(" %s: there should be only one %s ExecReload statement."
                       + "\n\t\t\tUse ' ; ' for multiple commands (ExecReloadPost or ExedReloadPre do not exist)", unit, section)
         if len(usedExecReload) > 0 and "/bin/kill " in usedExecReload[0]:
-            logg.warning(" %s: the use of /bin/kill is not recommended for %s ExecReload as it is asychronous."
-                         + "\n\t\t\tThat means all the dependencies will perform the reload simultanously / out of order.", unit, section)
+            logg.warning(" %s: the use of /bin/kill is not recommended for %s ExecReload as it is asynchronous."
+                         + "\n\t\t\tThat means all the dependencies will perform the reload simultaneously / out of order.", unit, section)
         if conf.getlist(Service, "ExecRestart", []):  # pragma: no cover
             logg.error(" %s: there no such thing as an %s ExecRestart (ignored)", unit, section)
         if conf.getlist(Service, "ExecRestartPre", []):  # pragma: no cover
@@ -5484,7 +5484,7 @@ class Systemctl:
                 return True # ignore
         return False
     def default_services_modules(self, *modules):
-        """ show the default services 
+        """ show the default services
             This is used internally to know the list of service to be started in the 'get-default'
             target runlevel when the container is started through default initialisation. It will
             ignore a number of services - use '--all' to show a longer list of services and
@@ -5649,7 +5649,7 @@ class Systemctl:
             folders += [self.rc5_root_folder()]
         for folder in folders:
             if not os.path.isdir(folder):
-                logg.warning("non-existant %s", folder)
+                logg.warning("non-existent %s", folder)
                 continue
             for unit in sorted(os.listdir(folder)):
                 path = os.path.join(folder, unit)
@@ -5673,7 +5673,7 @@ class Systemctl:
                     units.append(unit)
         return units
     def get_target_conf(self, module): # -> conf (conf | default-conf)
-        """ accept that a unit does not exist 
+        """ accept that a unit does not exist
             and return a unit conf that says 'not-loaded' """
         conf = self.load_unit_conf(module)
         if conf is not None:
@@ -5699,7 +5699,7 @@ class Systemctl:
             This will go through the enabled services in the default 'multi-user.target'.
             However some services are ignored as being known to be installation garbage
             from unintended services. Use '--all' so start all of the installed services
-            and with '--all --force' even those services that are otherwise wrong. 
+            and with '--all --force' even those services that are otherwise wrong.
             /// SPECIAL: with --now or --init the init-loop is run and afterwards
                 a system_halt is performed with the enabled services to be stopped."""
         self.sysinit_status(SubState = "initializing")
@@ -5813,15 +5813,15 @@ class Systemctl:
         return msg
     def init_modules(self, *modules):
         """ [UNIT*] -- init loop: '--init default' or '--init start UNIT*'
-        The systemctl init service will start the enabled 'default' services, 
+        The systemctl init service will start the enabled 'default' services,
         and then wait for any  zombies to be reaped. When a SIGINT is received
         then a clean shutdown of the enabled services is ensured. A Control-C in
         in interactive mode will also run 'stop' on all the enabled services. //
         When a UNIT name is given then only that one is started instead of the
-        services in the 'default.target'. Using 'init UNIT' is better than 
-        '--init start UNIT' because the UNIT is also stopped cleanly even when 
+        services in the 'default.target'. Using 'init UNIT' is better than
+        '--init start UNIT' because the UNIT is also stopped cleanly even when
         it was never enabled in the system.
-        /// SPECIAL: when using --now then only the init-loop is started, 
+        /// SPECIAL: when using --now then only the init-loop is started,
         with the reap-zombies function and waiting for an interrupt.
         (and no unit is started/stoppped wether given or not).
         """
@@ -5915,11 +5915,11 @@ class Systemctl:
         delay = conf.get(Service, "RestartSec", strE(DefaultRestartSec))
         return time_to_seconds(delay, maximum)
     def restart_failed_units(self, units, maximum = None):
-        """ This function will retart failed units.
+        """ This function will restart failed units.
         /
         NOTE that with standard settings the LimitBurst implementation has no effect. If
-        the InitLoopSleep is ticking at the Default of 5sec and the LimitBurst Default 
-        is 5x within a Default 10secs time frame then within those 10sec only 2 loop 
+        the InitLoopSleep is ticking at the Default of 5sec and the LimitBurst Default
+        is 5x within a Default 10secs time frame then within those 10sec only 2 loop
         rounds have come here checking for possible restarts. You can directly shorten
         the interval ('-c InitLoopSleep=1') or have it indirectly shorter from the
         service descriptor's RestartSec ("RestartSec=2s").
@@ -5996,7 +5996,7 @@ class Systemctl:
                         logg.debug("[%s] [%s] restart scheduled in %+.3fs",
                                    me, unit, (self._restart_failed_units[unit] - now))
             except Exception as e:
-                logg.error("[%s] [%s] An error ocurred while restart checking: %s", me, unit, e)
+                logg.error("[%s] [%s] An error occurred while restart checking: %s", me, unit, e)
         if not self._restart_failed_units:
             self.error |= NOT_OK
             return []
@@ -6024,7 +6024,7 @@ class Systemctl:
                     if unit in self._restarted_unit:
                         self._restarted_unit[unit].append(time.time())
             except Exception as e:
-                logg.error("[%s] [%s] An error ocurred while restarting: %s", me, unit, e)
+                logg.error("[%s] [%s] An error occurred while restarting: %s", me, unit, e)
         for unit in restart_done:
             if unit in self._restart_failed_units:
                 del self._restart_failed_units[unit]
@@ -6035,7 +6035,7 @@ class Systemctl:
     def init_loop_until_stop(self, units):
         """ this is the init-loop - it checks for any zombies to be reaped and
             waits for an interrupt. When a SIGTERM /SIGINT /Control-C signal
-            is received then the signal name is returned. Any other signal will 
+            is received then the signal name is returned. Any other signal will
             just raise an Exception like one would normally expect. As a special
             the 'systemctl halt' emits SIGQUIT which puts it into no_more_procs mode."""
         signal.signal(signal.SIGQUIT, lambda signum, frame: ignore_signals_and_raise_keyboard_interrupt("SIGQUIT"))
@@ -6399,7 +6399,7 @@ def print_begin(argv, args):
     logg.info("EXEC BEGIN %s %s%s%s", script, " ".join(args), system, init)
     if _root and not is_good_root(_root):
         root44 = path44(_root)
-        logg.warning("the --root=%s should have alteast three levels /tmp/test_123/root", root44)
+        logg.warning("the --root=%s should have atleast three levels /tmp/test_123/root", root44)
 
 def print_begin2(args):
     logg.debug("======= systemctl.py %s", " ".join(args))
@@ -6643,7 +6643,7 @@ if __name__ == "__main__":
     _o.add_option("--reverse", action="store_true",
                   help="Show reverse dependencies with 'list-dependencies' (ignored)")
     _o.add_option("--job-mode", metavar="MODE",
-                  help="Specifiy how to deal with already queued jobs, when queuing a new job (ignored)")
+                  help="Specify how to deal with already queued jobs, when queuing a new job (ignored)")
     _o.add_option("--show-types", action="store_true",
                   help="When showing sockets, explicitly show their type (ignored)")
     _o.add_option("-i", "--ignore-inhibitors", action="store_true",

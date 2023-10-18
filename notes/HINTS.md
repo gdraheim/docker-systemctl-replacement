@@ -106,7 +106,7 @@ https://www.freedesktop.org/software/systemd/man/systemd.kill.html
 
 As one can already guess, the default for SendSIGHUP is "no" and it
 means that after the "KillSignal=" it should immediately send an
-addtional SIGHUP - which is defined to also be forwarded to the
+additional SIGHUP - which is defined to also be forwarded to the
 children of a program. 
 
 One can also guess the default for SendSIGKILL to be "yes". Here it
@@ -119,7 +119,7 @@ not make sense to mix Kill-SIGHUP and SendSIGHUP and there is no
 such thing to exist in real service systemd files.
 
 Last not least, there is also a "KillMode=control-group" default.
-Which effectivly means that the specified sequences of Signals
+Which effectively means that the specified sequences of Signals
 (SIGTERM + SIGHUP & SIGKILL) should be sent to all processes.
 
 As it is implemented for systemctl.py 1.0 there are some differences
@@ -144,7 +144,7 @@ https://www.freedesktop.org/software/systemd/man/systemd.service.html#ExecStart=
 
 * a "-" prefix is the most obvious: ignore the return value
 * a "@" prefix allows to have argv[0] to be not the called program
-* a "+" prefix makes for a priviledged services process which
+* a "+" prefix makes for a privileged services process which
   basically means that User/Group changes should NOT be made
   (User/Group would affect ExecStart/ExecStop otherwise)
 * and some unintelligible description of "!" and "!!" prefixes
@@ -185,7 +185,7 @@ advantage of that - it sounds a bit like wizardry around.
 
 As for the hint of "only one ExecStart" - while the script after
 ExecStart is NOT run in a shell you can still use multiple
-commands by having them seperated with "{space}{semicolon}{space}".
+commands by having them separated with "{space}{semicolon}{space}".
 And a stray semicolon may instead be escaped with "\;". Phew!
 
 

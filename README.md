@@ -15,7 +15,7 @@ container as the target host. Just as on a real machine you
 can use "systemctl start" and "systemctl enable" and other 
 commands to bring up services for further configuration and 
 testing. Information from "systemctl show" allows deployment
-automation tools to work seemlessly.
+automation tools to work seamlessly.
 
 This script can also be run as docker-init of a docker container
 (i.e. the main "CMD" on PID 1) where it will automatically bring 
@@ -80,7 +80,7 @@ the container. Just make your inventory look like
 
 Based on that `ansible_connection` one can enable the
 systemctl-replacement to intercept subsequent calls
-to `"service:"` steps. Effectivly Ansible scripts that 
+to `"service:"` steps. Effectively Ansible scripts that 
 shall be run on real virtual machines can be tested 
 with docker containers. However in newer centos/ubuntu
 images you need to check for python first.
@@ -113,7 +113,7 @@ around.
 Zombie processes may also occur when a master process does 
 not do a `wait` for its children or the children were
 explicitly "disown"ed to run as a daemon themselves. The
-systemctl replacment script can help here as it implements 
+systemctl replacement script can help here as it implements 
 the "zombie reaper" functionality that the standard unix
 init daemon would provide. Otherwise the zombie PIDs would
 continue to live forever (as long as the container is
@@ -175,7 +175,7 @@ a number of packages during provisioning - but with the help of the
 [docker-mirror-packages-repo](https://github.com/gdraheim/docker-mirror-packages-repo)
 scripting this can be reduced a lot (it even runs without internet connection).
 
-Some real world examples have been cut out into a seperate
+Some real world examples have been cut out into a separate
 project. This includes dockerfile and ansible based tests
 to provide common applications like webservers, databases
 and even a Jenkins application. You may want to have a look
@@ -210,7 +210,7 @@ documented so that much of the current implementation is
 done by trial and fixing the errors. Some [BUGS](BUGS.md)
 are actually in other tools and need to be circumvented. As 
 most programmers tend to write very simple `*.service` files 
-it works in a surprising number of cases however. But definitly 
+it works in a surprising number of cases however. But definitely 
 not all. So if there is a problem, use the
 [github issue tracker](https://github.com/gdraheim/docker-systemctl-replacement/issues)
 to make me aware of it. In general it is not needed to emulate

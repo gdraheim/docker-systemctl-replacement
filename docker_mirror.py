@@ -221,8 +221,8 @@ class DockerMirrorPackagesRepo:
             return self.get_ubuntu_latest_version(version)
         return ""
     def get_docker_mirror(self, image):
-        """ attach local centos-repo / opensuse-repo to docker-start enviroment.
-            Effectivly when it is required to 'docker start centos:x.y' then do
+        """ attach local centos-repo / opensuse-repo to docker-start environment.
+            Effectively when it is required to 'docker start centos:x.y' then do
             'docker start centos-repo:x.y' before and extend the original to 
             'docker start --add-host mirror...:centos-repo centos:x.y'. """
         if image.startswith("centos:"):
@@ -237,8 +237,8 @@ class DockerMirrorPackagesRepo:
             return self.get_ubuntu_docker_mirror(image)
         return None
     def get_docker_mirrors(self, image):
-        """ attach local centos-repo / opensuse-repo to docker-start enviroment.
-            Effectivly when it is required to 'docker start centos:x.y' then do
+        """ attach local centos-repo / opensuse-repo to docker-start environment.
+            Effectively when it is required to 'docker start centos:x.y' then do
             'docker start centos-repo:x.y' before and extend the original to 
             'docker start --add-host mirror...:centos-repo centos:x.y'. """
         mirrors = []
@@ -292,7 +292,7 @@ class DockerMirrorPackagesRepo:
         return ver or version
     def get_ubuntu_docker_mirror(self, image):
         """ detects a local ubuntu mirror or starts a local
-            docker container with a ubunut repo mirror. It
+            docker container with a ubuntu repo mirror. It
             will return the extra_hosts setting to start
             other docker containers"""
         rmi = "localhost:5000/mirror-packages"
