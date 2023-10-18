@@ -16,7 +16,7 @@ The defaults for the LimitBurst implementation are just as in the standard Syste
 With a default of `InitLoopSleep=5` seconds it means that the LimitBurst will never
 be activated. If you have a lower InitLoopSleep (see below) then it might happen
 that a module restart was done too often - and the module gets an ActiveState=error.
-In that state it will never be restarted again - so the container is effectivly dead
+In that state it will never be restarted again - so the container is effectively dead
 in terms of that service unit.
 
 You can heal the situation explicitly by saying 'systemctl.py reset-failed [unit]'.
@@ -29,7 +29,7 @@ of SystemD.
 The DefaultRestartSec is set at 100ms just like it is in SystemD. However this has
 no effect on the systemctl behaviour as the InitLoopSleep is at 5 seconds. The
 implementation of the Restart behaviour is done so that it does check for failed
-services - and then they are scheduled for restart in the future. So effectivly
+services - and then they are scheduled for restart in the future. So effectively
 it is `StartTime = now + RestartSec`. But because of the InitLoop the next check
 may be far away - so instead of with 100ms it gets the real restart of the failed
 service after 5000ms.
@@ -40,7 +40,7 @@ will check for the "RestartSec" in the unit service descriptors. If it is atleas
 For example if you do have a service unit with a "Restart=2s" then you can expect
 that the real restart from failure will haben about 2 seconds after the failed state
 was detected - which is again within a time frame of 2 seconds after the failure
-has occured. As a result, a restart can happens far as 4 seconds after a unit failure.
+has occurred. As a result, a restart can happens far as 4 seconds after a unit failure.
 
 A "RestartSec=0" is a special value - it will be increased to an InitLoop interval 
 of 1 second but it has no further delay, so that a restart occurs within 1 second

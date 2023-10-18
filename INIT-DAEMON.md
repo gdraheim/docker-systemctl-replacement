@@ -60,7 +60,7 @@ on all those services.
 
 Of course it would be possible to write a second script to
 implement the docker-init-replacement functionality but it
-is integrated here. Just run the systemctl replacemnt as 
+is integrated here. Just run the systemctl replacement as 
 the PID-1 process and it will implicitly call its functionality 
 of "systemctl -1 default", and upon receiving a SIGTERM from
 docker-stop it will run its "systemctl halt" implementation.

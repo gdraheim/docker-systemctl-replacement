@@ -22,7 +22,7 @@ Calling Ansible "service" with "enabled: yes" will fail with
     "no service or tool found for: my.service"
 
 Although "my.service" is mentioned it really thinks that
-the tool /usr/bin/systemctl does not exist - altough it does.
+the tool /usr/bin/systemctl does not exist - although it does.
 The reason is an additional sanity check whether systemd is
 really managing the system - and it wants to fallback to
 "chkconfig" otherwise. The test (seen in Ansible 2.1) can

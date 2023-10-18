@@ -50,7 +50,7 @@ Note that
 * the testcases 1000...4999 are using a --root=subdir environment
 * the testcases 5000...9999 will start a docker container to work.
 
-Also remember that not all systemctl replacment script commands have 
+Also remember that not all systemctl replacement script commands have 
 been checked to interpret the --root=subdir option correctly. Be 
 wary when you run systemctl.py outside of a docker container.
 

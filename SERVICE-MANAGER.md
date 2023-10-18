@@ -30,7 +30,7 @@ As a historic background this script was born when the
 deployment targets shifted from RHEL6 (with initscripts)
 to RHEL7 (with SystemD) and suddenly even a simple call
 to "service app start" would result in errors from a missing
-SystemD-daemon. By using this docker systemctl replacment
+SystemD-daemon. By using this docker systemctl replacement
 script one could continue with the original installers.
 
 Please note that this systemctl replacement will also

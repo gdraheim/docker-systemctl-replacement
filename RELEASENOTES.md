@@ -55,7 +55,7 @@ your docker environment to get things right.
 Internally, there are a number of changes as well. One important thing
 was the original start of the 1.5 branch where the exit-code of the
 program is not derived from just the return value of a function but
-it also checks for the ".error" bitmask. That's in preperation of some
+it also checks for the ".error" bitmask. That's in preparation of some
 C99 implementation in the feature/cplusplus branch of this project. It 
 will not be merged soon but the foundation is there where the Python code
 and C/C++ code represent the same logic with the same variables and
