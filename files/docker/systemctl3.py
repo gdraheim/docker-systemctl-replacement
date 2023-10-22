@@ -102,6 +102,7 @@ _system_folder3 = "/var/run/systemd/system"
 _system_folder4 = "/usr/local/lib/systemd/system"
 _system_folder5 = "/usr/lib/systemd/system"
 _system_folder6 = "/lib/systemd/system"
+_system_folder7 = "/run/systemd/generator"
 _system_folderX = None
 _user_folder1 = "{XDG_CONFIG_HOME}/systemd/user"
 _user_folder2 = "/etc/systemd/user"
@@ -1404,6 +1405,7 @@ class Systemctl:
             if _system_folder4: yield _system_folder4
             if _system_folder5: yield _system_folder5
             if _system_folder6: yield _system_folder6
+            if _system_folder7: yield _system_folder7
             if _system_folderX: yield _system_folderX
     def get_SYSTEMD_UNIT_PATH(self):
         if self._SYSTEMD_UNIT_PATH is None:
@@ -5196,6 +5198,18 @@ class Systemctl:
             The returncode will tell the number of warnings,
             and it is over 100 if it can not continue even
             for the relaxed systemctl.py style of execution. """
+        normal_dir = "/run/systemd/generator"
+        early_dir = "/run/systemd/generator.early"
+        late_dir = "/run/systemd/generator.late"
+        if not os.path.exists(normal_dir):
+            os.mkdir(normal_dir)
+        if not os.path.exists(early_dir):
+            os.mkdir(early_dir)
+        if not os.path.exists(late_dir):
+            os.mkdir(late_dir)
+        os.system("rm -rf %s/* %s/* %s/*" % (normal_dir, early_dir, late_dir))
+        os.system("run-parts /lib/systemd/system-generators/ -a %s -a %s -a %s 2> /dev/null" % (
+            normal_dir, early_dir, late_dir))
         errors = 0
         for unit in self.match_units():
             try:
