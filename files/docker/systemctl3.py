@@ -1655,29 +1655,25 @@ class Systemctl:
         """ make a file glob on all known units (systemd areas).
             It returns all modules if no modules pattern were given.
             Also a single string as one module pattern may be given. """
-        modules = to_list(modules)
+        modules = [(module[:-len(suffix)] if module.endswith(suffix) else module) for module in to_list(modules)]
         self.scan_unit_sysd_files()
         assert self._file_for_unit_sysd is not None
         for item in sorted(self._file_for_unit_sysd.keys()):
             if not modules:
                 yield item
-            elif [module for module in modules if fnmatch.fnmatchcase(item, module)]:
-                yield item
-            elif [module for module in modules if module+suffix == item]:
+            elif [module for module in modules if fnmatch.fnmatchcase(item, module+suffix)]:
                 yield item
     def match_sysv_units(self, modules = None, suffix=".service"): # -> generate[ unit ]
         """ make a file glob on all known units (sysv areas).
             It returns all modules if no modules pattern were given.
             Also a single string as one module pattern may be given. """
-        modules = to_list(modules)
+        modules = [(module[:-len(suffix)] if module.endswith(suffix) else module) for module in to_list(modules)]
         self.scan_unit_sysv_files()
         assert self._file_for_unit_sysv is not None
         for item in sorted(self._file_for_unit_sysv.keys()):
             if not modules:
                 yield item
-            elif [module for module in modules if fnmatch.fnmatchcase(item, module)]:
-                yield item
-            elif [module for module in modules if module+suffix == item]:
+            elif [module for module in modules if fnmatch.fnmatchcase(item, module+suffix)]:
                 yield item
     def match_units(self, modules = None, suffix=".service"): # -> [ units,.. ]
         """ Helper for about any command with multiple units which can
