@@ -363,6 +363,7 @@ def get_exist_path(paths):
     for p in paths:
         if os.path.exists(p):
             return p
+    return None
 
 def get_PAGER():
     PAGER = os.environ.get("PAGER", "less")
