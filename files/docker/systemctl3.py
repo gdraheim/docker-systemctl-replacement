@@ -190,9 +190,9 @@ EXPAND_KEEP_VARS = True
 RESTART_FAILED_UNITS = True
 ACTIVE_IF_ENABLED=False
 
-TAIL_CMD = "/usr/bin/tail"
-LESS_CMD = "/usr/bin/less"
-CAT_CMD = "/usr/bin/cat"
+TAIL_CMDS = ["/bin/tail", "/usr/bin/tail", "/usr/local/bin/tail"]
+LESS_CMDS = ["/bin/less", "/usr/bin/less", "/usr/local/bin/less"]
+CAT_CMDS = ["/bin/cat", "/usr/bin/cat", "/usr/local/bin/cat"]
 
 # The systemd default was NOTIFY_SOCKET="/var/run/systemd/notify"
 _notify_socket_folder = "{RUN}/systemd" # alias /run/systemd
@@ -363,6 +363,11 @@ def path_replace_extension(path, old, new):
     if path.endswith(old):
         path = path[:-len(old)]
     return path + new
+def get_exist_path(paths):
+    for p in paths:
+        if os.path.exists(p):
+            return p
+    return None
 
 def get_PAGER():
     PAGER = os.environ.get("PAGER", "less")
@@ -2185,9 +2190,9 @@ class Systemctl:
             return (EXPAND_KEEP_VARS and namevar or "")
         #
         maxdepth = EXPAND_VARS_MAXDEPTH
-        expanded = re.sub("[$](\w+)", lambda m: get_env1(m), cmd.replace("\\\n", ""))
+        expanded = re.sub(r"[$](\w+)", lambda m: get_env1(m), cmd.replace("\\\n", ""))
         for depth in xrange(maxdepth):
-            new_text = re.sub("[$][{](\w+)[}]", lambda m: get_env2(m), expanded)
+            new_text = re.sub(r"[$][{](\w+)[}]", lambda m: get_env2(m), expanded)
             if new_text == expanded:
                 return expanded
             expanded = new_text
@@ -2291,11 +2296,11 @@ class Systemctl:
                 return env[name]
             logg.debug("can not expand $%s}}", name)
             return ""  # empty string
-        cmd3 = re.sub("[$](\w+)", lambda m: get_env1(m), cmd2)
+        cmd3 = re.sub(r"[$](\w+)", lambda m: get_env1(m), cmd2)
         newcmd = []
         for part in shlex.split(cmd3):
             part2 = self.expand_special(part, conf)
-            newcmd += [re.sub("[$][{](\w+)[}]", lambda m: get_env2(m), part2)] # type: ignore[arg-type]
+            newcmd += [re.sub(r"[$][{](\w+)[}]", lambda m: get_env2(m), part2)] # type: ignore[arg-type]
         return newcmd
     def remove_service_directories(self, conf, section = Service):
         # |
@@ -2683,25 +2688,41 @@ class Systemctl:
         cmd_args = []
         log_path = self.get_journal_log_from(conf)
         if follow:
-            cmd = [TAIL_CMD, "-n", str(lines or 10), "-F", log_path]
+            tail_cmd = get_exist_path(TAIL_CMDS)
+            if tail_cmd is None:
+                print("tail command not found")
+                return 1
+            cmd = [tail_cmd, "-n", str(lines or 10), "-F", log_path]
             logg.debug("journalctl %s -> %s", conf.name(), cmd)
             cmd_args = [arg for arg in cmd] # satisfy mypy
-            return os.spawnvp(os.P_WAIT, cmd_args[0], cmd_args)
+            return os.execvp(cmd_args[0], cmd_args)
         elif lines:
-            cmd = [TAIL_CMD, "-n", str(lines or 10), log_path]
+            tail_cmd = get_exist_path(TAIL_CMDS)
+            if tail_cmd is None:
+                print("tail command not found")
+                return 1
+            cmd = [tail_cmd, "-n", str(lines or 10), log_path]
             logg.debug("journalctl %s -> %s", conf.name(), cmd)
             cmd_args = [arg for arg in cmd] # satisfy mypy
-            return os.spawnvp(os.P_WAIT, cmd_args[0], cmd_args)
+            return os.execvp(cmd_args[0], cmd_args)
         elif _no_pager:
-            cmd = [CAT_CMD, log_path]
+            cat_cmd = get_exist_path(CAT_CMDS)
+            if cat_cmd is None:
+                print("cat command not found")
+                return 1
+            cmd = [cat_cmd, log_path]
             logg.debug("journalctl %s -> %s", conf.name(), cmd)
             cmd_args = [arg for arg in cmd] # satisfy mypy
-            return os.spawnvp(os.P_WAIT, cmd_args[0], cmd_args)
+            return os.execvp(cmd_args[0], cmd_args)
         else:
-            cmd = [LESS_CMD, log_path]
+            less_cmd = get_exist_path(LESS_CMDS)
+            if less_cmd is None:
+                print("less command not found")
+                return 1
+            cmd = [less_cmd, log_path]
             logg.debug("journalctl %s -> %s", conf.name(), cmd)
             cmd_args = [arg for arg in cmd] # satisfy mypy
-            return os.spawnvp(os.P_WAIT, cmd_args[0], cmd_args)
+            return os.execvp(cmd_args[0], cmd_args)
     def get_journal_log_from(self, conf):
         return os_path(self._root, self.get_journal_log(conf))
     def get_journal_log(self, conf):
