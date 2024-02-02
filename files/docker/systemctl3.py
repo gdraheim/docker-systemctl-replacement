@@ -2710,7 +2710,7 @@ class Systemctl:
             cmd = [tail_cmd, "-n", str(lines or 10), "-F", log_path]
             logg.debug("journalctl %s -> %s", conf.name(), cmd)
             cmd_args = [arg for arg in cmd] # satisfy mypy
-            return os.spawnvp(os.P_WAIT, cmd_args[0], cmd_args)
+            return os.execvp(cmd_args[0], cmd_args)
         elif lines:
             tail_cmd = get_exist_path(TAIL_CMDS)
             if tail_cmd is None:
@@ -2719,7 +2719,7 @@ class Systemctl:
             cmd = [tail_cmd, "-n", str(lines or 10), log_path]
             logg.debug("journalctl %s -> %s", conf.name(), cmd)
             cmd_args = [arg for arg in cmd] # satisfy mypy
-            return os.spawnvp(os.P_WAIT, cmd_args[0], cmd_args)
+            return os.execvp(cmd_args[0], cmd_args)
         elif _no_pager:
             cat_cmd = get_exist_path(CAT_CMDS)
             if cat_cmd is None:
@@ -2728,7 +2728,7 @@ class Systemctl:
             cmd = [cat_cmd, log_path]
             logg.debug("journalctl %s -> %s", conf.name(), cmd)
             cmd_args = [arg for arg in cmd] # satisfy mypy
-            return os.spawnvp(os.P_WAIT, cmd_args[0], cmd_args)
+            return os.execvp(cmd_args[0], cmd_args)
         else:
             less_cmd = get_exist_path(LESS_CMDS)
             if less_cmd is None:
@@ -2737,7 +2737,7 @@ class Systemctl:
             cmd = [less_cmd, log_path]
             logg.debug("journalctl %s -> %s", conf.name(), cmd)
             cmd_args = [arg for arg in cmd] # satisfy mypy
-            return os.spawnvp(os.P_WAIT, cmd_args[0], cmd_args)
+            return os.execvp(cmd_args[0], cmd_args)
     def get_journal_log_from(self, conf):
         return os_path(self._root, self.get_journal_log(conf))
     def get_journal_log(self, conf):
