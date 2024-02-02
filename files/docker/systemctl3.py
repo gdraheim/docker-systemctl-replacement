@@ -186,9 +186,9 @@ EXPAND_KEEP_VARS = True
 RESTART_FAILED_UNITS = True
 ACTIVE_IF_ENABLED=False
 
-TAIL_CMD = "/usr/bin/tail"
-LESS_CMD = "/usr/bin/less"
-CAT_CMD = "/usr/bin/cat"
+TAIL_CMDS = ["/bin/tail", "/usr/bin/tail", "/usr/local/bin/tail"]
+LESS_CMDS = ["/bin/less", "/usr/bin/less", "/usr/local/bin/less"]
+CAT_CMDS = ["/bin/cat", "/usr/bin/cat", "/usr/local/bin/cat"]
 
 # The systemd default was NOTIFY_SOCKET="/var/run/systemd/notify"
 _notify_socket_folder = "{RUN}/systemd" # alias /run/systemd
@@ -359,6 +359,10 @@ def path_replace_extension(path, old, new):
     if path.endswith(old):
         path = path[:-len(old)]
     return path + new
+def get_exist_path(paths):
+    for p in paths:
+        if os.path.exists(p):
+            return p
 
 def get_PAGER():
     PAGER = os.environ.get("PAGER", "less")
@@ -2699,22 +2703,38 @@ class Systemctl:
         cmd_args = []
         log_path = self.get_journal_log_from(conf)
         if follow:
-            cmd = [TAIL_CMD, "-n", str(lines or 10), "-F", log_path]
+            tail_cmd = get_exist_path(TAIL_CMDS)
+            if tail_cmd is None:
+                print("tail command not found")
+                return 1
+            cmd = [tail_cmd, "-n", str(lines or 10), "-F", log_path]
             logg.debug("journalctl %s -> %s", conf.name(), cmd)
             cmd_args = [arg for arg in cmd] # satisfy mypy
             return os.spawnvp(os.P_WAIT, cmd_args[0], cmd_args)
         elif lines:
-            cmd = [TAIL_CMD, "-n", str(lines or 10), log_path]
+            tail_cmd = get_exist_path(TAIL_CMDS)
+            if tail_cmd is None:
+                print("tail command not found")
+                return 1
+            cmd = [tail_cmd, "-n", str(lines or 10), log_path]
             logg.debug("journalctl %s -> %s", conf.name(), cmd)
             cmd_args = [arg for arg in cmd] # satisfy mypy
             return os.spawnvp(os.P_WAIT, cmd_args[0], cmd_args)
         elif _no_pager:
-            cmd = [CAT_CMD, log_path]
+            cat_cmd = get_exist_path(CAT_CMDS)
+            if cat_cmd is None:
+                print("cat command not found")
+                return 1
+            cmd = [cat_cmd, log_path]
             logg.debug("journalctl %s -> %s", conf.name(), cmd)
             cmd_args = [arg for arg in cmd] # satisfy mypy
             return os.spawnvp(os.P_WAIT, cmd_args[0], cmd_args)
         else:
-            cmd = [LESS_CMD, log_path]
+            less_cmd = get_exist_path(LESS_CMDS)
+            if less_cmd is None:
+                print("less command not found")
+                return 1
+            cmd = [less_cmd, log_path]
             logg.debug("journalctl %s -> %s", conf.name(), cmd)
             cmd_args = [arg for arg in cmd] # satisfy mypy
             return os.spawnvp(os.P_WAIT, cmd_args[0], cmd_args)
