@@ -3190,7 +3190,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} daemon-reload"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        cmd = "{systemctl} show -p Environment zzb.service" + vv
+        cmd = "{systemctl} show -p Environment zzb.service {vv}"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)

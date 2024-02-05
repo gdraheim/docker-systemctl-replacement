@@ -1658,7 +1658,9 @@ class Systemctl:
         self.scan_unit_sysd_files()
         assert self._file_for_unit_sysd is not None
         for item in sorted(self._file_for_unit_sysd.keys()):
-            if not modules:
+            if "." not in item:
+                pass
+            elif not modules:
                 yield item
             elif [module for module in modules if fnmatch.fnmatchcase(item, module)]:
                 yield item
