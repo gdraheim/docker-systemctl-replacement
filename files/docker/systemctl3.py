@@ -88,12 +88,13 @@ _no_ask_password = False
 _preset_mode = "all"
 _quiet = False
 _root = ""
-_unit_type = None
-_unit_state = None
 _unit_property = None
-_what_kind = ""
 _show_all = False
 _user_mode = False
+_only_what = []
+_only_type = []
+_only_state = []
+_only_property = []
 
 # common default paths
 _system_folders = [
@@ -289,6 +290,14 @@ def to_list(value):
     if isinstance(value, tuple):
         return list(value)
     return str(value or "").split(",")
+def commalist(value):
+    return list(_commalist(value))
+def _commalist(value):
+    for val in value:
+        if not val:
+            continue
+        for elem in val.strip().split(","):
+            yield elem
 def int_mode(value):
     try: return int(value, 8)
     except: return None # pragma: no cover
@@ -1326,9 +1335,10 @@ class Systemctl:
         self._quiet = _quiet
         self._root = _root
         self._show_all = _show_all
-        self._unit_property = _unit_property
-        self._unit_state = _unit_state
-        self._unit_type = _unit_type
+        self._only_what = commalist(_only_what) or [""]
+        self._only_property = commalist(_only_property)
+        self._only_state = commalist(_only_state)
+        self._only_type = commalist(_only_type)
         # some common constants that may be changed
         self._systemd_version = SystemCompatibilityVersion
         self._journal_log_folder = _journal_log_folder
@@ -1714,8 +1724,14 @@ class Systemctl:
                 substate[unit] = self.get_substate_from(conf) or "unknown"
             except Exception as e:
                 logg.warning("list-units: %s", e)
-            if self._unit_state:
-                if self._unit_state not in [result[unit], active[unit], substate[unit]]:
+            if self._only_state:
+                if result[unit] in self._only_state:
+                    pass
+                elif active[unit] in self._only_state:
+                    pass
+                elif substate[unit] in self._only_state:
+                    pass
+                else:
                     del result[unit]
         return [(unit, result[unit] + " " + active[unit] + " " + substate[unit], description[unit]) for unit in sorted(result)]
     def list_units_modules(self, *modules): # -> [ (unit,loaded,description) ]
@@ -1734,7 +1750,7 @@ class Systemctl:
         result = {}
         enabled = {}
         for unit in self.match_units(to_list(modules)):
-            if _unit_type and self.get_unit_type(unit) not in _unit_type.split(","):
+            if self._only_type and self.get_unit_type(unit) not in self._only_type:
                 continue
             result[unit] = None
             enabled[unit] = ""
@@ -1786,12 +1802,11 @@ class Systemctl:
         if self._now:
             basics = self.list_service_unit_basics()
             result = [(name, sysv + " " + filename) for name, sysv, filename in basics]
-        elif self._unit_type == "target":
-            result = self.list_target_unit_files()
-        elif self._unit_type == "service":
-            result = self.list_service_unit_files()
-        elif self._unit_type:
-            logg.warning("unsupported unit --type=%s", self._unit_type)
+        elif self._only_type: 
+            if "target" in self._only_type:
+                result = self.list_target_unit_files()
+            if "service" in self._only_type:
+                result = self.list_service_unit_files()
         else:
             result = self.list_target_unit_files()
             result += self.list_service_unit_files(*modules)
@@ -2141,8 +2156,11 @@ class Systemctl:
             logg.error("Unit %s could not be found.", unit)
             self.error |= NOT_FOUND
             return None
-        if _unit_property:
-            return conf.getlist(Service, _unit_property)
+        if self._only_property:
+            found: List[str] = []
+            for prop in self._only_property:
+                found += conf.getlist(Service, prop)
+            return found
         return conf.getlist(Service, "ExecStart")
     def environment_of_unit(self, unit):
         """ [UNIT]. -- show environment parts """
@@ -2634,7 +2652,7 @@ class Systemctl:
         return ok and found_all
     def clean_units(self, units, what = ""):
         if not what:
-            what = _what_kind
+            what = self._only_what[0]
         ok = True
         for unit in units:
             ok = self.clean_unit(unit, what) and ok
@@ -2974,7 +2992,7 @@ class Systemctl:
                     logg.error("the ExecStartPre control process exited with error code")
                     active = "failed"
                     self.write_status_from(conf, AS=active)
-                    if _what_kind not in ["none", "keep"]:
+                    if self._only_what[0] not in ["none", "keep"]:
                         self.remove_service_directories(conf) # cleanup that /run/sshd
                     return False
         if runs in ["oneshot"]:
@@ -3145,7 +3163,7 @@ class Systemctl:
                 run = subprocess_waitpid(forkpid)
                 logg.debug("post-fail done (%s) <-%s>",
                            run.returncode or "OK", run.signal or "")
-            if _what_kind not in ["none", "keep"]:
+            if self._only_what[0] not in ["none", "keep"]:
                 self.remove_service_directories(conf)
             return False
         else:
@@ -3752,7 +3770,7 @@ class Systemctl:
                 run = subprocess_waitpid(forkpid)
                 logg.debug("post-stop done (%s) <-%s>",
                            run.returncode or "OK", run.signal or "")
-        if _what_kind not in ["none", "keep"]:
+        if self._only_what[0] not in ["none", "keep"]:
             self.remove_service_directories(conf)
         return service_result == "success"
     def do_stop_socket_from(self, conf):
@@ -5415,13 +5433,13 @@ class Systemctl:
                     units += [unit]
         return self.show_units(units) + notfound # and found_all
     def show_units(self, units):
-        logg.debug("show --property=%s", self._unit_property)
+        logg.debug("show --property=%s", ",".join(self._only_property))
         result = []
         for unit in units:
             if result: result += [""]
             for var, value in self.show_unit_items(unit):
-                if self._unit_property:
-                    if self._unit_property != var:
+                if self._only_property:
+                    if var not in self._only_property:
                         continue
                 else:
                     if not value and not self._show_all:
@@ -6649,13 +6667,13 @@ if __name__ == "__main__":
     #     help="Operate on remote host*")
     # _o.add_option("-M", "--machine", metavar="CONTAINER",
     #     help="Operate on local container*")
-    _o.add_option("-t", "--type", metavar="TYPE", dest="unit_type", default=_unit_type,
+    _o.add_option("-t", "--type", metavar="TYPE", action="append", dest="only_type", default=_only_type,
                   help="List units of a particual type")
-    _o.add_option("--state", metavar="STATE", default=_unit_state,
+    _o.add_option("--state", metavar="STATE", action="append", dest="only_state", default=_only_state,
                   help="List units with particular LOAD or SUB or ACTIVE state")
-    _o.add_option("-p", "--property", metavar="NAME", dest="unit_property", default=_unit_property,
+    _o.add_option("-p", "--property", metavar="NAME", action="append", dest="only_property", default=_only_property,
                   help="Show only properties by this name")
-    _o.add_option("--what", metavar="TYPE", dest="what_kind", default=_what_kind,
+    _o.add_option("--what", metavar="TYPE", action="append", dest="only_what", default=_only_what,
                   help="Defines the service directories to be cleaned (configuration, state, cache, logs, runtime)")
     _o.add_option("-a", "--all", action="store_true", dest="show_all", default=_show_all,
                   help="Show all loaded units/properties, including dead empty ones. To list all units installed on the system, use the 'list-unit-files' command instead")
@@ -6737,10 +6755,10 @@ if __name__ == "__main__":
     _quiet = opt.quiet
     _root = opt.root
     _show_all = opt.show_all
-    _unit_state = opt.state
-    _unit_type = opt.unit_type
-    _unit_property = opt.unit_property
-    _what_kind = opt.what_kind
+    _only_state = opt.only_state
+    _only_type = opt.only_type
+    _only_property = opt.only_property
+    _only_what = opt.only_what
     # being PID 1 (or 0) in a container will imply --init
     _pid = os.getpid()
     _init = opt.init or _pid in [1, 0]
@@ -6776,6 +6794,10 @@ if __name__ == "__main__":
                 logg.debug("str %s=%s", nam, val)
                 globals()[nam] = val.strip()
                 logg.debug("... SysInitTarget=%s", SysInitTarget)
+            elif isinstance(old, list):
+                logg.debug("str %s+=[%s]", nam, val)
+                globals()[nam].append(val.strip())
+                logg.debug("... _only_type=%s", _only_type)
             else:
                 logg.warning("(ignored) unknown target type -c '%s' : %s", nam, type(old))
         else:

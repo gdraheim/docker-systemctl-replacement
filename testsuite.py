@@ -3160,11 +3160,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_2300_override_environment_extras(self, real: bool = False) -> None:
         """ check that the result of 'show -p Environment UNIT' can
             list the settings when using override file extras"""
+        vv = self.begin()
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir, real)
         systemctl = cover() + _systemctl_py + " --root=" + root
-        if real: systemctl = "/usr/bin/systemctl"
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
         text_file(os_path(root, "/etc/sysconfig/zzb.conf"), """
             DEF1='def1'
             DEF2="def2"
@@ -3189,7 +3190,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} daemon-reload"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        cmd = "{systemctl} show -p Environment zzb.service"
+        cmd = "{systemctl} show -p Environment zzb.service" + vv
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
@@ -3711,12 +3712,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         ##
-    def test_2612_show_unit_property_not_found(self) -> None:
+    def real_2612_show_unit_property_not_found(self) -> None:
+        self.test_2612_show_unit_property_not_found(True)
+    def test_2612_show_unit_property_not_found(self, real: bool = False) -> None:
         """ check when 'show UNIT' not found  """
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
+        if real: systemctl = "/usr/bin/systemctl"
         text_file(os_path(root, "/etc/systemd/system/zza.service"), """
             [Unit]
             Description=Testing A
@@ -3724,12 +3728,47 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             TimeoutStartSec=29
             TimeoutStopSec=60
             """)
+        cmd = "{systemctl} daemon-reload"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
         cmd = "{systemctl} show -p WeirdOption zza.service"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
         self.assertEqual(end, 0)
         self.assertEqual(len(out.strip()), 0)
         self.rm_testdir()
+        self.rm_zzfiles(root)
+        self.coverage()
+        ##
+    def real_2614_show_multiple_unit_property(self) -> None:
+        self.test_2614_show_multiple_unit_property(True)
+    def test_2614_show_multiple_unit_property(self, real: bool = False) -> None:
+        """ check when 'show UNIT' with multiple -p (as used by Chef) """
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir, real)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        if real: systemctl = "/usr/bin/systemctl"
+        text_file(os_path(root, "/etc/systemd/system/zza.service"), """
+            [Unit]
+            Description=Testing A
+            [Service]
+            TimeoutStartSec=29
+            TimeoutStopSec=60
+            """)
+        cmd = "{systemctl} daemon-reload"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "{systemctl} show -p TimeoutStartUSec -p TimeoutStopUSec zza.service"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertEqual(end, 0)
+        rep = lines(out)
+        self.assertEqual(len(rep), 2)
+        self.assertIn("TimeoutStartUSec=29s", rep)
+        self.assertIn("TimeoutStopUSec=1min", rep)
+        self.rm_testdir()
+        self.rm_zzfiles(root)
         self.coverage()
         ##
     def test_2701_create_runtime(self) -> None:

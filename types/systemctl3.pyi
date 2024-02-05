@@ -7,7 +7,7 @@ import collections
 import logging
 from collections import namedtuple
 from typing import Callable, Dict, Iterable, List, NoReturn, Optional, TextIO, Tuple, Type, Union
-from typing import NamedTuple, Match, TextIO, BinaryIO, Sequence, overload, Generator
+from typing import NamedTuple, Match, TextIO, BinaryIO, Sequence, overload, Iterator
 from types import TracebackType
 
 _extra_vars: List[str]
@@ -36,9 +36,10 @@ _no_ask_password: bool
 _preset_mode: str
 _quiet: bool
 _root: str
-_unit_type: Optional[str]
-_unit_state: Optional[str]
-_unit_property: Optional[str]
+_only_what: List[str]
+_only_type: List[str]
+_only_state: List[str]
+_only_property: List[str]
 _show_all: bool
 _user_mode: bool
 _system_folders: List[str]
@@ -92,6 +93,8 @@ def shell_cmd(cmd: List[str]) -> str: ...
 def to_int(value: str, default: int = ...) -> int: ...
 def to_intN(value: Optional[str], default: Optional[int] = ...) -> Optional[int]: ...
 def to_list(value: Union[str, List[str], Tuple[str], Tuple[str, ...], None]) -> List[str]: ...
+def commalist(value: Iterable[str]) -> List[str]: ...
+def _commalist(value: Iterable[str]) -> Iterator[str]: ...
 def unit_of(module: str) -> str: ...
 def int_mode(value: str) -> Optional[int]: ...
 def o22(part: str) -> str: ...
