@@ -1141,6 +1141,27 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.rm_zzfiles(root)
         self.coverage()
+    def test_1044_systemctl_override_list_config(self) -> None:
+        """ we can use -c name=something to override internals """
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/zza.service"), """
+            [Unit]
+            Description=Testing A
+            [Service]
+            ExecStart=/bin/sleep 3
+        """)
+        #
+        cmd = "{systemctl} daemon-reload -c _extra_vars=1,2 -vvv"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        self.assertEqual(lines(out), [])
+        self.assertEqual(end, 0)
+        self.assertEqual(len(greps(err, "_extra_vars=.'1', '2'.")), 1)
+        self.rm_testdir()
+        self.rm_zzfiles(root)
+        self.coverage()
     def test_1045_systemctl_override_fail_unknown_config(self) -> None:
         """ we can use -c name=something to override internals """
         testdir = self.testdir()
@@ -1174,12 +1195,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart=/bin/sleep 3
         """)
         #
-        cmd = "{systemctl} daemon-reload -c _extra_vars=1 -vvv"
+        cmd = "{systemctl} daemon-reload -c target_requires=1 -vvv"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
         self.assertEqual(lines(out), [])
         self.assertEqual(end, 0)
-        self.assertTrue(greps(err, "unknown target type -c '_extra_vars'.*'list'>"))
+        self.assertTrue(greps(err, "unknown target type -c 'target_requires'.*'dict'>"))
         self.rm_testdir()
         self.rm_zzfiles(root)
         self.coverage()
