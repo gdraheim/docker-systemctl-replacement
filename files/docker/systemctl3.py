@@ -88,7 +88,6 @@ _no_ask_password = False
 _preset_mode = "all"
 _quiet = False
 _root = ""
-_unit_property = None
 _show_all = False
 _user_mode = False
 _only_what = []
@@ -6798,8 +6797,8 @@ if __name__ == "__main__":
                 logg.debug("... SysInitTarget=%s", SysInitTarget)
             elif isinstance(old, list):
                 logg.debug("str %s+=[%s]", nam, val)
-                globals()[nam].append(val.strip())
-                logg.debug("... _only_type=%s", _only_type)
+                globals()[nam] += val.strip().split(",")
+                logg.debug("... _extra_vars=%s", _extra_vars)
             else:
                 logg.warning("(ignored) unknown target type -c '%s' : %s", nam, type(old))
         else:
