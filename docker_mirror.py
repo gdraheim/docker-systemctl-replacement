@@ -1,10 +1,10 @@
 #! /usr/bin/python3
 # from __future__ import print_function
 
-__copyright__ = "(C) 2023 Guido Draheim"
+__copyright__ = "(C) 2024 Guido Draheim"
 __contact__ = "https://github.com/gdraheim/docker-mirror-packages-repo"
 __license__ = "CC0 Creative Commons Zero (Public Domain)"
-__version__ = "1.7.5117"
+__version__ = "1.7.6065"
 
 from collections import OrderedDict, namedtuple
 import os.path
@@ -33,19 +33,24 @@ MAXWAIT = 6
 
 LEAP = "opensuse/leap"
 SUSE = "opensuse"
-OPENSUSE_VERSIONS = {"42.2": SUSE, "42.3": SUSE, "15.0": LEAP, "15.1": LEAP, "15.2": LEAP, "15.3": LEAP, "15.4": LEAP}
-UBUNTU_LTS = {"16": "16.04", "18": "18.04", "20": "20.04"}
+OPENSUSE_VERSIONS = {"42.2": SUSE, "42.3": SUSE, "15.0": LEAP, "15.1": LEAP, #  ..
+                     "15.2": LEAP, "15.3": LEAP, "15.4": LEAP, "15.5": LEAP, "15.6": LEAP,
+                     "16.0": LEAP }
+UBUNTU_LTS = {"16": "16.04", "18": "18.04", "20": "20.04", "22": "22.04", "24": "24.04" }
 UBUNTU_VERSIONS = {"12.04": "precise", "14.04": "trusty", "16.04": "xenial", "17.10": "artful",
                    "18.04": "bionic", "18.10": "cosmic", "19.04": "disco", "19.10": "eoan",
                    "20.04": "focal", "20.10": "groovy", "21.04": "hirsute", "21.10": "impish",
-                   "22.04": "jammpy", "22.10": "kinetic", "23.04": "lunatic"}
+                   "22.04": "jammpy", "22.10": "kinetic", "23.04": "lunatic", "23.10": "mantic",
+                   "24.04": "noble" }
 CENTOS_VERSIONS = {"7.0": "7.0.1406", "7.1": "7.1.1503", "7.2": "7.2.1511", "7.3": "7.3.1611",
                    "7.4": "7.4.1708", "7.5": "7.5.1804", "7.6": "7.6.1810", "7.7": "7.7.1908",
                    "7.8": "7.8.2003", "7.9": "7.9.2009",
                    "8.0": "8.0.1905", "8.1": "8.1.1911", "8.2": "8.2.2004", "8.3": "8.3.2011",
                    "8.4": "8.4.2105"}
-ALMA_VERSIONS = {"9.1-20230222": "9.1", "9.1-20221201": "9.1", "9.1-20221117": "9.1",
-                 "9.0-20221001": "9.0", "9.0-20220901": "9.0", "9.0-20220706": "9.0", }
+ALMA_VERSIONS = { "9.0-20221001": "9.0", "9.0-20220901": "9.0", "9.0-20220706": "9.0", 
+                  "9.1-20230222": "9.1", "9.1-20221201": "9.1", "9.1-20221117": "9.1",
+                  "9.3-20231124": "9.3" }
+
 
 def decodes(text):
     if text is None: return None
@@ -221,8 +226,8 @@ class DockerMirrorPackagesRepo:
             return self.get_ubuntu_latest_version(version)
         return ""
     def get_docker_mirror(self, image):
-        """ attach local centos-repo / opensuse-repo to docker-start environment.
-            Effectively when it is required to 'docker start centos:x.y' then do
+        """ attach local centos-repo / opensuse-repo to docker-start enviroment.
+            Effectivly when it is required to 'docker start centos:x.y' then do
             'docker start centos-repo:x.y' before and extend the original to 
             'docker start --add-host mirror...:centos-repo centos:x.y'. """
         if image.startswith("centos:"):
@@ -237,8 +242,8 @@ class DockerMirrorPackagesRepo:
             return self.get_ubuntu_docker_mirror(image)
         return None
     def get_docker_mirrors(self, image):
-        """ attach local centos-repo / opensuse-repo to docker-start environment.
-            Effectively when it is required to 'docker start centos:x.y' then do
+        """ attach local centos-repo / opensuse-repo to docker-start enviroment.
+            Effectivly when it is required to 'docker start centos:x.y' then do
             'docker start centos-repo:x.y' before and extend the original to 
             'docker start --add-host mirror...:centos-repo centos:x.y'. """
         mirrors = []
@@ -292,7 +297,7 @@ class DockerMirrorPackagesRepo:
         return ver or version
     def get_ubuntu_docker_mirror(self, image):
         """ detects a local ubuntu mirror or starts a local
-            docker container with a ubuntu repo mirror. It
+            docker container with a ubunut repo mirror. It
             will return the extra_hosts setting to start
             other docker containers"""
         rmi = "localhost:5000/mirror-packages"
