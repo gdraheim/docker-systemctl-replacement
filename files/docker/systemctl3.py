@@ -2158,7 +2158,7 @@ class Systemctl:
             self.error |= NOT_FOUND
             return None
         if self._only_property:
-            found: List[str] = []
+            found = []
             for prop in self._only_property:
                 found += conf.getlist(Service, prop)
             return found
