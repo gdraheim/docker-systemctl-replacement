@@ -60,3 +60,22 @@ C99 implementation in the feature/cplusplus branch of this project. It
 will not be merged soon but the foundation is there where the Python code
 and C/C++ code represent the same logic with the same variables and
 the same function names and types.
+
+UPCOMING RELEASE 2.0
+
+Python2 can not be installed on Ubuntu24.04 and AlmaLinux 9.3 (202311). 
+The RHEL7 distribution runs out of support by June 2024 (with some
+extended support till 2026). As such the Python2 development in this
+project will be dropped at the end of 2024. This will see a switch
+to version 2.x by 2025. Note that the code will not change and it
+can still be used with python2 and the testbuilds.py will still test
+it until 2026 - however the current two versions systemctl.py and
+systemctl3.py will be dropped in the git repo to just systemctl.py
+being run by python3.
+
+The switch to a RELEASE 2.0 does also allow to reset the BASEYEAR
+of the versioning scheme. It is close to running out of numbers.
+
+
+
+
