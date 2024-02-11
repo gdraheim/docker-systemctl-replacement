@@ -29104,7 +29104,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.begin()
         testname = self.testname()
         testdir = self.testdir()
-        self.forking_service_functions("user", testname, testdir)
+        self.usermode_forking_service_functions("user", testname, testdir)
         self.rm_testdir()
         self.end()
     def usermode_forking_service_functions(self, system: str, testname: str, testdir: str) -> None:
