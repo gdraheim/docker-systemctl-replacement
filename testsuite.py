@@ -161,6 +161,8 @@ def python_package(python: str, image: Optional[str] = None) -> str:
     if package.endswith("2"):
         if image and "centos:8" in image:
             return package
+        if image and "ubuntu:2" in image:
+            return package
         return package[:-1]
     return package
 def coverage_tool(image: Optional[str] = None, python: Optional[str] = None) -> str:

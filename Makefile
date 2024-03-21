@@ -50,16 +50,17 @@ UA ubuntu-apache2.dockerfile: ; ./testsuite.py test_6005
 DJ docker-jenkins: ; ./testsuite.py test_900*
 
 COVERAGE=--coverage
-est_%: ; rm .coverage*; rm -rf tmp/tmp.t$@ ; ./testsuite.py "t$@" -vv --coverage --keep
-test_%: ; ./testsuite.py "$@" -vv
-real_%: ; ./testsuite.py "$@" -vv
-st_%: ; $(MAKE) 2 && ./testsuite.py "te$@" -vv $(WITH2)
+est_%: ; rm .coverage*; rm -rf tmp/tmp.t$(notdir $@) ; ./testsuite.py "t$(notdir $@)" -vv --coverage --keep
+test_%: ; ./testsuite.py "$(notdir $@)" -vv
+real_%: ; ./testsuite.py "$(notdir $@)" -vv
+st_%: ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv $(WITH2)
 
 test: ; $(MAKE) type && $(MAKE) tests && $(MAKE) coverage
 
 WITH2 = --python=/usr/bin/python2 --with=files/docker/systemctl.py
 WITH3 = --python=/usr/bin/python3 --with=files/docker/systemctl3.py
 todo/test_%:             ; ./testsuite.py   "$(notdir $@)" -vv --todo
+15.6/test_%:             ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=opensuse/leap:15.6
 15.5/test_%:             ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=opensuse/leap:15.5
 15.4/test_%:             ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=opensuse/leap:15.4
 15.2/test_%:             ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=opensuse/leap:15.2
@@ -67,6 +68,7 @@ todo/test_%:             ; ./testsuite.py   "$(notdir $@)" -vv --todo
 15.0/test_%:             ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=opensuse/leap:15.0
 42.3/test_%:             ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=opensuse:42.3
 42.2/test_%:             ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=opensuse:42.2
+24.04/test_%:            ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=ubuntu:24.04
 22.04/test_%:            ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=ubuntu:22.04
 20.04/test_%:            ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=ubuntu:20.04
 19.10/test_%:            ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=ubuntu:19.10
@@ -104,6 +106,7 @@ test2list = st_[567]
 testslist = test_[567]
 tests: ; $(MAKE) "${basetests}"
 .PHONY: tests
+15.6/tests:  ; $(MAKE) "15.6/$(testslist)"
 15.5/tests:  ; $(MAKE) "15.5/$(testslist)"
 15.4/tests:  ; $(MAKE) "15.4/$(testslist)"
 15.2/tests:  ; $(MAKE) "15.2/$(testslist)"
@@ -111,12 +114,17 @@ tests: ; $(MAKE) "${basetests}"
 15.0/tests:  ; $(MAKE) "15.0/$(testslist)"
 42.3/tests:  ; $(MAKE) "42.3/$(testslist)"
 42.2/tests:  ; $(MAKE) "42.2/$(testslist)"
+22.04/tests: ; $(MAKE) "22.04/$(testslist)"
+20.04/tests: ; $(MAKE) "20.04/$(testslist)"
 19.10/tests: ; $(MAKE) "19.10/$(testslist)"
 18.04/tests: ; $(MAKE) "18.04/$(testslist)"
 16.04/tests: ; $(MAKE) "16.04/$(testslist)"
+9.3/tests:   ; $(MAKE) "9.3/$(testslist)"
 9.1/tests:   ; $(MAKE) "9.1/$(testslist)"
+8.5/tests:   ; $(MAKE) "8.5/$(testslist)"
 8.1/tests:   ; $(MAKE) "8.1/$(testslist)"
 8.0/tests:   ; $(MAKE) "8.0/$(testslist)"
+7.9/tests:   ; $(MAKE) "7.9/$(testslist)"
 7.7/tests:   ; $(MAKE) "7.7/$(testslist)"
 7.6/tests:   ; $(MAKE) "7.6/$(testslist)"
 7.5/tests:   ; $(MAKE) "7.5/$(testslist)"
@@ -127,10 +135,14 @@ tests: ; $(MAKE) "${basetests}"
 15.0/test2:  ; $(MAKE) "15.0/$(test2list)"
 42.3/test2:  ; $(MAKE) "42.3/$(test2list)"
 42.2/test2:  ; $(MAKE) "42.2/$(test2list)"
+22.04/test2: ; $(MAKE) "22.04/$(test2list)"
+20.04/test2: ; $(MAKE) "20.04/$(test2list)"
 18.04/test2: ; $(MAKE) "18.04/$(test2list)"
 16.04/test2: ; $(MAKE) "16.04/$(test2list)"
+8.5/test2:   ; $(MAKE) "8.5/$(test2list)"
 8.1/test2:   ; $(MAKE) "8.1/$(test2list)"
 8.0/test2:   ; $(MAKE) "8.0/$(test2list)"
+7.9/test2:   ; $(MAKE) "7.9/$(test2list)"
 7.7/test2:   ; $(MAKE) "7.7/$(test2list)"
 7.6/test2:   ; $(MAKE) "7.6/$(test2list)"
 7.5/test2:   ; $(MAKE) "7.5/$(test2list)"
@@ -140,13 +152,27 @@ tests: ; $(MAKE) "${basetests}"
 nightrun: checkall
 	$(MAKE) checks
 checkall: checkall2019
-checkall2018:
-	$(MAKE) -j1 tests
-	$(MAKE) -j1 7.5/tests 7.4/tests 7.3/tests
-	$(MAKE) -j1 18.04/tests 16.04/tests
-	$(MAKE) -j1 15.0/tests 42.3/tests
-	$(MAKE) -j1 18.04/test2 16.04/test2
-	$(MAKE) -j1 15.0/test2 42.3/test2
+checkall2: checkall2024.2
+checkall2024:
+	$(MAKE) -j1 tests checkall2023.3 checkall2023.2
+checkall2024.3:
+	$(MAKE) -j1 9.3/tests   8.5/tests   7.9/tests
+	$(MAKE) -j1 24.04/tests 22.04/test2 18.04/tests
+	$(MAKE) -j1 15.6/tests  15.5/tests  15.4/tests  15.2/tests
+checkall2024.2:
+	: $(MAKE) -j1             8.5/test2   7.9/test2
+	$(MAKE) -j1             22.04/test2 18.04/test2
+	$(MAKE) -j1 15.6/test2  15.5/test2  15.4/test2  15.2/test2
+checkall2023:
+	$(MAKE) -j1 tests checkall2023.3 checkall2023.2
+checkall2023.3:
+	$(MAKE) -j1 9.1/tests 8.5/tests 7.9/tests
+	$(MAKE) -j1 22.04/test2 20.04/tests 18.04/tests
+	$(MAKE) -j1 15.5/tests 15.4/tests 15.2/tests
+checkall2023.2:
+	$(MAKE) -j1           8.5/test2 7.9/test2
+	$(MAKE) -j1 22.04/test2 20.04/test2 18.04/test2
+	$(MAKE) -j1 15.5/test2 15.4/test2 15.2/test2
 checkall2019:
 	$(MAKE) -j1 tests checkall2019.3 checkall2019.2
 checkall2019.3:
@@ -157,9 +183,17 @@ checkall2019.2:
 	$(MAKE) -j1 7.7/test2 7.5/test2 7.4/test2 7.3/test2
 	$(MAKE) -j1 18.04/test2 16.04/test2
 	$(MAKE) -j1 15.1/test2 15.0/test2 42.3/test2
+checkall2018:
+	$(MAKE) -j1 tests
+	$(MAKE) -j1 7.5/tests 7.4/tests 7.3/tests
+	$(MAKE) -j1 18.04/tests 16.04/tests
+	$(MAKE) -j1 15.0/tests 42.3/tests
+	$(MAKE) -j1 18.04/test2 16.04/test2
+	$(MAKE) -j1 15.0/test2 42.3/test2
 
 check: check2023
 	@ echo please run 'make checks' now
+24 check2024: ; ./testsuite.py -vv --opensuse=15.6 --ubuntu=ubuntu:24.04 --centos=almalinux:9.3
 23 check2023: ; ./testsuite.py -vv --opensuse=15.5 --ubuntu=ubuntu:22.04 --centos=almalinux:9.1
 22 check2022: ; ./testsuite.py -vv --opensuse=15.3 --ubuntu=ubuntu:22.04 --centos=almalinux:9.1
 19 check2019: ; ./testsuite.py -vv --opensuse=15.1 --ubuntu=ubuntu:18.04 --centos=centos:7.7
