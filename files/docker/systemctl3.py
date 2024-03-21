@@ -5910,7 +5910,10 @@ class Systemctl:
             except Exception as e:
                 logg.error("can not open %s log: %s\n\t%s", unit, log_path, e)
     def read_log_files(self, units):
+        self.print_log_files(units)
+    def print_log_files(self, units, stdout = 1):
         BUFSIZE=8192
+        printed = 0
         for unit in units:
             if unit in self._log_file:
                 new_text = b""
@@ -5928,9 +5931,16 @@ class Systemctl:
                 for line in lines:
                     prefix = unit.encode("utf-8")
                     content = prefix+b": "+line+b"\n"
-                    os.write(1, content)
-                    try: os.fsync(1)
-                    except: pass
+                    try:
+                        os.write(stdout, content)
+                        try: 
+                            os.fsync(stdout)
+                        except Exception: 
+                            pass
+                        printed += 1
+                    except BlockingIOError:
+                        pass
+        return printed
     def stop_log_files(self, units):
         for unit in units:
             try:
