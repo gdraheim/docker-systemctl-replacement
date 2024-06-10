@@ -107,7 +107,7 @@ the container - but NOT to any other process. If the CMD
 is the actual application (exec java -jar whatever) then 
 this works fine as it will also clean up its subprocesses. 
 In many other cases it is not sufficient leaving 
-[zombie processes](https://www.howtogeek.com/119815/) 
+[zombie processes](https://www.howtogeek.com/119815/htg-explains-what-is-a-zombie-process-on-linux/) 
 around.
 
 Zombie processes may also occur when a master process does 
