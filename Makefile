@@ -347,15 +347,33 @@ setup.py.tmp: Makefile
 	echo "import setuptools ; setuptools.setup()" > setup.py
 
 .PHONY: build
-build:
-	rm -rf build dist *.egg-info
+src-files:
 	$(MAKE) $(PARALLEL) setup.py src/README.md src/systemctl.py src/systemctl.pyi
-	# pip install --root=~/local . -v
-	$(PYTHON3) setup.py sdist
+src-remove:
 	- rm -v setup.py src/README.md src/systemctl.py src/systemctl.pyi
 	- rmdir src
+
+build:
+	rm -rf build dist *.egg-info
+	$(MAKE) src-files
+	# pip install --root=~/local . -v
+	$(PYTHON3) setup.py sdist
+	$(MAKE) src-remove
 	$(TWINE) check dist/*
 	: $(TWINE) upload dist/*
+
+ins install:
+	$(MAKE) src-files
+	$(PYTHON3) -m pip install --no-compile --user .
+	$(MAKE) src-remove
+	$(MAKE) show | sed -e "s|[.][.]/[.][.]/[.][.]/bin|$$HOME/.local/bin|"
+show:
+	test -d tmp || mkdir -v tmp
+	cd tmp && $(PYTHON3) -m pip show -f $$(sed -e '/^name *=/!d' -e 's/.*= *//' ../setup.cfg)
+uns uninstall: 
+	test -d tmp || mkdir -v tmp
+	cd tmp && $(PYTHON3) -m pip uninstall -v --yes $$(sed -e '/^name *=/!d' -e 's/.*= *//' ../setup.cfg)
+
 
 ####### autopep8
 AUTOPEP8=autopep8
