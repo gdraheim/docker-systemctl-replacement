@@ -1383,17 +1383,27 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 which is quite special
             [Service]
             PIDFile=/var/run/zzfoo.pid
+            ExecStart=sleep \\
+                2 \\
+
             """)
         textA = reads(os_path(root, "/etc/systemd/system/zza.service"))
         self.assertTrue(greps(textA, "Testing A"))
         self.assertTrue(greps(textA, "quite special"))
         self.assertTrue(greps(textA, "PIDFile="))
+        self.assertTrue(greps(textA, "ExecStart="))
         cmd = "{systemctl} __get_description zza.service"
         out, end = output2(cmd.format(**locals()))
         logg.info("%s => \n%s", cmd, out)
         self.assertEqual(end, 0)
         self.assertTrue(greps(out, "Testing A"))
         self.assertTrue(greps(out, "quite special"))
+        cmd = "{systemctl} command zza.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info("%s => \n%s", cmd, out)
+        self.assertEqual(end, 0)
+        self.assertEqual(len(lines(out)), 3)
+        self.assertTrue(greps(out, "sleep \\\\"))
         cmd = "{systemctl} __get_pid_file zza.service"
         out, end = output2(cmd.format(**locals()))
         logg.info("%s => \n%s", cmd, out)

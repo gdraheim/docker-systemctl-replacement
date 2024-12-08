@@ -810,6 +810,8 @@ class SystemctlConfigParser(SystemctlConfData):
             else:
                 # hint: an empty line shall reset the value-list
                 self.set(section, name, text and text or None)
+        if nextline:
+            self.set(section, name, text)
         return self
     def read_sysv(self, filename):
         """ an LSB header is scanned and converted to (almost)
