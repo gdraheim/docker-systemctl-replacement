@@ -539,7 +539,6 @@ def shutil_setuid(user: Optional[str] = None, group: Optional[str] = None, xgrou
     if user:
         pw = pwd.getpwnam(user)
         gid = pw.pw_gid
-        gname = grp.getgrgid(gid).gr_name
         if not group:
             os.setgid(gid)
             logg.debug("setgid %s for user %s", gid, strQ(user))
