@@ -1047,7 +1047,7 @@ class waitlock:
             logg.warning("[%s] oops %s, %s", os.getpid(), str(type(e)), e)
         # TODO# raise Exception("no lock for %s", self.unit or "global")
         return False
-    def __exit__(self, type: Optional[Type[BaseException]], value: Optional[BaseException], traceback: Optional[TracebackType]) -> None:
+    def __exit__(self, exc: Optional[Type[BaseException]], value: Optional[BaseException], traceback: Optional[TracebackType]) -> None:
         try:
             os.lseek(self.opened, 0, os.SEEK_SET)
             os.ftruncate(self.opened, 0)
