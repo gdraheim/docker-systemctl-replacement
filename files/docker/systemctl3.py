@@ -1,5 +1,6 @@
 #! /usr/bin/python3
-# pylint: disable=line-too-long
+# pylint: disable=line-too-long,missing-function-docstring,consider-using-f-string,import-outside-toplevel
+# pylint: disable=too-many-lines,multiple-statements,unspecified-encoding,dangerous-default-value
 from __future__ import print_function
 import threading
 import grp
@@ -6530,7 +6531,7 @@ def print_str_dict_dict(result: Dict[str, Dict[str, str]]) -> None:
         logg.log(HINT, "EXEC END %i items", shown)
         logg.debug("    END %s", result)
 
-def run(command: str, *modules: str) -> int:
+def runcommand(command: str, *modules: str) -> int:
     systemctl = Systemctl()
     if _force_ipv4:
         systemctl.force_ipv4()
@@ -6860,7 +6861,7 @@ def main() -> int:
         modules.remove("service")
     except ValueError:
         pass
-    return run(command, *modules)
+    return runcommand(command, *modules)
 
 if __name__ == "__main__":
     sys.exit(main())
