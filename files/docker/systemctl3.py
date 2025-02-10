@@ -2081,7 +2081,7 @@ class Systemctl:
         now = time.time()
         started_time = now - (uptime_secs - started_secs)
         if DEBUG_BOOTTIME:
-            logg.debug("  BOOT 1. Proc has been running since: %s" % (datetime.datetime.fromtimestamp(started_time)))
+            logg.debug("  BOOT 1. Proc has been running since: %s", datetime.datetime.fromtimestamp(started_time))
 
         # Variant 2:
         system_stat = _proc_sys_stat
@@ -2096,7 +2096,7 @@ class Systemctl:
 
         started_btime = system_btime + started_secs
         if DEBUG_BOOTTIME:
-            logg.debug("  BOOT 2. Proc has been running since: %s" % (datetime.datetime.fromtimestamp(started_btime)))
+            logg.debug("  BOOT 2. Proc has been running since: %s", datetime.datetime.fromtimestamp(started_btime))
 
         # return started_time
         return started_btime
@@ -4765,7 +4765,7 @@ class Systemctl:
         symlink = os.path.join(folder, conf.name())
         if TRUE:
             _f = self._force and "-f" or ""
-            logg.info("ln -s {_f} '{source}' '{symlink}'".format(**locals()))
+            logg.info("ln -s %s %s %s", _f, strQ(source), strQ(symlink))
         if self._force and os.path.islink(symlink):
             os.remove(target)
         if not os.path.islink(symlink):
@@ -4865,7 +4865,7 @@ class Systemctl:
             if os.path.exists(symlink):
                 try:
                     _f = self._force and "-f" or ""
-                    logg.info("rm {_f} '{symlink}'".format(**locals()))
+                    logg.info("rm %s %s", _f, strQ(symlink))
                     if os.path.islink(symlink) or self._force:
                         os.remove(symlink)
                 except (OSError, IOError) as e:
@@ -5013,12 +5013,12 @@ class Systemctl:
         dev_null = _dev_null
         if TRUE:
             _f = self._force and "-f" or ""
-            logg.debug("ln -s {_f} {dev_null} '{target}'".format(**locals()))
+            logg.debug("ln -s %s %s %s", _f, dev_null, strQ(target))
         if self._force and os.path.islink(target):
             os.remove(target)
         if not os.path.exists(target):
             os.symlink(dev_null, target)
-            logg.info("Created symlink {target} -> {dev_null}".format(**locals()))
+            logg.info("Created symlink %s -> %s", strQ(target), dev_null)
             return True
         elif os.path.islink(target):
             logg.debug("mask symlink does already exist: %s", target)
@@ -5078,7 +5078,7 @@ class Systemctl:
         target = os.path.join(folder, os.path.basename(unit_file))
         if TRUE:
             _f = self._force and "-f" or ""
-            logg.info("rm {_f} '{target}'".format(**locals()))
+            logg.info("rm %s %s", _f, strQ(target))
         if os.path.islink(target):
             os.remove(target)
             return True
