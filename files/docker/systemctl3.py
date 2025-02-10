@@ -2666,22 +2666,21 @@ class Systemctl:
         """ [UNIT]... -- remove the state directories
         /// it recognizes --what=all or any of configuration, state, cache, logs, runtime
             while an empty value (the default) removes cache and runtime directories"""
-        found_all = True
+        missing: List[str] = []
         units: List[str] = []
         for module in modules:
             matched = self.match_units(to_list(module))
             if not matched:
-                logg.error("Unit %s not found.", unit_of(module))
-                self.error |= NOT_FOUND
-                found_all = False
+                missing.append(unit_of(module))
                 continue
             for unit in matched:
                 if unit not in units:
                     units += [unit]
-        lines = _log_lines
-        follow = _force
+        if missing:
+            logg.error("Unit %s not found.", " and ".join(missing))
+            self.error |= NOT_FOUND
         ok = self.clean_units(units)
-        return ok and found_all
+        return ok and not missing
     def clean_units(self, units: List[str], what: str = NIX) -> bool:
         if not what:
             what = self._only_what[0]
@@ -2702,25 +2701,26 @@ class Systemctl:
         """ [UNIT]... -- start 'less' on the log files for the services
         /// use '-f' to follow and '-n lines' to limit output using 'tail',
             using '--no-pager' just does a full 'cat'"""
-        found_all = True
+        missing: List[str] = []
         units: List[str] = []
         for module in modules:
             matched = self.match_units(to_list(module))
             if not matched:
-                logg.error("Unit %s not found.", unit_of(module))
-                self.error |= NOT_FOUND
-                found_all = False
+                missing.append(unit_of(module))
                 continue
             for unit in matched:
                 if unit not in units:
                     units += [unit]
+        if missing:
+            logg.error("Unit %s not found.", " and ".join(missing))
+            self.error |= NOT_FOUND
         lines = _log_lines
         follow = _force
         result = self.log_units(units, lines, follow)
         if result:
             self.error = result
             return False
-        return found_all
+        return not missing
     def log_units(self, units: List[str], lines: Optional[int] = None, follow: bool = False) -> int:
         result = 0
         for unit in self.sortedAfter(units):
@@ -2928,20 +2928,21 @@ class Systemctl:
         """ [UNIT]... -- start these units
         /// SPECIAL: with --now or --init it will
             run the init-loop and stop the units afterwards """
-        found_all = True
+        missing: List[str] = []
         units: List[str] = []
         for module in modules:
             matched = self.match_units(to_list(module))
             if not matched:
-                logg.error("Unit %s not found.", unit_of(module))
-                self.error |= NOT_FOUND
-                found_all = False
+                missing.append(unit_of(module))
                 continue
             for unit in matched:
                 if unit not in units:
                     units += [unit]
+        if missing:
+            logg.error("Unit %s not found.", " and ".join(missing))
+            self.error |= NOT_FOUND
         init = self._now or self._init
-        return self.start_units(units, init) and found_all
+        return self.start_units(units, init) and not missing
     def start_units(self, units: List[str], init: Optional[bool] = None) -> bool:
         """ fails if any unit does not start
         /// SPECIAL: may run the init-loop and
@@ -3211,19 +3212,20 @@ class Systemctl:
             return True
     def listen_modules(self, *modules: str) -> bool:
         """ [UNIT]... -- listen socket units"""
-        found_all = True
+        missing: List[str] = []
         units: List[str] = []
         for module in modules:
             matched = self.match_units(to_list(module))
             if not matched:
-                logg.error("Unit %s not found.", unit_of(module))
-                self.error |= NOT_FOUND
-                found_all = False
+                missing.append(unit_of(module))
                 continue
             for unit in matched:
                 if unit not in units:
                     units += [unit]
-        return self.listen_units(units) and found_all
+        if missing:
+            logg.error("Unit %s not found.", " and ".join(missing))
+            self.error |= NOT_FOUND
+        return self.listen_units(units) and not missing
     def listen_units(self, units: List[str]) -> bool:
         """ fails if any socket does not start """
         self.wait_system()
@@ -3629,19 +3631,20 @@ class Systemctl:
         return None
     def stop_modules(self, *modules: str) -> bool:
         """ [UNIT]... -- stop these units """
-        found_all = True
+        missing: List[str] = []
         units: List[str] = []
         for module in modules:
             matched = self.match_units(to_list(module))
             if not matched:
-                logg.error("Unit %s not found.", unit_of(module))
-                self.error |= NOT_FOUND
-                found_all = False
+                missing.append(unit_of(module))
                 continue
             for unit in matched:
                 if unit not in units:
                     units += [unit]
-        return self.stop_units(units) and found_all
+        if missing:
+            logg.error("Unit %s not found.", " and ".join(missing))
+            self.error |= NOT_FOUND
+        return self.stop_units(units) and not missing
     def stop_units(self, units: List[str]) -> bool:
         """ fails if any unit fails to stop """
         self.wait_system()
@@ -3857,19 +3860,20 @@ class Systemctl:
     def reload_modules(self, *modules: str) -> bool:
         """ [UNIT]... -- reload these units """
         self.wait_system()
-        found_all = True
+        missing: List[str] = []
         units: List[str] = []
         for module in modules:
             matched = self.match_units(to_list(module))
             if not matched:
-                logg.error("Unit %s not found.", unit_of(module))
-                self.error |= NOT_FOUND
-                found_all = False
+                missing.append(unit_of(module))
                 continue
             for unit in matched:
                 if unit not in units:
                     units += [unit]
-        return self.reload_units(units) and found_all
+        if missing:
+            logg.error("Unit %s not found.", " and ".join(missing))
+            self.error |= NOT_FOUND
+        return self.reload_units(units) and not missing
     def reload_units(self, units: List[str]) -> bool:
         """ fails if any unit fails to reload """
         self.wait_system()
@@ -3961,19 +3965,20 @@ class Systemctl:
             return False
     def restart_modules(self, *modules: str) -> bool:
         """ [UNIT]... -- restart these units """
-        found_all = True
+        missing: List[str] = []
         units: List[str] = []
         for module in modules:
             matched = self.match_units(to_list(module))
             if not matched:
-                logg.error("Unit %s not found.", unit_of(module))
-                self.error |= NOT_FOUND
-                found_all = False
+                missing.append(unit_of(module))
                 continue
             for unit in matched:
                 if unit not in units:
                     units += [unit]
-        return self.restart_units(units) and found_all
+        if missing:
+            logg.warning("Unit %s not found.", " and ".join(missing))
+            self.error |= NOT_FOUND
+        return self.restart_units(units) and not missing
     def restart_units(self, units: List[str]) -> bool:
         """ fails if any unit fails to restart """
         self.wait_system()
@@ -4009,19 +4014,20 @@ class Systemctl:
         return self.do_start_unit_from(conf)
     def try_restart_modules(self, *modules: str) -> bool:
         """ [UNIT]... -- try-restart these units """
-        found_all = True
+        missing: List[str] = []
         units: List[str] = []
         for module in modules:
             matched = self.match_units(to_list(module))
             if not matched:
-                logg.error("Unit %s not found.", unit_of(module))
-                self.error |= NOT_FOUND
-                found_all = False
+                missing.append(unit_of(module))
                 continue
             for unit in matched:
                 if unit not in units:
                     units += [unit]
-        return self.try_restart_units(units) and found_all
+        if missing:
+            logg.error("Unit %s not found.", " and ".join(missing))
+            self.error |= NOT_FOUND
+        return self.try_restart_units(units) and not missing
     def try_restart_units(self, units: List[str]) -> bool:
         """ fails if any module fails to try-restart """
         self.wait_system()
@@ -4046,19 +4052,20 @@ class Systemctl:
         return True
     def reload_or_restart_modules(self, *modules: str) -> bool:
         """ [UNIT]... -- reload-or-restart these units """
-        found_all = True
+        missing: List[str] = []
         units: List[str] = []
         for module in modules:
             matched = self.match_units(to_list(module))
             if not matched:
-                logg.error("Unit %s not found.", unit_of(module))
-                self.error |= NOT_FOUND
-                found_all = False
+                missing.append(unit_of(module))
                 continue
             for unit in matched:
                 if unit not in units:
                     units += [unit]
-        return self.reload_or_restart_units(units) and found_all
+        if missing:
+            logg.error("Unit %s not found.", " and ".join(missing))
+            self.error |= NOT_FOUND
+        return self.reload_or_restart_units(units) and not missing
     def reload_or_restart_units(self, units: List[str]) -> bool:
         """ fails if any unit does not reload-or-restart """
         self.wait_system()
@@ -4096,19 +4103,20 @@ class Systemctl:
             return self.do_restart_unit_from(conf)
     def reload_or_try_restart_modules(self, *modules: str) -> bool:
         """ [UNIT]... -- reload-or-try-restart these units """
-        found_all = True
+        missing: List[str] = []
         units: List[str] = []
         for module in modules:
             matched = self.match_units(to_list(module))
             if not matched:
-                logg.error("Unit %s not found.", unit_of(module))
-                self.error |= NOT_FOUND
-                found_all = False
+                missing.append(unit_of(module))
                 continue
             for unit in matched:
                 if unit not in units:
                     units += [unit]
-        return self.reload_or_try_restart_units(units) and found_all
+        if missing:
+            logg.error("Unit %s not found.", " and ".join(missing))
+            self.error |= NOT_FOUND
+        return self.reload_or_try_restart_units(units) and not missing
     def reload_or_try_restart_units(self, units: List[str]) -> bool:
         """ fails if any unit fails to reload-or-try-restart """
         self.wait_system()
@@ -4139,19 +4147,20 @@ class Systemctl:
             return self.do_restart_unit_from(conf)
     def kill_modules(self, *modules: str) -> bool:
         """ [UNIT]... -- kill these units """
-        found_all = True
+        missing: List[str] = []
         units: List[str] = []
         for module in modules:
             matched = self.match_units(to_list(module))
             if not matched:
-                logg.error("Unit %s not found.", unit_of(module))
-                # self.error |= NOT_FOUND
-                found_all = False
+                missing.append(unit_of(module))
                 continue
             for unit in matched:
                 if unit not in units:
                     units += [unit]
-        return self.kill_units(units) and found_all
+        if missing:
+            logg.error("Unit %s not found.", " and ".join(missing))
+            # self.error |= NOT_FOUND
+        return self.kill_units(units) and not missing
     def kill_units(self, units: List[str]) -> bool:
         """ fails if any unit could not be killed """
         self.wait_system()
@@ -4270,13 +4279,12 @@ class Systemctl:
         #   and "Unless --quiet is specified, print the unit state"
         units: List[str]
         units = []
+        missing: List[str] = []
         results: List[str] = []
         for module in modules:
             units = self.match_units(to_list(module))
             if not units:
-                logg.error("Unit %s not found.", unit_of(module))
-                # self.error |= NOT_FOUND
-                self.error |= NOT_ACTIVE
+                missing.append(unit_of(module))
                 results += ["inactive"]
                 continue
             for unit in units:
@@ -4286,6 +4294,10 @@ class Systemctl:
                     active = "inactive" # "unknown"
                 results += [active]
                 break
+        if missing:
+            logg.error("Unit %s not found.", " and ".join(missing))
+            # self.error |= NOT_FOUND
+            self.error |= NOT_ACTIVE
         # how it should work:
         status = "active" in results
         # how 'systemctl' works:
@@ -4410,12 +4422,12 @@ class Systemctl:
         """ [UNIT]... -- check if these units are in failes state
         implements True if any is-active = True """
         units: List[str] = []
+        missing: List[str] = []
         results: List[str] = []
         for module in modules:
             units = self.match_units(to_list(module))
             if not units:
-                logg.error("Unit %s not found.", unit_of(module))
-                # self.error |= NOT_FOUND
+                missing.append(unit_of(module))
                 results += ["inactive"]
                 continue
             for unit in units:
@@ -4425,6 +4437,9 @@ class Systemctl:
                     active = "inactive"
                 results += [active]
                 break
+        if missing:
+            logg.warning("Unit %s not found.", " and ".join(missing))
+            # self.error |= NOT_FOUND
         if "failed" in results:
             self.error = 0
         else:
@@ -4438,18 +4453,21 @@ class Systemctl:
     def reset_failed_modules(self, *modules: str) -> bool:
         """ [UNIT]... -- Reset failed state for all, one, or more units """
         units: List[str] = []
+        missing: List[str] = []
         status = True
         for module in modules:
             units = self.match_units(to_list(module))
             if not units:
-                logg.error("Unit %s not found.", unit_of(module))
-                # self.error |= NOT_FOUND
+                missing.append(unit_of(module))
                 return False
             for unit in units:
                 if not self.reset_failed_unit(unit):
                     logg.error("Unit %s could not be reset.", unit_of(module))
                     status = False
                 break
+        if missing:
+            logg.warning("Unit %s not found.", " and ".join(missing))
+            # self.error |= NOT_FOUND
         return status
     def reset_failed_unit(self, unit: str) -> bool:
         conf = self.load_unit_conf(unit)
@@ -4484,23 +4502,22 @@ class Systemctl:
     def status_modules(self, *modules: str) -> str:
         """ [UNIT]... check the status of these units.
         """
-        found_all = True
+        missing: List[str] = []
         units: List[str] = []
         for module in modules:
             matched = self.match_units(to_list(module))
             if not matched:
-                logg.error("Unit %s could not be found.", unit_of(module))
-                self.error |= NOT_FOUND
-                found_all = False
+                missing.append(unit_of(module))
                 continue
             for unit in matched:
                 if unit not in units:
                     units += [unit]
-        result = self.status_units(units)
-        # if not found_all:
-        #     self.error |= NOT_OK | NOT_ACTIVE # 3
-        #     # same as (dead) # original behaviour
-        return result
+        if missing:
+            logg.error("Unit %s not found.", " and ".join(missing))
+            self.error |= NOT_FOUND
+            # self.error |= NOT_OK | NOT_ACTIVE # 3
+            # # same as (dead) # original behaviour
+        return self.status_units(units)
     def status_units(self, units: List[str]) -> str:
         """ concatenates the status output of all units
             and the last non-successful statuscode """
@@ -4538,21 +4555,21 @@ class Systemctl:
     def cat_modules(self, *modules: str) -> str:
         """ [UNIT]... show the *.system file for these"
         """
-        found_all = True
+        missing: List[str] = []
         units: List[str] = []
         for module in modules:
             matched = self.match_units(to_list(module))
             if not matched:
-                logg.error("Unit %s could not be found.", unit_of(module))
-                # self.error |= NOT_FOUND
-                found_all = False
+                missing.append(unit_of(module))
                 continue
             for unit in matched:
                 if unit not in units:
                     units += [unit]
-        result = self.cat_units(units)
-        if not found_all:
+        if missing:
+            logg.error("Unit %s not found.", " and ".join(missing))
+            # self.error |= NOT_FOUND
             self.error |= NOT_OK
+        result = self.cat_units(units)
         return result
     def cat_units(self, units: List[str]) -> str:
         done = True
@@ -4620,18 +4637,20 @@ class Systemctl:
         if self.user_mode():
             logg.warning("preset makes no sense in --user mode")
             return True
-        found_all = True
+        missing: List[str] = []
         units: List[str] = []
         for module in modules:
             matched = self.match_units(to_list(module))
             if not matched:
-                logg.error("Unit %s could not be found.", unit_of(module))
-                found_all = False
+                missing.append(unit_of(module))
                 continue
             for unit in matched:
                 if unit not in units:
                     units += [unit]
-        return self.preset_units(units) and found_all
+        if missing:
+            logg.error("Unit %s not found.", " and ".join(missing))
+            # self.error |= NOT_FOIUND
+        return self.preset_units(units) and not missing
     def preset_units(self, units: List[str]) -> bool:
         """ fails if any unit could not be changed """
         self.wait_system()
@@ -4688,20 +4707,21 @@ class Systemctl:
         return os.path.join(basefolder, wanted)
     def enable_modules(self, *modules: str) -> bool:
         """ [UNIT]... -- enable these units """
-        found_all = True
+        missing: List[str] = []
         units: List[str] = []
         for module in modules:
             matched = self.match_units(to_list(module))
             if not matched:
-                logg.error("Unit %s not found.", unit_of(module))
-                # self.error |= NOT_FOUND
-                found_all = False
+                missing.append(unit_of(module))
                 continue
             for unit in matched:
                 logg.info("matched %s", unit)  # ++
                 if unit not in units:
                     units += [unit]
-        return self.enable_units(units) and found_all
+        if missing:
+            logg.error("Unit %s not found", " and ".join(missing))
+            # self.error |= NOT_FOUND
+        return self.enable_units(units) and not missing
     def enable_units(self, units: List[str]) -> bool:
         self.wait_system()
         done = True
@@ -4793,19 +4813,20 @@ class Systemctl:
         return True
     def disable_modules(self, *modules: str) -> bool:
         """ [UNIT]... -- disable these units """
-        found_all = True
+        missing: List[str] = []
         units: List[str] = []
         for module in modules:
             matched = self.match_units(to_list(module))
             if not matched:
-                logg.error("Unit %s not found.", unit_of(module))
-                # self.error |= NOT_FOUND
-                found_all = False
+                missing.append(unit_of(module))
                 continue
             for unit in matched:
                 if unit not in units:
                     units += [unit]
-        return self.disable_units(units) and found_all
+        if missing:
+            logg.error("Unit %s not found.", " and ".join(missing))
+            # self.error |= NOT_FOUND
+        return self.disable_units(units) and not missing
     def disable_units(self, units: List[str]) -> bool:
         self.wait_system()
         done = True
@@ -4885,19 +4906,20 @@ class Systemctl:
     def is_enabled_modules(self, *modules: str) -> List[str]:
         """ [UNIT]... -- check if these units are enabled
         returns True if any of them is enabled."""
-        found_all = True
+        missing: List[str] = []
         units: List[str] = []
         for module in modules:
             matched = self.match_units(to_list(module))
             if not matched:
-                logg.error("Unit %s not found.", unit_of(module))
-                # self.error |= NOT_FOUND
-                found_all = False
+                missing.append(unit_of(module))
                 continue
             for unit in matched:
                 if unit not in units:
                     units += [unit]
-        return self.is_enabled_units(units) # and found_all
+        if missing:
+            logg.warning("Unit %s not found.", " and ".join(missing))
+            # self.error |= NOT_FOUND
+        return self.is_enabled_units(units) # and not missing
     def is_enabled_units(self, units: List[str]) -> List[str]:
         """ true if any is enabled, and a list of infos """
         result = False
@@ -4951,19 +4973,20 @@ class Systemctl:
         return "disabled"
     def mask_modules(self, *modules: str) -> bool:
         """ [UNIT]... -- mask non-startable units """
-        found_all = True
+        missing: List[str] = []
         units: List[str] = []
         for module in modules:
             matched = self.match_units(to_list(module))
             if not matched:
-                logg.error("Unit %s not found.", unit_of(module))
-                self.error |= NOT_FOUND
-                found_all = False
+                missing.append(unit_of(module))
                 continue
             for unit in matched:
                 if unit not in units:
                     units += [unit]
-        return self.mask_units(units) and found_all
+        if missing:
+            logg.error("Unit %s not found.", " and ".join(missing))
+            self.error |= NOT_FOUND
+        return self.mask_units(units) and not missing
     def mask_units(self, units: List[str]) -> bool:
         self.wait_system()
         done = True
@@ -5018,19 +5041,20 @@ class Systemctl:
                 yield folder
     def unmask_modules(self, *modules: str) -> bool:
         """ [UNIT]... -- unmask non-startable units """
-        found_all = True
+        missing: List[str] = []
         units: List[str] = []
         for module in modules:
             matched = self.match_units(to_list(module))
             if not matched:
-                logg.error("Unit %s not found.", unit_of(module))
-                self.error |= NOT_FOUND
-                found_all = False
+                missing.append(unit_of(module))
                 continue
             for unit in matched:
                 if unit not in units:
                     units += [unit]
-        return self.unmask_units(units) and found_all
+        if missing:
+            logg.error("Unit %s not found.", " and ".join(missing))
+            self.error |= NOT_FOUND
+        return self.unmask_units(units) and not missing
     def unmask_units(self, units: List[str]) -> bool:
         self.wait_system()
         done = True
@@ -5069,18 +5093,20 @@ class Systemctl:
     def list_dependencies_modules(self, *modules: str) -> List[str]:
         """ [UNIT]... show the dependency tree"
         """
-        found_all = True
+        missing: List[str] = []
         units: List[str] = []
         for module in modules:
             matched = self.match_units(to_list(module))
             if not matched:
-                logg.error("Unit %s could not be found.", unit_of(module))
-                found_all = False
+                missing.append(unit_of(module))
                 continue
             for unit in matched:
                 if unit not in units:
                     units += [unit]
-        return self.list_dependencies_units(units) # and found_all
+        if missing:
+            logg.warning("Unit %s not found.", " and ".join(missing))
+            # self.error |= NOT_FOUND
+        return self.list_dependencies_units(units) # and not missing
     def list_dependencies_units(self, units: List[str]) -> List[str]:
         result: List[str] = []
         for unit in units:
@@ -5449,19 +5475,20 @@ class Systemctl:
            NOTE: only a subset of properties is implemented """
         notfound: List[str] = []
         units: List[str] = []
-        found_all = True
+        missing: List[str] = []
         for module in modules:
             matched = self.match_units(to_list(module))
             if not matched:
-                logg.error("Unit %s could not be found.", unit_of(module))
                 units += [module]
-                # self.error |= NOT_FOUND
-                found_all = False
+                missing.append(unit_of(module))
                 continue
             for unit in matched:
                 if unit not in units:
                     units += [unit]
-        return self.show_units(units) + notfound # and found_all
+        if missing:
+            logg.warning("Unit %s not found.", " and ".join(missing))
+            # self.error |= NOT_FOUND
+        return self.show_units(units) + notfound # and not missing
     def show_units(self, units: List[str]) -> List[str]:
         logg.debug("show --property=%s", ",".join(self._only_property))
         result: List[str] = []
@@ -5909,21 +5936,23 @@ class Systemctl:
         if self._now or self._show_all:
             logg.debug("init services --now --all => no_more_procs")
             self.doExitWhenNoMoreProcs = True
-        found_all = True
+        missing: List[str] = []
         units: List[str] = []
         for module in modules:
             matched = self.match_units(to_list(module))
             if not matched:
-                logg.error("Unit %s could not be found.", unit_of(module))
-                found_all = False
+                missing.append(unit_of(module))
                 continue
             for unit in matched:
                 if unit not in units:
                     units += [unit]
+        if missing:
+            logg.warning("Unit %s not found.", " and ".join(missing))
+            # self.error |= NOT_FOUND
         logg.info("init %s -> start %s", ",".join(modules), ",".join(units))
         done = self.start_units(units, init = True)
         logg.info("-- init is done")
-        return done # and found_all
+        return done # and not missing
     def start_log_files(self, units: List[str]) -> None:
         self._log_file = {}
         self._log_hold = {}
