@@ -5969,7 +5969,7 @@ class Systemctl:
         interval = conf.get(Service, "StartLimitIntervalSec", strE(defaults)) # 10s
         return time_to_seconds(interval, maximum)
     def get_RestartSec(self, conf, maximum = None):
-        maximum = maximum or DefaultStartLimitIntervalSec
+        maximum = maximum or 999
         delay = conf.get(Service, "RestartSec", strE(DefaultRestartSec))
         return time_to_seconds(delay, maximum)
     def restart_failed_units(self, units, maximum = None):
