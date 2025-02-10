@@ -713,8 +713,8 @@ class SystemctlConfData:
                 return default
             if allow_no_value:
                 return None
-            logg.warning("section {} does not exist".format(section))
-            logg.warning("  have {}".format(self.sections()))
+            logg.warning("section %s does not exist", section)
+            logg.warning("  have %s", self.sections())
             raise AttributeError("section {} does not exist".format(section))
         if option not in self._conf[section]:
             if default is not None:
@@ -736,8 +736,8 @@ class SystemctlConfData:
                 return default
             if allow_no_value:
                 return []
-            logg.warning("section {} does not exist".format(section))
-            logg.warning("  have {}".format(self.sections()))
+            logg.warning("section %s does not exist", section)
+            logg.warning("  have %s", self.sections())
             raise AttributeError("section {} does not exist".format(section))
         if option not in self._conf[section]:
             if default is not None:
@@ -1842,7 +1842,7 @@ class Systemctl:
                     if line.strip():
                         pid = to_intN(line.strip())
                         break
-        except Exception as e:
+        except (OSError, ValueError) as e:
             logg.warning("bad read of pid file '%s': %s", pid_file, e)
         return pid
     def wait_pid_file(self, pid_file: str, timeout: Optional[int] = None) -> Optional[int]: # -> pid?
@@ -5979,7 +5979,7 @@ class Systemctl:
         the interval ('-c InitLoopSleep=1') or have it indirectly shorter from the
         service descriptor's RestartSec ("RestartSec=2s").
         """
-        global InitLoopSleep
+        global InitLoopSleep  # pylint: disable=global-statement
         me = os.getpid()
         maximum = maximum or DefaultStartLimitIntervalSec
         restartDelay = MinimumYield
