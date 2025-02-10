@@ -1920,7 +1920,7 @@ class Systemctl:
         conf = self.get_unit_conf(unit)
         return self.get_status_file_from(conf)
     def get_status_file_from(self, conf: SystemctlConf, default: Optional[str] = None) -> str:
-        status_file = self.get_StatusFile(conf)
+        status_file = self.get_StatusFile(conf, default)
         # this not a real setting, but do the expand_special anyway
         return os_path(self._root, self.expand_special(status_file, conf))
     def get_StatusFile(self, conf: SystemctlConf, default: Optional[str] = None) -> str: # -> text
