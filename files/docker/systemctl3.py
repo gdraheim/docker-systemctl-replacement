@@ -3029,7 +3029,6 @@ class Systemctl:
                         self.remove_service_directories(conf) # cleanup that /run/sshd
                     return False
         if runs in ["oneshot"]:
-            status_file = self.get_status_file_from(conf)
             if self.get_status_from(conf, "ActiveState", "unknown") == "active":
                 logg.warning("the service was already up once")
                 return True
@@ -3054,7 +3053,6 @@ class Systemctl:
                 active = returncode and "failed" or "active"
                 self.write_status_from(conf, AS=active)
         elif runs in ["simple", "exec", "idle"]:
-            status_file = self.get_status_file_from(conf)
             pid = self.read_mainpid_from(conf)
             if self.is_active_pid(pid):
                 logg.warning("the service is already running on PID %s", pid)
@@ -3174,7 +3172,6 @@ class Systemctl:
             if not pid_file:
                 time.sleep(MinimumTimeoutStartSec)
                 logg.warning("No PIDFile for forking %s", strQ(conf.filename()))
-                status_file = self.get_status_file_from(conf)
                 self.set_status_from(conf, "ExecMainCode", strE(returncode))
                 active = returncode and "failed" or "active"
                 self.write_status_from(conf, AS=active)
@@ -3923,7 +3920,6 @@ class Systemctl:
             if not okee and _no_reload: return False
         initscript = conf.filename()
         if self.is_sysv_file(initscript):
-            status_file = self.get_status_file_from(conf)
             if initscript:
                 newcmd = [initscript, "reload"]
                 env["SYSTEMCTL_SKIP_REDIRECT"] = "yes"
