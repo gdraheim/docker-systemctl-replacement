@@ -32,8 +32,8 @@ basestring: Type[str]
 _system_folders: List[str]
 SystemCompatibilityVersion: int
 _pid_file_folder: str
-__copyright__: str = "(C) 2016-2024 Guido U. Draheim, licensed under the EUPL"
-__version__: str = "1.5.8066"
+__copyright__: str = "(C) 2024-2025 Guido U. Draheim, licensed under the EUPL"
+__version__: str = "2.0.1061"
 
 
 import logging
@@ -92,6 +92,8 @@ _only_what: List[str] = []
 _only_type: List[str] = []
 _only_state: List[str] = []
 _only_property: List[str] = []
+_force_ipv4 = False
+_force_ipv6 = False
 
 # common default paths
 _system_folders = [
@@ -758,9 +760,9 @@ class SystemctlConfigParser(SystemctlConfData):
         of the line.  """
     # def __init__(self, defaults=None, dict_type=None, allow_no_value=False):
     #   SystemctlConfData.__init__(self, defaults, dict_type, allow_no_value)
-    def read(self, filename: str) -> SystemctlConfigParser:
+    def read(self, filename: str) -> 'SystemctlConfigParser':
         return self.read_sysd(filename)
-    def read_sysd(self, filename: str) -> SystemctlConfigParser:
+    def read_sysd(self, filename: str) -> 'SystemctlConfigParser':
         initscript = False
         initinfo = False
         section = "GLOBAL"
@@ -812,7 +814,7 @@ class SystemctlConfigParser(SystemctlConfData):
             if nextline:
                 self.set(section, name, text)
         return self
-    def read_sysv(self, filename: str) -> SystemctlConfigParser:
+    def read_sysv(self, filename: str) -> 'SystemctlConfigParser':
         """ an LSB header is scanned and converted to (almost)
             equivalent settings of a SystemD ini-style input """
         initscript = False
@@ -872,7 +874,7 @@ class SystemctlConfigParser(SystemctlConfData):
 UnitConfParser = SystemctlConfigParser
 
 class SystemctlSocket:
-    def __init__(self, conf: SystemctlConf, sock: socket.socket, skip: bool = False) -> None:
+    def __init__(self, conf: 'SystemctlConf', sock: socket.socket, skip: bool = False) -> None:
         self.conf = conf
         self.sock = sock
         self.skip = skip
@@ -962,7 +964,7 @@ class PresetFile:
         if self._files:
             return self._files[-1]
         return None
-    def read(self, filename: str) -> PresetFile:
+    def read(self, filename: str) -> 'PresetFile':
         self._files.append(filename)
         with open(filename) as f:
             for line in f:
@@ -1225,7 +1227,7 @@ def conf_sortedAfter(conflist: Iterable[SystemctlConf], cmp: Callable[[Systemctl
     return [item.conf for item in sortedlist]
 
 class SystemctlListenThread(threading.Thread):
-    def __init__(self, systemctl: Systemctl) -> None:
+    def __init__(self, systemctl: 'Systemctl') -> None:
         threading.Thread.__init__(self, name="listen")
         self.systemctl = systemctl
         self.stopped = threading.Event()
@@ -6534,6 +6536,11 @@ def print_str_dict_dict(result: Dict[str, Dict[str, str]]) -> None:
         logg.debug("    END %s", result)
 
 def run(command: str, *modules: str) -> int:
+    systemctl = Systemctl()
+    if _force_ipv4:
+        systemctl.force_ipv4()
+    elif _force_ipv6:
+        systemctl.force_ipv6()
     exitcode = 0
     if command in ["help"]:
         print_str_list(systemctl.help_modules(*modules))
@@ -6674,7 +6681,10 @@ def run(command: str, *modules: str) -> int:
     exitcode |= systemctl.error
     return exitcode
 
-if __name__ == "__main__":
+def main() -> int:
+    global _extra_vars, _force, _full, _log_lines, _no_pager, _no_reload, _no_legend, _no_ask_password
+    global _now, _preset_mode, _quiet, _root, _show_all, _only_state, _only_type, _only_property, _only_what
+    global _pid, _init, _user_mode, _force_ipv4, _force_ipv6
     import optparse
     _o = optparse.OptionParser("%prog [options] command [name...]",
                                epilog="use 'help' command for more information")
@@ -6753,9 +6763,9 @@ if __name__ == "__main__":
                   help="..override settings in the syntax of 'Environment='")
     _o.add_option("-v", "--verbose", action="count", default=0,
                   help="..increase debugging information level")
-    _o.add_option("-4", "--ipv4", action="store_true", default=False,
+    _o.add_option("-4", "--ipv4", action="store_true", default=_force_ipv4,
                   help="..only keep ipv4 localhost in /etc/hosts")
-    _o.add_option("-6", "--ipv6", action="store_true", default=False,
+    _o.add_option("-6", "--ipv6", action="store_true", default=_force_ipv6,
                   help="..only keep ipv6 localhost in /etc/hosts")
     _o.add_option("-1", "--init", action="store_true", default=False,
                   help="..keep running as init-process (default if PID 1)")
@@ -6780,6 +6790,8 @@ if __name__ == "__main__":
     _only_type = opt.only_type
     _only_property = opt.only_property
     _only_what = opt.only_what
+    _force_ipv4 = opt.force_ipv4
+    _force_ipv6 = opt.force_ipv6
     # being PID 1 (or 0) in a container will imply --init
     _pid = os.getpid()
     _init = opt.init or _pid in [1, 0]
@@ -6839,7 +6851,6 @@ if __name__ == "__main__":
     #
     print_begin(sys.argv, args)
     #
-    systemctl = Systemctl()
     if opt.version:
         args = ["version"]
     if not args:
@@ -6854,8 +6865,7 @@ if __name__ == "__main__":
         modules.remove("service")
     except ValueError:
         pass
-    if opt.ipv4:
-        systemctl.force_ipv4()
-    elif opt.ipv6:
-        systemctl.force_ipv6()
-    sys.exit(run(command, *modules))
+    return run(command, *modules)
+
+if __name__ == "__main__":
+    sys.exit(main())

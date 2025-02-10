@@ -1,5 +1,5 @@
-F= files/docker/systemctl.py
-B= 2016
+F= files/docker/systemctl3.py
+B= 2024
 FOR=today
 DAY=%u
 # 'make version FOR=yesterday' or 'make version DAY=0'
@@ -12,7 +12,7 @@ PYTHON3 = python3
 COVERAGE3 = $(PYTHON3) -m coverage
 TWINE = twine
 GIT=git
-VERFILES = files/docker/systemctl.py files/docker/systemctl3.py testsuite.py setup.cfg
+VERFILES = files/docker/systemctl3.py testsuite.py pyproject.toml
 
 verfiles:
 	@ grep -l __version__ */*.??* */*/*.??* | { while read f; do echo $$f; done; } 
@@ -35,11 +35,6 @@ version:
 
 help:
 	python files/docker/systemctl3.py help
-2:
-	$(STRIPHINTS) files/docker/systemctl3.py -o files/docker/systemctl.py
-	sed -i -e "s|/usr/bin/python3|/usr/bin/python2|" files/docker/systemctl.py
-	sed -i -e "s|type hints are provide.*|generated from systemctl3.py - do not change|" files/docker/systemctl.py
-	: $(GIT) add files/docker/systemctl.py || true
 
 alltests: CH CP UA DJ
 
@@ -56,7 +51,6 @@ st_%: ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv $(WITH2)
 
 test: ; $(MAKE) type && $(MAKE) tests && $(MAKE) coverage
 
-WITH2 = --python=/usr/bin/python2 --with=files/docker/systemctl.py
 WITH3 = --python=/usr/bin/python3 --with=files/docker/systemctl3.py
 todo/test_%:             ; ./testsuite.py   "$(notdir $@)" -vv --todo
 15.6/test_%:             ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=opensuse/leap:15.6
@@ -82,23 +76,6 @@ todo/test_%:             ; ./testsuite.py   "$(notdir $@)" -vv --todo
 7.5/test_%:              ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=centos:7.5.1804
 7.4/test_%:              ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=centos:7.4.1708
 7.3/test_%:              ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=centos:7.3.1611
-15.4/st_%:  ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv $(FORCE) --image=opensuse/leap:15.4 $(WITH2)
-15.2/st_%:  ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv $(FORCE) --image=opensuse/leap:15.2 $(WITH2)
-15.1/st_%:  ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv $(FORCE) --image=opensuse/leap:15.1 $(WITH2)
-15.0/st_%:  ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv $(FORCE) --image=opensuse/leap:15.0 $(WITH2)
-42.3/st_%:  ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv $(FORCE) --image=opensuse:42.3      $(WITH2)
-42.2/st_%:  ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv $(FORCE) --image=opensuse:42.2      $(WITH2)
-22.04/st_%: ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv $(FORCE) --image=ubuntu:22.04       $(WITH2)
-20.04/st_%: ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv $(FORCE) --image=ubuntu:20.04       $(WITH2)
-18.04/st_%: ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv $(FORCE) --image=ubuntu:18.04       $(WITH2)
-16.04/st_%: ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv $(FORCE) --image=ubuntu:16.04       $(WITH2)
-8.1/st_%:   ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv $(FORCE) --image=centos:8.1.1911    $(WITH2)
-8.0/st_%:   ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv $(FORCE) --image=centos:8.0.1905    $(WITH2)
-7.7/st_%:   ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv $(FORCE) --image=centos:7.7.1908    $(WITH2)
-7.6/st_%:   ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv $(FORCE) --image=centos:7.6.1810    $(WITH2)
-7.5/st_%:   ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv $(FORCE) --image=centos:7.5.1804    $(WITH2)
-7.4/st_%:   ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv $(FORCE) --image=centos:7.4.1708    $(WITH2)
-7.3/st_%:   ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv $(FORCE) --image=centos:7.3.1611    $(WITH2)
 
 basetests = test_[1234]
 test2list = st_[567]
@@ -151,54 +128,17 @@ tests: ; $(MAKE) "${basetests}"
 nightrun: checkall
 	$(MAKE) checks
 checkall: checkall2019
-checkall2: checkall2024.2
 checkall2024:
-	$(MAKE) -j1 tests checkall2023.3 checkall2023.2
+	$(MAKE) -j1 tests checkall2024.3
 checkall2024.3:
 	$(MAKE) -j1 9.3/tests   8.5/tests   7.9/tests
 	$(MAKE) -j1 24.04/tests 22.04/test2 18.04/tests
 	$(MAKE) -j1 15.6/tests  15.5/tests  15.4/tests  15.2/tests
-checkall2024.2:
-	: $(MAKE) -j1             8.5/test2   7.9/test2
-	$(MAKE) -j1             22.04/test2 18.04/test2
-	$(MAKE) -j1 15.6/test2  15.5/test2  15.4/test2  15.2/test2
-checkall2023:
-	$(MAKE) -j1 tests checkall2023.3 checkall2023.2
-checkall2023.3:
-	$(MAKE) -j1 9.1/tests 8.5/tests 7.9/tests
-	$(MAKE) -j1 22.04/test2 20.04/tests 18.04/tests
-	$(MAKE) -j1 15.5/tests 15.4/tests 15.2/tests
-checkall2023.2:
-	$(MAKE) -j1           8.5/test2 7.9/test2
-	$(MAKE) -j1 22.04/test2 20.04/test2 18.04/test2
-	$(MAKE) -j1 15.5/test2 15.4/test2 15.2/test2
-checkall2019:
-	$(MAKE) -j1 tests checkall2019.3 checkall2019.2
-checkall2019.3:
-	$(MAKE) -j1 8.0/tests
-	$(MAKE) -j1 18.04/tests 16.04/tests
-	$(MAKE) -j1 15.1/tests 15.0/tests 42.3/tests
-checkall2019.2:
-	$(MAKE) -j1 7.7/test2 7.5/test2 7.4/test2 7.3/test2
-	$(MAKE) -j1 18.04/test2 16.04/test2
-	$(MAKE) -j1 15.1/test2 15.0/test2 42.3/test2
-checkall2018:
-	$(MAKE) -j1 tests
-	$(MAKE) -j1 7.5/tests 7.4/tests 7.3/tests
-	$(MAKE) -j1 18.04/tests 16.04/tests
-	$(MAKE) -j1 15.0/tests 42.3/tests
-	$(MAKE) -j1 18.04/test2 16.04/test2
-	$(MAKE) -j1 15.0/test2 42.3/test2
 
-check: check2023
+
+check: check2024
 	@ echo please run 'make checks' now
 24 check2024: ; ./testsuite.py -vv --opensuse=15.6 --ubuntu=ubuntu:24.04 --centos=almalinux:9.3
-23 check2023: ; ./testsuite.py -vv --opensuse=15.5 --ubuntu=ubuntu:22.04 --centos=almalinux:9.1
-22 check2022: ; ./testsuite.py -vv --opensuse=15.3 --ubuntu=ubuntu:22.04 --centos=almalinux:9.1
-19 check2019: ; ./testsuite.py -vv --opensuse=15.1 --ubuntu=ubuntu:18.04 --centos=centos:7.7
-18 check2018: ; ./testsuite.py -vv --opensuse=15.0 --ubuntu=ubuntu:18.04 --centos=centos:7.5
-17 check2017: ; ./testsuite.py -vv --opensuse=42.3 --ubuntu=ubuntu:16.04 --centos=centos:7.4
-16 check2016: ; ./testsuite.py -vv --opensuse=42.2 --ubuntu=ubuntu:16.04 --centos=centos:7.3
 
 2/test_%:
 	$(MAKE) tmp_systemctl_py_2
@@ -284,7 +224,7 @@ coverage3:
 
 tmp_systemctl_py_2:
 	@ test -d tmp || mkdir tmp
-	@ cp files/docker/systemctl.py tmp/systemctl.py
+	@ $(STRIPHINTS) files/docker/systemctl3.py --to-empty -o tmp/systemctl.py
 tmp_systemctl_py_3:
 	@ test -d tmp || mkdir tmp
 	@ cp files/docker/systemctl3.py tmp/systemctl.py
@@ -331,48 +271,43 @@ dockerfiles:
 
 src/systemctl.py:
 	test -d $(dir $@) || mkdir -v $(dir $@)
+	$(STRIPHINTS) files/docker/systemctl3.py --to-empty -o $@
+src/systemctl3.py:
 	cp files/docker/systemctl3.py $@
-src/systemctl.pyi:
-	cp types/systemctl3.pyi $@
 src/README.md: README.md Makefile
 	test -d $(dir $@) || mkdir -v $(dir $@)
 	cat README.md | sed -e "/\\/badge/d" -e /^---/q > $@
-setup.py: Makefile
-	{ echo '#!/usr/bin/env python3' \
-	; echo 'import setuptools' \
-	; echo 'setuptools.setup()' ; } > setup.py
-	chmod +x setup.py
-setup.py.tmp: Makefile
-	echo "import setuptools ; setuptools.setup()" > setup.py
 
 .PHONY: build
 src-files:
-	$(MAKE) $(PARALLEL) setup.py src/README.md src/systemctl.py src/systemctl.pyi
+	$(MAKE) $(PARALLEL) src/README.md src/systemctl.py src/systemctl3.py
 src-remove:
-	- rm -v setup.py src/README.md src/systemctl.py src/systemctl.pyi
+	- rm -v src/README.md src/systemctl.py src/systemctl3.py
 	- rmdir src
 
+PIP3 = pip3
 build:
 	rm -rf build dist *.egg-info
 	$(MAKE) src-files
 	# pip install --root=~/local . -v
-	$(PYTHON3) setup.py sdist
+	$(PYTHON3) -m build
 	$(MAKE) src-remove
 	$(TWINE) check dist/*
 	: $(TWINE) upload dist/*
 
 ins install:
 	$(MAKE) src-files
-	$(PYTHON3) -m pip install --no-compile --user .
+	$(PIP3) install --no-compile --user .
 	$(MAKE) src-remove
 	$(MAKE) show | sed -e "s|[.][.]/[.][.]/[.][.]/bin|$$HOME/.local/bin|"
-show:
-	test -d tmp || mkdir -v tmp
-	cd tmp && $(PYTHON3) -m pip show -f $$(sed -e '/^name *=/!d' -e 's/.*= *//' ../setup.cfg)
+
 uns uninstall: 
 	test -d tmp || mkdir -v tmp
-	cd tmp && $(PYTHON3) -m pip uninstall -v --yes $$(sed -e '/^name *=/!d' -e 's/.*= *//' ../setup.cfg)
+	set -x; $(PIP3) uninstall -y `sed -e '/^name *=/!d' -e 's/name *= *"//' -e 's/".*//'  pyproject.toml`
 
+show:
+	@ $(PIP3) show --files `sed -e '/^name *=/!d' -e 's/name *= *"//' -e 's/".*//' pyproject.toml` \
+	| sed -e "s:[^ ]*/[.][.]/\\([a-z][a-z]*\\)/:~/.local/\\1/:"
 
 ####### autopep8
 AUTOPEP8=autopep8
