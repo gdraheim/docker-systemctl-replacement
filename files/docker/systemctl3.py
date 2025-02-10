@@ -1991,8 +1991,9 @@ class Systemctl:
                                 status[key.strip()] = value.strip()
                         else:  # pragma: no cover
                             logg.warning("ignored %s", line.strip())
-        except:
+        except (OSError, ValueError) as e:
             logg.warning("bad read of status file '%s'", status_file)
+            logg.debug("  bad read of status file: %s", e)
         return status
     def get_status_from(self, conf: SystemctlConf, name: str, default: Optional[str] = None) -> Optional[str]:
         if conf.status is None:
