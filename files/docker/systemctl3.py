@@ -771,8 +771,6 @@ class SystemctlConfigParser(SystemctlConfData):
     def read(self, filename: str) -> 'SystemctlConfigParser':
         return self.read_sysd(filename)
     def read_sysd(self, filename: str) -> 'SystemctlConfigParser':
-        initscript = False
-        initinfo = False
         section = "GLOBAL"
         nextline = False
         name, text = "", ""
@@ -825,7 +823,6 @@ class SystemctlConfigParser(SystemctlConfData):
     def read_sysv(self, filename: str) -> 'SystemctlConfigParser':
         """ an LSB header is scanned and converted to (almost)
             equivalent settings of a SystemD ini-style input """
-        initscript = False
         initinfo = False
         section = "GLOBAL"
         if os.path.isfile(filename):
