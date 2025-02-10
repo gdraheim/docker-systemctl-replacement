@@ -300,7 +300,7 @@ def _commalist(value: Iterable[str]) -> Iterator[str]:
             yield elem
 def int_mode(value: str) -> Optional[int]:
     try: return int(value, 8)
-    except: return None # pragma: no cover
+    except ValueError: return None # pragma: no cover
 def unit_of(module: str) -> str:
     if "." not in module:
         return module + ".service"
