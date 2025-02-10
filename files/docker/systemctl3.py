@@ -41,6 +41,7 @@ if sys.version[0] == '2':
 else:
     stringtypes = str # pylint: disable=invalid-name
 
+NEVER = False
 TRUE = True
 NIX = ""
 DEBUG_AFTER: bool = False
@@ -422,7 +423,7 @@ def get_PID_DIR(root: bool = False) -> str:
         return os.path.join(get_RUN(root), "run") # compat with older systemctl.py
 
 def get_home() -> str:
-    if False: # pragma: no cover
+    if NEVER: # pragma: no cover
         explicit = os.environ.get("HOME", "")   # >> On Unix, an initial ~ (tilde) is replaced by the
         if explicit: return explicit            # environment variable HOME if it is set; otherwise
         uid = os.geteuid()                      # the current users home directory is looked up in the
