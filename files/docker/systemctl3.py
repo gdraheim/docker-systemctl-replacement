@@ -3293,7 +3293,7 @@ class Systemctl:
         return service_unit
     def do_start_socket_from(self, conf: SystemctlConf) -> bool:
         runs = "socket"
-        timeout = self.get_SocketTimeoutSec(conf)
+        # timeout = self.get_SocketTimeoutSec(conf)
         accept = conf.getbool(Socket, "Accept", "no")
         stream = conf.get(Socket, "ListenStream", "")
         service_unit = self.get_socket_service_from(conf)
@@ -3809,7 +3809,7 @@ class Systemctl:
         return service_result == "success"
     def do_stop_socket_from(self, conf: SystemctlConf) -> bool:
         runs = "socket"
-        timeout = self.get_SocketTimeoutSec(conf)
+        # timeout = self.get_SocketTimeoutSec(conf)
         accept = conf.getbool(Socket, "Accept", "no")
         service_unit = self.get_socket_service_from(conf)
         service_conf = self.load_unit_conf(service_unit)
