@@ -1258,12 +1258,13 @@ class SystemctlListenThread(threading.Thread):
         me = os.getpid()
         if DEBUG_INITLOOP: # pragma: no cover
             logg.info("[%s] listen: new thread", me)
-        if not self.systemctl._sockets:
+        socketlist = self.systemctl.socketlist()
+        if not socketlist:
             return
         if DEBUG_INITLOOP: # pragma: no cover
             logg.info("[%s] listen: start thread", me)
         listen = select.poll()
-        for sock in self.systemctl._sockets.values():
+        for sock in socketlist:
             listen.register(sock, READ_ONLY)
             sock.listen()
             logg.debug("[%s] listen: %s :%s", me, sock.name(), sock.addr())
@@ -1287,7 +1288,7 @@ class SystemctlListenThread(threading.Thread):
                 if DEBUG_INITLOOP: # pragma: no cover
                     logg.debug("[%s] listen: poll (%s)", me, len(accepting))
                 for sock_fileno, _ in accepting:
-                    for sock in self.systemctl._sockets.values():
+                    for sock in socketlist:
                         if sock.fileno() == sock_fileno:
                             if not self.stopped.is_set():
                                 if self.systemctl.loop.acquire():
@@ -1296,7 +1297,7 @@ class SystemctlListenThread(threading.Thread):
             except Exception as e:
                 logg.info("[%s] listen: interrupted - exception %s", me, e)
                 raise
-        for sock in self.systemctl._sockets.values():
+        for sock in socketlist:
             try:
                 listen.unregister(sock)
                 sock.close()
@@ -3372,6 +3373,8 @@ class Systemctl:
                 logg.debug("post-start done (%s) <-%s>",
                            run.returncode or "OK", run.signal or "")
             return True
+    def socketlist(self) -> List[SystemctlSocket]:
+        return self._sockets.values()
     def create_socket(self, conf: SystemctlConf) -> Optional[socket.socket]:
         unsupported = ["ListenUSBFunction", "ListenMessageQueue", "ListenNetlink"]
         unsupported += ["ListenSpecial", "ListenFIFO", "ListenSequentialPacket"]
