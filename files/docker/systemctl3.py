@@ -2022,7 +2022,7 @@ class Systemctl:
         if pid_max < 0:
             pid_max = pid1 - pid_max
         for pid in range(pid1, pid_max):
-            proc = _proc_pid_stat.format(**locals())
+            proc = _proc_pid_stat.format({"pid": pid})
             try:
                 if os.path.exists(proc):
                     # return os.path.getmtime(proc) # did sometimes change
@@ -2035,7 +2035,7 @@ class Systemctl:
     def get_boottime_from_old_proc(self) -> float:
         booted = time.time()
         for pid in os.listdir(_proc_pid_dir):
-            proc = _proc_pid_stat.format(**locals())
+            proc = _proc_pid_stat.format({"pid": pid})
             try:
                 if os.path.exists(proc):
                     # ctime = os.path.getmtime(proc)
@@ -2091,7 +2091,6 @@ class Systemctl:
                 assert isinstance(line, bytes)
                 if line.startswith(b"btime"):
                     system_btime = float(line.decode().split()[1])
-        f.closed
         if DEBUG_BOOTTIME:
             logg.debug("  BOOT 2. System btime secs: %.3f (%s)", system_btime, system_stat)
 
