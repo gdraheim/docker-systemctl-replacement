@@ -1616,7 +1616,7 @@ class Systemctl:
             conf = self.load_sysv_unit_conf(module)
             if conf is not None:
                 return conf
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             logg.warning("%s not loaded: %s", module, e)
         return None
     def default_unit_conf(self, module: str, description: Optional[str] = None) -> SystemctlConf: # -> conf
