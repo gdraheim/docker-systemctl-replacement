@@ -8,7 +8,7 @@ __version__ = "2.0.1061"
 # The testcases 1000...4999 are using a --root=subdir environment
 # The testcases 5000...9999 will start a docker container to work.
 
-from typing import List, Dict, Tuple, Generator, Union, Optional, TextIO
+from typing import List, Dict, Tuple, Generator, Iterator, Union, Optional, TextIO
 
 import subprocess
 import os
@@ -253,39 +253,40 @@ def background(cmd: str, shell: bool = True) -> BackgroundProcess:
 
 def reads(filename: str) -> str:
     return decodes(open(filename, "rb").read())
-def _lines(lines: Union[str, List[str], Generator[str, None, None], TextIO]) -> List[str]:
-    if isinstance(lines, string_types):
-        lines = decodes(lines).split("\n")
-        if len(lines) and lines[-1] == "":
-            lines = lines[:-1]
-    return list(lines)
-def lines(text: Union[str, List[str], Generator[str, None, None], TextIO]) -> List[str]:
-    lines = []
-    for line in _lines(text):
-        lines.append(line.rstrip())
-    return lines
-def each_grep(pattern: str, lines: Union[str, List[str], TextIO]) -> Generator[str, None, None]:
-    for line in _lines(lines):
+def _lines(textlines: Union[str, List[str], Iterator[str], TextIO]) -> List[str]:
+    if isinstance(textlines, string_types):
+        linelist = decodes(textlines).split("\n")
+        if len(linelist) and linelist[-1] == "":
+            linelist = linelist[:-1]
+        return linelist
+    return list(textlines)
+def lines(textlines: Union[str, List[str], Iterator[str], TextIO]) -> List[str]:
+    linelist = []
+    for line in _lines(textlines):
+        linelist.append(line.rstrip())
+    return linelist
+def each_grep(pattern: str, textlines: Union[str, List[str], TextIO]) -> Iterator[str]:
+    for line in _lines(textlines):
         if re.search(pattern, line.rstrip()):
             yield line.rstrip()
-def grep(pattern: str, lines: Union[str, List[str], TextIO]) -> List[str]:
-    return list(each_grep(pattern, lines))
-def greps(lines: Union[str, List[str], TextIO], pattern: str) -> List[str]:
-    return list(each_grep(pattern, lines))
-def running(lines: Union[str, List[str]]) -> List[str]:
-    return list(each_non_runuser(each_non_defunct(lines)))
-def each_non_defunct(lines: Union[str, List[str], Generator[str, None, None]]) -> Generator[str, None, None]:
-    for line in _lines(lines):
+def grep(pattern: str, textlines: Union[str, List[str], TextIO]) -> List[str]:
+    return list(each_grep(pattern, textlines))
+def greps(textlines: Union[str, List[str], TextIO], pattern: str) -> List[str]:
+    return list(each_grep(pattern, textlines))
+def running(textlines: Union[str, List[str]]) -> List[str]:
+    return list(each_non_runuser(each_non_defunct(textlines)))
+def each_non_defunct(textlines: Union[str, List[str], Iterator[str]]) -> Iterator[str]:
+    for line in _lines(textlines):
         if '<defunct>' in line:
             continue
         yield line
-def each_non_runuser(lines: Union[str, List[str], Generator[str, None, None]]) -> Generator[str, None, None]:
-    for line in _lines(lines):
+def each_non_runuser(textlines: Union[str, List[str], Iterator[str]]) -> Iterator[str]:
+    for line in _lines(textlines):
         if 'runuser -u' in line:
             continue
         yield line
-def each_clean(lines: Union[str, List[str]]) -> Generator[str, None, None]:
-    for line in _lines(lines):
+def each_clean(textlines: Union[str, List[str]]) -> Iterator[str]:
+    for line in _lines(textlines):
         if '<defunct>' in line:
             continue
         if 'runuser -u' in line:
@@ -293,8 +294,8 @@ def each_clean(lines: Union[str, List[str]]) -> Generator[str, None, None]:
         if 'ps -eo pid,' in line:
             continue
         yield line
-def clean(lines: Union[str, List[str]]) -> str:
-    return " " + "\n ".join(each_clean(lines))
+def clean(textlines: Union[str, List[str]]) -> str:
+    return " " + "\n ".join(each_clean(textlines))
 
 def i2(part: str, indent: str = "  ") -> str:
     if isinstance(part, string_types):
@@ -526,6 +527,7 @@ def get_LOG_DIR(root: bool = False) -> str:
     CONFIG = get_CONFIG_HOME(root)
     return os.path.join(CONFIG, "log")
 def expand_path(path: str, root: bool = True) -> str:
+    # pylint: disable=possibly-unused-variable
     LOG = get_LOG_DIR(root)
     XDG_CONFIG_HOME=get_CONFIG_HOME(root)
     XDG_RUNTIME_DIR=get_RUNTIME_DIR(root)
