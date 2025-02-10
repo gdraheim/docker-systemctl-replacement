@@ -1657,7 +1657,7 @@ class Systemctl:
         return string.capwords(self.get_unit_type(module) or default)
     def get_unit_section_from(self, conf: SystemctlConf, default: str = Service) -> str:
         return self.get_unit_section(conf.name(), default)
-    def match_sysd_templates(self, modules: Optional[List[str]] = None, suffix: str = ".service") -> Iterable[str]: # -> generate[ unit ]
+    def match_sysd_templates(self, modules: Optional[List[str]] = None) -> Iterable[str]: # -> generate[ unit ]
         """ make a file glob on all known template units (systemd areas).
             It returns no modules (!!) if no modules pattern were given.
             The module string should contain an instance name already. """
@@ -1676,10 +1676,11 @@ class Systemctl:
                 module_unit = parse_unit(module)
                 if service_unit.prefix == module_unit.prefix:
                     yield "%s@%s.%s" % (service_unit.prefix, module_unit.instance, service_unit.suffix)
-    def match_sysd_units(self, modules: Optional[List[str]] = None, suffix: str = ".service") -> Iterable[str]: # -> generate[ unit ]
+    def match_sysd_units(self, modules: Optional[List[str]] = None) -> Iterable[str]: # -> generate[ unit ]
         """ make a file glob on all known units (systemd areas).
             It returns all modules if no modules pattern were given.
             Also a single string as one module pattern may be given. """
+        suffix = ".service"
         modules = to_list(modules)
         self.scan_unit_sysd_files()
         assert self._file_for_unit_sysd is not None
@@ -1692,10 +1693,11 @@ class Systemctl:
                 yield item
             elif [module for module in modules if module+suffix == item]:
                 yield item
-    def match_sysv_units(self, modules: Optional[List[str]] = None, suffix: str = ".service") -> Iterable[str]: # -> generate[ unit ]
+    def match_sysv_units(self, modules: Optional[List[str]] = None) -> Iterable[str]: # -> generate[ unit ]
         """ make a file glob on all known units (sysv areas).
             It returns all modules if no modules pattern were given.
             Also a single string as one module pattern may be given. """
+        suffix = ".service"
         modules = to_list(modules)
         self.scan_unit_sysv_files()
         assert self._file_for_unit_sysv is not None
@@ -1706,19 +1708,19 @@ class Systemctl:
                 yield item
             elif [module for module in modules if module+suffix == item]:
                 yield item
-    def match_units(self, modules: Optional[List[str]] = None, suffix: str = ".service") -> List[str]: # -> [ units,.. ]
+    def match_units(self, modules: Optional[List[str]] = None) -> List[str]: # -> [ units,.. ]
         """ Helper for about any command with multiple units which can
             actually be glob patterns on their respective unit name.
             It returns all modules if no modules pattern were given.
             Also a single string as one module pattern may be given. """
         found: List[str] = []
-        for unit in self.match_sysd_units(modules, suffix):
+        for unit in self.match_sysd_units(modules):
             if unit not in found:
                 found.append(unit)
-        for unit in self.match_sysd_templates(modules, suffix):
+        for unit in self.match_sysd_templates(modules):
             if unit not in found:
                 found.append(unit)
-        for unit in self.match_sysv_units(modules, suffix):
+        for unit in self.match_sysv_units(modules):
             if unit not in found:
                 found.append(unit)
         return found
