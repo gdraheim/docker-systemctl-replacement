@@ -1448,7 +1448,7 @@ class Systemctl:
         if TRUE:
             for folder in self.system_folders():
                 yield folder
-    def scan_unit_sysd_files(self, module: Optional[str] = None) -> List[str]: # -> [ unit-names,... ]
+    def scan_unit_sysd_files(self) -> List[str]: # -> [ unit-names,... ]
         """ reads all unit files, returns the first filename for the unit given """
         if self._file_for_unit_sysd is None:
             self._file_for_unit_sysd = {}
@@ -1467,7 +1467,7 @@ class Systemctl:
                         self._file_for_unit_sysd[service_name] = path
             logg.debug("found %s sysd files", len(self._file_for_unit_sysd))
         return list(self._file_for_unit_sysd.keys())
-    def scan_unit_sysv_files(self, module: Optional[str] = None) -> List[str]: # -> [ unit-names,... ]
+    def scan_unit_sysv_files(self) -> List[str]: # -> [ unit-names,... ]
         """ reads all init.d files, returns the first filename when unit is a '.service' """
         if self._file_for_unit_sysv is None:
             self._file_for_unit_sysv = {}
