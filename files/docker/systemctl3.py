@@ -60,12 +60,12 @@ logging.addLevelName(HINT, "HINT")
 logging.addLevelName(NOTE, "NOTE")
 logging.addLevelName(DONE, "DONE")
 
-def logg_debug_flock(format: str, *args: Union[str, int]) -> None:
+def logg_debug_flock(msg: str, *args: Union[str, int]) -> None:
     if DEBUG_FLOCK:
-        logg.debug(format, *args) # pragma: no cover
-def logg_debug_after(format: str, *args: Union[str, int]) -> None:
+        logg.debug(msg, *args) # pragma: no cover
+def logg_debug_after(msg: str, *args: Union[str, int]) -> None:
     if DEBUG_AFTER:
-        logg.debug(format, *args) # pragma: no cover
+        logg.debug(msg, *args) # pragma: no cover
 
 NOT_A_PROBLEM: int = 0   # FOUND_OK
 NOT_OK: int = 1          # FOUND_ERROR
@@ -1817,7 +1817,7 @@ class Systemctl:
         if self._now:
             basics = self.list_service_unit_basics()
             result = [(name, sysv + " " + filename) for name, sysv, filename in basics]
-        elif self._only_type: 
+        elif self._only_type:
             if "target" in self._only_type:
                 result = self.list_target_unit_files()
             if "service" in self._only_type:
@@ -4640,7 +4640,7 @@ class Systemctl:
                 if not self.disable_unit(unit):
                     logg.warning("failed to disable %s", unit)
                     fails += 1
-        return not fails and not not found
+        return not fails and not not found  # pylint:  disable=unnecessary-negation
     def preset_all_modules(self, *modules: str) -> bool:
         """ 'preset' all services
         enable or disable services according to *.preset files
@@ -5775,7 +5775,7 @@ class Systemctl:
             sig = self.init_loop_until_stop(services)
             logg.info("init-loop %s", sig)
             self.stop_system_default()
-        return not not services
+        return not not services  # pylint: disable=unnecessary-negation
     def start_target_system(self, target: str, init: bool = False) -> List[str]:
         services = self.target_default_services(target, "S")
         self.sysinit_status(SubState = "starting")
@@ -5795,7 +5795,7 @@ class Systemctl:
         target = self.get_default_target()
         services = self.stop_target_system(target)
         logg.info("%s system is down", target)
-        return not not services
+        return not not services  # pylint: disable=unnecessary-negation
     def stop_target_system(self, target: str) -> List[str]:
         services = self.target_default_services(target, "K")
         self.sysinit_status(SubState = "stopping")
@@ -5884,7 +5884,7 @@ class Systemctl:
         """
         if self._now:
             result = self.init_loop_until_stop([])
-            return not not result
+            return not not result  # pylint: disable=unnecessary-negation
         if not modules:
             # like 'systemctl --init default'
             if self._now or self._show_all:
@@ -5950,9 +5950,9 @@ class Systemctl:
                     content = prefix+b": "+line+b"\n"
                     try:
                         os.write(stdout, content)
-                        try: 
+                        try:
                             os.fsync(stdout)
-                        except OSError: 
+                        except OSError:
                             pass
                         printed += 1
                     except BlockingIOError:
