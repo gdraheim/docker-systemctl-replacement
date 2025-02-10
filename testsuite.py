@@ -34,7 +34,6 @@ from fnmatch import fnmatchcase as fnmatch
 from glob import glob
 import json
 
-xrange = range
 string_types = (str, bytes)
 
 logg = logging.getLogger("TESTING")
@@ -615,7 +614,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                         logg.info(" killing %s", e)
                 except Exception as e:
                     logg.info(" killing %s", e)
-        for checking in xrange(int(wait or KILLWAIT)):
+        for checking in range(int(wait or KILLWAIT)):
             remaining = 0
             for nextpid in os.listdir("/proc"):
                 try: pid = int(nextpid)
@@ -674,7 +673,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             except Exception as e:
                 logg.info(" killing %s", e)
         status = F"/proc/{pid}/status"
-        for checking in xrange(int(wait or KILLWAIT)):
+        for checking in range(int(wait or KILLWAIT)):
             if not os.path.exists(cmdline):
                 return True
             try:
@@ -10957,7 +10956,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "^active"))
         self.assertFalse(greps(out, "inactive"))
         self.assertFalse(greps(out, "failed"))
-        for check in xrange(9):
+        for check in range(9):
             time.sleep(3)
             top = _recent(output(_top_list))
             logg.info("[%s] checking for testsleep procs: \n>>>\n%s",
@@ -11083,7 +11082,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "^active"))
         self.assertFalse(greps(out, "inactive"))
         self.assertFalse(greps(out, "failed"))
-        for check in xrange(9):
+        for check in range(9):
             time.sleep(3)
             top = _recent(output(_top_list))
             logg.info("[%s] checking for testsleep procs: \n>>>\n%s",
@@ -18818,7 +18817,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         journal_b=output(cmd).strip().split("=", 1)[1]
         logg.info("journal zza = %s", journal_a)
         logg.info("journal zzb = %s", journal_b)
-        for attempt in xrange(5):
+        for attempt in range(5):
             time.sleep(1)
             if not os.path.exists(journal_a): continue
             if not os.path.exists(journal_b): continue
@@ -25007,7 +25006,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(out, "stopping\n")
         self.assertEqual(rc, 1)
         #
-        for attempt in xrange(10):
+        for attempt in range(10):
             top = _recent(output(_top_list))
             logg.info("\n>>>\n%s", top)
             if greps(top, "sleepA") or greps(top, "sleepB"):
@@ -28615,7 +28614,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(running(greps(top, testsleep)))
         self.assertEqual(end, 0)
         #
-        for attempt in xrange(4): # 4*3 = 12s
+        for attempt in range(4): # 4*3 = 12s
             time.sleep(3)
             logg.info("=====================================================================")
             top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
@@ -35428,7 +35427,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd)
         #
         waits = 3
-        for attempt in xrange(5):
+        for attempt in range(5):
             logg.info("[%s] waits %ss for the zombie-reaper to have cleaned up", attempt, waits)
             time.sleep(waits)
             cmd = F"{docker} inspect {testname}"
@@ -35572,7 +35571,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd)
         #
         waits = 3
-        for attempt in xrange(5):
+        for attempt in range(5):
             logg.info("[%s] waits %ss for the zombie-reaper to have cleaned up", attempt, waits)
             time.sleep(waits)
             cmd = F"{docker} inspect {testname}"
@@ -35719,7 +35718,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd)
         #
         waits = 3
-        for attempt in xrange(10):
+        for attempt in range(10):
             logg.info("[%s] waits %ss for the zombie-reaper to have cleaned up", attempt, waits)
             time.sleep(waits)
             cmd = F"{docker} inspect {testname}"
@@ -35854,7 +35853,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd)
         #
         waits = 3
-        for attempt in xrange(10):
+        for attempt in range(10):
             logg.info("[%s] waits %ss for the zombie-reaper to have cleaned up", attempt, waits)
             time.sleep(waits)
             cmd = F"{docker} inspect {testname}"
@@ -36419,7 +36418,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = output(cmd)
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "Z .*sleep.*<defunct>")) # <<< we have zombie!
-        for attempt in xrange(10):
+        for attempt in range(10):
             time.sleep(3)
             cmd = F"{docker} exec {testname} ps -eo state,pid,ppid,user,args"
             top = output(cmd)
@@ -37375,7 +37374,7 @@ ExecStart=/usr/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_CONFIG_ARGS $KUBELE
         #
         container = self.ip_container(testname)
         # THEN
-        for attempt in xrange(10):
+        for attempt in range(10):
             time.sleep(1)
             cmd = F"wget -O {testdir}/result.txt http://{container}/phpMyAdmin"
             out, err, end = output3(cmd)
@@ -37427,7 +37426,7 @@ ExecStart=/usr/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_CONFIG_ARGS $KUBELE
         #
         container = self.ip_container(testname)
         # THEN
-        for attempt in xrange(10):
+        for attempt in range(10):
             time.sleep(1)
             cmd = F"wget -O {testdir}/result.txt http://{container}/phpMyAdmin"
             out, err, end = output3(cmd)
