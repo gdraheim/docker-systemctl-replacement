@@ -1,6 +1,6 @@
 #! /usr/bin/python3
 # pylint: disable=line-too-long,missing-function-docstring,consider-using-f-string,import-outside-toplevel
-# pylint: disable=too-many-lines,multiple-statements,unspecified-encoding,dangerous-default-value,invalid-name
+# pylint: disable=too-many-lines,multiple-statements,unspecified-encoding,dangerous-default-value,invalid-name,unnecessary-lambda
 """ run 'systemctl start' and other systemctl commands based on available *.service descriptions without a systemd daemon running in the system """
 from __future__ import print_function
 import threading
@@ -21,7 +21,7 @@ import shlex
 import fnmatch
 import re
 
-from typing import Callable, Dict, Iterable, List, NoReturn, Optional, TextIO, Tuple, Type, Union, Match, Iterator
+from typing import Dict, Iterable, List, NoReturn, Optional, TextIO, Tuple, Type, Union, Match, Iterator
 from types import TracebackType
 _extra_vars: List[str]
 _system_folder1: Optional[str]
@@ -1197,7 +1197,7 @@ def compareAfter(confA: SystemctlConf, confB: SystemctlConf) -> int:
             return -1
     return 0
 
-def conf_sortedAfter(conflist: Iterable[SystemctlConf], cmp: Callable[[SystemctlConf, SystemctlConf], int] = compareAfter) -> List[SystemctlConf]:
+def conf_sortedAfter(conflist: Iterable[SystemctlConf]) -> List[SystemctlConf]:
     # the normal sorted() does only look at two items
     # so if "A after C" and a list [A, B, C] then
     # it will see "A = B" and "B = C" assuming that
@@ -1254,7 +1254,7 @@ class SystemctlListenThread(threading.Thread):
         self.stopped.set()
     def run(self) -> None:
         READ_ONLY = select.POLLIN | select.POLLPRI | select.POLLHUP | select.POLLERR
-        READ_WRITE = READ_ONLY | select.POLLOUT
+        # READ_WRITE = READ_ONLY | select.POLLOUT
         me = os.getpid()
         if DEBUG_INITLOOP: # pragma: no cover
             logg.info("[%s] listen: new thread", me)
@@ -1286,7 +1286,7 @@ class SystemctlListenThread(threading.Thread):
                 accepting = listen.poll(100) # milliseconds
                 if DEBUG_INITLOOP: # pragma: no cover
                     logg.debug("[%s] listen: poll (%s)", me, len(accepting))
-                for sock_fileno, event in accepting:
+                for sock_fileno, _ in accepting:
                     for sock in self.systemctl._sockets.values():
                         if sock.fileno() == sock_fileno:
                             if not self.stopped.is_set():
@@ -5242,7 +5242,7 @@ class Systemctl:
             if conf.loaded():
                 deps_conf.append(conf)
         result: List[Tuple[str, str]] = []
-        sortlist = conf_sortedAfter(deps_conf, cmp=compareAfter)
+        sortlist = conf_sortedAfter(deps_conf)
         for item in sortlist:
             line = (item.name(), "(%s)" % (" ".join(deps[item.name()])))
             result.append(line)
