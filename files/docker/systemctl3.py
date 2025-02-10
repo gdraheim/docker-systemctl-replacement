@@ -1,6 +1,6 @@
 #! /usr/bin/python3
 # pylint: disable=line-too-long,missing-function-docstring,consider-using-f-string,import-outside-toplevel
-# pylint: disable=too-many-lines,multiple-statements,unspecified-encoding,dangerous-default-value
+# pylint: disable=too-many-lines,multiple-statements,unspecified-encoding,dangerous-default-value,invalid-name
 from __future__ import print_function
 import threading
 import grp
@@ -90,6 +90,8 @@ _only_state: List[str] = []
 _only_property: List[str] = []
 _force_ipv4 = False
 _force_ipv6 = False
+_pid = -1  # FIXME
+_init = False
 
 # common default paths
 _system_folders = [
@@ -6676,6 +6678,7 @@ def runcommand(command: str, *modules: str) -> int:
     return exitcode
 
 def main() -> int:
+    # pylint: disable=global-statement
     global _extra_vars, _force, _full, _log_lines, _no_pager, _no_reload, _no_legend, _no_ask_password
     global _now, _preset_mode, _quiet, _root, _show_all, _only_state, _only_type, _only_property, _only_what
     global _pid, _init, _user_mode, _force_ipv4, _force_ipv6
