@@ -6208,7 +6208,7 @@ class Systemctl:
                     logg.info("reap zombie %s", pid)
                     try: os.waitpid(pid, os.WNOHANG)
                     except OSError as e:
-                        logg.warning("reap zombie %s: %s", e.strerror)
+                        logg.warning("reap zombie %s: %s", pid, e.strerror)
             if os.path.isfile(proc_status):
                 if pid > 1:
                     running += 1
