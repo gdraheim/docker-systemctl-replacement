@@ -324,6 +324,12 @@ def o77(part: str) -> str:
             return part
         return part[:20] + "..." + part[-54:]
     return part # pragma: no cover (is always str)
+def delayed(attempt: int, suffix: str = ".", default: str = NIX) -> str:
+    if attempt < 10:
+        return default
+    if attempt < 100:
+        return "%+i%s" % (attempt, suffix)
+    return "%i%s" % (attempt, suffix)
 def path44(filename: Optional[str]) -> str:
     if not filename:
         return "<none>"
@@ -1014,22 +1020,23 @@ class waitlock:
             self.opened = os.open(lockfile, os.O_RDWR | os.O_CREAT, 0o600)
             for attempt in range(int(MaxLockWait or DefaultMaximumTimeout)):
                 try:
-                    logg_debug_flock("[%s] %s. trying %s _______ ", os.getpid(), attempt, lockname)
+                    logg_debug_flock("[%s] %s trying %s _______ ", os.getpid(), delayed(attempt), lockname)
                     fcntl.flock(self.opened, fcntl.LOCK_EX | fcntl.LOCK_NB)
                     st = os.fstat(self.opened)
                     if not st.st_nlink:
-                        logg_debug_flock("[%s] %s. %s got deleted, trying again", os.getpid(), attempt, lockname)
+                        logg_debug_flock("[%s] %s %s got deleted, trying again", os.getpid(), delayed(attempt), lockname)
                         os.close(self.opened)
                         self.opened = os.open(lockfile, os.O_RDWR | os.O_CREAT, 0o600)
                         continue
                     content = "{ 'systemctl': %s, 'lock': '%s' }\n" % (os.getpid(), lockname)
                     os.write(self.opened, content.encode("utf-8"))
-                    logg_debug_flock("[%s] %s. holding lock on %s", os.getpid(), attempt, lockname)
+                    logg_debug_flock("[%s] %s holding lock on %s", os.getpid(), delayed(attempt), lockname)
                     return True
                 except IOError as e:
                     whom = os.read(self.opened, 4096)
                     os.lseek(self.opened, 0, os.SEEK_SET)
-                    logg.info("[%s] %s. systemctl locked by %s", os.getpid(), attempt, whom.rstrip())
+                    logg.debug("[%s] %s could not get lock: %s", os.getpid(), delayed(attempt), e)
+                    logg.info(" [%s] %s systemctl locked by %s", os.getpid(), delayed(attempt), whom.rstrip())
                     time.sleep(1) # until MaxLockWait
                     continue
             logg.error("[%s] not able to get the lock to %s", os.getpid(), lockname)
@@ -1862,7 +1869,8 @@ class Systemctl:
         timeout = int(timeout or (DefaultTimeoutStartSec/2))
         timeout = max(timeout, (MinimumTimeoutStartSec))
         dirpath = os.path.dirname(os.path.abspath(pid_file))
-        for x in range(timeout):
+        for attempt in range(timeout):
+            logg.debug("%s wait pid file %s", delayed(attempt), pid_file)
             if not os.path.isdir(dirpath):
                 time.sleep(1) # until TimeoutStartSec/2
                 continue
@@ -2229,7 +2237,7 @@ class Systemctl:
         #
         maxdepth = EXPAND_VARS_MAXDEPTH
         expanded = re.sub(r"[$](\w+)", lambda m: get_env1(m), cmd.replace("\\\n", ""))
-        for depth in range(maxdepth):
+        for _ in range(maxdepth):
             new_text = re.sub(r"[$][{](\w+)[}]", lambda m: get_env2(m), expanded)
             if new_text == expanded:
                 return expanded
@@ -3834,13 +3842,13 @@ class Systemctl:
             return True
         if not self.is_active_pid(pid):
             return True
-        logg.info("wait for PID %s to vanish (%ss)", pid, timeout)
-        for x in range(int(timeout)):
+        for attempt in range(int(timeout)):
             time.sleep(1) # until TimeoutStopSec
+            logg.debug("%s wait for PID %s to vanish (%ss)", delayed(attempt), pid, timeout)
             if not self.is_active_pid(pid):
-                logg.info("wait for PID %s is done (%s.)", pid, x)
+                logg.info(" %s wait for PID %s is done", delayed(attempt), pid)
                 return True
-        logg.info("wait for PID %s failed (%s.)", pid, timeout)
+        logg.info("%s wait for PID %s failed", delayed(timeout), pid)
         return False
     def reload_modules(self, *modules: str) -> bool:
         """ [UNIT]... -- reload these units """
@@ -6251,12 +6259,12 @@ class Systemctl:
             state = self.is_system_running()
             if "init" in state:
                 if target in [SysInitTarget, "basic.target"]:
-                    logg.info("system not initialized - wait %s", target)
+                    logg.info("%s system not initialized - wait %s", delayed(attempt), target)
                     time.sleep(1)
                     continue
             if "start" in state or "stop" in state:
                 if target in ["basic.target"]:
-                    logg.info("system not running - wait %s", target)
+                    logg.info("%s system not running - wait %s", delayed(attempt), target)
                     time.sleep(1)
                     continue
             if "running" not in state:
@@ -6274,7 +6282,7 @@ class Systemctl:
             return []
         pidlist = [pid]
         pids = [pid]
-        for depth in range(PROC_MAX_DEPTH):
+        for _ in range(PROC_MAX_DEPTH):
             for pid_entry in os.listdir(_proc_pid_dir):
                 pid = to_intN(pid_entry)
                 if pid is None:
