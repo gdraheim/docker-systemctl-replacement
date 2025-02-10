@@ -1842,10 +1842,10 @@ class Systemctl:
     ##
     def get_description(self, unit: str, default: str = NIX) -> str:
         return self.get_description_from(self.load_unit_conf(unit)) or default
-    def get_description_from(self, conf: Optional[SystemctlConf], default: Optional[str] = None) -> str: # -> text
+    def get_description_from(self, conf: Optional[SystemctlConf], default: str = NIX) -> str: # -> text
         """ Unit.Description could be empty sometimes """
         if not conf: return default or ""
-        description = conf.get(Unit, "Description", default or "")
+        description = conf.get(Unit, "Description", default)
         return self.expand_special(description, conf)
     def read_pid_file(self, pid_file: str, default: Optional[int] = None) -> Optional[int]:
         pid = default
