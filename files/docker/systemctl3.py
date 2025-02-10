@@ -3593,7 +3593,7 @@ class Systemctl:
             os.dup2(err.fileno(), sys.stderr.fileno())
     def execve_from(self, conf: SystemctlConf, cmd: List[str], env: Dict[str, str]) -> NoReturn:
         """ this code is commonly run in a child process // returns exit-code"""
-        runs = conf.get(Service, "Type", "simple").lower()
+        # runs = conf.get(Service, "Type", "simple").lower()
         # logg.debug("%s process for %s => %s", runs, strE(conf.name()), strQ(conf.filename()))
         self.dup2_journal_log(conf)
         cmd_args: List[Union[str, bytes]] = []
