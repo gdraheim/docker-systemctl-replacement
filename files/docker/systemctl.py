@@ -21,8 +21,8 @@ import fnmatch
 import re
 from types import GeneratorType
 
-__copyright__ = "(C) 2016-2024 Guido U. Draheim, licensed under the EUPL"
-__version__ = "1.5.8066"
+__copyright__ = "(C) 2016-2025 Guido U. Draheim, licensed under the EUPL"
+__version__ = "1.5.9061"
 
 # |
 # |
