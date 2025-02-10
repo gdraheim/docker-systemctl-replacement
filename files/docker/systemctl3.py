@@ -1,10 +1,9 @@
 #! /usr/bin/python3
-# type hints are provided in 'types/systemctl3.pyi'
+# pylint: disable=line-too-long
 from __future__ import print_function
 import threading
 import grp
 import pwd
-import hashlib
 import select
 import fcntl
 import string
@@ -19,11 +18,8 @@ import collections
 import shlex
 import fnmatch
 import re
-from types import GeneratorType
 
-from collections import namedtuple
-from typing import Callable, Dict, Iterable, List, NoReturn, Optional, TextIO, Tuple, Type, Union
-from typing import NamedTuple, Match, TextIO, BinaryIO, Sequence, overload, Iterator
+from typing import Callable, Dict, Iterable, List, NoReturn, Optional, TextIO, Tuple, Type, Union, Match, Iterator
 from types import TracebackType
 _extra_vars: List[str]
 _system_folder1: Optional[str]
