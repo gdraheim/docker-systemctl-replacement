@@ -1648,7 +1648,7 @@ class Systemctl:
             return conf
         return self.default_unit_conf(module)
     def get_unit_type(self, module: str) -> Optional[str]:
-        _, ext = os.path.splitext(module)
+        _nam, ext = os.path.splitext(module)
         if ext in [".service", ".socket", ".target"]:
             return ext[1:]
         logg.debug("unknown unit type %s", module)
@@ -2862,7 +2862,7 @@ class Systemctl:
         notify.socket.settimeout(timeout or DefaultMaximumTimeout)
         result = ""
         try:
-            result, _ = notify.socket.recvfrom(4096)
+            result, _addr = notify.socket.recvfrom(4096)
             assert isinstance(result, bytes)
             if result:
                 result = result.decode("utf-8")
@@ -3269,7 +3269,7 @@ class Systemctl:
         service_conf = self.load_unit_conf(service_unit)
         if service_conf is None or TestAccept:  # pragma: no cover
             if sock.type == socket.SOCK_STREAM:
-                conn, addr = sock.accept()
+                conn, _addr = sock.accept()
                 data = conn.recv(1024)
                 logg.debug("%s: '%s'", conf.name(), data)
                 conn.send(b"ERROR: "+data.upper())
@@ -3294,8 +3294,8 @@ class Systemctl:
     def do_start_socket_from(self, conf: SystemctlConf) -> bool:
         runs = "socket"
         # timeout = self.get_SocketTimeoutSec(conf)
+        # stream = conf.get(Socket, "ListenStream", "")
         accept = conf.getbool(Socket, "Accept", "no")
-        stream = conf.get(Socket, "ListenStream", "")
         service_unit = self.get_socket_service_from(conf)
         service_conf = self.load_unit_conf(service_unit)
         if service_conf is None:
@@ -3625,7 +3625,7 @@ class Systemctl:
         if not conf: return None
         env = self.get_env(conf)
         for cmd in conf.getlist(Service, "ExecStart", []):
-            exe, newcmd = self.exec_newcmd(cmd, env, conf)
+            _xe, newcmd = self.exec_newcmd(cmd, env, conf)
             self.execve_from(conf, newcmd, env)
         return None
     def stop_modules(self, *modules: str) -> bool:
@@ -3834,7 +3834,7 @@ class Systemctl:
         if not self.is_active_from(conf):
             env["SERVICE_RESULT"] = service_result
             for cmd in conf.getlist(Socket, "ExecStopPost", []):
-                exe, newcmd = self.exec_newcmd(cmd, env, conf)
+                _xe, newcmd = self.exec_newcmd(cmd, env, conf)
                 logg.info("%s post-stop %s", runs, shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
@@ -6032,7 +6032,7 @@ class Systemctl:
         global InitLoopSleep  # pylint: disable=global-statement
         me = os.getpid()
         maximum = maximum or DefaultStartLimitIntervalSec
-        restartDelay = MinimumYield
+        # restartDelay = MinimumYield
         for unit in units:
             now = time.time()
             try:
