@@ -352,6 +352,13 @@ def path44(filename: Optional[str]) -> str:
     else:
         out += filename[remain:]
     return out
+def fnmatched(text, *patterns) -> bool:
+    if not patterns:
+        return True
+    for pattern in patterns:
+        if fnmatch.fnmatchcase(text, pattern):
+            return True
+    return False
 
 def unit_name_escape(text: str) -> str:
     # https://www.freedesktop.org/software/systemd/man/systemd.unit.html#id-1.6
@@ -1810,7 +1817,7 @@ class Systemctl:
                 enabled[unit] = "enabled"
             if unit in _all_common_disabled:
                 enabled[unit] = "disabled"
-        return [(unit, enabled[unit]) for unit in sorted(targets)]
+        return [(unit, enabled[unit]) for unit in sorted(targets) if fnmatched(unit, *modules)]
     def list_unit_files_modules(self, *modules: str) -> List[Tuple[str, str]]: # -> [ (unit,enabled) ]
         """[PATTERN]... -- List installed unit files
         List installed unit files and their enablement state (as reported
@@ -1824,9 +1831,9 @@ class Systemctl:
             result = [(name, sysv + " " + filename) for name, sysv, filename in basics]
         elif self._only_type:
             if "target" in self._only_type:
-                result = self.list_target_unit_files()
+                result = self.list_target_unit_files(*modules)
             if "service" in self._only_type:
-                result = self.list_service_unit_files()
+                result = self.list_service_unit_files(*modules)
         else:
             result = self.list_target_unit_files()
             result += self.list_service_unit_files(*modules)
@@ -4573,7 +4580,7 @@ class Systemctl:
         return None
     ##
     ##
-    def load_preset_files(self, module: Optional[str] = None) -> List[str]: # -> [ preset-file-names,... ]
+    def load_preset_files(self, *modules: str) -> List[str]: # -> [ preset-file-names,... ]
         """ reads all preset files, returns the scanned files """
         if self._preset_file_list is None:
             self._preset_file_list = {}
@@ -4595,7 +4602,7 @@ class Systemctl:
                         preset = PresetFile().read(path)
                         self._preset_file_list[name] = preset
             logg.debug("found %s preset files", len(self._preset_file_list))
-        return sorted(self._preset_file_list.keys())
+        return sorted([name for name in self._preset_file_list if fnmatched(name, modules)])
     def get_preset_of_unit(self, unit: str) -> Optional[str]:
         """ [UNIT] check the *.preset of this unit
         """
@@ -4654,9 +4661,8 @@ class Systemctl:
         if self.user_mode():
             logg.warning("preset-all makes no sense in --user mode")
             return True
-        found_all = True
-        units = self.match_units() # TODO: how to handle module arguments
-        return self.preset_units(units) and found_all
+        units = self.match_units() 
+        return self.preset_units([unit for unit in units if fnmatched(unit, modules)])
     def wanted_from(self, conf: SystemctlConf, default: Optional[str] = None) -> Optional[str]:
         if not conf: return default
         return conf.get(Install, "WantedBy", default, True)
