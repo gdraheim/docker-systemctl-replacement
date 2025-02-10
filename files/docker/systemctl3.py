@@ -5817,7 +5817,7 @@ class Systemctl:
     def start_target_system(self, target: str, init: bool = False) -> List[str]:
         services = self.target_default_services(target, "S")
         self.sysinit_status(SubState = "starting")
-        self.start_units(services)
+        self.start_units(services, init=init)
         return services
     def do_start_target_from(self, conf: SystemctlConf) -> bool:
         target = conf.name()
