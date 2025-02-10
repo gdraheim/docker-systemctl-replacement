@@ -1840,8 +1840,8 @@ class Systemctl:
         return [("UNIT FILE", "STATE")] + result + [("", ""), (found, "")]
     ##
     ##
-    def get_description(self, unit: str, default: Optional[str] = None) -> str:
-        return self.get_description_from(self.load_unit_conf(unit))
+    def get_description(self, unit: str, default: str = NIX) -> str:
+        return self.get_description_from(self.load_unit_conf(unit)) or default
     def get_description_from(self, conf: Optional[SystemctlConf], default: Optional[str] = None) -> str: # -> text
         """ Unit.Description could be empty sometimes """
         if not conf: return default or ""
