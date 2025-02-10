@@ -37478,9 +37478,9 @@ ExecStart=/usr/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_CONFIG_ARGS $KUBELE
                 sx____(F"{docker} rm -f {container}")
 
 if __name__ == "__main__":
-    from optparse import OptionParser
+    from optparse import OptionParser  # pylint: disable=deprecated-module
     _o = OptionParser("%prog [options] test*",
-                      epilog=__doc__.strip().split("\n")[0])
+                      epilog=__doc__.strip().split("\n", 1)[0])
     _o.add_option("-v", "--verbose", action="count", default=0,
                   help="increase logging level [%default]")
     _o.add_option("--with", metavar="FILE", dest="systemctl_py", default=_systemctl_py,
@@ -37584,7 +37584,7 @@ if __name__ == "__main__":
             testclass = globals()[classname]
             for method in sorted(dir(testclass)):
                 if "*" not in arg: arg += "*"
-                if len(arg) > 2 and arg[1] == "_": 
+                if len(arg) > 2 and arg[1] == "_":
                     arg = "test" + arg[1:]
                 if fnmatch(method, arg):
                     suite.addTest(testclass(method))
