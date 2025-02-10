@@ -379,7 +379,7 @@ def get_exist_path(paths: List[str]) -> Optional[str]:
     return None
 
 def get_PAGER() -> List[str]:
-    PAGER = os.environ.get("PAGER", "less")
+    PAGER = os.environ.get("PAGER", "less")  # pylint: disable=possibly-unused-variable
     pager = os.environ.get("SYSTEMD_PAGER", "{PAGER}").format(**locals())
     options = os.environ.get("SYSTEMD_LESS", "FRSXMK") # see 'man timedatectl'
     if not pager: pager = "cat"
@@ -397,7 +397,7 @@ def get_runtime_dir() -> str:
     user = os_getlogin()
     return "/tmp/run-"+user
 def get_RUN(root: bool = False) -> str:
-    tmp_var = get_TMP(root)
+    tmp_var = get_TMP(root)  # pylint: disable=possibly-unused-variable
     if _root:
         tmp_var = _root
     if root:
@@ -408,7 +408,7 @@ def get_RUN(root: bool = False) -> str:
         os.makedirs(path) # "/tmp/run"
         return path
     else:
-        uid = get_USER_ID(root)
+        uid = get_USER_ID(root)  # pylint: disable=possibly-unused-variable
         for p in ("/run/user/{uid}", "/var/run/user/{uid}", "{tmp_var}/run-{uid}"):
             path = p.format(**locals())
             if os.path.isdir(path) and os.access(path, os.W_OK):
@@ -490,6 +490,7 @@ def get_VARLIB_HOME(root: bool = False) -> str:
     CONFIG = get_CONFIG_HOME(root)
     return CONFIG
 def expand_path(path: str, root: bool = False) -> str:
+    # pylint: disable=possibly-unused-variable
     HOME = get_HOME(root)
     RUN = get_RUN(root)
     LOG = get_LOG_DIR(root)
@@ -4505,6 +4506,7 @@ class Systemctl:
         result = "%s - %s" % (unit, self.get_description_from(conf))
         loaded = conf.loaded()
         if loaded:
+            # pylint: disable=possibly-unused-variable
             filename = str(conf.filename())
             enabled = self.enabled_from(conf)
             result += "\n    Loaded: {loaded} ({filename}, {enabled})".format(**locals())
