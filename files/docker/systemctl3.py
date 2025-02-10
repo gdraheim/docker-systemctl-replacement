@@ -4297,7 +4297,7 @@ class Systemctl:
             # self.error |= NOT_FOUND
             self.error |= NOT_ACTIVE
         # how it should work:
-        status = "active" in results
+        status = "active" in results  # pylint: disable=unused-variable
         # how 'systemctl' works:
         non_active = [result for result in results if result != "active"]
         if non_active:
