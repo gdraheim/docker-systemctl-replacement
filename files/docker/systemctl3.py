@@ -36,10 +36,10 @@ __version__: str = "2.0.1061"
 import logging
 logg: logging.Logger = logging.getLogger("systemctl")
 
-if sys.version[0] == '2':
-    stringtypes = basestring # type: ignore[name-defined] # pylint: disable=undefined-variable # PEP 484
+if sys.version[0] != '2':
+    stringtypes = str # type: ignore[name-defined] # pylint: disable=invalid-name
 else:
-    stringtypes = str # pylint: disable=invalid-name
+    stringtypes = basestring # type: ignore[name-defined,misc] # pylint: disable=undefined-variable # PEP 484
 
 NEVER = False
 TRUE = True
