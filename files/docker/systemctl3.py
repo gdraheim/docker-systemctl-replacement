@@ -28,8 +28,7 @@ from types import TracebackType
 _extra_vars: List[str]
 _system_folder1: Optional[str]
 _all_common_enabled: List[str]
-basestring: Type[str]
-_system_folders: List[str]
+stringtypeslders: List[str]
 SystemCompatibilityVersion: int
 _pid_file_folder: str
 __copyright__: str = "(C) 2024-2025 Guido U. Draheim, licensed under the EUPL"
@@ -39,10 +38,10 @@ __version__: str = "2.0.1061"
 import logging
 logg: logging.Logger = logging.getLogger("systemctl")
 
-
-if sys.version[0] == '3':
-    basestring = str
-    xrange = range
+if sys.version[0] == '2':
+    stringtypes = basestring # type: ignore[name-defined] # pylint: disable=undefined-variable # PEP 484
+else:
+    stringtypes = str # pylint: disable=invalid-name
 
 DEBUG_AFTER: bool = False
 DEBUG_STATUS: bool = False
@@ -305,19 +304,19 @@ def unit_of(module: str) -> str:
         return module + ".service"
     return module
 def o22(part: str) -> str:
-    if isinstance(part, basestring):
+    if isinstance(part, stringtypes):
         if len(part) <= 22:
             return part
         return part[:5] + "..." + part[-14:]
     return part # pragma: no cover (is always str)
 def o44(part: str) -> str:
-    if isinstance(part, basestring):
+    if isinstance(part, stringtypes):
         if len(part) <= 44:
             return part
         return part[:10] + "..." + part[-31:]
     return part # pragma: no cover (is always str)
 def o77(part: str) -> str:
-    if isinstance(part, basestring):
+    if isinstance(part, stringtypes):
         if len(part) <= 77:
             return part
         return part[:20] + "..." + part[-54:]
@@ -1005,7 +1004,7 @@ class waitlock:
             lockfile = self.lockfile()
             lockname = os.path.basename(lockfile)
             self.opened = os.open(lockfile, os.O_RDWR | os.O_CREAT, 0o600)
-            for attempt in xrange(int(MaxLockWait or DefaultMaximumTimeout)):
+            for attempt in range(int(MaxLockWait or DefaultMaximumTimeout)):
                 try:
                     logg_debug_flock("[%s] %s. trying %s _______ ", os.getpid(), attempt, lockname)
                     fcntl.flock(self.opened, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -1196,10 +1195,10 @@ def conf_sortedAfter(conflist: Iterable[SystemctlConf], cmp: Callable[[Systemctl
             self.rank = rank
             self.conf = conf
     sortlist = [SortTuple(0, conf) for conf in conflist]
-    for check in xrange(len(sortlist)): # maxrank = len(sortlist)
+    for check in range(len(sortlist)): # maxrank = len(sortlist)
         changed = 0
-        for A in xrange(len(sortlist)):
-            for B in xrange(len(sortlist)):
+        for A in range(len(sortlist)):
+            for B in range(len(sortlist)):
                 if A != B:
                     itemA = sortlist[A]
                     itemB = sortlist[B]
@@ -1852,7 +1851,7 @@ class Systemctl:
         timeout = int(timeout or (DefaultTimeoutStartSec/2))
         timeout = max(timeout, (MinimumTimeoutStartSec))
         dirpath = os.path.dirname(os.path.abspath(pid_file))
-        for x in xrange(timeout):
+        for x in range(timeout):
             if not os.path.isdir(dirpath):
                 time.sleep(1) # until TimeoutStartSec/2
                 continue
@@ -1997,7 +1996,7 @@ class Systemctl:
         pid_max = BOOT_PID_MAX
         if pid_max < 0:
             pid_max = pid1 - pid_max
-        for pid in xrange(pid1, pid_max):
+        for pid in range(pid1, pid_max):
             proc = _proc_pid_stat.format(**locals())
             try:
                 if os.path.exists(proc):
@@ -2219,7 +2218,7 @@ class Systemctl:
         #
         maxdepth = EXPAND_VARS_MAXDEPTH
         expanded = re.sub(r"[$](\w+)", lambda m: get_env1(m), cmd.replace("\\\n", ""))
-        for depth in xrange(maxdepth):
+        for depth in range(maxdepth):
             new_text = re.sub(r"[$][{](\w+)[}]", lambda m: get_env2(m), expanded)
             if new_text == expanded:
                 return expanded
@@ -2862,7 +2861,7 @@ class Systemctl:
         logg.info("wait $NOTIFY_SOCKET, timeout %s (lapse %s)", timeout, lapseTimeout)
         waiting = " ---"
         results: Dict[str, str] = {}
-        for attempt in xrange(int(timeout)+1):
+        for attempt in range(int(timeout)+1):
             if pid and not self.is_active_pid(pid):
                 logg.info("seen dead PID %s", pid)
                 return results
@@ -3825,7 +3824,7 @@ class Systemctl:
         if not self.is_active_pid(pid):
             return True
         logg.info("wait for PID %s to vanish (%ss)", pid, timeout)
-        for x in xrange(int(timeout)):
+        for x in range(int(timeout)):
             time.sleep(1) # until TimeoutStopSec
             if not self.is_active_pid(pid):
                 logg.info("wait for PID %s is done (%s.)", pid, x)
@@ -6238,7 +6237,7 @@ class Systemctl:
         return state
     def wait_system(self, target: Optional[str] = None) -> None:
         target = target or SysInitTarget
-        for attempt in xrange(int(SysInitWait)):
+        for attempt in range(int(SysInitWait)):
             state = self.is_system_running()
             if "init" in state:
                 if target in [SysInitTarget, "basic.target"]:
@@ -6265,7 +6264,7 @@ class Systemctl:
             return []
         pidlist = [pid]
         pids = [pid]
-        for depth in xrange(PROC_MAX_DEPTH):
+        for depth in range(PROC_MAX_DEPTH):
             for pid_entry in os.listdir(_proc_pid_dir):
                 pid = to_intN(pid_entry)
                 if pid is None:
@@ -6823,7 +6822,7 @@ def main() -> int:
                 logg.debug("int %s=%s", nam, val)
                 globals()[nam] = int(val)
                 logg.debug("... InitLoopSleep=%s", InitLoopSleep)
-            elif isinstance(old, basestring):
+            elif isinstance(old, stringtypes):
                 logg.debug("str %s=%s", nam, val)
                 globals()[nam] = val.strip()
                 logg.debug("... SysInitTarget=%s", SysInitTarget)
