@@ -1720,7 +1720,7 @@ class Systemctl:
         return found
     def list_service_unit_basics(self) -> List[Tuple[str, str, str]]:
         """ show all the basic loading state of services """
-        filename = self.unit_file() # scan all
+        self.unit_file() # scan all
         assert self._file_for_unit_sysd is not None
         assert self._file_for_unit_sysv is not None
         result: List[Tuple[str, str, str]] = []
