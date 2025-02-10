@@ -36,11 +36,10 @@ version:
 help:
 	python files/docker/systemctl3.py help
 2:
-	cp -v files/docker/systemctl3.py files/docker/systemctl.py
+	$(STRIPHINTS) files/docker/systemctl3.py -o files/docker/systemctl.py
 	sed -i -e "s|/usr/bin/python3|/usr/bin/python2|" files/docker/systemctl.py
 	sed -i -e "s|type hints are provide.*|generated from systemctl3.py - do not change|" files/docker/systemctl.py
-	$(GIT) add files/docker/systemctl.py || true
-	diff -U1 files/docker/systemctl3.py files/docker/systemctl.py || true
+	: $(GIT) add files/docker/systemctl.py || true
 
 alltests: CH CP UA DJ
 
@@ -391,67 +390,34 @@ autopep8: ; $${PKG:-zypper} install -y python3-autopep8
 	$(AUTOPEP8) $(AUTOPEP8_WITH) ${@:.style=} --diff
 pep8 style:
 	$(MAKE) files/docker/systemctl3.py.pep8
-	$(MAKE) types/systemctl3.pyi.pep8
 	$(MAKE) testsuite.py.pep8
 pep style.d: 
 	$(MAKE) files/docker/systemctl3.py.style
-	$(MAKE) types/systemctl3.pyi.style
 	$(MAKE) testsuite.py.style
-
-####### strip-hints
-STRIP_HINTS = ../strip-hints
-strip-hints:
-	set -ex ; if test -d $(STRIP_HINTS); then cd $(STRIP_HINTS) && git pull; else \
-	cd $(dir $(STRIP_HINTS)) && git clone git@github.com:abarker/strip-hints.git $(notdir $(STRIP_HINTS)) ; fi
-	python3 $(STRIP_HINTS)/bin/strip_hints.py --only-test-for-changes files/docker/systemctl3.py
-st strip:
-	python3 $(STRIP_HINTS)/bin/strip_hints.py --to-empty tmp.files/docker/systemctl3.py > tmp.files/docker/systemctl.py
-	diff -U0 files/docker/systemctl.py tmp.files/docker/systemctl.py
-
-PY_BACKWARDS = ../py-backwards
-py-backwards:
-	set -ex ; if test -d $(PY_BACKWARDS); then cd $(PY_BACKWARDS) && git pull; else \
-	cd $(dir $(PY_BACKWARDS)) && git clone git@github.com:nvbn/py-backwards.git $(notdir $(PY_BACKWARDS)) ; fi
-	python3 $(PY_BACKWARDS)/py_backwards/main.py -e main --version
 
 https://github.com/nvbn/py-backwards
 
-####### retype + stubgen
-PY_RETYPE = ../retype
-RETYPE = $(PY_RETYPE)/retype.py
-RETYPE_WITH= --traceback
-py-retype:
-	set -ex ; if test -d $(PY_RETYPE); then cd $(PY_RETYPE) && git pull; else : \
-	; cd $(dir $(PY_RETYPE)) && git clone git@github.com:ambv/retype.git $(notdir $(PY_RETYPE)) \
-	; cd $(PY_RETYPE) && git checkout 17.12.0 ; fi
-	python3 $(PY_RETYPE)/retype.py --version
+STRIPHINTS_GIT_URL = https://github.com/abarker/strip-hints.git
+STRIPHINTS_GIT = ../striphints
+STRIPHINTS = $(PYTHON3) $(STRIPHINTS_GIT)/bin/strip_hints.py
+striphints.git:
+	set -ex ; if test -d $(STRIPHINTS_GIT); then cd $(STRIPHINTS_GIT) && git pull; else : \
+	; cd $(dir $(STRIPHINTS_GIT)) && git clone $(STRIPHINTS_GIT_URL) $(notdir $(STRIPHINTS_GIT)) \
+	; fi
+	echo "def test(a: str) -> str: return a" > tmp.striphints.py
+	python3 $(STRIPHINTS) --to-empty tmp.striphints.py | tee tmp.striphints.py.out
+	test "def test(a )  : return a" = "`cat tmp.striphints.py.out`"
+	rm tmp.striphints.*
 
 MYPY = mypy
 MYPY_WITH = --strict --show-error-codes --show-error-context 
-MYPY_OPTIONS = --no-warn-unused-ignores --python-version 3.6
+MYPY_OPTIONS = --no-warn-unused-ignores --python-version 3.7
 mypy:
 	zypper install -y mypy
 	zypper install -y python3-click python3-pathspec
-	cd .. && git clone git@github.com:ambv/retype.git
-	cd ../retype && git checkout 17.12.0
-stub:
-	stubgen -o tmp.types --include-private files/docker/systemctl3.py
-stub.:
-	stubgen -o tmp.types --include-private files/docker/systemctl3.py
-	sed -i -e "/^basestring = str/d" -e "/xrange = range/d" tmp.types/systemctl3.pyi
-	sed -i -e "/^EXEC_SPAWN/d" -e "/^_notify_socket_folder/d" tmp.types/systemctl3.pyi
-	diff -U1 types/systemctl3.pyi tmp.types/systemctl3.pyi | head -20
-type.:
-	python3 $(RETYPE) $(RETYPE_WITH) files/docker/systemctl3.py -t tmp.files/docker
-	stubgen -o tmp.types --include-private tmp.files/docker/systemctl3.py
-	sed -i -e "/^basestring = str/d" -e "/xrange = range/d" tmp.types/systemctl3.pyi
-	sed -i -e "/^EXEC_SPAWN/d" -e "/^_notify_socket_folder/d" tmp.types/systemctl3.pyi
-	diff -U1 types/systemctl3.pyi tmp.types/systemctl3.pyi | head -20
-	$(MYPY) $(MYPY_WITH) $(MYPY_OPTIONS) tmp.files/docker/systemctl3.py 2>&1 | head -20
+	$(MAKE) striphints.git
 type:
-	python3 $(RETYPE) $(RETYPE_WITH) files/docker/systemctl3.py -t tmp.files/docker
-	sed -i -e "/# [|]/d" tmp.files/docker/systemctl3.py
-	$(MYPY) $(MYPY_WITH) $(MYPY_OPTIONS) tmp.files/docker/systemctl3.py
+	$(MYPY) $(MYPY_WITH) $(MYPY_OPTIONS) files/docker/systemctl3.py
 
 ####### box test
 box:
