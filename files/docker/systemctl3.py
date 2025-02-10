@@ -1644,9 +1644,10 @@ class Systemctl:
             return conf
         return self.default_unit_conf(module)
     def get_unit_type(self, module: str) -> Optional[str]:
-        name, ext = os.path.splitext(module)
+        _, ext = os.path.splitext(module)
         if ext in [".service", ".socket", ".target"]:
             return ext[1:]
+        logg.debug("unknown unit type %s", module)
         return None
     def get_unit_section(self, module: str, default: str = Service) -> str:
         return string.capwords(self.get_unit_type(module) or default)
