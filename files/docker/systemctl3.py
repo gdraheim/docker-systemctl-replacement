@@ -352,7 +352,7 @@ def path44(filename: Optional[str]) -> str:
     else:
         out += filename[remain:]
     return out
-def fnmatched(text, *patterns) -> bool:
+def fnmatched(text: str, *patterns: str) -> bool:
     if not patterns:
         return True
     for pattern in patterns:
@@ -3369,7 +3369,7 @@ class Systemctl:
                            run.returncode or "OK", run.signal or "")
             return True
     def socketlist(self) -> List[SystemctlSocket]:
-        return self._sockets.values()
+        return list(self._sockets.values())
     def create_socket(self, conf: SystemctlConf) -> Optional[socket.socket]:
         unsupported = ["ListenUSBFunction", "ListenMessageQueue", "ListenNetlink"]
         unsupported += ["ListenSpecial", "ListenFIFO", "ListenSequentialPacket"]
@@ -3854,7 +3854,7 @@ class Systemctl:
             if not self.is_active_pid(pid):
                 logg.info(" %s wait for PID %s is done", delayed(attempt), pid)
                 return True
-        logg.info("%s wait for PID %s failed", delayed(timeout), pid)
+        logg.info("%s wait for PID %s failed", delayed(int(timeout)), pid)
         return False
     def reload_modules(self, *modules: str) -> bool:
         """ [UNIT]... -- reload these units """
@@ -4617,7 +4617,7 @@ class Systemctl:
                         preset = PresetFile().read(path)
                         self._preset_file_list[name] = preset
             logg.debug("found %s preset files", len(self._preset_file_list))
-        return sorted([name for name in self._preset_file_list if fnmatched(name, modules)])
+        return sorted([name for name in self._preset_file_list if fnmatched(name, *modules)])
     def get_preset_of_unit(self, unit: str) -> Optional[str]:
         """ [UNIT] check the *.preset of this unit
         """
@@ -4679,7 +4679,7 @@ class Systemctl:
             logg.warning("preset-all makes no sense in --user mode")
             return True
         units = self.match_units()
-        return self.preset_units([unit for unit in units if fnmatched(unit, modules)])
+        return self.preset_units([unit for unit in units if fnmatched(unit, *modules)])
     def wanted_from(self, conf: SystemctlConf, default: Optional[str] = None) -> Optional[str]:
         if not conf: return default
         return conf.get(Install, "WantedBy", default, True)
