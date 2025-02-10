@@ -1,6 +1,8 @@
 #! /usr/bin/env python3
 """ Testcases for docker-systemctl-replacement functionality """
 
+# pylint: disable=line-too-long,too-many-lines,bare-except,broad-exception-caught,pointless-statement,multiple-statements,f-string-without-interpolation
+# pylint: disable=missing-function-docstring,unused-variable,unused-argument,unspecified-encoding,redefined-outer-name,using-constant-test
 __copyright__ = "(C) Guido Draheim, licensed under the EUPL"""
 __version__ = "2.0.1061"
 
@@ -393,7 +395,6 @@ def path_proc_started(proc: str) -> float:
     else:
         with open(proc, "rb") as f:
             data = f.readline()
-        f.closed
         stat_data = data.split()
         started_ticks = stat_data[21]
         # man proc(5): "(22) starttime = The time the process started after system boot."
@@ -410,7 +411,6 @@ def path_proc_started(proc: str) -> float:
         system_uptime = "/proc/uptime"
         with open(system_uptime, "rb") as f:
             data = f.readline()
-        f.closed
         uptime_data = decodes(data).split()
         uptime_secs = float(uptime_data[0])
         logg.debug("System uptime secs: %.3f (%s)", uptime_secs, system_uptime)
@@ -440,7 +440,7 @@ def download(base_url: str, filename: str, into: str) -> None:
     if not os.path.isdir(into):
         os.makedirs(into)
     if not os.path.exists(os.path.join(into, filename)):
-        sh____("cd {into} && wget {base_url}/{filename}".format(**locals()))
+        sh____(F"cd {into} && wget {base_url}/{filename}")
 def text_file(filename: str, content: str) -> None:
     filedir = os.path.dirname(filename)
     if not os.path.isdir(filedir):
@@ -536,7 +536,7 @@ def expand_path(path: str, root: bool = True) -> str:
 ############ local mirror helpers #############
 def ip_container(name: str) -> str:
     docker = _docker
-    values = output("{docker} inspect {name}".format(**locals()))
+    values = output(F"{docker} inspect {name}")
     values = json.loads(values)
     if not values or "NetworkSettings" not in values[0]:
         logg.critical(" %s inspect %s => %s ", docker, name, values)
@@ -592,8 +592,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def rm_docker(self, testname: str) -> None:
         docker = _docker
         if not KEEP:
-            sx____("{docker} stop -t 6 {testname}".format(**locals()))
-            sx____("{docker} rm -f {testname}".format(**locals()))
+            sx____(F"{docker} stop -t 6 {testname}")
+            sx____(F"{docker} rm -f {testname}")
     def killall(self, what: str, wait: Optional[int] = None, sig: Optional[int] = None, but: Optional[List[str]] = None) -> None:
         # logg.info("killall %s (but %s)", what, but)
         killed = 0
@@ -601,13 +601,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             for nextpid in os.listdir("/proc"):
                 try: pid = int(nextpid)
                 except: continue
-                cmdline = "/proc/{pid}/cmdline".format(**locals())
+                cmdline = F"/proc/{pid}/cmdline"
                 try:
                     cmd = open(cmdline).read().replace("\0", " ")
                     if fnmatch(cmd, what):
                         found = [name for name in (but or []) if name in cmd]
                         if found: continue
-                        logg.info(" kill {pid} # {cmd}".format(**locals()))
+                        logg.info(" %s", F"kill {pid} # {cmd}")
                         os.kill(pid, sig or signal.SIGINT)
                         killed += 1
                 except IOError as e:
@@ -620,7 +620,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             for nextpid in os.listdir("/proc"):
                 try: pid = int(nextpid)
                 except: continue
-                cmdline = "/proc/{pid}/cmdline".format(**locals())
+                cmdline = F"/proc/{pid}/cmdline"
                 try:
                     cmd = open(cmdline).read().replace("\0", " ")
                     if fnmatch(cmd, what):
@@ -641,13 +641,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             for nextpid in os.listdir("/proc"):
                 try: pid = int(nextpid)
                 except: continue
-                cmdline = "/proc/{pid}/cmdline".format(**locals())
+                cmdline = F"/proc/{pid}/cmdline"
                 try:
                     cmd = open(cmdline).read().replace("\0", " ")
                     if fnmatch(cmd, what):
                         found = [name for name in (but or []) if name in cmd]
                         if found: continue
-                        logg.info(" kill {pid} # {cmd}".format(**locals()))
+                        logg.info(" %s", F"kill {pid} # {cmd}")
                         os.kill(pid, sig or signal.SIGKILL)
                         killed += 1
                 except IOError as e:
@@ -658,22 +658,22 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def rm_killall(self, testname: Optional[str] = None) -> None:
         self.killall("*systemctl*.py *", 10, but = ["edit ", "testsuite.py "])
         testname = testname or self.caller_testname()
-        self.killall("*/{testname}_*".format(**locals()))
+        self.killall(F"*/{testname}_*")
     def kill(self, pid: Union[str, int], wait: Optional[int] = None, sig: Optional[int] = None) -> bool:
         pid = int(pid)
-        cmdline = "/proc/{pid}/cmdline".format(**locals())
+        cmdline = F"/proc/{pid}/cmdline"
         if True:
             try:
                 if os.path.exists(cmdline):
                     cmd = open(cmdline).read().replace("\0", " ").strip()
-                    logg.info(" kill {pid} # {cmd}".format(**locals()))
+                    logg.info(" %s", F"kill {pid} # {cmd}")
                     os.kill(pid, sig or signal.SIGINT)
             except IOError as e:
                 if e.errno != errno.ENOENT:
                     logg.info(" killing %s", e)
             except Exception as e:
                 logg.info(" killing %s", e)
-        status = "/proc/{pid}/status".format(**locals())
+        status = F"/proc/{pid}/status"
         for checking in xrange(int(wait or KILLWAIT)):
             if not os.path.exists(cmdline):
                 return True
@@ -734,7 +734,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 text = inp.read()
             text2 = re.sub(rb"(\]\}\})[^{}]*(\]\}\})$", rb"\1", text)
             with open(newcoverage, "wb") as out:
-               out.write(text2)
+                out.write(text2)
     def root(self, testdir: str, real: bool = False) -> str:
         if real: return "/"
         root_folder = os.path.join(testdir, "root")
@@ -775,7 +775,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             return image
         add_hosts = self.start_mirror(image)
         if add_hosts:
-            return "{add_hosts} {image}".format(**locals())
+            return F"{add_hosts} {image}"
         return image
     def local_addhosts(self, dockerfile: str) -> str:
         image = ""
@@ -800,7 +800,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         return decodes(out).strip()
     def drop_container(self, name: str) -> None:
         docker = _docker
-        sx____("{docker} rm --force {name}".format(**locals()))
+        sx____(F"{docker} rm --force {name}")
     def drop_centos(self) -> None:
         self.drop_container("centos")
     def drop_ubuntu(self) -> None:
@@ -819,8 +819,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         local_image = self.local_image(image)
         cmd = F"{docker} run --detach --name {name} {local_image} sleep 1000"
         sh____(cmd)
-        print("                 # {local_image}".format(**locals()))
-        print("  {docker} exec -it {name} bash".format(**locals()))
+        print(F"                 # {local_image}")
+        print(F"  {docker} exec -it {name} bash")
     def begin(self) -> str:
         self._started = time.time()
         logg.info("[[%s]]", datetime.datetime.fromtimestamp(self._started).strftime("%H:%M:%S"))
@@ -2477,34 +2477,34 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         root = self.root(testdir)
         user = self.user()
         systemctl = cover() + _systemctl_py + " --root=" + root
-        text_file(os_path(root, "/etc/systemd/system/zza.service"), """
+        text_file(os_path(root, "/etc/systemd/system/zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
             User={user}
             [Install]
-            WantedBy=multi-user.target""".format(**locals()))
-        text_file(os_path(root, "/usr/lib/systemd/system/zzb.service"), """
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/usr/lib/systemd/system/zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Sevice]
             User={user}
             [Install]
-            WantedBy=multi-user.target""".format(**locals()))
-        text_file(os_path(root, "/lib/systemd/system/zzc.service"), """
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/lib/systemd/system/zzc.service"), F"""
             [Unit]
             Description=Testing C
             [Sevice]
             User={user}
             [Install]
-            WantedBy=multi-user.target""".format(**locals()))
-        text_file(os_path(root, "/var/run/systemd/system/zzd.service"), """
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/var/run/systemd/system/zzd.service"), F"""
             [Unit]
             Description=Testing D
             [Sevice]
             User={user}
             [Install]
-            WantedBy=multi-user.target""".format(**locals()))
+            WantedBy=multi-user.target""")
         text_file(os_path(root, "/etc/systemd/user/zzu.service"), """
             [Unit]
             Description=Testing U
@@ -4374,7 +4374,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         this_user = get_USER()
         this_group = get_GROUP()
-        text_file(os_path(root, "/etc/systemd/system/zza.service"), """
+        text_file(os_path(root, "/etc/systemd/system/zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -4383,8 +4383,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StateDirectory=foo/bar aaa
             User={this_user}
             ExecStart=/bin/sleep 3
-            """.format(**locals()))
-        text_file(os_path(root, "/etc/systemd/system/zzb.service"), """
+            """)
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
@@ -4393,7 +4393,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StateDirectory=foo/bar aaa
             Group={this_group}
             ExecStart=/bin/sleep 3
-            """.format(**locals()))
+            """)
         path1 = os_path(root, "/var/lib/foo/bar")
         path2 = os_path(root, "/var/lib/aaa")
         self.assertFalse(os.path.isdir(path1))
@@ -4477,22 +4477,22 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         this_group = get_GROUP()
         last_group = get_LASTGROUP()
-        text_file(os_path(root, "/etc/systemd/system/zza.service"), """
+        text_file(os_path(root, "/etc/systemd/system/zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
             StateDirectory=foo/bar aaa
             Group={this_group}
             ExecStart=/bin/sleep 3
-            """.format(**locals()))
-        text_file(os_path(root, "/etc/systemd/system/zzb.service"), """
+            """)
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
             StateDirectory=foo/bar aaa
             Group={last_group}
             ExecStart=/bin/sleep 4
-            """.format(**locals()))
+            """)
         path1 = os_path(root, "/var/lib/foo/bar")
         path2 = os_path(root, "/var/lib/aaa")
         self.assertFalse(os.path.isdir(path1))
@@ -4580,22 +4580,22 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         this_group = get_GROUP()
         last_group = get_LASTGROUP()
-        text_file(os_path(root, "/etc/systemd/system/zza.service"), """
+        text_file(os_path(root, "/etc/systemd/system/zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
             ConfigurationDirectory=foo/bar aaa
             Group={this_group}
             ExecStart=/bin/sleep 3
-            """.format(**locals()))
-        text_file(os_path(root, "/etc/systemd/system/zzb.service"), """
+            """)
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
             ConfigurationDirectory=foo/bar aaa
             Group={last_group}
             ExecStart=/bin/sleep 4
-            """.format(**locals()))
+            """)
         path1 = os_path(root, "/etc/foo/bar")
         path2 = os_path(root, "/etc/aaa")
         self.assertFalse(os.path.isdir(path1))
@@ -4683,7 +4683,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         service_file = os_path(root, "/etc/systemd/system/zzb.service")
         defaults = {"a1": "default1"}
         systemctl = os.path.splitext(os.path.basename(_systemctl_py))[0]
-        shell_file(unitconfparser_py, """
+        shell_file(unitconfparser_py, F"""
             #! {python_exe}
             from __future__ import print_function
             import sys
@@ -4734,8 +4734,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             print("getlist.environment=", conf.data.getlist("Service", "Environment"))
             print("get.environment=", conf.data.get("Service", "Environment"))
             print("get.execstart=", conf.data.get("Service", "ExecStart"))
-            """.format(**locals()))
-        text_file(service_file, """
+            """)
+        text_file(service_file, F"""
             [Unit]
             Description=Testing B
             [Service]
@@ -5181,7 +5181,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(logfile, "created\n")
         begin = "{"
         ends = "}"
-        shell_file(os_path(testdir, "xxx.init"), """
+        shell_file(os_path(testdir, "xxx.init"), F"""
             #! /bin/bash
             ### BEGIN INIT INFO
             # Required-Start: $local_fs $remote_fs $syslog $network
@@ -5192,7 +5192,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             # Description:    Allows for SysV testing
             ### END INIT INFO
         """)
-        shell_file(os_path(testdir, "zzz.init"), """
+        shell_file(os_path(testdir, "zzz.init"), F"""
             #! /bin/bash
             ### BEGIN INIT INFO
             # Required-Start: $local_fs $remote_fs $syslog $network
@@ -5236,7 +5236,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ;; esac
             echo "done$1" >&2
             exit 0
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "xxx.init"), os_path(root, "/etc/init.d/xxx"))
         copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/etc/init.d/zzz"))
@@ -6211,22 +6211,22 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart=/bin/sleep 2
             [Install]
             WantedBy=multi-user.target""")
-        text_file(os_path(root, "/etc/systemd/system/zzc.service"), """
+        text_file(os_path(root, "/etc/systemd/system/zzc.service"), F"""
             [Unit]
             Description=Testing C
             [Service]
             ExecStart=/bin/sleep 2
             User={user}
             [Install]
-            WantedBy=multi-user.target""".format(**locals()))
+            WantedBy=multi-user.target""")
         configs = os.path.expanduser("~/.config")
-        text_file(os_path(root, configs+"/systemd/user/zzd.service"), """
+        text_file(os_path(root, configs+"/systemd/user/zzd.service"), F"""
             [Unit]
             Description=Testing D
             [Service]
             ExecStart=/bin/sleep 2
             [Install]
-            WantedBy=multi-user.target""".format(**locals()))
+            WantedBy=multi-user.target""")
         #
         cmd = F"{systemctl} list-unit-files --user"
         out, end = output2(cmd)
@@ -6609,7 +6609,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zzz.service"), """
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -6618,7 +6618,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStop=/usr/bin/killall {testsleep}
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         #
@@ -6652,8 +6652,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
-        kill_testsleep = "{systemctl} __killall {testsleep}"
-        sx____(kill_testsleep.format(**locals()))
+        cmd = F"{systemctl} __killall {testsleep}"
+        sx____(cmd)
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -6667,7 +6667,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zzz.service"), """
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -6675,7 +6675,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart={bindir}/{testsleep} 111
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         #
@@ -6709,8 +6709,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
-        kill_testsleep = "{systemctl} __killall {testsleep}"
-        sx____(kill_testsleep.format(**locals()))
+        cmd = F"{systemctl} __killall {testsleep}"
+        sx____(cmd)
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -6725,7 +6725,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         os.makedirs(os_path(root, "/var/run"))
-        shell_file(os_path(testdir, "zzz.init"), """
+        shell_file(os_path(testdir, "zzz.init"), F"""
             #! /bin/bash
             case "$1" in start)
                [ -d /var/run ] || mkdir -p /var/run
@@ -6739,8 +6739,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ;; esac
             echo "done$1" >&2
             exit 0
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzz.service"), """
+            """)
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -6750,7 +6750,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExeeStop={root}/usr/bin/zzz.init stop
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/usr/bin/zzz.init"))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
@@ -6785,8 +6785,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
-        kill_testsleep = "{systemctl} __killall {testsleep}"
-        sx____(kill_testsleep.format(**locals()))
+        cmd = F"{systemctl} __killall {testsleep}"
+        sx____(cmd)
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -6801,7 +6801,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         os.makedirs(os_path(root, "/var/run"))
-        shell_file(os_path(testdir, "zzz.init"), """
+        shell_file(os_path(testdir, "zzz.init"), F"""
             #! /bin/bash
             case "$1" in start)
                ({bindir}/{testsleep} 111 0<&- &>/dev/null &) &
@@ -6814,8 +6814,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ;; esac
             echo "done$1" >&2
             exit 0
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzz.service"), """
+            """)
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -6824,7 +6824,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStop={root}/usr/bin/zzz.init stop
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/usr/bin/zzz.init"))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
@@ -6859,8 +6859,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
-        kill_testsleep = "{systemctl} __killall {testsleep}"
-        sx____(kill_testsleep.format(**locals()))
+        cmd = F"{systemctl} __killall {testsleep}"
+        sx____(cmd)
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -6874,7 +6874,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zzz.service"), """
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -6884,7 +6884,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             TimeoutStopSec=4
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         #
@@ -6918,8 +6918,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
-        kill_testsleep = "{systemctl} __killall {testsleep}"
-        sx____(kill_testsleep.format(**locals()))
+        cmd = F"{systemctl} __killall {testsleep}"
+        sx____(cmd)
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -6933,7 +6933,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zzz.service"), """
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -6941,7 +6941,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart={bindir}/{testsleep} foo
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         #
@@ -6975,8 +6975,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
-        kill_testsleep = "{systemctl} __killall {testsleep}"
-        sx____(kill_testsleep.format(**locals()))
+        cmd = F"{systemctl} __killall {testsleep}"
+        sx____(cmd)
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -6991,7 +6991,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         os.makedirs(os_path(root, "/var/run"))
-        shell_file(os_path(testdir, "zzz.init"), """
+        shell_file(os_path(testdir, "zzz.init"), F"""
             #! /bin/bash
             case "$1" in start)
                [ -d /var/run ] || mkdir -p /var/run
@@ -7006,8 +7006,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ;; esac
             echo "done$1" >&2
             exit 0
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzz.service"), """
+            """)
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -7017,7 +7017,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExeeStop={root}/usr/bin/zzz.init stop
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/usr/bin/zzz.init"))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
@@ -7052,8 +7052,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
-        kill_testsleep = "{systemctl} __killall {testsleep}"
-        sx____(kill_testsleep.format(**locals()))
+        cmd = F"{systemctl} __killall {testsleep}"
+        sx____(cmd)
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -7068,7 +7068,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         os.makedirs(os_path(root, "/var/run"))
-        shell_file(os_path(testdir, "zzz.init"), """
+        shell_file(os_path(testdir, "zzz.init"), F"""
             #! /bin/bash
             case "$1" in start)
                ({bindir}/{testsleep} 111 0<&- &>/dev/null &) &
@@ -7081,8 +7081,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ;; esac
             echo "done$1" >&2
             exit 1
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzz.service"), """
+            """)
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -7091,7 +7091,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStop={root}/usr/bin/zzz.init stop
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/usr/bin/zzz.init"))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
@@ -7126,8 +7126,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
-        kill_testsleep = "{systemctl} __killall {testsleep}"
-        sx____(kill_testsleep.format(**locals()))
+        cmd = F"{systemctl} __killall {testsleep}"
+        sx____(cmd)
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -7144,7 +7144,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(os_path(testdir, "zza.service"), """
             [Unit]
             Description=Testing A""")
-        text_file(os_path(testdir, "zzb.service"), """
+        text_file(os_path(testdir, "zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
@@ -7152,8 +7152,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart={bindir}/{testsleep} 99
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzc.service"), """
+            """)
+        text_file(os_path(testdir, "zzc.service"), F"""
             [Unit]
             Description=Testing C
             [Service]
@@ -7161,7 +7161,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart={bindir}/{testsleep} 111
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
@@ -7203,8 +7203,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         #
-        kill_testsleep = "{systemctl} __killall {testsleep}"
-        sx____(kill_testsleep.format(**locals()))
+        cmd = F"{systemctl} __killall {testsleep}"
+        sx____(cmd)
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -7225,7 +7225,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(os_path(testdir, "zza.service"), """
             [Unit]
             Description=Testing A""")
-        text_file(os_path(testdir, "zzb.service"), """
+        text_file(os_path(testdir, "zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
@@ -7233,8 +7233,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart={bindir}/{testsleep} 99
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzc.service"), """
+            """)
+        text_file(os_path(testdir, "zzc.service"), F"""
             [Unit]
             Description=Testing C
             [Service]
@@ -7242,36 +7242,36 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart={bindir}/{testsleep} 111
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        sx____(_systemctl_py+" __killall {testsleep}".format(**locals()))
+            """)
+        sx____(_systemctl_py+F" __killall {testsleep}")
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
         copy_file(os_path(testdir, "zzc.service"), os_path(root, "/etc/systemd/system/zzc.service"))
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sh____(F"{systemctl} daemon-reload")
         #
-        enable_A = "{systemctl} enable zza.service"
-        enable_B = "{systemctl} enable zzb.service"
-        enable_C = "{systemctl} enable zzc.service"
-        enable_D = "{systemctl} enable zzd.service"
-        doneA, exitA = output2(enable_A.format(**locals()))
-        doneB, exitB = output2(enable_B.format(**locals()))
-        doneC, exitC = output2(enable_C.format(**locals()))
-        doneD, exitD = output2(enable_D.format(**locals()))
+        enable_A = F"{systemctl} enable zza.service"
+        enable_B = F"{systemctl} enable zzb.service"
+        enable_C = F"{systemctl} enable zzc.service"
+        enable_D = F"{systemctl} enable zzd.service"
+        doneA, exitA = output2(enable_A)
+        doneB, exitB = output2(enable_B)
+        doneC, exitC = output2(enable_C)
+        doneD, exitD = output2(enable_D)
         if TODO or real: self.assertEqual(exitA, 0)
         else: self.assertEqual(exitA, 1)
         self.assertEqual(exitB, 0)
         self.assertEqual(exitC, 0)
         self.assertEqual(exitD, 1)
         #
-        is_active_A = "{systemctl} is-active zza.service"
-        is_active_B = "{systemctl} is-active zzb.service"
-        is_active_C = "{systemctl} is-active zzc.service"
-        is_active_D = "{systemctl} is-active zzd.service"
-        actA, exitA = output2(is_active_A.format(**locals()))
-        actB, exitB = output2(is_active_B.format(**locals()))
-        actC, exitC = output2(is_active_C.format(**locals()))
-        actD, exitD = output2(is_active_D.format(**locals()))
+        is_active_A = F"{systemctl} is-active zza.service"
+        is_active_B = F"{systemctl} is-active zzb.service"
+        is_active_C = F"{systemctl} is-active zzc.service"
+        is_active_D = F"{systemctl} is-active zzd.service"
+        actA, exitA = output2(is_active_A)
+        actB, exitB = output2(is_active_B)
+        actC, exitC = output2(is_active_C)
+        actD, exitD = output2(is_active_D)
         self.assertEqual(actA.strip(), "inactive")
         self.assertEqual(actB.strip(), "inactive")
         self.assertEqual(actC.strip(), "inactive")
@@ -7285,14 +7285,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         #
-        is_active_A = "{systemctl} is-active zza.service"
-        is_active_B = "{systemctl} is-active zzb.service"
-        is_active_C = "{systemctl} is-active zzc.service"
-        is_active_D = "{systemctl} is-active zzd.service"
-        actA, exitA = output2(is_active_A.format(**locals()))
-        actB, exitB = output2(is_active_B.format(**locals()))
-        actC, exitC = output2(is_active_C.format(**locals()))
-        actD, exitD = output2(is_active_D.format(**locals()))
+        is_active_A = F"{systemctl} is-active zza.service"
+        is_active_B = F"{systemctl} is-active zzb.service"
+        is_active_C = F"{systemctl} is-active zzc.service"
+        is_active_D = F"{systemctl} is-active zzd.service"
+        actA, exitA = output2(is_active_A)
+        actB, exitB = output2(is_active_B)
+        actC, exitC = output2(is_active_C)
+        actD, exitD = output2(is_active_D)
         self.assertEqual(actA.strip(), "inactive")
         self.assertEqual(actB.strip(), "active")
         self.assertEqual(actC.strip(), "inactive")
@@ -7303,24 +7303,24 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertNotEqual(exitD, 0)
         #
         logg.info("== checking with --quiet")
-        is_active_A = "{systemctl} is-active zza.service --quiet"
-        is_active_B = "{systemctl} is-active zzb.service --quiet"
-        actA, exitA = output2(is_active_A.format(**locals()))
-        actB, exitB = output2(is_active_B.format(**locals()))
+        is_active_A = F"{systemctl} is-active zza.service --quiet"
+        is_active_B = F"{systemctl} is-active zzb.service --quiet"
+        actA, exitA = output2(is_active_A)
+        actB, exitB = output2(is_active_B)
         self.assertEqual(actA, "")
         self.assertEqual(actB, "")
         self.assertNotEqual(exitA, 0)
         self.assertEqual(exitB, 0)
         #
         logg.info("== checking combinations of arguments")
-        is_active_BC = "{systemctl} is-active zzb.service zzc.service "
-        is_active_CD = "{systemctl} is-active zzc.service zzd.service"
-        is_active_BD = "{systemctl} is-active zzb.service zzd.service"
-        is_active_BCD = "{systemctl} is-active zzb.service zzc.service zzd.service"
-        actBC, exitBC = output2(is_active_BC.format(**locals()))
-        actCD, exitCD = output2(is_active_CD.format(**locals()))
-        actBD, exitBD = output2(is_active_BD.format(**locals()))
-        actBCD, exitBCD = output2(is_active_BCD.format(**locals()))
+        is_active_BC = F"{systemctl} is-active zzb.service zzc.service "
+        is_active_CD = F"{systemctl} is-active zzc.service zzd.service"
+        is_active_BD = F"{systemctl} is-active zzb.service zzd.service"
+        is_active_BCD = F"{systemctl} is-active zzb.service zzc.service zzd.service"
+        actBC, exitBC = output2(is_active_BC)
+        actCD, exitCD = output2(is_active_CD)
+        actBD, exitBD = output2(is_active_BD)
+        actBCD, exitBCD = output2(is_active_BCD)
         self.assertEqual(actBC.split("\n"), ["active", "inactive", ""])
         self.assertEqual(actCD.split("\n"), ["inactive", "inactive", ""])
         self.assertEqual(actBD.split("\n"), ["active", "inactive", ""])
@@ -7339,7 +7339,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         #
-        actBC, exitBC = output2(is_active_BC.format(**locals()))
+        actBC, exitBC = output2(is_active_BC)
         self.assertEqual(actBC.split("\n"), ["active", "active", ""])
         self.assertEqual(exitBC, 0)
         #
@@ -7348,12 +7348,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         #
-        actBC, exitBC = output2(is_active_BC.format(**locals()))
+        actBC, exitBC = output2(is_active_BC)
         self.assertEqual(actBC.split("\n"), ["inactive", "inactive", ""])
         self.assertNotEqual(exitBC, 0)
         #
-        kill_testsleep = _systemctl_py+" __killall {testsleep}"
-        sx____(kill_testsleep.format(**locals()))
+        cmd = F"{_systemctl_py} __killall {testsleep}"
+        sx____(cmd)
         self.rm_testdir()
         self.rm_zzfiles(root)
         self.coverage()
@@ -7375,7 +7375,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(os_path(testdir, "zza.service"), """
             [Unit]
             Description=Testing A""")
-        text_file(os_path(testdir, "zzb.service"), """
+        text_file(os_path(testdir, "zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
@@ -7383,8 +7383,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart={bindir}/{testsleep} 99
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzc.service"), """
+            """)
+        text_file(os_path(testdir, "zzc.service"), F"""
             [Unit]
             Description=Testing C
             [Service]
@@ -7392,36 +7392,36 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart={bindir}/{testsleep} 111
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        sx____(_systemctl_py+" __killall {testsleep}".format(**locals()))
+            """)
+        sx____(F"{_systemctl_py} __killall {testsleep}")
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
         copy_file(os_path(testdir, "zzc.service"), os_path(root, "/etc/systemd/system/zzc.service"))
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sh____(F"{systemctl} daemon-reload")
         #
-        enable_A = "{systemctl} enable zza.service"
-        enable_B = "{systemctl} enable zzb.service"
-        enable_C = "{systemctl} enable zzc.service"
-        enable_D = "{systemctl} enable zzd.service"
-        doneA, exitA = output2(enable_A.format(**locals()))
-        doneB, exitB = output2(enable_B.format(**locals()))
-        doneC, exitC = output2(enable_C.format(**locals()))
-        doneD, exitD = output2(enable_D.format(**locals()))
+        enable_A = F"{systemctl} enable zza.service"
+        enable_B = F"{systemctl} enable zzb.service"
+        enable_C = F"{systemctl} enable zzc.service"
+        enable_D = F"{systemctl} enable zzd.service"
+        doneA, exitA = output2(enable_A)
+        doneB, exitB = output2(enable_B)
+        doneC, exitC = output2(enable_C)
+        doneD, exitD = output2(enable_D)
         if TODO or real: self.assertEqual(exitA, 0)
         else: self.assertEqual(exitA, 1)
         self.assertEqual(exitB, 0)
         self.assertEqual(exitC, 0)
         self.assertEqual(exitD, 1)
         #
-        is_active_A = "{systemctl} is-failed zza.service"
-        is_active_B = "{systemctl} is-failed zzb.service"
-        is_active_C = "{systemctl} is-failed zzc.service"
-        is_active_D = "{systemctl} is-failed zzd.service"
-        actA, exitA = output2(is_active_A.format(**locals()))
-        actB, exitB = output2(is_active_B.format(**locals()))
-        actC, exitC = output2(is_active_C.format(**locals()))
-        actD, exitD = output2(is_active_D.format(**locals()))
+        is_active_A = F"{systemctl} is-failed zza.service"
+        is_active_B = F"{systemctl} is-failed zzb.service"
+        is_active_C = F"{systemctl} is-failed zzc.service"
+        is_active_D = F"{systemctl} is-failed zzd.service"
+        actA, exitA = output2(is_active_A)
+        actB, exitB = output2(is_active_B)
+        actC, exitC = output2(is_active_C)
+        actD, exitD = output2(is_active_D)
         self.assertEqual(actA.strip(), "inactive")
         self.assertEqual(actB.strip(), "inactive")
         self.assertEqual(actC.strip(), "inactive")
@@ -7436,14 +7436,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         #
-        is_active_A = "{systemctl} is-failed zza.service"
-        is_active_B = "{systemctl} is-failed zzb.service"
-        is_active_C = "{systemctl} is-failed zzc.service"
-        is_active_D = "{systemctl} is-failed zzd.service"
-        actA, exitA = output2(is_active_A.format(**locals()))
-        actB, exitB = output2(is_active_B.format(**locals()))
-        actC, exitC = output2(is_active_C.format(**locals()))
-        actD, exitD = output2(is_active_D.format(**locals()))
+        is_active_A = F"{systemctl} is-failed zza.service"
+        is_active_B = F"{systemctl} is-failed zzb.service"
+        is_active_C = F"{systemctl} is-failed zzc.service"
+        is_active_D = F"{systemctl} is-failed zzd.service"
+        actA, exitA = output2(is_active_A)
+        actB, exitB = output2(is_active_B)
+        actC, exitC = output2(is_active_C)
+        actD, exitD = output2(is_active_D)
         self.assertEqual(actA.strip(), "inactive")
         self.assertEqual(actB.strip(), "active")
         self.assertEqual(actC.strip(), "inactive")
@@ -7454,26 +7454,26 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(exitD, 1)
         #
         logg.info("== checking with --quiet")
-        is_active_A = "{systemctl} is-failed zza.service --quiet"
-        is_active_B = "{systemctl} is-failed zzb.service --quiet"
-        actA, exitA = output2(is_active_A.format(**locals()))
-        actB, exitB = output2(is_active_B.format(**locals()))
+        is_active_A = F"{systemctl} is-failed zza.service --quiet"
+        is_active_B = F"{systemctl} is-failed zzb.service --quiet"
+        actA, exitA = output2(is_active_A)
+        actB, exitB = output2(is_active_B)
         self.assertEqual(actA, "")
         self.assertEqual(actB, "")
         self.assertEqual(exitA, 1)
         self.assertEqual(exitB, 1)
         #
         logg.info("== checking combinations of arguments")
-        is_active_BC = "{systemctl} is-failed zzb.service zzc.service {vv}"
-        is_active_CD = "{systemctl} is-failed zzc.service zzd.service {vv}"
-        is_active_BD = "{systemctl} is-failed zzb.service zzd.service {vv}"
-        is_active_BCD = "{systemctl} is-failed zzb.service zzc.service zzd.service {vv}"
-        is_active_BCDX = "{systemctl} is-failed zzb.service zzc.service zzd.service --quiet {vv}"
-        actBC, exitBC = output2(is_active_BC.format(**locals()))
-        actCD, exitCD = output2(is_active_CD.format(**locals()))
-        actBD, exitBD = output2(is_active_BD.format(**locals()))
-        actBCD, exitBCD = output2(is_active_BCD.format(**locals()))
-        actBCDX, exitBCDX = output2(is_active_BCDX.format(**locals()))
+        is_active_BC = F"{systemctl} is-failed zzb.service zzc.service {vv}"
+        is_active_CD = F"{systemctl} is-failed zzc.service zzd.service {vv}"
+        is_active_BD = F"{systemctl} is-failed zzb.service zzd.service {vv}"
+        is_active_BCD = F"{systemctl} is-failed zzb.service zzc.service zzd.service {vv}"
+        is_active_BCDX = F"{systemctl} is-failed zzb.service zzc.service zzd.service --quiet {vv}"
+        actBC, exitBC = output2(is_active_BC)
+        actCD, exitCD = output2(is_active_CD)
+        actBD, exitBD = output2(is_active_BD)
+        actBCD, exitBCD = output2(is_active_BCD)
+        actBCDX, exitBCDX = output2(is_active_BCDX)
         self.assertEqual(actBC.split("\n"), ["active", "inactive", ""])
         self.assertEqual(actCD.split("\n"), ["inactive", "inactive", ""])
         self.assertEqual(actBD.split("\n"), ["active", "inactive", ""])
@@ -7493,18 +7493,18 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         #
-        actBC, exitBC = output2(is_active_BC.format(**locals()))
+        actBC, exitBC = output2(is_active_BC)
         self.assertEqual(actBC.split("\n"), ["active", "active", ""])
         self.assertNotEqual(exitBC, 0)
         #
-        actBC, exitBC = output2(is_active_BC.format(**locals()))
+        actBC, exitBC = output2(is_active_BC)
         self.assertEqual(actBC.split("\n"), ["active", "active", ""])
         self.assertNotEqual(exitBC, 0)
         #
-        kill_testsleep = "{systemctl} __killall {testsleep}"
-        sx____(kill_testsleep.format(**locals()))
+        cmd = F"{systemctl} __killall {testsleep}"
+        sx____(cmd)
         #
-        actBC, exitBC = output2(is_active_BC.format(**locals()))
+        actBC, exitBC = output2(is_active_BC)
         if real:
             self.assertEqual(exitBC, 1)
             self.assertEqual(actBC.split("\n"), ["active", "active", ""])
@@ -7517,12 +7517,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         #
-        actBC, exitBC = output2(is_active_BC.format(**locals()))
+        actBC, exitBC = output2(is_active_BC)
         self.assertEqual(actBC.split("\n"), ["inactive", "inactive", ""])
         self.assertNotEqual(exitBC, 0)
         #
-        kill_testsleep = _systemctl_py+" __killall {testsleep}"
-        sx____(kill_testsleep.format(**locals()))
+        cmd = F"{_systemctl_py} __killall {testsleep}"
+        sx____(cmd)
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -7541,7 +7541,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         testsleep = self.testname("sleep")
         self.makedirs(os_path(root, "/var/run"))
-        shell_file(os_path(testdir, "zzz.init"), """
+        shell_file(os_path(testdir, "zzz.init"), F"""
             #! /bin/bash
             case "$1" in start)
                [ -d /var/run ] || mkdir -p /var/run
@@ -7555,8 +7555,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ;; esac
             echo "done$1" >&2
             exit 0
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzz.service"), """
+            """)
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -7566,7 +7566,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStop={root}/usr/bin/zzz.init stop
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/usr/bin/zzz.init"))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
@@ -7593,8 +7593,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         #
-        is_active_ZX = "{systemctl} is-active zzz.service {vv}"
-        actZX, exitZX = output2(is_active_ZX.format(**locals()))
+        is_active_ZX = F"{systemctl} is-active zzz.service {vv}"
+        actZX, exitZX = output2(is_active_ZX)
         self.assertEqual(actZX.split("\n"), ["active", ""])
         self.assertEqual(exitZX, 0)
         #
@@ -7606,13 +7606,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         #
-        is_active_ZX = "{systemctl} is-active zzz.service {vv}"
-        actZX, exitZX = output2(is_active_ZX.format(**locals()))
+        is_active_ZX = F"{systemctl} is-active zzz.service {vv}"
+        actZX, exitZX = output2(is_active_ZX)
         self.assertEqual(actZX.split("\n"), ["inactive", ""])
         self.assertEqual(exitZX, 3)
         #
-        kill_testsleep = "{systemctl} __killall {testsleep}"
-        sx____(kill_testsleep.format(**locals()))
+        cmd = F"{systemctl} __killall {testsleep}"
+        sx____(cmd)
         self.rm_testdir()
         self.rm_zzfiles(root)
         self.coverage()
@@ -7632,7 +7632,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir = os_path(root, "/usr/bin")
         testsleep = self.testname("sleep")
         self.makedirs(os_path(root, "/var/run"))
-        shell_file(os_path(testdir, "zzz.init"), """
+        shell_file(os_path(testdir, "zzz.init"), F"""
             #! /bin/bash
             case "$1" in start)
                [ -d /var/run ] || mkdir -p /var/run
@@ -7646,8 +7646,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ;; esac
             echo "done$1" >&2
             exit 0
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzz.service"), """
+            """)
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -7657,11 +7657,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStop={root}/usr/bin/zzz.init stop
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/usr/bin/zzz.init"))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sh____(F"{systemctl} daemon-reload")
         #
         cmd = F"{systemctl} is-failed zzz.service {vv}"
         actZX, exitZX = output2(cmd)
@@ -7683,8 +7683,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         #
-        is_active_ZX = "{systemctl} is-failed zzz.service {vv}"
-        actZX, exitZX = output2(is_active_ZX.format(**locals()))
+        is_active_ZX = F"{systemctl} is-failed zzz.service {vv}"
+        actZX, exitZX = output2(is_active_ZX)
         self.assertEqual(actZX.split("\n"), ["active", ""])
         self.assertEqual(exitZX, 1)
         #
@@ -7696,13 +7696,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         #
-        is_active_ZX = "{systemctl} is-failed zzz.service {vv}"
-        actZX, exitZX = output2(is_active_ZX.format(**locals()))
+        is_active_ZX = F"{systemctl} is-failed zzz.service {vv}"
+        actZX, exitZX = output2(is_active_ZX)
         self.assertEqual(actZX.split("\n"), ["inactive", ""])
         self.assertEqual(exitZX, 1)
         #
-        kill_testsleep = "{systemctl} __killall {testsleep}"
-        sx____(kill_testsleep.format(**locals()))
+        cmd = F"{systemctl} __killall {testsleep}"
+        sx____(cmd)
         self.rm_testdir()
         self.rm_zzfiles(root)
         self.coverage()
@@ -7724,7 +7724,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         self.makedirs(os_path(root, "/var/run"))
-        shell_file(os_path(testdir, "zzz.init"), """
+        shell_file(os_path(testdir, "zzz.init"), F"""
             #! /bin/bash
             case "$1" in start)
                [ -d /var/run ] || mkdir -p /var/run
@@ -7739,8 +7739,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ;; esac
             echo "done$1" >&2
             exit 0
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzz.service"), """
+            """)
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -7750,11 +7750,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStop={root}/usr/bin/zzz.init stop
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/usr/bin/zzz.init"))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sh____(F"{systemctl} daemon-reload")
         #
         cmd = F"{systemctl} is-active zzz.service {vv}"
         actZX, exitZX = output2(cmd)
@@ -7776,8 +7776,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
         #
-        is_active_ZX = "{systemctl} is-active zzz.service {vv}"
-        actZX, exitZX = output2(is_active_ZX.format(**locals()))
+        is_active_ZX = F"{systemctl} is-active zzz.service {vv}"
+        actZX, exitZX = output2(is_active_ZX)
         self.assertEqual(actZX.split("\n"), ["active", ""])
         self.assertEqual(exitZX, 0)
         self.assertTrue(os.path.exists(os_path(root, "/var/run/zzz.init.pid")))
@@ -7792,13 +7792,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         #
-        is_active_ZX = "{systemctl} is-active zzz.service {vv}"
-        actZX, exitZX = output2(is_active_ZX.format(**locals()))
+        is_active_ZX = F"{systemctl} is-active zzz.service {vv}"
+        actZX, exitZX = output2(is_active_ZX)
         self.assertEqual(actZX.split("\n"), ["inactive", ""])
         self.assertEqual(exitZX, 3)
         #
-        kill_testsleep = "{systemctl} __killall {testsleep}"
-        sx____(kill_testsleep.format(**locals()))
+        cmd = F"{systemctl} __killall {testsleep}"
+        sx____(cmd)
         self.rm_testdir()
         self.rm_zzfiles(root)
         self.coverage()
@@ -7821,7 +7821,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir = os_path(root, "/usr/bin")
         logfile = os.path.join(os.path.abspath(testdir), "zzz.log")
         self.makedirs(os_path(root, "/var/run"))
-        shell_file(os_path(testdir, "zzz.init"), """
+        shell_file(os_path(testdir, "zzz.init"), F"""
             #! /bin/bash
             case "$1" in start)
                [ -d /var/run ] || mkdir -p /var/run
@@ -7843,8 +7843,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ;; esac
             echo "done$1" >&2
             exit 0
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzz.service"), """
+            """)
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -7854,8 +7854,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStop={root}/usr/bin/zzz.init stop
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.service"), """
+            """)
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -7864,14 +7864,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart={bindir}/{testsleep}now 10
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_tool(_bin_sleep, os_path(bindir, testsleep+"pre"))
         copy_tool(_bin_sleep, os_path(bindir, testsleep+"now"))
         copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/usr/bin/zzz.init"))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sh____(F"{systemctl} daemon-reload")
         #
         cmd = F"{systemctl} enable zza.service zzz.service {vv}"
         out, end = output2(cmd)
@@ -7938,8 +7938,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         log4 = lines(open(logfile))
         logg.info("zzz.log>\n\t%s", "\n\t".join(log4))
         #
-        kill_testsleep = "{systemctl} __killall {testsleep}"
-        sx____(kill_testsleep.format(**locals()))
+        cmd = F"{systemctl} __killall {testsleep}"
+        sx____(cmd)
         self.rm_testdir()
         self.rm_zzfiles(root)
         self.coverage()
@@ -7962,7 +7962,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir = os_path(root, "/usr/bin")
         logfile = os.path.join(os.path.abspath(testdir), "zzz.log")
         self.makedirs(os_path(root, "/var/run"))
-        shell_file(os_path(testdir, "zzz.init"), """
+        shell_file(os_path(testdir, "zzz.init"), F"""
             #! /bin/bash
             case "$1" in start)
                [ -d /var/run ] || mkdir -p /var/run
@@ -7984,8 +7984,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ;; esac
             echo "done$1" >&2
             exit 0
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzz.service"), """
+            """)
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -7995,8 +7995,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStop={root}/usr/bin/zzz.init stop
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.service"), """
+            """)
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -8005,14 +8005,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart={bindir}/{testsleep}now 10
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_tool(_bin_sleep, os_path(bindir, testsleep+"pre"))
         copy_tool(_bin_sleep, os_path(bindir, testsleep+"now"))
         copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/usr/bin/zzz.init"))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sh____(F"{systemctl} daemon-reload")
         #
         cmd = F"{systemctl} enable zza.service zzz.service {vv}"
         out, end = output2(cmd)
@@ -8053,8 +8053,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(err, "1. systemctl locked by"))
         self.assertTrue(greps(err, "the service is already running on PID")) # FIXME: may not be?
         #
-        kill_testsleep = "{systemctl} __killall {testsleep}"
-        sx____(kill_testsleep.format(**locals()))
+        cmd = F"{systemctl} __killall {testsleep}"
+        sx____(cmd)
         self.rm_testdir()
         self.rm_zzfiles(root)
         self.coverage()
@@ -8080,7 +8080,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.makedirs(os_path(root, "/var/run"))
         if os.path.exists(logfile):
             os.remove(logfile)
-        shell_file(os_path(testdir, "zzz.init"), """
+        shell_file(os_path(testdir, "zzz.init"), F"""
             #! /bin/bash
             case "$1" in start)
                [ -d /var/run ] || mkdir -p /var/run
@@ -8102,8 +8102,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ;; esac
             echo "done$1" >&2
             exit 0
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzz.service"), """
+            """)
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -8113,8 +8113,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStop={root}/usr/bin/zzz.init stop
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.service"), """
+            """)
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -8123,14 +8123,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart={bindir}/{testsleep}now 10
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_tool(_bin_sleep, os_path(bindir, testsleep+"pre"))
         copy_tool(_bin_sleep, os_path(bindir, testsleep+"now"))
         copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/usr/bin/zzz.init"))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sh____(F"{systemctl} daemon-reload")
         #
         cmd = F"{systemctl} enable zza.service zzz.service {vv}"
         out, end = output2(cmd)
@@ -8174,8 +8174,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         log1 = lines(open(logfile))
         logg.info("zzz.log>\n\t%s", "\n\t".join(log1))
         #
-        kill_testsleep = "{systemctl} __killall {testsleep}"
-        sx____(kill_testsleep.format(**locals()))
+        cmd = F"{systemctl} __killall {testsleep}"
+        sx____(cmd)
         self.rm_testdir()
         self.rm_zzfiles(root)
         self.coverage()
@@ -8607,22 +8607,22 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(os_path(root, "/etc/systemd/system/zza.service"), """
             [Unit]
             Description=Testing A""")
-        text_file(os_path(root, "/etc/systemd/system/zzb.service"), """
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
             ExecStart={root}/bin/{testsleep} 2
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(root, "/etc/systemd/system/zzc.service"), """
+            """)
+        text_file(os_path(root, "/etc/systemd/system/zzc.service"), F"""
             [Unit]
             Description=Testing C
             [Service]
             ExecStart={root}/bin/{testsleep} 2
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         if not real:
             text_file(os_path(root, "/etc/systemd/system/basic.target"), """
             [Unit]
@@ -8636,7 +8636,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Basic Runlevel
             Requires=multi-user.target""")
-        copy_tool(_bin_sleep, "{root}/bin/{testsleep}".format(**locals()))
+        copy_tool(_bin_sleep, F"{root}/bin/{testsleep}")
         #
         cmd = F"{systemctl} default-services"
         out, end = output2(cmd)
@@ -8699,33 +8699,33 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep=self.testname("sleep")
-        text_file(os_path(root, "/etc/systemd/system/zza.service"), """
+        text_file(os_path(root, "/etc/systemd/system/zza.service"), F"""
             [Unit]
-            Description=Testing A""".format(**locals()))
-        text_file(os_path(root, "/etc/systemd/system/zzb.service"), """
+            Description=Testing A""")
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
             ExecStart={root}/bin/{testsleep} 2
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(root, "/etc/systemd/system/zzc.service"), """
+            """)
+        text_file(os_path(root, "/etc/systemd/system/zzc.service"), F"""
             [Unit]
             Description=Testing C
             [Service]
             ExecStart={root}/bin/{testsleep} 2
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(root, "/etc/systemd/system/zzd.service"), """
+            """)
+        text_file(os_path(root, "/etc/systemd/system/zzd.service"), F"""
             [Unit]
             Description=Testing D
             [Service]
             ExecStart={root}/bin/{testsleep} 2
             [Install]
             WantedBy=graphical.target
-            """.format(**locals()))
+            """)
         if not real:
             text_file(os_path(root, "/etc/systemd/system/basic.target"), """
             [Unit]
@@ -8739,7 +8739,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Basic Runlevel
             Requires=multi-user.target""")
-        copy_tool(_bin_sleep, "{root}/bin/{testsleep}".format(**locals()))
+        copy_tool(_bin_sleep, F"{root}/bin/{testsleep}")
         #
         cmd = F"{systemctl} default-services"
         out, end = output2(cmd)
@@ -8898,46 +8898,45 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(os_path(root, "/etc/systemd/system/zza.service"), """
             [Unit]
             Description=Testing A""")
-        text_file(os_path(root, "/etc/systemd/system/zzb.service"), """
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
             ExecStart={root}/bin/{testsleep} 4
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(root, "/etc/systemd/system/zzc.service"), """
+            """)
+        text_file(os_path(root, "/etc/systemd/system/zzc.service"), F"""
             [Unit]
             Description=Testing C
             [Service]
             ExecStart={root}/bin/{testsleep} 4
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(root, "/etc/systemd/system/zzd.service"), """
+            """)
+        text_file(os_path(root, "/etc/systemd/system/zzd.service"), F"""
             [Unit]
             Description=Testing D
             [Service]
             ExecStart={root}/bin/{testsleep} 4
             [Install]
             WantedBy=graphical.target
-            """.format(**locals()))
-        text_file(os_path(root, "/etc/systemd/system/zze.service"), """
+            """)
+        text_file(os_path(root, "/etc/systemd/system/zze.service"), F"""
             [Unit]
             Description=Testing E
             [Service]
             ExecStart={root}/bin/{testsleep} 4
             [Install]
             WantedBy=invented.target
-            """.format(**locals()))
-        text_file(os_path(root, "/etc/systemd/system/zzi.service"), """
+            """)
+        text_file(os_path(root, "/etc/systemd/system/zzi.service"), F"""
             [Unit]
             Description=Testing E
             [Service]
             ExecStart={root}/bin/{testsleep} 4
             [Install]
-            WantedBy=isolated.target"""
-                  .format(**locals()))
+            WantedBy=isolated.target""")
         text_file(os_path(root, "/etc/systemd/system/invented.target"), """
             [Unit]
             Description=Invented Runlevel
@@ -8958,7 +8957,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Basic Runlevel
             Requires=multi-user.target""")
-        copy_tool(_bin_sleep, "{root}/bin/{testsleep}".format(**locals()))
+        copy_tool(_bin_sleep, F"{root}/bin/{testsleep}")
         #
         cmd = F"{systemctl} list-unit-files --type=target"
         out, end = output2(cmd)
@@ -9194,7 +9193,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zzz.service"), """
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -9203,26 +9202,26 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart={bindir}/{testsleep} 111
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         #
-        start_service = "{systemctl} start zzz.service -vv"
-        end = sx____(start_service.format(**locals()))
+        start_service = F"{systemctl} start zzz.service -vv"
+        end = sx____(start_service)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         self.assertGreater(end, 0)
         #
-        stop_service = "{systemctl} stop zzz.service -vv"
-        end = sx____(stop_service.format(**locals()))
+        stop_service = F"{systemctl} stop zzz.service -vv"
+        end = sx____(stop_service)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
         self.assertGreater(end, 0)
         #
-        kill_testsleep = "{systemctl} __killall {testsleep}"
-        sx____(kill_testsleep.format(**locals()))
+        cmd = F"{systemctl} __killall {testsleep}"
+        sx____(cmd)
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -9237,7 +9236,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zzz.service"), """
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -9248,27 +9247,27 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStop=/usr/bin/killall {testsleep}
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzz.sh"), """
+            """)
+        text_file(os_path(testdir, "zzz.sh"), F"""
             #! /bin/sh
             echo "WITH CONF1=$CONF1" >> {logfile}
             echo "WITH CONF2=$CONF2" >> {logfile}
             echo "WITH CONF3=$CONF3" >> {logfile}
             echo "WITH CONF4=$CONF4" >> {logfile}
             {bindir}/{testsleep} 4
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzz.conf"), """
+            """)
+        text_file(os_path(testdir, "zzz.conf"), F"""
             CONF1=aa1
             CONF2="bb2"
             CONF3='cc3'
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "zzz.sh"), os_path(bindir, "zzz.sh"))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         copy_file(os_path(testdir, "zzz.conf"), os_path(root, "/etc/sysconfig/zzz.conf"))
         #
-        start_service = "{systemctl} start zzz.service -vv"
-        end = sx____(start_service.format(**locals()))
+        start_service = F"{systemctl} start zzz.service -vv"
+        end = sx____(start_service)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, testsleep))
@@ -9282,8 +9281,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(log, "WITH CONF4=dd4"))
         os.remove(logfile)
         #
-        stop_service = "{systemctl} stop zzz.service -vv"
-        end = sx____(stop_service.format(**locals()))
+        stop_service = F"{systemctl} stop zzz.service -vv"
+        end = sx____(stop_service)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
@@ -9325,11 +9324,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                   % (print_sh, print_sh, print_sh, print_sh,
                      print_sh, print_sh,))
         text_file(logfile, "")
-        shell_file(print_sh, """
+        shell_file(print_sh, F"""
             #! /bin/sh
             logfile='{logfile}'
             echo "'$1' '$2' '$3' '$4' '$5'" >> "$logfile"
-            """.format(**locals()))
+            """)
         cmd = F"{systemctl} environment zzb.service -vv"
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
@@ -9397,11 +9396,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                   % (print_sh, print_sh, print_sh, print_sh,
                      print_sh, print_sh,))
         text_file(logfile, "")
-        shell_file(print_sh, """
+        shell_file(print_sh, F"""
             #! /bin/sh
             logfile='{logfile}'
             echo "'$1'" >> "$logfile"
-            """.format(**locals()))
+            """)
         #
         cmd = F"{systemctl} start zzb.service {vv}"
         out, end = output2(cmd)
@@ -9472,11 +9471,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                   % (print_sh, print_sh, print_sh, print_sh,
                      print_sh, print_sh,))
         text_file(logfile, "")
-        shell_file(print_sh, """
+        shell_file(print_sh, F"""
             #! /bin/sh
             logfile='{logfile}'
             echo "'$1'" >> "$logfile"
-            """.format(**locals()))
+            """)
         #
         cmd = F"{systemctl} start zzb.service {vv}"
         out, end = output2(cmd)
@@ -9548,11 +9547,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                   % (print_sh, print_sh, print_sh, print_sh,
                      print_sh, print_sh,))
         text_file(logfile, "")
-        shell_file(print_sh, """
+        shell_file(print_sh, F"""
             #! /bin/sh
             logfile='{logfile}'
             echo "'$1'" >> "$logfile"
-            """.format(**locals()))
+            """)
         #
         cmd = F"{systemctl} start zzb.service {vv}"
         out, end = output2(cmd)
@@ -9624,11 +9623,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                      print_sh, print_sh, print_sh, print_sh,
                      print_sh, print_sh, print_sh))
         text_file(logfile, "")
-        shell_file(print_sh, """
+        shell_file(print_sh, F"""
             #! /bin/sh
             logfile='{logfile}'
             echo "'$1' '$2' '$3' '$4' '$5'" >> "$logfile"
-            """.format(**locals()))
+            """)
         #
         RUN = "/run" # for system-mode
         cmd = F"{systemctl} start 'zzb_zzc.service' {vv}"
@@ -9704,11 +9703,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                      print_sh, print_sh, print_sh, print_sh,
                      print_sh, print_sh, print_sh))
         text_file(logfile, "")
-        shell_file(print_sh, """
+        shell_file(print_sh, F"""
             #! /bin/sh
             logfile='{logfile}'
             echo "'$1' '$2' '$3' '$4' '$5'" >> "$logfile"
-            """.format(**locals()))
+            """)
         #
         RUN = "/run" # for system-mode
         cmd = F"{systemctl} start 'zzb\\x20zzc.service' {vv}"
@@ -9781,11 +9780,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                      print_sh, print_sh, print_sh, print_sh,
                      print_sh, print_sh, print_sh))
         text_file(logfile, "")
-        shell_file(print_sh, """
+        shell_file(print_sh, F"""
             #! /bin/sh
             logfile='{logfile}'
             echo "'$1' '$2' '$3' '$4' '$5'" >> "$logfile"
-            """.format(**locals()))
+            """)
         #
         RUN = "/run" # for system-mode
         RUN = get_runtime_dir()
@@ -9865,11 +9864,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                   % (env_file, print_sh, print_sh, print_sh,
                      print_sh, print_sh, print_sh, print_sh, ))
         text_file(logfile, "")
-        shell_file(print_sh, """
+        shell_file(print_sh, F"""
             #! /bin/sh
             logfile='{logfile}'
             echo "'$1' '$2' '$3' '$4' '$5'" >> "$logfile"
-            """.format(**locals()))
+            """)
         #
         cmd = F"{systemctl} start 'zzb zzc.service' -vv"
         out, end = output2(cmd)
@@ -9930,7 +9929,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zzs.service"), """
+        text_file(os_path(testdir, "zzs.service"), F"""
             [Unit]
             Description=Testing S
             After=foo.service
@@ -9940,7 +9939,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStop=/usr/bin/killall {testsleep}
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzs.service"), os_path(root, "/etc/systemd/system/zzs.service"))
         #
@@ -9997,8 +9996,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 0)
         #
         # cleanup
-        kill_testsleep = "{systemctl} __killall {testsleep}"
-        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = F"{systemctl} __killall {testsleep}"
+        sx____(kill_testsleep)
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -10013,7 +10012,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zzs.service"), """
+        text_file(os_path(testdir, "zzs.service"), F"""
             [Unit]
             Description=Testing S
             After=foo.service
@@ -10023,7 +10022,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStop=/usr/bin/killall {testsleep}
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzs.service"), os_path(root, "/etc/systemd/system/zzs.service"))
         #
@@ -10057,8 +10056,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 0)
         #
         # cleanup
-        kill_testsleep = "{systemctl} __killall {testsleep}"
-        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = F"{systemctl} __killall {testsleep}"
+        sx____(kill_testsleep)
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -10073,7 +10072,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zzs.service"), """
+        text_file(os_path(testdir, "zzs.service"), F"""
             [Unit]
             Description=Testing S
             After=foo.service
@@ -10083,7 +10082,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStop=/usr/bin/killall {testsleep}
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzs.service"), os_path(root, "/etc/systemd/system/zzs.service"))
         #
@@ -10117,8 +10116,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(data), 3)
         #
         # cleanup
-        kill_testsleep = "{systemctl} __killall {testsleep}"
-        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = F"{systemctl} __killall {testsleep}"
+        sx____(kill_testsleep)
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -10133,7 +10132,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zzs.service"), """
+        text_file(os_path(testdir, "zzs.service"), F"""
             [Unit]
             Description=Testing S
             After=foo.service
@@ -10143,7 +10142,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStop=/usr/bin/killall {testsleep}
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzs.service"), os_path(root, "/etc/systemd/system/zzs.service"))
         #
@@ -10180,8 +10179,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(data, "enabled[)]"))
         #
         # cleanup
-        kill_testsleep = "{systemctl} __killall {testsleep}"
-        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = F"{systemctl} __killall {testsleep}"
+        sx____(kill_testsleep)
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -10196,7 +10195,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zzs.service"), """
+        text_file(os_path(testdir, "zzs.service"), F"""
             [Unit]
             Description=Testing S
             After=foo.service
@@ -10206,7 +10205,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStop=/usr/bin/killall {testsleep}
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzs.service"), os_path(root, "/etc/systemd/system/zzs.service"))
         #
@@ -10243,8 +10242,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(data, "enabled[)]"))
         #
         # cleanup
-        kill_testsleep = "{systemctl} __killall {testsleep}"
-        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = F"{systemctl} __killall {testsleep}"
+        sx____(kill_testsleep)
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -10259,7 +10258,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zzz.service"), """
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -10268,14 +10267,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStop=/usr/bin/killall {testsleep}
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        shell_file(os_path(testdir, "zzz.sh"), """
+            """)
+        shell_file(os_path(testdir, "zzz.sh"), F"""
             #! /bin/sh
             log={logfile}
             date > "$log"
             pwd >> "$log"
             exec {bindir}/{testsleep} 111
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         copy_tool(os_path(testdir, "zzz.sh"), os_path(root, "/usr/bin/zzz.sh"))
@@ -10299,8 +10298,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
-        kill_testsleep = "{systemctl} __killall {testsleep}"
-        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = F"{systemctl} __killall {testsleep}"
+        sx____(kill_testsleep)
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -10316,7 +10315,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         workingdir = "/var/testsleep"
-        text_file(os_path(testdir, "zzz.service"), """
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -10326,14 +10325,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStop=/usr/bin/killall {testsleep}
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        shell_file(os_path(testdir, "zzz.sh"), """
+            """)
+        shell_file(os_path(testdir, "zzz.sh"), F"""
             #! /bin/sh
             log={logfile}
             date > "$log"
             pwd >> "$log"
             exec {bindir}/{testsleep} 111
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         copy_tool(os_path(testdir, "zzz.sh"), os_path(root, "/usr/bin/zzz.sh"))
@@ -10358,8 +10357,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
-        kill_testsleep = "{systemctl} __killall {testsleep}"
-        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = F"{systemctl} __killall {testsleep}"
+        sx____(kill_testsleep)
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -10375,7 +10374,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         workingdir = "/var/testsleep"
-        text_file(os_path(testdir, "zzz.service"), """
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -10385,14 +10384,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStop=/usr/bin/killall {testsleep}
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        shell_file(os_path(testdir, "zzz.sh"), """
+            """)
+        shell_file(os_path(testdir, "zzz.sh"), F"""
             #! /bin/sh
             log={logfile}
             date > "$log"
             pwd >> "$log"
             exec {bindir}/{testsleep} 111
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         copy_tool(os_path(testdir, "zzz.sh"), os_path(root, "/usr/bin/zzz.sh"))
@@ -10420,8 +10419,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 3)
         self.assertEqual(out, "failed\n")
         #
-        kill_testsleep = "{systemctl} __killall {testsleep}"
-        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = F"{systemctl} __killall {testsleep}"
+        sx____(kill_testsleep)
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -10437,7 +10436,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         workingdir = "/var/testsleep"
-        text_file(os_path(testdir, "zzz.service"), """
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -10447,14 +10446,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStop=/usr/bin/killall {testsleep}
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        shell_file(os_path(testdir, "zzz.sh"), """
+            """)
+        shell_file(os_path(testdir, "zzz.sh"), F"""
             #! /bin/sh
             log={logfile}
             date > "$log"
             pwd >> "$log"
             exec {bindir}/{testsleep} 111
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         copy_tool(os_path(testdir, "zzz.sh"), os_path(root, "/usr/bin/zzz.sh"))
@@ -10490,8 +10489,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
-        kill_testsleep = "{systemctl} __killall {testsleep}"
-        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = F"{systemctl} __killall {testsleep}"
+        sx____(kill_testsleep)
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -10505,7 +10504,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zzz.service"), """
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -10515,7 +10514,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost=killall {testsleep}
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         #
@@ -10529,8 +10528,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
         self.assertTrue(greps(err, "Exec is not an absolute"))
         #
-        kill_testsleep = "{systemctl} __killall {testsleep}"
-        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = F"{systemctl} __killall {testsleep}"
+        sx____(kill_testsleep)
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -10545,7 +10544,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zzz.service"), """
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -10554,7 +10553,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStop=killall {testsleep}
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         #
@@ -10568,8 +10567,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
         self.assertTrue(greps(err, "Exec is not an absolute"))
         #
-        kill_testsleep = "{systemctl} __killall {testsleep}"
-        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = F"{systemctl} __killall {testsleep}"
+        sx____(kill_testsleep)
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -10583,7 +10582,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zzz.service"), """
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -10592,7 +10591,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecReload=killall {testsleep}
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         #
@@ -10610,8 +10609,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
         #
-        kill_testsleep = "{systemctl} __killall {testsleep}"
-        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = F"{systemctl} __killall {testsleep}"
+        sx____(kill_testsleep)
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -10625,7 +10624,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zzz.service"), """
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -10634,7 +10633,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStartPost=echo OK
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         #
@@ -10648,8 +10647,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
         #
-        kill_testsleep = "{systemctl} __killall {testsleep}"
-        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = F"{systemctl} __killall {testsleep}"
+        sx____(kill_testsleep)
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -10663,7 +10662,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zzz.service"), """
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -10672,7 +10671,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart={bindir}/{testsleep} 111
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         #
@@ -10686,8 +10685,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
         #
-        kill_testsleep = "{systemctl} __killall {testsleep}"
-        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = F"{systemctl} __killall {testsleep}"
+        sx____(kill_testsleep)
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -10701,7 +10700,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zzz.service"), """
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -10710,7 +10709,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             TimeoutSec=10
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         #
@@ -10724,8 +10723,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
         #
-        kill_testsleep = "{systemctl} __killall {testsleep}"
-        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = F"{systemctl} __killall {testsleep}"
+        sx____(kill_testsleep)
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -10743,7 +10742,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zzz.service"), """
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -10752,11 +10751,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecReload=/usr/bin/killall -q some-unknown-program
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         cmd = F"{systemctl} start zzz.service {vv}"
-        sx____("{systemctl} daemon-reload".format(**locals()))
+        sx____(F"{systemctl} daemon-reload")
         #
         cmd = F"{systemctl} start zzz.service {vv}"
         out, end = output2(cmd)
@@ -10776,8 +10775,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
         #
-        kill_testsleep = "{systemctl} __killall {testsleep}"
-        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = F"{systemctl} __killall {testsleep}"
+        sx____(kill_testsleep)
         self.rm_testdir()
         self.rm_zzfiles(root)
         self.coverage()
@@ -10796,7 +10795,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zzt.timer"), """
+        text_file(os_path(testdir, "zzt.timer"), F"""
             [Unit]
             Description=Timer T
             [Timer]
@@ -10805,8 +10804,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Persistent=true
             [Install]
             WantedBy=timers.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzt.service"), """
+            """)
+        text_file(os_path(testdir, "zzt.service"), F"""
             [Unit]
             Description=Testing T
             [Service]
@@ -10814,11 +10813,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart={bindir}/{testsleep} 11
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzt.timer"), os_path(root, "/etc/systemd/system/zzt.timer"))
         copy_file(os_path(testdir, "zzt.service"), os_path(root, "/etc/systemd/system/zzt.service"))
-        sx____("{systemctl} daemon-reload".format(**locals()))
+        sx____(F"{systemctl} daemon-reload")
         #
         cmd = F"{systemctl} enable zzt.timer {vv}"
         out, end = output2(cmd)
@@ -10860,8 +10859,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
         self.assertTrue(greps(err, "not implemented"))
         #
-        kill_testsleep = "{systemctl} __killall {testsleep}"
-        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = F"{systemctl} __killall {testsleep}"
+        sx____(kill_testsleep)
         self.rm_testdir()
         self.rm_zzfiles(root)
         self.coverage()
@@ -10880,7 +10879,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(os_path(testdir, "zza.service"), """
             [Unit]
             Description=Testing A""")
-        text_file(os_path(testdir, "zzb.service"), """
+        text_file(os_path(testdir, "zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
@@ -10891,8 +10890,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost=/bin/echo stopping B
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzc.service"), """
+            """)
+        text_file(os_path(testdir, "zzc.service"), F"""
             [Unit]
             Description=Testing C
             [Service]
@@ -10903,7 +10902,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost=/bin/echo stopping C
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
@@ -10988,8 +10987,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(txt_stdout, "starting B"))
         self.assertTrue(greps(txt_stdout, "starting C"))
         #
-        kill_testsleep = "{systemctl} __killall {testsleep}"
-        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = F"{systemctl} __killall {testsleep}"
+        sx____(kill_testsleep)
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -11007,7 +11006,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(os_path(testdir, "zza.service"), """
             [Unit]
             Description=Testing A""")
-        text_file(os_path(testdir, "zzb.service"), """
+        text_file(os_path(testdir, "zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
@@ -11018,8 +11017,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost=/bin/echo stopping B
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzc.service"), """
+            """)
+        text_file(os_path(testdir, "zzc.service"), F"""
             [Unit]
             Description=Testing C
             [Service]
@@ -11030,7 +11029,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost=/bin/echo stopping C
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
@@ -11114,8 +11113,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(txt_stdout, "starting B"))
         self.assertTrue(greps(txt_stdout, "starting C"))
         #
-        kill_testsleep = "{systemctl} __killall {testsleep}"
-        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = F"{systemctl} __killall {testsleep}"
+        sx____(kill_testsleep)
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -11130,7 +11129,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         #
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sh____(F"{systemctl} daemon-reload")
         cmd = F"{systemctl} start zz-unknown.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
@@ -11152,7 +11151,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         #
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sh____(F"{systemctl} daemon-reload")
         cmd = F"{systemctl} stop zz-unknown.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
@@ -11175,7 +11174,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         #
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sh____(F"{systemctl} daemon-reload")
         cmd = F"{systemctl} restart zz-unknown.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
@@ -11197,7 +11196,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         #
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sh____(F"{systemctl} daemon-reload")
         cmd = F"{systemctl} reload zz-unknown.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
@@ -11219,7 +11218,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         #
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sh____(F"{systemctl} daemon-reload")
         cmd = F"{systemctl} reload-or-restart zz-unknown.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
@@ -11241,7 +11240,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         #
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sh____(F"{systemctl} daemon-reload")
         cmd = F"{systemctl} reload-or-try-restart zz-unknown.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
@@ -11263,7 +11262,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         #
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sh____(F"{systemctl} daemon-reload")
         cmd = F"{systemctl} try-restart zz-unknown.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
@@ -11285,7 +11284,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         #
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sh____(F"{systemctl} daemon-reload")
         cmd = F"{systemctl} kill zz-unknown.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
@@ -11310,7 +11309,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         #
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sh____(F"{systemctl} daemon-reload")
         cmd = F"{systemctl} reset-failed zz-unknown.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
@@ -11335,7 +11334,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         #
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sh____(F"{systemctl} daemon-reload")
         cmd = F"{systemctl} mask zz-unknown.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
@@ -11362,7 +11361,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         #
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sh____(F"{systemctl} daemon-reload")
         cmd = F"{systemctl} unmask zz-unknown.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
@@ -11388,7 +11387,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         #
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sh____(F"{systemctl} daemon-reload")
         cmd = F"{systemctl} enable zz-unknown.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
@@ -11413,7 +11412,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         #
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sh____(F"{systemctl} daemon-reload")
         cmd = F"{systemctl} disable zz-unknown.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
@@ -11438,7 +11437,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         #
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sh____(F"{systemctl} daemon-reload")
         cmd = F"{systemctl} is-enabled zz-unknown.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
@@ -11463,7 +11462,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         #
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sh____(F"{systemctl} daemon-reload")
         cmd = F"{systemctl} is-failed zz-unknown.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
@@ -11487,7 +11486,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         #
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sh____(F"{systemctl} daemon-reload")
         cmd = F"{systemctl} is-active zz-unknown.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
@@ -11510,7 +11509,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         #
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sh____(F"{systemctl} daemon-reload")
         cmd = F"{systemctl} cat zz-unknown.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
@@ -11535,7 +11534,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         #
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sh____(F"{systemctl} daemon-reload")
         cmd = F"{systemctl} status zz-unknown.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
@@ -11557,7 +11556,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         #
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sh____(F"{systemctl} daemon-reload")
         cmd = F"{systemctl} preset zz-unknown.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
@@ -11583,7 +11582,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         #
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sh____(F"{systemctl} daemon-reload")
         cmd = F"{systemctl} get-preset zz-unknown.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
@@ -11606,7 +11605,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         #
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sh____(F"{systemctl} daemon-reload")
         cmd = F"{systemctl} show zz-unknown.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
@@ -11635,7 +11634,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         #
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sh____(F"{systemctl} daemon-reload")
         cmd = F"{systemctl} environment zz-unknown.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
@@ -11656,7 +11655,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         #
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sh____(F"{systemctl} daemon-reload")
         cmd = F"{systemctl} preset-all --user {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
@@ -11676,7 +11675,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         #
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sh____(F"{systemctl} daemon-reload")
         cmd = F"{systemctl} __start_unit zz-unknown.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
@@ -11696,7 +11695,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         #
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sh____(F"{systemctl} daemon-reload")
         cmd = F"{systemctl} __stop_unit zz-unknown.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
@@ -11716,7 +11715,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         #
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sh____(F"{systemctl} daemon-reload")
         cmd = F"{systemctl} __restart_unit zz-unknown.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
@@ -11736,7 +11735,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         #
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sh____(F"{systemctl} daemon-reload")
         cmd = F"{systemctl} __reload_unit zz-unknown.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
@@ -11756,7 +11755,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         #
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sh____(F"{systemctl} daemon-reload")
         cmd = F"{systemctl} __reload_or_restart_unit zz-unknown.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
@@ -11776,7 +11775,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         #
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sh____(F"{systemctl} daemon-reload")
         cmd = F"{systemctl} __reload_or_try_restart_unit zz-unknown.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
@@ -11796,7 +11795,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         #
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sh____(F"{systemctl} daemon-reload")
         cmd = F"{systemctl} __try_restart_unit zz-unknown.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
@@ -11816,7 +11815,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         #
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sh____(F"{systemctl} daemon-reload")
         cmd = F"{systemctl} __kill_unit zz-unknown.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
@@ -11836,7 +11835,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         #
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sh____(F"{systemctl} daemon-reload")
         cmd = F"{systemctl} __reset_failed_unit zz-unknown.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
@@ -11856,7 +11855,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         #
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sh____(F"{systemctl} daemon-reload")
         cmd = F"{systemctl} __mask_unit zz-unknown.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
@@ -11876,7 +11875,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         #
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sh____(F"{systemctl} daemon-reload")
         cmd = F"{systemctl} __unmask_unit zz-unknown.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
@@ -11896,7 +11895,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         #
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sh____(F"{systemctl} daemon-reload")
         cmd = F"{systemctl} __enable_unit zz-unknown.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
@@ -11916,7 +11915,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         #
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sh____(F"{systemctl} daemon-reload")
         cmd = F"{systemctl} __disable_unit zz-unknown.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
@@ -11936,7 +11935,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         #
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sh____(F"{systemctl} daemon-reload")
         cmd = F"{systemctl} __is_enabled zz-unknown.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
@@ -11956,7 +11955,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         #
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sh____(F"{systemctl} daemon-reload")
         cmd = F"{systemctl} __get_active_unit zz-unknown.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
@@ -11977,7 +11976,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         #
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sh____(F"{systemctl} daemon-reload")
         cmd = F"{systemctl} __cat_unit zz-unknown.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
@@ -11997,7 +11996,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         #
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sh____(F"{systemctl} daemon-reload")
         cmd = F"{systemctl} __system_preset_all zz-unknown.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
@@ -12017,7 +12016,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         #
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sh____(F"{systemctl} daemon-reload")
         cmd = F"{systemctl} __get_preset_of_unit zz-unknown.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
@@ -12036,7 +12035,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         #
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sh____(F"{systemctl} daemon-reload")
         cmd = F"{systemctl} __show_unit_items zz-unknown.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
@@ -12064,7 +12063,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         text_file(os_path(root, "/etc/systemd/system/zz-empty.service"), "")
         #
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sh____(F"{systemctl} daemon-reload")
         cmd = F"{systemctl} start zz-empty.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
@@ -12086,7 +12085,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         text_file(os_path(root, "/etc/systemd/system/zz-empty.service"), "()")
         #
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sh____(F"{systemctl} daemon-reload")
         cmd = F"{systemctl} start zz-empty.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
@@ -12109,7 +12108,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(os_path(root, "/etc/systemd/system/zz-empty.service"), "()")
         os.chmod(os_path(root, "/etc/systemd/system/zz-empty.service"), 111)
         #
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sh____(F"{systemctl} daemon-reload")
         cmd = F"{systemctl} start zz-empty.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
@@ -12133,7 +12132,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zzs.service"), """
+        text_file(os_path(testdir, "zzs.service"), F"""
             [Unit]
             Description=Testing S
             After=foo.service
@@ -12143,7 +12142,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStop=/usr/bin/killall {testsleep}
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzs.service"), os_path(root, "/etc/systemd/system/zzs.service"))
         #
@@ -12169,7 +12168,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zzs.service"), """
+        text_file(os_path(testdir, "zzs.service"), F"""
             [Unit]
             Description=Testing S
             After=foo.service
@@ -12179,7 +12178,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStop=/usr/bin/killall {testsleep}
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzs.service"), os_path(root, "/etc/systemd/system/zzs.service"))
         #
@@ -12210,7 +12209,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir = os_path(root, "/usr/bin")
         self.rm_testdir()
         self.rm_zzfiles(root)
-        text_file(os_path(testdir, "zzz.service"), """
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             After=foo.service
@@ -12221,11 +12220,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStop=/usr/bin/killall {testsleep}
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
-        sx____("{systemctl} reset-failed zzz.service".format(**locals()))
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sx____(F"{systemctl} reset-failed zzz.service")
+        sh____(F"{systemctl} daemon-reload")
         #
         cmd = F"{systemctl} enable zzz.service {vv}"
         sh____(cmd)
@@ -12281,7 +12280,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir = os_path(root, "/usr/bin")
         self.rm_testdir()
         self.rm_zzfiles(root)
-        text_file(os_path(testdir, "zzz.service"), """
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             After=foo.service
@@ -12291,11 +12290,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStop=/usr/bin/killall {testsleep}
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
-        sx____("{systemctl} reset-failed zzz.service".format(**locals()))
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sx____(F"{systemctl} reset-failed zzz.service")
+        sh____(F"{systemctl} daemon-reload")
         #
         cmd = F"{systemctl} enable zzz.service {vv}"
         sh____(cmd)
@@ -12351,7 +12350,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir = os_path(root, "/usr/bin")
         self.rm_testdir()
         self.rm_zzfiles(root)
-        text_file(os_path(testdir, "zzz.service"), """
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             After=foo.service
@@ -12361,11 +12360,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStop=/usr/bin/killall {testsleep}
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
-        sx____("{systemctl} reset-failed zzz.service".format(**locals()))
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sx____(F"{systemctl} reset-failed zzz.service")
+        sh____(F"{systemctl} daemon-reload")
         #
         cmd = F"{systemctl} enable zzz.service {vv}"
         sh____(cmd)
@@ -12422,7 +12421,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir = os_path(root, "/usr/bin")
         self.rm_testdir()
         self.rm_zzfiles(root)
-        text_file(os_path(testdir, "zzz.service"), """
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             After=foo.service
@@ -12432,11 +12431,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStop=/usr/bin/killall {testsleep}
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
-        sx____("{systemctl} reset-failed zzz.service".format(**locals()))
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sx____(F"{systemctl} reset-failed zzz.service")
+        sh____(F"{systemctl} daemon-reload")
         #
         cmd = F"{systemctl} enable zzz.service {vv}"
         sh____(cmd)
@@ -12493,7 +12492,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir = os_path(root, "/usr/bin")
         self.rm_testdir()
         self.rm_zzfiles(root)
-        text_file(os_path(testdir, "zzz.service"), """
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             After=foo.service
@@ -12503,11 +12502,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStop=/usr/bin/killall {testsleep}
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
-        sx____("{systemctl} reset-failed zzz.service".format(**locals()))
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sx____(F"{systemctl} reset-failed zzz.service")
+        sh____(F"{systemctl} daemon-reload")
         #
         cmd = F"{systemctl} enable zzz.service {vv}"
         sh____(cmd)
@@ -12567,7 +12566,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir = os_path(root, "/usr/bin")
         os.makedirs(os_path(root, "/var/run"))
         text_file(logfile, "created\n")
-        shell_file(os_path(testdir, "zzz.init"), """
+        shell_file(os_path(testdir, "zzz.init"), F"""
             #! /bin/bash
             case "$1" in start)
                 ls -l  $NOTIFY_SOCKET
@@ -12581,8 +12580,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ;; esac
             echo "done$1" >&2
             exit 0
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzz.service"), """
+            """)
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -12592,8 +12591,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStop={root}/usr/bin/zzz.init stop
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        zzz_service = "/etc/systemd/system/zzz.service".format(**locals())
+            """)
+        zzz_service = F"/etc/systemd/system/zzz.service"
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/usr/bin/zzz.init"))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, zzz_service))
@@ -12660,7 +12659,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir = os_path(root, "/usr/bin")
         os.makedirs(os_path(root, "/var/run"))
         text_file(logfile, "created\n")
-        shell_file(os_path(testdir, "zzz.init"), """
+        shell_file(os_path(testdir, "zzz.init"), F"""
             #! /bin/bash
             case "$1" in start)
                 ls -l  $NOTIFY_SOCKET
@@ -12674,8 +12673,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ;; esac
             echo "done$1" >&2
             exit 0
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzz.service"), """
+            """)
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -12685,8 +12684,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStop={root}/usr/bin/zzz.init stop
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        zzz_service = "/etc/systemd/system/zzz.service".format(**locals())
+            """)
+        zzz_service = F"/etc/systemd/system/zzz.service"
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/usr/bin/zzz.init"))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, zzz_service))
@@ -12743,7 +12742,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir = os_path(root, "/usr/bin")
         os.makedirs(os_path(root, "/var/run"))
         text_file(logfile, "created\n")
-        shell_file(os_path(testdir, "zzz.init"), """
+        shell_file(os_path(testdir, "zzz.init"), F"""
             #! /bin/bash
             case "$1" in start)
                 ls -l  $NOTIFY_SOCKET
@@ -12757,8 +12756,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ;; esac
             echo "done$1" >&2
             exit 0
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzz.service"), """
+            """)
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -12768,8 +12767,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStop={root}/usr/bin/zzz.init stop
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        zzz_service = "/etc/systemd/system/zzz.service".format(**locals())
+            """)
+        zzz_service = F"/etc/systemd/system/zzz.service"
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/usr/bin/zzz.init"))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, zzz_service))
@@ -12828,7 +12827,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir = os_path(root, "/usr/bin")
         os.makedirs(os_path(root, "/var/run"))
         text_file(logfile, "created\n")
-        shell_file(os_path(testdir, "zzz.init"), """
+        shell_file(os_path(testdir, "zzz.init"), F"""
             #! /bin/bash
             case "$1" in start)
                 ls -l  $NOTIFY_SOCKET
@@ -12847,8 +12846,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ;; esac
             echo "done$1" >&2
             exit 0
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzz.service"), """
+            """)
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -12858,8 +12857,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStop={root}/usr/bin/zzz.init stop
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        zzz_service = "/etc/systemd/system/zzz.service".format(**locals())
+            """)
+        zzz_service = F"/etc/systemd/system/zzz.service"
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/usr/bin/zzz.init"))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, zzz_service))
@@ -12915,7 +12914,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir = os_path(root, "/usr/bin")
         os.makedirs(os_path(root, "/var/run"))
         text_file(logfile, "created\n")
-        shell_file(os_path(testdir, "zzz.init"), """
+        shell_file(os_path(testdir, "zzz.init"), F"""
             #! /bin/bash
             case "$1" in start)
                 ls -l  $NOTIFY_SOCKET
@@ -12934,8 +12933,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ;; esac
             echo "done$1" >&2
             exit 0
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzz.service"), """
+            """)
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -12946,8 +12945,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StartTimeoutSec=5
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        zzz_service = "/etc/systemd/system/zzz.service".format(**locals())
+            """)
+        zzz_service = F"/etc/systemd/system/zzz.service"
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/usr/bin/zzz.init"))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, zzz_service))
@@ -13022,7 +13021,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir = os_path(root, "/usr/bin")
         self.rm_testdir()
         self.rm_zzfiles(root)
-        text_file(os_path(testdir, "zzz.service"), """
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             After=foo.service
@@ -13032,11 +13031,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStop="/bin/false"
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
-        sx____("{systemctl} reset-failed zzz.service".format(**locals()))
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sx____(F"{systemctl} reset-failed zzz.service")
+        sh____(F"{systemctl} daemon-reload")
         #
         cmd = F"{systemctl} enable zzz.service {vv}"
         sh____(cmd)
@@ -13076,7 +13075,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 3)
         self.assertEqual(out.strip(), "inactive")
         #
-        sx____("{systemctl} reset-failed zzz.service".format(**locals()))
+        sx____(F"{systemctl} reset-failed zzz.service")
         self.rm_testdir()
         self.rm_zzfiles(root)
         self.coverage()
@@ -13097,7 +13096,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir = os_path(root, "/usr/bin")
         self.rm_testdir()
         self.rm_zzfiles(root)
-        text_file(os_path(testdir, "zzz.service"), """
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             After=foo.service
@@ -13107,11 +13106,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStop="/bin/false"
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
-        sx____("{systemctl} reset-failed zzz.service".format(**locals()))
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sx____(F"{systemctl} reset-failed zzz.service")
+        sh____(F"{systemctl} daemon-reload")
         #
         cmd = F"{systemctl} enable zzz.service {vv}"
         sh____(cmd)
@@ -13151,7 +13150,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 3)
         self.assertEqual(out.strip(), "failed")
         #
-        sx____("{systemctl} reset-failed zzz.service".format(**locals()))
+        sx____(F"{systemctl} reset-failed zzz.service")
         self.rm_testdir()
         self.rm_zzfiles(root)
         self.coverage()
@@ -13172,7 +13171,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir = os_path(root, "/usr/bin")
         self.rm_testdir()
         self.rm_zzfiles(root)
-        text_file(os_path(testdir, "zzz.service"), """
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             After=foo.service
@@ -13182,11 +13181,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStop="/bin/false"
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
-        sx____("{systemctl} reset-failed zzz.service".format(**locals()))
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sx____(F"{systemctl} reset-failed zzz.service")
+        sh____(F"{systemctl} daemon-reload")
         #
         cmd = F"{systemctl} enable zzz.service {vv}"
         sh____(cmd)
@@ -13226,7 +13225,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 3)
         self.assertEqual(out.strip(), "failed")
         #
-        sx____("{systemctl} reset-failed zzz.service".format(**locals()))
+        sx____(F"{systemctl} reset-failed zzz.service")
         self.rm_testdir()
         self.rm_zzfiles(root)
         self.coverage()
@@ -13257,7 +13256,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
-        systemctl += " --{system}".format(**locals())
+        systemctl += F" --{system}"
         testsleep = testname+"_testsleep"
         testscript = testname+"_testscript.sh"
         logfile = os_path(root, "/var/log/test.log")
@@ -13265,7 +13264,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         begin = "{"
         ends = "}"
         text_file(logfile, "")
-        text_file(os_path(testdir, "zzz.service"), """
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -13280,8 +13279,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             KillSignal=SIGQUIT
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        shell_file(os_path(bindir, testscript), """
+            """)
+        shell_file(os_path(bindir, testscript), F"""
             #! /bin/sh
             date +%T,enter > {logfile}
             stops () {begin}
@@ -13306,9 +13305,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             date +%T,leaving >> {logfile}
             trap - 3 10 # SIGQUIT SIGUSR1
             date +%T,leave >> {logfile}
-        """.format(**locals()))
+        """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
-        zzz_service = "/etc/systemd/{system}/zzz.service".format(**locals())
+        zzz_service = F"/etc/systemd/{system}/zzz.service"
         copy_file(os_path(testdir, "zzz.service"), os_path(root, zzz_service))
         #
         cmd = F"{systemctl} enable zzz.service -vv"
@@ -13593,8 +13592,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
 
         #
         # cleanup
-        kill_testsleep = "{systemctl} __killall {testsleep}"
-        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = F"{systemctl} __killall {testsleep}"
+        sx____(kill_testsleep)
         time.sleep(1)
     def test_4032_forking_service_functions_system(self) -> None:
         """ check that we manage forking services in a root env
@@ -13624,7 +13623,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
-        systemctl += " --{system}".format(**locals())
+        systemctl += F" --{system}"
         testsleep = testname+"_sleep"
         logfile = os_path(root, "/var/log/"+testsleep+".log")
         bindir = os_path(root, "/usr/bin")
@@ -13632,7 +13631,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(logfile, "created\n")
         begin = "{"
         ends = "}"
-        shell_file(os_path(testdir, "zzz.init"), """
+        shell_file(os_path(testdir, "zzz.init"), F"""
             #! /bin/bash
             logfile={logfile}
             start() {begin}
@@ -13666,8 +13665,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ;; esac
             echo "done$1" >&2
             exit 0
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzz.service"), """
+            """)
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -13677,8 +13676,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStop={root}/usr/bin/zzz.init stop
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        zzz_service = "/etc/systemd/{system}/zzz.service".format(**locals())
+            """)
+        zzz_service = F"/etc/systemd/{system}/zzz.service"
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/usr/bin/zzz.init"))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, zzz_service))
@@ -13960,7 +13959,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
-        systemctl += " --{system}".format(**locals())
+        systemctl += F" --{system}"
         testsleep = testname+"_sleep"
         logfile = os_path(root, "/var/log/"+testsleep+".log")
         bindir = os_path(root, "/usr/bin")
@@ -13968,7 +13967,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(logfile, "created\n")
         begin = "{"
         ends = "}"
-        shell_file(os_path(testdir, "zzz.init"), """
+        shell_file(os_path(testdir, "zzz.init"), F"""
             #! /bin/bash
             logfile={logfile}
             start() {begin}
@@ -14002,8 +14001,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ;; esac
             echo "done$1" >&2
             exit 0
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzz.service"), """
+            """)
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -14013,8 +14012,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStop={root}/usr/bin/zzz.init stop
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        zzz_service = "/etc/systemd/{system}/zzz.service".format(**locals())
+            """)
+        zzz_service = F"/etc/systemd/{system}/zzz.service"
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/usr/bin/zzz.init"))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, zzz_service))
@@ -14298,7 +14297,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
-        systemctl += " --{system}".format(**locals())
+        systemctl += F" --{system}"
         testsleep = self.testname("sleep")
         logfile = os_path(root, "/var/log/"+testsleep+".log")
         bindir = os_path(root, "/usr/bin")
@@ -14306,7 +14305,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(logfile, "created\n")
         begin = "{"
         ends = "}"
-        shell_file(os_path(testdir, "zzz.init"), """
+        shell_file(os_path(testdir, "zzz.init"), F"""
             #! /bin/bash
             logfile={logfile}
             start() {begin}
@@ -14340,8 +14339,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ;; esac
             echo "done$1" >&2
             exit 0
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzz.service"), """
+            """)
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -14354,8 +14353,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             TimeoutReloadSec=4
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        zzz_service = "/etc/systemd/{system}/zzz.service".format(**locals())
+            """)
+        zzz_service = F"/etc/systemd/{system}/zzz.service"
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/usr/bin/zzz.init"))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, zzz_service))
@@ -14639,7 +14638,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
-        systemctl += " --{system}".format(**locals())
+        systemctl += F" --{system}"
         testsleep = self.testname("sleep")
         logfile = os_path(root, "/var/log/"+testsleep+".log")
         bindir = os_path(root, "/usr/bin")
@@ -14647,7 +14646,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(logfile, "created\n")
         begin = "{"
         ends = "}"
-        shell_file(os_path(testdir, "zzz.init"), """
+        shell_file(os_path(testdir, "zzz.init"), F"""
             #! /bin/bash
             logfile={logfile}
             start() {begin}
@@ -14681,8 +14680,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ;; esac
             echo "done$1" >&2
             exit 0
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzz.service"), """
+            """)
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -14695,8 +14694,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             TimeoutReloadSec=4
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        zzz_service = "/etc/systemd/{system}/zzz.service".format(**locals())
+            """)
+        zzz_service = F"/etc/systemd/{system}/zzz.service"
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/usr/bin/zzz.init"))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, zzz_service))
@@ -14772,13 +14771,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
-        systemctl += " --{system}".format(**locals())
+        systemctl += F" --{system}"
         testsleep = self.testname("sleep")
         logfile = os_path(root, "/var/log/"+testsleep+".log")
         bindir = os_path(root, "/usr/bin")
         os.makedirs(os_path(root, "/var/run"))
         text_file(logfile, "created\n")
-        text_file(os_path(testdir, "zzz.service"), """
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -14789,13 +14788,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost=/bin/rm -f {root}/var/tmp/test.2
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         shell_file(os_path(testdir, "backup"), """
            #! /bin/sh
            set -x
            test ! -f "$1" || mv -v "$1" "$2"
         """)
-        zzz_service = "/etc/systemd/{system}/zzz.service".format(**locals())
+        zzz_service = F"/etc/systemd/{system}/zzz.service"
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, zzz_service))
         copy_tool(os_path(testdir, "backup"), os_path(root, "/usr/bin/backup"))
@@ -14804,8 +14803,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} enable zzz.service -vv"
         sh____(cmd)
         #
-        is_active = "{systemctl} is-active zzz.service -vv"
-        act, end = output2(is_active.format(**locals()))
+        is_active = F"{systemctl} is-active zzz.service -vv"
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "inactive")
         self.assertEqual(end, 3)
         #
@@ -14814,7 +14813,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active")
         self.assertEqual(end, 0)
         self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
@@ -14825,7 +14824,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "inactive")
         self.assertEqual(end, 3)
         self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.1")))
@@ -14836,7 +14835,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active")
         self.assertEqual(end, 0)
         self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
@@ -14847,7 +14846,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active")
         self.assertEqual(end, 0)
         self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
@@ -14858,7 +14857,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active")
         self.assertEqual(end, 0)
         self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
@@ -14869,7 +14868,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active")
         self.assertEqual(end, 0)
         #
@@ -14878,7 +14877,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "inactive")
         self.assertEqual(end, 3)
         self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.1")))
@@ -14889,7 +14888,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "inactive")
         self.assertEqual(end, 3)
         self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.1")))
@@ -14900,7 +14899,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "inactive")
         self.assertEqual(end, 3)
         self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.1")))
@@ -14911,7 +14910,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active")
         self.assertEqual(end, 0)
         self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
@@ -14922,7 +14921,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active")
         self.assertEqual(end, 0)
         self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
@@ -14933,7 +14932,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active")
         self.assertEqual(end, 0)
         self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
@@ -14944,7 +14943,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "inactive")
         self.assertEqual(end, 3)
         self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.1")))
@@ -14968,7 +14967,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir = os_path(root, "/usr/bin")
         os.makedirs(os_path(root, "/var/run"))
         text_file(logfile, "created\n")
-        text_file(os_path(testdir, "zzz.service"), """
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -14979,7 +14978,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost=/bin/rm -f {root}/var/tmp/test.2
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         shell_file(os_path(testdir, "backup"), """
            #! /bin/sh
            set -x
@@ -14992,8 +14991,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = F"{systemctl} enable zzz.service -vv"
         sh____(cmd)
-        is_active = "{systemctl} is-active zzz.service other.service -vv"
-        act, end = output2(is_active.format(**locals()))
+        is_active = F"{systemctl} is-active zzz.service other.service -vv"
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "inactive\ninactive")
         self.assertEqual(end, 3)
         #
@@ -15002,8 +15001,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertNotEqual(end, 0)
-        is_active = "{systemctl} is-active zzz.service other.service -vv"
-        act, end = output2(is_active.format(**locals()))
+        is_active = F"{systemctl} is-active zzz.service other.service -vv"
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active\ninactive")
         self.assertEqual(end, 3)
         self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
@@ -15014,7 +15013,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertNotEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "inactive\ninactive")
         self.assertEqual(end, 3)
         self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.1")))
@@ -15025,7 +15024,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertNotEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active\ninactive")
         self.assertEqual(end, 3)
         self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
@@ -15036,7 +15035,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertNotEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active\ninactive")
         self.assertEqual(end, 3)
         self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
@@ -15047,7 +15046,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertNotEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active\ninactive")
         self.assertEqual(end, 3)
         self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
@@ -15058,7 +15057,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertNotEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active\ninactive")
         self.assertEqual(end, 3)
         #
@@ -15067,7 +15066,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertNotEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "inactive\ninactive")
         self.assertEqual(end, 3)
         self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.1")))
@@ -15078,7 +15077,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertNotEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "inactive\ninactive")
         self.assertEqual(end, 3)
         self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.1")))
@@ -15089,7 +15088,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertNotEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "inactive\ninactive")
         self.assertEqual(end, 3)
         self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.1")))
@@ -15100,7 +15099,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertNotEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active\ninactive")
         self.assertEqual(end, 3)
         self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
@@ -15111,7 +15110,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertNotEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active\ninactive")
         self.assertEqual(end, 3)
         self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
@@ -15122,7 +15121,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertNotEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active\ninactive")
         self.assertEqual(end, 3)
         self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
@@ -15133,7 +15132,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertNotEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "inactive\ninactive")
         self.assertEqual(end, 3)
         self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.1")))
@@ -15169,13 +15168,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
-        systemctl += " --{system}".format(**locals())
+        systemctl += F" --{system}"
         testsleep = self.testname("sleep")
         logfile = os_path(root, "/var/log/"+testsleep+".log")
         bindir = os_path(root, "/usr/bin")
         os.makedirs(os_path(root, "/var/run"))
         text_file(logfile, "created\n")
-        text_file(os_path(testdir, "zzz@.service"), """
+        text_file(os_path(testdir, "zzz@.service"), F"""
             [Unit]
             Description=Testing Z.%i
             [Service]
@@ -15186,13 +15185,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost=/bin/rm -f {root}/var/tmp/test.%i.2
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         shell_file(os_path(testdir, "backup"), """
            #! /bin/sh
            set -x
            test ! -f "$1" || mv -v "$1" "$2"
         """)
-        zzz_service = "/etc/systemd/{system}/zzz@.service".format(**locals())
+        zzz_service = F"/etc/systemd/{system}/zzz@.service"
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz@.service"), os_path(root, zzz_service))
         copy_tool(os_path(testdir, "backup"), os_path(root, "/usr/bin/backup"))
@@ -15201,8 +15200,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} enable zzz@rsa.service -vv"
         sh____(cmd)
         #
-        is_active = "{systemctl} is-active zzz@rsa.service -vv"
-        act, end = output2(is_active.format(**locals()))
+        is_active = F"{systemctl} is-active zzz@rsa.service -vv"
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "inactive")
         self.assertEqual(end, 3)
         #
@@ -15211,7 +15210,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active")
         self.assertEqual(end, 0)
         self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.rsa.1")))
@@ -15222,7 +15221,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "inactive")
         self.assertEqual(end, 3)
         self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.rsa.1")))
@@ -15235,7 +15234,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active")
         self.assertEqual(end, 0)
         self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.rsa.1")))
@@ -15248,7 +15247,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active")
         self.assertEqual(end, 0)
         self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.rsa.1")))
@@ -15261,7 +15260,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active")
         self.assertEqual(end, 0)
         self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.rsa.1")))
@@ -15274,7 +15273,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active")
         self.assertEqual(end, 0)
         #
@@ -15283,7 +15282,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "inactive")
         self.assertEqual(end, 3)
         self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.rsa.1")))
@@ -15296,7 +15295,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "inactive")
         self.assertEqual(end, 3)
         self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.rsa.1")))
@@ -15309,7 +15308,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "inactive")
         self.assertEqual(end, 3)
         self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.rsa.1")))
@@ -15322,7 +15321,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active")
         self.assertEqual(end, 0)
         self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.rsa.1")))
@@ -15335,7 +15334,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active")
         self.assertEqual(end, 0)
         self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.rsa.1")))
@@ -15348,7 +15347,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active")
         self.assertEqual(end, 0)
         self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.rsa.1")))
@@ -15361,7 +15360,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "inactive")
         self.assertEqual(end, 3)
         self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.rsa.1")))
@@ -15388,7 +15387,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(logfile, "created\n")
         begin = "{"
         ends = "}"
-        shell_file(os_path(testdir, "zzz.init"), """
+        shell_file(os_path(testdir, "zzz.init"), F"""
             #! /bin/bash
             ### BEGIN INIT INFO
             # Required-Start: $local_fs $remote_fs $syslog $network
@@ -15432,7 +15431,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ;; esac
             echo "done$1" >&2
             exit 0
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/etc/init.d/zzz"))
         #
@@ -15676,7 +15675,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(logfile, "created\n")
         begin = "{"
         ends = "}"
-        shell_file(os_path(testdir, "zzz.init"), """
+        shell_file(os_path(testdir, "zzz.init"), F"""
             #! /bin/bash
             ### BEGIN INIT INFO
             # Required-Start: $local_fs $remote_fs $syslog $network
@@ -15720,7 +15719,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ;; esac
             echo "done$1" >&2
             exit 0
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/etc/init.d/zzz"))
         #
@@ -15784,7 +15783,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(logfile, "created\n")
         begin = "{"
         ends = "}"
-        shell_file(os_path(testdir, "zzz.init"), """
+        shell_file(os_path(testdir, "zzz.init"), F"""
             #! /bin/bash
             ### BEGIN INIT INFO
             # Required-Start: $local_fs $remote_fs $syslog $network
@@ -15829,7 +15828,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ;; esac
             echo "done$1" >&2
             exit 0
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/etc/init.d/zzz"))
         #
@@ -15910,7 +15909,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
-        systemctl += " --{system}".format(**locals())
+        systemctl += F" --{system}"
         testsleep = self.testname("sleep")
         logfile = os_path(root, "/var/log/"+testsleep+".log")
         bindir = os_path(root, "/usr/bin")
@@ -15918,7 +15917,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(logfile, "created\n")
         begin = "{"
         ends = "}"
-        shell_file(os_path(testdir, "zzz.init"), """
+        shell_file(os_path(testdir, "zzz.init"), F"""
             #! /bin/bash
             logfile={logfile}
             start() {begin}
@@ -15952,9 +15951,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ;; esac
             echo "done$1" >&2
             exit 0
-            """.format(**locals()))
+            """)
         zzz_service = "zzz-using-a-very-long-service-name-which-needs-to-be-truncated-for-the-notify-socket-file.service"
-        text_file(os_path(testdir, zzz_service), """
+        text_file(os_path(testdir, zzz_service), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -15967,8 +15966,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             TimeoutReloadSec=4
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        zzz_service_path = "/etc/systemd/{system}/{zzz_service}".format(**locals())
+            """)
+        zzz_service_path = F"/etc/systemd/{system}/{zzz_service}"
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/usr/bin/zzz.init"))
         copy_file(os_path(testdir, zzz_service), os_path(root, zzz_service_path))
@@ -16060,7 +16059,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
-        systemctl += " --{system}".format(**locals())
+        systemctl += F" --{system}"
         systemctl += " -c _notify_socket_folder=/var/run-using-notify-special-folder"
         testsleep = self.testname("sleep")
         logfile = os_path(root, "/var/log/"+testsleep+".log")
@@ -16069,7 +16068,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(logfile, "created\n")
         begin = "{"
         ends = "}"
-        shell_file(os_path(testdir, "zzz.init"), """
+        shell_file(os_path(testdir, "zzz.init"), F"""
             #! /bin/bash
             logfile={logfile}
             start() {begin}
@@ -16103,9 +16102,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ;; esac
             echo "done$1" >&2
             exit 0
-            """.format(**locals()))
+            """)
         zzz_service = "zzz-using-a-very-long-service-name-which-needs-to-be-truncated-for-the-notify-socket-file.service"
-        text_file(os_path(testdir, zzz_service), """
+        text_file(os_path(testdir, zzz_service), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -16118,8 +16117,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             TimeoutReloadSec=4
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        zzz_service_path = "/etc/systemd/{system}/{zzz_service}".format(**locals())
+            """)
+        zzz_service_path = F"/etc/systemd/{system}/{zzz_service}"
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/usr/bin/zzz.init"))
         copy_file(os_path(testdir, zzz_service), os_path(root, zzz_service_path))
@@ -16199,7 +16198,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(logfile, "created\n")
         begin = "{"
         ends = "}"
-        shell_file(os_path(testdir, "zzz.init"), """
+        shell_file(os_path(testdir, "zzz.init"), F"""
             #! /bin/bash
             logfile={logfile}
             start() {begin}
@@ -16249,8 +16248,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                exit 1
             fi
             exit 0
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzz.service"), """
+            """)
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -16263,7 +16262,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost={root}/usr/bin/zzz.init stop-post
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "zzz.init"), os_path(root, "/usr/bin/zzz.init"))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
@@ -16479,7 +16478,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir = os_path(root, "/usr/bin")
         os.makedirs(os_path(root, "/var/run"))
         text_file(logfile, "created\n")
-        text_file(os_path(testdir, "zzz.service"), """
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -16488,7 +16487,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost=/bin/rm {root}/var/tmp/test.1
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         text_file(os_path(root, "/var/tmp/test.0"), """..""")
@@ -16499,8 +16498,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = F"{systemctl} enable zzz.service -vv"
         sh____(cmd)
-        is_active = "{systemctl} is-active zzz.service other.service {vv}"
-        act, end = output2(is_active.format(**locals()))
+        is_active = F"{systemctl} is-active zzz.service other.service {vv}"
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "inactive\ninactive")
         self.assertEqual(end, 3)
         #
@@ -16509,14 +16508,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertNotEqual(end, 0)
-        is_active = "{systemctl} is-active zzz.service other.service -vv"
-        act, end = output2(is_active.format(**locals()))
+        is_active = F"{systemctl} is-active zzz.service other.service -vv"
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active\ninactive")
         self.assertEqual(end, 3)
         self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
         #
-        is_active = "{systemctl} is-active zzz.service other.service -vvvv"
-        act, end = output2(is_active.format(**locals()))
+        is_active = F"{systemctl} is-active zzz.service other.service -vvvv"
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active\ninactive")
         self.assertEqual(end, 3)
         #
@@ -16525,7 +16524,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertNotEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "inactive\ninactive")
         self.assertEqual(end, 3)
         self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.1")))
@@ -16535,7 +16534,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertNotEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active\ninactive")
         self.assertEqual(end, 3)
         self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
@@ -16546,14 +16545,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         status_file = output(cmd).split("=", 1)[1].strip()
         logg.info("status_file = %s", status_file)
         self.assertTrue(os.path.exists(status_file))
-        sh____("LANG=C stat {status_file} | grep Modify:".format(**locals()))
-        sh____("touch -d '{system_boot_time}' {status_file}".format(**locals()))
-        sh____("LANG=C stat {status_file} | grep Modify:".format(**locals()))
+        sh____(F"LANG=C stat {status_file} | grep Modify:")
+        sh____(F"touch -d '{system_boot_time}' {status_file}")
+        sh____(F"LANG=C stat {status_file} | grep Modify:")
         #
         logg.info("== the next is-active shall then truncate it")
         old_size = os.path.getsize(status_file)
-        is_activeXX = "{systemctl} is-active zzz.service other.service {vv} {vv}"
-        act, end = output2(is_activeXX.format(**locals()))
+        is_activeXX = F"{systemctl} is-active zzz.service other.service {vv} {vv}"
+        act, end = output2(is_activeXX)
         self.assertEqual(act.strip(), "inactive\ninactive")
         self.assertEqual(end, 3)
         self.assertTrue(os.path.exists(os_path(root, "/var/tmp/test.1")))
@@ -16567,7 +16566,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertNotEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "inactive\ninactive")
         self.assertEqual(end, 3)
         self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.1")))
@@ -16592,7 +16591,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zzz.service"), """
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             After=foo.service
@@ -16602,7 +16601,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStop=/usr/bin/killall {testsleep}
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         #
@@ -16612,8 +16611,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = F"{systemctl} enable zzz.service -vv"
         sh____(cmd)
-        is_active = "{systemctl} is-active zzz.service other.service {vv}"
-        act, end = output2(is_active.format(**locals()))
+        is_active = F"{systemctl} is-active zzz.service other.service {vv}"
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "inactive\ninactive")
         self.assertEqual(end, 3)
         #
@@ -16622,8 +16621,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertNotEqual(end, 0)
-        is_active = "{systemctl} is-active zzz.service other.service -vv"
-        act, end = output2(is_active.format(**locals()))
+        is_active = F"{systemctl} is-active zzz.service other.service -vv"
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active\ninactive")
         self.assertEqual(end, 3)
         #
@@ -16632,7 +16631,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertNotEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "inactive\ninactive")
         self.assertEqual(end, 3)
         #
@@ -16641,7 +16640,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertNotEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active\ninactive")
         self.assertEqual(end, 3)
         #
@@ -16652,23 +16651,23 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         status_file = output(cmd).split("=", 1)[1].strip()
         logg.info("status_file = %s", status_file)
         self.assertTrue(os.path.exists(status_file))
-        sh____("LANG=C stat {status_file} | grep Modify:".format(**locals()))
-        sh____("LANG=C stat /proc/1/status | grep Modify:".format(**locals()))
-        sh____("touch -d '{system_boot_time}' {status_file}".format(**locals()))
-        sh____("LANG=C stat {status_file} | grep Modify:".format(**locals()))
+        sh____(F"LANG=C stat {status_file} | grep Modify:")
+        sh____(F"LANG=C stat /proc/1/status | grep Modify:")
+        sh____(F"touch -d '{system_boot_time}' {status_file}")
+        sh____(F"LANG=C stat {status_file} | grep Modify:")
         #
         pid_file = os_path(root, "/var/run/zzz.service.pid")
         #+ self.assertTrue(os.path.exists(pid_file))
-        #+ sh____("LANG=C stat {pid_file} | grep Modify:".format(**locals()))
-        #+ sh____("LANG=C stat /proc/1/status | grep Modify:".format(**locals()))
-        #+ sh____("touch -r /proc/1/status {pid_file}".format(**locals()))
-        #+ sh____("LANG=C stat {pid_file} | grep Modify:".format(**locals()))
+        #+ sh____(F"LANG=C stat {pid_file} | grep Modify:")
+        #+ sh____(F"LANG=C stat /proc/1/status | grep Modify:")
+        #+ sh____(F"touch -r /proc/1/status {pid_file}")
+        #+ sh____(F"LANG=C stat {pid_file} | grep Modify:")
         #
         logg.info("== the next is-active shall then truncate it")
         old_status = os.path.getsize(status_file)
         # + old_pid = os.path.getsize(pid_file)
-        is_activeXX = "{systemctl} is-active zzz.service other.service {vv} {vv}"
-        act, end = output2(is_activeXX.format(**locals()))
+        is_activeXX = F"{systemctl} is-active zzz.service other.service {vv} {vv}"
+        act, end = output2(is_activeXX)
         self.assertEqual(act.strip(), "inactive\ninactive")
         self.assertEqual(end, 3)
         new_status = os.path.getsize(status_file)
@@ -16685,7 +16684,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertNotEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "inactive\ninactive")
         self.assertEqual(end, 3)
         logg.info("== and the status_file / pid_file is also cleaned away")
@@ -16709,7 +16708,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zzz.service"), """
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             After=foo.service
@@ -16719,7 +16718,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStop=/usr/bin/killall {testsleep}
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         #
@@ -16763,7 +16762,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleep = self.testname("testsleep")
         testfail = self.testname("testfail.sh")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zzz.service"), """
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -16776,8 +16775,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost=/bin/sleep 2
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zze.service"), """
+            """)
+        text_file(os_path(testdir, "zze.service"), F"""
             [Unit]
             Description=Testing E
             [Service]
@@ -16790,8 +16789,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost=/bin/sleep 2
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzf.service"), """
+            """)
+        text_file(os_path(testdir, "zzf.service"), F"""
             [Unit]
             Description=Testing F
             [Service]
@@ -16804,8 +16803,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost=/bin/sleep 2
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzr.service"), """
+            """)
+        text_file(os_path(testdir, "zzr.service"), F"""
             [Unit]
             Description=Testing R
             [Service]
@@ -16819,8 +16818,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost=/bin/sleep 2
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzx.service"), """
+            """)
+        text_file(os_path(testdir, "zzx.service"), F"""
             [Unit]
             Description=Testing X
             [Service]
@@ -16834,12 +16833,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost=/bin/sleep 2
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "testfail.sh"), """
+            """)
+        text_file(os_path(testdir, "testfail.sh"), F"""
             #! /bin/sh
             {bindir}/{testsleep} $1
             exit 2
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "testfail.sh"), os_path(bindir, testfail))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
@@ -16847,7 +16846,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_file(os_path(testdir, "zzf.service"), os_path(root, "/etc/systemd/system/zzf.service"))
         copy_file(os_path(testdir, "zzr.service"), os_path(root, "/etc/systemd/system/zzr.service"))
         copy_file(os_path(testdir, "zzx.service"), os_path(root, "/etc/systemd/system/zzx.service"))
-        sh____("{systemctl} daemon-reload".format(**locals()))
+        sh____(F"{systemctl} daemon-reload")
         #
         cmd = F"{systemctl} is-active zzz.service {vv}"
         out, end = output2(cmd)
@@ -17046,8 +17045,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         else: self.assertEqual(out.strip(), "inactive")
         #
         # cleanup
-        kill_testsleep = "{systemctl} __killall {testsleep}"
-        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = F"{systemctl} __killall {testsleep}"
+        sx____(kill_testsleep)
         self.rm_testdir()
         self.rm_zzfiles(root)
         self.coverage()
@@ -17064,7 +17063,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleepB = testsleep+"B"
         testsleepC = testsleep+"C"
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zzb.service"), """
+        text_file(os_path(testdir, "zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
@@ -17072,8 +17071,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart={bindir}/{testsleepB} 99
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzc.service"), """
+            """)
+        text_file(os_path(testdir, "zzc.service"), F"""
             [Unit]
             Description=Testing C
             [Service]
@@ -17081,7 +17080,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart={bindir}/{testsleepC} 111
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleepB))
         copy_tool(_bin_sleep, os_path(bindir, testsleepC))
         copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
@@ -17172,7 +17171,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         ends = "}"
         bindir = os_path(root, "/usr/bin")
         rundir = os_path(root, "/var/run")
-        text_file(os_path(testdir, "zzb.service"), """
+        text_file(os_path(testdir, "zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
@@ -17180,8 +17179,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart={bindir}/{testsleepB} 99
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzc.service"), """
+            """)
+        text_file(os_path(testdir, "zzc.service"), F"""
             [Unit]
             Description=Testing C
             [Service]
@@ -17190,7 +17189,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStop=/bin/kill ${begin}MAINPID{ends}
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleepB))
         copy_tool(_bin_sleep, os_path(bindir, testsleepC))
         copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
@@ -17323,7 +17322,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         begin = "{"
         ends = "}"
         text_file(logfile, "")
-        text_file(os_path(testdir, "zzb.service"), """
+        text_file(os_path(testdir, "zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
@@ -17338,8 +17337,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             # KillSignal=SIGQUIT
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        shell_file(os_path(bindir, testscriptB), """
+            """)
+        shell_file(os_path(bindir, testscriptB), F"""
             #! /bin/sh
             date +%T,enter > {logfile}
             stops () {begin}
@@ -17372,7 +17371,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             date +%T,leaving >> {logfile}
             trap - 3 10 15 # SIGQUIT SIGUSR1 SIGTERM
             date +%T,leave >> {logfile}
-        """.format(**locals()))
+        """)
         copy_tool(_bin_sleep, os_path(bindir, testsleepB))
         copy_tool(_bin_sleep, os_path(bindir, testsleepC))
         copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
@@ -17440,7 +17439,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         begin = "{"
         ends = "}"
         text_file(logfile, "")
-        text_file(os_path(testdir, "zzb.service"), """
+        text_file(os_path(testdir, "zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
@@ -17456,8 +17455,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             SendSIGKILL=no
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        shell_file(os_path(bindir, testscriptB), """
+            """)
+        shell_file(os_path(bindir, testscriptB), F"""
             #! /bin/sh
             date +%T,enter > {logfile}
             stops () {begin}
@@ -17490,7 +17489,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             date +%T,leaving >> {logfile}
             trap - 3 10 15 # SIGQUIT SIGUSR1 SIGTERM
             date +%T,leave >> {logfile}
-        """.format(**locals()))
+        """)
         copy_tool(_bin_sleep, os_path(bindir, testsleepB))
         copy_tool(_bin_sleep, os_path(bindir, testsleepC))
         copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
@@ -17560,7 +17559,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         begin = "{"
         ends = "}"
         text_file(logfile, "")
-        text_file(os_path(testdir, "zzb.service"), """
+        text_file(os_path(testdir, "zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
@@ -17576,8 +17575,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             SendSIGHUP=yes
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        shell_file(os_path(bindir, testscriptB), """
+            """)
+        shell_file(os_path(bindir, testscriptB), F"""
             #! /bin/sh
             date +%T,enter > {logfile}
             stops () {begin}
@@ -17610,7 +17609,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             date +%T,leaving >> {logfile}
             trap - 3 10 15  # SIGQUIT SIGUSR1 SIGTERM
             date +%T,leave >> {logfile}
-        """.format(**locals()))
+        """)
         copy_tool(_bin_sleep, os_path(bindir, testsleepB))
         copy_tool(_bin_sleep, os_path(bindir, testsleepC))
         copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
@@ -17680,7 +17679,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         begin = "{"
         ends = "}"
         text_file(logfile, "")
-        text_file(os_path(testdir, "zzb.service"), """
+        text_file(os_path(testdir, "zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
@@ -17697,8 +17696,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             # SendSIGHUP=yes
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        shell_file(os_path(bindir, testscriptB), """
+            """)
+        shell_file(os_path(bindir, testscriptB), F"""
             #! /bin/sh
             date +%T,enter > {logfile}
             stops () {begin}
@@ -17730,7 +17729,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             date +%T,leaving >> {logfile}
             trap - 3 10 15  # SIGQUIT SIGUSR1 SIGTERM
             date +%T,leave >> {logfile}
-        """.format(**locals()))
+        """)
         copy_tool(_bin_sleep, os_path(bindir, testsleepB))
         copy_tool(_bin_sleep, os_path(bindir, testsleepC))
         copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
@@ -17800,7 +17799,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         begin = "{"
         ends = "}"
         text_file(logfile, "")
-        text_file(os_path(testdir, "zzb.service"), """
+        text_file(os_path(testdir, "zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
@@ -17817,8 +17816,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             # SendSIGHUP=yes
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        shell_file(os_path(bindir, testscriptB), """
+            """)
+        shell_file(os_path(bindir, testscriptB), F"""
             #! /bin/sh
             date +%T,enter > {logfile}
             stops () {begin}
@@ -17850,7 +17849,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             date +%T,leaving >> {logfile}
             trap - 3 10 15  # SIGQUIT SIGUSR1 SIGTERM
             date +%T,leave >> {logfile}
-        """.format(**locals()))
+        """)
         copy_tool(_bin_sleep, os_path(bindir, testsleepB))
         copy_tool(_bin_sleep, os_path(bindir, testsleepC))
         copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
@@ -17913,7 +17912,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logfile = os_path(root, "/var/log/"+testname+".log")
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -17923,8 +17922,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost={bindir}/logger 'stop-A'
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzb.service"), """
+            """)
+        text_file(os_path(testdir, "zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
@@ -17934,8 +17933,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost={bindir}/logger 'stop-B'
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzc.service"), """
+            """)
+        text_file(os_path(testdir, "zzc.service"), F"""
             [Unit]
             Description=Testing C
             [Service]
@@ -17945,13 +17944,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost={bindir}/logger 'stop-C'
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        shell_file(os_path(testdir, "logger"), """
+            """)
+        shell_file(os_path(testdir, "logger"), F"""
             #! /bin/sh
             echo "$@" >> {logfile}
             cat {logfile} | sed -e "s|^| : |"
             true
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "logger"), os_path(bindir, "logger"))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
@@ -17960,8 +17959,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         os.makedirs(os_path(root, "/var/run"))
         os.makedirs(os_path(root, "/var/log"))
         #
-        list_dependencies = "{systemctl} list-dependencies zza.service --now"
-        deps = output(list_dependencies.format(**locals()))
+        list_dependencies = F"{systemctl} list-dependencies zza.service --now"
+        deps = output(list_dependencies)
         logg.info("deps \n%s", deps)
         #
         cmd = F"{systemctl} start zza.service zzb.service zzc.service -vv"
@@ -17996,8 +17995,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(log[2], "stop-C")
         os.remove(logfile)
         #
-        kill_testsleep = "{systemctl} __killall {testsleep}"
-        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = F"{systemctl} __killall {testsleep}"
+        sx____(kill_testsleep)
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -18013,7 +18012,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logfile = os_path(root, "/var/log/"+testname+".log")
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             After=zzb.service
@@ -18024,8 +18023,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost={bindir}/logger 'stop-A'
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzb.service"), """
+            """)
+        text_file(os_path(testdir, "zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
@@ -18035,8 +18034,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost={bindir}/logger 'stop-B'
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzc.service"), """
+            """)
+        text_file(os_path(testdir, "zzc.service"), F"""
             [Unit]
             Description=Testing C
             After=zza.service
@@ -18047,13 +18046,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost={bindir}/logger 'stop-C'
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        shell_file(os_path(testdir, "logger"), """
+            """)
+        shell_file(os_path(testdir, "logger"), F"""
             #! /bin/sh
             echo "$@" >> {logfile}
             cat {logfile} | sed -e "s|^| : |"
             true
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "logger"), os_path(bindir, "logger"))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
@@ -18062,8 +18061,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         os.makedirs(os_path(root, "/var/run"))
         os.makedirs(os_path(root, "/var/log"))
         #
-        list_dependencies = "{systemctl} list-dependencies zza.service --now"
-        deps = output(list_dependencies.format(**locals()))
+        list_dependencies = F"{systemctl} list-dependencies zza.service --now"
+        deps = output(list_dependencies)
         logg.info("deps \n%s", deps)
         #
         cmd = F"{systemctl} start zza.service zzb.service zzc.service -vv"
@@ -18098,8 +18097,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(log[2], "stop-B")
         os.remove(logfile)
         #
-        kill_testsleep = "{systemctl} __killall {testsleep}"
-        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = F"{systemctl} __killall {testsleep}"
+        sx____(kill_testsleep)
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -18115,7 +18114,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logfile = os_path(root, "/var/log/"+testname+".log")
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             Before=zzb.service
@@ -18126,8 +18125,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost={bindir}/logger 'stop-A'
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzb.service"), """
+            """)
+        text_file(os_path(testdir, "zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
@@ -18137,8 +18136,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost={bindir}/logger 'stop-B'
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzc.service"), """
+            """)
+        text_file(os_path(testdir, "zzc.service"), F"""
             [Unit]
             Description=Testing C
             Before=zza.service
@@ -18149,13 +18148,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost={bindir}/logger 'stop-C'
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        shell_file(os_path(testdir, "logger"), """
+            """)
+        shell_file(os_path(testdir, "logger"), F"""
             #! /bin/sh
             echo "$@" >> {logfile}
             cat {logfile} | sed -e "s|^| : |"
             true
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "logger"), os_path(bindir, "logger"))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
@@ -18164,8 +18163,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         os.makedirs(os_path(root, "/var/run"))
         os.makedirs(os_path(root, "/var/log"))
         #
-        list_dependencies = "{systemctl} list-dependencies zza.service --now"
-        deps = output(list_dependencies.format(**locals()))
+        list_dependencies = F"{systemctl} list-dependencies zza.service --now"
+        deps = output(list_dependencies)
         logg.info("deps \n%s", deps)
         #
         cmd = F"{systemctl} start zza.service zzb.service zzc.service -vv"
@@ -18201,8 +18200,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(log[2], "stop-C")
         os.remove(logfile)
         #
-        kill_testsleep = "{systemctl} __killall {testsleep}"
-        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = F"{systemctl} __killall {testsleep}"
+        sx____(kill_testsleep)
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -18218,7 +18217,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logfile = os_path(root, "/var/log/"+testname+".log")
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             After=zzb.service
@@ -18229,8 +18228,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost={bindir}/logger 'stop-A'
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzb.service"), """
+            """)
+        text_file(os_path(testdir, "zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
@@ -18240,8 +18239,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost={bindir}/logger 'stop-B'
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzc.service"), """
+            """)
+        text_file(os_path(testdir, "zzc.service"), F"""
             [Unit]
             Description=Testing C
             After=zza.service
@@ -18252,13 +18251,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost={bindir}/logger 'stop-C'
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        shell_file(os_path(testdir, "logger"), """
+            """)
+        shell_file(os_path(testdir, "logger"), F"""
             #! /bin/sh
             echo "$@" >> {logfile}
             cat {logfile} | sed -e "s|^| : |"
             true
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "logger"), os_path(bindir, "logger"))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
@@ -18267,8 +18266,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         os.makedirs(os_path(root, "/var/run"))
         os.makedirs(os_path(root, "/var/log"))
         #
-        list_dependencies = "{systemctl} list-start-dependencies zza.service"
-        deps_text = output(list_dependencies.format(**locals()))
+        list_dependencies = F"{systemctl} list-start-dependencies zza.service"
+        deps_text = output(list_dependencies)
         # logg.info("deps \n%s", deps_text)
         #
         # inspect logfile
@@ -18277,8 +18276,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(deps[0], "zza.service\t(Requested)")
         self.assertEqual(len(deps), 1)
         #
-        kill_testsleep = "{systemctl} __killall {testsleep}"
-        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = F"{systemctl} __killall {testsleep}"
+        sx____(kill_testsleep)
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -18294,7 +18293,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logfile = os_path(root, "/var/log/"+testname+".log")
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             Wants=zzb.service
@@ -18305,8 +18304,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost={bindir}/logger 'stop-A'
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzb.service"), """
+            """)
+        text_file(os_path(testdir, "zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
@@ -18316,8 +18315,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost={bindir}/logger 'stop-B'
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzc.service"), """
+            """)
+        text_file(os_path(testdir, "zzc.service"), F"""
             [Unit]
             Description=Testing C
             Wants=zza.service
@@ -18328,13 +18327,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost={bindir}/logger 'stop-C'
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        shell_file(os_path(testdir, "logger"), """
+            """)
+        shell_file(os_path(testdir, "logger"), F"""
             #! /bin/sh
             echo "$@" >> {logfile}
             cat {logfile} | sed -e "s|^| : |"
             true
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "logger"), os_path(bindir, "logger"))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
@@ -18343,8 +18342,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         os.makedirs(os_path(root, "/var/run"))
         os.makedirs(os_path(root, "/var/log"))
         #
-        list_dependencies = "{systemctl} list-start-dependencies zza.service"
-        deps_text = output(list_dependencies.format(**locals()))
+        list_dependencies = F"{systemctl} list-start-dependencies zza.service"
+        deps_text = output(list_dependencies)
         # logg.info("deps \n%s", deps_text)
         #
         # inspect logfile
@@ -18354,8 +18353,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(deps[1], "zza.service\t(Requested)")
         self.assertEqual(len(deps), 2)
         #
-        list_dependencies = "{systemctl} list-start-dependencies zzb.service"
-        deps_text = output(list_dependencies.format(**locals()))
+        list_dependencies = F"{systemctl} list-start-dependencies zzb.service"
+        deps_text = output(list_dependencies)
         # logg.info("deps \n%s", deps_text)
         #
         # inspect logfile
@@ -18365,8 +18364,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(deps), 1)
         #
         #
-        list_dependencies = "{systemctl} list-start-dependencies zzc.service"
-        deps_text = output(list_dependencies.format(**locals()))
+        list_dependencies = F"{systemctl} list-start-dependencies zzc.service"
+        deps_text = output(list_dependencies)
         # logg.info("deps \n%s", deps_text)
         #
         # inspect logfile
@@ -18376,8 +18375,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(deps[1], "zzc.service\t(Requested)")
         self.assertEqual(len(deps), 2)
         #
-        kill_testsleep = "{systemctl} __killall {testsleep}"
-        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = F"{systemctl} __killall {testsleep}"
+        sx____(kill_testsleep)
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -18393,7 +18392,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logfile = os_path(root, "/var/log/"+testname+".log")
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             Requires=zzb.service
@@ -18404,8 +18403,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost={bindir}/logger 'stop-A'
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzb.service"), """
+            """)
+        text_file(os_path(testdir, "zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
@@ -18415,8 +18414,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost={bindir}/logger 'stop-B'
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzc.service"), """
+            """)
+        text_file(os_path(testdir, "zzc.service"), F"""
             [Unit]
             Description=Testing C
             Requires=zza.service
@@ -18427,13 +18426,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost={bindir}/logger 'stop-C'
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        shell_file(os_path(testdir, "logger"), """
+            """)
+        shell_file(os_path(testdir, "logger"), F"""
             #! /bin/sh
             echo "$@" >> {logfile}
             cat {logfile} | sed -e "s|^| : |"
             true
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "logger"), os_path(bindir, "logger"))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
@@ -18442,8 +18441,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         os.makedirs(os_path(root, "/var/run"))
         os.makedirs(os_path(root, "/var/log"))
         #
-        list_dependencies = "{systemctl} list-start-dependencies zza.service"
-        deps_text = output(list_dependencies.format(**locals()))
+        list_dependencies = F"{systemctl} list-start-dependencies zza.service"
+        deps_text = output(list_dependencies)
         # logg.info("deps \n%s", deps_text)
         #
         # inspect logfile
@@ -18453,8 +18452,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(deps[1], "zza.service\t(Requested)")
         self.assertEqual(len(deps), 2)
         #
-        list_dependencies = "{systemctl} list-start-dependencies zzb.service"
-        deps_text = output(list_dependencies.format(**locals()))
+        list_dependencies = F"{systemctl} list-start-dependencies zzb.service"
+        deps_text = output(list_dependencies)
         # logg.info("deps \n%s", deps_text)
         #
         # inspect logfile
@@ -18464,8 +18463,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(deps), 1)
         #
         #
-        list_dependencies = "{systemctl} list-start-dependencies zzc.service"
-        deps_text = output(list_dependencies.format(**locals()))
+        list_dependencies = F"{systemctl} list-start-dependencies zzc.service"
+        deps_text = output(list_dependencies)
         # logg.info("deps \n%s", deps_text)
         #
         # inspect logfile
@@ -18475,8 +18474,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(deps[1], "zzc.service\t(Requested)")
         self.assertEqual(len(deps), 2)
         #
-        kill_testsleep = "{systemctl} __killall {testsleep}"
-        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = F"{systemctl} __killall {testsleep}"
+        sx____(kill_testsleep)
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -18492,7 +18491,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logfile = os_path(root, "/var/log/"+testname+".log")
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             After=zzb.service
@@ -18503,8 +18502,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost={bindir}/logger 'stop-A'
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzb.service"), """
+            """)
+        text_file(os_path(testdir, "zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
@@ -18514,8 +18513,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost={bindir}/logger 'stop-B'
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzc.service"), """
+            """)
+        text_file(os_path(testdir, "zzc.service"), F"""
             [Unit]
             Description=Testing C
             After=zza.service
@@ -18526,13 +18525,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost={bindir}/logger 'stop-C'
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        shell_file(os_path(testdir, "logger"), """
+            """)
+        shell_file(os_path(testdir, "logger"), F"""
             #! /bin/sh
             echo "$@" >> {logfile}
             cat {logfile} | sed -e "s|^| : |"
             true
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "logger"), os_path(bindir, "logger"))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
@@ -18541,8 +18540,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         os.makedirs(os_path(root, "/var/run"))
         os.makedirs(os_path(root, "/var/log"))
         #
-        list_dependencies = "{systemctl} list-dependencies zza.service"
-        deps_text = output(list_dependencies.format(**locals()))
+        list_dependencies = F"{systemctl} list-dependencies zza.service"
+        deps_text = output(list_dependencies)
         # logg.info("deps \n%s", deps_text)
         #
         # inspect logfile
@@ -18551,8 +18550,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(deps[0], "zza.service:")
         self.assertEqual(len(deps), 1)
         #
-        kill_testsleep = "{systemctl} __killall {testsleep}"
-        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = F"{systemctl} __killall {testsleep}"
+        sx____(kill_testsleep)
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -18568,7 +18567,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logfile = os_path(root, "/var/log/"+testname+".log")
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             Wants=zzb.service
@@ -18579,8 +18578,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost={bindir}/logger 'stop-A'
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzb.service"), """
+            """)
+        text_file(os_path(testdir, "zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
@@ -18590,8 +18589,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost={bindir}/logger 'stop-B'
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzc.service"), """
+            """)
+        text_file(os_path(testdir, "zzc.service"), F"""
             [Unit]
             Description=Testing C
             Wants=zza.service
@@ -18602,13 +18601,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost={bindir}/logger 'stop-C'
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        shell_file(os_path(testdir, "logger"), """
+            """)
+        shell_file(os_path(testdir, "logger"), F"""
             #! /bin/sh
             echo "$@" >> {logfile}
             cat {logfile} | sed -e "s|^| : |"
             true
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "logger"), os_path(bindir, "logger"))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
@@ -18617,8 +18616,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         os.makedirs(os_path(root, "/var/run"))
         os.makedirs(os_path(root, "/var/log"))
         #
-        list_dependencies = "{systemctl} list-dependencies zza.service"
-        deps_text = output(list_dependencies.format(**locals()))
+        list_dependencies = F"{systemctl} list-dependencies zza.service"
+        deps_text = output(list_dependencies)
         # logg.info("deps \n%s", deps_text)
         #
         # inspect logfile
@@ -18628,8 +18627,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(deps[1], "| zzb.service: wanted to start")
         self.assertEqual(len(deps), 2)
         #
-        list_dependencies = "{systemctl} list-dependencies zzb.service"
-        deps_text = output(list_dependencies.format(**locals()))
+        list_dependencies = F"{systemctl} list-dependencies zzb.service"
+        deps_text = output(list_dependencies)
         # logg.info("deps \n%s", deps_text)
         #
         # inspect logfile
@@ -18639,8 +18638,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(deps), 1)
         #
         #
-        list_dependencies = "{systemctl} list-dependencies zzc.service"
-        deps_text = output(list_dependencies.format(**locals()))
+        list_dependencies = F"{systemctl} list-dependencies zzc.service"
+        deps_text = output(list_dependencies)
         # logg.info("deps \n%s", deps_text)
         #
         # inspect logfile
@@ -18651,8 +18650,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(deps[2], "| | zzb.service: wanted to start")
         self.assertEqual(len(deps), 3)
         #
-        kill_testsleep = "{systemctl} __killall {testsleep}"
-        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = F"{systemctl} __killall {testsleep}"
+        sx____(kill_testsleep)
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -18668,7 +18667,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logfile = os_path(root, "/var/log/"+testname+".log")
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             Requires=zzb.service
@@ -18679,8 +18678,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost={bindir}/logger 'stop-A'
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzb.service"), """
+            """)
+        text_file(os_path(testdir, "zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
@@ -18690,8 +18689,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost={bindir}/logger 'stop-B'
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzc.service"), """
+            """)
+        text_file(os_path(testdir, "zzc.service"), F"""
             [Unit]
             Description=Testing C
             Requires=zza.service
@@ -18702,13 +18701,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost={bindir}/logger 'stop-C'
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        shell_file(os_path(testdir, "logger"), """
+            """)
+        shell_file(os_path(testdir, "logger"), F"""
             #! /bin/sh
             echo "$@" >> {logfile}
             cat {logfile} | sed -e "s|^| : |"
             true
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "logger"), os_path(bindir, "logger"))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
@@ -18717,8 +18716,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         os.makedirs(os_path(root, "/var/run"))
         os.makedirs(os_path(root, "/var/log"))
         #
-        list_dependencies = "{systemctl} list-dependencies zza.service"
-        deps_text = output(list_dependencies.format(**locals()))
+        list_dependencies = F"{systemctl} list-dependencies zza.service"
+        deps_text = output(list_dependencies)
         # logg.info("deps \n%s", deps_text)
         #
         # inspect logfile
@@ -18728,8 +18727,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(deps[1], "| zzb.service: required to start")
         self.assertEqual(len(deps), 2)
         #
-        list_dependencies = "{systemctl} list-dependencies zzb.service"
-        deps_text = output(list_dependencies.format(**locals()))
+        list_dependencies = F"{systemctl} list-dependencies zzb.service"
+        deps_text = output(list_dependencies)
         # logg.info("deps \n%s", deps_text)
         #
         # inspect logfile
@@ -18739,8 +18738,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(deps), 1)
         #
         #
-        list_dependencies = "{systemctl} list-dependencies zzc.service"
-        deps_text = output(list_dependencies.format(**locals()))
+        list_dependencies = F"{systemctl} list-dependencies zzc.service"
+        deps_text = output(list_dependencies)
         # logg.info("deps \n%s", deps_text)
         #
         # inspect logfile
@@ -18751,8 +18750,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(deps[2], "| | zzb.service: required to start")
         self.assertEqual(len(deps), 3)
         #
-        kill_testsleep = "{systemctl} __killall {testsleep}"
-        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = F"{systemctl} __killall {testsleep}"
+        sx____(kill_testsleep)
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -18769,7 +18768,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleepA = self.testname("sleepA")
         testsleepB = self.testname("sleepB")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -18777,8 +18776,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart={bindir}/{testsleepA} 4
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzb.service"), """
+            """)
+        text_file(os_path(testdir, "zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
@@ -18786,7 +18785,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart={bindir}/{testsleepB} 5
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleepA))
         copy_tool(_bin_sleep, os_path(bindir, testsleepB))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
@@ -18798,7 +18797,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
-        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -18847,17 +18846,17 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleepA = self.testname("sleepA")
         testsleepB = self.testname("sleepB")
         bindir = os_path(root, "/usr/bin")
-        shell_file(os_path(testdir, "testsleepA.bin"), """
+        shell_file(os_path(testdir, "testsleepA.bin"), F"""
             #! /bin/sh
             echo running testsleepA
             exec {bindir}/{testsleepA} "$@"
-            """.format(**locals()))
-        shell_file(os_path(testdir, "testsleepB.bin"), """
+            """)
+        shell_file(os_path(testdir, "testsleepB.bin"), F"""
             #! /bin/sh
             echo running testsleepB
             exec {bindir}/{testsleepB} "$@"
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.service"), """
+            """)
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -18865,8 +18864,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart={bindir}/{testsleepA}.bin 4
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzb.service"), """
+            """)
+        text_file(os_path(testdir, "zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
@@ -18874,7 +18873,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart={bindir}/{testsleepB}.bin 5
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleepA))
         copy_tool(_bin_sleep, os_path(bindir, testsleepB))
         copy_tool(os_path(testdir, "testsleepA.bin"), os_path(bindir, testsleepA + ".bin"))
@@ -18888,7 +18887,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
-        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -18941,19 +18940,19 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleepA = self.testname("sleepA")
         testsleepB = self.testname("sleepB")
         bindir = os_path(root, "/usr/bin")
-        shell_file(os_path(testdir, "testsleepA.bin"), """
+        shell_file(os_path(testdir, "testsleepA.bin"), F"""
             #! /bin/sh
             echo starts testsleepA >&2
             echo running testsleepA
             exec {bindir}/{testsleepA} "$@"
-            """.format(**locals()))
-        shell_file(os_path(testdir, "testsleepB.bin"), """
+            """)
+        shell_file(os_path(testdir, "testsleepB.bin"), F"""
             #! /bin/sh
             echo starts testsleepB >&2
             echo running testsleepB
             exec {bindir}/{testsleepB} "$@"
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.service"), """
+            """)
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -18961,8 +18960,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart={bindir}/{testsleepA}.bin 4
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzb.service"), """
+            """)
+        text_file(os_path(testdir, "zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
@@ -18970,7 +18969,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart={bindir}/{testsleepB}.bin 5
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleepA))
         copy_tool(_bin_sleep, os_path(bindir, testsleepB))
         copy_tool(os_path(testdir, "testsleepA.bin"), os_path(bindir, testsleepA + ".bin"))
@@ -18984,7 +18983,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
-        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -19042,19 +19041,19 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleepA = self.testname("sleepA")
         testsleepB = self.testname("sleepB")
         bindir = os_path(root, "/usr/bin")
-        shell_file(os_path(testdir, "testsleepA.bin"), """
+        shell_file(os_path(testdir, "testsleepA.bin"), F"""
             #! /bin/sh
             echo starts testsleepA >&2
             echo running testsleepA
             exec {bindir}/{testsleepA} "$@"
-            """.format(**locals()))
-        shell_file(os_path(testdir, "testsleepB.bin"), """
+            """)
+        shell_file(os_path(testdir, "testsleepB.bin"), F"""
             #! /bin/sh
             echo starts testsleepB >&2
             echo running testsleepB
             exec {bindir}/{testsleepB} "$@"
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.service"), """
+            """)
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -19063,8 +19062,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardError=null
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzb.service"), """
+            """)
+        text_file(os_path(testdir, "zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
@@ -19073,7 +19072,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardError=null
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleepA))
         copy_tool(_bin_sleep, os_path(bindir, testsleepB))
         copy_tool(os_path(testdir, "testsleepA.bin"), os_path(bindir, testsleepA + ".bin"))
@@ -19087,7 +19086,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
-        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -19144,19 +19143,19 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleepA = self.testname("sleepA")
         testsleepB = self.testname("sleepB")
         bindir = os_path(root, "/usr/bin")
-        shell_file(os_path(testdir, "testsleepA.bin"), """
+        shell_file(os_path(testdir, "testsleepA.bin"), F"""
             #! /bin/sh
             echo starts testsleepA >&2
             echo running testsleepA
             exec {bindir}/{testsleepA} "$@"
-            """.format(**locals()))
-        shell_file(os_path(testdir, "testsleepB.bin"), """
+            """)
+        shell_file(os_path(testdir, "testsleepB.bin"), F"""
             #! /bin/sh
             echo starts testsleepB >&2
             echo running testsleepB
             exec {bindir}/{testsleepB} "$@"
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.service"), """
+            """)
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -19166,8 +19165,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardError=journal
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzb.service"), """
+            """)
+        text_file(os_path(testdir, "zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
@@ -19177,7 +19176,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardError=journal
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleepA))
         copy_tool(_bin_sleep, os_path(bindir, testsleepB))
         copy_tool(os_path(testdir, "testsleepA.bin"), os_path(bindir, testsleepA + ".bin"))
@@ -19191,7 +19190,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
-        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -19248,19 +19247,19 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleepA = self.testname("sleepA")
         testsleepB = self.testname("sleepB")
         bindir = os_path(root, "/usr/bin")
-        shell_file(os_path(testdir, "testsleepA.bin"), """
+        shell_file(os_path(testdir, "testsleepA.bin"), F"""
             #! /bin/sh
             echo starts testsleepA >&2
             echo running testsleepA
             exec {bindir}/{testsleepA} "$@"
-            """.format(**locals()))
-        shell_file(os_path(testdir, "testsleepB.bin"), """
+            """)
+        shell_file(os_path(testdir, "testsleepB.bin"), F"""
             #! /bin/sh
             echo starts testsleepB >&2
             echo running testsleepB
             exec {bindir}/{testsleepB} "$@"
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.service"), """
+            """)
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -19270,8 +19269,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardError=null
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzb.service"), """
+            """)
+        text_file(os_path(testdir, "zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
@@ -19281,7 +19280,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardError=null
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleepA))
         copy_tool(_bin_sleep, os_path(bindir, testsleepB))
         copy_tool(os_path(testdir, "testsleepA.bin"), os_path(bindir, testsleepA + ".bin"))
@@ -19295,7 +19294,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
-        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -19340,19 +19339,19 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleepA = self.testname("sleepA")
         testsleepB = self.testname("sleepB")
         bindir = os_path(root, "/usr/bin")
-        shell_file(os_path(testdir, "testsleepA.bin"), """
+        shell_file(os_path(testdir, "testsleepA.bin"), F"""
             #! /bin/sh
             echo starts testsleepA >&2
             echo running testsleepA
             exec {bindir}/{testsleepA} "$@"
-            """.format(**locals()))
-        shell_file(os_path(testdir, "testsleepB.bin"), """
+            """)
+        shell_file(os_path(testdir, "testsleepB.bin"), F"""
             #! /bin/sh
             echo starts testsleepB >&2
             echo running testsleepB
             exec {bindir}/{testsleepB} "$@"
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.service"), """
+            """)
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -19361,8 +19360,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardOutput=null
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzb.service"), """
+            """)
+        text_file(os_path(testdir, "zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
@@ -19371,7 +19370,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardOutput=null
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleepA))
         copy_tool(_bin_sleep, os_path(bindir, testsleepB))
         copy_tool(os_path(testdir, "testsleepA.bin"), os_path(bindir, testsleepA + ".bin"))
@@ -19385,7 +19384,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
-        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -19430,19 +19429,19 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleepA = self.testname("sleepA")
         testsleepB = self.testname("sleepB")
         bindir = os_path(root, "/usr/bin")
-        shell_file(os_path(testdir, "testsleepA.bin"), """
+        shell_file(os_path(testdir, "testsleepA.bin"), F"""
             #! /bin/sh
             echo starts testsleepA >&2
             echo running testsleepA
             exec {bindir}/{testsleepA} "$@"
-            """.format(**locals()))
-        shell_file(os_path(testdir, "testsleepB.bin"), """
+            """)
+        shell_file(os_path(testdir, "testsleepB.bin"), F"""
             #! /bin/sh
             echo starts testsleepB >&2
             echo running testsleepB
             exec {bindir}/{testsleepB} "$@"
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.service"), """
+            """)
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -19451,8 +19450,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardOutput=file:{root}/var/log/zza.log
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzb.service"), """
+            """)
+        text_file(os_path(testdir, "zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
@@ -19461,7 +19460,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardOutput=file:{root}/var/log/zzb.log
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleepA))
         copy_tool(_bin_sleep, os_path(bindir, testsleepB))
         copy_tool(os_path(testdir, "testsleepA.bin"), os_path(bindir, testsleepA + ".bin"))
@@ -19475,7 +19474,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
-        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -19537,19 +19536,19 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleepA = self.testname("sleepA")
         testsleepB = self.testname("sleepB")
         bindir = os_path(root, "/usr/bin")
-        shell_file(os_path(testdir, "testsleepA.bin"), """
+        shell_file(os_path(testdir, "testsleepA.bin"), F"""
             #! /bin/sh
             echo starts testsleepA >&2
             echo running testsleepA
             exec {bindir}/{testsleepA} "$@"
-            """.format(**locals()))
-        shell_file(os_path(testdir, "testsleepB.bin"), """
+            """)
+        shell_file(os_path(testdir, "testsleepB.bin"), F"""
             #! /bin/sh
             echo starts testsleepB >&2
             echo running testsleepB
             exec {bindir}/{testsleepB} "$@"
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.service"), """
+            """)
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -19558,8 +19557,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardError=file:{root}/var/log/zza.log
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzb.service"), """
+            """)
+        text_file(os_path(testdir, "zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
@@ -19568,7 +19567,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardError=file:{root}/var/log/zzb.log
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleepA))
         copy_tool(_bin_sleep, os_path(bindir, testsleepB))
         copy_tool(os_path(testdir, "testsleepA.bin"), os_path(bindir, testsleepA + ".bin"))
@@ -19582,7 +19581,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
-        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -19646,19 +19645,19 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleepA = self.testname("sleepA")
         testsleepB = self.testname("sleepB")
         bindir = os_path(root, "/usr/bin")
-        shell_file(os_path(testdir, "testsleepA.bin"), """
+        shell_file(os_path(testdir, "testsleepA.bin"), F"""
             #! /bin/sh
             echo starts testsleepA >&2
             echo running testsleepA
             exec {bindir}/{testsleepA} "$@"
-            """.format(**locals()))
-        shell_file(os_path(testdir, "testsleepB.bin"), """
+            """)
+        shell_file(os_path(testdir, "testsleepB.bin"), F"""
             #! /bin/sh
             echo starts testsleepB >&2
             echo running testsleepB
             exec {bindir}/{testsleepB} "$@"
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.service"), """
+            """)
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -19668,8 +19667,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardError=journal
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzb.service"), """
+            """)
+        text_file(os_path(testdir, "zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
@@ -19679,7 +19678,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardError=journal
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleepA))
         copy_tool(_bin_sleep, os_path(bindir, testsleepB))
         copy_tool(os_path(testdir, "testsleepA.bin"), os_path(bindir, testsleepA + ".bin"))
@@ -19693,7 +19692,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
-        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -19758,19 +19757,19 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleepA = self.testname("sleepA")
         testsleepB = self.testname("sleepB")
         bindir = os_path(root, "/usr/bin")
-        shell_file(os_path(testdir, "testsleepA.bin"), """
+        shell_file(os_path(testdir, "testsleepA.bin"), F"""
             #! /bin/sh
             echo starts testsleepA >&2
             echo running testsleepA
             exec {bindir}/{testsleepA} "$@"
-            """.format(**locals()))
-        shell_file(os_path(testdir, "testsleepB.bin"), """
+            """)
+        shell_file(os_path(testdir, "testsleepB.bin"), F"""
             #! /bin/sh
             echo starts testsleepB >&2
             echo running testsleepB
             exec {bindir}/{testsleepB} "$@"
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.service"), """
+            """)
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -19779,8 +19778,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardOutput=file:{root}/var/log/zza.log
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzb.service"), """
+            """)
+        text_file(os_path(testdir, "zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
@@ -19789,7 +19788,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardOutput=file:{root}/var/log/zzb.log
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         text_file(os_path(testdir, "append.log"), "append")
         copy_tool(_bin_sleep, os_path(bindir, testsleepA))
         copy_tool(_bin_sleep, os_path(bindir, testsleepB))
@@ -19806,7 +19805,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
-        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -19871,19 +19870,19 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleepA = self.testname("sleepA")
         testsleepB = self.testname("sleepB")
         bindir = os_path(root, "/usr/bin")
-        shell_file(os_path(testdir, "testsleepA.bin"), """
+        shell_file(os_path(testdir, "testsleepA.bin"), F"""
             #! /bin/sh
             echo starts testsleepA >&2
             echo running testsleepA
             exec {bindir}/{testsleepA} "$@"
-            """.format(**locals()))
-        shell_file(os_path(testdir, "testsleepB.bin"), """
+            """)
+        shell_file(os_path(testdir, "testsleepB.bin"), F"""
             #! /bin/sh
             echo starts testsleepB >&2
             echo running testsleepB
             exec {bindir}/{testsleepB} "$@"
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.service"), """
+            """)
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -19892,8 +19891,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardError=file:{root}/var/log/zza.log
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzb.service"), """
+            """)
+        text_file(os_path(testdir, "zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
@@ -19902,7 +19901,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardError=file:{root}/var/log/zzb.log
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         text_file(os_path(testdir, "append.log"), "append")
         copy_tool(_bin_sleep, os_path(bindir, testsleepA))
         copy_tool(_bin_sleep, os_path(bindir, testsleepB))
@@ -19919,7 +19918,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
-        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -19986,19 +19985,19 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleepA = self.testname("sleepA")
         testsleepB = self.testname("sleepB")
         bindir = os_path(root, "/usr/bin")
-        shell_file(os_path(testdir, "testsleepA.bin"), """
+        shell_file(os_path(testdir, "testsleepA.bin"), F"""
             #! /bin/sh
             echo starts testsleepA >&2
             echo running testsleepA
             exec {bindir}/{testsleepA} "$@"
-            """.format(**locals()))
-        shell_file(os_path(testdir, "testsleepB.bin"), """
+            """)
+        shell_file(os_path(testdir, "testsleepB.bin"), F"""
             #! /bin/sh
             echo starts testsleepB >&2
             echo running testsleepB
             exec {bindir}/{testsleepB} "$@"
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.service"), """
+            """)
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -20008,8 +20007,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardError=journal
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzb.service"), """
+            """)
+        text_file(os_path(testdir, "zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
@@ -20019,7 +20018,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardError=journal
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         text_file(os_path(testdir, "append.log"), "append")
         copy_tool(_bin_sleep, os_path(bindir, testsleepA))
         copy_tool(_bin_sleep, os_path(bindir, testsleepB))
@@ -20036,7 +20035,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
-        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -20103,19 +20102,19 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleepA = self.testname("sleepA")
         testsleepB = self.testname("sleepB")
         bindir = os_path(root, "/usr/bin")
-        shell_file(os_path(testdir, "testsleepA.bin"), """
+        shell_file(os_path(testdir, "testsleepA.bin"), F"""
             #! /bin/sh
             echo starts testsleepA >&2
             echo running testsleepA
             exec {bindir}/{testsleepA} "$@"
-            """.format(**locals()))
-        shell_file(os_path(testdir, "testsleepB.bin"), """
+            """)
+        shell_file(os_path(testdir, "testsleepB.bin"), F"""
             #! /bin/sh
             echo starts testsleepB >&2
             echo running testsleepB
             exec {bindir}/{testsleepB} "$@"
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.service"), """
+            """)
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -20124,8 +20123,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardOutput=append:{root}/var/log/zza.log
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzb.service"), """
+            """)
+        text_file(os_path(testdir, "zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
@@ -20134,7 +20133,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardOutput=append:{root}/var/log/zzb.log
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         text_file(os_path(testdir, "append.log"), "append")
         copy_tool(_bin_sleep, os_path(bindir, testsleepA))
         copy_tool(_bin_sleep, os_path(bindir, testsleepB))
@@ -20151,7 +20150,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
-        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -20216,19 +20215,19 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleepA = self.testname("sleepA")
         testsleepB = self.testname("sleepB")
         bindir = os_path(root, "/usr/bin")
-        shell_file(os_path(testdir, "testsleepA.bin"), """
+        shell_file(os_path(testdir, "testsleepA.bin"), F"""
             #! /bin/sh
             echo starts testsleepA >&2
             echo running testsleepA
             exec {bindir}/{testsleepA} "$@"
-            """.format(**locals()))
-        shell_file(os_path(testdir, "testsleepB.bin"), """
+            """)
+        shell_file(os_path(testdir, "testsleepB.bin"), F"""
             #! /bin/sh
             echo starts testsleepB >&2
             echo running testsleepB
             exec {bindir}/{testsleepB} "$@"
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.service"), """
+            """)
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -20237,8 +20236,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardError=append:{root}/var/log/zza.log
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzb.service"), """
+            """)
+        text_file(os_path(testdir, "zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
@@ -20247,7 +20246,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardError=append:{root}/var/log/zzb.log
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         text_file(os_path(testdir, "append.log"), "append")
         copy_tool(_bin_sleep, os_path(bindir, testsleepA))
         copy_tool(_bin_sleep, os_path(bindir, testsleepB))
@@ -20264,7 +20263,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
-        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -20331,19 +20330,19 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleepA = self.testname("sleepA")
         testsleepB = self.testname("sleepB")
         bindir = os_path(root, "/usr/bin")
-        shell_file(os_path(testdir, "testsleepA.bin"), """
+        shell_file(os_path(testdir, "testsleepA.bin"), F"""
             #! /bin/sh
             echo starts testsleepA >&2
             echo running testsleepA
             exec {bindir}/{testsleepA} "$@"
-            """.format(**locals()))
-        shell_file(os_path(testdir, "testsleepB.bin"), """
+            """)
+        shell_file(os_path(testdir, "testsleepB.bin"), F"""
             #! /bin/sh
             echo starts testsleepB >&2
             echo running testsleepB
             exec {bindir}/{testsleepB} "$@"
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.service"), """
+            """)
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -20353,8 +20352,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardError=journal
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzb.service"), """
+            """)
+        text_file(os_path(testdir, "zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
@@ -20364,7 +20363,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardError=journal
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         text_file(os_path(testdir, "append.log"), "append")
         copy_tool(_bin_sleep, os_path(bindir, testsleepA))
         copy_tool(_bin_sleep, os_path(bindir, testsleepB))
@@ -20381,7 +20380,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
-        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -20448,19 +20447,19 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleepA = self.testname("sleepA")
         testsleepB = self.testname("sleepB")
         bindir = os_path(root, "/usr/bin")
-        shell_file(os_path(testdir, "testsleepA.bin"), """
+        shell_file(os_path(testdir, "testsleepA.bin"), F"""
             #! /bin/sh
             echo starts testsleepA >&2
             echo running testsleepA
             exec {bindir}/{testsleepA} "$@"
-            """.format(**locals()))
-        shell_file(os_path(testdir, "testsleepB.bin"), """
+            """)
+        shell_file(os_path(testdir, "testsleepB.bin"), F"""
             #! /bin/sh
             echo starts testsleepB >&2
             echo running testsleepB
             exec {bindir}/{testsleepB} "$@"
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.service"), """
+            """)
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -20469,8 +20468,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardOutput=file:{root}/var/log/zza.log
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzb.service"), """
+            """)
+        text_file(os_path(testdir, "zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
@@ -20479,7 +20478,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardOutput=file:{root}/var/log/zzb.log
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleepA))
         copy_tool(_bin_sleep, os_path(bindir, testsleepB))
         copy_tool(os_path(testdir, "testsleepA.bin"), os_path(bindir, testsleepA + ".bin"))
@@ -20495,7 +20494,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
-        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -20563,19 +20562,19 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleepA = self.testname("sleepA")
         testsleepB = self.testname("sleepB")
         bindir = os_path(root, "/usr/bin")
-        shell_file(os_path(testdir, "testsleepA.bin"), """
+        shell_file(os_path(testdir, "testsleepA.bin"), F"""
             #! /bin/sh
             echo starts testsleepA >&2
             echo running testsleepA
             exec {bindir}/{testsleepA} "$@"
-            """.format(**locals()))
-        shell_file(os_path(testdir, "testsleepB.bin"), """
+            """)
+        shell_file(os_path(testdir, "testsleepB.bin"), F"""
             #! /bin/sh
             echo starts testsleepB >&2
             echo running testsleepB
             exec {bindir}/{testsleepB} "$@"
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.service"), """
+            """)
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -20584,8 +20583,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardError=file:{root}/var/log/zza.log
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzb.service"), """
+            """)
+        text_file(os_path(testdir, "zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
@@ -20594,7 +20593,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardError=file:{root}/var/log/zzb.log
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleepA))
         copy_tool(_bin_sleep, os_path(bindir, testsleepB))
         copy_tool(os_path(testdir, "testsleepA.bin"), os_path(bindir, testsleepA + ".bin"))
@@ -20610,7 +20609,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
-        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -20680,19 +20679,19 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleepA = self.testname("sleepA")
         testsleepB = self.testname("sleepB")
         bindir = os_path(root, "/usr/bin")
-        shell_file(os_path(testdir, "testsleepA.bin"), """
+        shell_file(os_path(testdir, "testsleepA.bin"), F"""
             #! /bin/sh
             echo starts testsleepA >&2
             echo running testsleepA
             exec {bindir}/{testsleepA} "$@"
-            """.format(**locals()))
-        shell_file(os_path(testdir, "testsleepB.bin"), """
+            """)
+        shell_file(os_path(testdir, "testsleepB.bin"), F"""
             #! /bin/sh
             echo starts testsleepB >&2
             echo running testsleepB
             exec {bindir}/{testsleepB} "$@"
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.service"), """
+            """)
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -20702,8 +20701,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardError=journal
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzb.service"), """
+            """)
+        text_file(os_path(testdir, "zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
@@ -20713,7 +20712,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardError=journal
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool(_bin_sleep, os_path(bindir, testsleepA))
         copy_tool(_bin_sleep, os_path(bindir, testsleepB))
         copy_tool(os_path(testdir, "testsleepA.bin"), os_path(bindir, testsleepA + ".bin"))
@@ -20729,7 +20728,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
-        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -20799,7 +20798,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         replyA = self.testname("replyA")
         replyB = self.testname("replyB")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -20809,8 +20808,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardInput=file:{root}/var/log/zza.txt
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzb.service"), """
+            """)
+        text_file(os_path(testdir, "zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
@@ -20820,7 +20819,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardInput=file:{root}/var/log/zzb.txt
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         text_file(os_path(testdir, "zza.txt"), """testing zzA""")
         text_file(os_path(testdir, "zzb.txt"), """testing zzB""")
         copy_tool("reply.py", os_path(bindir, replyA))
@@ -20836,7 +20835,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
-        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -20894,7 +20893,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         replyA = self.testname("replyA")
         replyB = self.testname("replyB")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -20904,8 +20903,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardInput=file:{root}/var/log/zza-nothing.txt
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzb.service"), """
+            """)
+        text_file(os_path(testdir, "zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
@@ -20915,7 +20914,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardInput=file:{root}/var/log/zzb.txt
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         text_file(os_path(testdir, "zza.txt"), """testing zzA""")
         text_file(os_path(testdir, "zzb.txt"), """testing zzB""")
         copy_tool("reply.py", os_path(bindir, replyA))
@@ -20931,7 +20930,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
-        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -20989,7 +20988,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         replyA = self.testname("replyA")
         replyB = self.testname("replyB")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -20999,8 +20998,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardInput=syslog
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzb.service"), """
+            """)
+        text_file(os_path(testdir, "zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
@@ -21010,7 +21009,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardInput=file:{root}/var/log/zzb.txt
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         text_file(os_path(testdir, "zza.txt"), """testing zzA""")
         text_file(os_path(testdir, "zzb.txt"), """testing zzB""")
         copy_tool("reply.py", os_path(bindir, replyA))
@@ -21026,7 +21025,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
-        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -21085,7 +21084,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         replyA = self.testname("replyA")
         replyB = self.testname("replyB")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -21094,8 +21093,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardOutput=file:{root}/var/log/zza.log
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.socket"), """
+            """)
+        text_file(os_path(testdir, "zza.socket"), F"""
             [Unit]
             Description=Testing B
             [Socket]
@@ -21104,7 +21103,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Service=zza.service
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool("reply.py", os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
@@ -21113,7 +21112,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
-        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -21128,7 +21127,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
         #
-        oo = reads(debug_log.format(**locals()))
+        oo = reads(debug_log.format(**locals())) # TODO
         logg.info("debug.log>>\%s", oo)
         #
         cmd = F"./reply.py sendUNIX -d foo -f {sockfile}"
@@ -21138,8 +21137,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "request: foo"))
         self.assertTrue(greps(out, "replied: FOO"))
         #
-        log = "{root}/var/log/zza.log"
-        out = reads(log.format(**locals()))
+        log = F"{root}/var/log/zza.log"
+        out = reads(log)
         logg.info("zza.log>>%s", out)
         self.assertTrue(greps(out, "received:.*foo"))
         #
@@ -21165,7 +21164,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         replyB = self.testname("replyB")
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -21174,8 +21173,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardOutput=file:{root}/var/log/zza.log
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.socket"), """
+            """)
+        text_file(os_path(testdir, "zza.socket"), F"""
             [Unit]
             Description=Testing B
             [Socket]
@@ -21184,8 +21183,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Service=zza.service
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzc.service"), """
+            """)
+        text_file(os_path(testdir, "zzc.service"), F"""
             [Unit]
             Description=Testing C
             [Service]
@@ -21193,7 +21192,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart={root}/usr/bin/{testsleep} 5
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool("reply.py", os_path(bindir, replyA))
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
@@ -21204,7 +21203,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
-        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -21219,7 +21218,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
         #
-        oo = reads(debug_log.format(**locals()))
+        oo = reads(debug_log.format(**locals()))  # TODO
         logg.info("debug.log>>\%s", oo)
         #
         cmd = F"./reply.py sendUNIX -d foo -f {sockfile}"
@@ -21239,8 +21238,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "request: foo"))
         self.assertTrue(greps(out, "replied: FOO"))
         #
-        log = "{root}/var/log/zza.log"
-        out = reads(log.format(**locals()))
+        log = F"{root}/var/log/zza.log"
+        out = reads(log)
         logg.info("zza.log>>%s", out)
         self.assertTrue(greps(out, "received:.*foo"))
         #
@@ -21279,7 +21278,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         text_file(os_path(root, "/var/run/zz.txt"), "zz")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -21288,8 +21287,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardOutput=file:{root}/var/log/zza.log
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.socket"), """
+            """)
+        text_file(os_path(testdir, "zza.socket"), F"""
             [Unit]
             Description=Testing B
             [Socket]
@@ -21301,8 +21300,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost=/usr/bin/touch {root}/var/run/zza.socket.end.txt
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzc.service"), """
+            """)
+        text_file(os_path(testdir, "zzc.service"), F"""
             [Unit]
             Description=Testing C
             [Service]
@@ -21310,7 +21309,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart={root}/usr/bin/{testsleep} 5
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool("reply.py", os_path(bindir, replyA))
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
@@ -21321,7 +21320,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
-        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -21336,7 +21335,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
         #
-        oo = reads(debug_log.format(**locals()))
+        oo = reads(debug_log.format(**locals())) # TODO
         logg.info("debug.log>>\%s", oo)
         #
         cmd = F"./reply.py sendUNIX -d foo -f {sockfile}"
@@ -21366,8 +21365,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "request: foo"))
         self.assertTrue(greps(out, "replied: FOO"))
         #
-        log = "{root}/var/log/zza.log"
-        out = reads(log.format(**locals()))
+        log = F"{root}/var/log/zza.log"
+        out = reads(log)
         logg.info("zza.log>>%s", out)
         self.assertTrue(greps(out, "received:.*foo"))
         #
@@ -21409,7 +21408,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         text_file(os_path(root, "/var/run/zz.txt"), "zz")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -21418,8 +21417,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardOutput=file:{root}/var/log/zza.log
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.socket"), """
+            """)
+        text_file(os_path(testdir, "zza.socket"), F"""
             [Unit]
             Description=Testing B
             [Socket]
@@ -21431,8 +21430,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost=/usr/bin/touch {root}/var/run/zza.socket.end.txt
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzc.service"), """
+            """)
+        text_file(os_path(testdir, "zzc.service"), F"""
             [Unit]
             Description=Testing C
             [Service]
@@ -21440,7 +21439,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart={root}/usr/bin/{testsleep} 5
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool("reply.py", os_path(bindir, replyA))
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
@@ -21451,11 +21450,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
-        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
-        sx____("ls -l {root}/var/run/zz*".format(**locals()))
+        sx____(F"ls -l {root}/var/run/zz*")
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
@@ -21463,15 +21462,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         init = background(cmd)
         time.sleep(InitLoopSleep+1)
         #
-        sx____("ls -l {root}/var/run/zz*".format(**locals()))
+        sx____(F"ls -l {root}/var/run/zz*")
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
         #
-        oo = reads(debug_log.format(**locals()))
+        oo = reads(debug_log.format(**locals()))  # TODO
         logg.info("debug.log>>\%s", i2(oo))
         #
-        sx____("ls -l {root}/var/run/zz*".format(**locals()))
+        sx____(F"ls -l {root}/var/run/zz*")
         zza_pre = os_path(root, "/var/run/zza.socket.pre.txt")
         zza_post = os_path(root, "/var/run/zza.socket.post.txt")
         zza_end = os_path(root, "/var/run/zza.socket.end.txt")
@@ -21486,8 +21485,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "request: foo"))
         self.assertTrue(greps(out, "replied: FOO"))
         #
-        log = "{root}/var/log/zza.log"
-        out = reads(log.format(**locals()))
+        log = F"{root}/var/log/zza.log"
+        out = reads(log)
         logg.info("zza.log>>%s", out)
         self.assertTrue(greps(out, "received:.*foo"))
         #
@@ -21529,7 +21528,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         text_file(os_path(root, "/var/run/zz.txt"), "zz")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -21539,8 +21538,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardOutput=file:{root}/var/log/zza.log
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.socket"), """
+            """)
+        text_file(os_path(testdir, "zza.socket"), F"""
             [Unit]
             Description=Testing B
             [Socket]
@@ -21552,8 +21551,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost=/usr/bin/touch {root}/var/run/zza.socket.end.txt
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzc.service"), """
+            """)
+        text_file(os_path(testdir, "zzc.service"), F"""
             [Unit]
             Description=Testing C
             [Service]
@@ -21561,7 +21560,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart={root}/usr/bin/{testsleep} 5
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool("reply.py", os_path(bindir, replyA))
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
@@ -21572,7 +21571,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
-        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -21587,7 +21586,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
         #
-        oo = reads(debug_log.format(**locals()))
+        oo = reads(debug_log.format(**locals())) # TODO
         logg.info("debug.log>>\%s", oo)
         #
         cmd = F"./reply.py sendUNIX -d foo -f {sockfile}"
@@ -21650,7 +21649,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         text_file(os_path(root, "/var/run/zz.txt"), "zz")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -21660,8 +21659,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardOutput=file:{root}/var/log/zza.log
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.socket"), """
+            """)
+        text_file(os_path(testdir, "zza.socket"), F"""
             [Unit]
             Description=Testing B
             [Socket]
@@ -21673,8 +21672,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost=/usr/bin/touch {root}/var/run/zza.socket.end.txt
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzc.service"), """
+            """)
+        text_file(os_path(testdir, "zzc.service"), F"""
             [Unit]
             Description=Testing C
             [Service]
@@ -21682,7 +21681,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart={root}/usr/bin/{testsleep} 5
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool("reply.py", os_path(bindir, replyA))
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
@@ -21693,7 +21692,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
-        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -21708,7 +21707,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
         #
-        oo = reads(debug_log.format(**locals()))
+        oo = reads(debug_log.format(**locals())) # TODO
         logg.info("debug.log>>\%s", oo)
         #
         zza_pre = os_path(root, "/var/run/zza.socket.pre.txt")
@@ -21761,7 +21760,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         this_user=get_USER()
         this_group=get_GROUP()
         text_file(os_path(root, "/var/run/zz.txt"), "zz")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -21774,8 +21773,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             # User={this_user}
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.socket"), """
+            """)
+        text_file(os_path(testdir, "zza.socket"), F"""
             [Unit]
             Description=Testing B
             [Socket]
@@ -21788,8 +21787,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost=/usr/bin/touch {root}/var/run/zza.socket.end.txt
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzc.service"), """
+            """)
+        text_file(os_path(testdir, "zzc.service"), F"""
             [Unit]
             Description=Testing C
             [Service]
@@ -21797,7 +21796,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart={root}/usr/bin/{testsleep} 5
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool("reply.py", os_path(bindir, replyA))
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
@@ -21808,7 +21807,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
-        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -21823,7 +21822,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
         #
-        oo = reads(debug_log.format(**locals()))
+        oo = reads(debug_log.format(**locals())) # TODO
         logg.info("debug.log>>\%s", oo)
         #
         cmd = F"./reply.py sendUNIX -d foo -f {sockfile}"
@@ -21888,7 +21887,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         this_user=get_USER()
         this_group=get_GROUP()
         text_file(os_path(root, "/var/run/zz.txt"), "zz")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -21902,8 +21901,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             # Group={this_group}
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.socket"), """
+            """)
+        text_file(os_path(testdir, "zza.socket"), F"""
             [Unit]
             Description=Testing B
             [Socket]
@@ -21917,8 +21916,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost=/usr/bin/touch {root}/var/run/zza.socket.end.txt
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzc.service"), """
+            """)
+        text_file(os_path(testdir, "zzc.service"), F"""
             [Unit]
             Description=Testing C
             [Service]
@@ -21926,7 +21925,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart={root}/usr/bin/{testsleep} 5
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool("reply.py", os_path(bindir, replyA))
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
@@ -21937,7 +21936,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
-        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -21952,7 +21951,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
         #
-        oo = reads(debug_log.format(**locals()))
+        oo = reads(debug_log.format(**locals())) # TODO
         logg.info("debug.log>>\%s", oo)
         #
         cmd = F"./reply.py sendUNIX -d foo -f {sockfile}"
@@ -22017,7 +22016,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         this_user=get_USER()
         this_group=get_GROUP()
         text_file(os_path(root, "/var/run/zz.txt"), "zz")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -22030,8 +22029,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Group={this_group}
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.socket"), """
+            """)
+        text_file(os_path(testdir, "zza.socket"), F"""
             [Unit]
             Description=Testing B
             [Socket]
@@ -22044,8 +22043,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost=/usr/bin/touch {root}/var/run/zza.socket.end.txt
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzc.service"), """
+            """)
+        text_file(os_path(testdir, "zzc.service"), F"""
             [Unit]
             Description=Testing C
             [Service]
@@ -22053,7 +22052,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart={root}/usr/bin/{testsleep} 5
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool("reply.py", os_path(bindir, replyA))
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
@@ -22064,7 +22063,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
-        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -22079,7 +22078,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
         #
-        oo = reads(debug_log.format(**locals()))
+        oo = reads(debug_log.format(**locals())) # TODO
         logg.info("debug.log>>\%s", oo)
         #
         cmd = F"./reply.py sendUNIX -d foo -f {sockfile}"
@@ -22144,7 +22143,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         this_user=get_USER()
         this_group=get_GROUP()
         text_file(os_path(root, "/var/run/zz.txt"), "zz")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -22157,8 +22156,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             # User={this_user}
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.socket"), """
+            """)
+        text_file(os_path(testdir, "zza.socket"), F"""
             [Unit]
             Description=Testing B
             [Socket]
@@ -22171,8 +22170,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost=/usr/bin/touch {root}/var/run/zza.socket.end.txt
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzc.service"), """
+            """)
+        text_file(os_path(testdir, "zzc.service"), F"""
             [Unit]
             Description=Testing C
             [Service]
@@ -22180,7 +22179,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart={root}/usr/bin/{testsleep} 5
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool("reply.py", os_path(bindir, replyA))
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
@@ -22191,7 +22190,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
-        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -22206,7 +22205,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
         #
-        oo = reads(debug_log.format(**locals()))
+        oo = reads(debug_log.format(**locals())) # TODO
         logg.info("debug.log>>\%s", oo)
         #
         zza_pre = os_path(root, "/var/run/zza.socket.pre.txt")
@@ -22256,7 +22255,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         this_user=get_USER()
         this_group=get_GROUP()
         text_file(os_path(root, "/var/run/zz.txt"), "zz")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -22270,8 +22269,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             # Group={this_group}
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.socket"), """
+            """)
+        text_file(os_path(testdir, "zza.socket"), F"""
             [Unit]
             Description=Testing B
             [Socket]
@@ -22285,8 +22284,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost=/usr/bin/touch {root}/var/run/zza.socket.end.txt
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzc.service"), """
+            """)
+        text_file(os_path(testdir, "zzc.service"), F"""
             [Unit]
             Description=Testing C
             [Service]
@@ -22294,7 +22293,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart={root}/usr/bin/{testsleep} 5
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool("reply.py", os_path(bindir, replyA))
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
@@ -22305,7 +22304,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
-        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -22320,7 +22319,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
         #
-        oo = reads(debug_log.format(**locals()))
+        oo = reads(debug_log.format(**locals())) # TODO
         logg.info("debug.log>>\%s", oo)
         #
         zza_pre = os_path(root, "/var/run/zza.socket.pre.txt")
@@ -22370,7 +22369,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         this_user=get_USER()
         this_group=get_GROUP()
         text_file(os_path(root, "/var/run/zz.txt"), "zz")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -22383,8 +22382,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Group={this_group}
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.socket"), """
+            """)
+        text_file(os_path(testdir, "zza.socket"), F"""
             [Unit]
             Description=Testing B
             [Socket]
@@ -22397,8 +22396,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost=/usr/bin/touch {root}/var/run/zza.socket.end.txt
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzc.service"), """
+            """)
+        text_file(os_path(testdir, "zzc.service"), F"""
             [Unit]
             Description=Testing C
             [Service]
@@ -22406,7 +22405,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart={root}/usr/bin/{testsleep} 5
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool("reply.py", os_path(bindir, replyA))
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
@@ -22417,7 +22416,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
-        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -22432,7 +22431,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
         #
-        oo = reads(debug_log.format(**locals()))
+        oo = reads(debug_log.format(**locals())) # TODO
         logg.info("debug.log>>\%s", oo)
         #
         zza_pre = os_path(root, "/var/run/zza.socket.pre.txt")
@@ -22478,7 +22477,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         replyA = self.testname("replyA")
         replyB = self.testname("replyB")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -22487,8 +22486,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardOutput=file:{root}/var/log/zza.log
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.socket"), """
+            """)
+        text_file(os_path(testdir, "zza.socket"), F"""
             [Unit]
             Description=Testing B
             [Socket]
@@ -22497,7 +22496,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Service=zza.service
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool("reply.py", os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
@@ -22506,7 +22505,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
-        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -22527,8 +22526,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("send.log>>\n%s", out)
         self.assertTrue(greps(out, "request: foo"))
         self.assertTrue(greps(out, "replied: FOO"))
-        log = "{root}/var/log/zza.log"
-        out = reads(log.format(**locals()))
+        log = F"{root}/var/log/zza.log"
+        out = reads(log)
         logg.info("zza.log>>\n%s", out)
         self.assertTrue(greps(out, "received:.*foo"))
         #
@@ -22552,7 +22551,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         replyA = self.testname("replyA")
         replyB = self.testname("replyB")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -22561,8 +22560,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardOutput=file:{root}/var/log/zza.log
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.socket"), """
+            """)
+        text_file(os_path(testdir, "zza.socket"), F"""
             [Unit]
             Description=Testing B
             [Socket]
@@ -22570,7 +22569,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Service=zza.service
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool("reply.py", os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
@@ -22579,7 +22578,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
-        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -22601,8 +22600,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "request: foo"))
         # self.assertTrue(greps(out, "replied: FOO")) # FIXME
         self.assertTrue(greps(out, "replied: ERROR: FOO"))
-        ### log = "{root}/var/log/zza.log"
-        ### out = open(log.format(**locals())).read()
+        ### log = F"{root}/var/log/zza.log"
+        ### out = open(log).read()
         ### logg.info("zza.log>>\n%s", out)
         # self.assertTrue(greps(out, "received:.*foo")) # FIXME
         #
@@ -22632,7 +22631,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         replyA = self.testname("replyA")
         replyB = self.testname("replyB")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -22641,8 +22640,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardOutput=file:{root}/var/log/zza.log
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.socket"), """
+            """)
+        text_file(os_path(testdir, "zza.socket"), F"""
             [Unit]
             Description=Testing B
             [Socket]
@@ -22652,7 +22651,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Service=zza.service
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool("reply.py", os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
@@ -22661,7 +22660,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
-        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -22683,8 +22682,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "request: foo"))
         # self.assertTrue(greps(out, "replied: FOO")) # FIXME
         self.assertTrue(greps(out, "replied: ERROR: FOO"))
-        ### log = "{root}/var/log/zza.log"
-        ### out = open(log.format(**locals())).read()
+        ### log = F"{root}/var/log/zza.log"
+        ### out = open(log).read()
         ### logg.info("zza.log>>\n%s", out)
         # self.assertTrue(greps(out, "received:.*foo")) # FIXME
         #
@@ -22716,7 +22715,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         replyA = self.testname("replyA")
         replyB = self.testname("replyB")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -22725,8 +22724,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardOutput=file:{root}/var/log/zza.log
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.socket"), """
+            """)
+        text_file(os_path(testdir, "zza.socket"), F"""
             [Unit]
             Description=Testing B
             [Socket]
@@ -22736,7 +22735,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Service=zza.service
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool("reply.py", os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
@@ -22745,7 +22744,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
-        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -22767,8 +22766,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "request: foo"))
         # self.assertTrue(greps(out, "replied: FOO")) # FIXME
         self.assertTrue(greps(out, "replied: ERROR: FOO"))
-        ### log = "{root}/var/log/zza.log"
-        ### out = open(log.format(**locals())).read()
+        ### log = F"{root}/var/log/zza.log"
+        ### out = open(log).read()
         ### logg.info("zza.log>>\n%s", out)
         # self.assertTrue(greps(out, "received:.*foo")) # FIXME
         #
@@ -22800,7 +22799,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         replyA = self.testname("replyA")
         replyB = self.testname("replyB")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -22809,8 +22808,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardOutput=file:{root}/var/log/zza.log
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.socket"), """
+            """)
+        text_file(os_path(testdir, "zza.socket"), F"""
             [Unit]
             Description=Testing B
             [Socket]
@@ -22820,7 +22819,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Service=zza.service
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool("reply.py", os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
@@ -22829,7 +22828,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
-        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -22851,8 +22850,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "request: foo"))
         # self.assertTrue(greps(out, "replied: FOO")) # FIXME
         self.assertTrue(greps(out, "replied: ERROR: FOO"))
-        ### log = "{root}/var/log/zza.log"
-        ### out = open(log.format(**locals())).read()
+        ### log = F"{root}/var/log/zza.log"
+        ### out = open(log).read()
         ### logg.info("zza.log>>\n%s", out)
         # self.assertTrue(greps(out, "received:.*foo")) # FIXME
         #
@@ -22882,7 +22881,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         replyA = self.testname("replyA")
         replyB = self.testname("replyB")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -22891,8 +22890,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardOutput=file:{root}/var/log/zza.log
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.socket"), """
+            """)
+        text_file(os_path(testdir, "zza.socket"), F"""
             [Unit]
             Description=Testing B
             [Socket]
@@ -22901,7 +22900,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Service=zza.service
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool("reply.py", os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
@@ -22913,7 +22912,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
-        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -22959,7 +22958,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         replyA = self.testname("replyA")
         replyB = self.testname("replyB")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -22968,8 +22967,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardOutput=file:{root}/var/log/zza.log
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.socket"), """
+            """)
+        text_file(os_path(testdir, "zza.socket"), F"""
             [Unit]
             Description=Testing B
             [Socket]
@@ -22978,7 +22977,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Service=zza.service
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool("reply.py", os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
@@ -22990,7 +22989,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
-        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -23041,7 +23040,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         replyA = self.testname("replyA")
         replyB = self.testname("replyB")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -23050,8 +23049,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardOutput=file:{root}/var/log/zza.log
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.socket"), """
+            """)
+        text_file(os_path(testdir, "zza.socket"), F"""
             [Unit]
             Description=Testing B
             [Socket]
@@ -23061,7 +23060,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Service=zza.service
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool("reply.py", os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
@@ -23073,7 +23072,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
-        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -23119,7 +23118,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         replyA = self.testname("replyA")
         replyB = self.testname("replyB")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -23128,8 +23127,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardOutput=file:{root}/var/log/zza.log
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.socket"), """
+            """)
+        text_file(os_path(testdir, "zza.socket"), F"""
             [Unit]
             Description=Testing B
             [Socket]
@@ -23139,7 +23138,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Service=zza.service
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool("reply.py", os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
@@ -23151,7 +23150,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
-        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -23198,7 +23197,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         replyA = self.testname("replyA")
         replyB = self.testname("replyB")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -23207,8 +23206,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardOutput=file:{root}/var/log/zza.log
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.socket"), """
+            """)
+        text_file(os_path(testdir, "zza.socket"), F"""
             [Unit]
             Description=Testing B
             [Socket]
@@ -23217,7 +23216,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Service=zza.service
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool("reply.py", os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
@@ -23226,7 +23225,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
-        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -23247,8 +23246,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("send.log>>\n%s", out)
         self.assertTrue(greps(out, "request: foo"))
         self.assertTrue(greps(out, "replied: FOO"))
-        log = "{root}/var/log/zza.log"
-        out = open(log.format(**locals())).read()
+        log = F"{root}/var/log/zza.log"
+        out = open(log).read()
         logg.info("zza.log>>\n%s", out)
         self.assertTrue(greps(out, "received:.*foo"))
         #
@@ -23274,7 +23273,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         replyA = self.testname("replyA")
         replyB = self.testname("replyB")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -23283,8 +23282,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardOutput=file:{root}/var/log/zza.log
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.socket"), """
+            """)
+        text_file(os_path(testdir, "zza.socket"), F"""
             [Unit]
             Description=Testing B
             [Socket]
@@ -23293,7 +23292,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Service=zza.service
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool("reply.py", os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
@@ -23302,7 +23301,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
-        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -23323,8 +23322,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("send.log>>\n%s", out)
         self.assertTrue(greps(out, "request: foo"))
         self.assertTrue(greps(out, "replied: FOO"))
-        log = "{root}/var/log/zza.log"
-        out = open(log.format(**locals())).read()
+        log = F"{root}/var/log/zza.log"
+        out = open(log).read()
         logg.info("zza.log>>\n%s", out)
         self.assertTrue(greps(out, "received:.*foo"))
         #
@@ -23350,7 +23349,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         replyA = self.testname("replyA")
         replyB = self.testname("replyB")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -23359,8 +23358,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardOutput=file:{root}/var/log/zza.log
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.socket"), """
+            """)
+        text_file(os_path(testdir, "zza.socket"), F"""
             [Unit]
             Description=Testing B
             [Socket]
@@ -23369,7 +23368,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Service=zza.service
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool("reply.py", os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
@@ -23378,7 +23377,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
-        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -23399,8 +23398,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("send.log>>\n%s", out)
         self.assertTrue(greps(out, "request: foo"))
         self.assertTrue(greps(out, "replied: FOO"))
-        log = "{root}/var/log/zza.log"
-        out = open(log.format(**locals())).read()
+        log = F"{root}/var/log/zza.log"
+        out = open(log).read()
         logg.info("zza.log>>\n%s", out)
         self.assertTrue(greps(out, "received:.*foo"))
         #
@@ -23426,7 +23425,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         replyA = self.testname("replyA")
         replyB = self.testname("replyB")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -23435,8 +23434,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardOutput=file:{root}/var/log/zza.log
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.socket"), """
+            """)
+        text_file(os_path(testdir, "zza.socket"), F"""
             [Unit]
             Description=Testing B
             [Socket]
@@ -23444,7 +23443,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Service=zza.service
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool("reply.py", os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
@@ -23453,7 +23452,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
-        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -23475,8 +23474,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "request: foo"))
         # self.assertTrue(greps(out, "replied: FOO"))
         self.assertTrue(greps(out, "replied: ERROR: FOO"))
-        log = "{root}/var/log/zza.log"
-        ### out = open(log.format(**locals())).read()
+        log = F"{root}/var/log/zza.log"
+        ### out = open(log).read()
         ### logg.info("zza.log>>\n%s", out)
         ### self.assertTrue(greps(out, "received:.*foo"))
         #
@@ -23507,7 +23506,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         replyA = self.testname("replyA")
         replyB = self.testname("replyB")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -23516,8 +23515,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardOutput=file:{root}/var/log/zza.log
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.socket"), """
+            """)
+        text_file(os_path(testdir, "zza.socket"), F"""
             [Unit]
             Description=Testing B
             [Socket]
@@ -23525,7 +23524,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Service=zza.service
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool("reply.py", os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
@@ -23534,7 +23533,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
-        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -23556,8 +23555,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "request: foo"))
         # self.assertTrue(greps(out, "replied: FOO"))
         self.assertTrue(greps(out, "replied: ERROR: FOO"))
-        log = "{root}/var/log/zza.log"
-        ### out = open(log.format(**locals())).read()
+        log = F"{root}/var/log/zza.log"
+        ### out = open(log).read()
         ### logg.info("zza.log>>\n%s", out)
         ### self.assertTrue(greps(out, "received:.*foo"))
         #
@@ -23587,7 +23586,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         replyA = self.testname("replyA")
         replyB = self.testname("replyB")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -23596,8 +23595,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardOutput=file:{root}/var/log/zza.log
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.socket"), """
+            """)
+        text_file(os_path(testdir, "zza.socket"), F"""
             [Unit]
             Description=Testing B
             [Socket]
@@ -23605,7 +23604,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Service=zza.service
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool("reply.py", os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
@@ -23614,7 +23613,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
-        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -23636,8 +23635,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "request: foo"))
         # self.assertTrue(greps(out, "replied: FOO"))
         self.assertTrue(greps(out, "replied: ERROR: FOO"))
-        log = "{root}/var/log/zza.log"
-        ### out = open(log.format(**locals())).read()
+        log = F"{root}/var/log/zza.log"
+        ### out = open(log).read()
         ### logg.info("zza.log>>\n%s", out)
         ### self.assertTrue(greps(out, "received:.*foo"))
         #
@@ -23668,7 +23667,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         replyA = self.testname("replyA")
         replyB = self.testname("replyB")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -23677,8 +23676,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardOutput=file:{root}/var/log/zza.log
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.socket"), """
+            """)
+        text_file(os_path(testdir, "zza.socket"), F"""
             [Unit]
             Description=Testing B
             [Socket]
@@ -23686,7 +23685,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Service=zza.service
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool("reply.py", os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
@@ -23695,7 +23694,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
-        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -23717,8 +23716,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "request: foo"))
         # self.assertTrue(greps(out, "replied: FOO"))
         self.assertTrue(greps(out, "replied: ERROR: FOO"))
-        log = "{root}/var/log/zza.log"
-        ### out = open(log.format(**locals())).read()
+        log = F"{root}/var/log/zza.log"
+        ### out = open(log).read()
         ### logg.info("zza.log>>\n%s", out)
         ### self.assertTrue(greps(out, "received:.*foo"))
         #
@@ -23749,7 +23748,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         replyA = self.testname("replyA")
         replyB = self.testname("replyB")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -23758,8 +23757,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardOutput=file:{root}/var/log/zza.log
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.socket"), """
+            """)
+        text_file(os_path(testdir, "zza.socket"), F"""
             [Unit]
             Description=Testing B
             [Socket]
@@ -23767,7 +23766,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Service=zza.service
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool("reply.py", os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
@@ -23776,7 +23775,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
-        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -23798,8 +23797,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "request: foo"))
         # self.assertTrue(greps(out, "replied: FOO"))
         self.assertTrue(greps(out, "replied: ERROR: FOO"))
-        log = "{root}/var/log/zza.log"
-        ### out = open(log.format(**locals())).read()
+        log = F"{root}/var/log/zza.log"
+        ### out = open(log).read()
         ### logg.info("zza.log>>\n%s", out)
         ### self.assertTrue(greps(out, "received:.*foo"))
         #
@@ -23831,7 +23830,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         replyA = self.testname("replyA")
         replyB = self.testname("replyB")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -23840,8 +23839,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardOutput=file:{root}/var/log/zza.log
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.socket"), """
+            """)
+        text_file(os_path(testdir, "zza.socket"), F"""
             [Unit]
             Description=Testing B
             [Socket]
@@ -23849,7 +23848,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Service=zza.service
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool("reply.py", os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
@@ -23858,7 +23857,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
-        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -23880,8 +23879,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "request: foo"))
         # self.assertTrue(greps(out, "replied: FOO"))
         self.assertTrue(greps(out, "replied: ERROR: FOO"))
-        log = "{root}/var/log/zza.log"
-        ### out = open(log.format(**locals())).read()
+        log = F"{root}/var/log/zza.log"
+        ### out = open(log).read()
         ### logg.info("zza.log>>\n%s", out)
         ### self.assertTrue(greps(out, "received:.*foo"))
         #
@@ -23913,7 +23912,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         replyA = self.testname("replyA")
         replyB = self.testname("replyB")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -23922,8 +23921,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardOutput=file:{root}/var/log/zza.log
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.socket"), """
+            """)
+        text_file(os_path(testdir, "zza.socket"), F"""
             [Unit]
             Description=Testing B
             [Socket]
@@ -23931,7 +23930,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Service=zza.service
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool("reply.py", os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
@@ -23940,7 +23939,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
-        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -23962,8 +23961,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "request: foo"))
         # self.assertTrue(greps(out, "replied: FOO"))
         self.assertTrue(greps(out, "replied: ERROR: FOO"))
-        log = "{root}/var/log/zza.log"
-        ### out = open(log.format(**locals())).read()
+        log = F"{root}/var/log/zza.log"
+        ### out = open(log).read()
         ### logg.info("zza.log>>\n%s", out)
         ### self.assertTrue(greps(out, "received:.*foo"))
         #
@@ -23994,7 +23993,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         replyA = self.testname("replyA")
         replyB = self.testname("replyB")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -24003,8 +24002,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardOutput=file:{root}/var/log/zza.log
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.socket"), """
+            """)
+        text_file(os_path(testdir, "zza.socket"), F"""
             [Unit]
             Description=Testing B
             [Socket]
@@ -24012,7 +24011,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Service=zza.service
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool("reply.py", os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
@@ -24041,7 +24040,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         replyA = self.testname("replyA")
         replyB = self.testname("replyB")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -24050,8 +24049,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardOutput=file:{root}/var/log/zza.log
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.socket"), """
+            """)
+        text_file(os_path(testdir, "zza.socket"), F"""
             [Unit]
             Description=Testing B
             [Socket]
@@ -24059,7 +24058,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Service=zza.service
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool("reply.py", os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
@@ -24088,7 +24087,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         replyA = self.testname("replyA")
         replyB = self.testname("replyB")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -24097,8 +24096,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardOutput=file:{root}/var/log/zza.log
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.socket"), """
+            """)
+        text_file(os_path(testdir, "zza.socket"), F"""
             [Unit]
             Description=Testing B
             [Socket]
@@ -24106,7 +24105,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Service=zza.service
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool("reply.py", os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
@@ -24135,7 +24134,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         replyA = self.testname("replyA")
         replyB = self.testname("replyB")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -24144,8 +24143,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardOutput=file:{root}/var/log/zza.log
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.socket"), """
+            """)
+        text_file(os_path(testdir, "zza.socket"), F"""
             [Unit]
             Description=Testing B
             [Socket]
@@ -24153,7 +24152,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Service=zza.service
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool("reply.py", os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
@@ -24182,7 +24181,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         replyA = self.testname("replyA")
         replyB = self.testname("replyB")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -24191,8 +24190,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardOutput=file:{root}/var/log/zza.log
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.socket"), """
+            """)
+        text_file(os_path(testdir, "zza.socket"), F"""
             [Unit]
             Description=Testing B
             [Socket]
@@ -24200,7 +24199,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Service=zza.service
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool("reply.py", os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
@@ -24229,7 +24228,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         replyA = self.testname("replyA")
         replyB = self.testname("replyB")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -24238,8 +24237,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardOutput=file:{root}/var/log/zza.log
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.socket"), """
+            """)
+        text_file(os_path(testdir, "zza.socket"), F"""
             [Unit]
             Description=Testing B
             [Socket]
@@ -24247,7 +24246,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Service=zza.service
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool("reply.py", os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
@@ -24276,7 +24275,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         replyA = self.testname("replyA")
         replyB = self.testname("replyB")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -24285,8 +24284,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardOutput=file:{root}/var/log/zza.log
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.socket"), """
+            """)
+        text_file(os_path(testdir, "zza.socket"), F"""
             [Unit]
             Description=Testing B
             [Socket]
@@ -24294,7 +24293,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Service=zza.service
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool("reply.py", os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
@@ -24323,7 +24322,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         replyA = self.testname("replyA")
         replyB = self.testname("replyB")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -24332,8 +24331,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StandardOutput=file:{root}/var/log/zza.log
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zza.socket"), """
+            """)
+        text_file(os_path(testdir, "zza.socket"), F"""
             [Unit]
             Description=Testing B
             [Socket]
@@ -24341,7 +24340,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Service=zza.service
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         copy_tool("reply.py", os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
@@ -24366,7 +24365,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         logfile = os_path(root, "/var/log/"+testname+".log")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -24375,8 +24374,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStop=/bin/rm {root}/tmp/zz.a.txt
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzb.service"), """
+            """)
+        text_file(os_path(testdir, "zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
@@ -24385,8 +24384,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStop=/bin/rm {root}/tmp/zz.b.txt
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zz@.service"), """
+            """)
+        text_file(os_path(testdir, "zz@.service"), F"""
             [Unit]
             Description=Testing Z.%i
             [Service]
@@ -24395,12 +24394,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStop=/bin/rm {root}/tmp/zz.%i.txt
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzxx.target"), """
+            """)
+        text_file(os_path(testdir, "zzxx.target"), F"""
             [Unit]
             Description=Testing D
             Requires= zza.service zz@rsa.service
-            """.format(**locals()))
+            """)
         #
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
@@ -24482,7 +24481,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleepC = self.testname("sleepC")
         testsleepD = self.testname("sleepD")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -24492,8 +24491,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             RestartSec=4
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzb.service"), """
+            """)
+        text_file(os_path(testdir, "zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
@@ -24503,8 +24502,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             RestartSec=5
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzc.service"), """
+            """)
+        text_file(os_path(testdir, "zzc.service"), F"""
             [Unit]
             Description=Testing C
             [Service]
@@ -24514,8 +24513,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             RestartSec=6
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzd.service"), """
+            """)
+        text_file(os_path(testdir, "zzd.service"), F"""
             [Unit]
             Description=Testing D
             [Service]
@@ -24523,7 +24522,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart={bindir}/{testsleepD} 122
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         #
         copy_tool(_bin_sleep, os_path(bindir, testsleepA))
         copy_tool(_bin_sleep, os_path(bindir, testsleepB))
@@ -24549,7 +24548,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         InitLoopSleep = 1
         initsystemctl = systemctl
-        initsystemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -24565,8 +24564,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(top, "sleepC"))
         self.assertTrue(greps(top, "sleepD"))
         #
-        check = "{systemctl} list-units --state=running --type=service"
-        top = output(check.format(**locals()))
+        check = F"{systemctl} list-units --state=running --type=service"
+        top = output(check)
         logg.info("\n>>>\n%s", top)
         self.assertEqual(len(greps(top, "zz")), 4)
         #
@@ -24582,23 +24581,23 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # logg.info("systemctl.debug.log>\n\t%s", "\n\t".join(log))
         self.assertFalse(greps(log, "restart"))
         #
-        check = "{systemctl} list-units --state=running --type=service"
-        top = output(check.format(**locals()))
+        check = F"{systemctl} list-units --state=running --type=service"
+        top = output(check)
         logg.info("\n>>>\n%s", top)
         self.assertEqual(len(greps(top, "zz")), 3)
         #
         cmd = F"{systemctl} __killall {testsleepC}" # <<<
         sh____(cmd)
         #
-        check = "{systemctl} list-units --state=running --type=service"
-        top = output(check.format(**locals()))
+        check = F"{systemctl} list-units --state=running --type=service"
+        top = output(check)
         logg.info("\n>>>\n%s", top)
         self.assertEqual(len(greps(top, "zz")), 2)
         #
         time.sleep(InitLoopSleep+1) # RestartSec=6
         #
-        check = "{systemctl} list-units --state=running --type=service"
-        top = output(check.format(**locals()))
+        check = F"{systemctl} list-units --state=running --type=service"
+        top = output(check)
         logg.info("\n>>>\n%s", top)
         self.assertEqual(len(greps(top, "zz")), 2)
         #
@@ -24613,8 +24612,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         log = lines(open(debug_log))
         logg.info("systemctl.debug.log>\n\t%s", "\n\t".join(log[-20:]))
         #
-        check = "{systemctl} list-units --state=running --type=service"
-        top = output(check.format(**locals()))
+        check = F"{systemctl} list-units --state=running --type=service"
+        top = output(check)
         logg.info("\n>>>\n%s", top)
         self.assertEqual(len(greps(top, "zz")), 3)
         #
@@ -24648,7 +24647,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleepA = self.testname("sleepA")
         testsleepB = self.testname("sleepB")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -24660,8 +24659,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             StartLimitIntervalSec=12
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzb.service"), """
+            """)
+        text_file(os_path(testdir, "zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
@@ -24671,7 +24670,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             RestartSec=3
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         #
         copy_tool(_bin_sleep, os_path(bindir, testsleepA))
         copy_tool(_bin_sleep, os_path(bindir, testsleepB))
@@ -24688,7 +24687,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>\n%s", out2)
         #
         InitLoopSleep = 1
-        systemctl += " -c InitLoopSleep={InitLoopSleep}".format(**locals())
+        systemctl += F" -c InitLoopSleep={InitLoopSleep}"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -24712,8 +24711,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         log = lines(open(debug_log))
         logg.info("systemctl.debug.log>\n\t%s", "\n\t".join(log[-20:]))
         #
-        check = "{systemctl} list-units --state=running --type=service"
-        top = output(check.format(**locals()))
+        check = F"{systemctl} list-units --state=running --type=service"
+        top = output(check)
         logg.info("\n>>>\n%s", top)
         # self.assertEqual(len(greps(top, "zz")), 3)
         #
@@ -24746,7 +24745,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleepA = self.testname("sleepA")
         testsleepB = self.testname("sleepB")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -24756,8 +24755,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             RestartSec=200ms
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzb.service"), """
+            """)
+        text_file(os_path(testdir, "zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
@@ -24767,7 +24766,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             RestartSec=2
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         #
         copy_tool(_bin_sleep, os_path(bindir, testsleepA))
         copy_tool(_bin_sleep, os_path(bindir, testsleepB))
@@ -24830,7 +24829,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleepA = self.testname("sleepA")
         testsleepB = self.testname("sleepB")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -24840,8 +24839,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             RestartSec=2
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzb.service"), """
+            """)
+        text_file(os_path(testdir, "zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
@@ -24851,7 +24850,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             RestartSec=0
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         #
         copy_tool(_bin_sleep, os_path(bindir, testsleepA))
         copy_tool(_bin_sleep, os_path(bindir, testsleepB))
@@ -24916,7 +24915,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleepA = self.testname("sleepA")
         testsleepB = self.testname("sleepB")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -24926,8 +24925,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Restart=no
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzb.service"), """
+            """)
+        text_file(os_path(testdir, "zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
@@ -24937,7 +24936,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             RestartSec=0
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         #
         copy_tool(_bin_sleep, os_path(bindir, testsleepA))
         copy_tool(_bin_sleep, os_path(bindir, testsleepB))
@@ -25047,7 +25046,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir = os_path(root, "/usr/bin")
         this_user=get_USER()
         this_group=get_GROUP()
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -25056,20 +25055,20 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             User={this_user}
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         #
         copy_tool(_bin_sleep, os_path(bindir, testsleepA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
-        kill_testsleep = "{systemctl} __killall {testsleepA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = F"{systemctl} __killall {testsleepA} -vvvv"
+        sx____(kill_testsleep)
         #
         cmd = F"{systemctl} start zza.service -vvvv"
         out, err, rc = output3(cmd)
         logg.info("\n>>>(%s)\n%s\n%s", rc, i2(err), out)
         self.assertEqual(rc, 0)
         #
-        kill_testsleep = "{systemctl} __killall {testsleepA}"
-        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = F"{systemctl} __killall {testsleepA}"
+        sx____(kill_testsleep)
         #
         self.rm_testdir()
         self.coverage()
@@ -25089,7 +25088,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir = os_path(root, "/usr/bin")
         this_user=get_USER()
         this_group=get_GROUP()
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -25099,20 +25098,20 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Group={this_group}
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         #
         copy_tool(_bin_sleep, os_path(bindir, testsleepA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
-        kill_testsleep = "{systemctl} __killall {testsleepA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = F"{systemctl} __killall {testsleepA} -vvvv"
+        sx____(kill_testsleep)
         #
         cmd = F"{systemctl} start zza.service -vvvv"
         out, err, rc = output3(cmd)
         logg.info("\n>>>(%s)\n%s\n%s", rc, i2(err), out)
         self.assertEqual(rc, 0)
         #
-        kill_testsleep = "{systemctl} __killall {testsleepA}"
-        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = F"{systemctl} __killall {testsleepA}"
+        sx____(kill_testsleep)
         #
         self.rm_testdir()
         self.coverage()
@@ -25132,7 +25131,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir = os_path(root, "/usr/bin")
         this_user=get_USER()
         this_group=get_GROUP()
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -25141,20 +25140,20 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Group={this_group}
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         #
         copy_tool(_bin_sleep, os_path(bindir, testsleepA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
-        kill_testsleep = "{systemctl} __killall {testsleepA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = F"{systemctl} __killall {testsleepA} -vvvv"
+        sx____(kill_testsleep)
         #
         cmd = F"{systemctl} start zza.service -vvvv"
         out, err, rc = output3(cmd)
         logg.info("\n>>>(%s)\n%s\n%s", rc, i2(err), out)
         self.assertEqual(rc, 0)
         #
-        kill_testsleep = "{systemctl} __killall {testsleepA}"
-        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = F"{systemctl} __killall {testsleepA}"
+        sx____(kill_testsleep)
         #
         self.rm_testdir()
         self.coverage()
@@ -25174,7 +25173,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir = os_path(root, "/usr/bin")
         this_user=get_USER()
         this_group=get_GROUP()
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -25185,20 +25184,20 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             SupplementaryGroups={this_group}
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         #
         copy_tool(_bin_sleep, os_path(bindir, testsleepA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
-        kill_testsleep = "{systemctl} __killall {testsleepA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = F"{systemctl} __killall {testsleepA} -vvvv"
+        sx____(kill_testsleep)
         #
         cmd = F"{systemctl} start zza.service -vvvv"
         out, err, rc = output3(cmd)
         logg.info("\n>>>(%s)\n%s\n%s", rc, i2(err), out)
         self.assertEqual(rc, 0)
         #
-        kill_testsleep = "{systemctl} __killall {testsleepA}"
-        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = F"{systemctl} __killall {testsleepA}"
+        sx____(kill_testsleep)
         #
         self.rm_testdir()
         self.coverage()
@@ -25218,7 +25217,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir = os_path(root, "/usr/bin")
         this_user=get_USER()
         this_group=get_GROUP()
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -25228,20 +25227,20 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             SupplementaryGroups={this_group}
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         #
         copy_tool(_bin_sleep, os_path(bindir, testsleepA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
-        kill_testsleep = "{systemctl} __killall {testsleepA} -vvvv"
-        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = F"{systemctl} __killall {testsleepA} -vvvv"
+        sx____(kill_testsleep)
         #
         cmd = F"{systemctl} start zza.service -vvvv"
         out, err, rc = output3(cmd)
         logg.info("\n>>>(%s)\n%s\n%s", rc, i2(err), out)
         self.assertEqual(rc, 0)
         #
-        kill_testsleep = "{systemctl} __killall {testsleepA}"
-        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = F"{systemctl} __killall {testsleepA}"
+        sx____(kill_testsleep)
         #
         self.rm_testdir()
         self.coverage()
@@ -25256,7 +25255,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
         logfile = os_path(root, "/var/log/"+testname+".log")
-        text_file(os_path(root, "/etc/systemd/system/zza.service"), """
+        text_file(os_path(root, "/etc/systemd/system/zza.service"), F"""
             [Unit]
             Description=Testing A
             Requires=zzb.service
@@ -25265,13 +25264,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart={root}/bin/{testsleep} 10
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         text_file(os_path(root, "/etc/systemd/system-preset/our.preset"), """
             enable zza.service
             disable zzb.service""")
         os.makedirs(os_path(root, "/var/run"))
         os.makedirs(os_path(root, "/var/log"))
-        copy_tool(_bin_sleep, "{root}/bin/{testsleep}".format(**locals()))
+        copy_tool(_bin_sleep, F"{root}/bin/{testsleep}")
         #
         os.chmod(os_path(root, "/etc/systemd/system/zza.service"), 0o222)
         #
@@ -25385,7 +25384,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
         logfile = os_path(root, "/var/log/"+testname+".log")
-        text_file(os_path(root, "/etc/systemd/system/zza.service"), """
+        text_file(os_path(root, "/etc/systemd/system/zza.service"), F"""
             [Unit]
             Description=Testing A
             Requires=zzb.service
@@ -25395,8 +25394,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStop=/bin/kill $MAINPID
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        copy_tool(_bin_sleep, "{root}/bin/{testsleep}".format(**locals()))
+            """)
+        copy_tool(_bin_sleep, F"{root}/bin/{testsleep}")
         #
         cmd = F"{systemctl} start zza"
         out, end = output2(cmd)
@@ -25444,11 +25443,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl_py = realpath(_systemctl_py)
         systemctl_sh = os_path(testdir, "systemctl.sh")
         systemctl_py_run = systemctl_py.replace("/", "_")[1:]
-        shell_file(systemctl_sh, """
+        shell_file(systemctl_sh, F"""
             #! /bin/sh
             cd /tmp
             exec {cov_run} /{systemctl_py_run} "$@" -vv {cov_option}
-            """.format(**locals()))
+            """)
         cmd = F"{docker} cp {systemctl_py} {testname}:/{systemctl_py_run}"
         sh____(cmd)
         cmd = F"{docker} cp {systemctl_sh} {testname}:/usr/bin/systemctl"
@@ -25744,7 +25743,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         root = ""
         systemctl_py = realpath(_systemctl_py)
         systemctl = "/usr/bin/systemctl"
-        systemctl += " --{system}".format(**locals())
+        systemctl += F" --{system}"
         testsleep = testname+"_testsleep"
         testscript = testname+"_testscript.sh"
         logfile = os_path(root, "/var/log/test.log")
@@ -25762,7 +25761,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                   echo kill $pid
                   kill $pid
                fi done } """)
-        text_file(os_path(testdir, "zzz.service"), """
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -25778,8 +25777,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             KillSignal=SIGQUIT
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        shell_file(os_path(testdir, testscript), """
+            """)
+        shell_file(os_path(testdir, testscript), F"""
             #! /bin/sh
             date +%T,enter >> {logfile}
             stops () {begin}
@@ -25805,7 +25804,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             date +%T,leaving >> {logfile}
             trap - 3 10 # SIGQUIT SIGUSR1
             date +%T,leave >> {logfile}
-        """.format(**locals()))
+        """)
 
         cmd = F"{docker} rm --force {testname}"
         sx____(cmd)
@@ -25829,7 +25828,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd)
         cmd = F"{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd)
-        zzz_service = "/etc/systemd/{system}/zzz.service".format(**locals())
+        zzz_service = F"/etc/systemd/{system}/zzz.service"
         cmd = F"{docker} cp {testdir}/zzz.service {testname}:{zzz_service}"
         sh____(cmd)
         cmd = F"{docker} exec {testname} touch {logfile}"
@@ -25874,7 +25873,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(1) # kill is async
         cmd = F"{docker} exec {testname} cat {logfile}"
         sh____(cmd)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -25884,21 +25883,21 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(out.strip(), "inactive")
         #
         # inspect the service's log
-        log = lines(output("{docker} exec {testname} cat {logfile}".format(**locals())))
+        log = lines(output(F"{docker} exec {testname} cat {logfile}"))
         logg.info("LOG\n %s", "\n ".join(log))
         self.assertTrue(greps(log, "enter"))
         self.assertTrue(greps(log, "leave"))
         self.assertTrue(greps(log, "starting"))
         self.assertTrue(greps(log, "stopped"))
         self.assertFalse(greps(log, "reload"))
-        sh____("{docker} exec {testname} truncate -s0 {logfile}".format(**locals()))
+        sh____(F"{docker} exec {testname} truncate -s0 {logfile}")
         #
         logg.info("== 'restart' shall start a service that NOT is-active")
         cmd = F"{docker} exec {testname} {systemctl} restart zzz.service -vvvv"
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -25909,21 +25908,21 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top1= top
         #
         # inspect the service's log
-        log = lines(output("{docker} exec {testname} cat {logfile}".format(**locals())))
+        log = lines(output(F"{docker} exec {testname} cat {logfile}"))
         logg.info("LOG\n %s", "\n ".join(log))
         self.assertTrue(greps(log, "enter"))
         self.assertFalse(greps(log, "leave"))
         self.assertTrue(greps(log, "starting"))
         self.assertFalse(greps(log, "stopped"))
         self.assertFalse(greps(log, "reload"))
-        sh____("{docker} exec {testname} truncate -s0 {logfile}".format(**locals()))
+        sh____(F"{docker} exec {testname} truncate -s0 {logfile}")
         #
         logg.info("== 'restart' shall restart a service that is-active")
         cmd = F"{docker} exec {testname} {systemctl} restart zzz.service -vv"
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -25952,12 +25951,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertNotEqual(ps1[0], ps2[0])
         #
         # inspect the service's log
-        log = lines(output("{docker} exec {testname} cat {logfile}".format(**locals())))
+        log = lines(output(F"{docker} exec {testname} cat {logfile}"))
         logg.info("LOG\n %s", "\n ".join(log))
         self.assertTrue(greps(log, "enter"))
         self.assertTrue(greps(log, "starting"))
         self.assertFalse(greps(log, "reload"))
-        sh____("{docker} exec {testname} truncate -s0 {logfile}".format(**locals()))
+        sh____(F"{docker} exec {testname} truncate -s0 {logfile}")
         #
         #
         logg.info("== 'reload' will NOT restart a service that is-active")
@@ -25965,7 +25964,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -25983,21 +25982,21 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(ps2[0], ps3[0])
         #
         # inspect the service's log
-        log = lines(output("{docker} exec {testname} cat {logfile}".format(**locals())))
+        log = lines(output(F"{docker} exec {testname} cat {logfile}"))
         logg.info("LOG\n %s", "\n ".join(log))
         self.assertFalse(greps(log, "enter"))
         self.assertFalse(greps(log, "leave"))
         self.assertFalse(greps(log, "starting"))
         self.assertFalse(greps(log, "stopped"))
         self.assertTrue(greps(log, "reload"))
-        sh____("{docker} exec {testname} truncate -s0 {logfile}".format(**locals()))
+        sh____(F"{docker} exec {testname} truncate -s0 {logfile}")
         #
         logg.info("== 'reload-or-restart' will restart a service that is-active (if ExecReload)")
         cmd = F"{docker} exec {testname} {systemctl} reload-or-restart zzz.service -vv"
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -26019,7 +26018,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -26044,7 +26043,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -26058,7 +26057,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -26072,7 +26071,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -26087,7 +26086,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -26110,7 +26109,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -26127,8 +26126,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(len(ps7), 1)
         self.assertNotEqual(ps6[0], ps7[0])
         #
-        kill_testsleep = "{docker} exec {testname} binkillall {testsleep}"
-        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = F"{docker} exec {testname} binkillall {testsleep}"
+        sx____(kill_testsleep)
         #
         self.save_coverage(testname)
         #
@@ -26174,13 +26173,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         root = ""
         systemctl_py = realpath(_systemctl_py)
         systemctl = "/usr/bin/systemctl" # path in container
-        systemctl += " --{system}".format(**locals())
+        systemctl += F" --{system}"
         testsleep = testname+"_sleep"
         logfile = os_path(root, "/var/log/"+testsleep+".log")
         bindir = os_path(root, "/usr/bin")
         begin = "{"
         ends = "}"
-        shell_file(os_path(testdir, "zzz.init"), """
+        shell_file(os_path(testdir, "zzz.init"), F"""
             #! /bin/bash
             logfile={logfile}
             start() {begin}
@@ -26214,8 +26213,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ;; esac
             echo "done$1" >&2
             exit 0
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzz.service"), """
+            """)
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -26226,7 +26225,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStop=/usr/bin/zzz.init stop
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
 
         cmd = F"{docker} rm --force {testname}"
         sx____(cmd)
@@ -26246,7 +26245,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.prep_coverage(image, testname)
         cmd = F"{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd)
-        zzz_service = "/etc/systemd/{system}/zzz.service".format(**locals())
+        zzz_service = F"/etc/systemd/{system}/zzz.service"
         cmd = F"{docker} exec {testname} cp /bin/sleep {bindir}/{testsleep}"
         sh____(cmd)
         cmd = F"{docker} cp {testdir}/zzz.init {testname}:/usr/bin/zzz.init"
@@ -26275,7 +26274,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -26289,7 +26288,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -26303,7 +26302,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -26318,7 +26317,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -26351,7 +26350,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -26373,7 +26372,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -26395,7 +26394,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -26420,7 +26419,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -26434,7 +26433,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -26448,7 +26447,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -26463,7 +26462,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -26486,7 +26485,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -26503,7 +26502,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(len(ps7), 1)
         self.assertNotEqual(ps6[0], ps7[0])
         #
-        logg.info("LOG\n%s", " "+output("{docker} exec {testname} cat {logfile}".format(**locals())).replace("\n", "\n "))
+        logg.info("LOG\n%s", " "+output(F"{docker} exec {testname} cat {logfile}").replace("\n", "\n "))
         self.save_coverage(testname)
         #
         self.rm_docker(testname)
@@ -26548,13 +26547,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         root = ""
         systemctl_py = realpath(_systemctl_py)
         systemctl = "/usr/bin/systemctl" # path in container
-        systemctl += " --{system}".format(**locals())
+        systemctl += F" --{system}"
         testsleep = testname+"_sleep"
         logfile = os_path(root, "/var/log/"+testsleep+".log")
         bindir = os_path(root, "/usr/bin")
         begin = "{"
         ends = "}"
-        shell_file(os_path(testdir, "zzz.init"), """
+        shell_file(os_path(testdir, "zzz.init"), F"""
             #! /bin/bash
             logfile={logfile}
             start() {begin}
@@ -26588,8 +26587,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ;; esac
             echo "done$1" >&2
             exit 0
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzz.service"), """
+            """)
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -26600,7 +26599,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStop={root}/usr/bin/zzz.init stop
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
 
         cmd = F"{docker} rm --force {testname}"
         sx____(cmd)
@@ -26622,7 +26621,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.prep_coverage(image, testname)
         cmd = F"{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd)
-        zzz_service = "/etc/systemd/{system}/zzz.service".format(**locals())
+        zzz_service = F"/etc/systemd/{system}/zzz.service"
         cmd = F"{docker} exec {testname} cp /bin/sleep {bindir}/{testsleep}"
         sh____(cmd)
         cmd = F"{docker} cp {testdir}/zzz.init {testname}:/usr/bin/zzz.init"
@@ -26648,12 +26647,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(out.strip(), "inactive")
         #
         logg.info("== 'start' shall start a service that is NOT is-active ")
-        sh____("{docker} exec {testname} ls -l /var/run".format(**locals()))
+        sh____(F"{docker} exec {testname} ls -l /var/run")
         cmd = F"{docker} exec {testname} {systemctl} start zzz.service -vv -vv {quick}"
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -26667,7 +26666,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -26682,7 +26681,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s", cmd, end, out)
         cmd = F"{docker} exec {testname} cat {logfile}"
         sh____(cmd)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         self.assertEqual(end, 0)
@@ -26700,7 +26699,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s", cmd, end, out)
         cmd = F"{docker} exec {testname} cat {logfile}"
         sh____(cmd)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         self.assertEqual(end, 0)
@@ -26735,7 +26734,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -26757,7 +26756,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -26779,7 +26778,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -26804,7 +26803,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -26818,7 +26817,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -26832,7 +26831,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -26847,7 +26846,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -26870,7 +26869,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -26887,7 +26886,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(len(ps7), 1)
         self.assertNotEqual(ps6[0], ps7[0])
         #
-        logg.info("LOG\n%s", " "+output("{docker} exec {testname} cat {logfile}".format(**locals())).replace("\n", "\n "))
+        logg.info("LOG\n%s", " "+output(F"{docker} exec {testname} cat {logfile}").replace("\n", "\n "))
         #
         self.save_coverage(testname)
         #
@@ -26935,13 +26934,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         root = ""
         systemctl_py = realpath(_systemctl_py)
         systemctl = "/usr/bin/systemctl" # path in container
-        systemctl += " --{system}".format(**locals())
+        systemctl += F" --{system}"
         testsleep = self.testname("sleep")
         logfile = os_path(root, "/var/log/"+testsleep+".log")
         bindir = os_path(root, "/usr/bin")
         begin = "{"
         ends = "}"
-        shell_file(os_path(testdir, "zzz.init"), """
+        shell_file(os_path(testdir, "zzz.init"), F"""
             #! /bin/bash
             logfile={logfile}
             start() {begin}
@@ -26975,8 +26974,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ;; esac
             echo "done$1" >&2
             exit 0
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzz.service"), """
+            """)
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -26990,7 +26989,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             TimeoutReloadSec=4
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
 
         cmd = F"{docker} rm --force {testname}"
         sx____(cmd)
@@ -27012,7 +27011,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.prep_coverage(image, testname)
         cmd = F"{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd)
-        zzz_service = "/etc/systemd/{system}/zzz.service".format(**locals())
+        zzz_service = F"/etc/systemd/{system}/zzz.service"
         cmd = F"{docker} exec {testname} cp /bin/sleep {bindir}/{testsleep}"
         sh____(cmd)
         cmd = F"{docker} cp {testdir}/zzz.init {testname}:/usr/bin/zzz.init"
@@ -27042,7 +27041,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -27056,7 +27055,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -27070,7 +27069,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -27085,7 +27084,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -27118,7 +27117,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -27140,7 +27139,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -27162,7 +27161,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -27187,7 +27186,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -27201,7 +27200,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -27215,7 +27214,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -27230,7 +27229,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -27253,7 +27252,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -27270,7 +27269,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(len(ps7), 1)
         self.assertNotEqual(ps6[0], ps7[0])
         #
-        logg.info("LOG\n%s", " "+output("{docker} exec {testname} cat {logfile}".format(**locals())).replace("\n", "\n "))
+        logg.info("LOG\n%s", " "+output(F"{docker} exec {testname} cat {logfile}").replace("\n", "\n "))
         #
         self.save_coverage(testname)
         #
@@ -27316,11 +27315,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         root = ""
         systemctl_py = realpath(_systemctl_py)
         systemctl = "/usr/bin/systemctl" # path in container
-        systemctl += " --{system}".format(**locals())
+        systemctl += F" --{system}"
         testsleep = self.testname("sleep")
         logfile = os_path(root, "/var/log/"+testsleep+".log")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zzz.service"), """
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -27332,7 +27331,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost=/bin/rm -f {root}/var/tmp/test.2
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         shell_file(os_path(testdir, "backup"), """
            #! /bin/sh
            set -x
@@ -27357,7 +27356,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.prep_coverage(image, testname)
         cmd = F"{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd)
-        zzz_service = "/etc/systemd/{system}/zzz.service".format(**locals())
+        zzz_service = F"/etc/systemd/{system}/zzz.service"
         cmd = F"{docker} exec {testname} cp /bin/sleep {bindir}/{testsleep}"
         sh____(cmd)
         cmd = F"{docker} cp {testdir}/zzz.service {testname}:{zzz_service}"
@@ -27374,7 +27373,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd)
         cmd = F"{docker} exec {testname} touch /var/tmp/test.0"
         sh____(cmd)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertFalse(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
@@ -27382,8 +27381,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{docker} exec {testname} {systemctl} enable zzz.service -vv"
         sh____(cmd)
         #
-        is_active = "{docker} exec {testname} {systemctl} is-active zzz.service -vv"
-        act, end = output2(is_active.format(**locals()))
+        is_active = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "inactive")
         self.assertEqual(end, 3)
         #
@@ -27392,10 +27391,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active")
         self.assertEqual(end, 0)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertTrue(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
@@ -27405,10 +27404,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "inactive")
         self.assertEqual(end, 3)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertFalse(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
@@ -27418,10 +27417,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active")
         self.assertEqual(end, 0)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertTrue(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
@@ -27431,10 +27430,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active")
         self.assertEqual(end, 0)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertTrue(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
@@ -27444,10 +27443,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active")
         self.assertEqual(end, 0)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertTrue(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
@@ -27457,7 +27456,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active")
         self.assertEqual(end, 0)
         #
@@ -27466,10 +27465,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "inactive")
         self.assertEqual(end, 3)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertFalse(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
@@ -27479,10 +27478,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "inactive")
         self.assertEqual(end, 3)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertFalse(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
@@ -27492,10 +27491,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "inactive")
         self.assertEqual(end, 3)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertFalse(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
@@ -27505,10 +27504,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active")
         self.assertEqual(end, 0)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertTrue(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
@@ -27518,10 +27517,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active")
         self.assertEqual(end, 0)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertTrue(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
@@ -27531,10 +27530,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active")
         self.assertEqual(end, 0)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertTrue(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
@@ -27544,15 +27543,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "inactive")
         self.assertEqual(end, 3)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertFalse(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
         #
-        logg.info("LOG\n%s", " "+output("{docker} exec {testname} cat {logfile}".format(**locals())).replace("\n", "\n "))
+        logg.info("LOG\n%s", " "+output(F"{docker} exec {testname} cat {logfile}").replace("\n", "\n "))
         #
         self.save_coverage(testname)
         #
@@ -27587,7 +27586,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleep = self.testname("sleep")
         logfile = os_path(root, "/var/log/"+testsleep+".log")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zzz.service"), """
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -27599,7 +27598,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost=/bin/rm -f {root}/var/tmp/test.2
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         shell_file(os_path(testdir, "backup"), """
            #! /bin/sh
            set -x
@@ -27640,15 +27639,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd)
         cmd = F"{docker} exec {testname} useradd -u 1001 somebody -g nobody -m"
         sh____(cmd)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertFalse(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
         #
         cmd = F"{docker} exec {testname} {systemctl} enable zzz.service -vv"
         sh____(cmd)
-        is_active = "{docker} exec {testname} {systemctl} is-active zzz.service other.service -vv"
-        act, end = output2(is_active.format(**locals()))
+        is_active = F"{docker} exec {testname} {systemctl} is-active zzz.service other.service -vv"
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "inactive\ninactive")
         self.assertEqual(end, 3)
         #
@@ -27657,11 +27656,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertNotEqual(end, 0)
-        is_active = "{docker} exec {testname} {systemctl} is-active zzz.service other.service -vv"
-        act, end = output2(is_active.format(**locals()))
+        is_active = F"{docker} exec {testname} {systemctl} is-active zzz.service other.service -vv"
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active\ninactive")
         self.assertEqual(end, 3)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertTrue(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
@@ -27671,10 +27670,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertNotEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "inactive\ninactive")
         self.assertEqual(end, 3)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertFalse(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
@@ -27684,10 +27683,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertNotEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active\ninactive")
         self.assertEqual(end, 3)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertTrue(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
@@ -27697,10 +27696,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertNotEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active\ninactive")
         self.assertEqual(end, 3)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertTrue(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
@@ -27710,10 +27709,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertNotEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active\ninactive")
         self.assertEqual(end, 3)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertTrue(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
@@ -27723,7 +27722,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertNotEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active\ninactive")
         self.assertEqual(end, 3)
         #
@@ -27732,10 +27731,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertNotEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "inactive\ninactive")
         self.assertEqual(end, 3)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertFalse(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
@@ -27745,10 +27744,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertNotEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "inactive\ninactive")
         self.assertEqual(end, 3)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertFalse(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
@@ -27758,10 +27757,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertNotEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "inactive\ninactive")
         self.assertEqual(end, 3)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertFalse(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
@@ -27771,10 +27770,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertNotEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active\ninactive")
         self.assertEqual(end, 3)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertTrue(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
@@ -27784,10 +27783,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertNotEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active\ninactive")
         self.assertEqual(end, 3)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertTrue(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
@@ -27797,10 +27796,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertNotEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active\ninactive")
         self.assertEqual(end, 3)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertTrue(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
@@ -27810,15 +27809,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertNotEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "inactive\ninactive")
         self.assertEqual(end, 3)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertFalse(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
         #
-        logg.info("LOG\n%s", " "+output("{docker} exec {testname} cat {logfile}".format(**locals())).replace("\n", "\n "))
+        logg.info("LOG\n%s", " "+output(F"{docker} exec {testname} cat {logfile}").replace("\n", "\n "))
         #
         self.save_coverage(testname)
         #
@@ -27866,11 +27865,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         root = ""
         systemctl_py = realpath(_systemctl_py)
         systemctl = "/usr/bin/systemctl" # path in container
-        systemctl += " --{system}".format(**locals())
+        systemctl += F" --{system}"
         testsleep = self.testname("sleep")
         logfile = os_path(root, "/var/log/"+testsleep+".log")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zzz@.service"), """
+        text_file(os_path(testdir, "zzz@.service"), F"""
             [Unit]
             Description=Testing Z.%i
             [Service]
@@ -27882,7 +27881,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost=/bin/rm -f {root}/var/tmp/test.%i.2
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         shell_file(os_path(testdir, "backup"), """
            #! /bin/sh
            set -x
@@ -27907,7 +27906,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.prep_coverage(image, testname)
         cmd = F"{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd)
-        zzz_service = "/etc/systemd/{system}/zzz@.service".format(**locals())
+        zzz_service = F"/etc/systemd/{system}/zzz@.service"
         cmd = F"{docker} exec {testname} cp /bin/sleep {bindir}/{testsleep}"
         sh____(cmd)
         cmd = F"{docker} cp {testdir}/zzz@.service {testname}:{zzz_service}"
@@ -27924,7 +27923,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd)
         cmd = F"{docker} exec {testname} touch /var/tmp/test.0"
         sh____(cmd)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertFalse(greps(testfiles, "/var/tmp/test.rsa.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.rsa.2"))
@@ -27934,8 +27933,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{docker} exec {testname} {systemctl} enable zzz@rsa.service -vv"
         sh____(cmd)
         #
-        is_active = "{docker} exec {testname} {systemctl} is-active zzz@rsa.service -vv"
-        act, end = output2(is_active.format(**locals()))
+        is_active = F"{docker} exec {testname} {systemctl} is-active zzz@rsa.service -vv"
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "inactive")
         self.assertEqual(end, 3)
         #
@@ -27944,10 +27943,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active")
         self.assertEqual(end, 0)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertTrue(greps(testfiles, "/var/tmp/test.rsa.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.rsa.2"))
@@ -27959,10 +27958,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "inactive")
         self.assertEqual(end, 3)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertFalse(greps(testfiles, "/var/tmp/test.rsa.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.rsa.2"))
@@ -27974,10 +27973,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active")
         self.assertEqual(end, 0)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertTrue(greps(testfiles, "/var/tmp/test.rsa.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.rsa.2"))
@@ -27989,10 +27988,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active")
         self.assertEqual(end, 0)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertTrue(greps(testfiles, "/var/tmp/test.rsa.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.rsa.2"))
@@ -28004,10 +28003,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active")
         self.assertEqual(end, 0)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertTrue(greps(testfiles, "/var/tmp/test.rsa.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.rsa.2"))
@@ -28019,7 +28018,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active")
         self.assertEqual(end, 0)
         #
@@ -28028,10 +28027,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "inactive")
         self.assertEqual(end, 3)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertFalse(greps(testfiles, "/var/tmp/test.rsa.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.rsa.2"))
@@ -28043,10 +28042,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "inactive")
         self.assertEqual(end, 3)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertFalse(greps(testfiles, "/var/tmp/test.rsa.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.rsa.2"))
@@ -28058,10 +28057,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "inactive")
         self.assertEqual(end, 3)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertFalse(greps(testfiles, "/var/tmp/test.rsa.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.rsa.2"))
@@ -28073,10 +28072,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active")
         self.assertEqual(end, 0)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertTrue(greps(testfiles, "/var/tmp/test.rsa.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.rsa.2"))
@@ -28088,10 +28087,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active")
         self.assertEqual(end, 0)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertTrue(greps(testfiles, "/var/tmp/test.rsa.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.rsa.2"))
@@ -28103,10 +28102,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active")
         self.assertEqual(end, 0)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertTrue(greps(testfiles, "/var/tmp/test.rsa.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.rsa.2"))
@@ -28118,17 +28117,17 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "inactive")
         self.assertEqual(end, 3)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertFalse(greps(testfiles, "/var/tmp/test.rsa.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.rsa.2"))
         self.assertFalse(greps(testfiles, "/var/tmp/test..1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test..2"))
         #
-        logg.info("LOG\n%s", " "+output("{docker} exec {testname} cat {logfile}".format(**locals())).replace("\n", "\n "))
+        logg.info("LOG\n%s", " "+output(F"{docker} exec {testname} cat {logfile}").replace("\n", "\n "))
         #
         self.save_coverage(testname)
         #
@@ -28164,7 +28163,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir = os_path(root, "/usr/bin")
         begin = "{"
         ends = "}"
-        shell_file(os_path(testdir, "zzz.init"), """
+        shell_file(os_path(testdir, "zzz.init"), F"""
             #! /bin/bash
             ### BEGIN INIT INFO
             # Required-Start: $local_fs $remote_fs $syslog $network
@@ -28209,7 +28208,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ;; esac
             echo "done$1" >&2
             exit 0
-            """.format(**locals()))
+            """)
 
         cmd = F"{docker} rm --force {testname}"
         sx____(cmd)
@@ -28260,7 +28259,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -28275,8 +28274,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
         time.sleep(1) # killall is async
-        sx____("{docker} exec {testname} bash -c 'sed s/^/.../ {logfile} | tail'".format(**locals()))
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        sx____(F"{docker} exec {testname} bash -c 'sed s/^/.../ {logfile} | tail'")
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -28290,7 +28289,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -28305,7 +28304,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -28338,7 +28337,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -28360,7 +28359,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -28385,7 +28384,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -28403,7 +28402,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -28417,7 +28416,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -28432,7 +28431,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -28447,7 +28446,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -28465,7 +28464,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(len(ps7), 1)
         self.assertNotEqual(ps6[0], ps7[0])
         #
-        logg.info("LOG\n%s", " "+output("{docker} exec {testname} cat {logfile}".format(**locals())).replace("\n", "\n "))
+        logg.info("LOG\n%s", " "+output(F"{docker} exec {testname} cat {logfile}").replace("\n", "\n "))
         #
         self.save_coverage(testname)
         #
@@ -28518,11 +28517,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl_py = realpath(_systemctl_py)
         systemctl = "/usr/bin/systemctl" # path in container
         systemctl += " --user"
-        # systemctl += " --{system}".format(**locals())
+        # systemctl += F" --{system}"
         testsleep = testname+"_testsleep"
         logfile = os_path(root, "/var/log/test.log")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zzz.service"), """
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -28538,7 +28537,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             KillSignal=SIGQUIT
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
 
         cmd = F"{docker} rm --force {testname}"
         sx____(cmd)
@@ -28562,7 +28561,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd)
         cmd = F"{docker} exec {testname} cp /bin/sleep {bindir}/{testsleep}"
         sh____(cmd)
-        zzz_service = "/etc/systemd/{system}/zzz.service".format(**locals())
+        zzz_service = F"/etc/systemd/{system}/zzz.service"
         cmd = F"{docker} cp {testdir}/zzz.service {testname}:{zzz_service}"
         sh____(cmd)
         cmd = F"{docker} exec {testname} touch {logfile}"
@@ -28619,7 +28618,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         for attempt in xrange(4): # 4*3 = 12s
             time.sleep(3)
             logg.info("=====================================================================")
-            top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+            top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
             logg.info("\n>>>\n%s", top)
             cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
             out, err, end = output3(cmd)
@@ -28637,8 +28636,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             if greps(err, "Error response from daemon"):
                 break
         #
-        kill_testsleep = "killall {testsleep}"
-        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = F"killall {testsleep}"
+        sx____(kill_testsleep)
         #
         self.save_coverage(testname)
         #
@@ -28693,7 +28692,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl_py = realpath(_systemctl_py)
         systemctl = "/usr/bin/systemctl" # path in container
         systemctl += " --user"
-        # systemctl += " --{system}".format(**locals())
+        # systemctl += F" --{system}"
         testsleep = testname+"_testsleep"
         testscript = testname+"_testscript.sh"
         logfile = os_path(root, "/var/log/test.log")
@@ -28711,7 +28710,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                   echo kill $pid
                   kill $pid
                fi done } """)
-        text_file(os_path(testdir, "zzz.service"), """
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -28727,8 +28726,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             KillSignal=SIGQUIT
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        shell_file(os_path(testdir, testscript), """
+            """)
+        shell_file(os_path(testdir, testscript), F"""
             #! /bin/sh
             date +%T,enter >> {logfile}
             stops () {begin}
@@ -28754,7 +28753,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             date +%T,leaving >> {logfile}
             trap - 3 10 # SIGQUIT SIGUSR1
             date +%T,leave >> {logfile}
-        """.format(**locals()))
+        """)
 
         cmd = F"{docker} rm --force {testname}"
         sx____(cmd)
@@ -28780,7 +28779,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd)
         cmd = F"{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd)
-        zzz_service = "/etc/systemd/{system}/zzz.service".format(**locals())
+        zzz_service = F"/etc/systemd/{system}/zzz.service"
         cmd = F"{docker} cp {testdir}/zzz.service {testname}:{zzz_service}"
         sh____(cmd)
         cmd = F"{docker} exec {testname} touch {logfile}"
@@ -28836,7 +28835,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(1) # kill is async
         cmd = F"{docker} exec {testname} cat {logfile}"
         sh____(cmd)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -28846,21 +28845,21 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(out.strip(), "inactive")
         #
         # inspect the service's log
-        log = lines(output("{docker} exec {testname} cat {logfile}".format(**locals())))
+        log = lines(output(F"{docker} exec {testname} cat {logfile}"))
         logg.info("LOG\n %s", "\n ".join(log))
         self.assertTrue(greps(log, "enter"))
         self.assertTrue(greps(log, "leave"))
         self.assertTrue(greps(log, "starting"))
         self.assertTrue(greps(log, "stopped"))
         self.assertFalse(greps(log, "reload"))
-        sh____("{docker} exec {testname} truncate -s0 {logfile}".format(**locals()))
+        sh____(F"{docker} exec {testname} truncate -s0 {logfile}")
         #
         logg.info("== 'restart' shall start a service that NOT is-active")
         cmd = F"{docker} exec {testname} {systemctl} restart zzz.service -vvvv"
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -28871,21 +28870,21 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top1= top
         #
         # inspect the service's log
-        log = lines(output("{docker} exec {testname} cat {logfile}".format(**locals())))
+        log = lines(output(F"{docker} exec {testname} cat {logfile}"))
         logg.info("LOG\n %s", "\n ".join(log))
         self.assertTrue(greps(log, "enter"))
         self.assertFalse(greps(log, "leave"))
         self.assertTrue(greps(log, "starting"))
         self.assertFalse(greps(log, "stopped"))
         self.assertFalse(greps(log, "reload"))
-        sh____("{docker} exec {testname} truncate -s0 {logfile}".format(**locals()))
+        sh____(F"{docker} exec {testname} truncate -s0 {logfile}")
         #
         logg.info("== 'restart' shall restart a service that is-active")
         cmd = F"{docker} exec {testname} {systemctl} restart zzz.service -vv"
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -28914,12 +28913,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertNotEqual(ps1[0], ps2[0])
         #
         # inspect the service's log
-        log = lines(output("{docker} exec {testname} cat {logfile}".format(**locals())))
+        log = lines(output(F"{docker} exec {testname} cat {logfile}"))
         logg.info("LOG\n %s", "\n ".join(log))
         self.assertTrue(greps(log, "enter"))
         self.assertTrue(greps(log, "starting"))
         self.assertFalse(greps(log, "reload"))
-        sh____("{docker} exec {testname} truncate -s0 {logfile}".format(**locals()))
+        sh____(F"{docker} exec {testname} truncate -s0 {logfile}")
         #
         #
         logg.info("== 'reload' will NOT restart a service that is-active")
@@ -28927,7 +28926,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -28945,21 +28944,21 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(ps2[0], ps3[0])
         #
         # inspect the service's log
-        log = lines(output("{docker} exec {testname} cat {logfile}".format(**locals())))
+        log = lines(output(F"{docker} exec {testname} cat {logfile}"))
         logg.info("LOG\n %s", "\n ".join(log))
         self.assertFalse(greps(log, "enter"))
         self.assertFalse(greps(log, "leave"))
         self.assertFalse(greps(log, "starting"))
         self.assertFalse(greps(log, "stopped"))
         self.assertTrue(greps(log, "reload"))
-        sh____("{docker} exec {testname} truncate -s0 {logfile}".format(**locals()))
+        sh____(F"{docker} exec {testname} truncate -s0 {logfile}")
         #
         logg.info("== 'reload-or-restart' will restart a service that is-active (if ExecReload)")
         cmd = F"{docker} exec {testname} {systemctl} reload-or-restart zzz.service -vv"
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -28981,7 +28980,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -29006,7 +29005,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -29020,7 +29019,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -29034,7 +29033,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -29049,7 +29048,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -29072,7 +29071,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -29089,8 +29088,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(len(ps7), 1)
         self.assertNotEqual(ps6[0], ps7[0])
         #
-        kill_testsleep = "{docker} exec {testname} binkillall {testsleep}"
-        sx____(kill_testsleep.format(**locals()))
+        kill_testsleep = F"{docker} exec {testname} binkillall {testsleep}"
+        sx____(kill_testsleep)
         #
         self.save_coverage(testname)
         #
@@ -29139,13 +29138,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl_py = realpath(_systemctl_py)
         systemctl = "/usr/bin/systemctl" # path in container
         systemctl += " --user"
-        # systemctl += " --{system}".format(**locals())
+        # systemctl += F" --{system}"
         testsleep = testname+"_sleep"
         logfile = os_path(root, "/var/log/"+testsleep+".log")
         bindir = os_path(root, "/usr/bin")
         begin = "{"
         ends = "}"
-        shell_file(os_path(testdir, "zzz.init"), """
+        shell_file(os_path(testdir, "zzz.init"), F"""
             #! /bin/bash
             logfile={logfile}
             start() {begin}
@@ -29179,8 +29178,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ;; esac
             echo "done$1" >&2
             exit 0
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzz.service"), """
+            """)
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -29191,7 +29190,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStop=/usr/bin/zzz.init stop
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
 
         cmd = F"{docker} rm --force {testname}"
         sx____(cmd)
@@ -29213,7 +29212,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.prep_coverage(image, testname)
         cmd = F"{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd)
-        zzz_service = "/etc/systemd/{system}/zzz.service".format(**locals())
+        zzz_service = F"/etc/systemd/{system}/zzz.service"
         cmd = F"{docker} exec {testname} cp /bin/sleep {bindir}/{testsleep}"
         sh____(cmd)
         cmd = F"{docker} cp {testdir}/zzz.init {testname}:/usr/bin/zzz.init"
@@ -29253,7 +29252,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -29267,7 +29266,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -29281,7 +29280,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -29296,7 +29295,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -29329,7 +29328,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -29351,7 +29350,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -29373,7 +29372,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -29398,7 +29397,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -29412,7 +29411,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -29426,7 +29425,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -29441,7 +29440,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -29464,7 +29463,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -29481,7 +29480,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(len(ps7), 1)
         self.assertNotEqual(ps6[0], ps7[0])
         #
-        logg.info("LOG\n%s", " "+output("{docker} exec {testname} cat {logfile}".format(**locals())).replace("\n", "\n "))
+        logg.info("LOG\n%s", " "+output(F"{docker} exec {testname} cat {logfile}").replace("\n", "\n "))
         self.save_coverage(testname)
         #
         cmd = F"{docker} rmi {images}:{testname}"
@@ -29530,13 +29529,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl_py = realpath(_systemctl_py)
         systemctl = "/usr/bin/systemctl" # path in container
         systemctl += " --user"
-        # systemctl += " --{system}".format(**locals())
+        # systemctl += F" --{system}"
         testsleep = testname+"_sleep"
         logfile = os_path(root, "/var/log/"+testsleep+".log")
         bindir = os_path(root, "/usr/bin")
         begin = "{"
         ends = "}"
-        shell_file(os_path(testdir, "zzz.init"), """
+        shell_file(os_path(testdir, "zzz.init"), F"""
             #! /bin/bash
             logfile={logfile}
             start() {begin}
@@ -29570,8 +29569,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ;; esac
             echo "done$1" >&2
             exit 0
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzz.service"), """
+            """)
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -29582,7 +29581,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStop={root}/usr/bin/zzz.init stop
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
 
         cmd = F"{docker} rm --force {testname}"
         sx____(cmd)
@@ -29606,7 +29605,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.prep_coverage(image, testname)
         cmd = F"{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd)
-        zzz_service = "/etc/systemd/{system}/zzz.service".format(**locals())
+        zzz_service = F"/etc/systemd/{system}/zzz.service"
         cmd = F"{docker} exec {testname} cp /bin/sleep {bindir}/{testsleep}"
         sh____(cmd)
         cmd = F"{docker} cp {testdir}/zzz.init {testname}:/usr/bin/zzz.init"
@@ -29643,12 +29642,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(out.strip(), "inactive")
         #
         logg.info("== 'start' shall start a service that is NOT is-active ")
-        sh____("{docker} exec {testname} ls -l /var/run".format(**locals()))
+        sh____(F"{docker} exec {testname} ls -l /var/run")
         cmd = F"{docker} exec {testname} {systemctl} start zzz.service -vv -vv {quick}"
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -29662,7 +29661,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -29677,7 +29676,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s", cmd, end, out)
         cmd = F"{docker} exec {testname} cat {logfile}"
         sh____(cmd)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         self.assertEqual(end, 0)
@@ -29695,7 +29694,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s", cmd, end, out)
         cmd = F"{docker} exec {testname} cat {logfile}"
         sh____(cmd)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         self.assertEqual(end, 0)
@@ -29730,7 +29729,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -29752,7 +29751,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -29774,7 +29773,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -29799,7 +29798,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -29813,7 +29812,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -29827,7 +29826,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -29842,7 +29841,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -29865,7 +29864,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -29882,7 +29881,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(len(ps7), 1)
         self.assertNotEqual(ps6[0], ps7[0])
         #
-        logg.info("LOG\n%s", " "+output("{docker} exec {testname} cat {logfile}".format(**locals())).replace("\n", "\n "))
+        logg.info("LOG\n%s", " "+output(F"{docker} exec {testname} cat {logfile}").replace("\n", "\n "))
         #
         self.save_coverage(testname)
         #
@@ -29936,13 +29935,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl_py = realpath(_systemctl_py)
         systemctl = "/usr/bin/systemctl" # path in container
         systemctl += " --user"
-        # systemctl += " --{system}".format(**locals())
+        # systemctl += F" --{system}"
         testsleep = self.testname("sleep")
         logfile = os_path(root, "/var/log/"+testsleep+".log")
         bindir = os_path(root, "/usr/bin")
         begin = "{"
         ends = "}"
-        shell_file(os_path(testdir, "zzz.init"), """
+        shell_file(os_path(testdir, "zzz.init"), F"""
             #! /bin/bash
             logfile={logfile}
             start() {begin}
@@ -29976,8 +29975,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ;; esac
             echo "done$1" >&2
             exit 0
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzz.service"), """
+            """)
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -29991,7 +29990,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             TimeoutReloadSec=4
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
 
         cmd = F"{docker} rm --force {testname}"
         sx____(cmd)
@@ -30015,7 +30014,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.prep_coverage(image, testname)
         cmd = F"{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd)
-        zzz_service = "/etc/systemd/{system}/zzz.service".format(**locals())
+        zzz_service = F"/etc/systemd/{system}/zzz.service"
         cmd = F"{docker} exec {testname} cp /bin/sleep {bindir}/{testsleep}"
         sh____(cmd)
         cmd = F"{docker} cp {testdir}/zzz.init {testname}:/usr/bin/zzz.init"
@@ -30056,7 +30055,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -30070,7 +30069,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -30084,7 +30083,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -30099,7 +30098,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -30132,7 +30131,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -30154,7 +30153,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -30176,7 +30175,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -30201,7 +30200,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -30215,7 +30214,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -30229,7 +30228,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -30244,7 +30243,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -30267,7 +30266,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
-        top = _recent(output("{docker} exec {testname} ps -eo etime,pid,ppid,user,args".format(**locals())))
+        top = _recent(output(F"{docker} exec {testname} ps -eo etime,pid,ppid,user,args"))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(running(greps(top, testsleep)))
         cmd = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
@@ -30284,7 +30283,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(len(ps7), 1)
         self.assertNotEqual(ps6[0], ps7[0])
         #
-        logg.info("LOG\n%s", " "+output("{docker} exec {testname} cat {logfile}".format(**locals())).replace("\n", "\n "))
+        logg.info("LOG\n%s", " "+output(F"{docker} exec {testname} cat {logfile}").replace("\n", "\n "))
         #
         self.save_coverage(testname)
         #
@@ -30333,11 +30332,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl_py = realpath(_systemctl_py)
         systemctl = "/usr/bin/systemctl" # path in container
         systemctl += " --user"
-        # systemctl += " --{system}".format(**locals())
+        # systemctl += F" --{system}"
         testsleep = self.testname("sleep")
         logfile = os_path(root, "/var/log/"+testsleep+".log")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zzz.service"), """
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -30349,7 +30348,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost=/bin/rm -f {root}/var/tmp/test.2
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         shell_file(os_path(testdir, "backup"), """
            #! /bin/sh
            set -x
@@ -30376,7 +30375,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.prep_coverage(image, testname)
         cmd = F"{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd)
-        zzz_service = "/etc/systemd/{system}/zzz.service".format(**locals())
+        zzz_service = F"/etc/systemd/{system}/zzz.service"
         cmd = F"{docker} exec {testname} cp /bin/sleep {bindir}/{testsleep}"
         sh____(cmd)
         cmd = F"{docker} cp {testdir}/zzz.service {testname}:{zzz_service}"
@@ -30393,7 +30392,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd)
         cmd = F"{docker} exec {testname} touch /var/tmp/test.0"
         sh____(cmd)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertFalse(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
@@ -30413,8 +30412,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{docker} exec {testname} {systemctl} enable zzz.service -vv"
         sh____(cmd)
         #
-        is_active = "{docker} exec {testname} {systemctl} is-active zzz.service -vv"
-        act, end = output2(is_active.format(**locals()))
+        is_active = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "inactive")
         self.assertEqual(end, 3)
         #
@@ -30423,10 +30422,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active")
         self.assertEqual(end, 0)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertTrue(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
@@ -30436,10 +30435,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "inactive")
         self.assertEqual(end, 3)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertFalse(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
@@ -30449,10 +30448,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active")
         self.assertEqual(end, 0)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertTrue(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
@@ -30462,10 +30461,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active")
         self.assertEqual(end, 0)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertTrue(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
@@ -30475,10 +30474,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active")
         self.assertEqual(end, 0)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertTrue(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
@@ -30488,7 +30487,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active")
         self.assertEqual(end, 0)
         #
@@ -30497,10 +30496,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "inactive")
         self.assertEqual(end, 3)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertFalse(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
@@ -30510,10 +30509,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "inactive")
         self.assertEqual(end, 3)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertFalse(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
@@ -30523,10 +30522,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "inactive")
         self.assertEqual(end, 3)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertFalse(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
@@ -30536,10 +30535,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active")
         self.assertEqual(end, 0)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertTrue(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
@@ -30549,10 +30548,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active")
         self.assertEqual(end, 0)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertTrue(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
@@ -30562,10 +30561,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active")
         self.assertEqual(end, 0)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertTrue(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
@@ -30575,15 +30574,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "inactive")
         self.assertEqual(end, 3)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertFalse(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
         #
-        logg.info("LOG\n%s", " "+output("{docker} exec {testname} cat {logfile}".format(**locals())).replace("\n", "\n "))
+        logg.info("LOG\n%s", " "+output(F"{docker} exec {testname} cat {logfile}").replace("\n", "\n "))
         #
         self.save_coverage(testname)
         #
@@ -30621,7 +30620,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleep = self.testname("sleep")
         logfile = os_path(root, "/var/log/"+testsleep+".log")
         bindir = os_path(root, "/usr/bin")
-        text_file(os_path(testdir, "zzz.service"), """
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -30633,7 +30632,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost=/bin/rm -f {root}/var/tmp/test.2
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         shell_file(os_path(testdir, "backup"), """
            #! /bin/sh
            set -x
@@ -30676,7 +30675,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd)
         cmd = F"{docker} exec {testname} useradd -u 1001 somebody -g nobody -m"
         sh____(cmd)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertFalse(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
@@ -30695,8 +30694,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         cmd = F"{docker} exec {testname} {systemctl} enable zzz.service -vv"
         sh____(cmd)
-        is_active = "{docker} exec {testname} {systemctl} is-active zzz.service other.service -vv"
-        act, end = output2(is_active.format(**locals()))
+        is_active = F"{docker} exec {testname} {systemctl} is-active zzz.service other.service -vv"
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "inactive\ninactive")
         self.assertEqual(end, 3)
         #
@@ -30705,11 +30704,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertNotEqual(end, 0)
-        is_active = "{docker} exec {testname} {systemctl} is-active zzz.service other.service -vv"
-        act, end = output2(is_active.format(**locals()))
+        is_active = F"{docker} exec {testname} {systemctl} is-active zzz.service other.service -vv"
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active\ninactive")
         self.assertEqual(end, 3)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertTrue(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
@@ -30719,10 +30718,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertNotEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "inactive\ninactive")
         self.assertEqual(end, 3)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertFalse(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
@@ -30732,10 +30731,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertNotEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active\ninactive")
         self.assertEqual(end, 3)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertTrue(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
@@ -30745,10 +30744,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertNotEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active\ninactive")
         self.assertEqual(end, 3)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertTrue(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
@@ -30758,10 +30757,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertNotEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active\ninactive")
         self.assertEqual(end, 3)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertTrue(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
@@ -30771,7 +30770,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertNotEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active\ninactive")
         self.assertEqual(end, 3)
         #
@@ -30780,10 +30779,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertNotEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "inactive\ninactive")
         self.assertEqual(end, 3)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertFalse(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
@@ -30793,10 +30792,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertNotEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "inactive\ninactive")
         self.assertEqual(end, 3)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertFalse(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
@@ -30806,10 +30805,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertNotEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "inactive\ninactive")
         self.assertEqual(end, 3)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertFalse(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
@@ -30819,10 +30818,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertNotEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active\ninactive")
         self.assertEqual(end, 3)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertTrue(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
@@ -30832,10 +30831,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertNotEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active\ninactive")
         self.assertEqual(end, 3)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertTrue(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
@@ -30845,10 +30844,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertNotEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "active\ninactive")
         self.assertEqual(end, 3)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertTrue(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
@@ -30858,15 +30857,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info("%s =>\n%s", cmd, out)
         self.assertNotEqual(end, 0)
-        act, end = output2(is_active.format(**locals()))
+        act, end = output2(is_active)
         self.assertEqual(act.strip(), "inactive\ninactive")
         self.assertEqual(end, 3)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertFalse(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
         #
-        logg.info("LOG\n%s", " "+output("{docker} exec {testname} cat {logfile}".format(**locals())).replace("\n", "\n "))
+        logg.info("LOG\n%s", " "+output(F"{docker} exec {testname} cat {logfile}").replace("\n", "\n "))
         #
         self.save_coverage(testname)
         #
@@ -30907,7 +30906,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir = os_path(root, "/usr/bin")
         begin = "{"
         ends = "}"
-        shell_file(os_path(testdir, "zzz.init"), """
+        shell_file(os_path(testdir, "zzz.init"), F"""
             #! /bin/bash
             ### BEGIN INIT INFO
             # Required-Start: $local_fs $remote_fs $syslog $network
@@ -30952,7 +30951,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ;; esac
             echo "done$1" >&2
             exit 0
-            """.format(**locals()))
+            """)
 
         cmd = F"{docker} rm --force {testname}"
         sx____(cmd)
@@ -31061,7 +31060,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir = os_path(root, "/usr/bin")
         begin = "{"
         ends = "}"
-        text_file(os_path(testdir, "zzz.service"), """
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -31077,8 +31076,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             KillSignal=SIGQUIT
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
-        shell_file(os_path(testdir, testscript), """
+            """)
+        shell_file(os_path(testdir, testscript), F"""
             #! /bin/sh
             date +%T,enter >> {logfile}
             stops () {begin}
@@ -31104,7 +31103,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             date +%T,leaving >> {logfile}
             trap - 3 10 # SIGQUIT SIGUSR1
             date +%T,leave >> {logfile}
-        """.format(**locals()))
+        """)
 
         cmd = F"{docker} rm --force {testname}"
         sx____(cmd)
@@ -31130,7 +31129,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd)
         cmd = F"{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd)
-        zzz_service = "/etc/systemd/system/zzz.service".format(**locals())
+        zzz_service = F"/etc/systemd/system/zzz.service"
         cmd = F"{docker} cp {testdir}/zzz.service {testname}:{zzz_service}"
         sh____(cmd)
         cmd = F"{docker} exec {testname} touch {logfile}"
@@ -31267,13 +31266,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl_py = realpath(_systemctl_py)
         systemctl = "/usr/bin/systemctl" # path in container
         systemctl += " --user"
-        # systemctl += " --{system}".format(**locals())
+        # systemctl += F" --{system}"
         testsleep = testname+"_sleep"
         logfile = os_path(root, "/var/log/"+testsleep+".log")
         bindir = os_path(root, "/usr/bin")
         begin = "{"
         ends = "}"
-        shell_file(os_path(testdir, "zzz.init"), """
+        shell_file(os_path(testdir, "zzz.init"), F"""
             #! /bin/bash
             logfile={logfile}
             start() {begin}
@@ -31307,8 +31306,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ;; esac
             echo "done$1" >&2
             exit 0
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzz.service"), """
+            """)
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -31319,7 +31318,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStop=/usr/bin/zzz.init stop
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
 
         cmd = F"{docker} rm --force {testname}"
         sx____(cmd)
@@ -31341,7 +31340,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.prep_coverage(image, testname)
         cmd = F"{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd)
-        zzz_service = "/etc/systemd/system/zzz.service".format(**locals())
+        zzz_service = F"/etc/systemd/system/zzz.service"
         cmd = F"{docker} exec {testname} cp /bin/sleep {bindir}/{testsleep}"
         sh____(cmd)
         cmd = F"{docker} cp {testdir}/zzz.init {testname}:/usr/bin/zzz.init"
@@ -31490,13 +31489,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl_py = realpath(_systemctl_py)
         systemctl = "/usr/bin/systemctl" # path in container
         systemctl += " --user"
-        # systemctl += " --{system}".format(**locals())
+        # systemctl += F" --{system}"
         testsleep = testname+"_sleep"
         logfile = os_path(root, "/var/log/"+testsleep+".log")
         bindir = os_path(root, "/usr/bin")
         begin = "{"
         ends = "}"
-        shell_file(os_path(testdir, "zzz.init"), """
+        shell_file(os_path(testdir, "zzz.init"), F"""
             #! /bin/bash
             logfile={logfile}
             start() {begin}
@@ -31530,8 +31529,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ;; esac
             echo "done$1" >&2
             exit 0
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzz.service"), """
+            """)
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -31542,7 +31541,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStop={root}/usr/bin/zzz.init stop
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
 
         cmd = F"{docker} rm --force {testname}"
         sx____(cmd)
@@ -31566,7 +31565,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.prep_coverage(image, testname)
         cmd = F"{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd)
-        zzz_service = "/etc/systemd/system/zzz.service".format(**locals())
+        zzz_service = F"/etc/systemd/system/zzz.service"
         cmd = F"{docker} exec {testname} cp /bin/sleep {bindir}/{testsleep}"
         sh____(cmd)
         cmd = F"{docker} cp {testdir}/zzz.init {testname}:/usr/bin/zzz.init"
@@ -31721,13 +31720,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl_py = realpath(_systemctl_py)
         systemctl = "/usr/bin/systemctl" # path in container
         systemctl += " --user"
-        # systemctl += " --{system}".format(**locals())
+        # systemctl += F" --{system}"
         testsleep = self.testname("sleep")
         logfile = os_path(root, "/var/log/"+testsleep+".log")
         bindir = os_path(root, "/usr/bin")
         begin = "{"
         ends = "}"
-        shell_file(os_path(testdir, "zzz.init"), """
+        shell_file(os_path(testdir, "zzz.init"), F"""
             #! /bin/bash
             logfile={logfile}
             start() {begin}
@@ -31761,8 +31760,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ;; esac
             echo "done$1" >&2
             exit 0
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzz.service"), """
+            """)
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -31776,7 +31775,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             TimeoutReloadSec=4
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
 
         cmd = F"{docker} rm --force {testname}"
         sx____(cmd)
@@ -31800,7 +31799,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.prep_coverage(image, testname)
         cmd = F"{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd)
-        zzz_service = "/etc/systemd/system/zzz.service".format(**locals())
+        zzz_service = F"/etc/systemd/system/zzz.service"
         cmd = F"{docker} exec {testname} cp /bin/sleep {bindir}/{testsleep}"
         sh____(cmd)
         cmd = F"{docker} cp {testdir}/zzz.init {testname}:/usr/bin/zzz.init"
@@ -31943,13 +31942,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl_py = realpath(_systemctl_py)
         systemctl = "/usr/bin/systemctl" # path in container
         systemctl += " --user"
-        # systemctl += " --{system}".format(**locals())
+        # systemctl += F" --{system}"
         testsleep = self.testname("sleep")
         logfile = os_path(root, "/var/log/"+testsleep+".log")
         bindir = os_path(root, "/usr/bin")
         begin = "{"
         ends = "}"
-        text_file(os_path(testdir, "zzz.service"), """
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -31961,7 +31960,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStopPost=/bin/rm -f {root}/var/tmp/test.2
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         shell_file(os_path(testdir, "backup"), """
            #! /bin/sh
            set -x
@@ -31988,7 +31987,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.prep_coverage(image, testname)
         cmd = F"{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd)
-        zzz_service = "/etc/systemd/system/zzz.service".format(**locals())
+        zzz_service = F"/etc/systemd/system/zzz.service"
         cmd = F"{docker} exec {testname} cp /bin/sleep {bindir}/{testsleep}"
         sh____(cmd)
         cmd = F"{docker} cp {testdir}/zzz.service {testname}:{zzz_service}"
@@ -32005,7 +32004,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd)
         cmd = F"{docker} exec {testname} touch /var/tmp/test.0"
         sh____(cmd)
-        testfiles = output("{docker} exec {testname} find /var/tmp -name test.*".format(**locals()))
+        testfiles = output(F"{docker} exec {testname} find /var/tmp -name test.*")
         logg.info("found testfiles:\n%s", testfiles)
         self.assertFalse(greps(testfiles, "/var/tmp/test.1"))
         self.assertFalse(greps(testfiles, "/var/tmp/test.2"))
@@ -32028,7 +32027,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 1)
         self.assertTrue(greps(err, "Unit zzz.service not for --user mode"))
         #
-        is_active = "{docker} exec {testname} {systemctl} is-active zzz.service -vv"
+        is_active = F"{docker} exec {testname} {systemctl} is-active zzz.service -vv"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
         self.assertEqual(end, 1)
@@ -32127,13 +32126,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl_py = realpath(_systemctl_py)
         systemctl = "/usr/bin/systemctl" # path in container
         systemctl += " --user"
-        # systemctl += " --{system}".format(**locals())
+        # systemctl += F" --{system}"
         testsleep = self.testname("sleep")
         logfile = os_path(root, "/var/log/"+testsleep+".log")
         bindir = os_path(root, "/usr/bin")
         begin = "{"
         ends = "}"
-        text_file(os_path(testdir, "zzz.service"), """
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -32142,7 +32141,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart=/usr/bin/{testsleep} 11
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         shell_file(os_path(testdir, "backup"), """
            #! /bin/sh
            set -x
@@ -32169,7 +32168,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.prep_coverage(image, testname)
         cmd = F"{docker} exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
         sx____(cmd)
-        zzz_service = "/etc/systemd/system/zzz.service".format(**locals())
+        zzz_service = F"/etc/systemd/system/zzz.service"
         cmd = F"{docker} exec {testname} cp /bin/sleep {bindir}/{testsleep}"
         sh____(cmd)
         cmd = F"{docker} cp {testdir}/zzz.service {testname}:{zzz_service}"
@@ -33236,15 +33235,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(greps(top, " root ")), 3)
         self.assertEqual(len(greps(top, " somebody ")), 1)
         #
-        check = "{docker} exec {testname} bash -c 'ls -ld /var/run/*.status; grep PID /var/run/*.status'"
-        top = output(check.format(**locals()))
+        check = F"{docker} exec {testname} bash -c 'ls -ld /var/run/*.status; grep PID /var/run/*.status'"
+        top = output(check)
         logg.info("\n>>>\n%s", top)
-        check = "{docker} exec {testname} systemctl list-units"
-        top = output(check.format(**locals()))
+        check = F"{docker} exec {testname} systemctl list-units"
+        top = output(check)
         logg.info("\n>>>\n%s", top)
         self.assertEqual(len(greps(top, "zz")), 3)
-        check = "{docker} exec {testname} systemctl list-units --state=running"
-        top = output(check.format(**locals()))
+        check = F"{docker} exec {testname} systemctl list-units --state=running"
+        top = output(check)
         logg.info("\n>>>\n%s", top)
         self.assertEqual(len(greps(top, "zz")), 2)
         #
@@ -33397,8 +33396,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(InitLoopSleep+1)
         cmd = F"{docker} cp {testname}:/var/log/systemctl.debug.log {testdir}/systemctl.debug.log"
         sh____(cmd)
-        check = "{docker} exec {testname} systemctl list-units --state=running --type=service"
-        top = output(check.format(**locals()))
+        check = F"{docker} exec {testname} systemctl list-units --state=running --type=service"
+        top = output(check)
         logg.info("\n>>>\n%s", top)
         self.assertEqual(len(greps(top, "zz")), 4)
         #
@@ -33418,30 +33417,30 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # logg.info("systemctl.debug.log>\n\t%s", "\n\t".join(log))
         self.assertFalse(greps(log, "restart"))
         #
-        check = "{docker} exec {testname} systemctl list-units --state=running --type=service"
-        top = output(check.format(**locals()))
+        check = F"{docker} exec {testname} systemctl list-units --state=running --type=service"
+        top = output(check)
         logg.info("\n>>>\n%s", top)
         self.assertEqual(len(greps(top, "zz")), 3)
         #
         cmd = F"{docker} exec {testname} killall testsleepC" # <<<
         sh____(cmd)
         #
-        check = "{docker} exec {testname} systemctl list-units --state=running --type=service"
-        top = output(check.format(**locals()))
+        check = F"{docker} exec {testname} systemctl list-units --state=running --type=service"
+        top = output(check)
         logg.info("\n>>>\n%s", top)
         self.assertEqual(len(greps(top, "zz")), 2)
         #
         time.sleep(InitLoopSleep+1) # max 5sec but RestartSec=9
         #
-        check = "{docker} exec {testname} systemctl list-units --state=running --type=service"
-        top = output(check.format(**locals()))
+        check = F"{docker} exec {testname} systemctl list-units --state=running --type=service"
+        top = output(check)
         logg.info("\n>>>\n%s", top)
         self.assertEqual(len(greps(top, "zz")), 2)
         #
         time.sleep(10) # to have RestartSec=9
         #
-        check = "{docker} exec {testname} systemctl list-units --state=running --type=service"
-        top = output(check.format(**locals()))
+        check = F"{docker} exec {testname} systemctl list-units --state=running --type=service"
+        top = output(check)
         logg.info("\n>>>\n%s", top)
         self.assertEqual(len(greps(top, "zz")), 3)
         #
@@ -33496,7 +33495,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir="/usr/bin"
         this_user="somebody"
         this_group="nobody"
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -33505,7 +33504,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             User={this_user}
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         #
         cmd = F"{docker} rm --force {testname}"
         sx____(cmd)
@@ -33549,7 +33548,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = clean(output(cmd))
         logg.info("\n>>>\n%s", top)
         if not COVERAGE:
-            self.assertTrue(greps(top, "somebody *nobody *nobody .*{testsleepA}".format(**locals())))
+            self.assertTrue(greps(top, F"somebody *nobody *nobody .*{testsleepA}"))
         #
         cmd = F"{docker} exec {testname} find /tmp/ -name '.coverage*'"
         sh____(cmd)
@@ -33588,7 +33587,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir="/usr/bin"
         this_user="somebody"
         this_group="nobody"
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -33598,7 +33597,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Group={this_group}
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         #
         cmd = F"{docker} rm --force {testname}"
         sx____(cmd)
@@ -33640,7 +33639,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = clean(output(cmd))
         logg.info("\n>>>\n%s", top)
         if not COVERAGE:
-            self.assertTrue(greps(top, "somebody *nobody *nobody .*{testsleepA}".format(**locals())))
+            self.assertTrue(greps(top, F"somebody *nobody *nobody .*{testsleepA}"))
         #
         cmd = F"{docker} stop {testname}"
         sh____(cmd)
@@ -33677,7 +33676,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir="/usr/bin"
         this_user="somebody"
         this_group="nobody"
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -33686,7 +33685,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Group={this_group}
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         #
         cmd = F"{docker} rm --force {testname}"
         sx____(cmd)
@@ -33728,7 +33727,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = clean(output(cmd))
         logg.info("\n>>>\n%s", top)
         if not COVERAGE:
-            self.assertTrue(greps(top, "root *nobody *nobody .*{testsleepA}".format(**locals())))
+            self.assertTrue(greps(top, F"root *nobody *nobody .*{testsleepA}"))
         #
         cmd = F"{docker} stop {testname}"
         sh____(cmd)
@@ -33765,7 +33764,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir="/usr/bin"
         this_user="somebody"
         this_group="nobody"
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -33776,7 +33775,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             SupplementaryGroups={this_group}
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         #
         cmd = F"{docker} rm --force {testname}"
         sx____(cmd)
@@ -33818,7 +33817,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = clean(output(cmd))
         logg.info("\n>>>\n%s", top)
         if not COVERAGE:
-            self.assertTrue(greps(top, "somebody *nobody *nobody .*{testsleepA}".format(**locals())))
+            self.assertTrue(greps(top, F"somebody *nobody *nobody .*{testsleepA}"))
         #
         cmd = F"{docker} stop {testname}"
         sh____(cmd)
@@ -33855,7 +33854,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir="/usr/bin"
         this_user="somebody"
         this_group="nobody"
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -33865,7 +33864,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             SupplementaryGroups={this_group}
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         #
         cmd = F"{docker} rm --force {testname}"
         sx____(cmd)
@@ -33907,7 +33906,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = clean(output(cmd))
         logg.info("\n>>>\n%s", top)
         if not COVERAGE:
-            self.assertTrue(greps(top, "somebody *nobody *nobody .*{testsleepA}".format(**locals())))
+            self.assertTrue(greps(top, F"somebody *nobody *nobody .*{testsleepA}"))
         #
         cmd = F"{docker} stop {testname}"
         sh____(cmd)
@@ -33944,7 +33943,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir="/usr/bin"
         this_user="somebody"
         this_group="nobody"
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -33954,7 +33953,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Group=wheel
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         #
         cmd = F"{docker} rm --force {testname}"
         sx____(cmd)
@@ -33998,7 +33997,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = clean(output(cmd))
         logg.info("\n>>>\n%s", top)
         if not COVERAGE:
-            self.assertTrue(greps(top, "somebody *wheel *wheel .*{testsleepA}".format(**locals())))
+            self.assertTrue(greps(top, F"somebody *wheel *wheel .*{testsleepA}"))
         #
         cmd = F"{docker} stop {testname}"
         sh____(cmd)
@@ -34035,7 +34034,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir="/usr/bin"
         this_user="somebody"
         this_group="nobody"
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -34044,7 +34043,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Group=wheel
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         #
         cmd = F"{docker} rm --force {testname}"
         sx____(cmd)
@@ -34088,7 +34087,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = clean(output(cmd))
         logg.info("\n>>>\n%s", top)
         if not COVERAGE:
-            self.assertTrue(greps(top, "root *wheel *wheel .*{testsleepA}".format(**locals())))
+            self.assertTrue(greps(top, F"root *wheel *wheel .*{testsleepA}"))
         #
         cmd = F"{docker} stop {testname}"
         sh____(cmd)
@@ -34125,7 +34124,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir="/usr/bin"
         this_user="somebody"
         this_group="nobody"
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -34136,7 +34135,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             SupplementaryGroups={this_group}
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         #
         cmd = F"{docker} rm --force {testname}"
         sx____(cmd)
@@ -34180,7 +34179,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = clean(output(cmd))
         logg.info("\n>>>\n%s", top)
         if not COVERAGE:
-            self.assertTrue(greps(top, "somebody *wheel *nobody .*{testsleepA}".format(**locals())))
+            self.assertTrue(greps(top, F"somebody *wheel *nobody .*{testsleepA}"))
         #
         cmd = F"{docker} stop {testname}"
         sh____(cmd)
@@ -34217,7 +34216,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir="/usr/bin"
         this_user="somebody"
         this_group="nobody"
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -34227,7 +34226,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             SupplementaryGroups=wheel
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         #
         cmd = F"{docker} rm --force {testname}"
         sx____(cmd)
@@ -34271,7 +34270,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = clean(output(cmd))
         logg.info("\n>>>\n%s", top)
         if not COVERAGE:
-            self.assertTrue(greps(top, "somebody *nobody *wheel .*{testsleepA}".format(**locals())))
+            self.assertTrue(greps(top, F"somebody *nobody *wheel .*{testsleepA}"))
         #
         cmd = F"{docker} stop {testname}"
         sh____(cmd)
@@ -34308,7 +34307,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir="/usr/bin"
         this_user="somebody"
         this_group="nobody"
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -34317,7 +34316,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             User={this_user}
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         #
         cmd = F"{docker} rm --force {testname}"
         sx____(cmd)
@@ -34363,7 +34362,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = clean(output(cmd))
         logg.info("\n>>>\n%s", top)
         if not COVERAGE:
-            self.assertTrue(greps(top, "somebody *nobody *trusted .*{testsleepA}".format(**locals())))
+            self.assertTrue(greps(top, F"somebody *nobody *trusted .*{testsleepA}"))
         #
         cmd = F"{docker} exec {testname} find /tmp/ -name '.coverage*'"
         sh____(cmd)
@@ -34402,7 +34401,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir="/usr/bin"
         this_user="somebody"
         this_group="nobody"
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -34412,7 +34411,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Group={this_group}
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         #
         cmd = F"{docker} rm --force {testname}"
         sx____(cmd)
@@ -34456,7 +34455,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = clean(output(cmd))
         logg.info("\n>>>\n%s", top)
         if not COVERAGE:
-            self.assertTrue(greps(top, "somebody *nobody *trusted .*{testsleepA}".format(**locals())))
+            self.assertTrue(greps(top, F"somebody *nobody *trusted .*{testsleepA}"))
         #
         cmd = F"{docker} stop {testname}"
         sh____(cmd)
@@ -34493,7 +34492,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir="/usr/bin"
         this_user="somebody"
         this_group="nobody"
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -34502,7 +34501,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Group={this_group}
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         #
         cmd = F"{docker} rm --force {testname}"
         sx____(cmd)
@@ -34546,7 +34545,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = clean(output(cmd))
         logg.info("\n>>>\n%s", top)
         if not COVERAGE:
-            self.assertTrue(greps(top, "root *nobody *nobody .*{testsleepA}".format(**locals())))
+            self.assertTrue(greps(top, F"root *nobody *nobody .*{testsleepA}"))
         #
         cmd = F"{docker} stop {testname}"
         sh____(cmd)
@@ -34583,7 +34582,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir="/usr/bin"
         this_user="somebody"
         this_group="nobody"
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -34594,7 +34593,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             SupplementaryGroups=trusted
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         #
         cmd = F"{docker} rm --force {testname}"
         sx____(cmd)
@@ -34638,7 +34637,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = clean(output(cmd))
         logg.info("\n>>>\n%s", top)
         if not COVERAGE:
-            self.assertTrue(greps(top, "somebody *nobody *trusted .*{testsleepA}".format(**locals())))
+            self.assertTrue(greps(top, F"somebody *nobody *trusted .*{testsleepA}"))
         #
         cmd = F"{docker} stop {testname}"
         sh____(cmd)
@@ -34675,7 +34674,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir="/usr/bin"
         this_user="somebody"
         this_group="nobody"
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -34685,7 +34684,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             SupplementaryGroups=trusted
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         #
         cmd = F"{docker} rm --force {testname}"
         sx____(cmd)
@@ -34729,7 +34728,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = clean(output(cmd))
         logg.info("\n>>>\n%s", top)
         if not COVERAGE:
-            self.assertTrue(greps(top, "somebody *nobody *trusted .*{testsleepA}".format(**locals())))
+            self.assertTrue(greps(top, F"somebody *nobody *trusted .*{testsleepA}"))
         #
         cmd = F"{docker} stop {testname}"
         sh____(cmd)
@@ -34766,7 +34765,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir="/usr/bin"
         this_user="somebody"
         this_group="nobody"
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -34776,7 +34775,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Group=wheel
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         #
         cmd = F"{docker} rm --force {testname}"
         sx____(cmd)
@@ -34822,7 +34821,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = clean(output(cmd))
         logg.info("\n>>>\n%s", top)
         if not COVERAGE:
-            self.assertTrue(greps(top, "somebody *wheel *trusted .*{testsleepA}".format(**locals())))
+            self.assertTrue(greps(top, F"somebody *wheel *trusted .*{testsleepA}"))
         #
         cmd = F"{docker} stop {testname}"
         sh____(cmd)
@@ -34859,7 +34858,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir="/usr/bin"
         this_user="somebody"
         this_group="nobody"
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -34868,7 +34867,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Group=wheel
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         #
         cmd = F"{docker} rm --force {testname}"
         sx____(cmd)
@@ -34914,7 +34913,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = clean(output(cmd))
         logg.info("\n>>>\n%s", top)
         if not COVERAGE:
-            self.assertTrue(greps(top, "root *wheel *wheel .*{testsleepA}".format(**locals())))
+            self.assertTrue(greps(top, F"root *wheel *wheel .*{testsleepA}"))
         #
         cmd = F"{docker} stop {testname}"
         sh____(cmd)
@@ -34951,7 +34950,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir="/usr/bin"
         this_user="somebody"
         this_group="nobody"
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -34962,7 +34961,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             SupplementaryGroups={this_group}
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         #
         cmd = F"{docker} rm --force {testname}"
         sx____(cmd)
@@ -35008,7 +35007,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = clean(output(cmd))
         logg.info("\n>>>\n%s", top)
         if not COVERAGE:
-            self.assertTrue(greps(top, "somebody *wheel *trusted,nobody .*{testsleepA}".format(**locals())))
+            self.assertTrue(greps(top, F"somebody *wheel *trusted,nobody .*{testsleepA}"))
         #
         cmd = F"{docker} stop {testname}"
         sh____(cmd)
@@ -35045,7 +35044,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         bindir="/usr/bin"
         this_user="somebody"
         this_group="nobody"
-        text_file(os_path(testdir, "zza.service"), """
+        text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -35055,7 +35054,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             SupplementaryGroups=wheel
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         #
         cmd = F"{docker} rm --force {testname}"
         sx____(cmd)
@@ -35101,7 +35100,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = clean(output(cmd))
         logg.info("\n>>>\n%s", top)
         if not COVERAGE:
-            self.assertTrue(greps(top, "somebody *nobody *(wheel|trusted),(trusted|wheel) .*{testsleepA}".format(**locals())))
+            self.assertTrue(greps(top, F"somebody *nobody *(wheel|trusted),(trusted|wheel) .*{testsleepA}"))
         #
         cmd = F"{docker} stop {testname}"
         sh____(cmd)
@@ -36187,7 +36186,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if COVERAGE:
             cov_option = "-c EXEC_SPAWN=True"
         sometime = SOMETIME or 188
-        shell_file(testsleep_sh, """
+        shell_file(testsleep_sh, F"""
             #! /bin/sh
             logfile="/tmp/testsleep-$1.log"
             date > $logfile
@@ -36195,7 +36194,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             echo "user:" `id -un` >> $logfile
             echo "group:" `id -gn` >> $logfile
             testsleep $1
-            """.format(**locals()))
+            """)
         text_file(os_path(testdir, "zz4.service"), """
             [Unit]
             Description=Testing 4
@@ -36323,7 +36322,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sometime = SOMETIME or 188
         user = self.user()
         testsleep = self.testname("sleep")
-        shell_file(os_path(testdir, "zzz.init"), """
+        shell_file(os_path(testdir, "zzz.init"), F"""
             #! /bin/bash
             case "$1" in start)
                (/usr/bin/{testsleep} 111 0<&- &>/dev/null &) &
@@ -36336,8 +36335,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ;; esac
             echo "done$1" >&2
             exit 0
-            """.format(**locals()))
-        text_file(os_path(testdir, "zzz.service"), """
+            """)
+        text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
             [Service]
@@ -36346,7 +36345,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStop=/usr/bin/zzz.init stop
             [Install]
             WantedBy=multi-user.target
-            """.format(**locals()))
+            """)
         #
         cmd = F"{docker} rm --force {testname}"
         sx____(cmd)
@@ -37461,23 +37460,23 @@ ExecStart=/usr/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_CONFIG_ARGS $KUBELE
         """ a helper when using images from https://github.com/gdraheim/docker-mirror-packages-repo"
             which create containers according to self.local_image(IMAGE) """
         docker = _docker
-        containers = output("{docker} ps -a".format(**locals()))
+        containers = output(F"{docker} ps -a")
         for line in lines(containers):
             found = re.search("\\b(opensuse-repo-\\d[.\\d]*)\\b", line)
             if found:
                 container = found.group(1)
                 logg.info("     ---> drop %s", container)
-                sx____("{docker} rm -f {container}".format(**locals()))
+                sx____(F"{docker} rm -f {container}")
             found = re.search("\\b(centos-repo-\\d[.\\d]*)\\b", line)
             if found:
                 container = found.group(1)
                 logg.info("     ---> drop %s", container)
-                sx____("{docker} rm -f {container}".format(**locals()))
+                sx____(F"{docker} rm -f {container}")
             found = re.search("\\b(ubuntu-repo-\\d[.\\d]*)\\b", line)
             if found:
                 container = found.group(1)
                 logg.info("     ---> drop %s", container)
-                sx____("{docker} rm -f {container}".format(**locals()))
+                sx____(F"{docker} rm -f {container}")
 
 if __name__ == "__main__":
     from optparse import OptionParser
