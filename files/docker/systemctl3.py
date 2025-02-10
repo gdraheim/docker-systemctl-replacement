@@ -1,6 +1,7 @@
 #! /usr/bin/python3
 # pylint: disable=line-too-long,missing-function-docstring,consider-using-f-string,import-outside-toplevel
 # pylint: disable=too-many-lines,multiple-statements,unspecified-encoding,dangerous-default-value,invalid-name
+""" run 'systemctl start' and other systemctl commands based on available *.service descriptions without a systemd daemon running in the system """
 from __future__ import print_function
 import threading
 import grp
@@ -874,6 +875,7 @@ class SystemctlConfigParser(SystemctlConfData):
 UnitConfParser = SystemctlConfigParser
 
 class SystemctlSocket:
+    """ support for Socket unit descriptors """
     def __init__(self, conf: 'SystemctlConf', sock: socket.socket, skip: bool = False) -> None:
         self.conf = conf
         self.sock = sock
@@ -896,6 +898,7 @@ class SystemctlSocket:
         self.sock.close()
 
 class SystemctlConf:
+    """ status of loaded *.service descriptors (and other unit files) from the system environment """
     data: SystemctlConfData
     env: Dict[str, str]
     status: Optional[Dict[str, str]]
@@ -954,6 +957,7 @@ class SystemctlConf:
         return False
 
 class PresetFile:
+    """ scanning *.preset files to adjust the *.service default status """
     _files: List[str]
     _lines: List[str]
     def __init__(self) -> None:
@@ -982,6 +986,7 @@ class PresetFile:
 
 ## with waitlock(conf): self.start()
 class waitlock:
+    """ with-statement for mutex on modules - allowing to run multiple systemctl units in parallel, or guarding the global lock."""
     conf: SystemctlConf
     opened: int
     lockfolder: str
@@ -1192,6 +1197,7 @@ def conf_sortedAfter(conflist: Iterable[SystemctlConf], cmp: Callable[[Systemctl
     # anything without 'before' is a 'after'. In that
     # case we find that "B after C".
     class SortTuple:
+        """ sort systemctl unit names """
         def __init__(self, rank: int, conf: SystemctlConf) -> None:
             self.rank = rank
             self.conf = conf
@@ -1227,6 +1233,7 @@ def conf_sortedAfter(conflist: Iterable[SystemctlConf], cmp: Callable[[Systemctl
     return [item.conf for item in sortedlist]
 
 class SystemctlListenThread(threading.Thread):
+    """ support LISTEN modules """
     def __init__(self, systemctl: 'Systemctl') -> None:
         threading.Thread.__init__(self, name="listen")
         self.systemctl = systemctl
@@ -1286,6 +1293,7 @@ class SystemctlListenThread(threading.Thread):
         return
 
 class Systemctl:
+    """ emulation for systemctl commands """
     error: int
     _extra_vars: List[str]
     _force: bool
@@ -6685,7 +6693,7 @@ def main() -> int:
     global _now, _preset_mode, _quiet, _root, _show_all, _only_state, _only_type, _only_property, _only_what
     global _pid, _init, _user_mode, _force_ipv4, _force_ipv6
     import optparse # pylint: disable=deprecated-module
-    _o = optparse.OptionParser("%prog [options] command [name...]",
+    _o = optparse.OptionParser("%prog [options] command [name...]", description=__doc__.strip(),
                                epilog="use 'help' command for more information")
     _o.add_option("--version", action="store_true",
                   help="Show package version")
