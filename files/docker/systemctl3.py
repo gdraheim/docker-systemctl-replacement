@@ -3602,7 +3602,7 @@ class Systemctl:
             else: # pragma: no cover
                 os.execve(cmd[0], cmd, env)
                 sys.exit(11) # pragma: no cover (can not be reached / bug like mypy#8401)
-        except Exception as e:
+        except (OSError, RuntimeError) as e:
             logg.error("(%s): %s", shell_cmd(cmd), e)
             sys.exit(1)
     def test_start_unit(self, unit: str) -> None:
