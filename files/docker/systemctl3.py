@@ -1,6 +1,6 @@
 #! /usr/bin/python3
 # pylint: disable=line-too-long,missing-function-docstring,consider-using-f-string,import-outside-toplevel
-# pylint: disable=too-many-lines,multiple-statements,unspecified-encoding,dangerous-default-value,invalid-name,unnecessary-lambda
+# pylint: disable=too-many-lines,multiple-statements,unspecified-encoding,dangerous-default-value,invalid-name,unnecessary-lambda,superfluous-parens
 """ run 'systemctl start' and other systemctl commands based on available *.service descriptions without a systemd daemon running in the system """
 from __future__ import print_function
 import threading
@@ -1216,8 +1216,8 @@ def conf_sortedAfter(conflist: Iterable[SystemctlConf]) -> List[SystemctlConf]:
     sortlist = [SortTuple(0, conf) for conf in conflist]
     for check in range(len(sortlist)): # maxrank = len(sortlist)
         changed = 0
-        for A in range(len(sortlist)):
-            for B in range(len(sortlist)):
+        for A in range(len(sortlist)):  # pylint: disable=consider-using-enumerate
+            for B in range(len(sortlist)):  # pylint: disable=consider-using-enumerate
                 if A != B:
                     itemA = sortlist[A]
                     itemB = sortlist[B]
@@ -4678,7 +4678,7 @@ class Systemctl:
         if self.user_mode():
             logg.warning("preset-all makes no sense in --user mode")
             return True
-        units = self.match_units() 
+        units = self.match_units()
         return self.preset_units([unit for unit in units if fnmatched(unit, modules)])
     def wanted_from(self, conf: SystemctlConf, default: Optional[str] = None) -> Optional[str]:
         if not conf: return default
@@ -5143,7 +5143,7 @@ class Systemctl:
             for stop_recursion in ["Conflict", "conflict", "reloaded", "Propagate"]:
                 if stop_recursion in mark:
                     return
-            for dep in deps:
+            for dep in deps:  # pylint: disable=consider-using-dict-items
                 if dep in loop:
                     logg.debug("detected loop at %s", dep)
                     continue
