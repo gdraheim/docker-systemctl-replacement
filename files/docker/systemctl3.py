@@ -1600,7 +1600,7 @@ class Systemctl:
         conf.masked = masked
         conf.nonloaded_path = path # if masked
         conf.drop_in_files = drop_in_files
-        conf._root = self._root
+        conf._root = self._root  # pylint: disable=protected-access
         self._loaded_file_sysd[path] = conf
         return conf
     def load_sysv_unit_conf(self, module: Optional[str]) -> Optional[SystemctlConf]: # -> conf?
@@ -1613,7 +1613,7 @@ class Systemctl:
         data = UnitConfParser()
         data.read_sysv(path)
         conf = SystemctlConf(data, module)
-        conf._root = self._root
+        conf._root = self._root  # pylint: disable=protected-access
         self._loaded_file_sysv[path] = conf
         return conf
     def load_unit_conf(self, module: Optional[str]) -> Optional[SystemctlConf]: # -> conf | None(not-found)
@@ -1638,7 +1638,7 @@ class Systemctl:
         data.set(Unit, "Description", description or ("NOT-FOUND " + str(module)))
         # assert(not data.loaded())
         conf = SystemctlConf(data, module)
-        conf._root = self._root
+        conf._root = self._root  # pylint: disable=protected-access
         return conf
     def get_unit_conf(self, module: str) -> SystemctlConf: # -> conf (conf | default-conf)
         """ accept that a unit does not exist
