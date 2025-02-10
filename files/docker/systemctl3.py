@@ -2022,7 +2022,7 @@ class Systemctl:
         if pid_max < 0:
             pid_max = pid1 - pid_max
         for pid in range(pid1, pid_max):
-            proc = _proc_pid_stat.format({"pid": pid})
+            proc = _proc_pid_stat.format(pid = pid)
             try:
                 if os.path.exists(proc):
                     # return os.path.getmtime(proc) # did sometimes change
@@ -2035,7 +2035,7 @@ class Systemctl:
     def get_boottime_from_old_proc(self) -> float:
         booted = time.time()
         for pid in os.listdir(_proc_pid_dir):
-            proc = _proc_pid_stat.format({"pid": pid})
+            proc = _proc_pid_stat.format(pid = pid)
             try:
                 if os.path.exists(proc):
                     # ctime = os.path.getmtime(proc)
@@ -2354,7 +2354,6 @@ class Systemctl:
             newcmd += [re.sub(r"[$][{](\w+)[}]", lambda m: get_env2(m), part2)] # type: ignore[arg-type]
         return newcmd
     def remove_service_directories(self, conf: SystemctlConf, section: str = Service) -> bool:
-        env: Dict[str, str]
         ok = True
         nameRuntimeDirectory = self.get_RuntimeDirectory(conf, section)
         keepRuntimeDirectory = self.get_RuntimeDirectoryPreserve(conf, section)
@@ -2863,7 +2862,7 @@ class Systemctl:
         notify.socket.settimeout(timeout or DefaultMaximumTimeout)
         result = ""
         try:
-            result, client_address = notify.socket.recvfrom(4096)
+            result, _ = notify.socket.recvfrom(4096)
             assert isinstance(result, bytes)
             if result:
                 result = result.decode("utf-8")
@@ -5386,7 +5385,6 @@ class Systemctl:
             return True
         if not conf.data.has_section(section):
             return True  # pragma: no cover
-        haveType = conf.get(section, "Type", "simple")
         if self.is_sysv_file(conf.filename()):
             return True # we don't care about that
         unit = conf.name()
@@ -6231,7 +6229,7 @@ class Systemctl:
     def reap_zombies_target(self) -> str:
         """ -- check to reap children (internal) """
         running = self.reap_zombies()
-        return "remaining {running} process".format(**locals())
+        return "remaining {running} process".format(running = running)  # TODO: f-string
     def reap_zombies(self) -> int:
         """ check to reap children """
         selfpid = os.getpid()
@@ -6242,7 +6240,7 @@ class Systemctl:
                 continue
             if pid == selfpid:
                 continue
-            proc_status = _proc_pid_status.format(**locals())
+            proc_status = _proc_pid_status.format(pid = pid)
             if os.path.isfile(proc_status):
                 zombie = False
                 ppid = -1
