@@ -3312,12 +3312,12 @@ class Systemctl:
         if TRUE:
             for cmd in conf.getlist(Socket, "ExecStartPre", []):
                 exe, newcmd = self.exec_newcmd(cmd, env, conf)
-                logg.info(" pre-start %s", shell_cmd(newcmd))
+                logg.info("%s pre-start %s", runs, shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
                     self.execve_from(conf, newcmd, env) # pragma: no cover
                 run = subprocess_waitpid(forkpid)
-                logg.debug(" pre-start done (%s) <-%s>",
+                logg.debug("%s pre-start done (%s) <-%s>", runs,
                            run.returncode or "OK", run.signal or "")
                 if run.returncode and exe.check:
                     logg.error("the ExecStartPre control process exited with error code")
@@ -3352,23 +3352,23 @@ class Systemctl:
             env["SERVICE_RESULT"] = service_result
             for cmd in conf.getlist(Socket, "ExecStopPost", []):
                 exe, newcmd = self.exec_newcmd(cmd, env, conf)
-                logg.info("post-fail %s", shell_cmd(newcmd))
+                logg.info("%s post-fail %s", runs, shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
                     self.execve_from(conf, newcmd, env) # pragma: no cover
                 run = subprocess_waitpid(forkpid)
-                logg.debug("post-fail done (%s) <-%s>",
+                logg.debug("%s post-fail done (%s) <-%s>", runs,
                            run.returncode or "OK", run.signal or "")
             return False
         else:
             for cmd in conf.getlist(Socket, "ExecStartPost", []):
                 exe, newcmd = self.exec_newcmd(cmd, env, conf)
-                logg.info("post-start %s", shell_cmd(newcmd))
+                logg.info("%s post-start %s", runs, shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
                     self.execve_from(conf, newcmd, env) # pragma: no cover
                 run = subprocess_waitpid(forkpid)
-                logg.debug("post-start done (%s) <-%s>",
+                logg.debug("%s post-start done (%s) <-%s>", runs,
                            run.returncode or "OK", run.signal or "")
             return True
     def socketlist(self) -> List[SystemctlSocket]:
@@ -3838,12 +3838,12 @@ class Systemctl:
             env["SERVICE_RESULT"] = service_result
             for cmd in conf.getlist(Socket, "ExecStopPost", []):
                 exe, newcmd = self.exec_newcmd(cmd, env, conf)
-                logg.info("post-stop %s", shell_cmd(newcmd))
+                logg.info("%s post-stop %s", runs, shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
                     self.execve_from(conf, newcmd, env) # pragma: no cover
                 run = subprocess_waitpid(forkpid)
-                logg.debug("post-stop done (%s) <-%s>",
+                logg.debug("%s post-stop done (%s) <-%s>", runs,
                            run.returncode or "OK", run.signal or "")
         return service_result == "success"
     def wait_vanished_pid(self, pid: int, timeout: float) -> bool:
