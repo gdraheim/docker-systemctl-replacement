@@ -5236,7 +5236,7 @@ class Systemctl:
                 conf = self.get_unit_conf(unit)
             except Exception as e:
                 logg.error("%s: can not read unit file %s\n\t%s",
-                           unit, strQ(conf.filename()), e)
+                           unit, strQ(unit), e)
                 continue
             errors += self.syntax_check(conf)
         if errors:
