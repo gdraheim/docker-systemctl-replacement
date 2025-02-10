@@ -40,6 +40,8 @@ if sys.version[0] == '2':
 else:
     stringtypes = str # pylint: disable=invalid-name
 
+TRUE = True
+NIX = ""
 DEBUG_AFTER: bool = False
 DEBUG_STATUS: bool = False
 DEBUG_BOOTTIME: bool = False
@@ -81,7 +83,7 @@ _no_legend: bool = False
 _no_ask_password: bool = False
 _preset_mode: str = "all"
 _quiet: bool = False
-_root: str = ""
+_root: str = NIX
 _show_all: bool = False
 _user_mode: bool = False
 _only_what: List[str] = []
@@ -630,7 +632,7 @@ def checkprefix(cmd: str) -> Tuple[str, str]:
         else:
             newcmd = cmd[i:]
             return prefix, newcmd
-    return prefix, ""
+    return prefix, NIX
 
 ExecMode = collections.namedtuple("ExecMode", ["mode", "check", "nouser", "noexpand", "argv0"])
 def exec_path(cmd: str) -> Tuple[ExecMode, str]:
@@ -1426,7 +1428,7 @@ class Systemctl:
         if self.user_mode():
             for folder in self.user_folders():
                 yield folder
-        if True:
+        if TRUE:
             for folder in self.system_folders():
                 yield folder
     def scan_unit_sysd_files(self, module: Optional[str] = None) -> List[str]: # -> [ unit-names,... ]
@@ -1867,7 +1869,7 @@ class Systemctl:
         """ actual file path of pid file (internal) """
         conf = self.get_unit_conf(unit)
         return self.pid_file_from(conf) or self.get_status_file_from(conf)
-    def pid_file_from(self, conf: SystemctlConf, default: str = "") -> str:
+    def pid_file_from(self, conf: SystemctlConf, default: str = NIX) -> str:
         """ get the specified pid file path (not a computed default) """
         pid_file = self.get_pid_file(conf) or default
         return os_path(self._root, self.expand_special(pid_file, conf))
@@ -1922,7 +1924,7 @@ class Systemctl:
             os.makedirs(dirpath)
         if conf.status is None:
             conf.status = self.read_status_from(conf)
-        if True:
+        if TRUE:
             for key in sorted(status.keys()):
                 value = status[key]
                 if key.upper() == "AS": key = "ActiveState"
@@ -2397,7 +2399,7 @@ class Systemctl:
         return conf.get(section, "LogsDirectoryMode", "")
     def get_ConfigurationDirectoryMode(self, conf: SystemctlConf, section: str = Service) -> str:
         return conf.get(section, "ConfigurationDirectoryMode", "")
-    def clean_service_directories(self, conf: SystemctlConf, which: str = "") -> bool:
+    def clean_service_directories(self, conf: SystemctlConf, which: str = NIX) -> bool:
         ok = True
         section = self.get_unit_section_from(conf)
         nameRuntimeDirectory = self.get_RuntimeDirectory(conf, section)
@@ -2658,14 +2660,14 @@ class Systemctl:
         follow = _force
         ok = self.clean_units(units)
         return ok and found_all
-    def clean_units(self, units: List[str], what: str = "") -> bool:
+    def clean_units(self, units: List[str], what: str = NIX) -> bool:
         if not what:
             what = self._only_what[0]
         ok = True
         for unit in units:
             ok = self.clean_unit(unit, what) and ok
         return ok
-    def clean_unit(self, unit: str, what: str = "") -> bool:
+    def clean_unit(self, unit: str, what: str = NIX) -> bool:
         conf = self.load_unit_conf(unit)
         if not conf: return False
         return self.clean_unit_from(conf, what)
@@ -2984,7 +2986,7 @@ class Systemctl:
         # for StopPost on failure:
         returncode = 0
         service_result = "success"
-        if True:
+        if TRUE:
             if runs in ["simple", "exec", "forking", "notify", "idle"]:
                 env["MAINPID"] = strE(self.read_mainpid_from(conf))
             for cmd in conf.getlist(Service, "ExecStartPre", []):
@@ -3024,7 +3026,7 @@ class Systemctl:
                     break
                 logg.info("%s start done (%s) <-%s>", runs,
                           run.returncode or "OK", run.signal or "")
-            if True:
+            if TRUE:
                 self.set_status_from(conf, "ExecMainCode", strE(returncode))
                 active = returncode and "failed" or "active"
                 self.write_status_from(conf, AS=active)
@@ -3283,7 +3285,7 @@ class Systemctl:
         if not self._quiet:
             okee = self.exec_check_unit(conf, env, Socket, "Exec") # all...
             if not okee and _no_reload: return False
-        if True:
+        if TRUE:
             for cmd in conf.getlist(Socket, "ExecStartPre", []):
                 exe, newcmd = self.exec_newcmd(cmd, env, conf)
                 logg.info(" pre-start %s", shell_cmd(newcmd))
@@ -3684,7 +3686,7 @@ class Systemctl:
                     returncode = run.returncode
                     service_result = "failed"
                     break
-            if True:
+            if TRUE:
                 if returncode:
                     self.set_status_from(conf, "ExecStopCode", strE(returncode))
                     self.write_status_from(conf, AS="failed")
@@ -3693,7 +3695,7 @@ class Systemctl:
         # fallback Stop => Kill for ["simple","notify","forking"]
         elif not conf.getlist(Service, "ExecStop", []):
             logg.info("no ExecStop => systemctl kill")
-            if True:
+            if TRUE:
                 self.do_kill_unit_from(conf)
                 self.clean_pid_file_from(conf)
                 self.clean_status_from(conf) # "inactive"
@@ -4646,7 +4648,7 @@ class Systemctl:
         if self.user_mode():
             for folder in self.user_folders():
                 yield self.default_enablefolder(wanted, folder)
-        if True:
+        if TRUE:
             for folder in self.system_folders():
                 yield self.default_enablefolder(wanted, folder)
     def enablefolder(self, wanted: str) -> str:
@@ -4721,7 +4723,7 @@ class Systemctl:
             logg.debug("%s has no real file", conf.name())
             return False
         symlink = os.path.join(folder, conf.name())
-        if True:
+        if TRUE:
             _f = self._force and "-f" or ""
             logg.info("ln -s {_f} '{source}' '{symlink}'".format(**locals()))
         if self._force and os.path.islink(symlink):
@@ -4966,7 +4968,7 @@ class Systemctl:
             os.makedirs(folder)
         target = os.path.join(folder, os.path.basename(unit_file))
         dev_null = _dev_null
-        if True:
+        if TRUE:
             _f = self._force and "-f" or ""
             logg.debug("ln -s {_f} {dev_null} '{target}'".format(**locals()))
         if self._force and os.path.islink(target):
@@ -4989,7 +4991,7 @@ class Systemctl:
         if self.user_mode():
             for folder in self.user_folders():
                 yield folder
-        if True:
+        if TRUE:
             for folder in self.system_folders():
                 yield folder
     def unmask_modules(self, *modules: str) -> bool:
@@ -5030,7 +5032,7 @@ class Systemctl:
         if self._root:
             folder = os_path(self._root, folder)
         target = os.path.join(folder, os.path.basename(unit_file))
-        if True:
+        if TRUE:
             _f = self._force and "-f" or ""
             logg.info("rm {_f} '{target}'".format(**locals()))
         if os.path.islink(target):
@@ -5199,7 +5201,7 @@ class Systemctl:
     def sortedAfter(self, unitlist: List[str]) -> List[str]:
         """ get correct start order for the unit list (ignoring masked units) """
         conflist = [self.get_unit_conf(unit) for unit in unitlist]
-        if True:
+        if TRUE:
             conflist = []
             for unit in unitlist:
                 conf = self.get_unit_conf(unit)
@@ -5212,7 +5214,7 @@ class Systemctl:
     def sortedBefore(self, unitlist: List[str]) -> List[str]:
         """ get correct start order for the unit list (ignoring masked units) """
         conflist = [self.get_unit_conf(unit) for unit in unitlist]
-        if True:
+        if TRUE:
             conflist = []
             for unit in unitlist:
                 conf = self.get_unit_conf(unit)
@@ -5328,7 +5330,7 @@ class Systemctl:
                 logg.error(" %s: Failed to load environment files: %s", unit, env_file)
                 errors += 101
         return errors
-    def exec_check_unit(self, conf: SystemctlConf, env: Dict[str, str], section: str = Service, exectype: str = "") -> bool:
+    def exec_check_unit(self, conf: SystemctlConf, env: Dict[str, str], section: str = Service, exectype: str = NIX) -> bool:
         if conf is None: # pragma: no cover (is never null)
             return True
         if not conf.data.has_section(section):
@@ -5393,7 +5395,7 @@ class Systemctl:
                 tmpproblems += 1
         if not abspath and not notexists and not badusers and not badgroups:
             return True
-        if True:
+        if TRUE:
             filename = strE(conf.filename())
             if len(filename) > 44: filename = o44(filename)
             logg.error(" !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
@@ -5672,7 +5674,7 @@ class Systemctl:
         return units
     def enabled_target_configured_system_units(self, target: str, unit_type: str = ".service", igno: List[str] = []) -> List[str]:
         units: List[str] = []
-        if True:
+        if TRUE:
             folder = self.default_enablefolder(target)
             if self._root:
                 folder = os_path(self._root, folder)
