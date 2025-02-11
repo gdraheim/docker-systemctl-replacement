@@ -5784,7 +5784,7 @@ class Systemctl:
         while requires in SYSD_TARGET_REQUIRES:
             targets = [requires] + targets
             requires = SYSD_TARGET_REQUIRES[requires]
-        logg.debug("the %s requires %s", module, targets)
+        logg.debug("the [%s] requires %s", module, targets)
         return targets
     def default_system(self, arg: bool = True) -> bool:
         """ start units for default system level
@@ -5795,7 +5795,7 @@ class Systemctl:
             /// SPECIAL: with --now or --init the init-loop is run and afterwards
                 a system_halt is performed with the enabled services to be stopped."""
         self.sysinit_status(SubState = "initializing")
-        logg.info("system default requested - %s", arg)
+        logg.info("system default requested [init] %s", arg)
         init = self._now or self._init
         return self.start_system_default(init = init)
     def start_system_default(self, init: bool = False) -> bool:
@@ -5804,17 +5804,19 @@ class Systemctl:
             the services are stopped again by 'systemctl halt'."""
         target = self.get_default_target()
         services = self.start_target_system(target, init)
-        logg.info("%s system is up", target)
+        logg.info("[%s] system is up", target)
         if init:
-            logg.info("init-loop start")
+            logg.info("[%s] init-loop start", target)
             sig = self.init_loop_until_stop(services)
-            logg.info("init-loop %s", sig)
+            logg.info("[%s] init-loop stop on %s", target, sig)
             self.stop_system_default()
         return not not services  # pylint: disable=unnecessary-negation
     def start_target_system(self, target: str, init: bool = False) -> List[str]:
         services = self.target_default_services(target, "S")
+        logg.debug("start target system %s", services)
         self.sysinit_status(SubState = "starting")
-        self.start_units(services, init=init)
+        self.start_units(services)
+        logg.debug("run %s target system %s", init, services)
         return services
     def do_start_target_from(self, conf: SystemctlConf) -> bool:
         target = conf.name()
@@ -5829,7 +5831,7 @@ class Systemctl:
             at the end of a 'systemctl --init default' loop."""
         target = self.get_default_target()
         services = self.stop_target_system(target)
-        logg.info("%s system is down", target)
+        logg.info("[%s] system is down", target)
         return not not services  # pylint: disable=unnecessary-negation
     def stop_target_system(self, target: str) -> List[str]:
         services = self.target_default_services(target, "K")
@@ -5918,16 +5920,18 @@ class Systemctl:
         (and no unit is started/stoppped wether given or not).
         """
         if self._now:
+            logg.debug(" [init] init --now")
             result = self.init_loop_until_stop([])
             return not not result  # pylint: disable=unnecessary-negation
         if not modules:
-            # like 'systemctl --init default'
+            logg.debug(" [init] --init default")
             if self._now or self._show_all:
                 logg.debug("init default --now --all => no_more_procs")
                 self.doExitWhenNoMoreProcs = True
             return self.start_system_default(init = True)
         #
         # otherwise quit when all the init-services have died
+        logg.debug(" [init]  --init start")
         self.doExitWhenNoMoreServices = True
         if self._now or self._show_all:
             logg.debug("init services --now --all => no_more_procs")
