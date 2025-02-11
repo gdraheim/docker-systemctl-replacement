@@ -2185,7 +2185,7 @@ class Systemctl:
         found: List[str]
         conf = self.load_unit_conf(unit)
         if conf is None:
-            logg.error("Unit %s could not be found.", unit)
+            logg.error("Unit %s not found.", unit)
             self.error |= NOT_FOUND
             return None
         if self._only_property:
@@ -2198,7 +2198,7 @@ class Systemctl:
         """ [UNIT]. -- show environment parts """
         conf = self.load_unit_conf(unit)
         if conf is None:
-            logg.error("Unit %s could not be found.", unit)
+            logg.error("Unit %s not found.", unit)
             self.error |= NOT_FOUND
             return None
         return self.get_env(conf)
@@ -3973,7 +3973,7 @@ class Systemctl:
                 if unit not in units:
                     units += [unit]
         if missing:
-            logg.warning("Unit %s not found.", " and ".join(missing))
+            logg.error("Unit %s not found.", " and ".join(missing))
             self.error |= NOT_FOUND
         return self.restart_units(units) and not missing
     def restart_units(self, units: List[str]) -> bool:
@@ -4435,7 +4435,7 @@ class Systemctl:
                 results += [active]
                 break
         if missing:
-            logg.warning("Unit %s not found.", " and ".join(missing))
+            logg.error("Unit %s not found.", " and ".join(missing))
             # self.error |= NOT_FOUND
         if "failed" in results:
             self.error = 0
@@ -4463,7 +4463,7 @@ class Systemctl:
                     status = False
                 break
         if missing:
-            logg.warning("Unit %s not found.", " and ".join(missing))
+            logg.error("Unit %s not found.", " and ".join(missing))
             # self.error |= NOT_FOUND
         return status
     def reset_failed_unit(self, unit: str) -> bool:
@@ -4716,7 +4716,7 @@ class Systemctl:
                 if unit not in units:
                     units += [unit]
         if missing:
-            logg.error("Unit %s not found", " and ".join(missing))
+            logg.error("Unit %s not found.", " and ".join(missing))
             # self.error |= NOT_FOUND
         return self.enable_units(units) and not missing
     def enable_units(self, units: List[str]) -> bool:
@@ -4914,7 +4914,7 @@ class Systemctl:
                 if unit not in units:
                     units += [unit]
         if missing:
-            logg.warning("Unit %s not found.", " and ".join(missing))
+            logg.error("Unit %s not found.", " and ".join(missing))
             # self.error |= NOT_FOUND
         return self.is_enabled_units(units) # and not missing
     def is_enabled_units(self, units: List[str]) -> List[str]:
@@ -5101,7 +5101,7 @@ class Systemctl:
                 if unit not in units:
                     units += [unit]
         if missing:
-            logg.warning("Unit %s not found.", " and ".join(missing))
+            logg.error("Unit %s not found.", " and ".join(missing))
             # self.error |= NOT_FOUND
         return self.list_dependencies_units(units) # and not missing
     def list_dependencies_units(self, units: List[str]) -> List[str]:
@@ -5482,7 +5482,7 @@ class Systemctl:
                 if unit not in units:
                     units += [unit]
         if missing:
-            logg.warning("Unit %s not found.", " and ".join(missing))
+            logg.error("Unit %s not found.", " and ".join(missing))
             # self.error |= NOT_FOUND
         return self.show_units(units) + notfound # and not missing
     def show_units(self, units: List[str]) -> List[str]:
@@ -5943,7 +5943,7 @@ class Systemctl:
                 if unit not in units:
                     units += [unit]
         if missing:
-            logg.warning("Unit %s not found.", " and ".join(missing))
+            logg.error("Unit %s not found.", " and ".join(missing))
             # self.error |= NOT_FOUND
         logg.info("init %s -> start %s", ",".join(modules), ",".join(units))
         done = self.start_units(units, init = True)
