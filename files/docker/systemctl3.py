@@ -1,7 +1,7 @@
 #! /usr/bin/python3
 # pylint: disable=line-too-long,missing-function-docstring,consider-using-f-string,import-outside-toplevel
 # pylint: disable=too-many-lines,multiple-statements,unspecified-encoding,dangerous-default-value,unnecessary-lambda,superfluous-parens
-# pylint: disable=invalid-name
+# ylint: disable=invalid-name
 """ run 'systemctl start' and other systemctl commands based on available *.service descriptions without a systemd daemon running in the system """
 from __future__ import print_function
 import threading
@@ -22,7 +22,7 @@ import shlex
 import fnmatch
 import re
 
-from typing import Dict, Iterable, List, NoReturn, Optional, TextIO, Tuple, Type, Union, Match, Iterator
+from typing import Dict, Iterable, List, NoReturn, Optional, TextIO, Tuple, Type, Union, Match, Iterator, Final
 from types import TracebackType
 
 __copyright__: str = "(C) 2024-2025 Guido U. Draheim, licensed under the EUPL"
@@ -142,7 +142,7 @@ _proc_sys_uptime = "/proc/uptime"
 _proc_sys_stat = "/proc/stat"
 
 # default values
-SystemCompatibilityVersion = 219
+SystemCompatibilityVersion: int = 219
 SysInitTarget: str = "sysinit.target"
 SysInitWait: int = 5 # max for target
 MinimumYield: float = 0.5
@@ -192,8 +192,8 @@ LESS_CMDS = ["/bin/less", "/usr/bin/less", "/usr/local/bin/less"]
 CAT_CMDS = ["/bin/cat", "/usr/bin/cat", "/usr/local/bin/cat"]
 
 # The systemd default was NOTIFY_SOCKET="/var/run/systemd/notify"
-_notify_socket_folder = "{RUN}/systemd" # alias /run/systemd
-_journal_log_folder: str = "{LOG}/journal"
+NOTIFY_SOCKET_FOLDER = "{RUN}/systemd" # alias /run/systemd
+JOURNAL_LOG_FOLDER: str = "{LOG}/journal"
 
 SYSTEMCTL_DEBUG_LOG: str = "{LOG}/systemctl.debug.log"
 SYSTEMCTL_EXTRA_LOG: str = "{LOG}/systemctl.log"
@@ -225,10 +225,10 @@ _sysv_mappings["$timer"] = "timers.target"
 
 
 # sections from conf
-Unit = "Unit"
-Service = "Service"
-Socket = "Socket"
-Install = "Install"
+Unit: Final[str] = "Unit"
+Service: Final[str] = "Service"
+Socket: Final[str] = "Socket"
+Install: Final[str] = "Install"
 
 # https://tldp.org/LDP/abs/html/exitcodes.html
 # https://freedesktop.org/software/systemd/man/systemd.exec.html#id-1.20.8
@@ -999,7 +999,7 @@ class waitlock:
     def __init__(self, conf: SystemctlConf) -> None:
         self.conf = conf # currently unused
         self.opened = -1
-        self.lockfolder = expand_path(_notify_socket_folder, conf.root_mode())
+        self.lockfolder = expand_path(NOTIFY_SOCKET_FOLDER, conf.root_mode())
         try:
             folder = self.lockfolder
             if not os.path.isdir(folder):
@@ -1361,7 +1361,7 @@ class Systemctl:
         self._only_type = commalist(ONLY_TYPE)
         # some common constants that may be changed
         self._systemd_version = SystemCompatibilityVersion
-        self._journal_log_folder = _journal_log_folder
+        self._journal_log_folder = JOURNAL_LOG_FOLDER
         # and the actual internal runtime state
         self._loaded_file_sysv = {} # /etc/init.d/name => config data
         self._loaded_file_sysd = {} # /etc/systemd/system/name.service => config data
@@ -2814,7 +2814,7 @@ class Systemctl:
     NotifySocket = collections.namedtuple("NotifySocket", ["socket", "socketfile"])
     def get_notify_socket_from(self, conf: SystemctlConf, socketfile: Optional[str] = None, debug: bool = False) -> str:
         """ creates a notify-socket for the (non-privileged) user """
-        notify_socket_folder = expand_path(_notify_socket_folder, conf.root_mode())
+        notify_socket_folder = expand_path(NOTIFY_SOCKET_FOLDER, conf.root_mode())
         notify_folder = os_path(self._root, notify_socket_folder)
         notify_name = "notify." + str(conf.name() or "systemctl")
         notify_socket = os.path.join(notify_folder, notify_name)
