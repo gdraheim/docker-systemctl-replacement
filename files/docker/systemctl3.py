@@ -1,6 +1,7 @@
 #! /usr/bin/python3
 # pylint: disable=line-too-long,missing-function-docstring,consider-using-f-string,import-outside-toplevel
-# pylint: disable=too-many-lines,multiple-statements,unspecified-encoding,dangerous-default-value,invalid-name,unnecessary-lambda,superfluous-parens
+# pylint: disable=too-many-lines,multiple-statements,unspecified-encoding,dangerous-default-value,unnecessary-lambda,superfluous-parens
+# pylint: disable=invalid-name
 """ run 'systemctl start' and other systemctl commands based on available *.service descriptions without a systemd daemon running in the system """
 from __future__ import print_function
 import threading
@@ -68,28 +69,28 @@ NOT_ACTIVE: int = 2      # FOUND_INACTIVE
 NOT_FOUND: int = 4       # FOUND_UNKNOWN
 
 # defaults for options
-_extra_vars: List[str] = []
-_force: bool = False
-_full: bool = False
-_log_lines = 0
-_no_pager = False
-_now: bool = False
-_no_reload = False
-_no_legend: bool = False
-_no_ask_password: bool = False
-_preset_mode: str = "all"
-_quiet: bool = False
-_root: str = NIX
-_show_all: bool = False
-_user_mode: bool = False
-_only_what: List[str] = []
-_only_type: List[str] = []
-_only_state: List[str] = []
-_only_property: List[str] = []
-_force_ipv4 = False
-_force_ipv6 = False
-_pid = -1  # FIXME
-_init = False
+EXTRA_VARS: List[str] = []
+DO_FORCE: bool = False
+DO_FULL: bool = False
+LOG_LINES = 0
+NO_PAGER = False
+DO_NOW: bool = False
+NO_RELOAD = False
+NO_LEGEND: bool = False
+NO_ASK_PASSWORD: bool = False
+PRESET_MODE: str = "all"
+DO_QUIET: bool = False
+ROOT: str = NIX
+SHOW_ALL: bool = False
+USER_MODE: bool = False
+ONLY_WHAT: List[str] = []
+ONLY_TYPE: List[str] = []
+ONLY_STATE: List[str] = []
+ONLY_PROPERTY: List[str] = []
+FORCE_IPV4 = False
+FORCE_IPV6 = False
+PID1 = -1  # FIXME
+INIT1 = False
 
 # common default paths
 _system_folders = [
@@ -406,8 +407,8 @@ def get_runtime_dir() -> str:
     return "/tmp/run-"+user
 def get_RUN(root: bool = False) -> str:
     tmp_var = get_TMP(root)  # pylint: disable=possibly-unused-variable
-    if _root:
-        tmp_var = _root
+    if ROOT:
+        tmp_var = ROOT
     if root:
         for p in ("/run", "/var/run", "{tmp_var}/run"):
             path = p.format(**locals())
@@ -921,8 +922,8 @@ class SystemctlConf:
         self.module = module
         self.nonloaded_path = ""
         self.drop_in_files = {}
-        self._root = _root
-        self._user_mode = _user_mode
+        self._root = ROOT
+        self._user_mode = USER_MODE
     def root_mode(self) -> bool:
         return not self._user_mode
     def loaded(self) -> str:
@@ -1343,21 +1344,21 @@ class Systemctl:
     def __init__(self) -> None:
         self.error = NOT_A_PROBLEM # program exitcode or process returncode
         # from command line options or the defaults
-        self._extra_vars = _extra_vars
-        self._force = _force
-        self._full = _full
-        self._init = _init
-        self._no_ask_password = _no_ask_password
-        self._no_legend = _no_legend
-        self._now = _now
-        self._preset_mode = _preset_mode
-        self._quiet = _quiet
-        self._root = _root
-        self._show_all = _show_all
-        self._only_what = commalist(_only_what) or [""]
-        self._only_property = commalist(_only_property)
-        self._only_state = commalist(_only_state)
-        self._only_type = commalist(_only_type)
+        self._extra_vars = EXTRA_VARS
+        self._force = DO_FORCE
+        self._full = DO_FULL
+        self._init = INIT1
+        self._no_ask_password = NO_ASK_PASSWORD
+        self._no_legend = NO_LEGEND
+        self._now = DO_NOW
+        self._preset_mode = PRESET_MODE
+        self._quiet = DO_QUIET
+        self._root = ROOT
+        self._show_all = SHOW_ALL
+        self._only_what = commalist(ONLY_WHAT) or [""]
+        self._only_property = commalist(ONLY_PROPERTY)
+        self._only_state = commalist(ONLY_STATE)
+        self._only_type = commalist(ONLY_TYPE)
         # some common constants that may be changed
         self._systemd_version = SystemCompatibilityVersion
         self._journal_log_folder = _journal_log_folder
@@ -1371,7 +1372,7 @@ class Systemctl:
         self._sysinit_target = None # stores a UnitConf()
         self.doExitWhenNoMoreProcs = ExitWhenNoMoreProcs or False
         self.doExitWhenNoMoreServices = ExitWhenNoMoreServices or False
-        self._user_mode = _user_mode
+        self._user_mode = USER_MODE
         self._user_getlogin = os_getlogin()
         self._log_file = {} # init-loop
         self._log_hold = {} # init-loop
@@ -2710,8 +2711,8 @@ class Systemctl:
         if missing:
             logg.error("Unit %s not found.", " and ".join(missing))
             self.error |= NOT_FOUND
-        lines = _log_lines
-        follow = _force
+        lines = LOG_LINES
+        follow = DO_FORCE
         result = self.log_units(units, lines, follow)
         if result:
             self.error = result
@@ -2751,7 +2752,7 @@ class Systemctl:
             logg.debug("journalctl %s -> %s", conf.name(), cmd)
             cmd_args = [arg for arg in cmd] # satisfy mypy
             return os.execvp(cmd_args[0], cmd_args)
-        elif _no_pager:
+        elif NO_PAGER:
             cat_cmd = get_exist_path(CAT_CMDS)
             if cat_cmd is None:
                 print("cat command not found")
@@ -2999,7 +3000,7 @@ class Systemctl:
         env = self.get_env(conf)
         if not self._quiet:
             okee = self.exec_check_unit(conf, env, Service, "Exec") # all...
-            if not okee and _no_reload: return False
+            if not okee and NO_RELOAD: return False
         service_directories = self.create_service_directories(conf)
         env.update(service_directories) # atleast sshd did check for /run/sshd
         # for StopPost on failure:
@@ -3301,7 +3302,7 @@ class Systemctl:
         env = self.get_env(conf)
         if not self._quiet:
             okee = self.exec_check_unit(conf, env, Socket, "Exec") # all...
-            if not okee and _no_reload: return False
+            if not okee and NO_RELOAD: return False
         if TRUE:
             for cmd in conf.getlist(Socket, "ExecStartPre", []):
                 exe, newcmd = self.exec_newcmd(cmd, env, conf)
@@ -3685,7 +3686,7 @@ class Systemctl:
         env = self.get_env(conf)
         if not self._quiet:
             okee = self.exec_check_unit(conf, env, Service, "ExecStop")
-            if not okee and _no_reload: return False
+            if not okee and NO_RELOAD: return False
         service_directories = self.env_service_directories(conf)
         env.update(service_directories)
         returncode = 0
@@ -3816,7 +3817,7 @@ class Systemctl:
         env = self.get_env(conf)
         if not self._quiet:
             okee = self.exec_check_unit(conf, env, Socket, "ExecStop")
-            if not okee and _no_reload: return False
+            if not okee and NO_RELOAD: return False
         if not accept:
             # we do not listen but have the service started right away
             done = self.do_stop_service_from(service_conf)
@@ -3913,7 +3914,7 @@ class Systemctl:
         env = self.get_env(conf)
         if not self._quiet:
             okee = self.exec_check_unit(conf, env, Service, "ExecReload")
-            if not okee and _no_reload: return False
+            if not okee and NO_RELOAD: return False
         initscript = conf.filename()
         if self.is_sysv_file(initscript):
             if initscript:
@@ -4300,7 +4301,7 @@ class Systemctl:
             self.error |= NOT_ACTIVE
         if non_active:
             self.error |= NOT_OK # status
-        if _quiet:
+        if DO_QUIET:
             return []
         return results
     def is_active_from(self, conf: SystemctlConf) -> bool:
@@ -4438,7 +4439,7 @@ class Systemctl:
             self.error = 0
         else:
             self.error |= NOT_OK
-        if _quiet:
+        if DO_QUIET:
             return []
         return results
     def is_failed_from(self, conf: SystemctlConf) -> bool:
@@ -6498,11 +6499,11 @@ class Systemctl:
 
 def print_begin(argv: List[str], args: List[str]) -> None:
     script = os.path.realpath(argv[0])
-    system = _user_mode and " --user" or " --system"
-    init = _init and " --init" or ""
+    system = USER_MODE and " --user" or " --system"
+    init = INIT1 and " --init" or ""
     logg.info("EXEC BEGIN %s %s%s%s", script, " ".join(args), system, init)
-    if _root and not is_good_root(_root):
-        root44 = path44(_root)
+    if ROOT and not is_good_root(ROOT):
+        root44 = path44(ROOT)
         logg.warning("the --root=%s should have atleast three levels /tmp/test_123/root", root44)
 
 def print_begin2(args: List[str]) -> None:
@@ -6579,9 +6580,9 @@ def print_str_dict_dict(result: Dict[str, Dict[str, str]]) -> None:
 
 def runcommand(command: str, *modules: str) -> int:
     systemctl = Systemctl()
-    if _force_ipv4:
+    if FORCE_IPV4:
         systemctl.force_ipv4()
-    elif _force_ipv6:
+    elif FORCE_IPV6:
         systemctl.force_ipv6()
     exitcode = 0
     if command in ["help"]:
@@ -6725,9 +6726,9 @@ def runcommand(command: str, *modules: str) -> int:
 
 def main() -> int:
     # pylint: disable=global-statement
-    global _extra_vars, _force, _full, _log_lines, _no_pager, _no_reload, _no_legend, _no_ask_password
-    global _now, _preset_mode, _quiet, _root, _show_all, _only_state, _only_type, _only_property, _only_what
-    global _pid, _init, _user_mode, _force_ipv4, _force_ipv6
+    global EXTRA_VARS, DO_FORCE, DO_FULL, LOG_LINES, NO_PAGER, NO_RELOAD, NO_LEGEND, NO_ASK_PASSWORD
+    global DO_NOW, PRESET_MODE, DO_QUIET, ROOT, SHOW_ALL, ONLY_STATE, ONLY_TYPE, ONLY_PROPERTY, ONLY_WHAT
+    global PID1, INIT1, USER_MODE, FORCE_IPV4, FORCE_IPV6
     import optparse # pylint: disable=deprecated-module
     _o = optparse.OptionParser("%prog [options] command [name...]", description=__doc__.strip(),
                                epilog="use 'help' command for more information")
@@ -6735,23 +6736,23 @@ def main() -> int:
                   help="Show package version")
     _o.add_option("--system", action="store_true", default=False,
                   help="Connect to system manager (default)") # overrides --user
-    _o.add_option("--user", action="store_true", default=_user_mode,
+    _o.add_option("--user", action="store_true", default=USER_MODE,
                   help="Connect to user service manager")
     # _o.add_option("-H", "--host", metavar="[USER@]HOST",
     #     help="Operate on remote host*")
     # _o.add_option("-M", "--machine", metavar="CONTAINER",
     #     help="Operate on local container*")
-    _o.add_option("-t", "--type", metavar="TYPE", action="append", dest="only_type", default=_only_type,
+    _o.add_option("-t", "--type", metavar="TYPE", action="append", dest="only_type", default=ONLY_TYPE,
                   help="List units of a particual type")
-    _o.add_option("--state", metavar="STATE", action="append", dest="only_state", default=_only_state,
+    _o.add_option("--state", metavar="STATE", action="append", dest="only_state", default=ONLY_STATE,
                   help="List units with particular LOAD or SUB or ACTIVE state")
-    _o.add_option("-p", "--property", metavar="NAME", action="append", dest="only_property", default=_only_property,
+    _o.add_option("-p", "--property", metavar="NAME", action="append", dest="only_property", default=ONLY_PROPERTY,
                   help="Show only properties by this name")
-    _o.add_option("--what", metavar="TYPE", action="append", dest="only_what", default=_only_what,
+    _o.add_option("--what", metavar="TYPE", action="append", dest="only_what", default=ONLY_WHAT,
                   help="Defines the service directories to be cleaned (configuration, state, cache, logs, runtime)")
-    _o.add_option("-a", "--all", action="store_true", dest="show_all", default=_show_all,
+    _o.add_option("-a", "--all", action="store_true", dest="show_all", default=SHOW_ALL,
                   help="Show all loaded units/properties, including dead empty ones. To list all units installed on the system, use the 'list-unit-files' command instead")
-    _o.add_option("-l", "--full", action="store_true", default=_full,
+    _o.add_option("-l", "--full", action="store_true", default=DO_FULL,
                   help="Don't ellipsize unit names on output (never ellipsized)")
     _o.add_option("--reverse", action="store_true",
                   help="Show reverse dependencies with 'list-dependencies' (ignored)")
@@ -6765,29 +6766,29 @@ def main() -> int:
                   help="Who to send signal to (ignored)")
     _o.add_option("-s", "--signal", metavar="SIG",
                   help="Which signal to send (ignored)")
-    _o.add_option("--now", action="store_true", default=_now,
+    _o.add_option("--now", action="store_true", default=DO_NOW,
                   help="Start or stop unit in addition to enabling or disabling it")
-    _o.add_option("-q", "--quiet", action="store_true", default=_quiet,
+    _o.add_option("-q", "--quiet", action="store_true", default=DO_QUIET,
                   help="Suppress output")
     _o.add_option("--no-block", action="store_true", default=False,
                   help="Do not wait until operation finished (ignored)")
-    _o.add_option("--no-legend", action="store_true", default=_no_legend,
+    _o.add_option("--no-legend", action="store_true", default=NO_LEGEND,
                   help="Do not print a legend (column headers and hints)")
     _o.add_option("--no-wall", action="store_true", default=False,
                   help="Don't send wall message before halt/power-off/reboot (ignored)")
-    _o.add_option("--no-reload", action="store_true", default=_no_reload,
+    _o.add_option("--no-reload", action="store_true", default=NO_RELOAD,
                   help="Don't reload daemon after en-/dis-abling unit files")
-    _o.add_option("--no-ask-password", action="store_true", default=_no_ask_password,
+    _o.add_option("--no-ask-password", action="store_true", default=NO_ASK_PASSWORD,
                   help="Do not ask for system passwords")
     # _o.add_option("--global", action="store_true", dest="globally", default=_globally,
     #    help="Enable/disable unit files globally") # for all user logins
     # _o.add_option("--runtime", action="store_true",
     #     help="Enable unit files only temporarily until next reboot")
-    _o.add_option("-f", "--force", action="store_true", default=_force,
+    _o.add_option("-f", "--force", action="store_true", default=DO_FORCE,
                   help="When enabling unit files, override existing symblinks / When shutting down, execute action immediately")
-    _o.add_option("--preset-mode", metavar="TYPE", default=_preset_mode,
+    _o.add_option("--preset-mode", metavar="TYPE", default=PRESET_MODE,
                   help="Apply only enable, only disable, or all presets [%default]")
-    _o.add_option("--root", metavar="PATH", default=_root,
+    _o.add_option("--root", metavar="PATH", default=ROOT,
                   help="Enable unit files in the specified root directory (used for alternative root prefix)")
     _o.add_option("-n", "--lines", metavar="NUM",
                   help="Number of journal entries to show")
@@ -6806,9 +6807,9 @@ def main() -> int:
                   help="..override settings in the syntax of 'Environment='")
     _o.add_option("-v", "--verbose", action="count", default=0,
                   help="..increase debugging information level")
-    _o.add_option("-4", "--ipv4", action="store_true", default=_force_ipv4,
+    _o.add_option("-4", "--ipv4", action="store_true", default=FORCE_IPV4,
                   help="..only keep ipv4 localhost in /etc/hosts")
-    _o.add_option("-6", "--ipv6", action="store_true", default=_force_ipv6,
+    _o.add_option("-6", "--ipv6", action="store_true", default=FORCE_IPV6,
                   help="..only keep ipv6 localhost in /etc/hosts")
     _o.add_option("-1", "--init", action="store_true", default=False,
                   help="..keep running as init-process (default if PID 1)")
@@ -6816,33 +6817,33 @@ def main() -> int:
     logging.basicConfig(level = max(0, logging.FATAL - 10 * opt.verbose))
     logg.setLevel(max(0, logging.ERROR - 10 * opt.verbose))
     #
-    _extra_vars = opt.extra_vars
-    _force = opt.force
-    _full = opt.full
-    _log_lines = opt.lines
-    _no_pager = opt.no_pager
-    _no_reload = opt.no_reload
-    _no_legend = opt.no_legend
-    _no_ask_password = opt.no_ask_password
-    _now = opt.now
-    _preset_mode = opt.preset_mode
-    _quiet = opt.quiet
-    _root = opt.root
-    _show_all = opt.show_all
-    _only_state = opt.only_state
-    _only_type = opt.only_type
-    _only_property = opt.only_property
-    _only_what = opt.only_what
-    _force_ipv4 = opt.force_ipv4
-    _force_ipv6 = opt.force_ipv6
+    EXTRA_VARS = opt.extra_vars
+    DO_FORCE = opt.force
+    DO_FULL = opt.full
+    LOG_LINES = opt.lines
+    NO_PAGER = opt.no_pager
+    NO_RELOAD = opt.no_reload
+    NO_LEGEND = opt.no_legend
+    NO_ASK_PASSWORD = opt.no_ask_password
+    DO_NOW = opt.now
+    PRESET_MODE = opt.preset_mode
+    DO_QUIET = opt.quiet
+    ROOT = opt.root
+    SHOW_ALL = opt.show_all
+    ONLY_STATE = opt.only_state
+    ONLY_TYPE = opt.only_type
+    ONLY_PROPERTY = opt.only_property
+    ONLY_WHAT = opt.only_what
+    FORCE_IPV4 = opt.force_ipv4
+    FORCE_IPV6 = opt.force_ipv6
     # being PID 1 (or 0) in a container will imply --init
-    _pid = os.getpid()
-    _init = opt.init or _pid in [1, 0]
-    _user_mode = opt.user
-    if os.geteuid() and _pid in [1, 0]:
-        _user_mode = True
+    PID1 = os.getpid()
+    INIT1 = opt.init or PID1 in [1, 0]
+    USER_MODE = opt.user
+    if os.geteuid() and PID1 in [1, 0]:
+        USER_MODE = True
     if opt.system:
-        _user_mode = False # override --user
+        USER_MODE = False # override --user
     #
     for setting in opt.config:
         nam, val = setting, "1"
@@ -6857,7 +6858,7 @@ def main() -> int:
             if old is False or old is True:
                 logg.debug("yes %s=%s", nam, val)
                 globals()[nam] = (val in ("true", "True", "TRUE", "yes", "y", "Y", "YES", "1"))
-                logg.debug("... _show_all=%s", _show_all)
+                logg.debug("... _show_all=%s", SHOW_ALL)
             elif isinstance(old, float):
                 logg.debug("num %s=%s", nam, val)
                 globals()[nam] = float(val)
@@ -6873,14 +6874,14 @@ def main() -> int:
             elif isinstance(old, list):
                 logg.debug("str %s+=[%s]", nam, val)
                 globals()[nam] += val.strip().split(",")
-                logg.debug("... _extra_vars=%s", _extra_vars)
+                logg.debug("... _extra_vars=%s", EXTRA_VARS)
             else:
                 logg.warning("(ignored) unknown target type -c '%s' : %s", nam, type(old))
         else:
             logg.warning("(ignored) unknown target config -c '%s' : no such variable", nam)
     #
-    systemctl_debug_log = os_path(_root, expand_path(SYSTEMCTL_DEBUG_LOG, not _user_mode))
-    systemctl_extra_log = os_path(_root, expand_path(SYSTEMCTL_EXTRA_LOG, not _user_mode))
+    systemctl_debug_log = os_path(ROOT, expand_path(SYSTEMCTL_DEBUG_LOG, not USER_MODE))
+    systemctl_extra_log = os_path(ROOT, expand_path(SYSTEMCTL_EXTRA_LOG, not USER_MODE))
     if os.access(systemctl_extra_log, os.W_OK):
         loggfile = logging.FileHandler(systemctl_extra_log)
         loggfile.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
@@ -6897,7 +6898,7 @@ def main() -> int:
     if opt.version:
         args = ["version"]
     if not args:
-        if _init:
+        if INIT1:
             args = ["default"]
         else:
             args = ["list-units"]

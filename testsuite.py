@@ -1139,12 +1139,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart=/bin/sleep 3
         """)
         #
-        cmd = F"{systemctl} daemon-reload -c _show_all=True -vvv"
+        cmd = F"{systemctl} daemon-reload -c SHOW_ALL=True -vvv"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
         self.assertEqual(lines(out), [])
         self.assertEqual(end, 0)
-        self.assertEqual(len(greps(err, "_show_all=True")), 2)
+        self.assertEqual(len(greps(err, "SHOW_ALL=True")), 2)
         self.rm_testdir()
         self.rm_zzfiles(root)
         self.coverage()
@@ -1160,12 +1160,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart=/bin/sleep 3
         """)
         #
-        cmd = F"{systemctl} daemon-reload -c _extra_vars=1,2 -vvv"
+        cmd = F"{systemctl} daemon-reload -c EXTRA_VARS=1,2 -vvv"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
         self.assertEqual(lines(out), [])
         self.assertEqual(end, 0)
-        self.assertEqual(len(greps(err, "_extra_vars=.'1', '2'.")), 1)
+        self.assertEqual(len(greps(err, "EXTRA_VARS=.'1', '2'.")), 1)
         self.rm_testdir()
         self.rm_zzfiles(root)
         self.coverage()
