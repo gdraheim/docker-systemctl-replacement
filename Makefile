@@ -453,6 +453,7 @@ type:
 	python3 $(RETYPE) $(RETYPE_WITH) files/docker/systemctl3.py -t tmp.files/docker
 	sed -i -e "/# [|]/d" tmp.files/docker/systemctl3.py
 	$(MYPY) $(MYPY_WITH) $(MYPY_OPTIONS) tmp.files/docker/systemctl3.py
+ttype:; $(MYPY) $(MYPY_WITH) $(MYPY_OPTIONS) testsuite.py
 
 ####### box test
 box:
