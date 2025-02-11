@@ -369,7 +369,7 @@ def get_LASTGROUP_ID(root: bool = False) -> int:
     for gid in os.getgroups():
         if gid != current:
             lastgid = gid
-    return gid
+    return lastgid
 def get_LASTGROUP(root: bool = False) -> str:
     if root: return "root" # only there is
     gid = get_LASTGROUP_ID(root)
