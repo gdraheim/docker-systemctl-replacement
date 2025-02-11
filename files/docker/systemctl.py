@@ -6534,7 +6534,12 @@ def print_str_dict_dict(result):
         logg.log(HINT, "EXEC END %i items", shown)
         logg.debug("    END %s", result)
 
-def run(command, *modules):
+def runcommand(command, *modules):
+    systemctl = Systemctl()
+    if FORCE_IPV4:
+        systemctl.force_ipv4()
+    elif FORCE_IPV6:
+        systemctl.force_ipv6()
     exitcode = 0
     if command in ["help"]:
         print_str_list(systemctl.help_modules(*modules))
@@ -6781,6 +6786,8 @@ if __name__ == "__main__":
     _only_type = opt.only_type
     _only_property = opt.only_property
     _only_what = opt.only_what
+    FORCE_IPV4 = opt.force_ipv4
+    FORCE_IPV6 = opt.force_ipv6
     # being PID 1 (or 0) in a container will imply --init
     _pid = os.getpid()
     _init = opt.init or _pid in [1, 0]
@@ -6840,7 +6847,6 @@ if __name__ == "__main__":
     #
     print_begin(sys.argv, args)
     #
-    systemctl = Systemctl()
     if opt.version:
         args = ["version"]
     if not args:
@@ -6855,8 +6861,4 @@ if __name__ == "__main__":
         modules.remove("service")
     except ValueError:
         pass
-    if opt.ipv4:
-        systemctl.force_ipv4()
-    elif opt.ipv6:
-        systemctl.force_ipv6()
-    sys.exit(run(command, *modules))
+    sys.exit(runcommand(command, *modules))
