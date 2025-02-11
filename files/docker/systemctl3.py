@@ -438,68 +438,68 @@ def get_home() -> str:
         #                                       # password directory through the built-in module pwd.
         return pwd.getpwuid(uid).pw_name        # An initial ~user i looked up directly in the
     return os.path.expanduser("~")              # password directory. << from docs(os.path.expanduser)
-def get_HOME(root: bool = False) -> str:
+def get_HOME(root: bool = False) -> str:  # pylint: disable=invalid-name
     if root: return "/root"
     return get_home()
-def get_USER_ID(root: bool = False) -> int:
-    ID = 0
+def get_USER_ID(root: bool = False) -> int:  # pylint: disable=invalid-name
+    ID = 0  # pylint: disable=invalid-name
     if root: return ID
     return os.geteuid()
-def get_USER(root: bool = False) -> str:
+def get_USER(root: bool = False) -> str:  # pylint: disable=invalid-name
     if root: return "root"
     uid = os.geteuid()
     return pwd.getpwuid(uid).pw_name
-def get_GROUP_ID(root: bool = False) -> int:
-    ID = 0
+def get_GROUP_ID(root: bool = False) -> int:  # pylint: disable=invalid-name
+    ID = 0  # pylint: disable=invalid-name
     if root: return ID
     return os.getegid()
-def get_GROUP(root: bool = False) -> str:
+def get_GROUP(root: bool = False) -> str:  # pylint: disable=invalid-name
     if root: return "root"
     gid = os.getegid()
     return grp.getgrgid(gid).gr_name
-def get_TMP(root: bool = False) -> str:
-    TMP = "/tmp"
+def get_TMP(root: bool = False) -> str:  # pylint: disable=invalid-name
+    TMP = "/tmp"  # pylint: disable=invalid-name
     if root: return TMP
     return os.environ.get("TMPDIR", os.environ.get("TEMP", os.environ.get("TMP", TMP)))
-def get_VARTMP(root: bool = False) -> str:
-    VARTMP = "/var/tmp"
+def get_VARTMP(root: bool = False) -> str:  # pylint: disable=invalid-name
+    VARTMP = "/var/tmp"  # pylint: disable=invalid-name
     if root: return VARTMP
     return os.environ.get("TMPDIR", os.environ.get("TEMP", os.environ.get("TMP", VARTMP)))
-def get_SHELL(root: bool = False) -> str:
-    SHELL = "/bin/sh"
+def get_SHELL(root: bool = False) -> str:  # pylint: disable=invalid-name
+    SHELL = "/bin/sh"  # pylint: disable=invalid-name
     if root: return SHELL
     return os.environ.get("SHELL", SHELL)
-def get_RUNTIME_DIR(root: bool = False) -> str:
-    RUN = "/run"
+def get_RUNTIME_DIR(root: bool = False) -> str:  # pylint: disable=invalid-name
+    RUN = "/run"  # pylint: disable=invalid-name
     if root: return RUN
     return os.environ.get("XDG_RUNTIME_DIR", get_runtime_dir())
-def get_CONFIG_HOME(root: bool = False) -> str:
-    CONFIG = "/etc"
+def get_CONFIG_HOME(root: bool = False) -> str:  # pylint: disable=invalid-name
+    CONFIG = "/etc"  # pylint: disable=invalid-name
     if root: return CONFIG
-    HOME = get_HOME(root)
+    HOME = get_HOME(root)  # pylint: disable=invalid-name
     return os.environ.get("XDG_CONFIG_HOME", HOME + "/.config")
-def get_CACHE_HOME(root: bool = False) -> str:
-    CACHE = "/var/cache"
+def get_CACHE_HOME(root: bool = False) -> str:  # pylint: disable=invalid-name
+    CACHE = "/var/cache"  # pylint: disable=invalid-name
     if root: return CACHE
-    HOME = get_HOME(root)
+    HOME = get_HOME(root)  # pylint: disable=invalid-name
     return os.environ.get("XDG_CACHE_HOME", HOME + "/.cache")
-def get_DATA_HOME(root: bool = False) -> str:
-    SHARE = "/usr/share"
+def get_DATA_HOME(root: bool = False) -> str:  # pylint: disable=invalid-name
+    SHARE = "/usr/share"  # pylint: disable=invalid-name
     if root: return SHARE
-    HOME = get_HOME(root)
+    HOME = get_HOME(root)  # pylint: disable=invalid-name
     return os.environ.get("XDG_DATA_HOME", HOME + "/.local/share")
-def get_LOG_DIR(root: bool = False) -> str:
-    LOGDIR = "/var/log"
+def get_LOG_DIR(root: bool = False) -> str:  # pylint: disable=invalid-name
+    LOGDIR = "/var/log"  # pylint: disable=invalid-name
     if root: return LOGDIR
-    CONFIG = get_CONFIG_HOME(root)
+    CONFIG = get_CONFIG_HOME(root)  # pylint: disable=invalid-name
     return os.path.join(CONFIG, "log")
-def get_VARLIB_HOME(root: bool = False) -> str:
-    VARLIB = "/var/lib"
+def get_VARLIB_HOME(root: bool = False) -> str:  # pylint: disable=invalid-name
+    VARLIB = "/var/lib"  # pylint: disable=invalid-name
     if root: return VARLIB
-    CONFIG = get_CONFIG_HOME(root)
+    CONFIG = get_CONFIG_HOME(root)  # pylint: disable=invalid-name
     return CONFIG
 def expand_path(path: str, root: bool = False) -> str:
-    # pylint: disable=possibly-unused-variable
+    # pylint: disable=possibly-unused-variable,invalid-name
     HOME = get_HOME(root)
     RUN = get_RUN(root)
     LOG = get_LOG_DIR(root)
@@ -1397,44 +1397,44 @@ class Systemctl:
             if folder: return folder
         raise FileNotFoundError("did not find any systemd/system folder")
     def preset_folders(self) -> Iterable[str]:
-        SYSTEMD_PRESET_PATH = self.get_SYSTEMD_PRESET_PATH()
+        SYSTEMD_PRESET_PATH = self.get_SYSTEMD_PRESET_PATH()  # pylint: disable=invalid-name
         for path in SYSTEMD_PRESET_PATH.split(":"):
             if path.strip(): yield expand_path(path.strip())
         if SYSTEMD_PRESET_PATH.endswith(":"):
             for p in SYSD_PRESET_FOLDERS:
                 yield expand_path(p.strip())
     def init_folders(self) -> Iterable[str]:
-        SYSTEMD_SYSVINIT_PATH = self.get_SYSTEMD_SYSVINIT_PATH()
+        SYSTEMD_SYSVINIT_PATH = self.get_SYSTEMD_SYSVINIT_PATH() # pylint: disable=invalid-name
         for path in SYSTEMD_SYSVINIT_PATH.split(":"):
             if path.strip(): yield expand_path(path.strip())
         if SYSTEMD_SYSVINIT_PATH.endswith(":"):
             for p in SYSV_INIT_FOLDERS:
                 yield expand_path(p.strip())
     def user_folders(self) -> Iterable[str]:
-        SYSTEMD_UNIT_PATH = self.get_SYSTEMD_UNIT_PATH()
+        SYSTEMD_UNIT_PATH = self.get_SYSTEMD_UNIT_PATH() # pylint: disable=invalid-name
         for path in SYSTEMD_UNIT_PATH.split(":"):
             if path.strip(): yield expand_path(path.strip())
         if SYSTEMD_UNIT_PATH.endswith(":"):
             for p in SYSD_USER_FOLDERS:
                 yield expand_path(p.strip())
     def system_folders(self) -> Iterable[str]:
-        SYSTEMD_UNIT_PATH = self.get_SYSTEMD_UNIT_PATH()
+        SYSTEMD_UNIT_PATH = self.get_SYSTEMD_UNIT_PATH() # pylint: disable=invalid-name
         for path in SYSTEMD_UNIT_PATH.split(":"):
             if path.strip(): yield expand_path(path.strip())
         if SYSTEMD_UNIT_PATH.endswith(":"):
             for p in SYSD_SYSTEM_FOLDERS:
                 yield expand_path(p.strip())
-    def get_SYSTEMD_UNIT_PATH(self) -> str:
+    def get_SYSTEMD_UNIT_PATH(self) -> str: # pylint: disable=invalid-name
         if self._SYSTEMD_UNIT_PATH is None:
             self._SYSTEMD_UNIT_PATH = os.environ.get("SYSTEMD_UNIT_PATH", ":")
         assert self._SYSTEMD_UNIT_PATH is not None
         return self._SYSTEMD_UNIT_PATH
-    def get_SYSTEMD_SYSVINIT_PATH(self) -> str:
+    def get_SYSTEMD_SYSVINIT_PATH(self) -> str: # pylint: disable=invalid-name
         if self._SYSTEMD_SYSVINIT_PATH is None:
             self._SYSTEMD_SYSVINIT_PATH = os.environ.get("SYSTEMD_SYSVINIT_PATH", ":")
         assert self._SYSTEMD_SYSVINIT_PATH is not None
         return self._SYSTEMD_SYSVINIT_PATH
-    def get_SYSTEMD_PRESET_PATH(self) -> str:
+    def get_SYSTEMD_PRESET_PATH(self) -> str: # pylint: disable=invalid-name
         if self._SYSTEMD_PRESET_PATH is None:
             self._SYSTEMD_PRESET_PATH = os.environ.get("SYSTEMD_PRESET_PATH", ":")
         assert self._SYSTEMD_PRESET_PATH is not None
@@ -2257,7 +2257,7 @@ class Systemctl:
             if conf is None: # pragma: no cover (is never null)
                 return confs
             unit = parse_unit(conf.name())
-            #
+            # pylint: disable=invalid-name
             root = conf.root_mode()
             VARTMP = get_VARTMP(root)     # $TMPDIR              # "/var/tmp"
             TMP = get_TMP(root)           # $TMPDIR              # "/tmp"
