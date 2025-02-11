@@ -9,6 +9,7 @@ UBUNTU=ubuntu:18.04
 PYTHON=python3
 PYTHON2 = python2
 PYTHON3 = python3
+PYTHON_VERSION = 3.7
 COVERAGE3 = $(PYTHON3) -m coverage
 TWINE = twine
 GIT=git
@@ -346,7 +347,7 @@ striphints.git:
 
 MYPY = mypy
 MYPY_WITH = --strict --show-error-codes --show-error-context 
-MYPY_OPTIONS = --no-warn-unused-ignores --python-version 3.7
+MYPY_OPTIONS = --no-warn-unused-ignores --python-version $(PYTHON_VERSION)
 mypy:
 	zypper install -y mypy
 	zypper install -y python3-click python3-pathspec
