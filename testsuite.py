@@ -3,6 +3,7 @@
 
 # pylint: disable=line-too-long,too-many-lines,bare-except,broad-exception-caught,pointless-statement,multiple-statements,f-string-without-interpolation,import-outside-toplevel
 # pylint: disable=missing-function-docstring,unused-variable,unused-argument,unspecified-encoding,redefined-outer-name,using-constant-test,invalid-name
+# pylint: disable=fixme
 __copyright__ = "(C) Guido Draheim, licensed under the EUPL"""
 __version__ = "2.0.1061"
 
@@ -140,12 +141,12 @@ def refresh_tool(image: str, checks: bool = False) -> str:
         cmds = [
             "zypper mr --no-gpgcheck oss-update",
             "zypper refresh"]
-        return "bash -c '%s'" % (" && ".join(cmds))
+        return "bash -c '%s'" % (" && ".join(cmds))  # pylint: disable=consider-using-f-string
     if "opensuse/leap:15." in image:
         cmds = [
             "zypper mr --no-gpgcheck --all",
             "zypper refresh"]
-        return "bash -c '%s'" % (" && ".join(cmds))
+        return "bash -c '%s'" % (" && ".join(cmds))  # pylint: disable=consider-using-f-string
     if "opensuse" in image:
         return "zypper refresh"
     if "ubuntu" in image:
@@ -154,7 +155,7 @@ def refresh_tool(image: str, checks: bool = False) -> str:
         return "apt-get update"
     if "almalinux" in image:
         cmds = ["echo sslverify=false >> /etc/yum.conf"]
-        return "bash -c '%s'" % (" && ".join(cmds))
+        return "bash -c '%s'" % (" && ".join(cmds))  # pylint: disable=consider-using-f-string
     return "true"
 def python_package(python: str, image: Optional[str] = None) -> str:
     package = os.path.basename(python)
@@ -194,6 +195,12 @@ def cover(image: Optional[str] = None, python: Optional[str] = None, append: Opt
     if not COVERAGE: return ""
     return coverage_run(image, python, append)
 
+def strQ(part: Union[str, int, None]) -> str:
+    if part is None:
+        return ""
+    if isinstance(part, int):
+        return str(part)
+    return "'%s'" % part  # pylint: disable=consider-using-f-string
 def decodes(text: Union[str, bytes, None]) -> str:
     if text is None: return ""
     if isinstance(text, bytes):
@@ -209,19 +216,19 @@ def sh____(cmd: Union[str, List[str]], shell: bool = True) -> int:
     if isinstance(cmd, string_types):
         logg.info(": %s", cmd)
     else:
-        logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
+        logg.info(": %s", " ".join([strQ(item) for item in cmd]))
     return subprocess.check_call(cmd, shell=shell)
 def sx____(cmd: Union[str, List[str]], shell: bool = True) -> int:
     if isinstance(cmd, string_types):
         logg.info(": %s", cmd)
     else:
-        logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
+        logg.info(": %s", " ".join([strQ(item) for item in cmd]))
     return subprocess.call(cmd, shell=shell)
 def output(cmd: Union[str, List[str]], shell: bool = True) -> str:
     if isinstance(cmd, string_types):
         logg.info(": %s", cmd)
     else:
-        logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
+        logg.info(": %s", " ".join([strQ(item) for item in cmd]))
     run = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE)
     out, err = run.communicate()
     return decodes(out)
@@ -229,7 +236,7 @@ def output2(cmd: Union[str, List[str]], shell: bool = True) -> Tuple[str, int]:
     if isinstance(cmd, string_types):
         logg.info(": %s", cmd)
     else:
-        logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
+        logg.info(": %s", " ".join([strQ(item) for item in cmd]))
     run = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE)
     out, err = run.communicate()
     return decodes(out), run.returncode
@@ -237,7 +244,7 @@ def output3(cmd: Union[str, List[str]], shell: bool = True) -> Tuple[str, str, i
     if isinstance(cmd, string_types):
         logg.info(": %s", cmd)
     else:
-        logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
+        logg.info(": %s", " ".join([strQ(item) for item in cmd]))
     run = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out, err = run.communicate()
     return decodes(out), decodes(err), run.returncode
@@ -319,7 +326,7 @@ def only22(part: str, indent: str = "") -> str:
             if len(lines) <= 22:
                 return part
             skipped = len(lines) - 22 + 3
-            real = lines[:5] + ["...", "... (%s lines skipped)" % skipped, "..."] + lines[-14:]
+            real = lines[:5] + ["...", F"... ({skipped} lines skipped)", "..."] + lines[-14:]
             text = indent
             newline = "\n" + indent
             text += newline.join(real)
@@ -334,7 +341,7 @@ def only22(part: str, indent: str = "") -> str:
         if len(part) <= 22:
             return part
         skipped = len(part) - 22 + 3
-        return part[:5] + ["...", "... (%s lines skipped)" % skipped, "..."] + part[-14:]
+        return part[:5] + ["...", F"... ({skipped} lines skipped)", "..."] + part[-14:]
     return part
 
 def get_USER_ID(root: bool = False) -> int:
@@ -383,7 +390,7 @@ def beep() -> None:
 
 def get_proc_started(pid: int) -> float:
     """ get time process started after boot in clock ticks"""
-    proc = "/proc/%s/stat" % pid
+    proc = F"/proc/{pid}/stat"
     return path_proc_started(proc)
 def path_proc_started(proc: str) -> float:
     """ get time process started after boot in clock ticks"""
@@ -416,7 +423,7 @@ def path_proc_started(proc: str) -> float:
         # get time now
         now = time.time()
         started_time = now - (uptime_secs - started_secs)
-        logg.debug("Proc has been running since: %s" % (datetime.datetime.fromtimestamp(started_time)))
+        logg.debug("Proc has been running since: %s", datetime.datetime.fromtimestamp(started_time))
 
         # Variant 2:
         system_stat = "/proc/stat"
@@ -429,7 +436,7 @@ def path_proc_started(proc: str) -> float:
         logg.debug("System btime secs: %.3f (%s)", system_btime, system_stat)
 
         started_btime = system_btime + started_secs
-        logg.debug("Proc has been running since: %s" % (datetime.datetime.fromtimestamp(started_btime)))
+        logg.debug("Proc has been running since: %s", datetime.datetime.fromtimestamp(started_btime))
 
         # return started_time
         return started_btime
@@ -551,6 +558,7 @@ def detect_local_system() -> str:
 ############ the real testsuite ##############
 
 class DockerSystemctlReplacementTest(unittest.TestCase):
+    """ testcases for systemctl.py """
     def caller_testname(self) -> str:
         name = get_caller_caller_name()
         x1 = name.find("_")
@@ -9637,13 +9645,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         _N_="'_N_' 'zzb_zzc' 'x1' 'y2 y3' ''"
         _n_="'_n_' 'zzb_zzc.service' 'x1' 'y2 y3' ''"
         _f_="'_f_' '/zzb_zzc' 'x1' 'y2 y3' ''"
-        _t_="'_t_' '%s' 'x1' 'y2 y3' ''" % os_path(root, RUN)
+        _t_="'_t_' '%s' 'x1' 'y2 y3' ''" % os_path(root, RUN)  # pylint: disable=consider-using-f-string
         _P_="'_P_' 'zzb_zzc' 'x1' 'y2 y3' ''"
         _p_="'_p_' 'zzb_zzc' 'x1' 'y2 y3' ''"
         _I_="'_I_' '' 'x1' 'y2 y3' ''"
         _i_="'_i_' '' 'x1' 'y2 y3' ''"
-        _T_="'_T_' '%s' 'x1' 'y2 y3' ''" % os_path(root, "/tmp")
-        _V_="'_V_' '%s' 'x1' 'y2 y3' ''" % os_path(root, "/var/tmp")
+        _T_="'_T_' '%s' 'x1' 'y2 y3' ''" % os_path(root, "/tmp")  # pylint: disable=consider-using-f-string
+        _V_="'_V_' '%s' 'x1' 'y2 y3' ''" % os_path(root, "/var/tmp")  # pylint: disable=consider-using-f-string
         _Z_="'_Z_' '' 'x1' 'y2 y3' ''"
         self.assertIn(_N_, log)
         self.assertIn(_n_, log)
@@ -9718,13 +9726,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         _N_="'_N_' 'zzb\\x20zzc' 'x1' 'y2 y3' ''"
         _n_="'_n_' 'zzb\\x20zzc.service' 'x1' 'y2 y3' ''"
         _f_="'_f_' '/zzb zzc' 'x1' 'y2 y3' ''"
-        _t_="'_t_' '%s' 'x1' 'y2 y3' ''" % os_path(root, RUN)
+        _t_="'_t_' '%s' 'x1' 'y2 y3' ''" % os_path(root, RUN)  # pylint: disable=consider-using-f-string
         _P_="'_P_' 'zzb zzc' 'x1' 'y2 y3' ''"
         _p_="'_p_' 'zzb\\x20zzc' 'x1' 'y2 y3' ''"
         _I_="'_I_' '' 'x1' 'y2 y3' ''"
         _i_="'_i_' '' 'x1' 'y2 y3' ''"
-        _T_="'_T_' '%s' 'x1' 'y2 y3' ''" % os_path(root, "/tmp")
-        _V_="'_V_' '%s' 'x1' 'y2 y3' ''" % os_path(root, "/var/tmp")
+        _T_="'_T_' '%s' 'x1' 'y2 y3' ''" % os_path(root, "/tmp")  # pylint: disable=consider-using-f-string
+        _V_="'_V_' '%s' 'x1' 'y2 y3' ''" % os_path(root, "/var/tmp")  # pylint: disable=consider-using-f-string
         _Z_="'_Z_' '' 'x1' 'y2 y3' ''"
         self.assertIn(_N_, log)
         self.assertIn(_n_, log)
@@ -9795,13 +9803,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         _N_="'_N_' 'zzb zzc' 'x1' 'y2 y3' ''"
         _n_="'_n_' 'zzb zzc.service' 'x1' 'y2 y3' ''"
         _f_="'_f_' '/zzb zzc' 'x1' 'y2 y3' ''"
-        _t_="'_t_' '%s' 'x1' 'y2 y3' ''" % os_path(root, RUN)
+        _t_="'_t_' '%s' 'x1' 'y2 y3' ''" % os_path(root, RUN)  # pylint: disable=consider-using-f-string
         _P_="'_P_' 'zzb zzc' 'x1' 'y2 y3' ''"
         _p_="'_p_' 'zzb zzc' 'x1' 'y2 y3' ''"
         _I_="'_I_' '' 'x1' 'y2 y3' ''"
         _i_="'_i_' '' 'x1' 'y2 y3' ''"
-        _T_="'_T_' '%s' 'x1' 'y2 y3' ''" % os_path(root, "/tmp")
-        _V_="'_V_' '%s' 'x1' 'y2 y3' ''" % os_path(root, "/var/tmp")
+        _T_="'_T_' '%s' 'x1' 'y2 y3' ''" % os_path(root, "/tmp")  # pylint: disable=consider-using-f-string
+        _V_="'_V_' '%s' 'x1' 'y2 y3' ''" % os_path(root, "/var/tmp")  # pylint: disable=consider-using-f-string
         _Z_="'_Z_' '' 'x1' 'y2 y3' ''"
         self.assertIn(_N_, log)
         self.assertIn(_n_, log)
@@ -16492,7 +16500,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         getpid_boot_time = get_proc_started(os.getpid())
         system_boot_time = datetime.datetime.fromtimestamp(getpid_boot_time - 1)
-        systemctl += " -c BOOT_PID_MIN=%s -c DEBUG_BOOTTIME" % (os.getpid())
+        bootpid = os.getpid()
+        systemctl += F" -c BOOT_PID_MIN={bootpid} -c DEBUG_BOOTTIME"
         #
         cmd = F"{systemctl} enable zzz.service -vv"
         sh____(cmd)
@@ -16605,7 +16614,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         getpid_boot_time = get_proc_started(os.getpid())
         system_boot_time = datetime.datetime.fromtimestamp(getpid_boot_time - 1)
-        systemctl += " -c BOOT_PID_MIN=%s -c DEBUG_BOOTTIME" % (os.getpid())
+        bootpid = os.getpid()
+        systemctl += F" -c BOOT_PID_MIN={bootpid} -c DEBUG_BOOTTIME"
         #
         cmd = F"{systemctl} enable zzz.service -vv"
         sh____(cmd)
@@ -16721,7 +16731,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         #
         pid_max = reads("/proc/sys/kernel/pid_max").strip()
-        systemctl += " -c BOOT_PID_MIN=%s -c DEBUG_BOOTTIME" % (pid_max)
+        bootpid = pid_max
+        systemctl += " -c BOOT_PID_MIN={bootpid} -c DEBUG_BOOTTIME"
         #
         cmd = F"{systemctl} enable zzz.service -vv"
         sh____(cmd)
@@ -21074,13 +21085,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
-        user = self.user()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
-        logfile = os_path(root, "/var/log/"+testname+".log")
         sockfile = os_path(root, "/var/run/"+testname+".sock")
         replyA = self.testname("replyA")
-        replyB = self.testname("replyB")
         bindir = os_path(root, "/usr/bin")
         text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
@@ -21153,13 +21161,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
-        user = self.user()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
-        logfile = os_path(root, "/var/log/"+testname+".log")
         sockfile = os_path(root, "/var/run/"+testname+".sock")
         replyA = self.testname("replyA")
-        replyB = self.testname("replyB")
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         text_file(os_path(testdir, "zza.service"), F"""
@@ -21266,13 +21271,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
-        user = self.user()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
-        logfile = os_path(root, "/var/log/"+testname+".log")
         sockfile = os_path(root, "/var/run/"+testname+".sock")
         replyA = self.testname("replyA")
-        replyB = self.testname("replyB")
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         text_file(os_path(root, "/var/run/zz.txt"), "zz")
@@ -21396,13 +21398,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
-        user = self.user()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
-        logfile = os_path(root, "/var/log/"+testname+".log")
         sockfile = os_path(root, "/var/run/"+testname+".sock")
         replyA = self.testname("replyA")
-        replyB = self.testname("replyB")
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         text_file(os_path(root, "/var/run/zz.txt"), "zz")
@@ -21516,13 +21515,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
-        user = self.user()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
-        logfile = os_path(root, "/var/log/"+testname+".log")
         sockfile = os_path(root, "/var/run/"+testname+".sock")
         replyA = self.testname("replyA")
-        replyB = self.testname("replyB")
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         text_file(os_path(root, "/var/run/zz.txt"), "zz")
@@ -21637,13 +21633,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
-        user = self.user()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
-        logfile = os_path(root, "/var/log/"+testname+".log")
         sockfile = os_path(root, "/var/run/"+testname+".sock")
         replyA = self.testname("replyA")
-        replyB = self.testname("replyB")
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         text_file(os_path(root, "/var/run/zz.txt"), "zz")
@@ -21746,17 +21739,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
-        user = self.user()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
-        logfile = os_path(root, "/var/log/"+testname+".log")
         sockfile = os_path(root, "/var/run/"+testname+".sock")
         replyA = self.testname("replyA")
-        replyB = self.testname("replyB")
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         this_user=get_USER()
-        this_group=get_GROUP()
         text_file(os_path(root, "/var/run/zz.txt"), "zz")
         text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
@@ -21873,13 +21862,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
-        user = self.user()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
-        logfile = os_path(root, "/var/log/"+testname+".log")
         sockfile = os_path(root, "/var/run/"+testname+".sock")
         replyA = self.testname("replyA")
-        replyB = self.testname("replyB")
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         this_user=get_USER()
@@ -22002,17 +21988,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
-        user = self.user()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
-        logfile = os_path(root, "/var/log/"+testname+".log")
         sockfile = os_path(root, "/var/run/"+testname+".sock")
         replyA = self.testname("replyA")
-        replyB = self.testname("replyB")
         testsleep = self.testname("sleep")
-        bindir = os_path(root, "/usr/bin")
-        this_user=get_USER()
         this_group=get_GROUP()
+        bindir = os_path(root, "/usr/bin")
         text_file(os_path(root, "/var/run/zz.txt"), "zz")
         text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
@@ -22129,17 +22111,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
-        user = self.user()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
-        logfile = os_path(root, "/var/log/"+testname+".log")
         sockfile = os_path(root, "/var/run/"+testname+".sock")
         replyA = self.testname("replyA")
-        replyB = self.testname("replyB")
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         this_user=get_USER()
-        this_group=get_GROUP()
         text_file(os_path(root, "/var/run/zz.txt"), "zz")
         text_file(os_path(testdir, "zza.service"), F"""
             [Unit]
@@ -22241,13 +22219,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
-        user = self.user()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
-        logfile = os_path(root, "/var/log/"+testname+".log")
         sockfile = os_path(root, "/var/run/"+testname+".sock")
         replyA = self.testname("replyA")
-        replyB = self.testname("replyB")
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
         this_user=get_USER()
@@ -22355,16 +22330,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_killall()
         testname = self.testname()
         testdir = self.testdir()
-        user = self.user()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
-        logfile = os_path(root, "/var/log/"+testname+".log")
         sockfile = os_path(root, "/var/run/"+testname+".sock")
         replyA = self.testname("replyA")
-        replyB = self.testname("replyB")
         testsleep = self.testname("sleep")
         bindir = os_path(root, "/usr/bin")
-        this_user=get_USER()
         this_group=get_GROUP()
         text_file(os_path(root, "/var/run/zz.txt"), "zz")
         text_file(os_path(testdir, "zza.service"), F"""
