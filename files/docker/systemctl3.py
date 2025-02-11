@@ -93,7 +93,7 @@ PID1 = -1  # FIXME
 INIT1 = False
 
 # common default paths
-_system_folders = [
+SYSD_SYSTEM_FOLDERS = [
     "/etc/systemd/system",
     "/run/systemd/system",
     "/var/run/systemd/system",
@@ -101,7 +101,7 @@ _system_folders = [
     "/usr/lib/systemd/system",
     "/lib/systemd/system",
 ]
-_user_folders: List[str] = [
+SYSD_USER_FOLDERS: List[str] = [
     "{XDG_CONFIG_HOME}/systemd/user",
     "/etc/systemd/user",
     "{XDG_RUNTIME_DIR}/systemd/user",
@@ -112,12 +112,12 @@ _user_folders: List[str] = [
     "/usr/lib/systemd/user",
     "/lib/systemd/user",
 ]
-_init_folders = [
+SYSV_INIT_FOLDERS = [
     "/etc/init.d",
     "/run/init.d",
     "/var/run/init.d",
 ]
-_preset_folders: List[str] = [
+SYSD_PRESET_FOLDERS: List[str] = [
     "/etc/systemd/system-preset",
     "/run/systemd/system-preset",
     "/var/run/systemd/system-preset",
@@ -127,19 +127,19 @@ _preset_folders: List[str] = [
 ]
 
 # standard paths
-_dev_null = "/dev/null"
-_dev_zero = "/dev/zero"
-_etc_hosts = "/etc/hosts"
-_rc3_boot_folder = "/etc/rc3.d"
-_rc3_init_folder = "/etc/init.d/rc3.d"
-_rc5_boot_folder = "/etc/rc5.d"
-_rc5_init_folder = "/etc/init.d/rc5.d"
-_proc_pid_stat = "/proc/{pid}/stat"
-_proc_pid_status = "/proc/{pid}/status"
-_proc_pid_cmdline= "/proc/{pid}/cmdline"
-_proc_pid_dir = "/proc"
-_proc_sys_uptime = "/proc/uptime"
-_proc_sys_stat = "/proc/stat"
+_dev_null = "/dev/null"  # pylint: disable=invalid-name
+_dev_zero = "/dev/zero"  # pylint: disable=invalid-name
+_etc_hosts = "/etc/hosts"  # pylint: disable=invalid-name
+_rc3_boot_folder = "/etc/rc3.d"  # pylint: disable=invalid-name
+_rc3_init_folder = "/etc/init.d/rc3.d"  # pylint: disable=invalid-name
+_rc5_boot_folder = "/etc/rc5.d"  # pylint: disable=invalid-name
+_rc5_init_folder = "/etc/init.d/rc5.d"  # pylint: disable=invalid-name
+_proc_pid_stat = "/proc/{pid}/stat"  # pylint: disable=invalid-name
+_proc_pid_status = "/proc/{pid}/status"  # pylint: disable=invalid-name
+_proc_pid_cmdline= "/proc/{pid}/cmdline"  # pylint: disable=invalid-name
+_proc_pid_dir = "/proc"  # pylint: disable=invalid-name
+_proc_sys_uptime = "/proc/uptime"  # pylint: disable=invalid-name
+_proc_sys_stat = "/proc/stat"  # pylint: disable=invalid-name
 
 # default values
 SystemCompatibilityVersion: int = 219
@@ -198,37 +198,37 @@ JOURNAL_LOG_FOLDER: str = "{LOG}/journal"
 SYSTEMCTL_DEBUG_LOG: str = "{LOG}/systemctl.debug.log"
 SYSTEMCTL_EXTRA_LOG: str = "{LOG}/systemctl.log"
 
-_default_targets: List[str] = ["poweroff.target", "rescue.target", "sysinit.target", "basic.target", "multi-user.target", "graphical.target", "reboot.target"]
-_feature_targets: List[str] = ["network.target", "remote-fs.target", "local-fs.target", "timers.target", "nfs-client.target"]
-_all_common_targets: List[str] = ["default.target"] + _default_targets + _feature_targets
+SYSD_RUNLEVEL_TARGETS: List[str] = ["poweroff.target", "rescue.target", "sysinit.target", "basic.target", "multi-user.target", "graphical.target", "reboot.target"]
+SYSD_FEATURES_TARGETS: List[str] = ["network.target", "remote-fs.target", "local-fs.target", "timers.target", "nfs-client.target"]
+SYSD_COMMON_TARGETS: List[str] = ["default.target"] + SYSD_RUNLEVEL_TARGETS + SYSD_FEATURES_TARGETS
 
 # inside a docker we pretend the following
-_all_common_enabled = ["default.target", "multi-user.target", "remote-fs.target"]
-_all_common_disabled: List[str] = ["graphical.target", "resue.target", "nfs-client.target"]
+SYSD_ENABLED_TARGETS = ["default.target", "multi-user.target", "remote-fs.target"]
+SYSD_DISABLED_TARGETS: List[str] = ["graphical.target", "resue.target", "nfs-client.target"]
 
-target_requires = {"graphical.target": "multi-user.target", "multi-user.target": "basic.target", "basic.target": "sockets.target"}
+SYSD_TARGET_REQUIRES = {"graphical.target": "multi-user.target", "multi-user.target": "basic.target", "basic.target": "sockets.target"}
 
-_runlevel_mappings: Dict[str, str] = {} # the official list
-_runlevel_mappings["0"] = "poweroff.target"
-_runlevel_mappings["1"] = "rescue.target"
-_runlevel_mappings["2"] = "multi-user.target"
-_runlevel_mappings["3"] = "multi-user.target"
-_runlevel_mappings["4"] = "multi-user.target"
-_runlevel_mappings["5"] = "graphical.target"
-_runlevel_mappings["6"] = "reboot.target"
+SYSD_RUNLEVEL_FOR: Dict[str, str] = {} # the official list
+SYSD_RUNLEVEL_FOR["0"] = "poweroff.target"
+SYSD_RUNLEVEL_FOR["1"] = "rescue.target"
+SYSD_RUNLEVEL_FOR["2"] = "multi-user.target"
+SYSD_RUNLEVEL_FOR["3"] = "multi-user.target"
+SYSD_RUNLEVEL_FOR["4"] = "multi-user.target"
+SYSD_RUNLEVEL_FOR["5"] = "graphical.target"
+SYSD_RUNLEVEL_FOR["6"] = "reboot.target"
 
-_sysv_mappings: Dict[str, str] = {} # by rule of thumb
-_sysv_mappings["$local_fs"] = "local-fs.target"
-_sysv_mappings["$network"] = "network.target"
-_sysv_mappings["$remote_fs"] = "remote-fs.target"
-_sysv_mappings["$timer"] = "timers.target"
+SYSD_TARGET_FOR: Dict[str, str] = {} # by rule of thumb
+SYSD_TARGET_FOR["$local_fs"] = "local-fs.target"
+SYSD_TARGET_FOR["$network"] = "network.target"
+SYSD_TARGET_FOR["$remote_fs"] = "remote-fs.target"
+SYSD_TARGET_FOR["$timer"] = "timers.target"
 
 
 # sections from conf
-Unit: Final[str] = "Unit"
-Service: Final[str] = "Service"
-Socket: Final[str] = "Socket"
-Install: Final[str] = "Install"
+Unit: Final[str] = "Unit"  # pylint: disable=invalid-name
+Service: Final[str] = "Service"  # pylint: disable=invalid-name
+Socket: Final[str] = "Socket"  # pylint: disable=invalid-name
+Install: Final[str] = "Install"  # pylint: disable=invalid-name
 
 # https://tldp.org/LDP/abs/html/exitcodes.html
 # https://freedesktop.org/software/systemd/man/systemd.exec.html#id-1.20.8
@@ -855,16 +855,16 @@ class SystemctlConfigParser(SystemctlConfData):
         check = self.get("init.d", "Required-Start", "")
         if check:
             for item in check.split(" "):
-                if item.strip() in _sysv_mappings:
-                    self.set(Unit, "Requires", _sysv_mappings[item.strip()])
+                if item.strip() in SYSD_TARGET_FOR:
+                    self.set(Unit, "Requires", SYSD_TARGET_FOR[item.strip()])
         provides = self.get("init.d", "Provides", "")
         if provides:
             self.set(Install, "Alias", provides)
         # if already in multi-user.target then start it there.
         runlevels = self.getstr("init.d", "Default-Start", "3 5")
         for item in runlevels.split(" "):
-            if item.strip() in _runlevel_mappings:
-                self.set(Install, "WantedBy", _runlevel_mappings[item.strip()])
+            if item.strip() in SYSD_RUNLEVEL_FOR:
+                self.set(Install, "WantedBy", SYSD_RUNLEVEL_FOR[item.strip()])
         self.set(Service, "Restart", "no")
         self.set(Service, "TimeoutSec", strE(DefaultMaximumTimeout))
         self.set(Service, "KillMode", "process")
@@ -1401,28 +1401,28 @@ class Systemctl:
         for path in SYSTEMD_PRESET_PATH.split(":"):
             if path.strip(): yield expand_path(path.strip())
         if SYSTEMD_PRESET_PATH.endswith(":"):
-            for p in _preset_folders:
+            for p in SYSD_PRESET_FOLDERS:
                 yield expand_path(p.strip())
     def init_folders(self) -> Iterable[str]:
         SYSTEMD_SYSVINIT_PATH = self.get_SYSTEMD_SYSVINIT_PATH()
         for path in SYSTEMD_SYSVINIT_PATH.split(":"):
             if path.strip(): yield expand_path(path.strip())
         if SYSTEMD_SYSVINIT_PATH.endswith(":"):
-            for p in _init_folders:
+            for p in SYSV_INIT_FOLDERS:
                 yield expand_path(p.strip())
     def user_folders(self) -> Iterable[str]:
         SYSTEMD_UNIT_PATH = self.get_SYSTEMD_UNIT_PATH()
         for path in SYSTEMD_UNIT_PATH.split(":"):
             if path.strip(): yield expand_path(path.strip())
         if SYSTEMD_UNIT_PATH.endswith(":"):
-            for p in _user_folders:
+            for p in SYSD_USER_FOLDERS:
                 yield expand_path(p.strip())
     def system_folders(self) -> Iterable[str]:
         SYSTEMD_UNIT_PATH = self.get_SYSTEMD_UNIT_PATH()
         for path in SYSTEMD_UNIT_PATH.split(":"):
             if path.strip(): yield expand_path(path.strip())
         if SYSTEMD_UNIT_PATH.endswith(":"):
-            for p in _system_folders:
+            for p in SYSD_SYSTEM_FOLDERS:
                 yield expand_path(p.strip())
     def get_SYSTEMD_UNIT_PATH(self) -> str:
         if self._SYSTEMD_UNIT_PATH is None:
@@ -1808,12 +1808,12 @@ class Systemctl:
             logg.info("target %s", filepath)
             targets[target] = filepath
             enabled[target] = "static"
-        for unit in _all_common_targets:
+        for unit in SYSD_COMMON_TARGETS:
             targets[unit] = None
             enabled[unit] = "static"
-            if unit in _all_common_enabled:
+            if unit in SYSD_ENABLED_TARGETS:
                 enabled[unit] = "enabled"
-            if unit in _all_common_disabled:
+            if unit in SYSD_DISABLED_TARGETS:
                 enabled[unit] = "disabled"
         return [(unit, enabled[unit]) for unit in sorted(targets) if fnmatched(unit, *modules)]
     def list_unit_files_modules(self, *modules: str) -> List[Tuple[str, str]]: # -> [ (unit,enabled) ]
@@ -5769,8 +5769,8 @@ class Systemctl:
         if conf is not None:
             return conf
         target_conf = self.default_unit_conf(module)
-        if module in target_requires:
-            target_conf.set(Unit, "Requires", target_requires[module])
+        if module in SYSD_TARGET_REQUIRES:
+            target_conf.set(Unit, "Requires", SYSD_TARGET_REQUIRES[module])
         return target_conf
     def get_target_list(self, module: str) -> List[str]:
         """ the Requires= in target units are only accepted if known """
@@ -5779,9 +5779,9 @@ class Systemctl:
         targets = [target]
         conf = self.get_target_conf(module)
         requires = conf.get(Unit, "Requires", "")
-        while requires in target_requires:
+        while requires in SYSD_TARGET_REQUIRES:
             targets = [requires] + targets
-            requires = target_requires[requires]
+            requires = SYSD_TARGET_REQUIRES[requires]
         logg.debug("the %s requires %s", module, targets)
         return targets
     def default_system(self, arg: bool = True) -> bool:
