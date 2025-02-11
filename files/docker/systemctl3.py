@@ -23,15 +23,9 @@ import re
 
 from typing import Dict, Iterable, List, NoReturn, Optional, TextIO, Tuple, Type, Union, Match, Iterator
 from types import TracebackType
-_extra_vars: List[str]
-_system_folder1: Optional[str]
-_all_common_enabled: List[str]
-stringtypeslders: List[str]
-SystemCompatibilityVersion: int
-_pid_file_folder: str
+
 __copyright__: str = "(C) 2024-2025 Guido U. Draheim, licensed under the EUPL"
 __version__: str = "2.0.1061"
-
 
 import logging
 logg: logging.Logger = logging.getLogger("systemctl")
@@ -74,7 +68,7 @@ NOT_ACTIVE: int = 2      # FOUND_INACTIVE
 NOT_FOUND: int = 4       # FOUND_UNKNOWN
 
 # defaults for options
-_extra_vars = []
+_extra_vars: List[str] = []
 _force: bool = False
 _full: bool = False
 _log_lines = 0
