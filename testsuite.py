@@ -10,7 +10,7 @@ __version__ = "2.0.1061"
 # The testcases 1000...4999 are using a --root=subdir environment
 # The testcases 5000...9999 will start a docker container to work.
 
-from typing import List, Dict, Tuple, Generator, Iterator, Union, Optional, TextIO
+from typing import List, Tuple, Generator, Iterator, Union, Optional, TextIO
 
 import subprocess
 import os
@@ -21,7 +21,6 @@ import datetime
 import unittest
 import shutil
 import inspect
-import types
 import string
 import random
 import logging
