@@ -50,7 +50,7 @@ KEEP = 0
 LONGER = 2
 KILLWAIT = 20
 
-TestListen = False
+TESTING_LISTEN = False
 
 CENTOSVER = {"7.3": "7.3.1611", "7.4": "7.4.1708", "7.5": "7.5.1804", "7.6": "7.6.1810", "7.7": "7.7.1908", "7.9": "7.9.2009", "8.0": "8.0.1905", "8.1": "8.1.1911", "8.3": "8.3.2011"}
 TESTED_OS = ["centos:7.3.1611", "centos:7.4.1708", "centos:7.5.1804", "centos:7.6.1810", "centos:7.7.1908", "centos:7.9.2009", "centos:8.0.1905", "centos:8.1.1911", "centos:8.3.2011"]
@@ -22553,7 +22553,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
-        cmd = F"{initsystemctl} listen zza.socket -c TestListen -c TestAccept"
+        cmd = F"{initsystemctl} listen zza.socket -c TESTING_LISTEN -c TESTING_ACCEPT"
         init = background(cmd)
         time.sleep(InitLoopSleep+1)
         #
@@ -22574,7 +22574,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # self.assertTrue(greps(out, "received:.*foo")) # FIXME
         #
         logg.info("kill daemon at %s", init.pid)
-        if TestListen:
+        if TESTING_LISTEN:
             self.assertTrue(self.kill(init.pid))
         elif not self.kill(init.pid):
             self.kill(init.pid, sig = signal.SIGKILL)
@@ -22635,7 +22635,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
-        cmd = F"{initsystemctl} listen zza.socket -c TestListen -c TestAccept"
+        cmd = F"{initsystemctl} listen zza.socket -c TESTING_LISTEN -c TESTING_ACCEPT"
         init = background(cmd)
         time.sleep(InitLoopSleep+1)
         #
@@ -22656,7 +22656,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # self.assertTrue(greps(out, "received:.*foo")) # FIXME
         #
         logg.info("kill daemon at %s", init.pid)
-        if TestListen:
+        if TESTING_LISTEN:
             self.assertTrue(self.kill(init.pid))
         elif not self.kill(init.pid):
             self.kill(init.pid, sig = signal.SIGKILL)
@@ -22719,7 +22719,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
-        cmd = F"{initsystemctl} listen zza.socket -c TestListen -c TestAccept"
+        cmd = F"{initsystemctl} listen zza.socket -c TESTING_LISTEN -c TESTING_ACCEPT"
         init = background(cmd)
         time.sleep(InitLoopSleep+1)
         #
@@ -22740,7 +22740,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # self.assertTrue(greps(out, "received:.*foo")) # FIXME
         #
         logg.info("kill daemon at %s", init.pid)
-        if TestListen:
+        if TESTING_LISTEN:
             self.assertTrue(self.kill(init.pid))
         elif not self.kill(init.pid):
             self.kill(init.pid, sig = signal.SIGKILL)
@@ -22803,7 +22803,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
-        cmd = F"{initsystemctl} listen zza.socket -c TestListen -c TestAccept"
+        cmd = F"{initsystemctl} listen zza.socket -c TESTING_LISTEN -c TESTING_ACCEPT"
         init = background(cmd)
         time.sleep(InitLoopSleep+1)
         #
@@ -22824,7 +22824,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # self.assertTrue(greps(out, "received:.*foo")) # FIXME
         #
         logg.info("kill daemon at %s", init.pid)
-        if TestListen:
+        if TESTING_LISTEN:
             self.assertTrue(self.kill(init.pid))
         elif not self.kill(init.pid):
             self.kill(init.pid, sig = signal.SIGKILL)
@@ -22887,7 +22887,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
-        cmd = F"{initsystemctl} listen zza.socket -c TestListen -c TestAccept"
+        cmd = F"{initsystemctl} listen zza.socket -c TESTING_LISTEN -c TESTING_ACCEPT"
         init = background(cmd)
         time.sleep(InitLoopSleep+1)
         #
@@ -22901,7 +22901,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # no reply
         #
         logg.info("kill daemon at %s", init.pid)
-        if TestListen:
+        if TESTING_LISTEN:
             self.assertTrue(self.kill(init.pid))
         elif not self.kill(init.pid):
             self.kill(init.pid, sig = signal.SIGKILL)
@@ -22964,7 +22964,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
-        cmd = F"{initsystemctl} listen zza.socket -c TestListen -c TestAccept"
+        cmd = F"{initsystemctl} listen zza.socket -c TESTING_LISTEN -c TESTING_ACCEPT"
         init = background(cmd)
         time.sleep(InitLoopSleep+1)
         #
@@ -22983,7 +22983,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "replied: ERROR: FOO"))
         #
         logg.info("kill daemon at %s", init.pid)
-        if TestListen:
+        if TESTING_LISTEN:
             self.assertTrue(self.kill(init.pid))
         elif not self.kill(init.pid):
             self.kill(init.pid, sig = signal.SIGKILL)
@@ -23047,7 +23047,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
-        cmd = F"{initsystemctl} listen zza.socket -c TestListen -c TestAccept"
+        cmd = F"{initsystemctl} listen zza.socket -c TESTING_LISTEN -c TESTING_ACCEPT"
         init = background(cmd)
         time.sleep(InitLoopSleep+1)
         #
@@ -23061,7 +23061,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # no reply
         #
         logg.info("kill daemon at %s", init.pid)
-        if TestListen:
+        if TESTING_LISTEN:
             self.assertTrue(self.kill(init.pid))
         elif not self.kill(init.pid):
             self.kill(init.pid, sig = signal.SIGKILL)
@@ -23125,7 +23125,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
-        cmd = F"{initsystemctl} listen zza.socket -c TestListen -c TestAccept"
+        cmd = F"{initsystemctl} listen zza.socket -c TESTING_LISTEN -c TESTING_ACCEPT"
         init = background(cmd)
         time.sleep(InitLoopSleep+1)
         #
@@ -23139,7 +23139,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # no reply
         #
         logg.info("kill daemon at %s", init.pid)
-        if TestListen:
+        if TESTING_LISTEN:
             self.assertTrue(self.kill(init.pid))
         elif not self.kill(init.pid):
             self.kill(init.pid, sig = signal.SIGKILL)
@@ -23427,7 +23427,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
-        cmd = F"{initsystemctl} listen zza.socket -c TestListen -c TestAccept"
+        cmd = F"{initsystemctl} listen zza.socket -c TESTING_LISTEN -c TESTING_ACCEPT"
         init = background(cmd)
         time.sleep(InitLoopSleep+1)
         #
@@ -23448,7 +23448,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         ### self.assertTrue(greps(out, "received:.*foo"))
         #
         logg.info("kill daemon at %s", init.pid)
-        if TestListen:
+        if TESTING_LISTEN:
             self.assertTrue(self.kill(init.pid))
         elif not self.kill(init.pid):
             self.kill(init.pid, sig = signal.SIGKILL)
@@ -23508,7 +23508,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
-        cmd = F"{initsystemctl} listen zza.socket -c TestListen -c TestAccept"
+        cmd = F"{initsystemctl} listen zza.socket -c TESTING_LISTEN -c TESTING_ACCEPT"
         init = background(cmd)
         time.sleep(InitLoopSleep+1)
         #
@@ -23529,7 +23529,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         ### self.assertTrue(greps(out, "received:.*foo"))
         #
         logg.info("kill daemon at %s", init.pid)
-        if TestListen:
+        if TESTING_LISTEN:
             self.assertTrue(self.kill(init.pid))
         elif not self.kill(init.pid):
             self.kill(init.pid, sig = signal.SIGKILL)
@@ -23588,7 +23588,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
-        cmd = F"{initsystemctl} listen zza.socket -c TestListen -c TestAccept"
+        cmd = F"{initsystemctl} listen zza.socket -c TESTING_LISTEN -c TESTING_ACCEPT"
         init = background(cmd)
         time.sleep(InitLoopSleep+1)
         #
@@ -23609,7 +23609,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         ### self.assertTrue(greps(out, "received:.*foo"))
         #
         logg.info("kill daemon at %s", init.pid)
-        if TestListen:
+        if TESTING_LISTEN:
             self.assertTrue(self.kill(init.pid))
         elif not self.kill(init.pid):
             self.kill(init.pid, sig = signal.SIGKILL)
@@ -23669,7 +23669,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
-        cmd = F"{initsystemctl} listen zza.socket -c TestListen -c TestAccept"
+        cmd = F"{initsystemctl} listen zza.socket -c TESTING_LISTEN -c TESTING_ACCEPT"
         init = background(cmd)
         time.sleep(InitLoopSleep+1)
         #
@@ -23690,7 +23690,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         ### self.assertTrue(greps(out, "received:.*foo"))
         #
         logg.info("kill daemon at %s", init.pid)
-        if TestListen:
+        if TESTING_LISTEN:
             self.assertTrue(self.kill(init.pid))
         elif not self.kill(init.pid):
             self.kill(init.pid, sig = signal.SIGKILL)
@@ -23750,7 +23750,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
-        cmd = F"{initsystemctl} listen zza.socket -c TestListen -c TestAccept"
+        cmd = F"{initsystemctl} listen zza.socket -c TESTING_LISTEN -c TESTING_ACCEPT"
         init = background(cmd)
         time.sleep(InitLoopSleep+1)
         #
@@ -23771,7 +23771,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         ### self.assertTrue(greps(out, "received:.*foo"))
         #
         logg.info("kill daemon at %s", init.pid)
-        if TestListen:
+        if TESTING_LISTEN:
             self.assertTrue(self.kill(init.pid))
         elif not self.kill(init.pid):
             self.kill(init.pid, sig = signal.SIGKILL)
@@ -23832,7 +23832,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
-        cmd = F"{initsystemctl} listen zza.socket -c TestListen"
+        cmd = F"{initsystemctl} listen zza.socket -c TESTING_LISTEN"
         init = background(cmd)
         time.sleep(InitLoopSleep+1)
         #
@@ -23853,7 +23853,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         ### self.assertTrue(greps(out, "received:.*foo"))
         #
         logg.info("kill daemon at %s", init.pid)
-        if TestListen:
+        if TESTING_LISTEN:
             self.assertTrue(self.kill(init.pid))
         elif not self.kill(init.pid):
             self.kill(init.pid, sig = signal.SIGKILL)
@@ -23914,7 +23914,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
-        cmd = F"{initsystemctl} listen zza.socket -c TestListen"
+        cmd = F"{initsystemctl} listen zza.socket -c TESTING_LISTEN"
         init = background(cmd)
         time.sleep(InitLoopSleep+1)
         #
@@ -23935,7 +23935,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         ### self.assertTrue(greps(out, "received:.*foo"))
         #
         logg.info("kill daemon at %s", init.pid)
-        if TestListen:
+        if TESTING_LISTEN:
             self.assertTrue(self.kill(init.pid))
         elif not self.kill(init.pid):
             self.kill(init.pid, sig = signal.SIGKILL)
@@ -23984,7 +23984,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         #
-        cmd = F"{systemctl} start zza.socket -c TestListen -vvvv"
+        cmd = F"{systemctl} start zza.socket -c TESTING_LISTEN -vvvv"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
         self.assertTrue(greps(err, "ListenUSBFunction sockets are not implemented"))
@@ -24031,7 +24031,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         #
-        cmd = F"{systemctl} start zza.socket -c TestListen -vvvv"
+        cmd = F"{systemctl} start zza.socket -c TESTING_LISTEN -vvvv"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
         self.assertTrue(greps(err, "ListenSpecial sockets are not implemented"))
@@ -24078,7 +24078,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         #
-        cmd = F"{systemctl} start zza.socket -c TestListen -vvvv"
+        cmd = F"{systemctl} start zza.socket -c TESTING_LISTEN -vvvv"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
         self.assertTrue(greps(err, "ListenFIFO sockets are not implemented"))
@@ -24125,7 +24125,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         #
-        cmd = F"{systemctl} start zza.socket -c TestListen -vvvv"
+        cmd = F"{systemctl} start zza.socket -c TESTING_LISTEN -vvvv"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
         self.assertTrue(greps(err, "ListenSequentialPacket sockets are not implemented"))
@@ -24172,7 +24172,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         #
-        cmd = F"{systemctl} start zza.socket -c TestListen -vvvv"
+        cmd = F"{systemctl} start zza.socket -c TESTING_LISTEN -vvvv"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
         self.assertTrue(greps(err, "ListenMessageQueue sockets are not implemented"))
@@ -24219,7 +24219,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         #
-        cmd = F"{systemctl} start zza.socket -c TestListen -vvvv"
+        cmd = F"{systemctl} start zza.socket -c TESTING_LISTEN -vvvv"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
         self.assertTrue(greps(err, "virtual machine socket not implemented"))
@@ -24266,7 +24266,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         #
-        cmd = F"{systemctl} start zza.socket -c TestListen -vvvv"
+        cmd = F"{systemctl} start zza.socket -c TESTING_LISTEN -vvvv"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
         self.assertTrue(greps(err, "abstract namespace socket not implemented"))
@@ -24313,7 +24313,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         #
-        cmd = F"{systemctl} start zza.socket -c TestListen -vvvv"
+        cmd = F"{systemctl} start zza.socket -c TESTING_LISTEN -vvvv"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
         self.assertTrue(greps(err, "unknown socket address type"))

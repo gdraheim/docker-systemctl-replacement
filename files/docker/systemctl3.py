@@ -45,9 +45,9 @@ DEBUG_BOOTTIME: bool = False
 DEBUG_INITLOOP: bool = False
 DEBUG_KILLALL: bool = False
 DEBUG_FLOCK = False
-DebugPrintResult = False
-TestListen = False
-TestAccept = False
+DEBUG_PRINTRESULT = False
+TESTING_LISTEN = False
+TESTING_ACCEPT = False
 
 HINT = (logging.DEBUG + logging.INFO) // 2
 NOTE = (logging.WARNING + logging.INFO) // 2
@@ -3264,7 +3264,7 @@ class Systemctl:
         logg.debug("%s: accepting %s", conf.name(), sock.fileno())
         service_unit = self.get_socket_service_from(conf)
         service_conf = self.load_unit_conf(service_unit)
-        if service_conf is None or TestAccept:  # pragma: no cover
+        if service_conf is None or TESTING_ACCEPT:  # pragma: no cover
             if sock.type == socket.SOCK_STREAM:
                 conn, _addr = sock.accept()
                 data = conn.recv(1024)
@@ -3323,7 +3323,7 @@ class Systemctl:
         listening=False
         if not accept:
             sock = self.create_socket(conf)
-            if sock and TestListen:
+            if sock and TESTING_LISTEN:
                 listening=True
                 self._sockets[conf.name()] = SystemctlSocket(conf, sock)
                 service_result = "success"
@@ -6510,7 +6510,7 @@ def print_begin2(args: List[str]) -> None:
     logg.debug("======= systemctl.py %s", " ".join(args))
 
 def is_not_ok(result: bool) -> int:
-    if DebugPrintResult:
+    if DEBUG_PRINTRESULT:
         logg.log(HINT, "EXEC END %s", result)
     if result is False:
         return NOT_OK
@@ -6518,11 +6518,11 @@ def is_not_ok(result: bool) -> int:
 
 def print_str(result: Optional[str]) -> None:
     if result is None:
-        if DebugPrintResult:
+        if DEBUG_PRINTRESULT:
             logg.debug("    END %s", result)
         return
     print(result)
-    if DebugPrintResult:
+    if DEBUG_PRINTRESULT:
         result1 = result.split("\n")[0][:-20]
         if result == result1:
             logg.log(HINT, "EXEC END '%s'", result)
@@ -6531,14 +6531,14 @@ def print_str(result: Optional[str]) -> None:
             logg.debug("    END '%s'", result)
 def print_str_list(result: Union[None, List[str]]) -> None:
     if result is None:
-        if DebugPrintResult:
+        if DEBUG_PRINTRESULT:
             logg.debug("    END %s", result)
         return
     shown = 0
     for element in result:
         print(element)
         shown += 1
-    if DebugPrintResult:
+    if DEBUG_PRINTRESULT:
         logg.log(HINT, "EXEC END %i items", shown)
         logg.debug("    END %s", result)
 def print_str_list_list(result: Union[List[Tuple[str]], List[Tuple[str, str]], List[Tuple[str, str, str]]]) -> None:
@@ -6546,12 +6546,12 @@ def print_str_list_list(result: Union[List[Tuple[str]], List[Tuple[str, str]], L
     for element in result:
         print("\t".join([str(elem) for elem in element]))
         shown += 1
-    if DebugPrintResult:
+    if DEBUG_PRINTRESULT:
         logg.log(HINT, "EXEC END %i items", shown)
         logg.debug("    END %s", result)
 def print_str_dict(result: Union[None, Dict[str, str]]) -> None:
     if result is None:
-        if DebugPrintResult:
+        if DEBUG_PRINTRESULT:
             logg.debug("    END %s", result)
         return
     shown = 0
@@ -6559,12 +6559,12 @@ def print_str_dict(result: Union[None, Dict[str, str]]) -> None:
         element = result[key]
         print("%s=%s" % (key, element))
         shown += 1
-    if DebugPrintResult:
+    if DEBUG_PRINTRESULT:
         logg.log(HINT, "EXEC END %i items", shown)
         logg.debug("    END %s", result)
 def print_str_dict_dict(result: Dict[str, Dict[str, str]]) -> None:
     if result is None:
-        if DebugPrintResult:
+        if DEBUG_PRINTRESULT:
             logg.debug("    END %s", result)
         return
     shown = 0
@@ -6574,7 +6574,7 @@ def print_str_dict_dict(result: Dict[str, Dict[str, str]]) -> None:
             value = element[name]
             print("%s [%s] %s" % (key, value, name))
         shown += 1
-    if DebugPrintResult:
+    if DEBUG_PRINTRESULT:
         logg.log(HINT, "EXEC END %i items", shown)
         logg.debug("    END %s", result)
 
