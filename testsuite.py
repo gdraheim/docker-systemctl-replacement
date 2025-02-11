@@ -54,16 +54,16 @@ TESTING_LISTEN = False
 
 CENTOSVER = {"7.3": "7.3.1611", "7.4": "7.4.1708", "7.5": "7.5.1804", "7.6": "7.6.1810", "7.7": "7.7.1908", "7.9": "7.9.2009", "8.0": "8.0.1905", "8.1": "8.1.1911", "8.3": "8.3.2011"}
 TESTED_OS = ["centos:7.3.1611", "centos:7.4.1708", "centos:7.5.1804", "centos:7.6.1810", "centos:7.7.1908", "centos:7.9.2009", "centos:8.0.1905", "centos:8.1.1911", "centos:8.3.2011"]
-TESTED_OS += ["almalinux:9.1", "centos:7.5"]
-TESTED_OS += ["opensuse:42.2", "opensuse:42.3", "opensuse/leap:15.0", "opensuse/leap:15.1", "opensuse/leap:15.2", "opensuse/leap:15.5"]
-TESTED_OS += ["ubuntu:14.04", "ubuntu:16.04", "ubuntu:18.04", "ubuntu:22.04"]
+TESTED_OS += ["almalinux:9.1", "centos:7.5", "almalinux:9.3", "almalinux:9.4"]
+TESTED_OS += ["opensuse:42.2", "opensuse:42.3", "opensuse/leap:15.0", "opensuse/leap:15.1", "opensuse/leap:15.2", "opensuse/leap:15.5", "opensuse/leap:15.6"]
+TESTED_OS += ["ubuntu:14.04", "ubuntu:16.04", "ubuntu:18.04", "ubuntu:22.04", "ubuntu:24.04"]
 
 SAVETO = "localhost:5000/systemctl"
 IMAGES = "localhost:5000/systemctl/testing"
 IMAGE = ""
-CENTOS = "centos:8.3.2011"
-UBUNTU = "ubuntu:18.04"
-OPENSUSE = "opensuse/leap:15.2"
+CENTOS = "almalinux:9.4"
+UBUNTU = "ubuntu:24.04"
+OPENSUSE = "opensuse/leap:15.6"
 SOMETIME = ""
 
 QUICK = "-c DefaultMaximumTimeout=9"
@@ -1202,12 +1202,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart=/bin/sleep 3
         """)
         #
-        cmd = F"{systemctl} daemon-reload -c target_requires=1 -vvv"
+        cmd = F"{systemctl} daemon-reload -c SYSD_TARGET_REQUIRES=1 -vvv"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
         self.assertEqual(lines(out), [])
         self.assertEqual(end, 0)
-        self.assertTrue(greps(err, "unknown target type -c 'target_requires'.*'dict'>"))
+        self.assertTrue(greps(err, "unknown target type -c 'SYSD_TARGET_REQUIRES'.*'dict'>"))
         self.rm_testdir()
         self.rm_zzfiles(root)
         self.coverage()

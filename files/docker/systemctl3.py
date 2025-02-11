@@ -6858,7 +6858,7 @@ def main() -> int:
             if old is False or old is True:
                 logg.debug("yes %s=%s", nam, val)
                 globals()[nam] = (val in ("true", "True", "TRUE", "yes", "y", "Y", "YES", "1"))
-                logg.debug("... _show_all=%s", SHOW_ALL)
+                logg.debug("... SHOW_ALL=%s", SHOW_ALL)
             elif isinstance(old, float):
                 logg.debug("num %s=%s", nam, val)
                 globals()[nam] = float(val)
@@ -6874,7 +6874,7 @@ def main() -> int:
             elif isinstance(old, list):
                 logg.debug("str %s+=[%s]", nam, val)
                 globals()[nam] += val.strip().split(",")
-                logg.debug("... _extra_vars=%s", EXTRA_VARS)
+                logg.debug("... EXTRA_VARS=%s", EXTRA_VARS)
             else:
                 logg.warning("(ignored) unknown target type -c '%s' : %s", nam, type(old))
         else:
