@@ -22,7 +22,7 @@ import shlex
 import fnmatch
 import re
 
-from typing import Dict, Iterable, List, NoReturn, Optional, TextIO, Tuple, Type, Union, Match, Iterator, Final
+from typing import Dict, Iterable, List, NoReturn, Optional, TextIO, Tuple, Type, Union, Match, Iterator
 from types import TracebackType
 
 __copyright__: str = "(C) 2024-2025 Guido U. Draheim, licensed under the EUPL"
@@ -225,10 +225,10 @@ SYSD_TARGET_FOR["$timer"] = "timers.target"
 
 
 # sections from conf
-Unit: Final[str] = "Unit"  # pylint: disable=invalid-name
-Service: Final[str] = "Service"  # pylint: disable=invalid-name
-Socket: Final[str] = "Socket"  # pylint: disable=invalid-name
-Install: Final[str] = "Install"  # pylint: disable=invalid-name
+Unit = "Unit"  # pylint: disable=invalid-name
+Service = "Service"  # pylint: disable=invalid-name
+Socket = "Socket"  # pylint: disable=invalid-name
+Install = "Install"  # pylint: disable=invalid-name
 
 # https://tldp.org/LDP/abs/html/exitcodes.html
 # https://freedesktop.org/software/systemd/man/systemd.exec.html#id-1.20.8
