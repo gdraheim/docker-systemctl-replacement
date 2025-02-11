@@ -2067,7 +2067,6 @@ class Systemctl:
                 assert isinstance(line, bytes)
                 if line.startswith(b"btime"):
                     system_btime = float(line.decode().split()[1])
-        f.closed
         if DEBUG_BOOTTIME:
             logg.debug("  BOOT 2. System btime secs: %.3f (%s)", system_btime, system_stat)
 
