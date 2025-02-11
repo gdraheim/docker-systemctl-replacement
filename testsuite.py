@@ -827,11 +827,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         print(F"                 # {local_image}")
         print(F"  {docker} exec -it {name} bash")
     def begin(self) -> str:
-        self._started = time.time()
+        self._started = time.monotonic() # pylint: disable=attribute-defined-outside-init
         logg.info("[[%s]]", datetime.datetime.fromtimestamp(self._started).strftime("%H:%M:%S"))
         return "-vv"
     def end(self, maximum: int = 99) -> None:
-        runtime = time.time() - self._started
+        runtime = time.monotonic() - self._started
         self.assertLess(runtime, maximum * LONGER)
     #
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
