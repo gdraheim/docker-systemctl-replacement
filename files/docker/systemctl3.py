@@ -6785,8 +6785,8 @@ if __name__ == "__main__":
     _only_type = opt.only_type
     _only_property = opt.only_property
     _only_what = opt.only_what
-    FORCE_IPV4 = opt.force_ipv4
-    FORCE_IPV6 = opt.force_ipv6
+    FORCE_IPV4 = opt.ipv4
+    FORCE_IPV6 = opt.ipv6
     # being PID 1 (or 0) in a container will imply --init
     _pid = os.getpid()
     _init = opt.init or _pid in [1, 0]
