@@ -361,7 +361,6 @@ def get_GROUP(root: bool = False) -> str:
     if root: return "root"
     import grp
     gid = os.getegid()
-    import grp
     return grp.getgrgid(gid).gr_name
 def get_LASTGROUP_ID(root: bool = False) -> int:
     if root: return 0 # only there is
