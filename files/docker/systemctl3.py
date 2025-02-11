@@ -6364,9 +6364,9 @@ class Systemctl:
                         if DEBUG_KILLALL: logg.debug("cmd.exe '%s'", cmd_exe)
                         if fnmatch.fnmatchcase(cmd_exe, target): found = "exe"
                         if len(cmd) > 1 and cmd_exe.startswith("python"):
-                            X = 1
-                            while cmd[X].startswith("-"): X += 1 # atleast '-u' unbuffered
-                            cmd_arg = os.path.basename(cmd[X])
+                            nonoption = 1 # atleast skip over '-u' unbuffered
+                            while nonoption < len(cmd) and cmd[nonoption].startswith("-"): nonoption += 1 
+                            cmd_arg = os.path.basename(cmd[nonoption])
                             if DEBUG_KILLALL: logg.debug("cmd.arg '%s'", cmd_arg)
                             if fnmatch.fnmatchcase(cmd_arg, target): found = "arg"
                             if cmd_exe.startswith("coverage") or cmd_arg.startswith("coverage"):
