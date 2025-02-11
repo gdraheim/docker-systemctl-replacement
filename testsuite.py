@@ -728,13 +728,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(1)
         if os.path.isfile(".coverage"):
             # shutil.copy(".coverage", newcoverage)
-            f = open(".coverage", "rb")
-            text = f.read()
-            f.close()
+            with open(".coverage", "rb") as f:
+                text = f.read()
             text2 = re.sub(rb"(\]\}\})[^{}]*(\]\}\})$", rb"\1", text)
-            f = open(newcoverage, "wb")
-            f.write(text2)
-            f.close()
+            with open(newcoverage, "wb") as f:
+                f.write(text2)
     def root(self, testdir: str, real: bool = False) -> str:
         if real: return "/"
         root_folder = os.path.join(testdir, "root")
