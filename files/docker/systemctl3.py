@@ -321,9 +321,11 @@ def o77(part: str) -> str:
     return part # pragma: no cover (is always str)
 def delayed(attempt: int, suffix: str = ".", default: str = NIX) -> str:
     if attempt < 10:
-        return default
-    if attempt < 100:
         return "%+i%s" % (attempt, suffix)
+    if attempt < 100:
+        return "%i%s" % (attempt, suffix)
+    if attempt < 1000 and suffix:
+        return "%i%s" % (attempt, suffix[1:])
     return "%i%s" % (attempt, suffix)
 def path44(filename: Optional[str]) -> str:
     if not filename:
