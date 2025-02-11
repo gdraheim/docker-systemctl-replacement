@@ -6834,8 +6834,8 @@ def main() -> int:
     ONLY_TYPE = opt.only_type
     ONLY_PROPERTY = opt.only_property
     ONLY_WHAT = opt.only_what
-    FORCE_IPV4 = opt.force_ipv4
-    FORCE_IPV6 = opt.force_ipv6
+    FORCE_IPV4 = opt.ipv4
+    FORCE_IPV6 = opt.ipv6
     # being PID 1 (or 0) in a container will imply --init
     PID1 = os.getpid()
     INIT1 = opt.init or PID1 in [1, 0]
