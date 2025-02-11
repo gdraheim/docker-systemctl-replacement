@@ -1808,7 +1808,7 @@ class Systemctl:
         if self._now:
             basics = self.list_service_unit_basics()
             result = [(name, sysv + " " + filename) for name, sysv, filename in basics]
-        elif self._only_type: 
+        elif self._only_type:
             if "target" in self._only_type:
                 result = self.list_target_unit_files()
             if "service" in self._only_type:
@@ -5301,18 +5301,18 @@ class Systemctl:
                 logg.error(" %s: %s has no ExecStart= setting, which is only allowed for Type=oneshot services. Refusing.", unit, section)
                 errors += 101
         if len(usedExecStart) > 1 and haveType != "oneshot":
-            logg.error(" %s: there may be only one %s ExecStart statement (unless for 'oneshot' services)."
-                       + "\n\t\t\tYou can use ExecStartPre / ExecStartPost to add additional commands.", unit, section)
+            logg.error(" %s: there may be only one %s ExecStart statement (unless for 'oneshot' services)." +
+                       "\n\t\t\tYou can use ExecStartPre / ExecStartPost to add additional commands.", unit, section)
             errors += 1
         if len(usedExecStop) > 1 and haveType != "oneshot":
-            logg.info(" %s: there should be only one %s ExecStop statement (unless for 'oneshot' services)."
-                      + "\n\t\t\tYou can use ExecStopPost to add additional commands (also executed on failed Start)", unit, section)
+            logg.info(" %s: there should be only one %s ExecStop statement (unless for 'oneshot' services)." +
+                      "\n\t\t\tYou can use ExecStopPost to add additional commands (also executed on failed Start)", unit, section)
         if len(usedExecReload) > 1:
-            logg.info(" %s: there should be only one %s ExecReload statement."
-                      + "\n\t\t\tUse ' ; ' for multiple commands (ExecReloadPost or ExedReloadPre do not exist)", unit, section)
+            logg.info(" %s: there should be only one %s ExecReload statement." +
+                      "\n\t\t\tUse ' ; ' for multiple commands (ExecReloadPost or ExedReloadPre do not exist)", unit, section)
         if len(usedExecReload) > 0 and "/bin/kill " in usedExecReload[0]:
-            logg.warning(" %s: the use of /bin/kill is not recommended for %s ExecReload as it is asynchronous."
-                         + "\n\t\t\tThat means all the dependencies will perform the reload simultaneously / out of order.", unit, section)
+            logg.warning(" %s: the use of /bin/kill is not recommended for %s ExecReload as it is asynchronous." +
+                         "\n\t\t\tThat means all the dependencies will perform the reload simultaneously / out of order.", unit, section)
         if conf.getlist(Service, "ExecRestart", []):  # pragma: no cover
             logg.error(" %s: there no such thing as an %s ExecRestart (ignored)", unit, section)
         if conf.getlist(Service, "ExecRestartPre", []):  # pragma: no cover
@@ -5941,9 +5941,9 @@ class Systemctl:
                     content = prefix+b": "+line+b"\n"
                     try:
                         os.write(stdout, content)
-                        try: 
+                        try:
                             os.fsync(stdout)
-                        except Exception: 
+                        except Exception:
                             pass
                         printed += 1
                     except BlockingIOError:
