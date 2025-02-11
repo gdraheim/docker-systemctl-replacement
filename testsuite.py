@@ -108,7 +108,7 @@ def _recent(top_list: Union[str, List[str]]) -> str:
             result.append(" "+line)
     return "\n".join(result)
 
-def package_tool(image: str, checks = False) -> str:
+def package_tool(image: str, checks: bool = False) -> str:
     if "opensuse" in image:
         if not checks:
             # --gpgcheck-strict / --no-gpg-checks
@@ -132,7 +132,7 @@ def package_tool(image: str, checks = False) -> str:
     if not checks:
         return "yum --setopt=repo_gpgcheck=false"
     return "yum"
-def refresh_tool(image: str, checks = False) -> str:
+def refresh_tool(image: str, checks: bool = False) -> str:
     # https://github.com/openSUSE/docker-containers/issues/64
     #  {package} rr oss-update"
     #  {package} ar -f http://download.opensuse.org/update/leap/42.3/oss/openSUSE:Leap:42.3:Update.repo"
@@ -371,10 +371,10 @@ def get_LASTGROUP(root: bool = False) -> str:
 
 def beep() -> None:
     if os.name == "nt":
-        import winsound # type: ignore
+        import winsound # type: ignore[import]
         frequency = 2500
         duration = 1000
-        winsound.Beep(frequency, duration)
+        winsound.Beep(frequency, duration) # type: ignore[attr-defined]
     else:
         # using 'sox' on Linux as "\a" is usually disabled
         # sx___("play -n synth 0.1 tri  1000.0")
@@ -472,13 +472,13 @@ def copy_tool(filename: str, target: str) -> None:
 def get_caller_name() -> str:
     currentframe = inspect.currentframe()
     if not currentframe: return "global"
-    frame = currentframe.f_back.f_back
-    return frame.f_code.co_name
+    frame = currentframe.f_back.f_back # type: ignore[union-attr]
+    return frame.f_code.co_name # type: ignore[union-attr]
 def get_caller_caller_name() -> str:
     currentframe = inspect.currentframe()
     if not currentframe: return "global"
-    frame = currentframe.f_back.f_back.f_back
-    return frame.f_code.co_name
+    frame = currentframe.f_back.f_back.f_back # type: ignore[union-attr]
+    return frame.f_code.co_name # type: ignore[union-attr]
 # def os_path(root: Optional[str], path: Optional[str]) -> Optional[str]:
 def os_path(root: Optional[str], path: str) -> str:
     if not root:
