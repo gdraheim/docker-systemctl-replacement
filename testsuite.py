@@ -36698,7 +36698,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd)
         # CHECK
         debug_log = lines(open(testdir+"/systemctl.debug.log"))
-        if len(greps(debug_log, "Oops, ")):
+        if greps(debug_log, "Oops, "):
             self.assertTrue(greps(debug_log, "Service directory option not supported: PrivateTmp=yes"))
             self.assertTrue(greps(debug_log, "unsupported directory settings. You need to create those before using the service."))
             self.assertGreater(len(greps(debug_log, " ERROR ")), 2)
