@@ -5828,7 +5828,7 @@ class Systemctl:
         self.sysinit_status(SubState = "starting")
         for unit in units:
             self.start_unit(unit)
-        logg.debug("[%s] system is up --init=%s", target, init)
+        logg.info("[%s] system is up --init=%s", target, init)
         if init:
             logg.info("[%s] init-loop start", target)
             sig = self.init_loop_until_stop(services)
@@ -5836,7 +5836,7 @@ class Systemctl:
             self.sysinit_status(SubState = "stopping")
             for unit in reversed(units):
                 self.stop_unit(unit)
-            logg.debug("[%s] system is down", target)
+            logg.info("[%s] system is down", target)
         return units
     def do_start_target_from(self, conf: SystemctlConf) -> bool:
         target = conf.name()
