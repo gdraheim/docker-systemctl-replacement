@@ -1241,11 +1241,35 @@ def conf_sortedAfter(conflist: Iterable[SystemctlConf]) -> List[SystemctlConf]:
         logg_debug_after("[%s] %s", item.rank, item.conf.name())
     return [item.conf for item in sortedlist]
 
+def read_env_file(filename: str, root: Optional[str] = NIX) -> Iterator[Tuple[str, str]]:
+    try:
+        with open(os_path(root, filename)) as f:
+            for real_line in f:
+                line = real_line.strip()
+                if not line or line.startswith("#"):
+                    continue
+                m = re.match(r"(?:export +)?([\w_]+)[=]'([^']*)'", line)
+                if m:
+                    yield m.group(1), m.group(2)
+                    continue
+                m = re.match(r'(?:export +)?([\w_]+)[=]"([^"]*)"', line)
+                if m:
+                    yield m.group(1), m.group(2)
+                    continue
+                m = re.match(r'(?:export +)?([\w_]+)[=](.*)', line)
+                if m:
+                    yield m.group(1), m.group(2)
+                    continue
+    except OSError as e:
+        logg.info("while reading %s: %s", filename, e)
+
+
 class SystemctlLoadedUnits:
     """ database of loaded unit descriptors and expansion helpers for them. """
     _root: str
     _user_mode: bool
     _user_getlogin: str
+    _extra_vars: List[str]
     _SYSTEMD_UNIT_PATH: Optional[str]
     _SYSTEMD_SYSVINIT_PATH: Optional[str]
     _SYSTEMD_PRESET_PATH: Optional[str]
@@ -1258,6 +1282,7 @@ class SystemctlLoadedUnits:
         self._root = ROOT
         self._user_mode = USER_MODE
         self._user_getlogin = os_getlogin()
+        self._extra_vars = EXTRA_VARS
         self._SYSTEMD_UNIT_PATH = None  # pylint: disable=invalid-name
         self._SYSTEMD_SYSVINIT_PATH = None  # pylint: disable=invalid-name
         self._SYSTEMD_PRESET_PATH = None  # pylint: disable=invalid-name
@@ -1698,6 +1723,82 @@ class SystemctlLoadedUnits:
             result = re.sub("[%](.)", lambda m: get_conf1(m), cmd)
             # ++# logg.info("expanded => %s", result)
         return result
+    def extra_vars(self) -> List[str]:
+        return self._extra_vars # from command line
+    def get_env(self, conf: SystemctlConf) -> Dict[str, str]:
+        env = os.environ.copy()
+        for env_part in conf.getlist(Service, "Environment", []):
+            for name, value in self.read_env_part(self.expand_special(env_part, conf)):
+                env[name] = value # a '$word' is not special here (lazy expansion)
+        for env_file in conf.getlist(Service, "EnvironmentFile", []):
+            for name, value in self.read_env_file(self.expand_special(env_file, conf)):
+                env[name] = self.expand_env(value, env) # but nonlazy expansion here
+        logg.debug("extra-vars %s", self.extra_vars())
+        for extra in self.extra_vars():
+            if extra.startswith("@"):
+                for name, value in self.read_env_file(extra[1:]):
+                    logg.info("override %s=%s", name, value)
+                    env[name] = self.expand_env(value, env)
+            else:
+                for name, value in self.read_env_part(extra):
+                    logg.info("override %s=%s", name, value)
+                    env[name] = value # a '$word' is not special here
+        return env
+    def expand_env(self, cmd: str, env: Dict[str, str]) -> str:
+        def get_env1(m: Match[str]) -> str:
+            name = m.group(1)
+            if name in env:
+                return env[name]
+            namevar = "$%s" % name
+            logg.debug("can not expand %s", namevar)
+            return (EXPAND_KEEP_VARS and namevar or "")
+        def get_env2(m: Match[str]) -> str:
+            name = m.group(1)
+            if name in env:
+                return env[name]
+            namevar = "${%s}" % name
+            logg.debug("can not expand %s", namevar)
+            return (EXPAND_KEEP_VARS and namevar or "")
+        #
+        maxdepth = EXPAND_VARS_MAXDEPTH
+        expanded = re.sub(r"[$](\w+)", lambda m: get_env1(m), cmd.replace("\\\n", ""))
+        for _ in range(maxdepth):
+            new_text = re.sub(r"[$][{](\w+)[}]", lambda m: get_env2(m), expanded)
+            if new_text == expanded:
+                return expanded
+            expanded = new_text
+        logg.error("shell variable expansion exceeded maxdepth %s", maxdepth)
+        return expanded
+    def read_env_file(self, env_file: str) -> Iterable[Tuple[str, str]]: # -> generate[ (name,value) ]
+        """ EnvironmentFile=<name> is being scanned """
+        mode, env_file = load_path(env_file)
+        real_file = os_path(self._root, env_file)
+        if not os.path.exists(real_file):
+            if mode.check:
+                logg.error("file does not exist: %s", real_file)
+            else:
+                logg.debug("file does not exist: %s", real_file)
+            return
+        for name, value in read_env_file(env_file, self._root):
+            yield name, value
+    def read_env_part(self, env_part: str) -> Iterable[Tuple[str, str]]: # -> generate[ (name, value) ]
+        """ Environment=<name>=<value> is being scanned """
+        # systemd Environment= spec says it is a space-separated list of
+        # assignments. In order to use a space or an equals sign in a value
+        # one should enclose the whole assignment with double quotes:
+        # Environment="VAR1=word word" VAR2=word3 "VAR3=$word 5 6"
+        # and the $word is not expanded by other environment variables.
+        try:
+            for real_line in env_part.split("\n"):
+                line = real_line.strip()
+                for found in re.finditer(r'\s*("[\w_]+=[^"]*"|[\w_]+=\S*)', line):
+                    part = found.group(1)
+                    if part.startswith('"'):
+                        part = part[1:-1]
+                    name, value = part.split("=", 1)
+                    yield name, value
+        except OSError as e:
+            logg.info("while reading %s: %s", env_part, e)
     def get_dependencies_unit(self, unit: str, styles: Optional[List[str]] = None) -> Dict[str, str]:
         styles = styles or ["Requires", "Wants", "Requisite", "BindsTo", "PartOf", "ConsistsOf",
                             ".requires", ".wants", "PropagateReloadTo", "Conflicts", ]
@@ -1949,7 +2050,6 @@ class SystemctlListenThread(threading.Thread):
 class Systemctl:
     """ emulation for systemctl commands """
     error: int
-    _extra_vars: List[str]
     _force: bool
     _full: bool
     _init: bool
@@ -1982,7 +2082,6 @@ class Systemctl:
     def __init__(self) -> None:
         self.error = NOT_A_PROBLEM # program exitcode or process returncode
         # from command line options or the defaults
-        self._extra_vars = EXTRA_VARS
         self._force = DO_FORCE
         self._full = DO_FULL
         self._init = INIT1
@@ -2408,54 +2507,6 @@ class Systemctl:
             logg.warning("while reading file size: %s\n of %s", e, filename)
             return 0
     #
-    def read_env_file(self, env_file: str) -> Iterable[Tuple[str, str]]: # -> generate[ (name,value) ]
-        """ EnvironmentFile=<name> is being scanned """
-        mode, env_file = load_path(env_file)
-        real_file = os_path(self._root, env_file)
-        if not os.path.exists(real_file):
-            if mode.check:
-                logg.error("file does not exist: %s", real_file)
-            else:
-                logg.debug("file does not exist: %s", real_file)
-            return
-        try:
-            with open(os_path(self._root, env_file)) as f:
-                for real_line in f:
-                    line = real_line.strip()
-                    if not line or line.startswith("#"):
-                        continue
-                    m = re.match(r"(?:export +)?([\w_]+)[=]'([^']*)'", line)
-                    if m:
-                        yield m.group(1), m.group(2)
-                        continue
-                    m = re.match(r'(?:export +)?([\w_]+)[=]"([^"]*)"', line)
-                    if m:
-                        yield m.group(1), m.group(2)
-                        continue
-                    m = re.match(r'(?:export +)?([\w_]+)[=](.*)', line)
-                    if m:
-                        yield m.group(1), m.group(2)
-                        continue
-        except OSError as e:
-            logg.info("while reading %s: %s", env_file, e)
-    def read_env_part(self, env_part: str) -> Iterable[Tuple[str, str]]: # -> generate[ (name, value) ]
-        """ Environment=<name>=<value> is being scanned """
-        # systemd Environment= spec says it is a space-separated list of
-        # assignments. In order to use a space or an equals sign in a value
-        # one should enclose the whole assignment with double quotes:
-        # Environment="VAR1=word word" VAR2=word3 "VAR3=$word 5 6"
-        # and the $word is not expanded by other environment variables.
-        try:
-            for real_line in env_part.split("\n"):
-                line = real_line.strip()
-                for found in re.finditer(r'\s*("[\w_]+=[^"]*"|[\w_]+=\S*)', line):
-                    part = found.group(1)
-                    if part.startswith('"'):
-                        part = part[1:-1]
-                    name, value = part.split("=", 1)
-                    yield name, value
-        except OSError as e:
-            logg.info("while reading %s: %s", env_part, e)
     def command_of_unit(self, unit: str) -> Union[None, List[str]]:
         """ [UNIT]. -- show service settings (experimental)
             or use -p VarName to show another property than 'ExecStart' """
@@ -2478,53 +2529,7 @@ class Systemctl:
             logg.error("Unit %s not found.", unit)
             self.error |= NOT_FOUND
             return None
-        return self.get_env(conf)
-    def extra_vars(self) -> List[str]:
-        return self._extra_vars # from command line
-    def get_env(self, conf: SystemctlConf) -> Dict[str, str]:
-        env = os.environ.copy()
-        for env_part in conf.getlist(Service, "Environment", []):
-            for name, value in self.read_env_part(self.units.expand_special(env_part, conf)):
-                env[name] = value # a '$word' is not special here (lazy expansion)
-        for env_file in conf.getlist(Service, "EnvironmentFile", []):
-            for name, value in self.read_env_file(self.units.expand_special(env_file, conf)):
-                env[name] = self.expand_env(value, env) # but nonlazy expansion here
-        logg.debug("extra-vars %s", self.extra_vars())
-        for extra in self.extra_vars():
-            if extra.startswith("@"):
-                for name, value in self.read_env_file(extra[1:]):
-                    logg.info("override %s=%s", name, value)
-                    env[name] = self.expand_env(value, env)
-            else:
-                for name, value in self.read_env_part(extra):
-                    logg.info("override %s=%s", name, value)
-                    env[name] = value # a '$word' is not special here
-        return env
-    def expand_env(self, cmd: str, env: Dict[str, str]) -> str:
-        def get_env1(m: Match[str]) -> str:
-            name = m.group(1)
-            if name in env:
-                return env[name]
-            namevar = "$%s" % name
-            logg.debug("can not expand %s", namevar)
-            return (EXPAND_KEEP_VARS and namevar or "")
-        def get_env2(m: Match[str]) -> str:
-            name = m.group(1)
-            if name in env:
-                return env[name]
-            namevar = "${%s}" % name
-            logg.debug("can not expand %s", namevar)
-            return (EXPAND_KEEP_VARS and namevar or "")
-        #
-        maxdepth = EXPAND_VARS_MAXDEPTH
-        expanded = re.sub(r"[$](\w+)", lambda m: get_env1(m), cmd.replace("\\\n", ""))
-        for _ in range(maxdepth):
-            new_text = re.sub(r"[$][{](\w+)[}]", lambda m: get_env2(m), expanded)
-            if new_text == expanded:
-                return expanded
-            expanded = new_text
-        logg.error("shell variable expansion exceeded maxdepth %s", maxdepth)
-        return expanded
+        return self.units.get_env(conf)
     def exec_newcmd(self, cmd: str, env: Dict[str, str], conf: SystemctlConf) -> Tuple[ExecMode, List[str]]:
         mode, exe = exec_path(cmd)
         if mode.noexpand:
@@ -3210,7 +3215,7 @@ class Systemctl:
         timeout = self.get_TimeoutStartSec(conf)
         doRemainAfterExit = self.get_RemainAfterExit(conf)
         runs = conf.get(Service, "Type", "simple").lower()
-        env = self.get_env(conf)
+        env = self.units.get_env(conf)
         if not self._quiet:
             okee = self.exec_check_unit(conf, env, Service, "Exec") # all...
             if not okee and NO_RELOAD: return False
@@ -3512,7 +3517,7 @@ class Systemctl:
             logg.debug("unit could not be loaded (%s)", service_unit)
             logg.error("Unit %s not found.", service_unit)
             return False
-        env = self.get_env(conf)
+        env = self.units.get_env(conf)
         if not self._quiet:
             okee = self.exec_check_unit(conf, env, Socket, "Exec") # all...
             if not okee and NO_RELOAD: return False
@@ -3696,11 +3701,11 @@ class Systemctl:
             if name in env:
                 del env[name]
         locale = {}
-        path = env.get("LOCALE_CONF", LocaleConf)
-        parts = path.split(os.pathsep)
-        for part in parts:
-            if os.path.isfile(part):
-                for var, val in self.read_env_file("-"+part):
+        localepath = env.get("LOCALE_CONF", LocaleConf)
+        localeparts = localepath.split(os.pathsep)
+        for filename in localeparts:
+            if os.path.isfile(filename):
+                for var, val in read_env_file(filename, self._root):
                     locale[var] = val
                     env[var] = val
         if "LANG" not in locale:
@@ -3820,7 +3825,7 @@ class Systemctl:
         """ helper function to test the code that is normally forked off """
         conf = self.units.load_unit_conf(unit)
         if not conf: return None
-        env = self.get_env(conf)
+        env = self.units.get_env(conf)
         for cmd in conf.getlist(Service, "ExecStart", []):
             _xe, newcmd = self.exec_newcmd(cmd, env, conf)
             self.execve_from(conf, newcmd, env)
@@ -3883,7 +3888,7 @@ class Systemctl:
         pid: Optional[int]
         timeout = self.get_TimeoutStopSec(conf)
         runs = conf.get(Service, "Type", "simple").lower()
-        env = self.get_env(conf)
+        env = self.units.get_env(conf)
         if not self._quiet:
             okee = self.exec_check_unit(conf, env, Service, "ExecStop")
             if not okee and NO_RELOAD: return False
@@ -4014,7 +4019,7 @@ class Systemctl:
             logg.debug("unit could not be loaded (%s)", service_unit)
             logg.error("Unit %s not found.", service_unit)
             return False
-        env = self.get_env(conf)
+        env = self.units.get_env(conf)
         if not self._quiet:
             okee = self.exec_check_unit(conf, env, Socket, "ExecStop")
             if not okee and NO_RELOAD: return False
@@ -4111,7 +4116,7 @@ class Systemctl:
             return False
     def do_reload_service_from(self, conf: SystemctlConf) -> bool:
         runs = conf.get(Service, "Type", "simple").lower()
-        env = self.get_env(conf)
+        env = self.units.get_env(conf)
         if not self._quiet:
             okee = self.exec_check_unit(conf, env, Service, "ExecReload")
             if not okee and NO_RELOAD: return False
@@ -6738,7 +6743,7 @@ def runcommand(command: str, *modules: str) -> int:
     elif command in ["__mask_unit"]:
         exitcode = is_not_ok(systemctl.mask_unit(*modules))
     elif command in ["__read_env_file"]:
-        print_str_list_list(list(systemctl.read_env_file(*modules)))
+        print_str_list_list(list(systemctl.units.read_env_file(*modules)))
     elif command in ["__reload_unit"]:
         exitcode = is_not_ok(systemctl.reload_unit(*modules))
     elif command in ["__reload_or_restart_unit"]:
