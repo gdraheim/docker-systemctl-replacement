@@ -1640,8 +1640,8 @@ class SystemctlLoadedUnits:
                 if filename.endswith(".target"):
                     yield (filename, os.path.join(folder, filename))
     def get_description(self, unit: str, default: str = NIX) -> str:
-        return self.get_description_from(self.load_conf(unit)) or default
-    def get_description_from(self, conf: Optional[SystemctlConf], default: str = NIX) -> str: # -> text
+        return self.get_Description(self.load_conf(unit)) or default
+    def get_Description(self, conf: Optional[SystemctlConf], default: str = NIX) -> str: # -> text
         """ Unit.Description could be empty sometimes """
         if not conf: return default or ""
         description = conf.get(Unit, "Description", default)
@@ -2137,7 +2137,7 @@ class Systemctl:
             try:
                 conf = self.units.get_conf(unit)
                 result[unit] = "loaded"
-                description[unit] = self.units.get_description_from(conf)
+                description[unit] = self.units.get_Description(conf)
                 active[unit] = self.get_active_from(conf)
                 substate[unit] = self.get_substate_from(conf) or "unknown"
             except OSError as e:
@@ -4734,7 +4734,7 @@ class Systemctl:
         return result
     def status_unit(self, unit: str) -> Tuple[int, str]:
         conf = self.units.get_conf(unit)
-        result = "%s - %s" % (unit, self.units.get_description_from(conf))
+        result = "%s - %s" % (unit, self.units.get_Description(conf))
         loaded = conf.loaded()
         if loaded:
             # pylint: disable=possibly-unused-variable
@@ -5535,12 +5535,12 @@ class Systemctl:
         loaded = conf.loaded()
         if not loaded:
             loaded = "not-loaded"
-            if "NOT-FOUND" in self.units.get_description_from(conf):
+            if "NOT-FOUND" in self.units.get_Description(conf):
                 loaded = "not-found"
         names = {unit: 1, conf.name(): 1}
         yield "Id", conf.name()
         yield "Names", " ".join(sorted(names.keys()))
-        yield "Description", self.units.get_description_from(conf) # conf.get(Unit, "Description")
+        yield "Description", self.units.get_Description(conf) # conf.get(Unit, "Description")
         yield "PIDFile", self.get_pid_file(conf) # not self.pid_file_from w/o default location
         yield "PIDFilePath", self.pid_file_from(conf)
         yield "MainPID", strE(self.active_pid_from(conf))            # status["MainPID"] or PIDFile-read
