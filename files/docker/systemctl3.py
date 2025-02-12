@@ -1342,6 +1342,7 @@ class Systemctl:
     _restarted_unit: Dict[str, List[float]]
     _restart_failed_units: Dict[str, float]
     _sockets: Dict[str, SystemctlSocket]
+    _default_services: Dict[str, List[str]] # [target-name] -> List[service-name]
     loop: threading.Lock
     def __init__(self) -> None:
         self.error = NOT_A_PROBLEM # program exitcode or process returncode
@@ -1385,6 +1386,7 @@ class Systemctl:
         self._restarted_unit = {}
         self._restart_failed_units = {}
         self._sockets = {}
+        self._default_services = {}
         self.loop = threading.Lock()
     def user(self) -> str:
         return self._user_getlogin
@@ -2947,18 +2949,16 @@ class Systemctl:
         /// SPECIAL: may run the init-loop and
             stop the named units afterwards """
         self.wait_system()
+        if init:
+            self._default_services["systemctl-start.target"] = units
+            self.start_target_system("systemctl-start.target", init = init)
+            return True
         done = True
         started_units = []
         for unit in self.sortedAfter(units):
             started_units.append(unit)
             if not self.start_unit(unit):
                 done = False
-        if init:
-            logg.info("init-loop start")
-            sig = self.init_loop_until_stop(started_units)
-            logg.info("init-loop %s", sig)
-            for unit in reversed(started_units):
-                self.stop_unit(unit)
         return done
     def start_unit(self, unit: str) -> bool:
         conf = self.load_unit_conf(unit)
@@ -5592,6 +5592,19 @@ class Systemctl:
                     results.append(unit)
         return results
     def target_default_services(self, target: Optional[str] = None, sysv: str = "S") -> List[str]:
+        """ knows about systemctl-start and systemctl-init targets with their explicit list of services to start"""
+        if target in self._default_services:
+            units = self._default_services[target]
+            services = []
+            for unit in units:
+                if unit.endswith(".target"):
+                    for target in self.get_target_list(unit):
+                        services += self.target_enabled_services(target, sysv)
+                else:
+                    services += [unit]
+            return services
+        return self.target_enabled_services(target, sysv)
+    def target_enabled_services(self, target: Optional[str] = None, sysv: str = "S") -> List[str]:
         """ get the default services for a target - this will ignore a number of services,
             use '--all' and --force' to get more services.
         """
@@ -5804,20 +5817,26 @@ class Systemctl:
             the services are stopped again by 'systemctl halt'."""
         target = self.get_default_target()
         services = self.start_target_system(target, init)
-        logg.info("[%s] system is up", target)
+        return not not services  # pylint: disable=unnecessary-negation
+    def start_target_system(self, target: str, init: bool = False) -> List[str]:
+        services = self.target_default_services(target, "S")
+        logg.debug("[%s] system starts %s", target, services)
+        units = []
+        for unit in self.sortedAfter(services):
+            units.append(unit)
+        self.sysinit_status(SubState = "starting")
+        for unit in units:
+            self.start_unit(unit)
+        logg.debug("[%s] system is up --init=%s", target, init)
         if init:
             logg.info("[%s] init-loop start", target)
             sig = self.init_loop_until_stop(services)
             logg.info("[%s] init-loop stop on %s", target, sig)
-            self.stop_system_default()
-        return not not services  # pylint: disable=unnecessary-negation
-    def start_target_system(self, target: str, init: bool = False) -> List[str]:
-        services = self.target_default_services(target, "S")
-        logg.debug("start target system %s", services)
-        self.sysinit_status(SubState = "starting")
-        self.start_units(services)
-        logg.debug("run %s target system %s", init, services)
-        return services
+            self.sysinit_status(SubState = "stopping")
+            for unit in reversed(units):
+                self.stop_unit(unit)
+            logg.debug("[%s] system is down", target)
+        return units
     def do_start_target_from(self, conf: SystemctlConf) -> bool:
         target = conf.name()
         # services = self.start_target_system(target)
@@ -5949,10 +5968,9 @@ class Systemctl:
         if missing:
             logg.error("Unit %s not found.", " and ".join(missing))
             # self.error |= NOT_FOUND
-        logg.info("init %s -> start %s", ",".join(modules), ",".join(units))
-        done = self.start_units(units, init = True)
-        logg.info("-- init is done")
-        return done # and not missing
+        self._default_services["systemctl-init.target"] = units
+        self.start_target_system("systemctl-init.target", init = True)
+        return not not units  # pylint: disable=unecessary-negation
     def start_log_files(self, units: List[str]) -> None:
         self._log_file = {}
         self._log_hold = {}
