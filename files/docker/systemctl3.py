@@ -26,7 +26,7 @@ from typing import Dict, Iterable, List, NoReturn, Optional, TextIO, Tuple, Type
 from types import TracebackType
 
 __copyright__: str = "(C) 2024-2025 Guido U. Draheim, licensed under the EUPL"
-__version__: str = "2.0.1061"
+__version__: str = "2.0.1063"
 
 import logging
 logg: logging.Logger = logging.getLogger("systemctl")
