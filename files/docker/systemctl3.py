@@ -4456,7 +4456,7 @@ class Systemctl:
             units = self.match_units(to_list(module))
             if not units:
                 missing.append(unit_of(module))
-                return False
+                continue
             for unit in units:
                 if not self.reset_failed_unit(unit):
                     logg.error("Unit %s could not be reset.", unit_of(module))
@@ -4465,6 +4465,7 @@ class Systemctl:
         if missing:
             logg.error("Unit %s not found.", " and ".join(missing))
             # self.error |= NOT_FOUND
+            self.error |= NOT_OK
         return status
     def reset_failed_unit(self, unit: str) -> bool:
         conf = self.load_unit_conf(unit)
