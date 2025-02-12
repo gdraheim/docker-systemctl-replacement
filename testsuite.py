@@ -11320,7 +11320,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
         self.assertEqual(end, 1)
         if real:
-            self.assertTrue(greps(err, "Unit zz-unknown.service is not loaded."))
+            self.assertTrue(greps(err, "Unit zz-unknown.service not loaded."))
         else:
             self.assertTrue(greps(err, "Unit zz-unknown.service not found."))
         #
