@@ -16731,7 +16731,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         pid_max = reads("/proc/sys/kernel/pid_max").strip()
         bootpid = pid_max
-        systemctl += " -c BOOT_PID_MIN={bootpid} -c DEBUG_BOOTTIME"
+        systemctl += F" -c BOOT_PID_MIN={bootpid} -c DEBUG_BOOTTIME"
         #
         cmd = F"{systemctl} enable zzz.service -vv"
         sh____(cmd)
