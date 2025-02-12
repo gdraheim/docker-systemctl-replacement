@@ -11114,7 +11114,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("-- %s>\n\t%s", log_stdout, "\n\t".join(txt_stdout))
         logg.info("-- %s>\n\t%s", log_stderr, "\n\t".join(txt_stderr))
         self.assertTrue(greps(txt_stderr, "no more services - exit init-loop"))
-        self.assertTrue(greps(txt_stderr, "init is done"))
+        self.assertTrue(greps(txt_stderr, "system is up"))
         self.assertTrue(greps(txt_stdout, "starting B"))
         self.assertTrue(greps(txt_stdout, "starting C"))
         #
