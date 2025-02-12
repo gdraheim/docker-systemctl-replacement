@@ -44,11 +44,12 @@ CP centos-postgres.dockerfile: ; ./testsuite.py test_6002
 UA ubuntu-apache2.dockerfile: ; ./testsuite.py test_6005
 DJ docker-jenkins: ; ./testsuite.py test_900*
 
+VV=-vv
 COVERAGE=--coverage
-est_%: ; rm .coverage*; rm -rf tmp/tmp.t$(notdir $@) ; ./testsuite.py "t$(notdir $@)" -vv --coverage --keep
-test_%: ; ./testsuite.py "$(notdir $@)" -vv
-real_%: ; ./testsuite.py "$(notdir $@)" -vv
-st_%: ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" -vv $(WITH2)
+est_%: ; rm .coverage*; rm -rf tmp/tmp.t$(notdir $@) ; ./testsuite.py "t$(notdir $@)" $(VV) $V --coverage --keep
+test_%: ; ./testsuite.py "$(notdir $@)" $(VV) $V
+real_%: ; ./testsuite.py "$(notdir $@)" $(VV) $V
+st_%: ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" $(VV) $V $(WITH2)
 
 test: ; $(MAKE) type && $(MAKE) tests && $(MAKE) coverage
 
