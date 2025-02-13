@@ -161,8 +161,8 @@ DefaultPath: str = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 ResetLocale: List[str] = ["LANG", "LANGUAGE", "LC_CTYPE", "LC_NUMERIC", "LC_TIME", "LC_COLLATE", "LC_MONETARY",
                "LC_MESSAGES", "LC_PAPER", "LC_NAME", "LC_ADDRESS", "LC_TELEPHONE", "LC_MEASUREMENT",
                "LC_IDENTIFICATION", "LC_ALL"]
-LocaleConf="/etc/locale.conf"
-DefaultListenBacklog=2
+LocaleConf: str ="/etc/locale.conf"
+DefaultListenBacklog: int =2
 
 ExitWhenNoMoreServices: bool = False
 ExitWhenNoMoreProcs: bool = False
@@ -1639,78 +1639,78 @@ class SystemctlLoadedUnits:
             for filename in os.listdir(folder):
                 if filename.endswith(".target"):
                     yield (filename, os.path.join(folder, filename))
-    def get_TimeoutStartSec(self, conf: SystemctlConf, section: str = Service) -> float:
+    def get_TimeoutStartSec(self, conf: SystemctlConf, section: str = Service) -> float: # pylint: disable=invalid-name
         timeout = conf.get(section, "TimeoutSec", strE(DefaultTimeoutStartSec))
         timeout = conf.get(section, "TimeoutStartSec", timeout)
         return time_to_seconds(timeout, DefaultMaximumTimeout)
-    def get_SocketTimeoutSec(self, conf: SystemctlConf, section: str = Socket) -> float:
+    def get_SocketTimeoutSec(self, conf: SystemctlConf, section: str = Socket) -> float: # pylint: disable=invalid-name
         timeout = conf.get(section, "TimeoutSec", strE(DefaultTimeoutStartSec))
         return time_to_seconds(timeout, DefaultMaximumTimeout)
-    def get_RemainAfterExit(self, conf: SystemctlConf, section: str = Service) -> bool:
+    def get_RemainAfterExit(self, conf: SystemctlConf, section: str = Service) -> bool: # pylint: disable=invalid-name
         return conf.getbool(section, "RemainAfterExit", "no")
-    def get_StatusFile(self, conf: SystemctlConf, section: str = Service) -> Optional[str]: # -> text
+    def get_StatusFile(self, conf: SystemctlConf, section: str = Service) -> Optional[str]:  # pylint: disable=invalid-name
         """ file where to store a status mark """
         return conf.get(section, "StatusFile", None)
-    def get_RuntimeDirectoryPreserve(self, conf: SystemctlConf, section: str = Service) -> bool:
+    def get_RuntimeDirectoryPreserve(self, conf: SystemctlConf, section: str = Service) -> bool: # pylint: disable=invalid-name
         return conf.getbool(section, "RuntimeDirectoryPreserve", "no")
-    def get_RuntimeDirectory(self, conf: SystemctlConf, section: str = Service) -> str:
+    def get_RuntimeDirectory(self, conf: SystemctlConf, section: str = Service) -> str: # pylint: disable=invalid-name
         return self.expand_special(conf.get(section, "RuntimeDirectory", ""), conf)
-    def get_StateDirectory(self, conf: SystemctlConf, section: str = Service) -> str:
+    def get_StateDirectory(self, conf: SystemctlConf, section: str = Service) -> str: # pylint: disable=invalid-name
         return self.expand_special(conf.get(section, "StateDirectory", ""), conf)
-    def get_CacheDirectory(self, conf: SystemctlConf, section: str = Service) -> str:
+    def get_CacheDirectory(self, conf: SystemctlConf, section: str = Service) -> str: # pylint: disable=invalid-name
         return self.expand_special(conf.get(section, "CacheDirectory", ""), conf)
-    def get_LogsDirectory(self, conf: SystemctlConf, section: str = Service) -> str:
+    def get_LogsDirectory(self, conf: SystemctlConf, section: str = Service) -> str: # pylint: disable=invalid-name
         return self.expand_special(conf.get(section, "LogsDirectory", ""), conf)
-    def get_ConfigurationDirectory(self, conf: SystemctlConf, section: str = Service) -> str:
+    def get_ConfigurationDirectory(self, conf: SystemctlConf, section: str = Service) -> str: # pylint: disable=invalid-name
         return self.expand_special(conf.get(section, "ConfigurationDirectory", ""), conf)
-    def get_RuntimeDirectoryMode(self, conf: SystemctlConf, section: str = Service) -> str:
+    def get_RuntimeDirectoryMode(self, conf: SystemctlConf, section: str = Service) -> str: # pylint: disable=invalid-name
         return conf.get(section, "RuntimeDirectoryMode", "")
-    def get_StateDirectoryMode(self, conf: SystemctlConf, section: str = Service) -> str:
+    def get_StateDirectoryMode(self, conf: SystemctlConf, section: str = Service) -> str: # pylint: disable=invalid-name
         return conf.get(section, "StateDirectoryMode", "")
-    def get_CacheDirectoryMode(self, conf: SystemctlConf, section: str = Service) -> str:
+    def get_CacheDirectoryMode(self, conf: SystemctlConf, section: str = Service) -> str: # pylint: disable=invalid-name
         return conf.get(section, "CacheDirectoryMode", "")
-    def get_LogsDirectoryMode(self, conf: SystemctlConf, section: str = Service) -> str:
+    def get_LogsDirectoryMode(self, conf: SystemctlConf, section: str = Service) -> str: # pylint: disable=invalid-name
         return conf.get(section, "LogsDirectoryMode", "")
-    def get_ConfigurationDirectoryMode(self, conf: SystemctlConf, section: str = Service) -> str:
+    def get_ConfigurationDirectoryMode(self, conf: SystemctlConf, section: str = Service) -> str: # pylint: disable=invalid-name
         return conf.get(section, "ConfigurationDirectoryMode", "")
-    def get_WorkingDirectory(self, conf: SystemctlConf) -> str:
+    def get_WorkingDirectory(self, conf: SystemctlConf) -> str: # pylint: disable=invalid-name
         return conf.get(Service, "WorkingDirectory", "")
-    def get_TimeoutStopSec(self, conf: SystemctlConf) -> float:
+    def get_TimeoutStopSec(self, conf: SystemctlConf) -> float: # pylint: disable=invalid-name
         timeout = conf.get(Service, "TimeoutSec", strE(DefaultTimeoutStartSec))
         timeout = conf.get(Service, "TimeoutStopSec", timeout)
         return time_to_seconds(timeout, DefaultMaximumTimeout)
-    def get_SendSIGKILL(self, conf: SystemctlConf) -> bool:
+    def get_SendSIGKILL(self, conf: SystemctlConf) -> bool: # pylint: disable=invalid-name
         return conf.getbool(Service, "SendSIGKILL", "yes")
-    def get_SendSIGHUP(self, conf: SystemctlConf) -> bool:
+    def get_SendSIGHUP(self, conf: SystemctlConf) -> bool: # pylint: disable=invalid-name
         return conf.getbool(Service, "SendSIGHUP", "no")
-    def get_KillMode(self, conf: SystemctlConf) -> str:
+    def get_KillMode(self, conf: SystemctlConf) -> str: # pylint: disable=invalid-name
         return conf.get(Service, "KillMode", "control-group")
-    def get_KillSignal(self, conf: SystemctlConf) -> str:
+    def get_KillSignal(self, conf: SystemctlConf) -> str: # pylint: disable=invalid-name
         return conf.get(Service, "KillSignal", "SIGTERM")
-    def get_StartLimitBurst(self, conf: SystemctlConf) -> int:
+    def get_StartLimitBurst(self, conf: SystemctlConf) -> int: # pylint: disable=invalid-name
         defaults = DefaultStartLimitBurst
         return to_int(conf.get(Service, "StartLimitBurst", strE(defaults)), defaults) # 5
-    def get_StartLimitIntervalSec(self, conf: SystemctlConf, maximum: Optional[int] = None) -> float:
+    def get_StartLimitIntervalSec(self, conf: SystemctlConf, maximum: Optional[int] = None) -> float: # pylint: disable=invalid-name
         maximum = maximum or 999
         defaults = DefaultStartLimitIntervalSec
         interval = conf.get(Service, "StartLimitIntervalSec", strE(defaults)) # 10s
         return time_to_seconds(interval, maximum)
-    def get_RestartSec(self, conf: SystemctlConf, maximum: Optional[int] = None) -> float:
+    def get_RestartSec(self, conf: SystemctlConf, maximum: Optional[int] = None) -> float: # pylint: disable=invalid-name
         maximum = maximum or DefaultMaximumTimeout
         delay = conf.get(Service, "RestartSec", strE(DefaultRestartSec))
         return time_to_seconds(delay, maximum)
     def get_description(self, unit: str, default: str = NIX) -> str:
         return self.get_Description(self.load_conf(unit)) or default
-    def get_Description(self, conf: Optional[SystemctlConf], default: str = NIX) -> str: # -> text
+    def get_Description(self, conf: Optional[SystemctlConf], default: str = NIX) -> str: # -> text # pylint: disable=invalid-name
         """ Unit.Description could be empty sometimes """
         if not conf: return default or ""
         description = conf.get(Unit, "Description", default)
         return self.expand_special(description, conf)
-    def get_User(self, conf: SystemctlConf) -> Optional[str]:
+    def get_User(self, conf: SystemctlConf) -> Optional[str]: # pylint: disable=invalid-name
         return self.expand_special(conf.get(Service, "User", ""), conf)
-    def get_Group(self, conf: SystemctlConf) -> Optional[str]:
+    def get_Group(self, conf: SystemctlConf) -> Optional[str]: # pylint: disable=invalid-name
         return self.expand_special(conf.get(Service, "Group", ""), conf)
-    def get_SupplementaryGroups(self, conf: SystemctlConf) -> List[str]:
+    def get_SupplementaryGroups(self, conf: SystemctlConf) -> List[str]: # pylint: disable=invalid-name
         return self.expand_list(conf.getlist(Service, "SupplementaryGroups", []), conf)
     def expand_list(self, group_lines: List[str], conf: SystemctlConf) -> List[str]:
         result = []
@@ -2764,16 +2764,16 @@ class Systemctl:
     def create_service_directories(self, conf: SystemctlConf) -> Dict[str, str]:
         envs = {}
         section = self.get_unit_section_from(conf)
-        nameRuntimeDirectory = self.units.get_RuntimeDirectory(conf, section)
-        modeRuntimeDirectory = self.units.get_RuntimeDirectoryMode(conf, section)
-        nameStateDirectory = self.units.get_StateDirectory(conf, section)
-        modeStateDirectory = self.units.get_StateDirectoryMode(conf, section)
-        nameCacheDirectory = self.units.get_CacheDirectory(conf, section)
-        modeCacheDirectory = self.units.get_CacheDirectoryMode(conf, section)
-        nameLogsDirectory = self.units.get_LogsDirectory(conf, section)
-        modeLogsDirectory = self.units.get_LogsDirectoryMode(conf, section)
-        nameConfigurationDirectory = self.units.get_ConfigurationDirectory(conf, section)
-        modeConfigurationDirectory = self.units.get_ConfigurationDirectoryMode(conf, section)
+        nameRuntimeDirectory = self.units.get_RuntimeDirectory(conf, section)  # pylint: disable=invalid-name
+        modeRuntimeDirectory = self.units.get_RuntimeDirectoryMode(conf, section)  # pylint: disable=invalid-name
+        nameStateDirectory = self.units.get_StateDirectory(conf, section)  # pylint: disable=invalid-name
+        modeStateDirectory = self.units.get_StateDirectoryMode(conf, section)  # pylint: disable=invalid-name
+        nameCacheDirectory = self.units.get_CacheDirectory(conf, section)  # pylint: disable=invalid-name
+        modeCacheDirectory = self.units.get_CacheDirectoryMode(conf, section)  # pylint: disable=invalid-name
+        nameLogsDirectory = self.units.get_LogsDirectory(conf, section)  # pylint: disable=invalid-name
+        modeLogsDirectory = self.units.get_LogsDirectoryMode(conf, section)  # pylint: disable=invalid-name
+        nameConfigurationDirectory = self.units.get_ConfigurationDirectory(conf, section)  # pylint: disable=invalid-name
+        modeConfigurationDirectory = self.units.get_ConfigurationDirectoryMode(conf, section)  # pylint: disable=invalid-name
         root = conf.root_mode()
         user = self.units.get_User(conf)
         group = self.units.get_Group(conf)
