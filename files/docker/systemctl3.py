@@ -6842,7 +6842,7 @@ def main() -> int:
     _o.add_option("--no-warn", action="store_true",
                   help="Do not generate certain warnings (ignored)")
     #
-    _o.add_option("--maxtimeout", metvar="SEC", default=MAXTIMEOUT,
+    _o.add_option("--maxtimeout", metavar="SEC", default=MAXTIMEOUT,
                   help="..override max timeout [%default]")
     _o.add_option("-c", "--config", metavar="NAME=VAL", action="append", default=[],
                   help="..override internal variables (INITLOOPSLEEP,SYSINIT_TARGET) {%default}")
