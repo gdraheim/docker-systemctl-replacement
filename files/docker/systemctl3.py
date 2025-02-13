@@ -1639,6 +1639,66 @@ class SystemctlLoadedUnits:
             for filename in os.listdir(folder):
                 if filename.endswith(".target"):
                     yield (filename, os.path.join(folder, filename))
+    def get_TimeoutStartSec(self, conf: SystemctlConf, section: str = Service) -> float:
+        timeout = conf.get(section, "TimeoutSec", strE(DefaultTimeoutStartSec))
+        timeout = conf.get(section, "TimeoutStartSec", timeout)
+        return time_to_seconds(timeout, DefaultMaximumTimeout)
+    def get_SocketTimeoutSec(self, conf: SystemctlConf, section: str = Socket) -> float:
+        timeout = conf.get(section, "TimeoutSec", strE(DefaultTimeoutStartSec))
+        return time_to_seconds(timeout, DefaultMaximumTimeout)
+    def get_RemainAfterExit(self, conf: SystemctlConf, section: str = Service) -> bool:
+        return conf.getbool(section, "RemainAfterExit", "no")
+    def get_StatusFile(self, conf: SystemctlConf, section: str = Service) -> Optional[str]: # -> text
+        """ file where to store a status mark """
+        return conf.get(section, "StatusFile", None)
+    def get_RuntimeDirectoryPreserve(self, conf: SystemctlConf, section: str = Service) -> bool:
+        return conf.getbool(section, "RuntimeDirectoryPreserve", "no")
+    def get_RuntimeDirectory(self, conf: SystemctlConf, section: str = Service) -> str:
+        return self.expand_special(conf.get(section, "RuntimeDirectory", ""), conf)
+    def get_StateDirectory(self, conf: SystemctlConf, section: str = Service) -> str:
+        return self.expand_special(conf.get(section, "StateDirectory", ""), conf)
+    def get_CacheDirectory(self, conf: SystemctlConf, section: str = Service) -> str:
+        return self.expand_special(conf.get(section, "CacheDirectory", ""), conf)
+    def get_LogsDirectory(self, conf: SystemctlConf, section: str = Service) -> str:
+        return self.expand_special(conf.get(section, "LogsDirectory", ""), conf)
+    def get_ConfigurationDirectory(self, conf: SystemctlConf, section: str = Service) -> str:
+        return self.expand_special(conf.get(section, "ConfigurationDirectory", ""), conf)
+    def get_RuntimeDirectoryMode(self, conf: SystemctlConf, section: str = Service) -> str:
+        return conf.get(section, "RuntimeDirectoryMode", "")
+    def get_StateDirectoryMode(self, conf: SystemctlConf, section: str = Service) -> str:
+        return conf.get(section, "StateDirectoryMode", "")
+    def get_CacheDirectoryMode(self, conf: SystemctlConf, section: str = Service) -> str:
+        return conf.get(section, "CacheDirectoryMode", "")
+    def get_LogsDirectoryMode(self, conf: SystemctlConf, section: str = Service) -> str:
+        return conf.get(section, "LogsDirectoryMode", "")
+    def get_ConfigurationDirectoryMode(self, conf: SystemctlConf, section: str = Service) -> str:
+        return conf.get(section, "ConfigurationDirectoryMode", "")
+    def get_WorkingDirectory(self, conf: SystemctlConf) -> str:
+        return conf.get(Service, "WorkingDirectory", "")
+    def get_TimeoutStopSec(self, conf: SystemctlConf) -> float:
+        timeout = conf.get(Service, "TimeoutSec", strE(DefaultTimeoutStartSec))
+        timeout = conf.get(Service, "TimeoutStopSec", timeout)
+        return time_to_seconds(timeout, DefaultMaximumTimeout)
+    def get_SendSIGKILL(self, conf: SystemctlConf) -> bool:
+        return conf.getbool(Service, "SendSIGKILL", "yes")
+    def get_SendSIGHUP(self, conf: SystemctlConf) -> bool:
+        return conf.getbool(Service, "SendSIGHUP", "no")
+    def get_KillMode(self, conf: SystemctlConf) -> str:
+        return conf.get(Service, "KillMode", "control-group")
+    def get_KillSignal(self, conf: SystemctlConf) -> str:
+        return conf.get(Service, "KillSignal", "SIGTERM")
+    def get_StartLimitBurst(self, conf: SystemctlConf) -> int:
+        defaults = DefaultStartLimitBurst
+        return to_int(conf.get(Service, "StartLimitBurst", strE(defaults)), defaults) # 5
+    def get_StartLimitIntervalSec(self, conf: SystemctlConf, maximum: Optional[int] = None) -> float:
+        maximum = maximum or 999
+        defaults = DefaultStartLimitIntervalSec
+        interval = conf.get(Service, "StartLimitIntervalSec", strE(defaults)) # 10s
+        return time_to_seconds(interval, maximum)
+    def get_RestartSec(self, conf: SystemctlConf, maximum: Optional[int] = None) -> float:
+        maximum = maximum or DefaultMaximumTimeout
+        delay = conf.get(Service, "RestartSec", strE(DefaultRestartSec))
+        return time_to_seconds(delay, maximum)
     def get_description(self, unit: str, default: str = NIX) -> str:
         return self.get_Description(self.load_conf(unit)) or default
     def get_Description(self, conf: Optional[SystemctlConf], default: str = NIX) -> str: # -> text
@@ -2294,13 +2354,13 @@ class Systemctl:
     def get_status_file(self, unit: str) -> str: # for testing
         conf = self.units.get_conf(unit)
         return self.get_status_file_from(conf)
-    def get_status_file_from(self, conf: SystemctlConf, default: Optional[str] = None) -> str:
-        status_file = self.get_StatusFile(conf, default)
+    def get_status_file_from(self, conf: SystemctlConf) -> str:
+        status_file = self.get_StatusFile(conf)
         # this not a real setting, but do the expand_special anyway
         return os_path(self._root, self.units.expand_special(status_file, conf))
-    def get_StatusFile(self, conf: SystemctlConf, default: Optional[str] = None) -> str: # -> text
+    def get_StatusFile(self, conf: SystemctlConf) -> str: # -> text
         """ file where to store a status mark """
-        status_file = conf.get(Service, "StatusFile", default)
+        status_file = self.units.get_StatusFile(conf)
         if status_file:
             return status_file
         root = conf.root_mode()
@@ -2572,8 +2632,8 @@ class Systemctl:
         return newcmd
     def remove_service_directories(self, conf: SystemctlConf, section: str = Service) -> bool:
         ok = True
-        nameRuntimeDirectory = self.get_RuntimeDirectory(conf, section)
-        keepRuntimeDirectory = self.get_RuntimeDirectoryPreserve(conf, section)
+        nameRuntimeDirectory = self.units.get_RuntimeDirectory(conf, section)
+        keepRuntimeDirectory = self.units.get_RuntimeDirectoryPreserve(conf, section)
         if not keepRuntimeDirectory:
             root = conf.root_mode()
             for name in nameRuntimeDirectory.split(" "):
@@ -2616,36 +2676,14 @@ class Systemctl:
                 ok = False # pragma: no cover
         logg.debug("%s rm_tree %s", ok and "done" or "fail", path)
         return ok
-    def get_RuntimeDirectoryPreserve(self, conf: SystemctlConf, section: str = Service) -> bool:
-        return conf.getbool(section, "RuntimeDirectoryPreserve", "no")
-    def get_RuntimeDirectory(self, conf: SystemctlConf, section: str = Service) -> str:
-        return self.units.expand_special(conf.get(section, "RuntimeDirectory", ""), conf)
-    def get_StateDirectory(self, conf: SystemctlConf, section: str = Service) -> str:
-        return self.units.expand_special(conf.get(section, "StateDirectory", ""), conf)
-    def get_CacheDirectory(self, conf: SystemctlConf, section: str = Service) -> str:
-        return self.units.expand_special(conf.get(section, "CacheDirectory", ""), conf)
-    def get_LogsDirectory(self, conf: SystemctlConf, section: str = Service) -> str:
-        return self.units.expand_special(conf.get(section, "LogsDirectory", ""), conf)
-    def get_ConfigurationDirectory(self, conf: SystemctlConf, section: str = Service) -> str:
-        return self.units.expand_special(conf.get(section, "ConfigurationDirectory", ""), conf)
-    def get_RuntimeDirectoryMode(self, conf: SystemctlConf, section: str = Service) -> str:
-        return conf.get(section, "RuntimeDirectoryMode", "")
-    def get_StateDirectoryMode(self, conf: SystemctlConf, section: str = Service) -> str:
-        return conf.get(section, "StateDirectoryMode", "")
-    def get_CacheDirectoryMode(self, conf: SystemctlConf, section: str = Service) -> str:
-        return conf.get(section, "CacheDirectoryMode", "")
-    def get_LogsDirectoryMode(self, conf: SystemctlConf, section: str = Service) -> str:
-        return conf.get(section, "LogsDirectoryMode", "")
-    def get_ConfigurationDirectoryMode(self, conf: SystemctlConf, section: str = Service) -> str:
-        return conf.get(section, "ConfigurationDirectoryMode", "")
     def clean_service_directories(self, conf: SystemctlConf, which: str = NIX) -> bool:
         ok = True
         section = self.get_unit_section_from(conf)
-        nameRuntimeDirectory = self.get_RuntimeDirectory(conf, section)
-        nameStateDirectory = self.get_StateDirectory(conf, section)
-        nameCacheDirectory = self.get_CacheDirectory(conf, section)
-        nameLogsDirectory = self.get_LogsDirectory(conf, section)
-        nameConfigurationDirectory = self.get_ConfigurationDirectory(conf, section)
+        nameRuntimeDirectory = self.units.get_RuntimeDirectory(conf, section)
+        nameStateDirectory = self.units.get_StateDirectory(conf, section)
+        nameCacheDirectory = self.units.get_CacheDirectory(conf, section)
+        nameLogsDirectory = self.units.get_LogsDirectory(conf, section)
+        nameConfigurationDirectory = self.units.get_ConfigurationDirectory(conf, section)
         root = conf.root_mode()
         for name in nameRuntimeDirectory.split(" "):
             if not name.strip(): continue
@@ -2691,11 +2729,11 @@ class Systemctl:
     def env_service_directories(self, conf: SystemctlConf) -> Dict[str, str]:
         envs = {}
         section = self.get_unit_section_from(conf)
-        nameRuntimeDirectory = self.get_RuntimeDirectory(conf, section)
-        nameStateDirectory = self.get_StateDirectory(conf, section)
-        nameCacheDirectory = self.get_CacheDirectory(conf, section)
-        nameLogsDirectory = self.get_LogsDirectory(conf, section)
-        nameConfigurationDirectory = self.get_ConfigurationDirectory(conf, section)
+        nameRuntimeDirectory = self.units.get_RuntimeDirectory(conf, section)
+        nameStateDirectory = self.units.get_StateDirectory(conf, section)
+        nameCacheDirectory = self.units.get_CacheDirectory(conf, section)
+        nameLogsDirectory = self.units.get_LogsDirectory(conf, section)
+        nameConfigurationDirectory = self.units.get_ConfigurationDirectory(conf, section)
         root = conf.root_mode()
         for name in nameRuntimeDirectory.split(" "):
             if not name.strip(): continue
@@ -2726,16 +2764,16 @@ class Systemctl:
     def create_service_directories(self, conf: SystemctlConf) -> Dict[str, str]:
         envs = {}
         section = self.get_unit_section_from(conf)
-        nameRuntimeDirectory = self.get_RuntimeDirectory(conf, section)
-        modeRuntimeDirectory = self.get_RuntimeDirectoryMode(conf, section)
-        nameStateDirectory = self.get_StateDirectory(conf, section)
-        modeStateDirectory = self.get_StateDirectoryMode(conf, section)
-        nameCacheDirectory = self.get_CacheDirectory(conf, section)
-        modeCacheDirectory = self.get_CacheDirectoryMode(conf, section)
-        nameLogsDirectory = self.get_LogsDirectory(conf, section)
-        modeLogsDirectory = self.get_LogsDirectoryMode(conf, section)
-        nameConfigurationDirectory = self.get_ConfigurationDirectory(conf, section)
-        modeConfigurationDirectory = self.get_ConfigurationDirectoryMode(conf, section)
+        nameRuntimeDirectory = self.units.get_RuntimeDirectory(conf, section)
+        modeRuntimeDirectory = self.units.get_RuntimeDirectoryMode(conf, section)
+        nameStateDirectory = self.units.get_StateDirectory(conf, section)
+        modeStateDirectory = self.units.get_StateDirectoryMode(conf, section)
+        nameCacheDirectory = self.units.get_CacheDirectory(conf, section)
+        modeCacheDirectory = self.units.get_CacheDirectoryMode(conf, section)
+        nameLogsDirectory = self.units.get_LogsDirectory(conf, section)
+        modeLogsDirectory = self.units.get_LogsDirectoryMode(conf, section)
+        nameConfigurationDirectory = self.units.get_ConfigurationDirectory(conf, section)
+        modeConfigurationDirectory = self.units.get_ConfigurationDirectoryMode(conf, section)
         root = conf.root_mode()
         user = self.units.get_User(conf)
         group = self.units.get_Group(conf)
@@ -3008,14 +3046,12 @@ class Systemctl:
         if not os.path.isdir(log_folder):
             os.makedirs(log_folder)
         return open(os.path.join(log_file), "a")
-    def get_WorkingDirectory(self, conf: SystemctlConf) -> str:
-        return conf.get(Service, "WorkingDirectory", "")
     def chdir_workingdir(self, conf: SystemctlConf) -> Union[str, bool, None]:
         """ if specified then change the working directory """
         # the original systemd will start in '/' even if User= is given
         if self._root:
             os.chdir(self._root)
-        workingdir = self.get_WorkingDirectory(conf)
+        workingdir = self.units.get_WorkingDirectory(conf)
         mode, workingdir = load_path(workingdir)
         if workingdir:
             into = os_path(self._root, self.units.expand_special(workingdir, conf))
@@ -3186,15 +3222,6 @@ class Systemctl:
             logg.error("Unit %s not for --user mode", unit)
             return False
         return self.start_unit_from(conf)
-    def get_TimeoutStartSec(self, conf: SystemctlConf) -> float:
-        timeout = conf.get(Service, "TimeoutSec", strE(DefaultTimeoutStartSec))
-        timeout = conf.get(Service, "TimeoutStartSec", timeout)
-        return time_to_seconds(timeout, DefaultMaximumTimeout)
-    def get_SocketTimeoutSec(self, conf: SystemctlConf) -> float:
-        timeout = conf.get(Socket, "TimeoutSec", strE(DefaultTimeoutStartSec))
-        return time_to_seconds(timeout, DefaultMaximumTimeout)
-    def get_RemainAfterExit(self, conf: SystemctlConf) -> bool:
-        return conf.getbool(Service, "RemainAfterExit", "no")
     def start_unit_from(self, conf: SystemctlConf) -> bool:
         if not conf: return False
         if self.syntax_check(conf) > 100: return False
@@ -3212,8 +3239,8 @@ class Systemctl:
             logg.error("start not implemented for unit type: %s", conf.name())
             return False
     def do_start_service_from(self, conf: SystemctlConf) -> bool:
-        timeout = self.get_TimeoutStartSec(conf)
-        doRemainAfterExit = self.get_RemainAfterExit(conf)
+        timeout = self.units.get_TimeoutStartSec(conf)
+        doRemainAfterExit = self.units.get_RemainAfterExit(conf)
         runs = conf.get(Service, "Type", "simple").lower()
         env = self.units.get_env(conf)
         if not self._quiet:
@@ -3864,10 +3891,6 @@ class Systemctl:
             return False
         return self.stop_unit_from(conf)
 
-    def get_TimeoutStopSec(self, conf: SystemctlConf) -> float:
-        timeout = conf.get(Service, "TimeoutSec", strE(DefaultTimeoutStartSec))
-        timeout = conf.get(Service, "TimeoutStopSec", timeout)
-        return time_to_seconds(timeout, DefaultMaximumTimeout)
     def stop_unit_from(self, conf: SystemctlConf) -> bool:
         if not conf: return False
         if self.syntax_check(conf) > 100: return False
@@ -3886,7 +3909,7 @@ class Systemctl:
             return False
     def do_stop_service_from(self, conf: SystemctlConf) -> bool:
         pid: Optional[int]
-        timeout = self.get_TimeoutStopSec(conf)
+        timeout = self.units.get_TimeoutStopSec(conf)
         runs = conf.get(Service, "Type", "simple").lower()
         env = self.units.get_env(conf)
         if not self._quiet:
@@ -4385,12 +4408,12 @@ class Systemctl:
             return self.do_kill_unit_from(conf)
     def do_kill_unit_from(self, conf: SystemctlConf) -> bool:
         started = time.time()
-        doSendSIGKILL = self.get_SendSIGKILL(conf)
-        doSendSIGHUP = self.get_SendSIGHUP(conf)
-        useKillMode = self.get_KillMode(conf)
-        useKillSignal = self.get_KillSignal(conf)
+        doSendSIGKILL = self.units.get_SendSIGKILL(conf)
+        doSendSIGHUP = self.units.get_SendSIGHUP(conf)
+        useKillMode = self.units.get_KillMode(conf)
+        useKillSignal = self.units.get_KillSignal(conf)
         kill_signal = getattr(signal, useKillSignal)
-        timeout = self.get_TimeoutStopSec(conf)
+        timeout = self.units.get_TimeoutStopSec(conf)
         status_file = self.get_status_file_from(conf)
         size = os.path.exists(status_file) and os.path.getsize(status_file)
         logg.info("STATUS %s %s", status_file, size)
@@ -5556,18 +5579,18 @@ class Systemctl:
         yield "User", self.units.get_User(conf) or ""
         yield "Group", self.units.get_Group(conf) or ""
         yield "SupplementaryGroups", " ".join(self.units.get_SupplementaryGroups(conf))
-        yield "TimeoutStartUSec", seconds_to_time(self.get_TimeoutStartSec(conf))
-        yield "TimeoutStopUSec", seconds_to_time(self.get_TimeoutStopSec(conf))
+        yield "TimeoutStartUSec", seconds_to_time(self.units.get_TimeoutStartSec(conf))
+        yield "TimeoutStopUSec", seconds_to_time(self.units.get_TimeoutStopSec(conf))
         yield "NeedDaemonReload", "no"
-        yield "SendSIGKILL", strYes(self.get_SendSIGKILL(conf))
-        yield "SendSIGHUP", strYes(self.get_SendSIGHUP(conf))
-        yield "KillMode", strE(self.get_KillMode(conf))
-        yield "KillSignal", strE(self.get_KillSignal(conf))
-        yield "StartLimitBurst", strE(self.get_StartLimitBurst(conf))
-        yield "StartLimitIntervalSec", seconds_to_time(self.get_StartLimitIntervalSec(conf))
-        yield "RestartSec", seconds_to_time(self.get_RestartSec(conf))
-        yield "RemainAfterExit", strYes(self.get_RemainAfterExit(conf))
-        yield "WorkingDirectory", strE(self.get_WorkingDirectory(conf))
+        yield "SendSIGKILL", strYes(self.units.get_SendSIGKILL(conf))
+        yield "SendSIGHUP", strYes(self.units.get_SendSIGHUP(conf))
+        yield "KillMode", strE(self.units.get_KillMode(conf))
+        yield "KillSignal", strE(self.units.get_KillSignal(conf))
+        yield "StartLimitBurst", strE(self.units.get_StartLimitBurst(conf))
+        yield "StartLimitIntervalSec", seconds_to_time(self.units.get_StartLimitIntervalSec(conf))
+        yield "RestartSec", seconds_to_time(self.units.get_RestartSec(conf))
+        yield "RemainAfterExit", strYes(self.units.get_RemainAfterExit(conf))
+        yield "WorkingDirectory", strE(self.units.get_WorkingDirectory(conf))
         env_parts = []
         for env_part in conf.getlist(Service, "Environment", []):
             env_parts.append(self.units.expand_special(env_part, conf))
@@ -5578,14 +5601,6 @@ class Systemctl:
             env_files.append(self.units.expand_special(env_file, conf))
         if env_files:
             yield "EnvironmentFile", " ".join(env_files)
-    def get_SendSIGKILL(self, conf: SystemctlConf) -> bool:
-        return conf.getbool(Service, "SendSIGKILL", "yes")
-    def get_SendSIGHUP(self, conf: SystemctlConf) -> bool:
-        return conf.getbool(Service, "SendSIGHUP", "no")
-    def get_KillMode(self, conf: SystemctlConf) -> str:
-        return conf.get(Service, "KillMode", "control-group")
-    def get_KillSignal(self, conf: SystemctlConf) -> str:
-        return conf.get(Service, "KillSignal", "SIGTERM")
     #
     igno_centos = ["netconsole", "network"]
     igno_opensuse = ["raw", "pppoe", "*.local", "boot.*", "rpmconf*", "postfix*"]
@@ -6052,19 +6067,6 @@ class Systemctl:
                 logg.error("can not close log: %s\n\t%s", unit, e)
         self._log_file = {}
         self._log_hold = {}
-
-    def get_StartLimitBurst(self, conf: SystemctlConf) -> int:
-        defaults = DefaultStartLimitBurst
-        return to_int(conf.get(Service, "StartLimitBurst", strE(defaults)), defaults) # 5
-    def get_StartLimitIntervalSec(self, conf: SystemctlConf, maximum: Optional[int] = None) -> float:
-        maximum = maximum or 999
-        defaults = DefaultStartLimitIntervalSec
-        interval = conf.get(Service, "StartLimitIntervalSec", strE(defaults)) # 10s
-        return time_to_seconds(interval, maximum)
-    def get_RestartSec(self, conf: SystemctlConf, maximum: Optional[int] = None) -> float:
-        maximum = maximum or DefaultMaximumTimeout
-        delay = conf.get(Service, "RestartSec", strE(DefaultRestartSec))
-        return time_to_seconds(delay, maximum)
     def restart_failed_units(self, units: List[str], maximum: Optional[int] = None) -> List[str]:
         """ This function will restart failed units.
         /
@@ -6088,7 +6090,7 @@ class Systemctl:
                 if restartPolicy in ["no", "on-success"]:
                     logg.debug("[%s] [%s] Current NoCheck (Restart=%s)", me, unit, restartPolicy)
                     continue
-                restartSec = self.get_RestartSec(conf)
+                restartSec = self.units.get_RestartSec(conf)
                 if restartSec == 0:
                     if InitLoopSleep > 1:
                         logg.warning("[%s] set InitLoopSleep from %ss to 1 (caused by RestartSec=0!)",
@@ -6107,8 +6109,8 @@ class Systemctl:
                     if unit in self._restart_failed_units:
                         del self._restart_failed_units[unit]
                     continue
-                limitBurst = self.get_StartLimitBurst(conf)
-                limitSecs = self.get_StartLimitIntervalSec(conf)
+                limitBurst = self.units.get_StartLimitBurst(conf)
+                limitSecs = self.units.get_StartLimitIntervalSec(conf)
                 if limitBurst > 1 and limitSecs >= 1:
                     try:
                         if unit not in self._restarted_unit:
