@@ -11941,7 +11941,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         #
         sh____(F"{systemctl} daemon-reload")
-        cmd = F"{systemctl} __is_enabled zz-unknown.service {vv}"
+        cmd = F"{systemctl} __is_enabled_unit zz-unknown.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
         self.assertEqual(end, 1)

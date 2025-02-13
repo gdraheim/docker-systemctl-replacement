@@ -5310,12 +5310,12 @@ class Systemctl:
         infos: List[str] = []
         for unit in units:
             infos += [self.enabled_unit(unit)]
-            if self.is_enabled(unit):
+            if self.is_enabled_unit(unit):
                 result = True
         if not result:
             self.error |= NOT_OK
         return infos
-    def is_enabled(self, unit: str) -> bool:
+    def is_enabled_unit(self, unit: str) -> bool:
         conf = self.units.load_conf(unit)
         if conf is None:
             logg.error("Unit %s not found.", unit)
@@ -5326,7 +5326,7 @@ class Systemctl:
             return False
         if self.units.is_sysv_file(unit_file):
             return self.is_enabled_sysv(unit_file)
-        state = self.get_enabled_from(conf)
+        state = self.is_enabled(conf)
         if state in ["enabled", "static"]:
             return True
         return False # ["disabled", "masked"]
@@ -5340,8 +5340,8 @@ class Systemctl:
             if state:
                 return "enabled"
             return "disabled"
-        return self.get_enabled_from(conf)
-    def get_enabled_from(self, conf: SystemctlConf) -> str:
+        return self.is_enabled((conf)
+    def is_enabled(self, conf: SystemctlConf) -> str:
         if conf.masked:
             return "masked"
         wanted = self.units.get_InstallTarget(conf)
@@ -6735,8 +6735,8 @@ def runcommand(command: str, *modules: str) -> int:
         exitcode = is_not_ok(systemctl.disable_unit(*modules))
     elif command in ["__enable_unit"]:
         exitcode = is_not_ok(systemctl.enable_unit(*modules))
-    elif command in ["__is_enabled"]:
-        exitcode = is_not_ok(systemctl.is_enabled(*modules))
+    elif command in ["__is_enabled_unit"]:
+        exitcode = is_not_ok(systemctl.is_enabled_unit(*modules))
     elif command in ["__killall"]:
         exitcode = is_not_ok(systemctl.killall(*modules))
     elif command in ["__kill_unit"]:
