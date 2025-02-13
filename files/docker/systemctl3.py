@@ -165,6 +165,8 @@ ResetLocale: List[str] = ["LANG", "LANGUAGE", "LC_CTYPE", "LC_NUMERIC", "LC_TIME
                "LC_IDENTIFICATION", "LC_ALL"]
 LocaleConf: str ="/etc/locale.conf"
 DefaultListenBacklog: int =2
+NOTIFY_TIMEOUT = 3
+NOTIFY_QUICKER = 100
 
 ExitWhenNoMoreServices: bool = False
 ExitWhenNoMoreProcs: bool = False
@@ -3318,10 +3320,10 @@ class Systemctl:
             logg.info("no $NOTIFY_SOCKET exists")
             return {}
         #
-        lapseTimeout = max(3, int(timeout / 100))
-        mainpidTimeout = lapseTimeout # Apache sends READY before MAINPID
+        notify_timeout = max(NOTIFY_TIMEOUT, int(timeout / NOTIFY_QUICKER))  # timeout is usually set to TimeoutStart
+        wait_mainpid = notify_timeout # Apache sends READY before MAINPID
         status = ""
-        logg.info("wait $NOTIFY_SOCKET, timeout %s (lapse %s)", timeout, lapseTimeout)
+        logg.info("wait $NOTIFY_SOCKET, timeout %s (waiting %s)", timeout, notify_timeout)
         waiting = " ---"
         results: Dict[str, str] = {}
         for attempt in range(int(timeout)+1):
@@ -3342,16 +3344,16 @@ class Systemctl:
                     hint="seen notify %s     " % (waiting)
                     logg.debug("%s :%s=%s", hint, name, value)
             if status != results.get("STATUS", ""):
-                mainpidTimeout = lapseTimeout
+                wait_mainpid = notify_timeout
                 status = results.get("STATUS", "")
             if "READY" not in results:
-                time.sleep(1) # until TimeoutStart
+                time.sleep(1) # until TimeoutStart/NOTIFY_QUICKER
                 continue
             if "MAINPID" not in results and not pid_file:
-                mainpidTimeout -= 1
-                if mainpidTimeout > 0:
-                    waiting = "%4i" % (-mainpidTimeout)
-                    time.sleep(1) # until TimeoutStart
+                wait_mainpid -= 1
+                if wait_mainpid > 0:
+                    waiting = "%4i" % (-wait_mainpid)
+                    time.sleep(1) # until TimeoutStart/NOTIFY_QUICKER
                     continue
             break # READY and MAINPID
         if "READY" not in results:
