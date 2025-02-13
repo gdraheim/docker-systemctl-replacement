@@ -1666,7 +1666,6 @@ class SystemctlLoadedUnits:
         return targets
     def get_InstallTarget(self, conf: SystemctlConf, default: Optional[str] = None) -> Optional[str]: # pylint: disable=invalid-name
         if not conf: return default
-        # TODO: we could check that wantedby is a valid runlevel target
         return conf.get(Install, "WantedBy", default, True)
     def get_TimeoutStartSec(self, conf: SystemctlConf, section: str = Service) -> float: # pylint: disable=invalid-name
         timeout = conf.get(section, "TimeoutSec", nix_str(DefaultTimeoutStartSec))
@@ -2062,10 +2061,21 @@ class SystemctlLoadedUnits:
                 return status
         return None
     def syntax_check(self, conf: SystemctlConf) -> int:
+        errors = 0
         filename = conf.filename()
         if filename and filename.endswith(".service"):
-            return self.syntax_check_service(conf)
-        return 0
+            errors += self.syntax_check_service(conf)
+        errors += self.syntax_check_enable(conf)
+        return errors
+    def syntax_check_enable(self, conf: SystemctlConf, section: str = Install) -> int:
+        errors = 0
+        unit = conf.name()
+        target = conf.get(section, "WantedBy", NIX)
+        if target and target not in SYSD_TARGET_REQUIRES:
+            logg.error("%s: [Install] WantedBy unknown: %s", unit, target)
+            logg.info(" must be in %s", list(SYSD_TARGET_REQUIRES.keys()))
+            errors += 1
+        return errors
     def syntax_check_service(self, conf: SystemctlConf, section: str = Service) -> int:
         unit = conf.name()
         if not conf.data.has_section(Service):
