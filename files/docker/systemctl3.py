@@ -157,7 +157,7 @@ DefaultTimeoutAbortSec: int = 3600 # officially it none (usually larget than Sto
 DefaultRestartSec: float = 0.1       # official value of 100ms
 DefaultStartLimitIntervalSec: int = 10 # official value
 DefaultStartLimitBurst: int = 5        # official value
-InitLoopSleep: int = 5
+INITLOOPSLEEP: int = 5
 MAXLOCKWAIT: int = 0 # equals MAXTIMEOUT
 DEFAULT_PATH: str = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 RESET_LOCALE: str = """LANG LANGUAGE LC_CTYPE LC_NUMERIC LC_TIME LC_COLLATE LC_MONETARY LC_MESSAGES
@@ -2400,7 +2400,7 @@ class Systemctl:
         self._restart_failed_units = {}
         self._sockets = {}
         self._default_services = {}
-        self.loop_sleep = InitLoopSleep
+        self.loop_sleep = INITLOOPSLEEP
         self.loop_lock = threading.Lock()
         self.units = SystemctlLoadedUnits()
     def get_unit_type(self, module: str) -> Optional[str]:
@@ -6063,10 +6063,10 @@ class Systemctl:
         """ This function will restart failed units.
         /
         NOTE that with standard settings the LimitBurst implementation has no effect. If
-        the InitLoopSleep is ticking at the Default of 5sec and the LimitBurst Default
-        is 5x within a Default 10secs time frame then within those 10sec only 2 loop
+        the init-loop is ticking at the default of INITLOOPSLEEP of 5sec and the LimitBurst 
+        default is 5x within a default 10secs time frame then within those 10sec only 2 loop
         rounds have come here checking for possible restarts. You can directly shorten
-        the interval ('-c InitLoopSleep=1') or have it indirectly shorter from the
+        the interval ('-c INITLOOPSLEEP=1') or have it indirectly shorter from the
         service descriptor's RestartSec ("RestartSec=2s").
         """
         me = os.getpid()
@@ -6844,7 +6844,7 @@ def main() -> int:
                   help="Do not generate certain warnings (ignored)")
     #
     _o.add_option("-c", "--config", metavar="NAME=VAL", action="append", default=[],
-                  help="..override internal variables (InitLoopSleep,SYSINIT_TARGET) {%default}")
+                  help="..override internal variables (INITLOOPSLEEP,SYSINIT_TARGET) {%default}")
     _o.add_option("-e", "--extra-vars", "--environment", metavar="NAME=VAL", action="append", default=[],
                   help="..override settings in the syntax of 'Environment='")
     _o.add_option("-v", "--verbose", action="count", default=0,
@@ -6908,7 +6908,7 @@ def main() -> int:
             elif isinstance(old, int):
                 logg.debug("int %s=%s", nam, val)
                 globals()[nam] = int(val)
-                logg.debug("... InitLoopSleep=%s", InitLoopSleep)
+                logg.debug("... INITLOOPSLEEP=%s", INITLOOPSLEEP)
             elif isinstance(old, stringtypes):
                 logg.debug("str %s=%s", nam, val)
                 globals()[nam] = val.strip()
