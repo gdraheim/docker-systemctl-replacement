@@ -15,6 +15,7 @@ import time
 import signal
 import sys
 import os
+import glob
 import errno
 import collections
 import shlex
@@ -2060,8 +2061,87 @@ class SystemctlLoadedUnits:
             if status:
                 return status
         return None
+    def check_file_conditions(self, conf: SystemctlConf, section: str = Unit, warning: int = logging.WARNING) -> List[str]:
+        # added in Systemctl 244
+        problems: List[str] = []
+        unit = conf.name()
+        for spec in ["ConditionPathExistsGlob", "AssertPathExistsGlob"]:
+            warn = logging.ERROR if "Assert" in spec else logging.WARNING
+            checklist = conf.getlist(section, spec)
+            for checkfile in checklist:
+                mode, filename = checkprefix(checkfile)
+                filepath = os_path(self._root, filename)
+                found = len(glob.glob(filepath))
+                if found:
+                    if "!" in mode:
+                        logg.log(warn, "%s: %s - found %s files in: %s", unit, spec, found, filename)
+                else:
+                    if "!" not in mode:
+                        logg.log(warn, "%s: %s - no files not found: %s", unit, spec, filename)
+                        problems += [filename]
+        for spec in ["ConditionPathExists", "ConditionPathIsDirectory", "ConditionPathIsSymbolicLink", "ConditionPathIsMountPoint"
+                     "ConditionPathIsReadWrite", "ConditionDirectoryNotEmpty", "ConditionFileIsExecutable", "ConditionFileNotEmpty",
+                     "AssertPathExists", "AssertPathIsDirectory", "AssertPathIsSymbolicLink", "AssertPathIsMountPoint"
+                     "AssertPathIsReadWrite", "AssertDirectoryNotEmpty", "AssertFileIsExecutable", "AssertFileNotEmpty"]:
+            warn = logging.ERROR if "Assert" in spec else logging.WARNING
+            checklist = conf.getlist(section, spec)
+            for checkfile in checklist:
+                mode, checkname = checkprefix(checkfile)
+                filename = self.expand_special(checkname, conf)
+                if not os.path.isabs(filename):
+                    logg.error("%s: %s - path not absolute: %s", unit, spec, filename)
+                    problems += [filename]
+                    continue
+                filepath = os_path(self._root, filename)
+                if not os.path.exists(filepath):
+                    if "!" not in mode:
+                        logg.log(warn, "%s: %s - path not found: %s", unit, spec, filename)
+                        problems += [filename]
+                else:
+                    if "!" in mode:
+                        logg.log(warn, "%s: %s - must not exist: %s", unit, spec, filename)
+                        problems += [filename]
+                    else:
+                        if "FileNotEmpty" in spec:
+                            if not os.path.isfile(filepath):
+                                logg.log(warn, "%s: %s - not a file: %s", unit, spec, filename)
+                                problems += [filename]
+                            elif not os.path.getsize(filepath):
+                                logg.log(warn, "%s: %s - file is empty: %s", unit, spec, filename)
+                                problems += [filename]
+                        if "DirectoryNotEmpty" in spec:
+                            if not os.path.isdir(filepath):
+                                logg.log(warn, "%s: %s - not a directory: %s", unit, spec, filename)
+                                problems += [filename]
+                            elif not os.listdir(filepath):
+                                logg.log(warn, "%s: %s - directory is empty: %s", unit, spec, filename)
+                                problems += [filename]
+                        if "IsDirectory" in spec:
+                            if not os.path.isdir(filepath):
+                                logg.log(warn, "%s: %s - not a directory: %s", unit, spec, filename)
+                                problems += [filename]
+                        if "IsSymbolicLink" in spec:
+                            if not os.path.islink(filepath):
+                                logg.log(warn, "%s: %s - not a symbolic link: %s", unit, spec, filename)
+                                problems += [filename]
+                        if "IsMountPoint" in spec:
+                            if not os.path.ismount(filepath):
+                                logg.log(warn, "%s: %s - not a mount point: %s", unit, spec, filename)
+                                problems += [filename]
+                        if "IsReadWrite" in spec:
+                            if os.access(filepath, os.R_OK):
+                                logg.log(warn, "%s: %s - not readable: %s", unit, spec, filename)
+                                problems += [filename]
+                            elif os.access(filepath, os.W_OK):
+                                logg.log(warn, "%s: %s - not writable: %s", unit, spec, filename)
+                                problems += [filename]
+                        if "IsExecutable" in spec:
+                            if os.access(filepath, os.EX_OK):
+                                logg.log(warn, "%s: %s - not executable: %s", unit, spec, filename)
+                                problems += [filename]
+        return problems
     def syntax_check(self, conf: SystemctlConf) -> int:
-        errors = 0
+        errors = len(self.check_file_conditions(conf, warning=logging.INFO)) # conditions may be get active later
         filename = conf.filename()
         if filename and filename.endswith(".service"):
             errors += self.syntax_check_service(conf)
@@ -3426,6 +3506,10 @@ class Systemctl:
             logg.debug(" start unit %s => %s", conf.name(), q_str(conf.filename()))
             return self.do_start_unit_from(conf)
     def do_start_unit_from(self, conf: SystemctlConf) -> bool:
+        found = self.units.check_file_conditions(conf, warning=logging.ERROR)
+        if found:
+            logg.error("%s: %s conditions have failed: can not start", conf.name(), len(found))
+            return False
         if conf.name().endswith(".service"):
             return self.do_start_service_from(conf)
         elif conf.name().endswith(".socket"):
