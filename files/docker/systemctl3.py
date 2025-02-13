@@ -2045,7 +2045,218 @@ class SystemctlLoadedUnits:
             if status:
                 return status
         return None
- 
+    def syntax_check(self, conf: SystemctlConf) -> int:
+        filename = conf.filename()
+        if filename and filename.endswith(".service"):
+            return self.syntax_check_service(conf)
+        return 0
+    def syntax_check_service(self, conf: SystemctlConf, section: str = Service) -> int:
+        unit = conf.name()
+        if not conf.data.has_section(Service):
+            logg.error(" %s: a .service file without [Service] section", unit)
+            return 101
+        errors = 0
+        haveType = conf.get(section, "Type", "simple")
+        haveExecStart = conf.getlist(section, "ExecStart", [])
+        haveExecStop = conf.getlist(section, "ExecStop", [])
+        haveExecReload = conf.getlist(section, "ExecReload", [])
+        usedExecStart: List[str] = []
+        usedExecStop: List[str] = []
+        usedExecReload: List[str] = []
+        if haveType not in ["simple", "exec", "forking", "notify", "oneshot", "dbus", "idle"]:
+            logg.error(" %s: Failed to parse service type, ignoring: %s", unit, haveType)
+            errors += 100
+        for line in haveExecStart:
+            mode, exe = exec_path(line)
+            if not exe.startswith("/"):
+                if mode.check:
+                    logg.error("  %s: %s Executable path is not absolute.", unit, section)
+                else:
+                    logg.warning("%s: %s Executable path is not absolute.", unit, section)
+                logg.info("%s: %s exe = %s", unit, section, exe)
+                errors += 1
+            usedExecStart.append(line)
+        for line in haveExecStop:
+            mode, exe = exec_path(line)
+            if not exe.startswith("/"):
+                if mode.check:
+                    logg.error("  %s: %s Executable path is not absolute.", unit, section)
+                else:
+                    logg.warning("%s: %s Executable path is not absolute.", unit, section)
+                logg.info("%s: %s exe = %s", unit, section, exe)
+                errors += 1
+            usedExecStop.append(line)
+        for line in haveExecReload:
+            mode, exe = exec_path(line)
+            if not exe.startswith("/"):
+                if mode.check:
+                    logg.error("  %s: %s Executable path is not absolute.", unit, section)
+                else:
+                    logg.warning("%s: %s Executable path is not absolute.", unit, section)
+                logg.info("%s: %s exe = %s", unit, section, exe)
+                errors += 1
+            usedExecReload.append(line)
+        if haveType in ["simple", "exec", "notify", "forking", "idle"]:
+            if not usedExecStart and not usedExecStop:
+                logg.error(" %s: %s lacks both ExecStart and ExecStop= setting. Refusing.", unit, section)
+                errors += 101
+            elif not usedExecStart and haveType != "oneshot":
+                logg.error(" %s: %s has no ExecStart= setting, which is only allowed for Type=oneshot services. Refusing.", unit, section)
+                errors += 101
+        if len(usedExecStart) > 1 and haveType != "oneshot":
+            logg.error(" %s: there may be only one %s ExecStart statement (unless for 'oneshot' services)."
+                       + "\n\t\t\tYou can use ExecStartPre / ExecStartPost to add additional commands.", unit, section)
+            errors += 1
+        if len(usedExecStop) > 1 and haveType != "oneshot":
+            logg.info(" %s: there should be only one %s ExecStop statement (unless for 'oneshot' services)."
+                      + "\n\t\t\tYou can use ExecStopPost to add additional commands (also executed on failed Start)", unit, section)
+        if len(usedExecReload) > 1:
+            logg.info(" %s: there should be only one %s ExecReload statement."
+                      + "\n\t\t\tUse ' ; ' for multiple commands (ExecReloadPost or ExedReloadPre do not exist)", unit, section)
+        if len(usedExecReload) > 0 and "/bin/kill " in usedExecReload[0]:
+            logg.warning(" %s: the use of /bin/kill is not recommended for %s ExecReload as it is asynchronous."
+                         + "\n\t\t\tThat means all the dependencies will perform the reload simultaneously / out of order.", unit, section)
+        if conf.getlist(Service, "ExecRestart", []):  # pragma: no cover
+            logg.error(" %s: there no such thing as an %s ExecRestart (ignored)", unit, section)
+        if conf.getlist(Service, "ExecRestartPre", []):  # pragma: no cover
+            logg.error(" %s: there no such thing as an %s ExecRestartPre (ignored)", unit, section)
+        if conf.getlist(Service, "ExecRestartPost", []):  # pragma: no cover
+            logg.error(" %s: there no such thing as an %s ExecRestartPost (ignored)", unit, section)
+        if conf.getlist(Service, "ExecReloadPre", []):  # pragma: no cover
+            logg.error(" %s: there no such thing as an %s ExecReloadPre (ignored)", unit, section)
+        if conf.getlist(Service, "ExecReloadPost", []):  # pragma: no cover
+            logg.error(" %s: there no such thing as an %s ExecReloadPost (ignored)", unit, section)
+        if conf.getlist(Service, "ExecStopPre", []):  # pragma: no cover
+            logg.error(" %s: there no such thing as an %s ExecStopPre (ignored)", unit, section)
+        for env_file in conf.getlist(Service, "EnvironmentFile", []):
+            if env_file.startswith("-"): continue
+            if not os.path.isfile(os_path(self._root, self.expand_special(env_file, conf))):
+                logg.error(" %s: Failed to load environment files: %s", unit, env_file)
+                errors += 101
+        return errors
+    def exec_check(self, conf: SystemctlConf, env: Dict[str, str], section: str = Service, exectype: str = NIX) -> bool:
+        if conf is None: # pragma: no cover (is never null)
+            return True
+        if not conf.data.has_section(section):
+            return True  # pragma: no cover
+        if self.is_sysv_file(conf.filename()):
+            return True # we don't care about that
+        unit = conf.name()
+        abspath = 0
+        notexists = 0
+        badusers = 0
+        badgroups = 0
+        for execs in ["ExecStartPre", "ExecStart", "ExecStartPost", "ExecStop", "ExecStopPost", "ExecReload"]:
+            if not execs.startswith(exectype):
+                continue
+            for cmd in conf.getlist(section, execs, []):
+                mode, newcmd = self.expand_cmd(cmd, env, conf)
+                if not newcmd:
+                    continue
+                exe = newcmd[0]
+                if not exe:
+                    continue
+                if exe[0] != "/":
+                    logg.error(" %s: Exec is not an absolute path:  %s=%s", unit, execs, cmd)
+                    abspath += 1
+                if not os.path.isfile(exe):
+                    logg.error(" %s: Exec command does not exist: (%s) %s", unit, execs, exe)
+                    if mode.check:
+                        notexists += 1
+                    newexe1 = os.path.join("/usr/bin", exe)
+                    newexe2 = os.path.join("/bin", exe)
+                    if os.path.exists(newexe1):
+                        logg.error(" %s: but this does exist: %s  %s", unit, " " * len(execs), newexe1)
+                    elif os.path.exists(newexe2):
+                        logg.error(" %s: but this does exist: %s      %s", unit, " " * len(execs), newexe2)
+        users = [conf.get(section, "User", ""), conf.get(section, "SocketUser", "")]
+        groups = [conf.get(section, "Group", ""), conf.get(section, "SocketGroup", "")] + conf.getlist(section, "SupplementaryGroups")
+        for user in users:
+            if user:
+                try: pwd.getpwnam(self.expand_special(user, conf))
+                except (OSError, LookupError) as e:
+                    logg.error(" %s: User does not exist: %s (%s)", unit, user, getattr(e, "__doc__", ""))
+                    badusers += 1
+        for group in groups:
+            if group:
+                try: grp.getgrnam(self.expand_special(group, conf))
+                except (OSError, LookupError) as e:
+                    logg.error(" %s: Group does not exist: %s (%s)", unit, group, getattr(e, "__doc__", ""))
+                    badgroups += 1
+        tmpproblems = 0
+        for setting in ("RootDirectory", "RootImage", "BindPaths", "BindReadOnlyPaths",
+                        "ReadWritePaths", "ReadOnlyPaths", "TemporaryFileSystem"):
+            setting_value = conf.get(section, setting, "")
+            if setting_value:
+                logg.info("%s: %s private directory remounts ignored: %s=%s", unit, section, setting, setting_value)
+                tmpproblems += 1
+        for setting in ("PrivateTmp", "PrivateDevices", "PrivateNetwork", "PrivateUsers", "DynamicUser",
+                        "ProtectSystem", "ProjectHome", "ProtectHostname", "PrivateMounts", "MountAPIVFS"):
+            setting_yes = conf.getbool(section, setting, "no")
+            if setting_yes:
+                logg.info("%s: %s private directory option is ignored: %s=yes", unit, section, setting)
+                tmpproblems += 1
+        if not abspath and not notexists and not badusers and not badgroups:
+            return True
+        if TRUE:
+            filename = strE(conf.filename())
+            if len(filename) > 44: filename = o44(filename)
+            logg.error(" !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+            if abspath:
+                logg.error(" The SystemD ExecXY commands must always be absolute paths by definition.")
+                time.sleep(1)
+            if notexists:
+                logg.error(" Oops, %s executable paths were not found in the current environment. Refusing.", notexists)
+                time.sleep(1)
+            if badusers or badgroups:
+                logg.error(" Oops, %s user names and %s group names were not found. Refusing.", badusers, badgroups)
+                time.sleep(1)
+            if tmpproblems:
+                logg.info("  Note, %s private directory settings are ignored. The application should not depend on it.", tmpproblems)
+                time.sleep(1)
+            logg.error(" !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        return False
+    def expand_cmd(self, cmd: str, env: Dict[str, str], conf: SystemctlConf) -> Tuple[ExecMode, List[str]]:
+        mode, exe = exec_path(cmd)
+        if mode.noexpand:
+            newcmd = self.split_cmd(exe)
+        else:
+            newcmd = self.split_cmd_and_expand(exe, env, conf)
+        if mode.argv0:
+            if len(newcmd) > 1:
+                del newcmd[1] # TODO: keep but allow execve calls to pick it up
+        return mode, newcmd
+    def split_cmd(self, cmd: str) -> List[str]:
+        cmd2 = cmd.replace("\\\n", "")
+        newcmd: List[str] = []
+        for part in shlex.split(cmd2):
+            newcmd += [part]
+        return newcmd
+    def split_cmd_and_expand(self, cmd: str, env: Dict[str, str], conf: SystemctlConf) -> List[str]:
+        """ expand ExecCmd statements including %i and $MAINPID """
+        cmd2 = cmd.replace("\\\n", "")
+        # according to documentation, when bar="one two" then the expansion
+        # of '$bar' is ["one","two"] and '${bar}' becomes ["one two"]. We
+        # tackle that by expand $bar before shlex, and the rest thereafter.
+        def get_env1(m: Match[str]) -> str:
+            name = m.group(1)
+            if name in env:
+                return env[name]
+            logg.debug("can not expand $%s", name)
+            return ""  # empty string
+        def get_env2(m: Match[str]) -> str:
+            name = m.group(1)
+            if name in env:
+                return env[name]
+            logg.debug("can not expand $%s}}", name)
+            return ""  # empty string
+        cmd3 = re.sub(r"[$](\w+)", lambda m: get_env1(m), cmd2)
+        newcmd: List[str] = []
+        for part in shlex.split(cmd3):
+            part2 = self.expand_special(part, conf)
+            newcmd += [re.sub(r"[$][{](\w+)[}]", lambda m: get_env2(m), part2)] # type: ignore[arg-type]
+        return newcmd
+
 class SystemctlListenThread(threading.Thread):
     """ support LISTEN modules """
     def __init__(self, systemctl: 'Systemctl') -> None:
@@ -2590,46 +2801,6 @@ class Systemctl:
             self.error |= NOT_FOUND
             return None
         return self.units.get_env(conf)
-    def exec_newcmd(self, cmd: str, env: Dict[str, str], conf: SystemctlConf) -> Tuple[ExecMode, List[str]]:
-        mode, exe = exec_path(cmd)
-        if mode.noexpand:
-            newcmd = self.split_cmd(exe)
-        else:
-            newcmd = self.expand_cmd(exe, env, conf)
-        if mode.argv0:
-            if len(newcmd) > 1:
-                del newcmd[1] # TODO: keep but allow execve calls to pick it up
-        return mode, newcmd
-    def split_cmd(self, cmd: str) -> List[str]:
-        cmd2 = cmd.replace("\\\n", "")
-        newcmd: List[str] = []
-        for part in shlex.split(cmd2):
-            newcmd += [part]
-        return newcmd
-    def expand_cmd(self, cmd: str, env: Dict[str, str], conf: SystemctlConf) -> List[str]:
-        """ expand ExecCmd statements including %i and $MAINPID """
-        cmd2 = cmd.replace("\\\n", "")
-        # according to documentation, when bar="one two" then the expansion
-        # of '$bar' is ["one","two"] and '${bar}' becomes ["one two"]. We
-        # tackle that by expand $bar before shlex, and the rest thereafter.
-        def get_env1(m: Match[str]) -> str:
-            name = m.group(1)
-            if name in env:
-                return env[name]
-            logg.debug("can not expand $%s", name)
-            return ""  # empty string
-        def get_env2(m: Match[str]) -> str:
-            name = m.group(1)
-            if name in env:
-                return env[name]
-            logg.debug("can not expand $%s}}", name)
-            return ""  # empty string
-        cmd3 = re.sub(r"[$](\w+)", lambda m: get_env1(m), cmd2)
-        newcmd: List[str] = []
-        for part in shlex.split(cmd3):
-            part2 = self.units.expand_special(part, conf)
-            newcmd += [re.sub(r"[$][{](\w+)[}]", lambda m: get_env2(m), part2)] # type: ignore[arg-type]
-        return newcmd
     def remove_service_directories(self, conf: SystemctlConf, section: str = Service) -> bool:
         ok = True
         nameRuntimeDirectory = self.units.get_RuntimeDirectory(conf, section)
@@ -3224,7 +3395,7 @@ class Systemctl:
         return self.start_unit_from(conf)
     def start_unit_from(self, conf: SystemctlConf) -> bool:
         if not conf: return False
-        if self.syntax_check(conf) > 100: return False
+        if self.units.syntax_check(conf) > 100: return False
         with waitlock(conf):
             logg.debug(" start unit %s => %s", conf.name(), strQ(conf.filename()))
             return self.do_start_unit_from(conf)
@@ -3244,7 +3415,7 @@ class Systemctl:
         runs = conf.get(Service, "Type", "simple").lower()
         env = self.units.get_env(conf)
         if not self._quiet:
-            okee = self.exec_check_unit(conf, env, Service, "Exec") # all...
+            okee = self.units.exec_check(conf, env, Service, "Exec") # all...
             if not okee and NO_RELOAD: return False
         service_directories = self.create_service_directories(conf)
         env.update(service_directories) # atleast sshd did check for /run/sshd
@@ -3255,7 +3426,7 @@ class Systemctl:
             if runs in ["simple", "exec", "forking", "notify", "idle"]:
                 env["MAINPID"] = strE(self.read_mainpid_from(conf))
             for cmd in conf.getlist(Service, "ExecStartPre", []):
-                exe, newcmd = self.exec_newcmd(cmd, env, conf)
+                exe, newcmd = self.units.expand_cmd(cmd, env, conf)
                 logg.info(" pre-start %s", shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
@@ -3275,7 +3446,7 @@ class Systemctl:
                 logg.warning("the service was already up once")
                 return True
             for cmd in conf.getlist(Service, "ExecStart", []):
-                exe, newcmd = self.exec_newcmd(cmd, env, conf)
+                exe, newcmd = self.units.expand_cmd(cmd, env, conf)
                 logg.info("%s start %s", runs, shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid: # pragma: no cover
@@ -3308,7 +3479,7 @@ class Systemctl:
             for cmd in cmdlist:
                 pid = self.read_mainpid_from(conf)
                 env["MAINPID"] = strE(pid)
-                exe, newcmd = self.exec_newcmd(cmd, env, conf)
+                exe, newcmd = self.units.expand_cmd(cmd, env, conf)
                 logg.info("%s start %s", runs, shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid: # pragma: no cover
@@ -3351,7 +3522,7 @@ class Systemctl:
             for cmd in cmdlist:
                 mainpid = self.read_mainpid_from(conf)
                 env["MAINPID"] = strE(mainpid)
-                exe, newcmd = self.exec_newcmd(cmd, env, conf)
+                exe, newcmd = self.units.expand_cmd(cmd, env, conf)
                 logg.info("%s start %s", runs, shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid: # pragma: no cover
@@ -3392,7 +3563,7 @@ class Systemctl:
         elif runs in ["forking"]:
             pid_file = self.pid_file_from(conf)
             for cmd in conf.getlist(Service, "ExecStart", []):
-                exe, newcmd = self.exec_newcmd(cmd, env, conf)
+                exe, newcmd = self.units.expand_cmd(cmd, env, conf)
                 if not newcmd: continue
                 logg.info("%s start %s", runs, shell_cmd(newcmd))
                 forkpid = os.fork()
@@ -3427,7 +3598,7 @@ class Systemctl:
             # should execute the ExecStopPost sequence allowing some cleanup.
             env["SERVICE_RESULT"] = service_result
             for cmd in conf.getlist(Service, "ExecStopPost", []):
-                exe, newcmd = self.exec_newcmd(cmd, env, conf)
+                exe, newcmd = self.units.expand_cmd(cmd, env, conf)
                 logg.info("post-fail %s", shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
@@ -3440,7 +3611,7 @@ class Systemctl:
             return False
         else:
             for cmd in conf.getlist(Service, "ExecStartPost", []):
-                exe, newcmd = self.exec_newcmd(cmd, env, conf)
+                exe, newcmd = self.units.expand_cmd(cmd, env, conf)
                 logg.info("post-start %s", shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
@@ -3546,11 +3717,11 @@ class Systemctl:
             return False
         env = self.units.get_env(conf)
         if not self._quiet:
-            okee = self.exec_check_unit(conf, env, Socket, "Exec") # all...
+            okee = self.units.exec_check(conf, env, Socket, "Exec") # all...
             if not okee and NO_RELOAD: return False
         if TRUE:
             for cmd in conf.getlist(Socket, "ExecStartPre", []):
-                exe, newcmd = self.exec_newcmd(cmd, env, conf)
+                exe, newcmd = self.units.expand_cmd(cmd, env, conf)
                 logg.info("%s pre-start %s", runs, shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
@@ -3590,7 +3761,7 @@ class Systemctl:
             # should execute the ExecStopPost sequence allowing some cleanup.
             env["SERVICE_RESULT"] = service_result
             for cmd in conf.getlist(Socket, "ExecStopPost", []):
-                exe, newcmd = self.exec_newcmd(cmd, env, conf)
+                exe, newcmd = self.units.expand_cmd(cmd, env, conf)
                 logg.info("%s post-fail %s", runs, shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
@@ -3601,7 +3772,7 @@ class Systemctl:
             return False
         else:
             for cmd in conf.getlist(Socket, "ExecStartPost", []):
-                exe, newcmd = self.exec_newcmd(cmd, env, conf)
+                exe, newcmd = self.units.expand_cmd(cmd, env, conf)
                 logg.info("%s post-start %s", runs, shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
@@ -3854,7 +4025,7 @@ class Systemctl:
         if not conf: return None
         env = self.units.get_env(conf)
         for cmd in conf.getlist(Service, "ExecStart", []):
-            _xe, newcmd = self.exec_newcmd(cmd, env, conf)
+            _xe, newcmd = self.units.expand_cmd(cmd, env, conf)
             self.execve_from(conf, newcmd, env)
         return None
     def stop_modules(self, *modules: str) -> bool:
@@ -3893,7 +4064,7 @@ class Systemctl:
 
     def stop_unit_from(self, conf: SystemctlConf) -> bool:
         if not conf: return False
-        if self.syntax_check(conf) > 100: return False
+        if self.units.syntax_check(conf) > 100: return False
         with waitlock(conf):
             logg.info(" stop unit %s => %s", conf.name(), strQ(conf.filename()))
             return self.do_stop_unit_from(conf)
@@ -3913,7 +4084,7 @@ class Systemctl:
         runs = conf.get(Service, "Type", "simple").lower()
         env = self.units.get_env(conf)
         if not self._quiet:
-            okee = self.exec_check_unit(conf, env, Service, "ExecStop")
+            okee = self.units.exec_check(conf, env, Service, "ExecStop")
             if not okee and NO_RELOAD: return False
         service_directories = self.env_service_directories(conf)
         env.update(service_directories)
@@ -3925,7 +4096,7 @@ class Systemctl:
                 logg.warning("the service is already down once")
                 return True
             for cmd in conf.getlist(Service, "ExecStop", []):
-                exe, newcmd = self.exec_newcmd(cmd, env, conf)
+                exe, newcmd = self.units.expand_cmd(cmd, env, conf)
                 logg.info("%s stop %s", runs, shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
@@ -3955,7 +4126,7 @@ class Systemctl:
             pid = 0
             for cmd in conf.getlist(Service, "ExecStop", []):
                 env["MAINPID"] = strE(self.read_mainpid_from(conf))
-                exe, newcmd = self.exec_newcmd(cmd, env, conf)
+                exe, newcmd = self.units.expand_cmd(cmd, env, conf)
                 logg.info("%s stop %s", runs, shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
@@ -3988,7 +4159,7 @@ class Systemctl:
                     new_pid = self.read_mainpid_from(conf)
                     if new_pid:
                         env["MAINPID"] = strE(new_pid)
-                exe, newcmd = self.exec_newcmd(cmd, env, conf)
+                exe, newcmd = self.units.expand_cmd(cmd, env, conf)
                 logg.info("fork stop %s", shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
@@ -4021,7 +4192,7 @@ class Systemctl:
         if not self.is_active_from(conf):
             env["SERVICE_RESULT"] = service_result
             for cmd in conf.getlist(Service, "ExecStopPost", []):
-                exe, newcmd = self.exec_newcmd(cmd, env, conf)
+                exe, newcmd = self.units.expand_cmd(cmd, env, conf)
                 logg.info("post-stop %s", shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
@@ -4044,7 +4215,7 @@ class Systemctl:
             return False
         env = self.units.get_env(conf)
         if not self._quiet:
-            okee = self.exec_check_unit(conf, env, Socket, "ExecStop")
+            okee = self.units.exec_check(conf, env, Socket, "ExecStop")
             if not okee and NO_RELOAD: return False
         if not accept:
             # we do not listen but have the service started right away
@@ -4059,7 +4230,7 @@ class Systemctl:
         if not self.is_active_from(conf):
             env["SERVICE_RESULT"] = service_result
             for cmd in conf.getlist(Socket, "ExecStopPost", []):
-                _xe, newcmd = self.exec_newcmd(cmd, env, conf)
+                _xe, newcmd = self.units.expand_cmd(cmd, env, conf)
                 logg.info("%s post-stop %s", runs, shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
@@ -4117,7 +4288,7 @@ class Systemctl:
         return self.reload_unit_from(conf)
     def reload_unit_from(self, conf: SystemctlConf) -> bool:
         if not conf: return False
-        if self.syntax_check(conf) > 100: return False
+        if self.units.syntax_check(conf) > 100: return False
         with waitlock(conf):
             logg.info(" reload unit %s => %s", conf.name(), strQ(conf.filename()))
             return self.do_reload_unit_from(conf)
@@ -4141,7 +4312,7 @@ class Systemctl:
         runs = conf.get(Service, "Type", "simple").lower()
         env = self.units.get_env(conf)
         if not self._quiet:
-            okee = self.exec_check_unit(conf, env, Service, "ExecReload")
+            okee = self.units.exec_check(conf, env, Service, "ExecReload")
             if not okee and NO_RELOAD: return False
         initscript = conf.filename()
         if self.units.is_sysv_file(initscript):
@@ -4168,7 +4339,7 @@ class Systemctl:
                 return True
             for cmd in conf.getlist(Service, "ExecReload", []):
                 env["MAINPID"] = strE(self.read_mainpid_from(conf))
-                exe, newcmd = self.exec_newcmd(cmd, env, conf)
+                exe, newcmd = self.units.expand_cmd(cmd, env, conf)
                 logg.info("%s reload %s", runs, shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
@@ -4221,7 +4392,7 @@ class Systemctl:
         return self.restart_unit_from(conf)
     def restart_unit_from(self, conf: SystemctlConf) -> bool:
         if not conf: return False
-        if self.syntax_check(conf) > 100: return False
+        if self.units.syntax_check(conf) > 100: return False
         with waitlock(conf):
             if conf.name().endswith(".service"):
                 logg.info(" restart service %s => %s", conf.name(), strQ(conf.filename()))
@@ -5330,181 +5501,10 @@ class Systemctl:
                 logg.error("%s: can not read unit file %s\n\t%s",
                            unit, strQ(unit), e)
                 continue
-            errors += self.syntax_check(conf)
+            errors += self.units.syntax_check(conf)
         if errors:
             logg.warning(" (%s) found %s problems", errors, errors % 100)
         return True # errors
-    def syntax_check(self, conf: SystemctlConf) -> int:
-        filename = conf.filename()
-        if filename and filename.endswith(".service"):
-            return self.syntax_check_service(conf)
-        return 0
-    def syntax_check_service(self, conf: SystemctlConf, section: str = Service) -> int:
-        unit = conf.name()
-        if not conf.data.has_section(Service):
-            logg.error(" %s: a .service file without [Service] section", unit)
-            return 101
-        errors = 0
-        haveType = conf.get(section, "Type", "simple")
-        haveExecStart = conf.getlist(section, "ExecStart", [])
-        haveExecStop = conf.getlist(section, "ExecStop", [])
-        haveExecReload = conf.getlist(section, "ExecReload", [])
-        usedExecStart: List[str] = []
-        usedExecStop: List[str] = []
-        usedExecReload: List[str] = []
-        if haveType not in ["simple", "exec", "forking", "notify", "oneshot", "dbus", "idle"]:
-            logg.error(" %s: Failed to parse service type, ignoring: %s", unit, haveType)
-            errors += 100
-        for line in haveExecStart:
-            mode, exe = exec_path(line)
-            if not exe.startswith("/"):
-                if mode.check:
-                    logg.error("  %s: %s Executable path is not absolute.", unit, section)
-                else:
-                    logg.warning("%s: %s Executable path is not absolute.", unit, section)
-                logg.info("%s: %s exe = %s", unit, section, exe)
-                errors += 1
-            usedExecStart.append(line)
-        for line in haveExecStop:
-            mode, exe = exec_path(line)
-            if not exe.startswith("/"):
-                if mode.check:
-                    logg.error("  %s: %s Executable path is not absolute.", unit, section)
-                else:
-                    logg.warning("%s: %s Executable path is not absolute.", unit, section)
-                logg.info("%s: %s exe = %s", unit, section, exe)
-                errors += 1
-            usedExecStop.append(line)
-        for line in haveExecReload:
-            mode, exe = exec_path(line)
-            if not exe.startswith("/"):
-                if mode.check:
-                    logg.error("  %s: %s Executable path is not absolute.", unit, section)
-                else:
-                    logg.warning("%s: %s Executable path is not absolute.", unit, section)
-                logg.info("%s: %s exe = %s", unit, section, exe)
-                errors += 1
-            usedExecReload.append(line)
-        if haveType in ["simple", "exec", "notify", "forking", "idle"]:
-            if not usedExecStart and not usedExecStop:
-                logg.error(" %s: %s lacks both ExecStart and ExecStop= setting. Refusing.", unit, section)
-                errors += 101
-            elif not usedExecStart and haveType != "oneshot":
-                logg.error(" %s: %s has no ExecStart= setting, which is only allowed for Type=oneshot services. Refusing.", unit, section)
-                errors += 101
-        if len(usedExecStart) > 1 and haveType != "oneshot":
-            logg.error(" %s: there may be only one %s ExecStart statement (unless for 'oneshot' services)."
-                       + "\n\t\t\tYou can use ExecStartPre / ExecStartPost to add additional commands.", unit, section)
-            errors += 1
-        if len(usedExecStop) > 1 and haveType != "oneshot":
-            logg.info(" %s: there should be only one %s ExecStop statement (unless for 'oneshot' services)."
-                      + "\n\t\t\tYou can use ExecStopPost to add additional commands (also executed on failed Start)", unit, section)
-        if len(usedExecReload) > 1:
-            logg.info(" %s: there should be only one %s ExecReload statement."
-                      + "\n\t\t\tUse ' ; ' for multiple commands (ExecReloadPost or ExedReloadPre do not exist)", unit, section)
-        if len(usedExecReload) > 0 and "/bin/kill " in usedExecReload[0]:
-            logg.warning(" %s: the use of /bin/kill is not recommended for %s ExecReload as it is asynchronous."
-                         + "\n\t\t\tThat means all the dependencies will perform the reload simultaneously / out of order.", unit, section)
-        if conf.getlist(Service, "ExecRestart", []):  # pragma: no cover
-            logg.error(" %s: there no such thing as an %s ExecRestart (ignored)", unit, section)
-        if conf.getlist(Service, "ExecRestartPre", []):  # pragma: no cover
-            logg.error(" %s: there no such thing as an %s ExecRestartPre (ignored)", unit, section)
-        if conf.getlist(Service, "ExecRestartPost", []):  # pragma: no cover
-            logg.error(" %s: there no such thing as an %s ExecRestartPost (ignored)", unit, section)
-        if conf.getlist(Service, "ExecReloadPre", []):  # pragma: no cover
-            logg.error(" %s: there no such thing as an %s ExecReloadPre (ignored)", unit, section)
-        if conf.getlist(Service, "ExecReloadPost", []):  # pragma: no cover
-            logg.error(" %s: there no such thing as an %s ExecReloadPost (ignored)", unit, section)
-        if conf.getlist(Service, "ExecStopPre", []):  # pragma: no cover
-            logg.error(" %s: there no such thing as an %s ExecStopPre (ignored)", unit, section)
-        for env_file in conf.getlist(Service, "EnvironmentFile", []):
-            if env_file.startswith("-"): continue
-            if not os.path.isfile(os_path(self._root, self.units.expand_special(env_file, conf))):
-                logg.error(" %s: Failed to load environment files: %s", unit, env_file)
-                errors += 101
-        return errors
-    def exec_check_unit(self, conf: SystemctlConf, env: Dict[str, str], section: str = Service, exectype: str = NIX) -> bool:
-        if conf is None: # pragma: no cover (is never null)
-            return True
-        if not conf.data.has_section(section):
-            return True  # pragma: no cover
-        if self.units.is_sysv_file(conf.filename()):
-            return True # we don't care about that
-        unit = conf.name()
-        abspath = 0
-        notexists = 0
-        badusers = 0
-        badgroups = 0
-        for execs in ["ExecStartPre", "ExecStart", "ExecStartPost", "ExecStop", "ExecStopPost", "ExecReload"]:
-            if not execs.startswith(exectype):
-                continue
-            for cmd in conf.getlist(section, execs, []):
-                mode, newcmd = self.exec_newcmd(cmd, env, conf)
-                if not newcmd:
-                    continue
-                exe = newcmd[0]
-                if not exe:
-                    continue
-                if exe[0] != "/":
-                    logg.error(" %s: Exec is not an absolute path:  %s=%s", unit, execs, cmd)
-                    abspath += 1
-                if not os.path.isfile(exe):
-                    logg.error(" %s: Exec command does not exist: (%s) %s", unit, execs, exe)
-                    if mode.check:
-                        notexists += 1
-                    newexe1 = os.path.join("/usr/bin", exe)
-                    newexe2 = os.path.join("/bin", exe)
-                    if os.path.exists(newexe1):
-                        logg.error(" %s: but this does exist: %s  %s", unit, " " * len(execs), newexe1)
-                    elif os.path.exists(newexe2):
-                        logg.error(" %s: but this does exist: %s      %s", unit, " " * len(execs), newexe2)
-        users = [conf.get(section, "User", ""), conf.get(section, "SocketUser", "")]
-        groups = [conf.get(section, "Group", ""), conf.get(section, "SocketGroup", "")] + conf.getlist(section, "SupplementaryGroups")
-        for user in users:
-            if user:
-                try: pwd.getpwnam(self.units.expand_special(user, conf))
-                except (OSError, LookupError) as e:
-                    logg.error(" %s: User does not exist: %s (%s)", unit, user, getattr(e, "__doc__", ""))
-                    badusers += 1
-        for group in groups:
-            if group:
-                try: grp.getgrnam(self.units.expand_special(group, conf))
-                except (OSError, LookupError) as e:
-                    logg.error(" %s: Group does not exist: %s (%s)", unit, group, getattr(e, "__doc__", ""))
-                    badgroups += 1
-        tmpproblems = 0
-        for setting in ("RootDirectory", "RootImage", "BindPaths", "BindReadOnlyPaths",
-                        "ReadWritePaths", "ReadOnlyPaths", "TemporaryFileSystem"):
-            setting_value = conf.get(section, setting, "")
-            if setting_value:
-                logg.info("%s: %s private directory remounts ignored: %s=%s", unit, section, setting, setting_value)
-                tmpproblems += 1
-        for setting in ("PrivateTmp", "PrivateDevices", "PrivateNetwork", "PrivateUsers", "DynamicUser",
-                        "ProtectSystem", "ProjectHome", "ProtectHostname", "PrivateMounts", "MountAPIVFS"):
-            setting_yes = conf.getbool(section, setting, "no")
-            if setting_yes:
-                logg.info("%s: %s private directory option is ignored: %s=yes", unit, section, setting)
-                tmpproblems += 1
-        if not abspath and not notexists and not badusers and not badgroups:
-            return True
-        if TRUE:
-            filename = strE(conf.filename())
-            if len(filename) > 44: filename = o44(filename)
-            logg.error(" !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-            if abspath:
-                logg.error(" The SystemD ExecXY commands must always be absolute paths by definition.")
-                time.sleep(1)
-            if notexists:
-                logg.error(" Oops, %s executable paths were not found in the current environment. Refusing.", notexists)
-                time.sleep(1)
-            if badusers or badgroups:
-                logg.error(" Oops, %s user names and %s group names were not found. Refusing.", badusers, badgroups)
-                time.sleep(1)
-            if tmpproblems:
-                logg.info("  Note, %s private directory settings are ignored. The application should not depend on it.", tmpproblems)
-                time.sleep(1)
-            logg.error(" !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-        return False
     def show_modules(self, *modules: str) -> List[str]:
         """ [PATTERN]... -- Show properties of one or more units
            Show properties of one or more units (or the manager itself).
