@@ -323,7 +323,7 @@ def o77(part: str) -> str:
             return part
         return part[:20] + "..." + part[-54:]
     return part # pragma: no cover (is always str)
-def delayed(attempt: int, suffix: str = ".", default: str = NIX) -> str:
+def delayed(attempt: int, suffix: str = ".") -> str:
     if attempt < 10:
         return "%+i%s" % (attempt, suffix)
     if attempt < 100:
