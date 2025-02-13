@@ -1,7 +1,6 @@
 #! /usr/bin/python3
 # pylint: disable=line-too-long,missing-function-docstring,consider-using-f-string,import-outside-toplevel
 # pylint: disable=too-many-lines,multiple-statements,unspecified-encoding,dangerous-default-value,unnecessary-lambda,superfluous-parens
-# ylint: disable=invalid-name
 """ run 'systemctl start' and other systemctl commands based on available *.service descriptions without a systemd daemon running in the system """
 from __future__ import print_function
 import threading
@@ -998,7 +997,7 @@ class PresetFile:
         return None
 
 ## with waitlock(conf): self.start()
-class waitlock:
+class waitlock:  # pylint: disable=invalid-name
     """ with-statement for mutex on modules - allowing to run multiple systemctl units in parallel, or guarding the global lock."""
     conf: SystemctlConf
     opened: int
