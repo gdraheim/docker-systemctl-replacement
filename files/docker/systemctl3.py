@@ -5340,7 +5340,7 @@ class Systemctl:
             if state:
                 return "enabled"
             return "disabled"
-        return self.is_enabled((conf)
+        return self.is_enabled(conf)
     def is_enabled(self, conf: SystemctlConf) -> str:
         if conf.masked:
             return "masked"
