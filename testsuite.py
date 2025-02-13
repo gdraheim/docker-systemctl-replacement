@@ -51,6 +51,8 @@ LONGER = 2
 KILLWAIT = 20
 
 TESTING_LISTEN = False
+EXIT_SUCCESS = 0
+EXIT_FAILURE = 1
 
 CENTOSVER = {"7.3": "7.3.1611", "7.4": "7.4.1708", "7.5": "7.5.1804", "7.6": "7.6.1810", "7.7": "7.7.1908", "7.9": "7.9.2009", "8.0": "8.0.1905", "8.1": "8.1.1911", "8.3": "8.3.2011"}
 TESTED_OS = ["centos:7.3.1611", "centos:7.4.1708", "centos:7.5.1804", "centos:7.6.1810", "centos:7.7.1908", "centos:7.9.2009", "centos:8.0.1905", "centos:8.1.1911", "centos:8.3.2011"]
@@ -1097,12 +1099,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart=/bin/sleep 3
         """)
         #
-        cmd = F"{systemctl} daemon-reload -c InitLoopSleep=1 -vvv"
+        cmd = F"{systemctl} daemon-reload -c INITLOOPSLEEP=1 -vvv"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
         self.assertEqual(lines(out), [])
         self.assertEqual(end, 0)
-        self.assertEqual(len(greps(err, "InitLoopSleep=1")), 2)
+        self.assertEqual(len(greps(err, "INITLOOPSLEEP=1")), 2)
         self.rm_testdir()
         self.rm_zzfiles(root)
         self.coverage()
@@ -2189,6 +2191,190 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_zzfiles(root)
         self.rm_testdir()
         self.coverage()
+    def real_1501_condition(self) -> None:
+        self.test_1501_condition(True)
+    def test_1501_condition(self, real: bool = False) -> None:
+        """ check that file conditions work"""
+        vv = self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir, real)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
+        self.rm_zzfiles(root)
+        text_file(os_path(root, "/etc/systemd/system/zza.service"), """
+            [Unit]
+            Description=Testing A
+            AssertPathExists=/etc/sysconfig/zza
+            [Service]
+            Type=simple
+            ExecStart=/usr/bin/false
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"), """
+            [Unit]
+            Description=Testing B
+            ConditionPathExists=/etc/sysconfig/zza
+            [Service]
+            Type=simple
+            ExecStart=/usr/bin/false
+            [Install]
+            WantedBy=multi-user.target""")
+        cmd = F"{systemctl} daemon-reload"
+        out, end = output2(cmd)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = F"{systemctl} status zza.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        self.assertTrue(greps(out, "Loaded: loaded"))
+        cmd = F"{systemctl} status zzb.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        self.assertTrue(greps(out, "Loaded: loaded"))
+        #
+        cmd = F"{systemctl} start zza.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        if real:
+            self.assertTrue(greps(err, "Assertion failed on job for zza.service"))
+        else:            
+            self.assertTrue(greps(err, "AssertPathExists - path not found"))
+        self.assertEqual(end, EXIT_FAILURE)
+        cmd = F"{systemctl} start zzb.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        if real:
+            self.assertEqual(end, EXIT_SUCCESS) # TODO?
+        else:
+            self.assertTrue(greps(err, "ConditionPathExists - path not found"))
+            self.assertEqual(end, EXIT_FAILURE)
+        #
+        text_file(os_path(root, "/etc/sysconfig/zza"), """allow=true""")
+        text_file(os_path(root, "/etc/sysconfig/zzb"), """allow=true""")
+       #
+        cmd = F"{systemctl} start zza.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        if real:
+            self.assertFalse(greps(err, "Assertion failed on job for zza.service"))
+            self.assertEqual(end, EXIT_SUCCESS)
+        else:            
+            self.assertFalse(greps(err, "AssertPathExists - path not found"))
+            self.assertEqual(end, EXIT_FAILURE)
+        cmd = F"{systemctl} start zzb.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        if real:
+            self.assertEqual(end, EXIT_SUCCESS) # TODO?
+        else:
+            self.assertFalse(greps(err, "ConditionPathExists - path not found"))
+            self.assertEqual(end, EXIT_FAILURE)
+        self.rm_zzfiles(root)
+        self.rm_testdir()
+        self.coverage()
+    def real_1502_condition(self) -> None:
+        self.test_1502_condition(True)
+    def test_1502_condition(self, real: bool = False) -> None:
+        """ check that file conditions work"""
+        vv = self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir, real)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
+        self.rm_zzfiles(root)
+        text_file(os_path(root, "/etc/systemd/system/zza.service"), """
+            [Unit]
+            Description=Testing A
+            AssertFileNotEmpty=/etc/sysconfig/zza
+            [Service]
+            Type=simple
+            ExecStart=/usr/bin/false
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"), """
+            [Unit]
+            Description=Testing B
+            ConditionFileNotEmpty=/etc/sysconfig/zza
+            [Service]
+            Type=simple
+            ExecStart=/usr/bin/false
+            [Install]
+            WantedBy=multi-user.target""")
+        cmd = F"{systemctl} daemon-reload"
+        out, end = output2(cmd)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = F"{systemctl} status zza.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        self.assertTrue(greps(out, "Loaded: loaded"))
+        cmd = F"{systemctl} status zzb.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        self.assertTrue(greps(out, "Loaded: loaded"))
+        #
+        cmd = F"{systemctl} start zza.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        if real:
+            self.assertTrue(greps(err, "Assertion failed on job for zza.service"))
+        else:            
+            self.assertTrue(greps(err, "AssertFileNotEmpty - path not found"))
+        self.assertEqual(end, EXIT_FAILURE)
+        cmd = F"{systemctl} start zzb.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        if real:
+            self.assertEqual(end, EXIT_SUCCESS) # TODO?
+        else:
+            self.assertTrue(greps(err, "ConditionFileNotEmpty - path not found"))
+            self.assertEqual(end, EXIT_FAILURE)
+        #
+        text_file(os_path(root, "/etc/sysconfig/zza"), """allow=true""")
+        text_file(os_path(root, "/etc/sysconfig/zzb"), """allow=true""")
+        #
+        cmd = F"{systemctl} start zza.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        if real:
+            self.assertFalse(greps(err, "Assertion failed on job for zza.service"))
+            self.assertEqual(end, EXIT_SUCCESS)
+        else:            
+            self.assertFalse(greps(err, "AssertFileNotEmpty - path not found"))
+            self.assertEqual(end, EXIT_FAILURE)
+        cmd = F"{systemctl} start zzb.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        if real:
+            self.assertEqual(end, EXIT_SUCCESS) # TODO?
+        else:
+            self.assertFalse(greps(err, "ConditionFileNotEmpty - path not found"))
+            self.assertEqual(end, EXIT_FAILURE)
+       #
+        text_file(os_path(root, "/etc/sysconfig/zza"), "")
+        text_file(os_path(root, "/etc/sysconfig/zzb"), "")
+        #
+        cmd = F"{systemctl} start zza.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        if real:
+            self.assertTrue(greps(err, "Assertion failed on job for zza.service"))
+            self.assertEqual(end, EXIT_FAILURE)
+        else:            
+            self.assertTrue(greps(err, "AssertFileNotEmpty - file is empty"))
+            self.assertEqual(end, EXIT_FAILURE)
+        cmd = F"{systemctl} start zzb.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        if real:
+            self.assertEqual(end, EXIT_SUCCESS) # TODO?
+        else:
+            self.assertTrue(greps(err, "ConditionFileNotEmpty - file is empty"))
+            self.assertEqual(end, EXIT_FAILURE)
+        self.rm_zzfiles(root)
+        self.rm_testdir()
+        self.coverage()
+    #
     def test_2001_can_create_test_services(self) -> None:
         """ check that two unit files can be created for testing """
         testname = self.testname()
@@ -10943,7 +11129,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             systemctl_cmd = [_systemctl_py, "--root="+root, "--init", "default", "-vv"]
             env = os.environ.copy()
             systemctl_cmd += ["-c", "EXIT_WHEN_NO_MORE_SERVICES=yes"]
-            systemctl_cmd += ["-c", "InitLoopSleep=2"]
+            systemctl_cmd += ["-c", "INITLOOPSLEEP=2"]
             os.execve(_systemctl_py, systemctl_cmd, env)
         time.sleep(2)
         logg.info("all services running [systemctl.py PID %s]", pid)
@@ -11069,7 +11255,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             os.dup2(new_stderr, 2)
             systemctl_cmd = [_systemctl_py, "--root="+root, "init", "zzb.service", "zzc.service", "-vv"]
             env = os.environ.copy()
-            systemctl_cmd += ["-c", "InitLoopSleep=2"]
+            systemctl_cmd += ["-c", "INITLOOPSLEEP=2"]
             os.execve(_systemctl_py, systemctl_cmd, env)
         time.sleep(3)
         logg.info("all services running [systemctl.py PID %s]", pid)
@@ -18803,9 +18989,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} enable zzb.service"
         sh____(cmd)
         #
-        InitLoopSleep = 1
+        INITLOOPSLEEP = 1
         initsystemctl = systemctl
-        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
+        initsystemctl += F" -c INITLOOPSLEEP={INITLOOPSLEEP}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -18814,11 +19000,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(debug_log, "")
         cmd = F"{initsystemctl} -1"
         init = background(cmd)
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
+        self.assertTrue(greps(top, "systemctl.*INITLOOPSLEEP"))
         #
         cmd = F"{systemctl} show zza.service -p JournalFilePath"
         journal_a=output(cmd).strip().split("=", 1)[1]
@@ -18893,9 +19079,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} enable zzb.service"
         sh____(cmd)
         #
-        InitLoopSleep = 1
+        INITLOOPSLEEP = 1
         initsystemctl = systemctl
-        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
+        initsystemctl += F" -c INITLOOPSLEEP={INITLOOPSLEEP}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -18904,11 +19090,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(debug_log, "")
         cmd = F"{initsystemctl} -1"
         init = background(cmd)
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
+        self.assertTrue(greps(top, "systemctl.*INITLOOPSLEEP"))
         #
         cmd = F"{systemctl} show zza.service -p JournalFilePath"
         journal_a=output(cmd).strip().split("=", 1)[1]
@@ -18989,9 +19175,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} enable zzb.service"
         sh____(cmd)
         #
-        InitLoopSleep = 1
+        INITLOOPSLEEP = 1
         initsystemctl = systemctl
-        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
+        initsystemctl += F" -c INITLOOPSLEEP={INITLOOPSLEEP}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -19000,11 +19186,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(debug_log, "")
         cmd = F"{initsystemctl} -1"
         init = background(cmd)
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
+        self.assertTrue(greps(top, "systemctl.*INITLOOPSLEEP"))
         #
         cmd = F"{systemctl} show zza.service -p JournalFilePath"
         journal_a=output(cmd).strip().split("=", 1)[1]
@@ -19092,9 +19278,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} enable zzb.service"
         sh____(cmd)
         #
-        InitLoopSleep = 1
+        INITLOOPSLEEP = 1
         initsystemctl = systemctl
-        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
+        initsystemctl += F" -c INITLOOPSLEEP={INITLOOPSLEEP}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -19103,11 +19289,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(debug_log, "")
         cmd = F"{initsystemctl} -1"
         init = background(cmd)
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
+        self.assertTrue(greps(top, "systemctl.*INITLOOPSLEEP"))
         #
         cmd = F"{systemctl} show zza.service -p JournalFilePath"
         journal_a=output(cmd).strip().split("=", 1)[1]
@@ -19196,9 +19382,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} enable zzb.service"
         sh____(cmd)
         #
-        InitLoopSleep = 1
+        INITLOOPSLEEP = 1
         initsystemctl = systemctl
-        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
+        initsystemctl += F" -c INITLOOPSLEEP={INITLOOPSLEEP}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -19207,11 +19393,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(debug_log, "")
         cmd = F"{initsystemctl} -1"
         init = background(cmd)
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
+        self.assertTrue(greps(top, "systemctl.*INITLOOPSLEEP"))
         #
         cmd = F"{systemctl} show zza.service -p JournalFilePath"
         journal_a=output(cmd).strip().split("=", 1)[1]
@@ -19300,9 +19486,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} enable zzb.service"
         sh____(cmd)
         #
-        InitLoopSleep = 1
+        INITLOOPSLEEP = 1
         initsystemctl = systemctl
-        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
+        initsystemctl += F" -c INITLOOPSLEEP={INITLOOPSLEEP}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -19311,11 +19497,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(debug_log, "")
         cmd = F"{initsystemctl} -1"
         init = background(cmd)
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
+        self.assertTrue(greps(top, "systemctl.*INITLOOPSLEEP"))
         #
         cmd = F"{systemctl} show zza.service -p JournalFilePath"
         journal_a=output(cmd).strip().split("=", 1)[1]
@@ -19390,9 +19576,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} enable zzb.service"
         sh____(cmd)
         #
-        InitLoopSleep = 1
+        INITLOOPSLEEP = 1
         initsystemctl = systemctl
-        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
+        initsystemctl += F" -c INITLOOPSLEEP={INITLOOPSLEEP}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -19401,11 +19587,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(debug_log, "")
         cmd = F"{initsystemctl} -1"
         init = background(cmd)
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
+        self.assertTrue(greps(top, "systemctl.*INITLOOPSLEEP"))
         #
         cmd = F"{systemctl} show zza.service -p JournalFilePath"
         journal_a=output(cmd).strip().split("=", 1)[1]
@@ -19480,9 +19666,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} enable zzb.service"
         sh____(cmd)
         #
-        InitLoopSleep = 1
+        INITLOOPSLEEP = 1
         initsystemctl = systemctl
-        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
+        initsystemctl += F" -c INITLOOPSLEEP={INITLOOPSLEEP}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -19491,11 +19677,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(debug_log, "")
         cmd = F"{initsystemctl} -1"
         init = background(cmd)
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
+        self.assertTrue(greps(top, "systemctl.*INITLOOPSLEEP"))
         #
         cmd = F"{systemctl} show zza.service -p JournalFilePath"
         journal_a=output(cmd).strip().split("=", 1)[1]
@@ -19587,9 +19773,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} enable zzb.service"
         sh____(cmd)
         #
-        InitLoopSleep = 1
+        INITLOOPSLEEP = 1
         initsystemctl = systemctl
-        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
+        initsystemctl += F" -c INITLOOPSLEEP={INITLOOPSLEEP}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -19598,11 +19784,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(debug_log, "")
         cmd = F"{initsystemctl} -1"
         init = background(cmd)
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
+        self.assertTrue(greps(top, "systemctl.*INITLOOPSLEEP"))
         #
         cmd = F"{systemctl} show zza.service -p JournalFilePath"
         journal_a=output(cmd).strip().split("=", 1)[1]
@@ -19698,9 +19884,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} enable zzb.service"
         sh____(cmd)
         #
-        InitLoopSleep = 1
+        INITLOOPSLEEP = 1
         initsystemctl = systemctl
-        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
+        initsystemctl += F" -c INITLOOPSLEEP={INITLOOPSLEEP}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -19709,11 +19895,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(debug_log, "")
         cmd = F"{initsystemctl} -1"
         init = background(cmd)
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
+        self.assertTrue(greps(top, "systemctl.*INITLOOPSLEEP"))
         #
         cmd = F"{systemctl} show zza.service -p JournalFilePath"
         journal_a=output(cmd).strip().split("=", 1)[1]
@@ -19811,9 +19997,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} enable zzb.service"
         sh____(cmd)
         #
-        InitLoopSleep = 1
+        INITLOOPSLEEP = 1
         initsystemctl = systemctl
-        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
+        initsystemctl += F" -c INITLOOPSLEEP={INITLOOPSLEEP}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -19822,11 +20008,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(debug_log, "")
         cmd = F"{initsystemctl} -1"
         init = background(cmd)
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
+        self.assertTrue(greps(top, "systemctl.*INITLOOPSLEEP"))
         #
         cmd = F"{systemctl} show zza.service -p JournalFilePath"
         journal_a=output(cmd).strip().split("=", 1)[1]
@@ -19924,9 +20110,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} enable zzb.service"
         sh____(cmd)
         #
-        InitLoopSleep = 1
+        INITLOOPSLEEP = 1
         initsystemctl = systemctl
-        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
+        initsystemctl += F" -c INITLOOPSLEEP={INITLOOPSLEEP}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -19935,11 +20121,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(debug_log, "")
         cmd = F"{initsystemctl} -1"
         init = background(cmd)
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
+        self.assertTrue(greps(top, "systemctl.*INITLOOPSLEEP"))
         #
         cmd = F"{systemctl} show zza.service -p JournalFilePath"
         journal_a=output(cmd).strip().split("=", 1)[1]
@@ -20041,9 +20227,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} enable zzb.service"
         sh____(cmd)
         #
-        InitLoopSleep = 1
+        INITLOOPSLEEP = 1
         initsystemctl = systemctl
-        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
+        initsystemctl += F" -c INITLOOPSLEEP={INITLOOPSLEEP}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -20052,11 +20238,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(debug_log, "")
         cmd = F"{initsystemctl} -1"
         init = background(cmd)
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
+        self.assertTrue(greps(top, "systemctl.*INITLOOPSLEEP"))
         #
         cmd = F"{systemctl} show zza.service -p JournalFilePath"
         journal_a=output(cmd).strip().split("=", 1)[1]
@@ -20156,9 +20342,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} enable zzb.service"
         sh____(cmd)
         #
-        InitLoopSleep = 1
+        INITLOOPSLEEP = 1
         initsystemctl = systemctl
-        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
+        initsystemctl += F" -c INITLOOPSLEEP={INITLOOPSLEEP}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -20167,11 +20353,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(debug_log, "")
         cmd = F"{initsystemctl} -1"
         init = background(cmd)
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
+        self.assertTrue(greps(top, "systemctl.*INITLOOPSLEEP"))
         #
         cmd = F"{systemctl} show zza.service -p JournalFilePath"
         journal_a=output(cmd).strip().split("=", 1)[1]
@@ -20269,9 +20455,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} enable zzb.service"
         sh____(cmd)
         #
-        InitLoopSleep = 1
+        INITLOOPSLEEP = 1
         initsystemctl = systemctl
-        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
+        initsystemctl += F" -c INITLOOPSLEEP={INITLOOPSLEEP}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -20280,11 +20466,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(debug_log, "")
         cmd = F"{initsystemctl} -1"
         init = background(cmd)
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
+        self.assertTrue(greps(top, "systemctl.*INITLOOPSLEEP"))
         #
         cmd = F"{systemctl} show zza.service -p JournalFilePath"
         journal_a=output(cmd).strip().split("=", 1)[1]
@@ -20386,9 +20572,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} enable zzb.service"
         sh____(cmd)
         #
-        InitLoopSleep = 1
+        INITLOOPSLEEP = 1
         initsystemctl = systemctl
-        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
+        initsystemctl += F" -c INITLOOPSLEEP={INITLOOPSLEEP}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -20397,11 +20583,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(debug_log, "")
         cmd = F"{initsystemctl} -1"
         init = background(cmd)
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
+        self.assertTrue(greps(top, "systemctl.*INITLOOPSLEEP"))
         #
         cmd = F"{systemctl} show zza.service -p JournalFilePath"
         journal_a=output(cmd).strip().split("=", 1)[1]
@@ -20500,9 +20686,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} enable zzb.service"
         sh____(cmd)
         #
-        InitLoopSleep = 1
+        INITLOOPSLEEP = 1
         initsystemctl = systemctl
-        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
+        initsystemctl += F" -c INITLOOPSLEEP={INITLOOPSLEEP}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -20511,11 +20697,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(debug_log, "")
         cmd = F"{initsystemctl} -1"
         init = background(cmd)
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
+        self.assertTrue(greps(top, "systemctl.*INITLOOPSLEEP"))
         #
         cmd = F"{systemctl} show zza.service -p JournalFilePath"
         journal_a=output(cmd).strip().split("=", 1)[1]
@@ -20615,9 +20801,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} enable zzb.service"
         sh____(cmd)
         #
-        InitLoopSleep = 1
+        INITLOOPSLEEP = 1
         initsystemctl = systemctl
-        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
+        initsystemctl += F" -c INITLOOPSLEEP={INITLOOPSLEEP}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -20626,11 +20812,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(debug_log, "")
         cmd = F"{initsystemctl} -1"
         init = background(cmd)
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
+        self.assertTrue(greps(top, "systemctl.*INITLOOPSLEEP"))
         #
         cmd = F"{systemctl} show zza.service -p JournalFilePath"
         journal_a=output(cmd).strip().split("=", 1)[1]
@@ -20734,9 +20920,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} enable zzb.service"
         sh____(cmd)
         #
-        InitLoopSleep = 1
+        INITLOOPSLEEP = 1
         initsystemctl = systemctl
-        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
+        initsystemctl += F" -c INITLOOPSLEEP={INITLOOPSLEEP}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -20745,11 +20931,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(debug_log, "")
         cmd = F"{initsystemctl} -1"
         init = background(cmd)
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
+        self.assertTrue(greps(top, "systemctl.*INITLOOPSLEEP"))
         #
         cmd = F"{systemctl} show zza.service -p JournalFilePath"
         journal_a=output(cmd).strip().split("=", 1)[1]
@@ -20841,9 +21027,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} enable zzb.service"
         sh____(cmd)
         #
-        InitLoopSleep = 1
+        INITLOOPSLEEP = 1
         initsystemctl = systemctl
-        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
+        initsystemctl += F" -c INITLOOPSLEEP={INITLOOPSLEEP}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -20852,11 +21038,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(debug_log, "")
         cmd = F"{initsystemctl} -1"
         init = background(cmd)
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
+        self.assertTrue(greps(top, "systemctl.*INITLOOPSLEEP"))
         #
         cmd = F"{systemctl} show zza.service -p JournalFilePath"
         journal_a=output(cmd).strip().split("=", 1)[1]
@@ -20936,9 +21122,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} enable zzb.service"
         sh____(cmd)
         #
-        InitLoopSleep = 1
+        INITLOOPSLEEP = 1
         initsystemctl = systemctl
-        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
+        initsystemctl += F" -c INITLOOPSLEEP={INITLOOPSLEEP}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -20947,11 +21133,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(debug_log, "")
         cmd = F"{initsystemctl} -1"
         init = background(cmd)
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
+        self.assertTrue(greps(top, "systemctl.*INITLOOPSLEEP"))
         #
         cmd = F"{systemctl} show zza.service -p JournalFilePath"
         journal_a=output(cmd).strip().split("=", 1)[1]
@@ -21031,9 +21217,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} enable zzb.service"
         sh____(cmd)
         #
-        InitLoopSleep = 1
+        INITLOOPSLEEP = 1
         initsystemctl = systemctl
-        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
+        initsystemctl += F" -c INITLOOPSLEEP={INITLOOPSLEEP}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -21042,11 +21228,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(debug_log, "")
         cmd = F"{initsystemctl} -1"
         init = background(cmd)
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
+        self.assertTrue(greps(top, "systemctl.*INITLOOPSLEEP"))
         #
         cmd = F"{systemctl} show zza.service -p JournalFilePath"
         journal_a=output(cmd).strip().split("=", 1)[1]
@@ -21115,9 +21301,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} enable zza.socket"
         sh____(cmd)
         #
-        InitLoopSleep = 1
+        INITLOOPSLEEP = 1
         initsystemctl = systemctl
-        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
+        initsystemctl += F" -c INITLOOPSLEEP={INITLOOPSLEEP}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -21126,11 +21312,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(debug_log, "")
         cmd = F"{initsystemctl} -1"
         init = background(cmd)
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
+        self.assertTrue(greps(top, "systemctl.*INITLOOPSLEEP"))
         #
         oo = reads(debug_log.format(**locals())) # TODO
         logg.info("debug.log>>\n%s", oo)
@@ -21203,9 +21389,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} enable zzc.service"
         sh____(cmd)
         #
-        InitLoopSleep = 1
+        INITLOOPSLEEP = 1
         initsystemctl = systemctl
-        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
+        initsystemctl += F" -c INITLOOPSLEEP={INITLOOPSLEEP}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -21214,11 +21400,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(debug_log, "")
         cmd = F"{initsystemctl} -1"
         init = background(cmd)
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
+        self.assertTrue(greps(top, "systemctl.*INITLOOPSLEEP"))
         #
         oo = reads(debug_log.format(**locals()))  # TODO
         logg.info("debug.log>>\n%s", oo)
@@ -21317,9 +21503,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} enable zzc.service"
         sh____(cmd)
         #
-        InitLoopSleep = 1
+        INITLOOPSLEEP = 1
         initsystemctl = systemctl
-        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
+        initsystemctl += F" -c INITLOOPSLEEP={INITLOOPSLEEP}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -21328,11 +21514,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(debug_log, "")
         cmd = F"{initsystemctl} -1"
         init = background(cmd)
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
+        self.assertTrue(greps(top, "systemctl.*INITLOOPSLEEP"))
         #
         oo = reads(debug_log.format(**locals())) # TODO
         logg.info("debug.log>>\n%s", oo)
@@ -21444,9 +21630,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} enable zza.socket"
         sh____(cmd)
         #
-        InitLoopSleep = 1
+        INITLOOPSLEEP = 1
         initsystemctl = systemctl
-        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
+        initsystemctl += F" -c INITLOOPSLEEP={INITLOOPSLEEP}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -21456,12 +21642,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(debug_log, "")
         cmd = F"{initsystemctl} -1"
         init = background(cmd)
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         #
         sx____(F"ls -l {root}/var/run/zz*")
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
+        self.assertTrue(greps(top, "systemctl.*INITLOOPSLEEP"))
         #
         oo = reads(debug_log.format(**locals()))  # TODO
         logg.info("debug.log>>\n%s", i2(oo))
@@ -21562,9 +21748,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} enable zzc.service"
         sh____(cmd)
         #
-        InitLoopSleep = 1
+        INITLOOPSLEEP = 1
         initsystemctl = systemctl
-        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
+        initsystemctl += F" -c INITLOOPSLEEP={INITLOOPSLEEP}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -21573,11 +21759,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(debug_log, "")
         cmd = F"{initsystemctl} -1"
         init = background(cmd)
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
+        self.assertTrue(greps(top, "systemctl.*INITLOOPSLEEP"))
         #
         oo = reads(debug_log.format(**locals())) # TODO
         logg.info("debug.log>>\n%s", oo)
@@ -21680,9 +21866,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} enable zza.socket"
         sh____(cmd)
         #
-        InitLoopSleep = 1
+        INITLOOPSLEEP = 1
         initsystemctl = systemctl
-        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
+        initsystemctl += F" -c INITLOOPSLEEP={INITLOOPSLEEP}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -21691,11 +21877,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(debug_log, "")
         cmd = F"{initsystemctl} -1"
         init = background(cmd)
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
+        self.assertTrue(greps(top, "systemctl.*INITLOOPSLEEP"))
         #
         oo = reads(debug_log.format(**locals())) # TODO
         logg.info("debug.log>>\n%s", oo)
@@ -21791,9 +21977,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} enable zzc.service"
         sh____(cmd)
         #
-        InitLoopSleep = 1
+        INITLOOPSLEEP = 1
         initsystemctl = systemctl
-        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
+        initsystemctl += F" -c INITLOOPSLEEP={INITLOOPSLEEP}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -21802,11 +21988,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(debug_log, "")
         cmd = F"{initsystemctl} -1"
         init = background(cmd)
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
+        self.assertTrue(greps(top, "systemctl.*INITLOOPSLEEP"))
         #
         oo = reads(debug_log.format(**locals())) # TODO
         logg.info("debug.log>>\n%s", oo)
@@ -21917,9 +22103,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} enable zzc.service"
         sh____(cmd)
         #
-        InitLoopSleep = 1
+        INITLOOPSLEEP = 1
         initsystemctl = systemctl
-        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
+        initsystemctl += F" -c INITLOOPSLEEP={INITLOOPSLEEP}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -21928,11 +22114,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(debug_log, "")
         cmd = F"{initsystemctl} -1"
         init = background(cmd)
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
+        self.assertTrue(greps(top, "systemctl.*INITLOOPSLEEP"))
         #
         oo = reads(debug_log.format(**locals())) # TODO
         logg.info("debug.log>>\n%s", oo)
@@ -22040,9 +22226,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} enable zzc.service"
         sh____(cmd)
         #
-        InitLoopSleep = 1
+        INITLOOPSLEEP = 1
         initsystemctl = systemctl
-        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
+        initsystemctl += F" -c INITLOOPSLEEP={INITLOOPSLEEP}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -22051,11 +22237,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(debug_log, "")
         cmd = F"{initsystemctl} -1"
         init = background(cmd)
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
+        self.assertTrue(greps(top, "systemctl.*INITLOOPSLEEP"))
         #
         oo = reads(debug_log.format(**locals())) # TODO
         logg.info("debug.log>>\n%s", oo)
@@ -22163,9 +22349,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} enable zza.socket"
         sh____(cmd)
         #
-        InitLoopSleep = 1
+        INITLOOPSLEEP = 1
         initsystemctl = systemctl
-        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
+        initsystemctl += F" -c INITLOOPSLEEP={INITLOOPSLEEP}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -22174,11 +22360,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(debug_log, "")
         cmd = F"{initsystemctl} -1"
         init = background(cmd)
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
+        self.assertTrue(greps(top, "systemctl.*INITLOOPSLEEP"))
         #
         oo = reads(debug_log.format(**locals())) # TODO
         logg.info("debug.log>>\n%s", oo)
@@ -22274,9 +22460,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} enable zza.socket"
         sh____(cmd)
         #
-        InitLoopSleep = 1
+        INITLOOPSLEEP = 1
         initsystemctl = systemctl
-        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
+        initsystemctl += F" -c INITLOOPSLEEP={INITLOOPSLEEP}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -22285,11 +22471,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(debug_log, "")
         cmd = F"{initsystemctl} -1"
         init = background(cmd)
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
+        self.assertTrue(greps(top, "systemctl.*INITLOOPSLEEP"))
         #
         oo = reads(debug_log.format(**locals())) # TODO
         logg.info("debug.log>>\n%s", oo)
@@ -22382,9 +22568,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} enable zza.socket"
         sh____(cmd)
         #
-        InitLoopSleep = 1
+        INITLOOPSLEEP = 1
         initsystemctl = systemctl
-        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
+        initsystemctl += F" -c INITLOOPSLEEP={INITLOOPSLEEP}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -22393,11 +22579,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(debug_log, "")
         cmd = F"{initsystemctl} -1"
         init = background(cmd)
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
-        self.assertTrue(greps(top, "systemctl.*InitLoopSleep"))
+        self.assertTrue(greps(top, "systemctl.*INITLOOPSLEEP"))
         #
         oo = reads(debug_log.format(**locals())) # TODO
         logg.info("debug.log>>\n%s", oo)
@@ -22471,9 +22657,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} enable zza.socket"
         sh____(cmd)
         #
-        InitLoopSleep = 1
+        INITLOOPSLEEP = 1
         initsystemctl = systemctl
-        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
+        initsystemctl += F" -c INITLOOPSLEEP={INITLOOPSLEEP}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -22482,7 +22668,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(debug_log, "")
         cmd = F"{initsystemctl} listen zza.socket"
         init = background(cmd)
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
@@ -22544,9 +22730,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} enable zza.socket"
         sh____(cmd)
         #
-        InitLoopSleep = 1
+        INITLOOPSLEEP = 1
         initsystemctl = systemctl
-        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
+        initsystemctl += F" -c INITLOOPSLEEP={INITLOOPSLEEP}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -22555,7 +22741,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(debug_log, "")
         cmd = F"{initsystemctl} listen zza.socket -c TESTING_LISTEN -c TESTING_ACCEPT"
         init = background(cmd)
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
@@ -22626,9 +22812,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} enable zza.socket"
         sh____(cmd)
         #
-        InitLoopSleep = 1
+        INITLOOPSLEEP = 1
         initsystemctl = systemctl
-        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
+        initsystemctl += F" -c INITLOOPSLEEP={INITLOOPSLEEP}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -22637,7 +22823,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(debug_log, "")
         cmd = F"{initsystemctl} listen zza.socket -c TESTING_LISTEN -c TESTING_ACCEPT"
         init = background(cmd)
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
@@ -22710,9 +22896,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} enable zza.socket"
         sh____(cmd)
         #
-        InitLoopSleep = 1
+        INITLOOPSLEEP = 1
         initsystemctl = systemctl
-        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
+        initsystemctl += F" -c INITLOOPSLEEP={INITLOOPSLEEP}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -22721,7 +22907,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(debug_log, "")
         cmd = F"{initsystemctl} listen zza.socket -c TESTING_LISTEN -c TESTING_ACCEPT"
         init = background(cmd)
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
@@ -22794,9 +22980,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} enable zza.socket"
         sh____(cmd)
         #
-        InitLoopSleep = 1
+        INITLOOPSLEEP = 1
         initsystemctl = systemctl
-        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
+        initsystemctl += F" -c INITLOOPSLEEP={INITLOOPSLEEP}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -22805,7 +22991,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(debug_log, "")
         cmd = F"{initsystemctl} listen zza.socket -c TESTING_LISTEN -c TESTING_ACCEPT"
         init = background(cmd)
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
@@ -22878,9 +23064,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         text_file(debug_log, "")
         #
-        InitLoopSleep = 1
+        INITLOOPSLEEP = 1
         initsystemctl = systemctl
-        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
+        initsystemctl += F" -c INITLOOPSLEEP={INITLOOPSLEEP}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -22889,7 +23075,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(debug_log, "")
         cmd = F"{initsystemctl} listen zza.socket -c TESTING_LISTEN -c TESTING_ACCEPT"
         init = background(cmd)
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         #
         log = reads(debug_log)
         logg.info("systemctl.debug.log:\n%s", i2(log))
@@ -22955,9 +23141,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         text_file(debug_log, "")
         #
-        InitLoopSleep = 1
+        INITLOOPSLEEP = 1
         initsystemctl = systemctl
-        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
+        initsystemctl += F" -c INITLOOPSLEEP={INITLOOPSLEEP}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -22966,7 +23152,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(debug_log, "")
         cmd = F"{initsystemctl} listen zza.socket -c TESTING_LISTEN -c TESTING_ACCEPT"
         init = background(cmd)
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         #
         log = reads(debug_log)
         logg.info("systemctl.debug.log:\n%s", i2(log))
@@ -23038,9 +23224,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         text_file(debug_log, "")
         #
-        InitLoopSleep = 1
+        INITLOOPSLEEP = 1
         initsystemctl = systemctl
-        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
+        initsystemctl += F" -c INITLOOPSLEEP={INITLOOPSLEEP}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -23049,7 +23235,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(debug_log, "")
         cmd = F"{initsystemctl} listen zza.socket -c TESTING_LISTEN -c TESTING_ACCEPT"
         init = background(cmd)
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         #
         log = reads(debug_log)
         logg.info("systemctl.debug.log:\n%s", i2(log))
@@ -23116,9 +23302,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         text_file(debug_log, "")
         #
-        InitLoopSleep = 1
+        INITLOOPSLEEP = 1
         initsystemctl = systemctl
-        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
+        initsystemctl += F" -c INITLOOPSLEEP={INITLOOPSLEEP}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -23127,7 +23313,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(debug_log, "")
         cmd = F"{initsystemctl} listen zza.socket -c TESTING_LISTEN -c TESTING_ACCEPT"
         init = background(cmd)
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         #
         log = reads(debug_log)
         logg.info("systemctl.debug.log:\n%s", i2(log))
@@ -23191,9 +23377,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} enable zza.socket"
         sh____(cmd)
         #
-        InitLoopSleep = 1
+        INITLOOPSLEEP = 1
         initsystemctl = systemctl
-        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
+        initsystemctl += F" -c INITLOOPSLEEP={INITLOOPSLEEP}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -23202,7 +23388,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(debug_log, "")
         cmd = F"{initsystemctl} listen zza.socket"
         init = background(cmd)
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
@@ -23267,9 +23453,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} enable zza.socket"
         sh____(cmd)
         #
-        InitLoopSleep = 1
+        INITLOOPSLEEP = 1
         initsystemctl = systemctl
-        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
+        initsystemctl += F" -c INITLOOPSLEEP={INITLOOPSLEEP}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -23278,7 +23464,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(debug_log, "")
         cmd = F"{initsystemctl} listen zza.socket"
         init = background(cmd)
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
@@ -23343,9 +23529,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} enable zza.socket"
         sh____(cmd)
         #
-        InitLoopSleep = 1
+        INITLOOPSLEEP = 1
         initsystemctl = systemctl
-        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
+        initsystemctl += F" -c INITLOOPSLEEP={INITLOOPSLEEP}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -23354,7 +23540,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(debug_log, "")
         cmd = F"{initsystemctl} listen zza.socket"
         init = background(cmd)
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
@@ -23418,9 +23604,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} enable zza.socket"
         sh____(cmd)
         #
-        InitLoopSleep = 1
+        INITLOOPSLEEP = 1
         initsystemctl = systemctl
-        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
+        initsystemctl += F" -c INITLOOPSLEEP={INITLOOPSLEEP}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -23429,7 +23615,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(debug_log, "")
         cmd = F"{initsystemctl} listen zza.socket -c TESTING_LISTEN -c TESTING_ACCEPT"
         init = background(cmd)
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
@@ -23499,9 +23685,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} enable zza.socket"
         sh____(cmd)
         #
-        InitLoopSleep = 1
+        INITLOOPSLEEP = 1
         initsystemctl = systemctl
-        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
+        initsystemctl += F" -c INITLOOPSLEEP={INITLOOPSLEEP}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -23510,7 +23696,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(debug_log, "")
         cmd = F"{initsystemctl} listen zza.socket -c TESTING_LISTEN -c TESTING_ACCEPT"
         init = background(cmd)
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
@@ -23579,9 +23765,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} enable zza.socket"
         sh____(cmd)
         #
-        InitLoopSleep = 1
+        INITLOOPSLEEP = 1
         initsystemctl = systemctl
-        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
+        initsystemctl += F" -c INITLOOPSLEEP={INITLOOPSLEEP}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -23590,7 +23776,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(debug_log, "")
         cmd = F"{initsystemctl} listen zza.socket -c TESTING_LISTEN -c TESTING_ACCEPT"
         init = background(cmd)
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
@@ -23660,9 +23846,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} enable zza.socket"
         sh____(cmd)
         #
-        InitLoopSleep = 1
+        INITLOOPSLEEP = 1
         initsystemctl = systemctl
-        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
+        initsystemctl += F" -c INITLOOPSLEEP={INITLOOPSLEEP}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -23671,7 +23857,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(debug_log, "")
         cmd = F"{initsystemctl} listen zza.socket -c TESTING_LISTEN -c TESTING_ACCEPT"
         init = background(cmd)
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
@@ -23741,9 +23927,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} enable zza.socket"
         sh____(cmd)
         #
-        InitLoopSleep = 1
+        INITLOOPSLEEP = 1
         initsystemctl = systemctl
-        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
+        initsystemctl += F" -c INITLOOPSLEEP={INITLOOPSLEEP}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -23752,7 +23938,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(debug_log, "")
         cmd = F"{initsystemctl} listen zza.socket -c TESTING_LISTEN -c TESTING_ACCEPT"
         init = background(cmd)
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
@@ -23823,9 +24009,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} enable zza.socket"
         sh____(cmd)
         #
-        InitLoopSleep = 1
+        INITLOOPSLEEP = 1
         initsystemctl = systemctl
-        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
+        initsystemctl += F" -c INITLOOPSLEEP={INITLOOPSLEEP}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -23834,7 +24020,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(debug_log, "")
         cmd = F"{initsystemctl} listen zza.socket -c TESTING_LISTEN"
         init = background(cmd)
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
@@ -23905,9 +24091,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} enable zza.socket"
         sh____(cmd)
         #
-        InitLoopSleep = 1
+        INITLOOPSLEEP = 1
         initsystemctl = systemctl
-        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
+        initsystemctl += F" -c INITLOOPSLEEP={INITLOOPSLEEP}"
         if COVERAGE:
             initsystemctl += " -c EXEC_SPAWN=True"
         #
@@ -23916,7 +24102,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(debug_log, "")
         cmd = F"{initsystemctl} listen zza.socket -c TESTING_LISTEN"
         init = background(cmd)
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
@@ -24514,16 +24700,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out2 = output(cmd)
         logg.info("\n>\n%s", out2)
         #
-        InitLoopSleep = 1
+        INITLOOPSLEEP = 1
         initsystemctl = systemctl
-        initsystemctl += F" -c InitLoopSleep={InitLoopSleep}"
+        initsystemctl += F" -c INITLOOPSLEEP={INITLOOPSLEEP}"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
         text_file(debug_log, "")
         cmd = F"{initsystemctl} -1"
         init = background(cmd)
-        time.sleep(InitLoopSleep+2)
+        time.sleep(INITLOOPSLEEP+2)
         #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
@@ -24544,7 +24730,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} __killall {testsleepD}" # <<<
         sh____(cmd)
         #
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         log = lines(open(debug_log))
         # logg.info("systemctl.debug.log>\n\t%s", "\n\t".join(log))
         self.assertFalse(greps(log, "restart"))
@@ -24562,7 +24748,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertEqual(len(greps(top, "zz")), 2)
         #
-        time.sleep(InitLoopSleep+1) # RestartSec=6
+        time.sleep(INITLOOPSLEEP+1) # RestartSec=6
         #
         check = F"{systemctl} list-units --state=running --type=service"
         top = output(check)
@@ -24585,7 +24771,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertEqual(len(greps(top, "zz")), 3)
         #
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         log = lines(open(debug_log))
         logg.info("systemctl.debug.log>\n\t%s", "\n\t".join(log))
         self.assertTrue(greps(log, "restart"))
@@ -24654,8 +24840,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out2 = output(cmd)
         logg.info("\n>\n%s", out2)
         #
-        InitLoopSleep = 1
-        systemctl += F" -c InitLoopSleep={InitLoopSleep}"
+        INITLOOPSLEEP = 1
+        systemctl += F" -c INITLOOPSLEEP={INITLOOPSLEEP}"
         #
         debug_log = os_path(root, expand_path(SYSTEMCTL_DEBUG_LOG))
         os_remove(debug_log)
@@ -24684,7 +24870,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         # self.assertEqual(len(greps(top, "zz")), 3)
         #
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         log = lines(open(debug_log))
         logg.info("systemctl.debug.log>\n\t%s", "\n\t".join(log))
         self.assertTrue(greps(log, "restart"))
@@ -24878,7 +25064,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
-        systemctl += " -c InitLoopSleep=2"
+        systemctl += " -c INITLOOPSLEEP=2"
         logfile = os_path(root, "/var/log/"+testname+".log")
         testsleepA = self.testname("sleepA")
         testsleepB = self.testname("sleepB")
@@ -25008,7 +25194,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
-        systemctl += " -c InitLoopSleep=2 -c EXEC_SPAWN=True"
+        systemctl += " -c INITLOOPSLEEP=2 -c EXEC_SPAWN=True"
         logfile = os_path(root, "/var/log/"+testname+".log")
         testsleepA = self.testname("sleepA")
         bindir = os_path(root, "/usr/bin")
@@ -25050,7 +25236,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
-        systemctl += " -c InitLoopSleep=2 -c EXEC_SPAWN=True"
+        systemctl += " -c INITLOOPSLEEP=2 -c EXEC_SPAWN=True"
         logfile = os_path(root, "/var/log/"+testname+".log")
         testsleepA = self.testname("sleepA")
         bindir = os_path(root, "/usr/bin")
@@ -25093,7 +25279,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
-        systemctl += " -c InitLoopSleep=2 -c EXEC_SPAWN=True"
+        systemctl += " -c INITLOOPSLEEP=2 -c EXEC_SPAWN=True"
         logfile = os_path(root, "/var/log/"+testname+".log")
         testsleepA = self.testname("sleepA")
         bindir = os_path(root, "/usr/bin")
@@ -25135,7 +25321,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
-        systemctl += " -c InitLoopSleep=2 -c EXEC_SPAWN=True"
+        systemctl += " -c INITLOOPSLEEP=2 -c EXEC_SPAWN=True"
         logfile = os_path(root, "/var/log/"+testname+".log")
         testsleepA = self.testname("sleepA")
         bindir = os_path(root, "/usr/bin")
@@ -25179,7 +25365,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         user = self.user()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
-        systemctl += " -c InitLoopSleep=2 -c EXEC_SPAWN=True"
+        systemctl += " -c INITLOOPSLEEP=2 -c EXEC_SPAWN=True"
         logfile = os_path(root, "/var/log/"+testname+".log")
         testsleepA = self.testname("sleepA")
         bindir = os_path(root, "/usr/bin")
@@ -33360,8 +33546,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(greps(top, " root ")), 5)
         self.assertEqual(len(greps(top, " somebody ")), 1)
         #
-        InitLoopSleep = 5
-        time.sleep(InitLoopSleep+1)
+        INITLOOPSLEEP = 5
+        time.sleep(INITLOOPSLEEP+1)
         cmd = F"{docker} cp {testname}:/var/log/systemctl.debug.log {testdir}/systemctl.debug.log"
         sh____(cmd)
         check = F"{docker} exec {testname} systemctl list-units --state=running --type=service"
@@ -33378,7 +33564,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{docker} exec {testname} killall testsleepD" # <<<
         sh____(cmd)
         #
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         cmd = F"{docker} cp {testname}:/var/log/systemctl.debug.log {testdir}/systemctl.debug.log"
         sh____(cmd)
         log = lines(open(testdir+"/systemctl.debug.log"))
@@ -33398,7 +33584,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertEqual(len(greps(top, "zz")), 2)
         #
-        time.sleep(InitLoopSleep+1) # max 5sec but RestartSec=9
+        time.sleep(INITLOOPSLEEP+1) # max 5sec but RestartSec=9
         #
         check = F"{docker} exec {testname} systemctl list-units --state=running --type=service"
         top = output(check)
@@ -33412,7 +33598,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertEqual(len(greps(top, "zz")), 3)
         #
-        time.sleep(InitLoopSleep+1)
+        time.sleep(INITLOOPSLEEP+1)
         cmd = F"{docker} cp {testname}:/var/log/systemctl.debug.log {testdir}/systemctl.debug.log"
         sh____(cmd)
         log = lines(open(testdir+"/systemctl.debug.log"))

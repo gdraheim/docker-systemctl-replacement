@@ -2147,7 +2147,7 @@ class SystemctlLoadedUnits:
                      "ConditionPathIsReadWrite", "ConditionDirectoryNotEmpty", "ConditionFileIsExecutable", "ConditionFileNotEmpty",
                      "AssertPathExists", "AssertPathIsDirectory", "AssertPathIsSymbolicLink", "AssertPathIsMountPoint"
                      "AssertPathIsReadWrite", "AssertDirectoryNotEmpty", "AssertFileIsExecutable", "AssertFileNotEmpty"]:
-            warn = logging.ERROR if "Assert" in spec else logging.WARNING
+            warn = logging.ERROR if "Assert" in spec else warning
             checklist = conf.getlist(section, spec)
             for checkfile in checklist:
                 mode, checkname = checkprefix(checkfile)
