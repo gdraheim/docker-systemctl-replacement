@@ -195,7 +195,7 @@ def cover(image: Optional[str] = None, python: Optional[str] = None, append: Opt
     if not COVERAGE: return ""
     return coverage_run(image, python, append)
 
-def strQ(part: Union[str, int, None]) -> str:
+def q_str(part: Union[str, int, None]) -> str:
     if part is None:
         return ""
     if isinstance(part, int):
@@ -216,19 +216,19 @@ def sh____(cmd: Union[str, List[str]], shell: bool = True) -> int:
     if isinstance(cmd, string_types):
         logg.info(": %s", cmd)
     else:
-        logg.info(": %s", " ".join([strQ(item) for item in cmd]))
+        logg.info(": %s", " ".join([q_str(item) for item in cmd]))
     return subprocess.check_call(cmd, shell=shell)
 def sx____(cmd: Union[str, List[str]], shell: bool = True) -> int:
     if isinstance(cmd, string_types):
         logg.info(": %s", cmd)
     else:
-        logg.info(": %s", " ".join([strQ(item) for item in cmd]))
+        logg.info(": %s", " ".join([q_str(item) for item in cmd]))
     return subprocess.call(cmd, shell=shell)
 def output(cmd: Union[str, List[str]], shell: bool = True) -> str:
     if isinstance(cmd, string_types):
         logg.info(": %s", cmd)
     else:
-        logg.info(": %s", " ".join([strQ(item) for item in cmd]))
+        logg.info(": %s", " ".join([q_str(item) for item in cmd]))
     run = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE)
     out, err = run.communicate()
     return decodes(out)
@@ -236,7 +236,7 @@ def output2(cmd: Union[str, List[str]], shell: bool = True) -> Tuple[str, int]:
     if isinstance(cmd, string_types):
         logg.info(": %s", cmd)
     else:
-        logg.info(": %s", " ".join([strQ(item) for item in cmd]))
+        logg.info(": %s", " ".join([q_str(item) for item in cmd]))
     run = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE)
     out, err = run.communicate()
     return decodes(out), run.returncode
@@ -244,7 +244,7 @@ def output3(cmd: Union[str, List[str]], shell: bool = True) -> Tuple[str, str, i
     if isinstance(cmd, string_types):
         logg.info(": %s", cmd)
     else:
-        logg.info(": %s", " ".join([strQ(item) for item in cmd]))
+        logg.info(": %s", " ".join([q_str(item) for item in cmd]))
     run = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out, err = run.communicate()
     return decodes(out), decodes(err), run.returncode
