@@ -189,6 +189,7 @@ EXPAND_VARS_MAXDEPTH: int = 20
 EXPAND_KEEP_VARS: bool = True
 RESTART_FAILED_UNITS: bool = True
 ACTIVE_IF_ENABLED=False
+OK_CONDITION_FAILURE = True
 
 TAIL_CMDS = ["/bin/tail", "/usr/bin/tail", "/usr/local/bin/tail"]
 LESS_CMDS = ["/bin/less", "/usr/bin/less", "/usr/local/bin/less"]
@@ -2142,7 +2143,7 @@ class SystemctlLoadedUnits:
                 else:
                     if "!" not in mode:
                         logg.log(warn, "%s: %s - no files found: %s", unit, spec, filename)
-                        problems += [filename]
+                        problems += [spec+"="+checkfile]
         for spec in ["ConditionPathExists", "ConditionPathIsDirectory", "ConditionPathIsSymbolicLink", "ConditionPathIsMountPoint",
                      "ConditionPathIsReadWrite", "ConditionDirectoryNotEmpty", "ConditionFileIsExecutable", "ConditionFileNotEmpty",
                      "AssertPathExists", "AssertPathIsDirectory", "AssertPathIsSymbolicLink", "AssertPathIsMountPoint",
@@ -2156,62 +2157,65 @@ class SystemctlLoadedUnits:
                 filename = self.expand_special(checkname, conf)
                 if not os.path.isabs(filename):
                     logg.error("%s: %s - path not absolute: %s", unit, spec, filename)
-                    problems += [filename]
+                    problems += [spec+"="+checkfile]
                     continue
                 filepath = os_path(self._root, filename)
                 if not os.path.exists(filepath):
                     if "!" not in mode:
                         logg.log(warn, "%s: %s - path not found: %s", unit, spec, filename)
-                        problems += [filename]
+                        problems += [spec+"="+checkfile]
                 else:
                     if "!" in mode:
                         logg.log(warn, "%s: %s - must not exist: %s", unit, spec, filename)
-                        problems += [filename]
+                        problems += [spec+"="+checkfile]
                     else:
                         if "FileNotEmpty" in spec:
                             if not os.path.isfile(filepath):
                                 logg.log(warn, "%s: %s - not a file: %s", unit, spec, filename)
-                                problems += [filename]
+                                problems += [spec+"="+checkfile]
                             elif not os.path.getsize(filepath):
                                 logg.log(warn, "%s: %s - file is empty: %s", unit, spec, filename)
-                                problems += [filename]
+                                problems += [spec+"="+checkfile]
                         if "DirectoryNotEmpty" in spec:
                             if not os.path.isdir(filepath):
                                 logg.log(warn, "%s: %s - not a directory: %s", unit, spec, filename)
-                                problems += [filename]
+                                problems += [spec+"="+checkfile]
                             elif not os.listdir(filepath):
                                 logg.log(warn, "%s: %s - directory is empty: %s", unit, spec, filename)
-                                problems += [filename]
+                                problems += [spec+"="+checkfile]
                         if "IsDirectory" in spec:
                             if not os.path.isdir(filepath):
                                 logg.log(warn, "%s: %s - not a directory: %s", unit, spec, filename)
-                                problems += [filename]
+                                problems += [spec+"="+checkfile]
                         if "IsSymbolicLink" in spec:
                             if not os.path.islink(filepath):
                                 logg.log(warn, "%s: %s - not a symbolic link: %s", unit, spec, filename)
-                                problems += [filename]
+                                problems += [spec+"="+checkfile]
                         if "IsMountPoint" in spec:
                             if not os.path.ismount(filepath):
                                 logg.log(warn, "%s: %s - not a mount point: %s", unit, spec, filename)
-                                problems += [filename]
+                                problems += [spec+"="+checkfile]
                         if "IsReadWrite" in spec:
                             if not os.access(filepath, os.R_OK):
                                 logg.log(warn, "%s: %s - not readable: %s", unit, spec, filename)
-                                problems += [filename]
+                                problems += [spec+"="+checkfile]
                             elif not os.access(filepath, os.W_OK):
                                 logg.log(warn, "%s: %s - not writable: %s", unit, spec, filename)
-                                problems += [filename]
+                                problems += [spec+"="+checkfile]
                         if "IsExecutable" in spec:
                             if not os.access(filepath, os.X_OK):
                                 logg.log(warn, "%s: %s - not executable: %s", unit, spec, filename)
-                                problems += [filename]
+                                problems += [spec+"="+checkfile]
         return problems
-    def syntax_check(self, conf: SystemctlConf) -> int:
-        errors = len(self.check_file_conditions(conf, warning=logging.INFO)) # conditions may be get active later
+    def syntax_check(self, conf: SystemctlConf, *, conditions: bool = True) -> int:
+        errors = 0
+        if conditions:
+            errors += len(self.check_file_conditions(conf, warning=logging.INFO)) # conditions may be get active later
         filename = conf.filename()
         if filename and filename.endswith(".service"):
             errors += self.syntax_check_service(conf)
-        errors += self.syntax_check_enable(conf)
+        if TRUE:
+            errors += self.syntax_check_enable(conf)
         return errors
     def syntax_check_enable(self, conf: SystemctlConf, section: str = Install) -> int:
         errors = 0
@@ -3567,7 +3571,7 @@ class Systemctl:
         return self.start_unit_from(conf)
     def start_unit_from(self, conf: SystemctlConf) -> bool:
         if not conf: return False
-        if self.units.syntax_check(conf) > 100: return False
+        if self.units.syntax_check(conf, conditions=False) > 100: return False
         with waitlock(conf):
             logg.debug(" start unit %s => %s", conf.name(), q_str(conf.filename()))
             return self.do_start_unit_from(conf)
@@ -3575,11 +3579,24 @@ class Systemctl:
         blocked = self.units.check_system_conditions(conf, warning=logging.ERROR)
         if blocked:
             logg.error("%s: %s system conditions have failed: can not start", conf.name(), len(blocked))
-            return False
+            asserts = [cond for cond in blocked if cond.startswith("Assert")]
+            if asserts:
+                logg.error("Assertion failed on job for %s", conf.name())
+                return False
+            else: # original systemctl silently skips the unit without having them started
+                logg.info("%s was skipped due to an unmet condition (%s)", conf.name(), " and ".join(blocked))
+                return OK_CONDITION_FAILURE
         missing = self.units.check_file_conditions(conf, warning=logging.ERROR)
+        logg.fatal("missing %s", missing)
         if missing:
             logg.error("%s: %s file conditions have failed: can not start", conf.name(), len(missing))
-            return False
+            asserts = [cond for cond in missing if cond.startswith("Assert")]
+            if asserts:
+                logg.error("Assertion failed on job for %s", conf.name()) 
+                return False
+            else: # original systemctl silently skips the unit without having them started
+                logg.info("%s was skipped due to an unmet condition (%s)", conf.name(), " and ".join(missing))
+                return OK_CONDITION_FAILURE
         if conf.name().endswith(".service"):
             return self.do_start_service_from(conf)
         elif conf.name().endswith(".socket"):
