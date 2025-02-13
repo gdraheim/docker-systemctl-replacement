@@ -389,8 +389,8 @@ def get_exist_path(paths: List[str]) -> Optional[str]:
             return p
     return None
 
-def get_PAGER() -> List[str]:
-    PAGER = os.environ.get("PAGER", "less")  # pylint: disable=possibly-unused-variable
+def get_PAGER() -> List[str]:  # pylint: disable=invalid-name
+    PAGER = os.environ.get("PAGER", "less")  # pylint: disable=possibly-unused-variable,invalid-name
     pager = os.environ.get("SYSTEMD_PAGER", "{PAGER}").format(**locals())
     options = os.environ.get("SYSTEMD_LESS", "FRSXMK") # see 'man timedatectl'
     if not pager: pager = "cat"
@@ -407,7 +407,7 @@ def get_runtime_dir() -> str:
     if explicit: return explicit
     user = os_getlogin()
     return "/tmp/run-"+user
-def get_RUN(root: bool = False) -> str:
+def get_RUN(root: bool = False) -> str:  # pylint: disable=invalid-name
     tmp_var = get_TMP(root)  # pylint: disable=possibly-unused-variable
     if ROOT:
         tmp_var = ROOT
@@ -426,7 +426,7 @@ def get_RUN(root: bool = False) -> str:
                 return path
         os.makedirs(path, 0o700) # "/tmp/run/user/{uid}"
         return path
-def get_PID_DIR(root: bool = False) -> str:
+def get_PID_DIR(root: bool = False) -> str:  # pylint: disable=invalid-name
     if root:
         return get_RUN(root)
     else:
@@ -2583,7 +2583,7 @@ class Systemctl:
         status_file = self.get_StatusFile(conf)
         # this not a real setting, but do the expand_special anyway
         return os_path(self._root, self.units.expand_special(status_file, conf))
-    def get_StatusFile(self, conf: SystemctlConf) -> str: # -> text
+    def get_StatusFile(self, conf: SystemctlConf) -> str: # -> text # pylint: disable=invalid-name
         """ file where to store a status mark """
         status_file = self.units.get_StatusFile(conf)
         if status_file:
