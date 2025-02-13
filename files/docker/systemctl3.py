@@ -2293,16 +2293,16 @@ class SystemctlListenThread(threading.Thread):
             listen.register(sock, READ_ONLY)
             sock.listen()
             logg.debug("[%s] listen: %s :%s", me, sock.name(), sock.addr())
-        timestamp = time.time()
+        started = time.monotonic()
         while not self.stopped.is_set():
             try:
-                sleep_sec = InitLoopSleep - (time.time() - timestamp)
+                sleep_sec = self.systemctl.loop_sleep - (time.monotonic() - started)
                 if sleep_sec < MinimumYield:
                     sleep_sec = MinimumYield
                 sleeping = sleep_sec
                 while sleeping > 2:
                     time.sleep(1) # accept signals atleast every second
-                    sleeping = InitLoopSleep - (time.time() - timestamp)
+                    sleeping = self.systemctl.loop_sleep - (time.monotonic() - started)
                     if sleeping < MinimumYield:
                         sleeping = MinimumYield
                         break
@@ -2360,6 +2360,7 @@ class Systemctl:
     _restart_failed_units: Dict[str, float]
     _sockets: Dict[str, SystemctlSocket]
     _default_services: Dict[str, List[str]] # [target-name] -> List[service-name]
+    loop_sleep: int
     loop: threading.Lock
     units: SystemctlLoadedUnits
     def __init__(self) -> None:
@@ -2394,7 +2395,8 @@ class Systemctl:
         self._restart_failed_units = {}
         self._sockets = {}
         self._default_services = {}
-        self.loop = threading.Lock()
+        self.loop_sleep = InitLoopSleep
+        self.loop_lock = threading.Lock()
         self.units = SystemctlLoadedUnits()
     def get_unit_type(self, module: str) -> Optional[str]:
         _nam, ext = os.path.splitext(module)
@@ -4590,7 +4592,7 @@ class Systemctl:
             logg.info(" kill unit %s => %s", conf.name(), strQ(conf.filename()))
             return self.do_kill_unit_from(conf)
     def do_kill_unit_from(self, conf: SystemctlConf) -> bool:
-        started = time.time()
+        started = time.monotonic()
         doSendSIGKILL = self.units.get_SendSIGKILL(conf)
         doSendSIGHUP = self.units.get_SendSIGHUP(conf)
         useKillMode = self.units.get_KillMode(conf)
@@ -4636,7 +4638,7 @@ class Systemctl:
                     break
             if dead:
                 break
-            if time.time() > started + timeout:
+            if time.monotonic() > started + timeout:
                 logg.info("service PIDs not stopped after %s", timeout)
                 break
             time.sleep(1) # until TimeoutStopSec
@@ -6064,57 +6066,56 @@ class Systemctl:
         the interval ('-c InitLoopSleep=1') or have it indirectly shorter from the
         service descriptor's RestartSec ("RestartSec=2s").
         """
-        global InitLoopSleep  # pylint: disable=global-statement
         me = os.getpid()
         maximum = maximum or DefaultStartLimitIntervalSec
         # restartDelay = MinimumYield
         for unit in units:
-            now = time.time()
+            now = time.monotonic()
             try:
                 conf = self.units.load_conf(unit)
                 if not conf: continue
-                restartPolicy = conf.get(Service, "Restart", "no")
-                if restartPolicy in ["no", "on-success"]:
-                    logg.debug("[%s] [%s] Current NoCheck (Restart=%s)", me, unit, restartPolicy)
+                restart_policy = conf.get(Service, "Restart", "no")
+                if restart_policy in ["no", "on-success"]:
+                    logg.debug("[%s] [%s] Current NoCheck (Restart=%s)", me, unit, restart_policy)
                     continue
-                restartSec = self.units.get_RestartSec(conf)
-                if restartSec == 0:
-                    if InitLoopSleep > 1:
-                        logg.warning("[%s] set InitLoopSleep from %ss to 1 (caused by RestartSec=0!)",
-                                     unit, InitLoopSleep)
-                        InitLoopSleep = 1
-                elif restartSec > 0.9 and restartSec < InitLoopSleep:
-                    restartSleep = int(restartSec + 0.2)
-                    if restartSleep < InitLoopSleep:
-                        logg.warning("[%s] set InitLoopSleep from %ss to %s (caused by RestartSec=%.3fs)",
-                                     unit, InitLoopSleep, restartSleep, restartSec)
-                        InitLoopSleep = restartSleep
-                isUnitState = self.active_state(conf)
-                isUnitFailed = isUnitState in ["failed"]
-                logg.debug("[%s] [%s] Current Status: %s (%s)", me, unit, isUnitState, isUnitFailed)
-                if not isUnitFailed:
+                restart_sec = self.units.get_RestartSec(conf)
+                if restart_sec == 0:
+                    if self.loop_sleep > 1:
+                        logg.warning("[%s] set loop-sleep from %ss to 1 (caused by RestartSec=0!)",
+                                     unit, self.loop_sleep)
+                        self.loop_sleep = 1
+                elif restart_sec > 0.9 and restart_sec < self.loop_sleep:
+                    restart_sleep = int(restart_sec + 0.2)
+                    if restart_sleep < self.loop_sleep:
+                        logg.warning("[%s] set loop-sleep from %ss to %s (caused by RestartSec=%.3fs)",
+                                     unit, self.loop_sleep, restart_sleep, restart_sec)
+                        self.loop_sleep = restart_sleep
+                active_state = self.active_state(conf)
+                is_failed = active_state in ["failed"]
+                logg.debug("[%s] [%s] Current Status: %s (%s)", me, unit, active_state, is_failed)
+                if not is_failed:
                     if unit in self._restart_failed_units:
                         del self._restart_failed_units[unit]
                     continue
-                limitBurst = self.units.get_StartLimitBurst(conf)
-                limitSecs = self.units.get_StartLimitIntervalSec(conf)
-                if limitBurst > 1 and limitSecs >= 1:
+                limit_burst = self.units.get_StartLimitBurst(conf)
+                limit_secs = self.units.get_StartLimitIntervalSec(conf)
+                if limit_burst > 1 and limit_secs >= 1:
                     try:
                         if unit not in self._restarted_unit:
                             self._restarted_unit[unit] = []
                             # we want to register restarts from now on
                         restarted = self._restarted_unit[unit]
-                        logg.debug("[%s] [%s] Current limitSecs=%ss limitBurst=%sx (restarted %sx)",
-                                   me, unit, limitSecs, limitBurst, len(restarted))
+                        logg.debug("[%s] [%s] Current limit-secs=%ss limit-burst=%sx (restarted %sx)",
+                                   me, unit, limit_secs, limit_burst, len(restarted))
                         oldest = 0.
                         interval = 0.
-                        if len(restarted) >= limitBurst:
+                        if len(restarted) >= limit_burst:
                             logg.debug("[%s] [%s] restarted %s",
-                                       me, unit, ["%.3fs" % (t - now) for t in restarted])
+                                       me, unit, ["%.3fs" % (sec - now) for sec in restarted])
                             while len(restarted):
                                 oldest = restarted[0]
-                                interval = time.time() - oldest
-                                if interval > limitSecs:
+                                interval = time.monotonic() - oldest
+                                if interval > limit_secs:
                                     restarted = restarted[1:]
                                     continue
                                 break
@@ -6122,9 +6123,9 @@ class Systemctl:
                             logg.debug("[%s] [%s] ratelimit %s",
                                        me, unit, ["%.3fs" % (t - now) for t in restarted])
                             # all values in restarted have a time below limitSecs
-                        if len(restarted) >= limitBurst:
+                        if len(restarted) >= limit_burst:
                             logg.info("[%s] [%s] Blocking Restart - oldest %s is %s ago (allowed %s)",
-                                      me, unit, oldest, interval, limitSecs)
+                                      me, unit, oldest, interval, limit_secs)
                             self.write_status_from(conf, AS="error")
                             unit = "" # dropped out
                             continue
@@ -6132,7 +6133,7 @@ class Systemctl:
                         logg.error("[%s] burst exception %s", unit, e)
                 if unit: # not dropped out
                     if unit not in self._restart_failed_units:
-                        self._restart_failed_units[unit] = now + restartSec
+                        self._restart_failed_units[unit] = now + restart_sec
                         logg.debug("[%s] [%s] restart scheduled in %+.3fs",
                                    me, unit, (self._restart_failed_units[unit] - now))
             except Exception as e: # pylint: disable=broad-exception-caught
@@ -6142,34 +6143,34 @@ class Systemctl:
             return []
         # NOTE: this function is only called from InitLoop when "running"
         # let's check if any of the restart_units has its restartSec expired
-        now = time.time()
+        now = time.monotonic()
         restart_done: List[str] = []
         logg.debug("[%s] Restart checking  %s",
-                   me, ["%+.3fs" % (t - now) for t in self._restart_failed_units.values()])
+                   me, ["%+.3fs" % (sec - now) for sec in self._restart_failed_units.values()])
         for unit in sorted(self._restart_failed_units):
-            restartAt = self._restart_failed_units[unit]
-            if restartAt > now:
+            restart_at = self._restart_failed_units[unit]
+            if restart_at > now:
                 continue
             restart_done.append(unit)
             try:
                 conf = self.units.load_conf(unit)
                 if not conf: continue
-                isUnitState = self.active_state(conf)
-                isUnitFailed = isUnitState in ["failed"]
-                logg.debug("[%s] [%s] Restart Status: %s (%s)", me, unit, isUnitState, isUnitFailed)
-                if isUnitFailed:
+                active_state = self.active_state(conf)
+                is_failed = active_state in ["failed"]
+                logg.debug("[%s] [%s] Restart Status: %s (%s)", me, unit, active_state, is_failed)
+                if is_failed:
                     logg.debug("[%s] [%s] --- restarting failed unit...", me, unit)
                     self.restart_unit(unit)
                     logg.debug("[%s] [%s] --- has been restarted.", me, unit)
                     if unit in self._restarted_unit:
-                        self._restarted_unit[unit].append(time.time())
+                        self._restarted_unit[unit].append(time.monotonic())
             except Exception as e: # pylint: disable=broad-exception-caught
                 logg.error("[%s] [%s] An error occurred while restarting: %s", me, unit, e)
         for unit in restart_done:
             if unit in self._restart_failed_units:
                 del self._restart_failed_units[unit]
         logg.debug("[%s] Restart remaining %s",
-                   me, ["%+.3fs" % (t - now) for t in self._restart_failed_units.values()])
+                   me, ["%+.3fs" % (sec - now) for sec in self._restart_failed_units.values()])
         return restart_done
 
     def init_loop_until_stop(self, units: List[str]) -> Optional[str]:
@@ -6190,26 +6191,26 @@ class Systemctl:
         listen.start()
         logg.debug("started listen")
         self.sysinit_status(ActiveState = "active", SubState = "running")
-        timestamp = time.time()
+        lasttime = time.monotonic()
         while True:
             try:
-                if DEBUG_INITLOOP: # pragma: no cover
-                    logg.debug("DONE InitLoop (sleep %ss)", InitLoopSleep)
-                sleep_sec = InitLoopSleep - (time.time() - timestamp)
+                sleep_sec = self.loop_sleep - (time.monotonic() - lasttime)
                 if sleep_sec < MinimumYield:
                     sleep_sec = MinimumYield
+                if DEBUG_INITLOOP: # pragma: no cover
+                    logg.debug("WAIT init-loop (loop-sleep %ss) sleeping %ss", self.loop_sleep, sleep_sec)
                 sleeping = sleep_sec
                 while sleeping > 2:
                     time.sleep(1) # accept signals atleast every second
-                    sleeping = InitLoopSleep - (time.time() - timestamp)
+                    sleeping = self.loop_sleep - (time.monotonic() - lasttime)
                     if sleeping < MinimumYield:
                         sleeping = MinimumYield
                         break
                 time.sleep(sleeping) # remainder waits less that 2 seconds
-                timestamp = time.time()
-                self.loop.acquire()
+                lasttime = time.monotonic()
+                self.loop_lock.acquire()
                 if DEBUG_INITLOOP: # pragma: no cover
-                    logg.debug("NEXT InitLoop (after %ss)", sleep_sec)
+                    logg.debug("NEXT init-loop (after %ss)", sleep_sec)
                 self.read_log_files(units)
                 if DEBUG_INITLOOP: # pragma: no cover
                     logg.debug("reap zombies - check current processes")
@@ -6232,7 +6233,7 @@ class Systemctl:
                         break
                 if RESTART_FAILED_UNITS:
                     self.restart_failed_units(units)
-                self.loop.release()
+                self.loop_lock.release()
             except KeyboardInterrupt as e:
                 if e.args and e.args[0] == "SIGQUIT":
                     # the original systemd puts a coredump on that signal.
@@ -6248,7 +6249,7 @@ class Systemctl:
                 logg.info("interrupted - exception %s", e)
                 raise
         self.sysinit_status(ActiveState = None, SubState = "degraded")
-        try: self.loop.release()
+        try: self.loop_lock.release()
         except (OSError, RuntimeError): pass
         listen.stop()
         listen.join(2)
