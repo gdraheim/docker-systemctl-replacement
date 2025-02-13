@@ -2538,20 +2538,20 @@ class Systemctl:
                 continue
             return pid
         return None
-    def get_status_pid_file(self, unit: str) -> str:
+    def get_pid_file(self, unit: str) -> str:
         """ actual file path of pid file (internal) """
         conf = self.units.get_conf(unit)
-        return self.pid_file_from(conf) or self.get_status_file_from(conf)
-    def pid_file_from(self, conf: SystemctlConf, default: str = NIX) -> str:
+        return self.pid_file(conf) or self.status_file(conf)
+    def pid_file(self, conf: SystemctlConf, default: str = NIX) -> str:
         """ get the specified pid file path (not a computed default) """
-        pid_file = self.get_pid_file(conf) or default
+        pid_file = self.get_PIDFile(conf) or default
         return os_path(self._root, self.units.expand_special(pid_file, conf))
-    def get_pid_file(self, conf: SystemctlConf, default: Optional[str] = None) -> str:
+    def get_PIDFile(self, conf: SystemctlConf, default: Optional[str] = None) -> str: # pylint: disable=invlid-name
         return conf.get(Service, "PIDFile", default)
     def read_mainpid_from(self, conf: SystemctlConf, default: Optional[int] = None) -> Optional[int]:
         """ MAINPID is either the PIDFile content written from the application
             or it is the value in the status file written by this systemctl.py code """
-        pid_file = self.pid_file_from(conf)
+        pid_file = self.pid_file(conf)
         if pid_file:
             return self.read_pid_file(pid_file, default)
         status = self.read_status_from(conf)
@@ -2559,7 +2559,7 @@ class Systemctl:
             return to_intN(status["MainPID"], default)
         return default
     def clean_pid_file_from(self, conf: SystemctlConf) -> None:
-        pid_file = self.pid_file_from(conf)
+        pid_file = self.pid_file(conf)
         if pid_file and os.path.isfile(pid_file):
             try:
                 os.remove(pid_file)
@@ -2568,8 +2568,8 @@ class Systemctl:
         self.write_status_from(conf, MainPID=None)
     def get_status_file(self, unit: str) -> str: # for testing
         conf = self.units.get_conf(unit)
-        return self.get_status_file_from(conf)
-    def get_status_file_from(self, conf: SystemctlConf) -> str:
+        return self.status_file(conf)
+    def status_file(self, conf: SystemctlConf) -> str:
         status_file = self.get_StatusFile(conf)
         # this not a real setting, but do the expand_special anyway
         return os_path(self._root, self.units.expand_special(status_file, conf))
@@ -2583,14 +2583,14 @@ class Systemctl:
         name = "%s.status" % conf.name()
         return os.path.join(folder, name)
     def clean_status_from(self, conf: SystemctlConf) -> None:
-        status_file = self.get_status_file_from(conf)
+        status_file = self.status_file(conf)
         if os.path.exists(status_file):
             os.remove(status_file)
         conf.status = {}
     def write_status_from(self, conf: SystemctlConf, **status: Union[str, int, None]) -> bool: # -> bool(written)
         """ if a status_file is known then path is created and the
             give status is written as the only content. """
-        status_file = self.get_status_file_from(conf)
+        status_file = self.status_file(conf)
         # if not status_file: return False
         dirpath = os.path.dirname(os.path.abspath(status_file))
         if not os.path.isdir(dirpath):
@@ -2621,7 +2621,7 @@ class Systemctl:
             logg.error("writing STATUS %s: %s\n\t to status file %s", status, e, status_file)
         return True
     def read_status_from(self, conf: SystemctlConf) -> Dict[str, str]:
-        status_file = self.get_status_file_from(conf)
+        status_file = self.status_file(conf)
         status: Dict[str, str] = {}
         # if not status_file: return status
         if not os.path.isfile(status_file):
@@ -3507,7 +3507,7 @@ class Systemctl:
         elif runs in ["notify"]:
             # "notify" is the same as "simple" but we create a $NOTIFY_SOCKET
             # and wait for startup completion by checking the socket messages
-            pid_file = self.pid_file_from(conf)
+            pid_file = self.pid_file(conf)
             pid = self.read_mainpid_from(conf)
             if self.is_active_pid(pid):
                 logg.error("the service is already running on PID %s", pid)
@@ -3565,7 +3565,7 @@ class Systemctl:
                 else:
                     service_result = "timeout" # "could not start service"
         elif runs in ["forking"]:
-            pid_file = self.pid_file_from(conf)
+            pid_file = self.pid_file(conf)
             for cmd in conf.getlist(Service, "ExecStart", []):
                 exe, newcmd = self.units.expand_cmd(cmd, env, conf)
                 if not newcmd: continue
@@ -4095,7 +4095,7 @@ class Systemctl:
         returncode = 0
         service_result = "success"
         if runs in ["oneshot"]:
-            status_file = self.get_status_file_from(conf)
+            status_file = self.status_file(conf)
             if self.get_status_from(conf, "ActiveState", "unknown") == "inactive":
                 logg.warning("the service is already down once")
                 return True
@@ -4124,7 +4124,7 @@ class Systemctl:
                 self.clean_pid_file_from(conf)
                 self.clean_status_from(conf) # "inactive"
         elif runs in ["simple", "exec", "notify", "idle"]:
-            status_file = self.get_status_file_from(conf)
+            status_file = self.status_file(conf)
             size = os.path.exists(status_file) and os.path.getsize(status_file)
             logg.info("STATUS %s %s", status_file, size)
             pid = 0
@@ -4155,8 +4155,8 @@ class Systemctl:
                     self.clean_pid_file_from(conf)
                 self.clean_status_from(conf) # "inactive"
         elif runs in ["forking"]:
-            status_file = self.get_status_file_from(conf)
-            pid_file = self.pid_file_from(conf)
+            status_file = self.status_file(conf)
+            pid_file = self.pid_file(conf)
             for cmd in conf.getlist(Service, "ExecStop", []):
                 # active = self.is_active_from(conf)
                 if pid_file:
@@ -4589,7 +4589,7 @@ class Systemctl:
         useKillSignal = self.units.get_KillSignal(conf)
         kill_signal = getattr(signal, useKillSignal)
         timeout = self.units.get_TimeoutStopSec(conf)
-        status_file = self.get_status_file_from(conf)
+        status_file = self.status_file(conf)
         size = os.path.exists(status_file) and os.path.getsize(status_file)
         logg.info("STATUS %s %s", status_file, size)
         mainpid = self.read_mainpid_from(conf)
@@ -4744,11 +4744,11 @@ class Systemctl:
         """ returns 'active' 'inactive' 'failed' 'unknown' """
         # used in try-restart/other commands to check if needed.
         if not conf: return "unknown"
-        pid_file = self.pid_file_from(conf)
+        pid_file = self.pid_file(conf)
         if pid_file: # application PIDFile
             if not os.path.exists(pid_file):
                 return "inactive"
-        status_file = self.get_status_file_from(conf)
+        status_file = self.status_file(conf)
         if self.getsize(status_file):
             state = self.get_status_from(conf, "ActiveState", "")
             if state:
@@ -4795,11 +4795,11 @@ class Systemctl:
     def get_substate_from(self, conf: SystemctlConf) -> Optional[str]:
         """ returns 'running' 'exited' 'dead' 'failed' 'plugged' 'mounted' """
         if not conf: return None
-        pid_file = self.pid_file_from(conf)
+        pid_file = self.pid_file(conf)
         if pid_file:
             if not os.path.exists(pid_file):
                 return "dead"
-        status_file = self.get_status_file_from(conf)
+        status_file = self.status_file(conf)
         if self.getsize(status_file):
             state = self.get_status_from(conf, "ActiveState", "")
             if state:
@@ -4881,7 +4881,7 @@ class Systemctl:
         if conf is None: return True
         if not self.is_failed_from(conf): return False
         done = False
-        status_file = self.get_status_file_from(conf)
+        status_file = self.status_file(conf)
         if status_file and os.path.exists(status_file):
             try:
                 os.remove(status_file)
@@ -4889,7 +4889,7 @@ class Systemctl:
                 logg.debug("done rm %s", status_file)
             except OSError as e:
                 logg.error("while rm %s: %s", status_file, e)
-        pid_file = self.pid_file_from(conf)
+        pid_file = self.pid_file(conf)
         if pid_file and os.path.exists(pid_file):
             try:
                 os.remove(pid_file)
@@ -5565,15 +5565,15 @@ class Systemctl:
         yield "Id", conf.name()
         yield "Names", " ".join(sorted(names.keys()))
         yield "Description", self.units.get_Description(conf) # conf.get(Unit, "Description")
-        yield "PIDFile", self.get_pid_file(conf) # not self.pid_file_from w/o default location
-        yield "PIDFilePath", self.pid_file_from(conf)
+        yield "PIDFile", self.get_PIDFile(conf) # not self.pid_file_from w/o default location
+        yield "PIDFilePath", self.pid_file(conf)
         yield "MainPID", strE(self.active_pid_from(conf))            # status["MainPID"] or PIDFile-read
         yield "SubState", self.get_substate_from(conf) or "unknown"  # status["SubState"] or notify-result
         yield "ActiveState", self.get_active_from(conf) or "unknown" # status["ActiveState"]
         yield "LoadState", loaded
         yield "UnitFileState", self.enabled_from(conf)
         yield "StatusFile", self.get_StatusFile(conf)
-        yield "StatusFilePath", self.get_status_file_from(conf)
+        yield "StatusFilePath", self.status_file(conf)
         yield "JournalFile", self.get_journal_log(conf)
         yield "JournalFilePath", self.get_journal_log_from(conf)
         yield "NotifySocket", self.get_notify_socket_from(conf)
@@ -6318,9 +6318,9 @@ class Systemctl:
         return self._sysinit_target
     def is_system_running(self) -> str:
         conf = self.sysinit_target()
-        if not self.is_running_unit_from(conf):
+        if not self.is_running(conf):
             time.sleep(MinimumYield)
-        if not self.is_running_unit_from(conf):
+        if not self.is_running(conf):
             return "offline"
         status = self.read_status_from(conf)
         return status.get("SubState", "unknown")
@@ -6348,13 +6348,13 @@ class Systemctl:
             if "running" not in state:
                 logg.info("system is %s", state)
             break
-    def is_running_unit_from(self, conf: SystemctlConf) -> bool:
-        status_file = self.get_status_file_from(conf)
-        pid_file = self.pid_file_from(conf)
+    def is_running(self, conf: SystemctlConf) -> bool:
+        status_file = self.status_file(conf)
+        pid_file = self.pid_file(conf)
         return self.getsize(status_file) > 0 or self.getsize(pid_file) > 0
     def is_running_unit(self, unit: str) -> bool:
         conf = self.units.get_conf(unit)
-        return self.is_running_unit_from(conf)
+        return self.is_running(conf)
     def pidlist_of(self, pid: Optional[int]) -> List[int]:
         if not pid:
             return []
@@ -6729,8 +6729,8 @@ def runcommand(command: str, *modules: str) -> int:
         print_str(systemctl.units.get_description(*modules))
     elif command in ["__get_status_file"]:
         print_str(systemctl.get_status_file(modules[0]))
-    elif command in ["__get_status_pid_file", "__get_pid_file"]:
-        print_str(systemctl.get_status_pid_file(modules[0]))
+    elif command in ["__get_pid_file"]:
+        print_str(systemctl.get_pid_file(modules[0]))
     elif command in ["__disable_unit"]:
         exitcode = is_not_ok(systemctl.disable_unit(*modules))
     elif command in ["__enable_unit"]:
