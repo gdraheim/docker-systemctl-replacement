@@ -148,17 +148,17 @@ SYSTEMD_VERSION: int = 219
 SYSINIT_TARGET: str = "sysinit.target"
 SYSINIT_WAIT: int = 5 # max for target
 YIELD: float = 0.5 # for cooperative multi-tasking
+MAXTIMEOUT: int = 200   # overrides all other
 MinimumTimeoutStartSec: int = 4
 MinimumTimeoutStopSec: int = 4
 DefaultTimeoutStartSec: int = 90   # official value
 DefaultTimeoutStopSec: int = 90    # official value
 DefaultTimeoutAbortSec: int = 3600 # officially it none (usually larget than StopSec)
-DefaultMaximumTimeout: int = 200   # overrides all other
 DefaultRestartSec: float = 0.1       # official value of 100ms
 DefaultStartLimitIntervalSec: int = 10 # official value
 DefaultStartLimitBurst: int = 5        # official value
 InitLoopSleep: int = 5
-MaxLockWait: int = 0 # equals DefaultMaximumTimeout
+MAXLOCKWAIT: int = 0 # equals MAXTIMEOUT
 DEFAULT_PATH: str = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 RESET_LOCALE: str = """LANG LANGUAGE LC_CTYPE LC_NUMERIC LC_TIME LC_COLLATE LC_MONETARY LC_MESSAGES
                        LC_PAPER LC_NAME LC_ADDRESS LC_TELEPHONE LC_MEASUREMENT LC_IDENTIFICATION LC_ALL"""
@@ -873,7 +873,7 @@ class SystemctlConfigParser(SystemctlConfData):
             if item.strip() in SYSD_RUNLEVEL_FOR:
                 self.set(Install, "WantedBy", SYSD_RUNLEVEL_FOR[item.strip()])
         self.set(Service, "Restart", "no")
-        self.set(Service, "TimeoutSec", nix_str(DefaultMaximumTimeout))
+        self.set(Service, "TimeoutSec", nix_str(MAXTIMEOUT))
         self.set(Service, "KillMode", "process")
         self.set(Service, "GuessMainPID", "no")
         # self.set(Service, "RemainAfterExit", "yes")
@@ -1023,7 +1023,7 @@ class waitlock:
             lockfile = self.lockfile()
             lockname = os.path.basename(lockfile)
             self.opened = os.open(lockfile, os.O_RDWR | os.O_CREAT, 0o600)
-            for attempt in range(int(MaxLockWait or DefaultMaximumTimeout)):
+            for attempt in range(int(MAXLOCKWAIT or MAXTIMEOUT)):
                 try:
                     logg_debug_flock("[%s] %s trying %s _______ ", os.getpid(), delayed(attempt), lockname)
                     fcntl.flock(self.opened, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -1042,7 +1042,7 @@ class waitlock:
                     os.lseek(self.opened, 0, os.SEEK_SET)
                     logg.debug("[%s] %s could not get lock: %s", os.getpid(), delayed(attempt), e)
                     logg.info(" [%s] %s systemctl locked by %s", os.getpid(), delayed(attempt), whom.rstrip())
-                    time.sleep(1) # until MaxLockWait
+                    time.sleep(1) # until MAXLOCKWAIT
                     continue
             logg.error("[%s] not able to get the lock to %s", os.getpid(), lockname)
         except OSError as e:
@@ -1672,10 +1672,10 @@ class SystemctlLoadedUnits:
     def get_TimeoutStartSec(self, conf: SystemctlConf, section: str = Service) -> float: # pylint: disable=invalid-name
         timeout = conf.get(section, "TimeoutSec", nix_str(DefaultTimeoutStartSec))
         timeout = conf.get(section, "TimeoutStartSec", timeout)
-        return time_to_seconds(timeout, DefaultMaximumTimeout)
+        return time_to_seconds(timeout, MAXTIMEOUT)
     def get_SocketTimeoutSec(self, conf: SystemctlConf, section: str = Socket) -> float: # pylint: disable=invalid-name
         timeout = conf.get(section, "TimeoutSec", nix_str(DefaultTimeoutStartSec))
-        return time_to_seconds(timeout, DefaultMaximumTimeout)
+        return time_to_seconds(timeout, MAXTIMEOUT)
     def get_RemainAfterExit(self, conf: SystemctlConf, section: str = Service) -> bool: # pylint: disable=invalid-name
         return conf.getbool(section, "RemainAfterExit", "no")
     def get_StatusFile(self, conf: SystemctlConf, section: str = Service) -> Optional[str]:  # pylint: disable=invalid-name
@@ -1708,7 +1708,7 @@ class SystemctlLoadedUnits:
     def get_TimeoutStopSec(self, conf: SystemctlConf) -> float: # pylint: disable=invalid-name
         timeout = conf.get(Service, "TimeoutSec", nix_str(DefaultTimeoutStartSec))
         timeout = conf.get(Service, "TimeoutStopSec", timeout)
-        return time_to_seconds(timeout, DefaultMaximumTimeout)
+        return time_to_seconds(timeout, MAXTIMEOUT)
     def get_SendSIGKILL(self, conf: SystemctlConf) -> bool: # pylint: disable=invalid-name
         return conf.getbool(Service, "SendSIGKILL", "yes")
     def get_SendSIGHUP(self, conf: SystemctlConf) -> bool: # pylint: disable=invalid-name
@@ -1726,7 +1726,7 @@ class SystemctlLoadedUnits:
         interval = conf.get(Service, "StartLimitIntervalSec", nix_str(defaults)) # 10s
         return time_to_seconds(interval, maximum)
     def get_RestartSec(self, conf: SystemctlConf, maximum: Optional[int] = None) -> float: # pylint: disable=invalid-name
-        maximum = maximum or DefaultMaximumTimeout
+        maximum = maximum or MAXTIMEOUT
         delay = conf.get(Service, "RestartSec", nix_str(DefaultRestartSec))
         return time_to_seconds(delay, maximum)
     def get_description(self, unit: str, default: str = NIX) -> str:
@@ -3300,7 +3300,7 @@ class Systemctl:
         os.chmod(socketfile, 0o777) # the service my run under some User=setting
         return Systemctl.NotifySocket(sock, socketfile)
     def read_notify_socket(self, notify: NotifySocket, timeout: float) -> str:
-        notify.socket.settimeout(timeout or DefaultMaximumTimeout)
+        notify.socket.settimeout(timeout or MAXTIMEOUT)
         result = ""
         try:
             result, _addr = notify.socket.recvfrom(4096)

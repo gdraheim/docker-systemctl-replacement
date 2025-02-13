@@ -66,7 +66,7 @@ UBUNTU = "ubuntu:24.04"
 OPENSUSE = "opensuse/leap:15.6"
 SOMETIME = ""
 
-QUICK = "-c DefaultMaximumTimeout=9"
+QUICK = "-c MAXTIMEOUT=9"
 DOCKER_SOCKET = "/var/run/docker.sock"
 PSQL_TOOL = "/usr/bin/psql"
 
@@ -1118,12 +1118,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart=/bin/sleep 3
         """)
         #
-        cmd = F"{systemctl} daemon-reload -c MinimumYield=0.7 -vvv"
+        cmd = F"{systemctl} daemon-reload -c YIELD=0.7 -vvv"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
         self.assertEqual(lines(out), [])
         self.assertEqual(end, 0)
-        self.assertEqual(len(greps(err, "MinimumYield=0.7")), 2)
+        self.assertEqual(len(greps(err, "YIELD=0.7")), 2)
         self.rm_testdir()
         self.rm_zzfiles(root)
         self.coverage()
