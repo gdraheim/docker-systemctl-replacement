@@ -2143,12 +2143,14 @@ class SystemctlLoadedUnits:
                     if "!" not in mode:
                         logg.log(warn, "%s: %s - no files not found: %s", unit, spec, filename)
                         problems += [filename]
-        for spec in ["ConditionPathExists", "ConditionPathIsDirectory", "ConditionPathIsSymbolicLink", "ConditionPathIsMountPoint"
+        for spec in ["ConditionPathExists", "ConditionPathIsDirectory", "ConditionPathIsSymbolicLink", "ConditionPathIsMountPoint",
                      "ConditionPathIsReadWrite", "ConditionDirectoryNotEmpty", "ConditionFileIsExecutable", "ConditionFileNotEmpty",
-                     "AssertPathExists", "AssertPathIsDirectory", "AssertPathIsSymbolicLink", "AssertPathIsMountPoint"
+                     "AssertPathExists", "AssertPathIsDirectory", "AssertPathIsSymbolicLink", "AssertPathIsMountPoint",
                      "AssertPathIsReadWrite", "AssertDirectoryNotEmpty", "AssertFileIsExecutable", "AssertFileNotEmpty"]:
             warn = logging.ERROR if "Assert" in spec else warning
             checklist = conf.getlist(section, spec)
+            if checklist:
+                logg.info(" --> checking %s %s", spec, checklist)
             for checkfile in checklist:
                 mode, checkname = checkprefix(checkfile)
                 filename = self.expand_special(checkname, conf)
@@ -2193,10 +2195,10 @@ class SystemctlLoadedUnits:
                                 logg.log(warn, "%s: %s - not a mount point: %s", unit, spec, filename)
                                 problems += [filename]
                         if "IsReadWrite" in spec:
-                            if os.access(filepath, os.R_OK):
+                            if not os.access(filepath, os.R_OK):
                                 logg.log(warn, "%s: %s - not readable: %s", unit, spec, filename)
                                 problems += [filename]
-                            elif os.access(filepath, os.W_OK):
+                            elif not os.access(filepath, os.W_OK):
                                 logg.log(warn, "%s: %s - not writable: %s", unit, spec, filename)
                                 problems += [filename]
                         if "IsExecutable" in spec:
