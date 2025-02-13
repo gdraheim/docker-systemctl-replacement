@@ -2320,7 +2320,7 @@ class SystemctlListenThread(threading.Thread):
                     for sock in socketlist:
                         if sock.fileno() == sock_fileno:
                             if not self.stopped.is_set():
-                                if self.systemctl.loop.acquire():
+                                if self.systemctl.loop_lock.acquire():
                                     logg.debug("[%s] listen: accept %s :%s", me, sock.name(), sock_fileno)
                                     self.systemctl.do_accept_socket_from(sock.conf, sock.sock)
             except Exception as e:
