@@ -147,7 +147,7 @@ _proc_sys_stat = "/proc/stat"  # pylint: disable=invalid-name
 SYSTEMD_VERSION: int = 219
 SYSINIT_TARGET: str = "sysinit.target"
 SYSINIT_WAIT: int = 5 # max for target
-MinimumYield: float = 0.5
+YIELD: float = 0.5 # for cooperative multi-tasking
 MinimumTimeoutStartSec: int = 4
 MinimumTimeoutStopSec: int = 4
 DefaultTimeoutStartSec: int = 90   # official value
@@ -2302,14 +2302,14 @@ class SystemctlListenThread(threading.Thread):
         while not self.stopped.is_set():
             try:
                 sleep_sec = self.systemctl.loop_sleep - (time.monotonic() - started)
-                if sleep_sec < MinimumYield:
-                    sleep_sec = MinimumYield
+                if sleep_sec < YIELD:
+                    sleep_sec = YIELD
                 sleeping = sleep_sec
                 while sleeping > 2:
                     time.sleep(1) # accept signals atleast every second
                     sleeping = self.systemctl.loop_sleep - (time.monotonic() - started)
-                    if sleeping < MinimumYield:
-                        sleeping = MinimumYield
+                    if sleeping < YIELD:
+                        sleeping = YIELD
                         break
                 time.sleep(sleeping) # remainder waits less that 2 seconds
                 if DEBUG_INITLOOP: # pragma: no cover
@@ -3505,7 +3505,7 @@ class Systemctl:
                 self.write_status_from(conf, MainPID=forkpid)
                 logg.info("%s started PID %s", runs, forkpid)
                 env["MAINPID"] = nix_str(forkpid)
-                time.sleep(MinimumYield)
+                time.sleep(YIELD)
                 run = subprocess_testpid(forkpid)
                 if run.returncode is not None:
                     logg.info("%s stopped PID %s (%s) <-%s>", runs, run.pid,
@@ -3550,7 +3550,7 @@ class Systemctl:
                 mainpid = forkpid
                 self.write_status_from(conf, MainPID=mainpid)
                 env["MAINPID"] = nix_str(mainpid)
-                time.sleep(MinimumYield)
+                time.sleep(YIELD)
                 run = subprocess_testpid(forkpid)
                 if run.returncode is not None:
                     logg.info("%s stopped PID %s (%s) <-%s>", runs, run.pid,
@@ -4366,7 +4366,7 @@ class Systemctl:
                     logg.error("Job for %s failed because the control process exited with error code. (%s)",
                                conf.name(), run.returncode)
                     return False
-            time.sleep(MinimumYield)
+            time.sleep(YIELD)
             return True
         elif runs in ["oneshot"]:
             logg.debug("ignored run type '%s' for reload", runs)
@@ -4653,12 +4653,12 @@ class Systemctl:
             for pid in pidlist:
                 if pid != mainpid:
                     self._kill_pid(pid, signal.SIGKILL)
-            time.sleep(MinimumYield)
+            time.sleep(YIELD)
         # useKillMode in [ "control-group", "mixed", "process" ]
         if pid_exists(mainpid):
             logg.info("hard kill PID %s", mainpid)
             self._kill_pid(mainpid, signal.SIGKILL)
-            time.sleep(MinimumYield)
+            time.sleep(YIELD)
         dead = not pid_exists(mainpid) or pid_zombie(mainpid)
         logg.info("done hard kill PID %s %s", mainpid, dead and "OK")
         return dead
@@ -6071,7 +6071,7 @@ class Systemctl:
         """
         me = os.getpid()
         maximum = maximum or DefaultStartLimitIntervalSec
-        # restartDelay = MinimumYield
+        # restartDelay = YIELD
         for unit in units:
             now = time.monotonic()
             try:
@@ -6198,16 +6198,16 @@ class Systemctl:
         while True:
             try:
                 sleep_sec = self.loop_sleep - (time.monotonic() - lasttime)
-                if sleep_sec < MinimumYield:
-                    sleep_sec = MinimumYield
+                if sleep_sec < YIELD:
+                    sleep_sec = YIELD
                 if DEBUG_INITLOOP: # pragma: no cover
                     logg.debug("WAIT init-loop (loop-sleep %ss) sleeping %ss", self.loop_sleep, sleep_sec)
                 sleeping = sleep_sec
                 while sleeping > 2:
                     time.sleep(1) # accept signals atleast every second
                     sleeping = self.loop_sleep - (time.monotonic() - lasttime)
-                    if sleeping < MinimumYield:
-                        sleeping = MinimumYield
+                    if sleeping < YIELD:
+                        sleeping = YIELD
                         break
                 time.sleep(sleeping) # remainder waits less that 2 seconds
                 lasttime = time.monotonic()
@@ -6309,7 +6309,7 @@ class Systemctl:
     def is_system_running(self) -> str:
         conf = self.sysinit_target()
         if not self.is_running(conf):
-            time.sleep(MinimumYield)
+            time.sleep(YIELD)
         if not self.is_running(conf):
             return "offline"
         status = self.read_status_from(conf)
@@ -6904,7 +6904,7 @@ def main() -> int:
             elif isinstance(old, float):
                 logg.debug("num %s=%s", nam, val)
                 globals()[nam] = float(val)
-                logg.debug("... MinimumYield=%s", MinimumYield)
+                logg.debug("... YIELD=%s", YIELD)
             elif isinstance(old, int):
                 logg.debug("int %s=%s", nam, val)
                 globals()[nam] = int(val)
