@@ -163,7 +163,7 @@ DefaultPath: str = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 ResetLocale: List[str] = ["LANG", "LANGUAGE", "LC_CTYPE", "LC_NUMERIC", "LC_TIME", "LC_COLLATE", "LC_MONETARY",
                "LC_MESSAGES", "LC_PAPER", "LC_NAME", "LC_ADDRESS", "LC_TELEPHONE", "LC_MEASUREMENT",
                "LC_IDENTIFICATION", "LC_ALL"]
-LocaleConf: str ="/etc/locale.conf"
+LOCALE_CONF: str ="/etc/locale.conf"
 LISTEN_BACKLOG: int =2
 NOTIFY_TIMEOUT = 3
 NOTIFY_QUICKER = 100
@@ -3917,7 +3917,7 @@ class Systemctl:
             if name in env:
                 del env[name]
         locale = {}
-        localepath = env.get("LOCALE_CONF", LocaleConf)
+        localepath = env.get("LOCALE_CONF", LOCALE_CONF)
         localeparts = localepath.split(os.pathsep)
         for filename in localeparts:
             if os.path.isfile(filename):
