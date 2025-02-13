@@ -2719,10 +2719,8 @@ class Systemctl:
         # man proc(5): "(22) starttime = The time the process started after system boot."
         #    ".. the value is expressed in clock ticks (divide by sysconf(_SC_CLK_TCK))."
         # NOTE: for containers the start time is related to the boot time of host system.
-
-        clkTickInt = os.sysconf_names['SC_CLK_TCK']
-        clockTicksPerSec = os.sysconf(clkTickInt)
-        started_secs = float(started_ticks) / clockTicksPerSec
+        ticks_per_sec = os.sysconf(os.sysconf_names['SC_CLK_TCK'])
+        started_secs = float(started_ticks) / ticks_per_sec
         if DEBUG_BOOTTIME:
             logg.debug("  BOOT .. Proc started time:  %.3f (%s)", started_secs, proc)
         # this value is the start time from the host system
