@@ -237,7 +237,7 @@ Install = "Install"  # pylint: disable=invalid-name
 EXIT_SUCCESS = 0
 EXIT_FAILURE = 1
 
-def strINET(value: int) -> str:
+def sock_type_str(value: int) -> str:
     if value == socket.SOCK_DGRAM:
         return "UDP"
     if value == socket.SOCK_STREAM:
@@ -3709,7 +3709,7 @@ class Systemctl:
                 logg.debug("%s: '%s'", conf.name(), data)
                 sock.sendto(b"ERROR: "+data.upper(), sender)
                 return False
-            logg.error("can not accept socket type %s", strINET(sock.type))
+            logg.error("can not accept socket type %s", sock_type_str(sock.type))
             return False
         return self.do_start_service_from(service_conf)
     def get_socket_service_from(self, conf: SystemctlConf) -> str:
@@ -3873,7 +3873,7 @@ class Systemctl:
         sock = socket.socket(socket.AF_INET, inet)
         try:
             sock.bind(('', int(port)))
-            logg.info("%s: bound socket at %s %s:%s", conf.name(), strINET(inet), ALL, port)
+            logg.info("%s: bound socket at %s %s:%s", conf.name(), sock_type_str(inet), ALL, port)
         except OSError as e:
             logg.error("%s: create socket failed (%s:%s): %s", conf.name(), ALL, port, e)
             sock.close()
@@ -3884,7 +3884,7 @@ class Systemctl:
         sock = socket.socket(socket.AF_INET, inet)
         try:
             sock.bind((addr, int(port)))
-            logg.info("%s: bound socket at %s %s:%s", conf.name(), strINET(inet), addr, port)
+            logg.info("%s: bound socket at %s %s:%s", conf.name(), sock_type_str(inet), addr, port)
         except OSError as e:
             logg.error("%s: create socket failed (%s:%s): %s", conf.name(), addr, port, e)
             sock.close()
@@ -3895,7 +3895,7 @@ class Systemctl:
         sock = socket.socket(socket.AF_INET6, inet)
         try:
             sock.bind((addr, int(port)))
-            logg.info("%s: bound socket at %s [%s]:%s", conf.name(), strINET(inet), addr, port)
+            logg.info("%s: bound socket at %s [%s]:%s", conf.name(), sock_type_str(inet), addr, port)
         except OSError as e:
             logg.error("%s: create socket failed ([%s]:%s): %s", conf.name(), addr, port, e)
             sock.close()
