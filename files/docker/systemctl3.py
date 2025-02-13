@@ -1639,6 +1639,28 @@ class SystemctlLoadedUnits:
             for filename in os.listdir(folder):
                 if filename.endswith(".target"):
                     yield (filename, os.path.join(folder, filename))
+    def get_target_conf(self, module: str) -> SystemctlConf: # -> conf (conf | default-conf)
+        """ accept that a unit does not exist
+            and return a unit conf that says 'not-loaded' """
+        conf = self.load_conf(module)
+        if conf is not None:
+            return conf
+        target_conf = self.default_conf(module)
+        if module in SYSD_TARGET_REQUIRES:
+            target_conf.set(Unit, "Requires", SYSD_TARGET_REQUIRES[module])
+        return target_conf
+    def get_target_list(self, module: str) -> List[str]:
+        """ the Requires= in target units are only accepted if known """
+        target = module
+        if "." not in target: target += ".target"
+        targets = [target]
+        conf = self.get_target_conf(module)
+        requires = conf.get(Unit, "Requires", "")
+        while requires in SYSD_TARGET_REQUIRES:
+            targets = [requires] + targets
+            requires = SYSD_TARGET_REQUIRES[requires]
+        logg.debug("the [%s] requires %s", module, targets)
+        return targets
     def get_InstallTarget(self, conf: SystemctlConf, default: Optional[str] = None) -> Optional[str]: # pylint: disable=invalid-name
         if not conf: return default
         # TODO: we could check that wantedby is a valid runlevel target
@@ -2546,7 +2568,7 @@ class Systemctl:
         """ get the specified pid file path (not a computed default) """
         pid_file = self.get_PIDFile(conf) or default
         return os_path(self._root, self.units.expand_special(pid_file, conf))
-    def get_PIDFile(self, conf: SystemctlConf, default: Optional[str] = None) -> str: # pylint: disable=invlid-name
+    def get_PIDFile(self, conf: SystemctlConf, default: Optional[str] = None) -> str: # pylint: disable=invalid-name
         return conf.get(Service, "PIDFile", default)
     def read_mainpid_from(self, conf: SystemctlConf, default: Optional[int] = None) -> Optional[int]:
         """ MAINPID is either the PIDFile content written from the application
@@ -4788,7 +4810,7 @@ class Systemctl:
             return result
     def get_active_target_list(self) -> List[str]:
         current_target = self.get_default_target()
-        target_list = self.get_target_list(current_target)
+        target_list = self.units.get_target_list(current_target)
         target_list += [DefaultUnit] # upper end
         target_list += [SysInitTarget] # lower end
         return target_list
@@ -5639,7 +5661,7 @@ class Systemctl:
             services = []
             for unit in units:
                 if unit.endswith(".target"):
-                    for target in self.get_target_list(unit):
+                    for target in self.units.get_target_list(unit):
                         services += self.target_enabled_services(target, sysv)
                 else:
                     services += [unit]
@@ -5660,7 +5682,7 @@ class Systemctl:
     def enabled_target_services(self, target: str, sysv: str = "S", igno: List[str] = []) -> List[str]:
         units: List[str] = []
         if self.units.user_mode():
-            targetlist = self.get_target_list(target)
+            targetlist = self.units.get_target_list(target)
             logg.debug("check for %s user services : %s", target, targetlist)
             for targets in targetlist:
                 for unit in self.enabled_target_user_local_units(targets, ".target", igno):
@@ -5687,7 +5709,7 @@ class Systemctl:
                     if unit not in units:
                         units.append(unit)
         else:
-            targetlist = self.get_target_list(target)
+            targetlist = self.units.get_target_list(target)
             logg.debug("check for %s system services: %s", target, targetlist)
             for targets in targetlist:
                 for unit in self.enabled_target_configured_system_units(targets, ".target", igno + self.igno_targets):
@@ -5818,28 +5840,6 @@ class Systemctl:
                 if unit not in units:
                     units.append(unit)
         return units
-    def get_target_conf(self, module: str) -> SystemctlConf: # -> conf (conf | default-conf)
-        """ accept that a unit does not exist
-            and return a unit conf that says 'not-loaded' """
-        conf = self.units.load_conf(module)
-        if conf is not None:
-            return conf
-        target_conf = self.units.default_conf(module)
-        if module in SYSD_TARGET_REQUIRES:
-            target_conf.set(Unit, "Requires", SYSD_TARGET_REQUIRES[module])
-        return target_conf
-    def get_target_list(self, module: str) -> List[str]:
-        """ the Requires= in target units are only accepted if known """
-        target = module
-        if "." not in target: target += ".target"
-        targets = [target]
-        conf = self.get_target_conf(module)
-        requires = conf.get(Unit, "Requires", "")
-        while requires in SYSD_TARGET_REQUIRES:
-            targets = [requires] + targets
-            requires = SYSD_TARGET_REQUIRES[requires]
-        logg.debug("the [%s] requires %s", module, targets)
-        return targets
     def default_system(self, arg: bool = True) -> bool:
         """ start units for default system level
             This will go through the enabled services in the default 'multi-user.target'.
