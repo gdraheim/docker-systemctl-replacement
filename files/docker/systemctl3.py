@@ -2435,7 +2435,7 @@ class Systemctl:
                 conf = self.units.get_conf(unit)
                 result[unit] = "loaded"
                 description[unit] = self.units.get_Description(conf)
-                active[unit] = self.get_active_from(conf)
+                active[unit] = self.active_state(conf)
                 substate[unit] = self.get_substate_from(conf) or "unknown"
             except OSError as e:
                 logg.warning("list-units: %s", e)
@@ -4732,7 +4732,7 @@ class Systemctl:
     def is_active_from(self, conf: SystemctlConf) -> bool:
         """ used in try-restart/other commands to check if needed. """
         if not conf: return False
-        return self.get_active_from(conf) == "active"
+        return self.active_state(conf) == "active"
     def active_pid_from(self, conf: SystemctlConf) -> Optional[int]:
         if not conf: return False
         pid = self.read_mainpid_from(conf)
@@ -4749,8 +4749,8 @@ class Systemctl:
             logg.warning("Unit %s not found.", unit)
             return "unknown"
         else:
-            return self.get_active_from(conf)
-    def get_active_from(self, conf: SystemctlConf) -> str:
+            return self.active_state(conf)
+    def active_state(self, conf: SystemctlConf) -> str:
         if conf.name().endswith(".service"):
             return self.get_active_service_from(conf)
         elif conf.name().endswith(".socket"):
@@ -4802,7 +4802,7 @@ class Systemctl:
             for service in services:
                 conf = self.units.load_conf(service)
                 if conf:
-                    state = self.get_active_from(conf)
+                    state = self.active_state(conf)
                     if state in ["failed"]:
                         result = state
                     elif state not in ["active"]:
@@ -4869,7 +4869,7 @@ class Systemctl:
         return results
     def is_failed_from(self, conf: SystemctlConf) -> bool:
         if conf is None: return True
-        return self.get_active_from(conf) == "failed"
+        return self.active_state(conf) == "failed"
     def reset_failed_modules(self, *modules: str) -> bool:
         """ [UNIT]... -- Reset failed state for all, one, or more units """
         units: List[str] = []
@@ -4966,7 +4966,7 @@ class Systemctl:
         else:
             result += "\n    Loaded: failed"
             return 3, result
-        active = self.get_active_from(conf)
+        active = self.active_state(conf)
         substate = self.get_substate_from(conf)
         result += "\n    Active: {} ({})".format(active, substate)
         if active == "active":
@@ -5591,7 +5591,7 @@ class Systemctl:
         yield "PIDFilePath", self.pid_file(conf)
         yield "MainPID", strE(self.active_pid_from(conf))            # status["MainPID"] or PIDFile-read
         yield "SubState", self.get_substate_from(conf) or "unknown"  # status["SubState"] or notify-result
-        yield "ActiveState", self.get_active_from(conf) or "unknown" # status["ActiveState"]
+        yield "ActiveState", self.active_state(conf) or "unknown" # status["ActiveState"]
         yield "LoadState", loaded
         yield "UnitFileState", self.enabled_state(conf)
         yield "StatusFile", self.get_StatusFile(conf)
@@ -6103,7 +6103,7 @@ class Systemctl:
                         logg.warning("[%s] set InitLoopSleep from %ss to %s (caused by RestartSec=%.3fs)",
                                      unit, InitLoopSleep, restartSleep, restartSec)
                         InitLoopSleep = restartSleep
-                isUnitState = self.get_active_from(conf)
+                isUnitState = self.active_state(conf)
                 isUnitFailed = isUnitState in ["failed"]
                 logg.debug("[%s] [%s] Current Status: %s (%s)", me, unit, isUnitState, isUnitFailed)
                 if not isUnitFailed:
@@ -6168,7 +6168,7 @@ class Systemctl:
             try:
                 conf = self.units.load_conf(unit)
                 if not conf: continue
-                isUnitState = self.get_active_from(conf)
+                isUnitState = self.active_state(conf)
                 isUnitFailed = isUnitState in ["failed"]
                 logg.debug("[%s] [%s] Restart Status: %s (%s)", me, unit, isUnitState, isUnitFailed)
                 if isUnitFailed:
