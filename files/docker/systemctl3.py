@@ -88,6 +88,7 @@ ONLY_WHAT: List[str] = []
 ONLY_TYPE: List[str] = []
 ONLY_STATE: List[str] = []
 ONLY_PROPERTY: List[str] = []
+LOG_BUFSIZE = 8192
 FORCE_IPV4 = False
 FORCE_IPV6 = False
 PID1 = -1  # FIXME
@@ -2281,8 +2282,8 @@ class SystemctlListenThread(threading.Thread):
     def stop(self) -> None:
         self.stopped.set()
     def run(self) -> None:
-        READ_ONLY = select.POLLIN | select.POLLPRI | select.POLLHUP | select.POLLERR
-        # READ_WRITE = READ_ONLY | select.POLLOUT
+        READ_ONLY = select.POLLIN | select.POLLPRI | select.POLLHUP | select.POLLERR # pylint: disable=invalid-name
+        READ_WRITE = READ_ONLY | select.POLLOUT # pylint: disable=invalid-name,unused-variable
         me = os.getpid()
         if DEBUG_INITLOOP: # pragma: no cover
             logg.info("[%s] listen: new thread", me)
@@ -6018,7 +6019,7 @@ class Systemctl:
     def read_log_files(self, units: List[str]) -> None:
         self.print_log_files(units)
     def print_log_files(self, units: List[str], stdout: int = 1) -> int:
-        BUFSIZE=8192
+        BUFSIZE=LOG_BUFSIZE # 8192  # pylint: disable=invalid-name
         printed = 0
         for unit in units:
             if unit in self._log_file:
