@@ -1639,6 +1639,10 @@ class SystemctlLoadedUnits:
             for filename in os.listdir(folder):
                 if filename.endswith(".target"):
                     yield (filename, os.path.join(folder, filename))
+    def get_InstallTarget(self, conf: SystemctlConf, default: Optional[str] = None) -> Optional[str]: # pylint: disable=invalid-name
+        if not conf: return default
+        # TODO: we could check that wantedby is a valid runlevel target
+        return conf.get(Install, "WantedBy", default, True)
     def get_TimeoutStartSec(self, conf: SystemctlConf, section: str = Service) -> float: # pylint: disable=invalid-name
         timeout = conf.get(section, "TimeoutSec", strE(DefaultTimeoutStartSec))
         timeout = conf.get(section, "TimeoutStartSec", timeout)
@@ -5043,9 +5047,6 @@ class Systemctl:
             return True
         units = self.units.match_units()
         return self.preset_units([unit for unit in units if fnmatched(unit, *modules)])
-    def wanted_from(self, conf: SystemctlConf, default: Optional[str] = None) -> Optional[str]:
-        if not conf: return default
-        return conf.get(Install, "WantedBy", default, True)
     def enablefolders(self, wanted: str) -> Iterable[str]:
         if self.units.user_mode():
             for folder in self.units.user_folders():
@@ -5111,7 +5112,7 @@ class Systemctl:
             return False
         return self.enable_unit_from(conf)
     def enable_unit_from(self, conf: SystemctlConf) -> bool:
-        wanted = self.wanted_from(conf)
+        wanted = self.units.get_InstallTarget(conf)
         if not wanted and not self._force:
             logg.debug("%s has no target", conf.name())
             return False # "static" is-enabled
@@ -5216,7 +5217,7 @@ class Systemctl:
             return False
         return self.disable_unit_from(conf)
     def disable_unit_from(self, conf: SystemctlConf) -> bool:
-        wanted = self.wanted_from(conf)
+        wanted = self.units.get_InstallTarget(conf)
         if not wanted and not self._force:
             logg.debug("%s has no target", conf.name())
             return False # "static" is-enabled
@@ -5321,7 +5322,7 @@ class Systemctl:
     def get_enabled_from(self, conf: SystemctlConf) -> str:
         if conf.masked:
             return "masked"
-        wanted = self.wanted_from(conf)
+        wanted = self.units.get_InstallTarget(conf)
         target = wanted or self.get_default_target()
         for folder in self.enablefolders(target):
             if self._root:
