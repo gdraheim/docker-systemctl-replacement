@@ -144,7 +144,7 @@ _proc_sys_uptime = "/proc/uptime"  # pylint: disable=invalid-name
 _proc_sys_stat = "/proc/stat"  # pylint: disable=invalid-name
 
 # default values
-SystemCompatibilityVersion: int = 219
+SYSTEMD_VERSION: int = 219
 SYSINIT_TARGET: str = "sysinit.target"
 SYSINIT_WAIT: int = 5 # max for target
 MinimumYield: float = 0.5
@@ -2386,7 +2386,7 @@ class Systemctl:
         self._only_state = commalist(ONLY_STATE)
         self._only_type = commalist(ONLY_TYPE)
         # some common constants that may be changed
-        self._systemd_version = SystemCompatibilityVersion
+        self._systemd_version = SYSTEMD_VERSION
         self._journal_log_folder = JOURNAL_LOG_FOLDER
         # and the actual internal runtime state
         self._default_target = DEFAULT_TARGET
