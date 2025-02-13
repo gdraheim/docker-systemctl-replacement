@@ -6770,7 +6770,7 @@ def main() -> int:
     # pylint: disable=global-statement
     global EXTRA_VARS, DO_FORCE, DO_FULL, LOG_LINES, NO_PAGER, NO_RELOAD, NO_LEGEND, NO_ASK_PASSWORD
     global DO_NOW, PRESET_MODE, DO_QUIET, ROOT, SHOW_ALL, ONLY_STATE, ONLY_TYPE, ONLY_PROPERTY, ONLY_WHAT
-    global PID1, INIT1, USER_MODE, FORCE_IPV4, FORCE_IPV6
+    global MAXTIMEOUT, PID1, INIT1, USER_MODE, FORCE_IPV4, FORCE_IPV6
     import optparse # pylint: disable=deprecated-module
     _o = optparse.OptionParser("%prog [options] command [name...]", description=__doc__.strip(),
                                epilog="use 'help' command for more information")
@@ -6843,6 +6843,8 @@ def main() -> int:
     _o.add_option("--no-warn", action="store_true",
                   help="Do not generate certain warnings (ignored)")
     #
+    _o.add_option("--maxtimeout", metvar="SEC", default=MAXTIMEOUT,
+                  help="..override max timeout [%default]")
     _o.add_option("-c", "--config", metavar="NAME=VAL", action="append", default=[],
                   help="..override internal variables (INITLOOPSLEEP,SYSINIT_TARGET) {%default}")
     _o.add_option("-e", "--extra-vars", "--environment", metavar="NAME=VAL", action="append", default=[],
@@ -6876,6 +6878,7 @@ def main() -> int:
     ONLY_TYPE = opt.only_type
     ONLY_PROPERTY = opt.only_property
     ONLY_WHAT = opt.only_what
+    MAXTIMEOUT = to_int(opt.maxtimeout)
     FORCE_IPV4 = opt.ipv4
     FORCE_IPV6 = opt.ipv6
     # being PID 1 (or 0) in a container will imply --init
