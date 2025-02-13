@@ -2475,7 +2475,7 @@ class Systemctl:
                     result[unit] = None
                     continue
                 result[unit] = conf
-                enabled[unit] = self.enabled_from(conf)
+                enabled[unit] = self.enabled_state(conf)
             except OSError as e:
                 logg.warning("list-units: %s", e)
         return [(unit, enabled[unit]) for unit in sorted(result) if result[unit]]
@@ -4959,7 +4959,7 @@ class Systemctl:
         if loaded:
             # pylint: disable=possibly-unused-variable
             filename = str(conf.filename())
-            enabled = self.enabled_from(conf)
+            enabled = self.enabled_state(conf)
             result += "\n    Loaded: {loaded} ({filename}, {enabled})".format(**locals())
             for path in conf.overrides():
                 result += "\n    Drop-In: {path}".format(**locals())
@@ -5332,8 +5332,8 @@ class Systemctl:
         return False # ["disabled", "masked"]
     def enabled_unit(self, unit: str) -> str:
         conf = self.units.get_conf(unit)
-        return self.enabled_from(conf)
-    def enabled_from(self, conf: SystemctlConf) -> str:
+        return self.enabled_state(conf)
+    def enabled_state(self, conf: SystemctlConf) -> str:
         unit_file = strE(conf.filename())
         if self.units.is_sysv_file(unit_file):
             state = self.is_enabled_sysv(unit_file)
@@ -5593,7 +5593,7 @@ class Systemctl:
         yield "SubState", self.get_substate_from(conf) or "unknown"  # status["SubState"] or notify-result
         yield "ActiveState", self.get_active_from(conf) or "unknown" # status["ActiveState"]
         yield "LoadState", loaded
-        yield "UnitFileState", self.enabled_from(conf)
+        yield "UnitFileState", self.enabled_state(conf)
         yield "StatusFile", self.get_StatusFile(conf)
         yield "StatusFilePath", self.status_file(conf)
         yield "JournalFile", self.get_journal_log(conf)
