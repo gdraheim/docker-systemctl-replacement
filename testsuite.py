@@ -2112,6 +2112,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.test_1211_set_default(True)
     def test_1211_set_default(self, real: bool = False) -> None:
         """ check that set-default works"""
+        vv = self.begin()
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir, real)
