@@ -2061,12 +2061,76 @@ class SystemctlLoadedUnits:
             if status:
                 return status
         return None
+    def check_system_conditions(self, conf: SystemctlConf, section: str = Unit, warning: int = logging.WARNING) -> List[str]:
+        problems: List[str] = []
+        unit = conf.name()
+        for spec in ["ConditionEnvironment", "AssertEnvironment"]:
+            warn = logging.ERROR if "Assert" in spec else warning
+            checklist = conf.getlist(section, spec)
+            for checkname in checklist:
+                mode, want = checkprefix(checkname)
+                wantvalue: Optional[str] = None
+                if "=" in want:
+                    name, wantvalue = want.split("=", 1)
+                else:
+                    name = want
+                value = os.environ.get(name)
+                if value is None:
+                    if "!" not in mode:
+                        logg.log(warn, "%s: %s - environment variable %s not found", unit, spec, name)
+                        problems += [spec]
+                else:
+                    if "!" in mode:
+                        logg.log(warn, "%s: %s - environment variable %s was found", unit, spec, name)
+                        problems += [spec]
+                    elif wantvalue is not None and value != wantvalue:
+                        logg.log(warn, "%s: %s - environment variable %s wrong value - have %s want %s", unit, spec, name, value, wantvalue)
+                        problems += [spec]
+        #
+        import platform
+        for spec in ["ConditionArchitecture", "AssertArchitecture"]:
+            warn = logging.ERROR if "Assert" in spec else warning
+            checklist = conf.getlist(section, spec)
+            for checkname in checklist:
+                mode, want = checkprefix(checkname)
+                have = platform.machine().replace("_", "-")
+                if not want:
+                    logg.debug("%s: %s - nothing to check", unit, spec)
+                elif not have:
+                    logg.info("%s: %s - nothing to check", unit, spec)
+                elif have != want:
+                    if "!" not in mode:
+                        logg.log(warn, "%s: %s - want %s - have %s", unit, spec, want, have)
+                        problems += [spec]
+                else:
+                    if "!" in mode:
+                        logg.log(warn, "%s: %s - want %s - have %s", unit, spec, want, have)
+                        problems += [spec]
+        for spec in ["ConditionHost", "AssertHost"]:
+            warn = logging.ERROR if "Assert" in spec else warning
+            checklist = conf.getlist(section, spec)
+            for checkname in checklist:
+                mode, want = checkprefix(checkname)
+                have = platform.node()
+                if not want:
+                    logg.debug("%s: %s - nothing to check", unit, spec)
+                elif not have:
+                    logg.info("%s: %s - nothing to check", unit, spec)
+                elif have != want:
+                    if "!" not in mode:
+                        logg.log(warn, "%s: %s - want %s - have %s", unit, spec, want, have)
+                        problems += [spec]
+                else:
+                    if "!" in mode:
+                        logg.log(warn, "%s: %s - want %s - have %s", unit, spec, want, have)
+                        problems += [spec]
+        return problems
     def check_file_conditions(self, conf: SystemctlConf, section: str = Unit, warning: int = logging.WARNING) -> List[str]:
         # added in Systemctl 244
         problems: List[str] = []
         unit = conf.name()
         for spec in ["ConditionPathExistsGlob", "AssertPathExistsGlob"]:
-            warn = logging.ERROR if "Assert" in spec else logging.WARNING
+            warn = logging.ERROR if "Assert" in spec else warning
             checklist = conf.getlist(section, spec)
             for checkfile in checklist:
                 mode, filename = checkprefix(checkfile)
@@ -3506,9 +3570,13 @@ class Systemctl:
             logg.debug(" start unit %s => %s", conf.name(), q_str(conf.filename()))
             return self.do_start_unit_from(conf)
     def do_start_unit_from(self, conf: SystemctlConf) -> bool:
-        found = self.units.check_file_conditions(conf, warning=logging.ERROR)
-        if found:
-            logg.error("%s: %s conditions have failed: can not start", conf.name(), len(found))
+        blocked = self.units.check_system_conditions(conf, warning=logging.ERROR)
+        if blocked:
+            logg.error("%s: %s system conditions have failed: can not start", conf.name(), len(blocked))
+            return False
+        missing = self.units.check_file_conditions(conf, warning=logging.ERROR)
+        if missing:
+            logg.error("%s: %s file conditions have failed: can not start", conf.name(), len(missing))
             return False
         if conf.name().endswith(".service"):
             return self.do_start_service_from(conf)
