@@ -5164,24 +5164,24 @@ class Systemctl:
         return rc3 and rc5
     def _enable_unit_sysv(self, unit_file: str, rc_folder: str) -> bool:
         name = os.path.basename(unit_file)
-        nameS = "S50"+name
-        nameK = "K50"+name
+        start = "S50"+name
+        stop = "K50"+name
         if not os.path.isdir(rc_folder):
             os.makedirs(rc_folder)
         # do not double existing entries
         for found in os.listdir(rc_folder):
-            m = re.match(r"S\d\d(.*)", found)
+            m = re.match(r"S\d\d(.*)", found) # match start files
             if m and m.group(1) == name:
-                nameS = found
-            m = re.match(r"K\d\d(.*)", found)
+                start = found
+            m = re.match(r"K\d\d(.*)", found) # match stop files
             if m and m.group(1) == name:
-                nameK = found
-        target = os.path.join(rc_folder, nameS)
-        if not os.path.exists(target):
-            os.symlink(unit_file, target)
-        target = os.path.join(rc_folder, nameK)
-        if not os.path.exists(target):
-            os.symlink(unit_file, target)
+                stop = found
+        start_file = os.path.join(rc_folder, start)
+        if not os.path.exists(start_file):
+            os.symlink(unit_file, start_file)
+        stop_file = os.path.join(rc_folder, stop)
+        if not os.path.exists(stop_file):
+            os.symlink(unit_file, stop_file)
         return True
     def disable_modules(self, *modules: str) -> bool:
         """ [UNIT]... -- disable these units """
@@ -5252,22 +5252,22 @@ class Systemctl:
     def _disable_unit_sysv(self, unit_file: str, rc_folder: str) -> bool:
         # a "multi-user.target"/rc3 is also started in /rc5
         name = os.path.basename(unit_file)
-        nameS = "S50"+name
-        nameK = "K50"+name
+        start = "S50"+name
+        stop = "K50"+name
         # do not forget the existing entries
         for found in os.listdir(rc_folder):
-            m = re.match(r"S\d\d(.*)", found)
+            m = re.match(r"S\d\d(.*)", found) # match start files
             if m and m.group(1) == name:
-                nameS = found
-            m = re.match(r"K\d\d(.*)", found)
+                start = found
+            m = re.match(r"K\d\d(.*)", found) # match stop files
             if m and m.group(1) == name:
-                nameK = found
-        target = os.path.join(rc_folder, nameS)
-        if os.path.exists(target):
-            os.unlink(target)
-        target = os.path.join(rc_folder, nameK)
-        if os.path.exists(target):
-            os.unlink(target)
+                stop = found
+        start_file = os.path.join(rc_folder, start)
+        if os.path.exists(start_file):
+            os.unlink(start_file)
+        stop_file = os.path.join(rc_folder, stop)
+        if os.path.exists(stop_file):
+            os.unlink(stop_file)
         return True
     def is_enabled_sysv(self, unit_file: str) -> bool:
         name = os.path.basename(unit_file)
