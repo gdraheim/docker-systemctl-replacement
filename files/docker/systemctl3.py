@@ -168,8 +168,8 @@ DefaultListenBacklog: int =2
 NOTIFY_TIMEOUT = 3
 NOTIFY_QUICKER = 100
 
-ExitWhenNoMoreServices: bool = False
-ExitWhenNoMoreProcs: bool = False
+EXIT_WHEN_NO_MORE_SERVICES: bool = False
+EXIT_WHEN_NO_MORE_PROCS: bool = False
 DefaultUnit: str = os.environ.get("SYSTEMD_DEFAULT_UNIT", "default.target") # systemd.exe --unit=default.target
 DefaultTarget: str = os.environ.get("SYSTEMD_DEFAULT_TARGET", "multi-user.target") # DefaultUnit fallback
 # LogLevel = os.environ.get("SYSTEMD_LOG_LEVEL", "info") # systemd.exe --log-level
@@ -2357,8 +2357,8 @@ class Systemctl:
     _journal_log_folder: str
     _default_target: str
     _sysinit_target: Optional[SystemctlConf]
-    doExitWhenNoMoreProcs: bool
-    doExitWhenNoMoreServices: bool
+    exit_when_no_more_procs: bool
+    exit_when_no_more_services: bool
     _log_file: Dict[str, int]
     _log_hold: Dict[str, bytes]
     _boottime: Optional[float]
@@ -2392,8 +2392,8 @@ class Systemctl:
         # and the actual internal runtime state
         self._default_target = DefaultTarget
         self._sysinit_target = None # stores a UnitConf()
-        self.doExitWhenNoMoreProcs = ExitWhenNoMoreProcs or False
-        self.doExitWhenNoMoreServices = ExitWhenNoMoreServices or False
+        self.exit_when_no_more_procs = EXIT_WHEN_NO_MORE_PROCS or False
+        self.exit_when_no_more_services = EXIT_WHEN_NO_MORE_SERVICES or False
         self._log_file = {} # init-loop
         self._log_hold = {} # init-loop
         self._boottime = None # cache self.get_boottime()
@@ -5979,15 +5979,15 @@ class Systemctl:
             logg.debug(" [init] --init default")
             if self._now or self._show_all:
                 logg.debug("init default --now --all => no_more_procs")
-                self.doExitWhenNoMoreProcs = True
+                self.exit_when_no_more_proces = True
             return self.start_system_default(init = True)
         #
         # otherwise quit when all the init-services have died
         logg.debug(" [init]  --init start")
-        self.doExitWhenNoMoreServices = True
+        self.exit_when_no_more_services = True
         if self._now or self._show_all:
             logg.debug("init services --now --all => no_more_procs")
-            self.doExitWhenNoMoreProcs = True
+            self.exit_when_no_more_procs = True
         missing: List[str] = []
         units: List[str] = []
         for module in modules:
@@ -6221,7 +6221,7 @@ class Systemctl:
                 running = self.reap_zombies()
                 if DEBUG_INITLOOP: # pragma: no cover
                     logg.debug("reap zombies - init-loop found %s running procs", running)
-                if self.doExitWhenNoMoreServices:
+                if self.exit_when_no_more_services:
                     active = False
                     for unit in units:
                         conf = self.units.load_conf(unit)
@@ -6231,7 +6231,7 @@ class Systemctl:
                     if not active:
                         logg.info("no more services - exit init-loop")
                         break
-                if self.doExitWhenNoMoreProcs:
+                if self.exit_when_no_more_procs:
                     if not running:
                         logg.info("no more procs - exit init-loop")
                         break
@@ -6242,7 +6242,7 @@ class Systemctl:
                 if e.args and e.args[0] == "SIGQUIT":
                     # the original systemd puts a coredump on that signal.
                     logg.info("SIGQUIT - switch to no more procs check")
-                    self.doExitWhenNoMoreProcs = True
+                    self.exit_when_no_more_procs = True
                     continue
                 signal.signal(signal.SIGTERM, signal.SIG_DFL)
                 signal.signal(signal.SIGINT, signal.SIG_DFL)
