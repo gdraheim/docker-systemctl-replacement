@@ -146,7 +146,7 @@ _proc_sys_stat = "/proc/stat"  # pylint: disable=invalid-name
 # default values
 SystemCompatibilityVersion: int = 219
 SYSINIT_TARGET: str = "sysinit.target"
-SysInitWait: int = 5 # max for target
+SYSINIT_WAIT: int = 5 # max for target
 MinimumYield: float = 0.5
 MinimumTimeoutStartSec: int = 4
 MinimumTimeoutStopSec: int = 4
@@ -6324,7 +6324,7 @@ class Systemctl:
         return state
     def wait_system(self, target: Optional[str] = None) -> None:
         target = target or SYSINIT_TARGET
-        for attempt in range(int(SysInitWait)):
+        for attempt in range(int(SYSINIT_WAIT)):
             state = self.is_system_running()
             if "init" in state:
                 if target in [SYSINIT_TARGET, "basic.target"]:
