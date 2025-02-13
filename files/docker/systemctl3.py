@@ -2202,7 +2202,7 @@ class SystemctlLoadedUnits:
                                 logg.log(warn, "%s: %s - not writable: %s", unit, spec, filename)
                                 problems += [filename]
                         if "IsExecutable" in spec:
-                            if os.access(filepath, os.EX_OK):
+                            if not os.access(filepath, os.X_OK):
                                 logg.log(warn, "%s: %s - not executable: %s", unit, spec, filename)
                                 problems += [filename]
         return problems
