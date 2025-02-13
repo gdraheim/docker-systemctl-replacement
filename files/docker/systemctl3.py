@@ -4595,10 +4595,10 @@ class Systemctl:
             return self.do_kill_unit_from(conf)
     def do_kill_unit_from(self, conf: SystemctlConf) -> bool:
         started = time.monotonic()
-        doSendSIGKILL = self.units.get_SendSIGKILL(conf)
-        doSendSIGHUP = self.units.get_SendSIGHUP(conf)
-        useKillMode = self.units.get_KillMode(conf)
-        useKillSignal = self.units.get_KillSignal(conf)
+        doSendSIGKILL = self.units.get_SendSIGKILL(conf)  # pylint: disable=invalid-name
+        doSendSIGHUP = self.units.get_SendSIGHUP(conf)  # pylint: disable=invalid-name
+        useKillMode = self.units.get_KillMode(conf)  # pylint: disable=invalid-name
+        useKillSignal = self.units.get_KillSignal(conf)  # pylint: disable=invalid-name
         kill_signal = getattr(signal, useKillSignal)
         timeout = self.units.get_TimeoutStopSec(conf)
         status_file = self.status_file(conf)
