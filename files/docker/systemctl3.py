@@ -159,7 +159,7 @@ DefaultStartLimitIntervalSec: int = 10 # official value
 DefaultStartLimitBurst: int = 5        # official value
 InitLoopSleep: int = 5
 MaxLockWait: int = 0 # equals DefaultMaximumTimeout
-DefaultPath: str = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+DEFAULT_PATH: str = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 ResetLocale: List[str] = ["LANG", "LANGUAGE", "LC_CTYPE", "LC_NUMERIC", "LC_TIME", "LC_COLLATE", "LC_MONETARY",
                "LC_MESSAGES", "LC_PAPER", "LC_NAME", "LC_ADDRESS", "LC_TELEPHONE", "LC_MEASUREMENT",
                "LC_IDENTIFICATION", "LC_ALL"]
@@ -3905,10 +3905,10 @@ class Systemctl:
         return sock
     def extend_exec_env(self, env: Dict[str, str]) -> Dict[str, str]:
         env = env.copy()
-        # implant DefaultPath into $PATH
-        path = env.get("PATH", DefaultPath)
+        # implant DEFAULT_PATH into $PATH
+        path = env.get("PATH", DEFAULT_PATH)
         parts = path.split(os.pathsep)
-        for part in DefaultPath.split(os.pathsep):
+        for part in DEFAULT_PATH.split(os.pathsep):
             if part and part not in parts:
                 parts.append(part)
         env["PATH"] = str(os.pathsep).join(parts)
