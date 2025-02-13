@@ -2436,7 +2436,7 @@ class Systemctl:
                 result[unit] = "loaded"
                 description[unit] = self.units.get_Description(conf)
                 active[unit] = self.active_state(conf)
-                substate[unit] = self.get_substate_from(conf) or "unknown"
+                substate[unit] = self.active_substate(conf) or "unknown"
             except OSError as e:
                 logg.warning("list-units: %s", e)
             if self._only_state:
@@ -4814,7 +4814,7 @@ class Systemctl:
         target_list += [DefaultUnit] # upper end
         target_list += [SysInitTarget] # lower end
         return target_list
-    def get_substate_from(self, conf: SystemctlConf) -> Optional[str]:
+    def active_substate(self, conf: SystemctlConf) -> Optional[str]:
         """ returns 'running' 'exited' 'dead' 'failed' 'plugged' 'mounted' """
         if not conf: return None
         pid_file = self.pid_file(conf)
@@ -4967,7 +4967,7 @@ class Systemctl:
             result += "\n    Loaded: failed"
             return 3, result
         active = self.active_state(conf)
-        substate = self.get_substate_from(conf)
+        substate = self.active_substate(conf)
         result += "\n    Active: {} ({})".format(active, substate)
         if active == "active":
             return 0, result
@@ -5590,7 +5590,7 @@ class Systemctl:
         yield "PIDFile", self.get_PIDFile(conf) # not self.pid_file_from w/o default location
         yield "PIDFilePath", self.pid_file(conf)
         yield "MainPID", strE(self.active_pid_from(conf))            # status["MainPID"] or PIDFile-read
-        yield "SubState", self.get_substate_from(conf) or "unknown"  # status["SubState"] or notify-result
+        yield "SubState", self.active_substate(conf) or "unknown"  # status["SubState"] or notify-result
         yield "ActiveState", self.active_state(conf) or "unknown" # status["ActiveState"]
         yield "LoadState", loaded
         yield "UnitFileState", self.enabled_state(conf)
