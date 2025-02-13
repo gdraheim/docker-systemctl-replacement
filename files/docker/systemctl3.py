@@ -160,9 +160,8 @@ DefaultStartLimitBurst: int = 5        # official value
 InitLoopSleep: int = 5
 MaxLockWait: int = 0 # equals DefaultMaximumTimeout
 DEFAULT_PATH: str = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-ResetLocale: List[str] = ["LANG", "LANGUAGE", "LC_CTYPE", "LC_NUMERIC", "LC_TIME", "LC_COLLATE", "LC_MONETARY",
-               "LC_MESSAGES", "LC_PAPER", "LC_NAME", "LC_ADDRESS", "LC_TELEPHONE", "LC_MEASUREMENT",
-               "LC_IDENTIFICATION", "LC_ALL"]
+RESET_LOCALE: str = """LANG LANGUAGE LC_CTYPE LC_NUMERIC LC_TIME LC_COLLATE LC_MONETARY LC_MESSAGES
+                       LC_PAPER LC_NAME LC_ADDRESS LC_TELEPHONE LC_MEASUREMENT LC_IDENTIFICATION LC_ALL"""
 LOCALE_CONF: str ="/etc/locale.conf"
 LISTEN_BACKLOG: int =2
 NOTIFY_TIMEOUT = 3
@@ -3913,7 +3912,7 @@ class Systemctl:
                 parts.append(part)
         env["PATH"] = str(os.pathsep).join(parts)
         # reset locale to system default
-        for name in ResetLocale:
+        for name in RESET_LOCALE.split():
             if name in env:
                 del env[name]
         locale = {}
