@@ -2815,17 +2815,17 @@ class Systemctl:
         return self.units.get_env(conf)
     def remove_service_directories(self, conf: SystemctlConf, section: str = Service) -> bool:
         ok = True
-        nameRuntimeDirectory = self.units.get_RuntimeDirectory(conf, section)
-        keepRuntimeDirectory = self.units.get_RuntimeDirectoryPreserve(conf, section)
-        if not keepRuntimeDirectory:
+        want_runtime_folders = self.units.get_RuntimeDirectory(conf, section)
+        keep_runtime_folders = self.units.get_RuntimeDirectoryPreserve(conf, section)
+        if not keep_runtime_folders:
             root = conf.root_mode()
-            for name in nameRuntimeDirectory.split(" "):
+            for name in want_runtime_folders.split(" "):
                 if not name.strip(): continue
-                RUN = get_RUNTIME_DIR(root)
-                path = os.path.join(RUN, name)
+                runtime_dir = get_RUNTIME_DIR(root)
+                path = os.path.join(runtime_dir, name)
                 dirpath = os_path(self._root, path)
                 ok = self.do_rm_tree(dirpath) and ok
-                if RUN == "/run":
+                if runtime_dir == "/run":
                     for var_run in ("/var/run", "/tmp/run"):
                         if os.path.isdir(var_run):
                             var_path = os.path.join(var_run, name)
@@ -2862,49 +2862,49 @@ class Systemctl:
     def clean_service_directories(self, conf: SystemctlConf, which: str = NIX) -> bool:
         ok = True
         section = self.get_unit_section_from(conf)
-        nameRuntimeDirectory = self.units.get_RuntimeDirectory(conf, section)
-        nameStateDirectory = self.units.get_StateDirectory(conf, section)
-        nameCacheDirectory = self.units.get_CacheDirectory(conf, section)
-        nameLogsDirectory = self.units.get_LogsDirectory(conf, section)
-        nameConfigurationDirectory = self.units.get_ConfigurationDirectory(conf, section)
+        want_runtime_folders = self.units.get_RuntimeDirectory(conf, section)
+        want_state_folders = self.units.get_StateDirectory(conf, section)
+        want_cache_folders = self.units.get_CacheDirectory(conf, section)
+        want_logs_folders = self.units.get_LogsDirectory(conf, section)
+        want_config_folders = self.units.get_ConfigurationDirectory(conf, section)
         root = conf.root_mode()
-        for name in nameRuntimeDirectory.split(" "):
+        for name in want_runtime_folders.split(" "):
             if not name.strip(): continue
-            RUN = get_RUNTIME_DIR(root)
-            path = os.path.join(RUN, name)
+            runtime_dir = get_RUNTIME_DIR(root)
+            path = os.path.join(runtime_dir, name)
             if which in ["all", "runtime", ""]:
                 dirpath = os_path(self._root, path)
                 ok = self.do_rm_tree(dirpath) and ok
-                if RUN == "/run":
+                if runtime_dir == "/run":
                     for var_run in ("/var/run", "/tmp/run"):
                         var_path = os.path.join(var_run, name)
                         var_dirpath = os_path(self._root, var_path)
                         self.do_rm_tree(var_dirpath)
-        for name in nameStateDirectory.split(" "):
+        for name in want_state_folders.split(" "):
             if not name.strip(): continue
-            DAT = get_VARLIB_HOME(root)
-            path = os.path.join(DAT, name)
+            state_dir = get_VARLIB_HOME(root)
+            path = os.path.join(state_dir, name)
             if which in ["all", "state"]:
                 dirpath = os_path(self._root, path)
                 ok = self.do_rm_tree(dirpath) and ok
-        for name in nameCacheDirectory.split(" "):
+        for name in want_cache_folders.split(" "):
             if not name.strip(): continue
-            CACHE = get_CACHE_HOME(root)
-            path = os.path.join(CACHE, name)
+            cache_dir = get_CACHE_HOME(root)
+            path = os.path.join(cache_dir, name)
             if which in ["all", "cache", ""]:
                 dirpath = os_path(self._root, path)
                 ok = self.do_rm_tree(dirpath) and ok
-        for name in nameLogsDirectory.split(" "):
+        for name in want_logs_folders.split(" "):
             if not name.strip(): continue
-            LOGS = get_LOG_DIR(root)
-            path = os.path.join(LOGS, name)
+            logs_dir = get_LOG_DIR(root)
+            path = os.path.join(logs_dir, name)
             if which in ["all", "logs"]:
                 dirpath = os_path(self._root, path)
                 ok = self.do_rm_tree(dirpath) and ok
-        for name in nameConfigurationDirectory.split(" "):
+        for name in want_config_folders.split(" "):
             if not name.strip(): continue
-            CONFIG = get_CONFIG_HOME(root)
-            path = os.path.join(CONFIG, name)
+            config_dir = get_CONFIG_HOME(root)
+            path = os.path.join(config_dir, name)
             if which in ["all", "configuration", ""]:
                 dirpath = os_path(self._root, path)
                 ok = self.do_rm_tree(dirpath) and ok
@@ -2912,63 +2912,63 @@ class Systemctl:
     def env_service_directories(self, conf: SystemctlConf) -> Dict[str, str]:
         envs = {}
         section = self.get_unit_section_from(conf)
-        nameRuntimeDirectory = self.units.get_RuntimeDirectory(conf, section)
-        nameStateDirectory = self.units.get_StateDirectory(conf, section)
-        nameCacheDirectory = self.units.get_CacheDirectory(conf, section)
-        nameLogsDirectory = self.units.get_LogsDirectory(conf, section)
-        nameConfigurationDirectory = self.units.get_ConfigurationDirectory(conf, section)
+        want_runtime_folders = self.units.get_RuntimeDirectory(conf, section)
+        want_state_folders = self.units.get_StateDirectory(conf, section)
+        want_cache_folders = self.units.get_CacheDirectory(conf, section)
+        want_logs_folders = self.units.get_LogsDirectory(conf, section)
+        want_config_folders = self.units.get_ConfigurationDirectory(conf, section)
         root = conf.root_mode()
-        for name in nameRuntimeDirectory.split(" "):
+        for name in want_runtime_folders.split(" "):
             if not name.strip(): continue
-            RUN = get_RUNTIME_DIR(root)
-            path = os.path.join(RUN, name)
+            runtime_dir = get_RUNTIME_DIR(root)
+            path = os.path.join(runtime_dir, name)
             envs["RUNTIME_DIRECTORY"] = path
-        for name in nameStateDirectory.split(" "):
+        for name in want_state_folders.split(" "):
             if not name.strip(): continue
-            DAT = get_VARLIB_HOME(root)
-            path = os.path.join(DAT, name)
+            state_dir = get_VARLIB_HOME(root)
+            path = os.path.join(state_dir, name)
             envs["STATE_DIRECTORY"] = path
-        for name in nameCacheDirectory.split(" "):
+        for name in want_cache_folders.split(" "):
             if not name.strip(): continue
-            CACHE = get_CACHE_HOME(root)
-            path = os.path.join(CACHE, name)
+            cache_dir = get_CACHE_HOME(root)
+            path = os.path.join(cache_dir, name)
             envs["CACHE_DIRECTORY"] = path
-        for name in nameLogsDirectory.split(" "):
+        for name in want_logs_folders.split(" "):
             if not name.strip(): continue
-            LOGS = get_LOG_DIR(root)
-            path = os.path.join(LOGS, name)
+            logs_dir = get_LOG_DIR(root)
+            path = os.path.join(logs_dir, name)
             envs["LOGS_DIRECTORY"] = path
-        for name in nameConfigurationDirectory.split(" "):
+        for name in want_config_folders.split(" "):
             if not name.strip(): continue
-            CONFIG = get_CONFIG_HOME(root)
-            path = os.path.join(CONFIG, name)
+            config_dir = get_CONFIG_HOME(root)
+            path = os.path.join(config_dir, name)
             envs["CONFIGURATION_DIRECTORY"] = path
         return envs
     def create_service_directories(self, conf: SystemctlConf) -> Dict[str, str]:
         envs = {}
         section = self.get_unit_section_from(conf)
-        nameRuntimeDirectory = self.units.get_RuntimeDirectory(conf, section)  # pylint: disable=invalid-name
-        modeRuntimeDirectory = self.units.get_RuntimeDirectoryMode(conf, section)  # pylint: disable=invalid-name
-        nameStateDirectory = self.units.get_StateDirectory(conf, section)  # pylint: disable=invalid-name
-        modeStateDirectory = self.units.get_StateDirectoryMode(conf, section)  # pylint: disable=invalid-name
-        nameCacheDirectory = self.units.get_CacheDirectory(conf, section)  # pylint: disable=invalid-name
-        modeCacheDirectory = self.units.get_CacheDirectoryMode(conf, section)  # pylint: disable=invalid-name
-        nameLogsDirectory = self.units.get_LogsDirectory(conf, section)  # pylint: disable=invalid-name
-        modeLogsDirectory = self.units.get_LogsDirectoryMode(conf, section)  # pylint: disable=invalid-name
-        nameConfigurationDirectory = self.units.get_ConfigurationDirectory(conf, section)  # pylint: disable=invalid-name
-        modeConfigurationDirectory = self.units.get_ConfigurationDirectoryMode(conf, section)  # pylint: disable=invalid-name
+        want_runtime_folders = self.units.get_RuntimeDirectory(conf, section)  # pylint: disable=invalid-name
+        mode_runtime_folders = self.units.get_RuntimeDirectoryMode(conf, section)  # pylint: disable=invalid-name
+        want_state_folders = self.units.get_StateDirectory(conf, section)  # pylint: disable=invalid-name
+        mode_state_folders = self.units.get_StateDirectoryMode(conf, section)  # pylint: disable=invalid-name
+        want_cache_folders = self.units.get_CacheDirectory(conf, section)  # pylint: disable=invalid-name
+        mode_cache_folders = self.units.get_CacheDirectoryMode(conf, section)  # pylint: disable=invalid-name
+        want_logs_folders = self.units.get_LogsDirectory(conf, section)  # pylint: disable=invalid-name
+        mode_logs_folders = self.units.get_LogsDirectoryMode(conf, section)  # pylint: disable=invalid-name
+        want_config_folders = self.units.get_ConfigurationDirectory(conf, section)  # pylint: disable=invalid-name
+        mode_config_folders = self.units.get_ConfigurationDirectoryMode(conf, section)  # pylint: disable=invalid-name
         root = conf.root_mode()
         user = self.units.get_User(conf)
         group = self.units.get_Group(conf)
-        for name in nameRuntimeDirectory.split(" "):
+        for name in want_runtime_folders.split(" "):
             if not name.strip(): continue
-            RUN = get_RUNTIME_DIR(root)
-            path = os.path.join(RUN, name)
+            runtime_dir = get_RUNTIME_DIR(root)
+            path = os.path.join(runtime_dir, name)
             logg.debug("RuntimeDirectory %s", path)
-            self.make_service_directory(path, modeRuntimeDirectory)
+            self.make_service_directory(path, mode_runtime_folders)
             self.chown_service_directory(path, user, group)
             envs["RUNTIME_DIRECTORY"] = path
-            if RUN == "/run":
+            if runtime_dir == "/run":
                 for var_run in ("/var/run", "/tmp/run"):
                     if os.path.isdir(var_run):
                         var_path = os.path.join(var_run, name)
@@ -2985,36 +2985,36 @@ class Systemctl:
                             os.symlink(dirpath, var_dirpath)
                         except OSError as e:
                             logg.debug("var symlink %s\n\t%s", var_dirpath, e)
-        for name in nameStateDirectory.split(" "):
+        for name in want_state_folders.split(" "):
             if not name.strip(): continue
-            DAT = get_VARLIB_HOME(root)
-            path = os.path.join(DAT, name)
+            state_dir = get_VARLIB_HOME(root)
+            path = os.path.join(state_dir, name)
             logg.debug("StateDirectory %s", path)
-            self.make_service_directory(path, modeStateDirectory)
+            self.make_service_directory(path, mode_state_folders)
             self.chown_service_directory(path, user, group)
             envs["STATE_DIRECTORY"] = path
-        for name in nameCacheDirectory.split(" "):
+        for name in want_cache_folders.split(" "):
             if not name.strip(): continue
-            CACHE = get_CACHE_HOME(root)
-            path = os.path.join(CACHE, name)
+            cache_dir = get_CACHE_HOME(root)
+            path = os.path.join(cache_dir, name)
             logg.debug("CacheDirectory %s", path)
-            self.make_service_directory(path, modeCacheDirectory)
+            self.make_service_directory(path, mode_cache_folders)
             self.chown_service_directory(path, user, group)
             envs["CACHE_DIRECTORY"] = path
-        for name in nameLogsDirectory.split(" "):
+        for name in want_logs_folders.split(" "):
             if not name.strip(): continue
-            LOGS = get_LOG_DIR(root)
-            path = os.path.join(LOGS, name)
+            logs_dir = get_LOG_DIR(root)
+            path = os.path.join(logs_dir, name)
             logg.debug("LogsDirectory %s", path)
-            self.make_service_directory(path, modeLogsDirectory)
+            self.make_service_directory(path, mode_logs_folders)
             self.chown_service_directory(path, user, group)
             envs["LOGS_DIRECTORY"] = path
-        for name in nameConfigurationDirectory.split(" "):
+        for name in want_config_folders.split(" "):
             if not name.strip(): continue
-            CONFIG = get_CONFIG_HOME(root)
-            path = os.path.join(CONFIG, name)
+            config_dir = get_CONFIG_HOME(root)
+            path = os.path.join(config_dir, name)
             logg.debug("ConfigurationDirectory %s", path)
-            self.make_service_directory(path, modeConfigurationDirectory)
+            self.make_service_directory(path, mode_config_folders)
             # not done according the standard
             # self.chown_service_directory(path, user, group)
             envs["CONFIGURATION_DIRECTORY"] = path
