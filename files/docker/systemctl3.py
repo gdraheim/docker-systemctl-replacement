@@ -170,15 +170,15 @@ NOTIFY_QUICKER = 100
 
 EXIT_WHEN_NO_MORE_SERVICES: bool = False
 EXIT_WHEN_NO_MORE_PROCS: bool = False
-DefaultUnit: str = os.environ.get("SYSTEMD_DEFAULT_UNIT", "default.target") # systemd.exe --unit=default.target
-DefaultTarget: str = os.environ.get("SYSTEMD_DEFAULT_TARGET", "multi-user.target") # DefaultUnit fallback
-# LogLevel = os.environ.get("SYSTEMD_LOG_LEVEL", "info") # systemd.exe --log-level
-# LogTarget = os.environ.get("SYSTEMD_LOG_TARGET", "journal-or-kmsg") # systemd.exe --log-target
-# LogLocation = os.environ.get("SYSTEMD_LOG_LOCATION", "no") # systemd.exe --log-location
-# ShowStatus = os.environ.get("SYSTEMD_SHOW_STATUS", "auto") # systemd.exe --show-status
-DefaultStandardInput=os.environ.get("SYSTEMD_STANDARD_INPUT", "null")
-DefaultStandardOutput=os.environ.get("SYSTEMD_STANDARD_OUTPUT", "journal") # systemd.exe --default-standard-output
-DefaultStandardError=os.environ.get("SYSTEMD_STANDARD_ERROR", "inherit") # systemd.exe --default-standard-error
+DEFAULT_UNIT: str = os.environ.get("SYSTEMD_DEFAULT_UNIT", "default.target") # systemd.exe --unit=default.target
+DEFAULT_TARGET: str = os.environ.get("SYSTEMD_DEFAULT_TARGET", "multi-user.target") # DEFAULT_UNIT fallback
+# LOG_LEVEL = os.environ.get("SYSTEMD_LOG_LEVEL", "info") # systemd.exe --log-level
+# LOG_TARGET = os.environ.get("SYSTEMD_LOG_TARGET", "journal-or-kmsg") # systemd.exe --log-target
+# LOG_LOCATION = os.environ.get("SYSTEMD_LOG_LOCATION", "no") # systemd.exe --log-location
+# SHOW_STATUS = os.environ.get("SYSTEMD_SHOW_STATUS", "auto") # systemd.exe --show-status
+STANDARD_INPUT=os.environ.get("SYSTEMD_STANDARD_INPUT", "null")
+STANDARD_OUTPUT=os.environ.get("SYSTEMD_STANDARD_OUTPUT", "journal") # systemd.exe --default-standard-output
+STANDARD_ERROR=os.environ.get("SYSTEMD_STANDARD_ERROR", "inherit") # systemd.exe --default-standard-error
 
 EXEC_SPAWN = False
 EXEC_DUP2 = True
@@ -2390,7 +2390,7 @@ class Systemctl:
         self._systemd_version = SystemCompatibilityVersion
         self._journal_log_folder = JOURNAL_LOG_FOLDER
         # and the actual internal runtime state
-        self._default_target = DefaultTarget
+        self._default_target = DEFAULT_TARGET
         self._sysinit_target = None # stores a UnitConf()
         self.exit_when_no_more_procs = EXIT_WHEN_NO_MORE_PROCS or False
         self.exit_when_no_more_services = EXIT_WHEN_NO_MORE_SERVICES or False
@@ -3930,8 +3930,8 @@ class Systemctl:
     def skip_journal_log(self, conf: SystemctlConf) -> bool:
         if self.get_unit_type(conf.name()) not in ["service"]:
             return True
-        std_out = conf.get(Service, "StandardOutput", DefaultStandardOutput)
-        std_err = conf.get(Service, "StandardError", DefaultStandardError)
+        std_out = conf.get(Service, "StandardOutput", STANDARD_OUTPUT)
+        std_err = conf.get(Service, "StandardError", STANDARD_ERROR)
         out, err = False, False
         if std_out in ["null"]: out = True
         if std_out.startswith("file:"): out = True
@@ -3943,9 +3943,9 @@ class Systemctl:
     def dup2_journal_log(self, conf: SystemctlConf) -> None:
         out: Optional[TextIO]
         msg = ""
-        std_inp = conf.get(Service, "StandardInput", DefaultStandardInput)
-        std_out = conf.get(Service, "StandardOutput", DefaultStandardOutput)
-        std_err = conf.get(Service, "StandardError", DefaultStandardError)
+        std_inp = conf.get(Service, "StandardInput", STANDARD_INPUT)
+        std_out = conf.get(Service, "StandardOutput", STANDARD_OUTPUT)
+        std_err = conf.get(Service, "StandardError", STANDARD_ERROR)
         inp, out, err = None, None, None
         if std_inp in ["null"]:
             inp = open(_dev_null, "r")
@@ -4803,7 +4803,7 @@ class Systemctl:
     def get_active_target_list(self) -> List[str]:
         current_target = self.get_default_target()
         target_list = self.units.get_target_list(current_target)
-        target_list += [DefaultUnit] # upper end
+        target_list += [DEFAULT_UNIT] # upper end
         target_list += [SysInitTarget] # lower end
         return target_list
     def active_substate(self, conf: SystemctlConf) -> Optional[str]:
@@ -5803,7 +5803,7 @@ class Systemctl:
     def enabled_target_sysv_units(self, target: str, sysv: str = "S", igno: List[str] = []) -> List[str]:
         units: List[str] = []
         folders: List[str] = []
-        if target in ["multi-user.target", DefaultUnit]:
+        if target in ["multi-user.target", DEFAULT_UNIT]:
             folders += [self.rc3_root_folder()]
         if target in ["graphical.target"]:
             folders += [self.rc5_root_folder()]
@@ -5920,7 +5920,7 @@ class Systemctl:
         return os_path(self._root, self.mask_folder())
     def get_default_target_file(self) -> str:
         targets_folder = self.get_targets_folder()
-        return os.path.join(targets_folder, DefaultUnit)
+        return os.path.join(targets_folder, DEFAULT_UNIT)
     def get_default_target(self, default_target: Optional[str] = None) -> str:
         """ get current default run-level"""
         current = default_target or self._default_target
