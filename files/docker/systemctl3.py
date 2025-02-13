@@ -3188,7 +3188,7 @@ class Systemctl:
         return self.log_unit_from(conf, lines, follow)
     def log_unit_from(self, conf: SystemctlConf, lines: Optional[int] = None, follow: bool = False) -> int:
         cmd_args: List[Union[str, bytes]] = []
-        log_path = self.get_journal_log_from(conf)
+        log_path = self.journal_log(conf)
         if follow:
             tail_cmd = get_exist_path(TAIL_CMDS)
             if tail_cmd is None:
@@ -3225,7 +3225,7 @@ class Systemctl:
             logg.debug("journalctl %s -> %s", conf.name(), cmd)
             cmd_args = [arg for arg in cmd] # satisfy mypy
             return os.execvp(cmd_args[0], cmd_args)
-    def get_journal_log_from(self, conf: SystemctlConf) -> str:
+    def journal_log(self, conf: SystemctlConf) -> str:
         return os_path(self._root, self.get_journal_log(conf))
     def get_journal_log(self, conf: SystemctlConf) -> str:
         """ /var/log/zzz.service.log or /var/log/default.unit.log """
@@ -3238,7 +3238,7 @@ class Systemctl:
             log_file = "dot."+log_file
         return os.path.join(log_folder, log_file)
     def open_journal_log(self, conf: SystemctlConf) -> TextIO:
-        log_file = self.get_journal_log_from(conf)
+        log_file = self.journal_log(conf)
         log_folder = os.path.dirname(log_file)
         if not os.path.isdir(log_folder):
             os.makedirs(log_folder)
@@ -5597,7 +5597,7 @@ class Systemctl:
         yield "StatusFile", self.get_StatusFile(conf)
         yield "StatusFilePath", self.status_file(conf)
         yield "JournalFile", self.get_journal_log(conf)
-        yield "JournalFilePath", self.get_journal_log_from(conf)
+        yield "JournalFilePath", self.journal_log(conf)
         yield "NotifySocket", self.get_notify_socket_from(conf)
         yield "User", self.units.get_User(conf) or ""
         yield "Group", self.units.get_Group(conf) or ""
@@ -6019,7 +6019,7 @@ class Systemctl:
             conf = self.units.load_conf(unit)
             if not conf: continue
             if self.skip_journal_log(conf): continue
-            log_path = self.get_journal_log_from(conf)
+            log_path = self.journal_log(conf)
             try:
                 opened = os.open(log_path, os.O_RDONLY | os.O_NONBLOCK)
                 self._log_file[unit] = opened
