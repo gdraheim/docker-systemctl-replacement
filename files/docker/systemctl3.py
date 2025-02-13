@@ -1153,7 +1153,7 @@ def seconds_to_time(seconds: float) -> str:
     else:
         return "%ss" % (secs)
 
-def getBefore(conf: SystemctlConf) -> List[str]:
+def get_Before(conf: SystemctlConf) -> List[str]:  # pylint: disable=invalid-name
     result: List[str] = []
     beforelist = conf.getlist(Unit, "Before", [])
     for befores in beforelist:
@@ -1163,7 +1163,7 @@ def getBefore(conf: SystemctlConf) -> List[str]:
                 result.append(name)
     return result
 
-def getAfter(conf: SystemctlConf) -> List[str]:
+def get_After(conf: SystemctlConf) -> List[str]:  # pylint: disable=invalid-name
     result: List[str] = []
     afterlist = conf.getlist(Unit, "After", [])
     for afters in afterlist:
@@ -1173,28 +1173,28 @@ def getAfter(conf: SystemctlConf) -> List[str]:
                 result.append(name)
     return result
 
-def compareAfter(confA: SystemctlConf, confB: SystemctlConf) -> int:
-    idA = confA.name()
-    idB = confB.name()
-    for after in getAfter(confA):
-        if after == idB:
-            logg.debug("%s After %s", idA, idB)
+def compare_after(conf1: SystemctlConf, conf2: SystemctlConf) -> int:
+    unit1 = conf1.name()
+    unit2 = conf2.name()
+    for after in get_After(conf1):
+        if after == unit2:
+            logg.debug("%s After %s", unit1, unit2)
             return -1
-    for after in getAfter(confB):
-        if after == idA:
-            logg.debug("%s After %s", idB, idA)
+    for after in get_After(conf2):
+        if after == unit1:
+            logg.debug("%s After %s", unit2, unit1)
             return 1
-    for before in getBefore(confA):
-        if before == idB:
-            logg.debug("%s Before %s", idA, idB)
+    for before in get_Before(conf1):
+        if before == unit2:
+            logg.debug("%s Before %s", unit1, unit2)
             return 1
-    for before in getBefore(confB):
-        if before == idA:
-            logg.debug("%s Before %s", idB, idA)
+    for before in get_Before(conf2):
+        if before == unit1:
+            logg.debug("%s Before %s", unit2, unit1)
             return -1
     return 0
 
-def conf_sortedAfter(conflist: Iterable[SystemctlConf]) -> List[SystemctlConf]:
+def sorted_after(conflist: Iterable[SystemctlConf]) -> List[SystemctlConf]:
     # the normal sorted() does only look at two items
     # so if "A after C" and a list [A, B, C] then
     # it will see "A = B" and "B = C" assuming that
@@ -1213,20 +1213,19 @@ def conf_sortedAfter(conflist: Iterable[SystemctlConf]) -> List[SystemctlConf]:
     sortlist = [SortTuple(0, conf) for conf in conflist]
     for check in range(len(sortlist)): # maxrank = len(sortlist)
         changed = 0
-        for A in range(len(sortlist)):  # pylint: disable=consider-using-enumerate
-            for B in range(len(sortlist)):  # pylint: disable=consider-using-enumerate
-                if A != B:
-                    itemA = sortlist[A]
-                    itemB = sortlist[B]
-                    before = compareAfter(itemA.conf, itemB.conf)
-                    if before > 0 and itemA.rank <= itemB.rank:
-                        logg_debug_after("  %-30s before %s", itemA.conf.name(), itemB.conf.name())
-                        itemA.rank = itemB.rank + 1
-                        changed += 1
-                    if before < 0 and itemB.rank <= itemA.rank:
-                        logg_debug_after("  %-30s before %s", itemB.conf.name(), itemA.conf.name())
-                        itemB.rank = itemA.rank + 1
-                        changed += 1
+        # TODO: replace total-sort into start-rank by a better algo
+        for index1, item1 in enumerate(sortlist):
+            for index2, item2 in enumerate(sortlist):
+                if index1 == index2: continue
+                before = compare_after(item1.conf, item2.conf)
+                if before > 0 and item1.rank <= item2.rank:
+                    logg_debug_after("  %-30s before %s", item1.conf.name(), item2.conf.name())
+                    item1.rank = item2.rank + 1
+                    changed += 1
+                if before < 0 and item2.rank <= item1.rank:
+                    logg_debug_after("  %-30s before %s", item2.conf.name(), item1.conf.name())
+                    item2.rank = item1.rank + 1
+                    changed += 1
         if not changed:
             logg_debug_after("done in check %s of %s", check, len(sortlist))
             break
@@ -1933,7 +1932,7 @@ class SystemctlLoadedUnits:
                         else:
                             deps[dep] = [style]
         return deps
-    def sortedAfter(self, unitlist: List[str]) -> List[str]:
+    def sorted_after(self, unitlist: List[str]) -> List[str]:
         """ get correct start order for the unit list (ignoring masked units) """
         conflist = [self.get_conf(unit) for unit in unitlist]
         if TRUE:
@@ -1944,21 +1943,8 @@ class SystemctlLoadedUnits:
                     logg.debug("ignoring masked unit %s", unit)
                     continue
                 conflist.append(conf)
-        sortlist = conf_sortedAfter(conflist)
+        sortlist = sorted_after(conflist)
         return [item.name() for item in sortlist]
-    def sortedBefore(self, unitlist: List[str]) -> List[str]:
-        """ get correct start order for the unit list (ignoring masked units) """
-        conflist = [self.get_conf(unit) for unit in unitlist]
-        if TRUE:
-            conflist = []
-            for unit in unitlist:
-                conf = self.get_conf(unit)
-                if conf.masked:
-                    logg.debug("ignoring masked unit %s", unit)
-                    continue
-                conflist.append(conf)
-        sortlist = conf_sortedAfter(reversed(conflist))
-        return [item.name() for item in reversed(sortlist)]
     def list_dependencies(self, unit: str, indent: Optional[str] = None) -> Iterable[str]:
         return self._list_dependencies(unit, "", indent)
     def list_all_dependencies(self, unit: str, indent: Optional[str] = None) -> Iterable[str]:
@@ -2032,7 +2018,7 @@ class SystemctlLoadedUnits:
             if conf.loaded():
                 deps_conf.append(conf)
         result: List[Tuple[str, str]] = []
-        sortlist = conf_sortedAfter(deps_conf)
+        sortlist = sorted_after(deps_conf)
         for item in sortlist:
             line = (item.name(), "(%s)" % (" ".join(deps[item.name()])))
             result.append(line)
@@ -3175,7 +3161,7 @@ class Systemctl:
         return not missing
     def log_units(self, units: List[str], lines: Optional[int] = None, follow: bool = False) -> int:
         result = 0
-        for unit in self.units.sortedAfter(units):
+        for unit in self.units.sorted_after(units):
             exitcode = self.log_unit(unit, lines, follow)
             if exitcode < 0:
                 return exitcode
@@ -3404,7 +3390,7 @@ class Systemctl:
             return True
         done = True
         started_units = []
-        for unit in self.units.sortedAfter(units):
+        for unit in self.units.sorted_after(units):
             started_units.append(unit)
             if not self.start_unit(unit):
                 done = False
@@ -3668,7 +3654,7 @@ class Systemctl:
         done = True
         started_units = []
         active_units = []
-        for unit in self.units.sortedAfter(units):
+        for unit in self.units.sorted_after(units):
             started_units.append(unit)
             if not self.listen_unit(unit):
                 done = False
@@ -4074,7 +4060,7 @@ class Systemctl:
         """ fails if any unit fails to stop """
         self.wait_system()
         done = True
-        for unit in self.units.sortedBefore(units):
+        for unit in reversed(self.units.sorted_after(units)):
             if not self.stop_unit(unit):
                 done = False
         return done
@@ -4299,7 +4285,7 @@ class Systemctl:
         """ fails if any unit fails to reload """
         self.wait_system()
         done = True
-        for unit in self.units.sortedAfter(units):
+        for unit in self.units.sorted_after(units):
             if not self.reload_unit(unit):
                 done = False
         return done
@@ -4403,7 +4389,7 @@ class Systemctl:
         """ fails if any unit fails to restart """
         self.wait_system()
         done = True
-        for unit in self.units.sortedAfter(units):
+        for unit in self.units.sorted_after(units):
             if not self.restart_unit(unit):
                 done = False
         return done
@@ -4452,7 +4438,7 @@ class Systemctl:
         """ fails if any module fails to try-restart """
         self.wait_system()
         done = True
-        for unit in self.units.sortedAfter(units):
+        for unit in self.units.sorted_after(units):
             if not self.try_restart_unit(unit):
                 done = False
         return done
@@ -4490,7 +4476,7 @@ class Systemctl:
         """ fails if any unit does not reload-or-restart """
         self.wait_system()
         done = True
-        for unit in self.units.sortedAfter(units):
+        for unit in self.units.sorted_after(units):
             if not self.reload_or_restart_unit(unit):
                 done = False
         return done
@@ -4541,7 +4527,7 @@ class Systemctl:
         """ fails if any unit fails to reload-or-try-restart """
         self.wait_system()
         done = True
-        for unit in self.units.sortedAfter(units):
+        for unit in self.units.sorted_after(units):
             if not self.reload_or_try_restart_unit(unit):
                 done = False
         return done
@@ -4585,7 +4571,7 @@ class Systemctl:
         """ fails if any unit could not be killed """
         self.wait_system()
         done = True
-        for unit in self.units.sortedBefore(units):
+        for unit in reversed(self.units.sorted_after(units)):
             if not self.kill_unit(unit):
                 done = False
         return done
@@ -5863,7 +5849,7 @@ class Systemctl:
         services = self.target_default_services(target, "S")
         logg.debug("[%s] system starts %s", target, services)
         units = []
-        for unit in self.units.sortedAfter(services):
+        for unit in self.units.sorted_after(services):
             units.append(unit)
         self.sysinit_status(SubState = "starting")
         for unit in units:
