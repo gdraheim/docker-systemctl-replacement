@@ -3429,7 +3429,7 @@ class Systemctl:
             return False
     def do_start_service_from(self, conf: SystemctlConf) -> bool:
         timeout = self.units.get_TimeoutStartSec(conf)
-        doRemainAfterExit = self.units.get_RemainAfterExit(conf)
+        doRemainAfterExit = self.units.get_RemainAfterExit(conf)  # pylint: disable=invalid-name
         runs = conf.get(Service, "Type", "simple").lower()
         env = self.units.get_env(conf)
         if not self._quiet:
