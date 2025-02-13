@@ -5999,7 +5999,7 @@ class Systemctl:
             # self.error |= NOT_FOUND
         self._default_services["systemctl-init.target"] = units
         self.start_target_system("systemctl-init.target", init = True)
-        return not not units  # pylint: disable=unecessary-negation
+        return not not units  # pylint: disable=unnecessary-negation
     def start_log_files(self, units: List[str]) -> None:
         self._log_file = {}
         self._log_hold = {}
@@ -6404,7 +6404,7 @@ class Systemctl:
                         if fnmatch.fnmatchcase(cmd_exe, target): found = "exe"
                         if len(cmd) > 1 and cmd_exe.startswith("python"):
                             nonoption = 1 # atleast skip over '-u' unbuffered
-                            while nonoption < len(cmd) and cmd[nonoption].startswith("-"): nonoption += 1 
+                            while nonoption < len(cmd) and cmd[nonoption].startswith("-"): nonoption += 1
                             cmd_arg = os.path.basename(cmd[nonoption])
                             if DEBUG_KILLALL: logg.debug("cmd.arg '%s'", cmd_arg)
                             if fnmatch.fnmatchcase(cmd_arg, target): found = "arg"
