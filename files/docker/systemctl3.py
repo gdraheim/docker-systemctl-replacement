@@ -5977,7 +5977,7 @@ class Systemctl:
             logg.debug(" [init] --init default")
             if self._now or self._show_all:
                 logg.debug("init default --now --all => no_more_procs")
-                self.exit_when_no_more_proces = True
+                self.exit_when_no_more_procs = True
             return self.start_system_default(init = True)
         #
         # otherwise quit when all the init-services have died
