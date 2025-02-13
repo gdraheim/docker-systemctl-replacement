@@ -903,9 +903,9 @@ class SystemctlSocket:
     def name(self) -> str:
         return self.conf.name()
     def addr(self) -> str:
-        stream = self.conf.get(Socket, "ListenStream", "")
-        dgram = self.conf.get(Socket, "ListenDatagram", "")
-        return stream or dgram
+        sock_stream = self.conf.get(Socket, "ListenStream", "")
+        data_stream = self.conf.get(Socket, "ListenDatagram", "")
+        return sock_stream or data_stream
     def close(self) -> None:
         self.sock.close()
 
@@ -3807,42 +3807,42 @@ class Systemctl:
                 logg.warning("%s: %s sockets are not implemented", conf.name(), item)
                 self.error |= NOT_OK
                 return None
-        vListenDatagram = conf.get(Socket, "ListenDatagram", "")
-        vListenStream = conf.get(Socket, "ListenStream", "")
-        address = vListenStream or vListenDatagram
-        m = re.match(r"(/.*)", address)
+        data_stream = conf.get(Socket, "ListenDatagram", "")
+        sock_stream = conf.get(Socket, "ListenStream", "")
+        addr_stream = sock_stream or data_stream
+        m = re.match(r"(/.*)", addr_stream)
         if m:
             path = m.group(1)
-            sock = self.create_unix_socket(conf, path, not vListenStream)
+            sock = self.create_unix_socket(conf, path, not sock_stream)
             self.set_status_from(conf, "path", path)
             return sock
-        m = re.match(r"(\d+[.]\d*[.]\d*[.]\d+):(\d+)", address)
+        m = re.match(r"(\d+[.]\d*[.]\d*[.]\d+):(\d+)", addr_stream)
         if m:
             addr, port = m.group(1), m.group(2)
-            sock = self.create_port_ipv4_socket(conf, addr, port, not vListenStream)
+            sock = self.create_port_ipv4_socket(conf, addr, port, not sock_stream)
             self.set_status_from(conf, "port", port)
             self.set_status_from(conf, "addr", addr)
             return sock
-        m = re.match(r"\[([0-9a-fA-F:]*)\]:(\d+)", address)
+        m = re.match(r"\[([0-9a-fA-F:]*)\]:(\d+)", addr_stream)
         if m:
             addr, port = m.group(1), m.group(2)
-            sock = self.create_port_ipv6_socket(conf, addr, port, not vListenStream)
+            sock = self.create_port_ipv6_socket(conf, addr, port, not sock_stream)
             self.set_status_from(conf, "port", port)
             self.set_status_from(conf, "addr", addr)
             return sock
-        m = re.match(r"(\d+)$", address)
+        m = re.match(r"(\d+)$", addr_stream)
         if m:
             port = m.group(1)
-            sock = self.create_port_socket(conf, port, not vListenStream)
+            sock = self.create_port_socket(conf, port, not sock_stream)
             self.set_status_from(conf, "port", port)
             return sock
-        if re.match("@.*", address):
-            logg.warning("%s: abstract namespace socket not implemented (%s)", conf.name(), address)
+        if re.match("@.*", addr_stream):
+            logg.warning("%s: abstract namespace socket not implemented (%s)", conf.name(), addr_stream)
             return None
-        if re.match("vsock:.*", address):
-            logg.warning("%s: virtual machine socket not implemented (%s)", conf.name(), address)
+        if re.match("vsock:.*", addr_stream):
+            logg.warning("%s: virtual machine socket not implemented (%s)", conf.name(), addr_stream)
             return None
-        logg.error("%s: unknown socket address type (%s)", conf.name(), address)
+        logg.error("%s: unknown socket address type (%s)", conf.name(), addr_stream)
         return None
     def create_unix_socket(self, conf: SystemctlConf, path: str, dgram: bool) -> Optional[socket.socket]:
         sock_stream = dgram and socket.SOCK_DGRAM or socket.SOCK_STREAM
