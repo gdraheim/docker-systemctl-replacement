@@ -2068,13 +2068,13 @@ class SystemctlLoadedUnits:
             logg.error(" %s: a .service file without [Service] section", unit)
             return 101
         errors = 0
-        haveType = conf.get(section, "Type", "simple")
-        haveExecStart = conf.getlist(section, "ExecStart", [])
-        haveExecStop = conf.getlist(section, "ExecStop", [])
-        haveExecReload = conf.getlist(section, "ExecReload", [])
-        usedExecStart: List[str] = []
-        usedExecStop: List[str] = []
-        usedExecReload: List[str] = []
+        haveType = conf.get(section, "Type", "simple")  # pylint: disable=invalid-name
+        haveExecStart = conf.getlist(section, "ExecStart", [])  # pylint: disable=invalid-name
+        haveExecStop = conf.getlist(section, "ExecStop", [])  # pylint: disable=invalid-name
+        haveExecReload = conf.getlist(section, "ExecReload", [])  # pylint: disable=invalid-name
+        usedExecStart: List[str] = []  # pylint: disable=invalid-name
+        usedExecStop: List[str] = []  # pylint: disable=invalid-name
+        usedExecReload: List[str] = []  # pylint: disable=invalid-name
         if haveType not in ["simple", "exec", "forking", "notify", "oneshot", "dbus", "idle"]:
             logg.error(" %s: Failed to parse service type, ignoring: %s", unit, haveType)
             errors += 100
