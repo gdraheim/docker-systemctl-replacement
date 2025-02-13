@@ -145,7 +145,7 @@ _proc_sys_stat = "/proc/stat"  # pylint: disable=invalid-name
 
 # default values
 SystemCompatibilityVersion: int = 219
-SysInitTarget: str = "sysinit.target"
+SYSINIT_TARGET: str = "sysinit.target"
 SysInitWait: int = 5 # max for target
 MinimumYield: float = 0.5
 MinimumTimeoutStartSec: int = 4
@@ -4804,7 +4804,7 @@ class Systemctl:
         current_target = self.get_default_target()
         target_list = self.units.get_target_list(current_target)
         target_list += [DEFAULT_UNIT] # upper end
-        target_list += [SysInitTarget] # lower end
+        target_list += [SYSINIT_TARGET] # lower end
         return target_list
     def active_substate(self, conf: SystemctlConf) -> Optional[str]:
         """ returns 'running' 'exited' 'dead' 'failed' 'plugged' 'mounted' """
@@ -6304,7 +6304,7 @@ class Systemctl:
         self.write_status_from(conf, **status)
     def sysinit_target(self) -> SystemctlConf:
         if not self._sysinit_target:
-            self._sysinit_target = self.units.default_conf(SysInitTarget, "System Initialization")
+            self._sysinit_target = self.units.default_conf(SYSINIT_TARGET, "System Initialization")
         assert self._sysinit_target is not None
         return self._sysinit_target
     def is_system_running(self) -> str:
@@ -6323,11 +6323,11 @@ class Systemctl:
             return None
         return state
     def wait_system(self, target: Optional[str] = None) -> None:
-        target = target or SysInitTarget
+        target = target or SYSINIT_TARGET
         for attempt in range(int(SysInitWait)):
             state = self.is_system_running()
             if "init" in state:
-                if target in [SysInitTarget, "basic.target"]:
+                if target in [SYSINIT_TARGET, "basic.target"]:
                     logg.info("%s system not initialized - wait %s", delayed(attempt), target)
                     time.sleep(1)
                     continue
@@ -6845,7 +6845,7 @@ def main() -> int:
                   help="Do not generate certain warnings (ignored)")
     #
     _o.add_option("-c", "--config", metavar="NAME=VAL", action="append", default=[],
-                  help="..override internal variables (InitLoopSleep,SysInitTarget) {%default}")
+                  help="..override internal variables (InitLoopSleep,SYSINIT_TARGET) {%default}")
     _o.add_option("-e", "--extra-vars", "--environment", metavar="NAME=VAL", action="append", default=[],
                   help="..override settings in the syntax of 'Environment='")
     _o.add_option("-v", "--verbose", action="count", default=0,
@@ -6913,7 +6913,7 @@ def main() -> int:
             elif isinstance(old, stringtypes):
                 logg.debug("str %s=%s", nam, val)
                 globals()[nam] = val.strip()
-                logg.debug("... SysInitTarget=%s", SysInitTarget)
+                logg.debug("... SYSINIT_TARGET=%s", SYSINIT_TARGET)
             elif isinstance(old, list):
                 logg.debug("str %s+=[%s]", nam, val)
                 globals()[nam] += val.strip().split(",")

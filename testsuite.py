@@ -1076,12 +1076,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart=/bin/sleep 3
         """)
         #
-        cmd = F"{systemctl} daemon-reload -c SysInitTarget=network.target -vvv"
+        cmd = F"{systemctl} daemon-reload -c SYSINIT_TARGET=network.target -vvv"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
         self.assertEqual(lines(out), [])
         self.assertEqual(end, 0)
-        self.assertEqual(len(greps(err, "SysInitTarget=network.target")), 2)
+        self.assertEqual(len(greps(err, "SYSINIT_TARGET=network.target")), 2)
         self.rm_testdir()
         self.rm_zzfiles(root)
         self.coverage()
@@ -10942,7 +10942,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             os.dup2(new_stderr, 2)
             systemctl_cmd = [_systemctl_py, "--root="+root, "--init", "default", "-vv"]
             env = os.environ.copy()
-            systemctl_cmd += ["-c", "ExitWhenNoMoreServices=yes"]
+            systemctl_cmd += ["-c", "EXIT_WHEN_NO_MORE_SERVICES=yes"]
             systemctl_cmd += ["-c", "InitLoopSleep=2"]
             os.execve(_systemctl_py, systemctl_cmd, env)
         time.sleep(2)
