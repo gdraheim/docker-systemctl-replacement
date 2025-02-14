@@ -3210,7 +3210,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         self.rm_zzfiles(root)
         import platform
-        wanted = platform.machine().replace("_", "-")
+        existing = platform.machine().replace("_", "-")
         unwanted = "mechanical-turk"
         text_file(os_path(root, "/etc/systemd/system/zza.service"), F"""
             [Unit]
@@ -3247,20 +3247,20 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
         self.assertTrue(greps(err, "Assertion failed on job for zza.service"))
         if not real:
-            self.assertTrue(greps(err, "AssertArchitecture - want mechanical-turk - have x86-64"))
+            self.assertTrue(greps(err, F"AssertArchitecture - want {unwanted} - have {existing}"))
         self.assertEqual(end, EXIT_FAILURE)
         cmd = F"{systemctl} start zzb.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
         self.assertFalse(greps(err, "Assertion failed on job"))
         if not real:
-            self.assertTrue(greps(err, "ConditionArchitecture - want mechanical-turk - have x86-64"))
+            self.assertTrue(greps(err, F"ConditionArchitecture - want {unwanted} - have {existing}"))
         self.assertEqual(end, EXIT_SUCCESS)
         #
         text_file(os_path(root, "/etc/systemd/system/zza.service"), F"""
             [Unit]
             Description=Testing A
-            AssertArchitecture={wanted}
+            AssertArchitecture={existing}
             [Service]
             Type=simple
             ExecStart=/usr/bin/sleep 1
@@ -3269,7 +3269,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(os_path(root, "/etc/systemd/system/zzb.service"), F"""
             [Unit]
             Description=Testing B
-            ConditionArchitecture={wanted}
+            ConditionArchitecture={existing}
             [Service]
             Type=simple
             ExecStart=/usr/bin/sleep 1
@@ -3306,7 +3306,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         self.rm_zzfiles(root)
         import platform
-        wanted = platform.node()
+        existing = platform.node()
         unwanted = "test1.example.com"
         text_file(os_path(root, "/etc/systemd/system/zza.service"), F"""
             [Unit]
@@ -3343,20 +3343,20 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
         self.assertTrue(greps(err, "Assertion failed on job for zza.service"))
         if not real:
-            self.assertTrue(greps(err, "AssertHost - want test1.example.com - have localhost.localdomain"))
+            self.assertTrue(greps(err, F"AssertHost - want {unwanted} - have {existing}"))
         self.assertEqual(end, EXIT_FAILURE)
         cmd = F"{systemctl} start zzb.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
         self.assertFalse(greps(err, "Assertion failed on job"))
         if not real:
-            self.assertTrue(greps(err, "ConditionHost - want test1.example.com - have localhost.localdomain"))
+            self.assertTrue(greps(err, F"ConditionHost - want {unwanted} - have {existing}"))
         self.assertEqual(end, EXIT_SUCCESS)
         #
         text_file(os_path(root, "/etc/systemd/system/zza.service"), F"""
             [Unit]
             Description=Testing A
-            AssertHost={wanted}
+            AssertHost={existing}
             [Service]
             Type=simple
             ExecStart=/usr/bin/sleep 1
@@ -3365,7 +3365,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(os_path(root, "/etc/systemd/system/zzb.service"), F"""
             [Unit]
             Description=Testing B
-            ConditionHost={wanted}
+            ConditionHost={existing}
             [Service]
             Type=simple
             ExecStart=/usr/bin/sleep 1
