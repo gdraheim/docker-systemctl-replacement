@@ -3899,6 +3899,126 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_zzfiles(root)
         self.rm_testdir()
         self.coverage()
+    def real_1553_condition(self) -> None:
+        self.test_1553_condition(True)
+    def test_1553_condition(self, real: bool = False) -> None:
+        """ check that file ConditionPathIsReadWrite work"""
+        vv = self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir, real)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
+        self.rm_zzfiles(root)
+        text_file(os_path(root, "/etc/systemd/system/zza.service"), """
+            [Unit]
+            Description=Testing A
+            AssertPathIsReadWrite=!/etc/sysconfig/zza
+            [Service]
+            Type=simple
+            ExecStart=/usr/bin/sleep 1
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"), """
+            [Unit]
+            Description=Testing B
+            ConditionPathIsReadWrite=!/etc/sysconfig/zzb
+            [Service]
+            Type=simple
+            ExecStart=/usr/bin/sleep 1
+            [Install]
+            WantedBy=multi-user.target""")
+        cmd = F"{systemctl} daemon-reload"
+        out, end = output2(cmd)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = F"{systemctl} status zza.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        self.assertTrue(greps(out, "Loaded: loaded"))
+        cmd = F"{systemctl} status zzb.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        self.assertTrue(greps(out, "Loaded: loaded"))
+        #
+        cmd = F"{systemctl} start zza.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertFalse(greps(err, "Assertion failed on job"))
+        if real:
+            self.assertFalse(greps(err, "AssertPathIsReadWrite - "))
+        self.assertEqual(end, EXIT_SUCCESS)
+        cmd = F"{systemctl} start zzb.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        if not real:
+            self.assertFalse(greps(err, "ConditionPathIsReadWrite -"))
+        self.assertEqual(end, EXIT_SUCCESS)
+        #
+        text_file(os_path(root, "/etc/sysconfig/zza"), """allow=true""")
+        text_file(os_path(root, "/etc/sysconfig/zzb"), """allow=true""")
+        #
+        cmd = F"{systemctl} stop zza.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        cmd = F"{systemctl} start zza.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertTrue(greps(err, "Assertion failed on job for zza.service"))
+        if not real:
+            self.assertTrue(greps(err, "AssertPathIsReadWrite - is readwrite"))
+        self.assertEqual(end, EXIT_FAILURE)
+        cmd = F"{systemctl} start zzb.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        if not real:
+            self.assertTrue(greps(err, "ConditionPathIsReadWrite - is readwrite"))
+        self.assertEqual(end, EXIT_SUCCESS)
+        #
+        os.chmod(os_path(root, "/etc/sysconfig/zza"), 0o400)
+        os.chmod(os_path(root, "/etc/sysconfig/zzb"), 0o400)
+        #
+        cmd = F"{systemctl} stop zza.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        cmd = F"{systemctl} start zza.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        if real or TODO:
+            self.assertTrue(greps(err, "Assertion failed on job for zza.service"))
+        if not real and TODO:
+            self.assertTrue(greps(err, "AssertPathIsReadWrite - not readable"))
+        if real or TODO:
+            self.assertEqual(end, EXIT_FAILURE)
+        cmd = F"{systemctl} start zzb.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        if not real and TODO:
+            self.assertTrue(greps(err, "ConditionPathIsReadWrite - not readable"))
+        self.assertEqual(end, EXIT_SUCCESS)
+        #
+        os.chmod(os_path(root, "/etc/sysconfig/zza"), 0o200)
+        os.chmod(os_path(root, "/etc/sysconfig/zzb"), 0o200)
+        #
+        cmd = F"{systemctl} start zza.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        if real or TODO:
+            self.assertTrue(greps(err, "Assertion failed on job for zza.service"))
+        if not real and TODO:
+            self.assertTrue(greps(err, "AssertPathIsReadWrite - path not found"))
+        if real or TODO:
+            self.assertEqual(end, EXIT_FAILURE)
+        cmd = F"{systemctl} start zzb.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        if not real and TODO:
+            self.assertTrue(greps(err, "ConditionPathIsReadWrite - path not found"))
+        self.assertEqual(end, EXIT_SUCCESS)
+
+
+        self.rm_zzfiles(root)
+        self.rm_testdir()
+        self.coverage()
 
     #
     #
