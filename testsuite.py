@@ -4014,8 +4014,134 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not real and TODO:
             self.assertTrue(greps(err, "ConditionPathIsReadWrite - path not found"))
         self.assertEqual(end, EXIT_SUCCESS)
-
-
+        self.rm_zzfiles(root)
+        self.rm_testdir()
+        self.coverage()
+    def real_1554_condition(self) -> None:
+        self.test_1554_condition(True)
+    def test_1554_condition(self, real: bool = False) -> None:
+        """ check that file ConditionFileIsExecutable work"""
+        vv = self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir, real)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
+        self.rm_zzfiles(root)
+        text_file(os_path(root, "/etc/systemd/system/zza.service"), """
+            [Unit]
+            Description=Testing A
+            AssertFileIsExecutable=!/etc/sysconfig/zza
+            [Service]
+            Type=simple
+            ExecStart=/usr/bin/sleep 1
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"), """
+            [Unit]
+            Description=Testing B
+            ConditionFileIsExecutable=!/etc/sysconfig/zzb
+            [Service]
+            Type=simple
+            ExecStart=/usr/bin/sleep 1
+            [Install]
+            WantedBy=multi-user.target""")
+        cmd = F"{systemctl} daemon-reload"
+        out, end = output2(cmd)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = F"{systemctl} status zza.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        self.assertTrue(greps(out, "Loaded: loaded"))
+        cmd = F"{systemctl} status zzb.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        self.assertTrue(greps(out, "Loaded: loaded"))
+        #
+        cmd = F"{systemctl} start zza.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertFalse(greps(err, "Assertion failed on job"))
+        if not real:
+            self.assertFalse(greps(err, "AssertFileIsExecutable - "))
+        self.assertEqual(end, EXIT_SUCCESS)
+        cmd = F"{systemctl} start zzb.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        if not real:
+            self.assertFalse(greps(err, "ConditionFileIsExecutable - "))
+        self.assertEqual(end, EXIT_SUCCESS)
+        #
+        text_file(os_path(root, "/etc/sysconfig/zza"), """#! /usr/bin/true""")
+        text_file(os_path(root, "/etc/sysconfig/zzb"), """#! /usr/bin/true""")
+        #
+        cmd = F"{systemctl} start zza.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertFalse(greps(err, "Assertion failed on job"))
+        if not real:
+            self.assertFalse(greps(err, "AssertFileIsExecutable - "))
+        self.assertEqual(end, EXIT_SUCCESS)
+        cmd = F"{systemctl} start zzb.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        if not real:
+            self.assertFalse(greps(err, "ConditionFileIsExecutable - "))
+        self.assertEqual(end, EXIT_SUCCESS)
+        #
+        os.chmod(os_path(root, "/etc/sysconfig/zza"), 0o200)
+        os.chmod(os_path(root, "/etc/sysconfig/zzb"), 0o200)
+        #
+        cmd = F"{systemctl} start zza.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertFalse(greps(err, "Assertion failed on job"))
+        if not real:
+            self.assertFalse(greps(err, "AssertFileIsExecutable - "))
+        self.assertEqual(end, EXIT_SUCCESS)
+        cmd = F"{systemctl} start zzb.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        if not real:
+            self.assertFalse(greps(err, "ConditionFileIsExecutable - "))
+        self.assertEqual(end, EXIT_SUCCESS)
+        #
+        os.chmod(os_path(root, "/etc/sysconfig/zza"), 0o400)
+        os.chmod(os_path(root, "/etc/sysconfig/zzb"), 0o400)
+        #
+        cmd = F"{systemctl} start zza.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertFalse(greps(err, "Assertion failed on job"))
+        if not real:
+            self.assertFalse(greps(err, "AssertFileIsExecutable - "))
+        self.assertEqual(end, EXIT_SUCCESS)
+        cmd = F"{systemctl} start zzb.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        if not real:
+            self.assertFalse(greps(err, "ConditionFileIsExecutable - "))
+        self.assertEqual(end, EXIT_SUCCESS)
+        #
+        os.chmod(os_path(root, "/etc/sysconfig/zza"), 0o700)
+        os.chmod(os_path(root, "/etc/sysconfig/zzb"), 0o700)
+        #
+        cmd = F"{systemctl} stop zza.service zzb.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        cmd = F"{systemctl} start zza.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertTrue(greps(err, "Assertion failed on job for zza.service"))
+        if not real:
+            self.assertTrue(greps(err, "AssertFileIsExecutable - is executable"))
+        self.assertEqual(end, EXIT_FAILURE)
+        cmd = F"{systemctl} start zzb.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        if not real:
+            self.assertTrue(greps(err, "ConditionFileIsExecutable - is executable"))
+        self.assertEqual(end, EXIT_SUCCESS)
         self.rm_zzfiles(root)
         self.rm_testdir()
         self.coverage()
