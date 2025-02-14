@@ -2201,7 +2201,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def real_1500_condition(self) -> None:
         self.test_1500_condition(True)
     def test_1500_condition(self, real: bool = False) -> None:
-        """ check that file conditions work"""
+        """ check that file ConditionPathExistsGlob work"""
         vv = self.begin()
         testname = self.testname()
         testdir = self.testdir()
@@ -2277,7 +2277,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def real_1501_condition(self) -> None:
         self.test_1501_condition(True)
     def test_1501_condition(self, real: bool = False) -> None:
-        """ check that file conditions work"""
+        """ check that file ConditionPathExists work"""
         vv = self.begin()
         testname = self.testname()
         testdir = self.testdir()
@@ -2353,7 +2353,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def real_1502_condition(self) -> None:
         self.test_1502_condition(True)
     def test_1502_condition(self, real: bool = False) -> None:
-        """ check that file conditions work"""
+        """ check that file ConditionFileNotEmpty work"""
         vv = self.begin()
         testname = self.testname()
         testdir = self.testdir()
@@ -2450,7 +2450,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def real_1503_condition(self) -> None:
         self.test_1503_condition(True)
     def test_1503_condition(self, real: bool = False) -> None:
-        """ check that file conditions work"""
+        """ check that file ConditionPathIsReadWrite work"""
         vv = self.begin()
         testname = self.testname()
         testdir = self.testdir()
@@ -2564,7 +2564,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def real_1504_condition(self) -> None:
         self.test_1504_condition(True)
     def test_1504_condition(self, real: bool = False) -> None:
-        """ check that file conditions work"""
+        """ check that file ConditionFileIsExecutable work"""
         vv = self.begin()
         testname = self.testname()
         testdir = self.testdir()
@@ -2689,7 +2689,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def real_1511_condition(self) -> None:
         self.test_1511_condition(True)
     def test_1511_condition(self, real: bool = False) -> None:
-        """ check that file conditions work"""
+        """ check that file ConditionPathIsSymbolicLink work"""
         vv = self.begin()
         testname = self.testname()
         testdir = self.testdir()
