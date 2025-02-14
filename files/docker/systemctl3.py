@@ -2135,7 +2135,7 @@ class SystemctlLoadedUnits:
             checklist = conf.getlist(section, spec)
             for checkfile in checklist:
                 mode, filename = checkprefix(checkfile)
-                filepath = os_path(self._root, filename)
+                filepath = os_path(NIX if "@" in mode else self._root, filename)
                 found = len(glob.glob(filepath))
                 if found:
                     if "!" in mode:
@@ -2159,52 +2159,82 @@ class SystemctlLoadedUnits:
                     logg.error("%s: %s - path not absolute: %s", unit, spec, filename)
                     problems += [spec+"="+checkfile]
                     continue
-                filepath = os_path(self._root, filename)
+                filepath = os_path(NIX if "@" in mode else self._root, filename)
                 if not os.path.exists(filepath):
                     if "!" not in mode:
                         logg.log(warn, "%s: %s - path not found: %s", unit, spec, filename)
                         problems += [spec+"="+checkfile]
                 else:
-                    if "!" in mode:
-                        logg.log(warn, "%s: %s - must not exist: %s", unit, spec, filename)
-                        problems += [spec+"="+checkfile]
-                    else:
-                        if "FileNotEmpty" in spec:
-                            if not os.path.isfile(filepath):
+                    if "PathExists" in spec:
+                        if "!" in mode:
+                            logg.log(warn, "%s: %s - must not exist: %s", unit, spec, filename)
+                            problems += [spec+"="+checkfile]
+                    if "FileNotEmpty" in spec:
+                        if not os.path.isfile(filepath):
+                            if "!" not in mode:
                                 logg.log(warn, "%s: %s - not a file: %s", unit, spec, filename)
                                 problems += [spec+"="+checkfile]
-                            elif not os.path.getsize(filepath):
-                                logg.log(warn, "%s: %s - file is empty: %s", unit, spec, filename)
+                        elif os.path.getsize(filepath):
+                            if "!" in mode:
+                                logg.log(warn, "%s: %s - file is not empty: %s", unit, spec, filename)
                                 problems += [spec+"="+checkfile]
-                        if "DirectoryNotEmpty" in spec:
-                            if not os.path.isdir(filepath):
+                        else:
+                            logg.log(warn, "%s: %s - file is empty: %s", unit, spec, filename)
+                            problems += [spec+"="+checkfile]
+                    if "DirectoryNotEmpty" in spec:
+                        if not os.path.isdir(filepath):
+                            if "!" in mode:
                                 logg.log(warn, "%s: %s - not a directory: %s", unit, spec, filename)
                                 problems += [spec+"="+checkfile]
-                            elif not os.listdir(filepath):
-                                logg.log(warn, "%s: %s - directory is empty: %s", unit, spec, filename)
+                        elif os.listdir(filepath):
+                            if "!" in mode:
+                                logg.log(warn, "%s: %s - directory is not empty: %s", unit, spec, filename)
                                 problems += [spec+"="+checkfile]
-                        if "IsDirectory" in spec:
-                            if not os.path.isdir(filepath):
-                                logg.log(warn, "%s: %s - not a directory: %s", unit, spec, filename)
+                        else:
+                            logg.log(warn, "%s: %s - directory is empty: %s", unit, spec, filename)
+                            problems += [spec+"="+checkfile]
+                    if "IsDirectory" in spec:
+                        if os.path.isdir(filepath):
+                            if "!" in mode:
+                                logg.log(warn, "%s: %s - is a directory: %s", unit, spec, filename)
                                 problems += [spec+"="+checkfile]
-                        if "IsSymbolicLink" in spec:
-                            if not os.path.islink(filepath):
-                                logg.log(warn, "%s: %s - not a symbolic link: %s", unit, spec, filename)
+                        else:
+                            logg.log(warn, "%s: %s - not a directory: %s", unit, spec, filename)
+                            problems += [spec+"="+checkfile]
+                    if "IsSymbolicLink" in spec:
+                        if os.path.islink(filepath):
+                            if "!" in mode:
+                                logg.log(warn, "%s: %s - is a symbolic link: %s", unit, spec, filename)
                                 problems += [spec+"="+checkfile]
-                        if "IsMountPoint" in spec:
-                            if not os.path.ismount(filepath):
-                                logg.log(warn, "%s: %s - not a mount point: %s", unit, spec, filename)
+                        else:
+                            logg.log(warn, "%s: %s - not a symbolic link: %s", unit, spec, filename)
+                            problems += [spec+"="+checkfile]
+                    if "IsMountPoint" in spec:
+                        if os.path.ismount(filepath):
+                            if "!" in mode:
+                                logg.log(warn, "%s: %s - is a mount point: %s", unit, spec, filename)
                                 problems += [spec+"="+checkfile]
-                        if "IsReadWrite" in spec:
-                            if not os.access(filepath, os.R_OK):
-                                logg.log(warn, "%s: %s - not readable: %s", unit, spec, filename)
+                        else:
+                            logg.log(warn, "%s: %s - not a mount point: %s", unit, spec, filename)
+                            problems += [spec+"="+checkfile]
+                    if "IsReadWrite" in spec:
+                        if not os.access(filepath, os.R_OK):
+                            logg.log(warn, "%s: %s - not readable: %s", unit, spec, filename)
+                            problems += [spec+"="+checkfile]
+                        elif not os.access(filepath, os.W_OK):
+                            logg.log(warn, "%s: %s - not writable: %s", unit, spec, filename)
+                            problems += [spec+"="+checkfile]
+                        else:
+                            if "!" in mode:
+                                logg.log(warn, "%s: %s - is readwrite: %s", unit, spec, filename)
                                 problems += [spec+"="+checkfile]
-                            elif not os.access(filepath, os.W_OK):
-                                logg.log(warn, "%s: %s - not writable: %s", unit, spec, filename)
-                                problems += [spec+"="+checkfile]
-                        if "IsExecutable" in spec:
-                            if not os.access(filepath, os.X_OK):
-                                logg.log(warn, "%s: %s - not executable: %s", unit, spec, filename)
+                    if "IsExecutable" in spec:
+                        if not os.access(filepath, os.X_OK):
+                            logg.log(warn, "%s: %s - not executable: %s", unit, spec, filename)
+                            problems += [spec+"="+checkfile]
+                        else:
+                            if "!" in mode:
+                                logg.log(warn, "%s: %s - is executable: %s", unit, spec, filename)
                                 problems += [spec+"="+checkfile]
         return problems
     def syntax_check(self, conf: SystemctlConf, *, conditions: bool = True) -> int:
@@ -3592,7 +3622,7 @@ class Systemctl:
             logg.error("%s: %s file conditions have failed: can not start", conf.name(), len(missing))
             asserts = [cond for cond in missing if cond.startswith("Assert")]
             if asserts:
-                logg.error("Assertion failed on job for %s", conf.name()) 
+                logg.error("Assertion failed on job for %s", conf.name())
                 return False
             else: # original systemctl silently skips the unit without having them started
                 logg.info("%s was skipped due to an unmet condition (%s)", conf.name(), " and ".join(missing))
