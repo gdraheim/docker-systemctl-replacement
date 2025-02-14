@@ -2243,7 +2243,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
         self.assertTrue(greps(err, "Assertion failed on job for zza.service"))
-        if not real:            
+        if not real:
             self.assertTrue(greps(err, "AssertPathExistsGlob - no files found"))
         self.assertEqual(end, EXIT_FAILURE)
         cmd = F"{systemctl} start zzb.service {vv}"
@@ -2434,7 +2434,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
         self.assertTrue(greps(err, "Assertion failed on job for zza.service"))
-        if not real:  
+        if not real:
             self.assertTrue(greps(err, "AssertFileNotEmpty - file is empty"))
         self.assertEqual(end, EXIT_FAILURE)
         cmd = F"{systemctl} start zzb.service {vv}"
@@ -3438,14 +3438,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
         self.assertTrue(greps(err, "Assertion failed on job for zza.service"))
         if not real:
-            self.assertTrue(greps(err, F"AssertEnvironment - \${blocked} not found"))
+            self.assertTrue(greps(err, F"AssertEnvironment - \\${blocked} not found"))
         self.assertEqual(end, EXIT_FAILURE)
         cmd = F"{systemctl} start zzb.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
         self.assertFalse(greps(err, "Assertion failed on job"))
         if not real:
-            self.assertTrue(greps(err, F"ConditionEnvironment - \${blocked} not found"))
+            self.assertTrue(greps(err, F"ConditionEnvironment - \\${blocked} not found"))
         self.assertEqual(end, EXIT_SUCCESS)
         #
         text_file(os_path(root, "/etc/systemd/system/zza.service"), F"""
@@ -3484,6 +3484,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not real:
             self.assertFalse(greps(err, "ConditionEnvironment - "))
         self.assertEqual(end, EXIT_SUCCESS)
+        #
+        cmd = F"{systemctl} stop zza.service zzb.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
         self.rm_zzfiles(root)
         self.rm_testdir()
     def real_1532_condition(self) -> None:
@@ -3497,7 +3501,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         self.rm_zzfiles(root)
-        import platform
         enabled = "LANG"
         blocked = "BLOCKED"
         text_file(os_path(root, "/etc/systemd/system/zza.service"), F"""
@@ -3535,14 +3538,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
         self.assertTrue(greps(err, "Assertion failed on job for zza.service"))
         if not real:
-            self.assertTrue(greps(err, F"AssertEnvironment - \${blocked} not found"))
+            self.assertTrue(greps(err, F"AssertEnvironment - \\${blocked} not found"))
         self.assertEqual(end, EXIT_FAILURE)
         cmd = F"{systemctl} start zzb.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
         self.assertFalse(greps(err, "Assertion failed on job"))
         if not real:
-            self.assertTrue(greps(err, F"ConditionEnvironment - \${blocked} not found"))
+            self.assertTrue(greps(err, F"ConditionEnvironment - \\${blocked} not found"))
         self.assertEqual(end, EXIT_SUCCESS)
         #
         text_file(os_path(root, "/etc/systemd/system/zza.service"), F"""
@@ -3572,25 +3575,25 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
         ## self.assertTrue(greps(err, "Assertion failed on job for zza.service"))
         if not real:
-            self.assertTrue(greps(err, F"AssertEnvironment - \${enabled} wrong value - want 'ok'"))
+            self.assertTrue(greps(err, F"AssertEnvironment - \\${enabled} wrong value - want 'ok'"))
         self.assertEqual(end, EXIT_FAILURE)
         cmd = F"{systemctl} start zzb.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
         self.assertFalse(greps(err, "Assertion failed on job"))
         if not real:
-            self.assertTrue(greps(err, F"ConditionEnvironment - \${enabled} wrong value - want 'ok'"))
+            self.assertTrue(greps(err, F"ConditionEnvironment - \\${enabled} wrong value - want 'ok'"))
         self.assertEqual(end, EXIT_SUCCESS)
         #
         cmd = F"{systemctl} show-environment {vv}"
-        out, err, end = output3(cmd) 
+        out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
         correct="no"
         for line in out.splitlines():
             logg.info("     env %s", line.rstrip())
             if line.startswith(F"{enabled}="):
-                 correct = line.split("=", 1)[1].rstrip()
-                 break
+                correct = line.split("=", 1)[1].rstrip()
+                break
         if correct in ['C']:
             if not TODO:
                 logg.warning("LANG was found to be '%s' - but that's not being evaluated later", correct)
@@ -3631,6 +3634,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not real:
             self.assertFalse(greps(err, "ConditionEnvironment - "))
         self.assertEqual(end, EXIT_SUCCESS)
+        #
+        cmd = F"{systemctl} stop zza.service zzb.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
         self.rm_zzfiles(root)
         self.rm_testdir()
     #
