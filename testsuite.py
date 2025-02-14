@@ -2464,7 +2464,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             AssertPathIsReadWrite=/etc/sysconfig/zza
             [Service]
             Type=simple
-            ExecStart=/usr/bin/false
+            ExecStart=/usr/bin/sleep 1
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(root, "/etc/systemd/system/zzb.service"), """
@@ -2473,7 +2473,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ConditionPathIsReadWrite=/etc/sysconfig/zzb
             [Service]
             Type=simple
-            ExecStart=/usr/bin/false
+            ExecStart=/usr/bin/sleep 1
             [Install]
             WantedBy=multi-user.target""")
         cmd = F"{systemctl} daemon-reload"
@@ -2491,19 +2491,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} start zza.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        if real:
-            self.assertTrue(greps(err, "Assertion failed on job for zza.service"))
-        else:            
+        self.assertTrue(greps(err, "Assertion failed on job for zza.service"))
+        if not real:
             self.assertTrue(greps(err, "AssertPathIsReadWrite - path not found"))
         self.assertEqual(end, EXIT_FAILURE)
         cmd = F"{systemctl} start zzb.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        if real:
-            self.assertEqual(end, EXIT_SUCCESS) # TODO?
-        else:
+        if not real:
             self.assertTrue(greps(err, "ConditionPathIsReadWrite - path not found"))
-            self.assertEqual(end, EXIT_FAILURE)
+        self.assertEqual(end, EXIT_SUCCESS)
         #
         text_file(os_path(root, "/etc/sysconfig/zza"), """allow=true""")
         text_file(os_path(root, "/etc/sysconfig/zzb"), """allow=true""")
@@ -2511,62 +2508,56 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} start zza.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertFalse(greps(err, "Assertion failed on job"))
         if real:
-            self.assertFalse(greps(err, "Assertion failed on job for zza.service"))
-            self.assertEqual(end, EXIT_SUCCESS)
-        else:            
-            self.assertFalse(greps(err, "AssertPathIsReadWrite - path not found"))
-            self.assertEqual(end, EXIT_FAILURE)
+            self.assertFalse(greps(err, "AssertPathIsReadWrite - "))
+        self.assertEqual(end, EXIT_SUCCESS)
         cmd = F"{systemctl} start zzb.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        if real:
-            self.assertEqual(end, EXIT_SUCCESS) # TODO?
-        else:
-            self.assertFalse(greps(err, "ConditionPathIsReadWrite - path not found"))
-            self.assertEqual(end, EXIT_FAILURE)
+        if not real:
+            self.assertFalse(greps(err, "ConditionPathIsReadWrite -"))
+        self.assertEqual(end, EXIT_SUCCESS)
         #
         os.chmod(os_path(root, "/etc/sysconfig/zza"), 0o400)
         os.chmod(os_path(root, "/etc/sysconfig/zzb"), 0o400)
         #
+        cmd = F"{systemctl} stop zza.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
         cmd = F"{systemctl} start zza.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        if real:
+        if not real: # TODO
             self.assertTrue(greps(err, "Assertion failed on job for zza.service"))
-            self.assertEqual(end, EXIT_FAILURE)
-        else:            
             self.assertTrue(greps(err, "AssertPathIsReadWrite - not writable"))
             self.assertEqual(end, EXIT_FAILURE)
         cmd = F"{systemctl} start zzb.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        if real:
-            self.assertEqual(end, EXIT_SUCCESS) # TODO?
-        else:
+        if not real:
             self.assertTrue(greps(err, "ConditionPathIsReadWrite - not writable"))
-            self.assertEqual(end, EXIT_FAILURE)
+        self.assertEqual(end, EXIT_SUCCESS)
         #
         os.chmod(os_path(root, "/etc/sysconfig/zza"), 0o200)
         os.chmod(os_path(root, "/etc/sysconfig/zzb"), 0o200)
         #
+        cmd = F"{systemctl} stop zza.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
         cmd = F"{systemctl} start zza.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        if real:
+        if not real: # TODO
             self.assertTrue(greps(err, "Assertion failed on job for zza.service"))
-            self.assertEqual(end, EXIT_FAILURE)
-        else:            
             self.assertTrue(greps(err, "AssertPathIsReadWrite - not readable"))
             self.assertEqual(end, EXIT_FAILURE)
         cmd = F"{systemctl} start zzb.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        if real:
-            self.assertEqual(end, EXIT_SUCCESS) # TODO?
-        else:
+        if not real:
             self.assertTrue(greps(err, "ConditionPathIsReadWrite - not readable"))
-            self.assertEqual(end, EXIT_FAILURE)
+        self.assertEqual(end, EXIT_SUCCESS)
         self.rm_zzfiles(root)
         self.rm_testdir()
         self.coverage()
@@ -2587,7 +2578,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             AssertFileIsExecutable=/etc/sysconfig/zza
             [Service]
             Type=simple
-            ExecStart=/usr/bin/false
+            ExecStart=/usr/bin/sleep 1
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(root, "/etc/systemd/system/zzb.service"), """
@@ -2596,7 +2587,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ConditionFileIsExecutable=/etc/sysconfig/zzb
             [Service]
             Type=simple
-            ExecStart=/usr/bin/false
+            ExecStart=/usr/bin/sleep 1
             [Install]
             WantedBy=multi-user.target""")
         cmd = F"{systemctl} daemon-reload"
@@ -2614,19 +2605,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} start zza.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        if real:
-            self.assertTrue(greps(err, "Assertion failed on job for zza.service"))
-        else:            
+        self.assertTrue(greps(err, "Assertion failed on job for zza.service"))
+        if not real:
             self.assertTrue(greps(err, "AssertFileIsExecutable - path not found"))
         self.assertEqual(end, EXIT_FAILURE)
         cmd = F"{systemctl} start zzb.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        if real:
-            self.assertEqual(end, EXIT_SUCCESS) # TODO?
-        else:
+        if not real:
             self.assertTrue(greps(err, "ConditionFileIsExecutable - path not found"))
-            self.assertEqual(end, EXIT_FAILURE)
+        self.assertEqual(end, EXIT_SUCCESS)
         #
         text_file(os_path(root, "/etc/sysconfig/zza"), """#! /usr/bin/true""")
         text_file(os_path(root, "/etc/sysconfig/zzb"), """#! /usr/bin/true""")
@@ -2634,20 +2622,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} start zza.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        if real:
-            self.assertFalse(greps(err, "Assertion failed on job for zza.service"))
-            self.assertEqual(end, EXIT_SUCCESS)
-        else:            
-            self.assertFalse(greps(err, "AssertFileIsExecutable - path not found"))
-            self.assertEqual(end, EXIT_FAILURE)
+        self.assertFalse(greps(err, "Assertion failed on job"))
+        if not real:
+            self.assertFalse(greps(err, "AssertFileIsExecutable - "))
+        self.assertEqual(end, EXIT_SUCCESS)
         cmd = F"{systemctl} start zzb.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        if real:
-            self.assertEqual(end, EXIT_SUCCESS) # TODO?
-        else:
-            self.assertFalse(greps(err, "ConditionFileIsExecutable - path not found"))
-            self.assertEqual(end, EXIT_FAILURE)
+        if not real:
+            self.assertFalse(greps(err, "ConditionFileIsExecutable - "))
+        self.assertEqual(end, EXIT_SUCCESS)
         #
         os.chmod(os_path(root, "/etc/sysconfig/zza"), 0o200)
         os.chmod(os_path(root, "/etc/sysconfig/zzb"), 0o200)
@@ -2655,20 +2639,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} start zza.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        if real:
-            self.assertTrue(greps(err, "Assertion failed on job for zza.service"))
-            self.assertEqual(end, EXIT_FAILURE)
-        else:            
+        self.assertTrue(greps(err, "Assertion failed on job for zza.service"))
+        if not real:
             self.assertTrue(greps(err, "AssertFileIsExecutable - not executable"))
-            self.assertEqual(end, EXIT_FAILURE)
+        self.assertEqual(end, EXIT_FAILURE)
         cmd = F"{systemctl} start zzb.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        if real:
-            self.assertEqual(end, EXIT_SUCCESS) # TODO?
-        else:
+        if not real:
             self.assertTrue(greps(err, "ConditionFileIsExecutable - not executable"))
-            self.assertEqual(end, EXIT_FAILURE)
+        self.assertEqual(end, EXIT_SUCCESS)
         #
         os.chmod(os_path(root, "/etc/sysconfig/zza"), 0o400)
         os.chmod(os_path(root, "/etc/sysconfig/zzb"), 0o400)
@@ -2676,20 +2656,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} start zza.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        if real:
-            self.assertTrue(greps(err, "Assertion failed on job for zza.service"))
-            self.assertEqual(end, EXIT_FAILURE)
-        else:            
+        self.assertTrue(greps(err, "Assertion failed on job for zza.service"))
+        if not real:
             self.assertTrue(greps(err, "AssertFileIsExecutable - not executable"))
-            self.assertEqual(end, EXIT_FAILURE)
+        self.assertEqual(end, EXIT_FAILURE)
         cmd = F"{systemctl} start zzb.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        if real:
-            self.assertEqual(end, EXIT_SUCCESS) # TODO?
-        else:
+        if not real:
             self.assertTrue(greps(err, "ConditionFileIsExecutable - not executable"))
-            self.assertEqual(end, EXIT_FAILURE)
+        self.assertEqual(end, EXIT_SUCCESS)
         #
         os.chmod(os_path(root, "/etc/sysconfig/zza"), 0o700)
         os.chmod(os_path(root, "/etc/sysconfig/zzb"), 0o700)
@@ -2697,20 +2673,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} start zza.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        if real:
-            self.assertFalse(greps(err, "Assertion failed on job for zza.service"))
-            self.assertEqual(end, EXIT_FAILURE)
-        else:            
-            self.assertFalse(greps(err, "AssertFileIsExecutable - not executable"))
-            self.assertEqual(end, EXIT_FAILURE)
+        self.assertFalse(greps(err, "Assertion failed on job"))
+        if not real:
+            self.assertFalse(greps(err, "AssertFileIsExecutable -"))
+        self.assertEqual(end, EXIT_SUCCESS)
         cmd = F"{systemctl} start zzb.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        if real:
-            self.assertEqual(end, EXIT_SUCCESS) # TODO?
-        else:
-            self.assertFalse(greps(err, "ConditionFileIsExecutable - not executable"))
-            self.assertEqual(end, EXIT_FAILURE)
+        if not real:
+            self.assertFalse(greps(err, "ConditionFileIsExecutable - "))
+        self.assertEqual(end, EXIT_SUCCESS)
         self.rm_zzfiles(root)
         self.rm_testdir()
         self.coverage()
@@ -2731,7 +2703,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             AssertPathIsSymbolicLink=/etc/sysconfig/zza
             [Service]
             Type=simple
-            ExecStart=/usr/bin/false
+            ExecStart=/usr/bin/sleep 1
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(root, "/etc/systemd/system/zzb.service"), """
@@ -2740,7 +2712,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ConditionPathIsSymbolicLink=/etc/sysconfig/zzb
             [Service]
             Type=simple
-            ExecStart=/usr/bin/false
+            ExecStart=/usr/bin/sleep 1
             [Install]
             WantedBy=multi-user.target""")
         cmd = F"{systemctl} daemon-reload"
@@ -2758,19 +2730,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} start zza.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        if real:
-            self.assertTrue(greps(err, "Assertion failed on job for zza.service"))
-        else:            
+        self.assertTrue(greps(err, "Assertion failed on job for zza.service"))
+        if not real:
             self.assertTrue(greps(err, "AssertPathIsSymbolicLink - path not found"))
         self.assertEqual(end, EXIT_FAILURE)
         cmd = F"{systemctl} start zzb.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        if real:
-            self.assertEqual(end, EXIT_SUCCESS) # TODO?
-        else:
+        if not real:
             self.assertTrue(greps(err, "ConditionPathIsSymbolicLink - path not found"))
-            self.assertEqual(end, EXIT_FAILURE)
+        self.assertEqual(end, EXIT_SUCCESS)
         #
         text_file(os_path(root, "/etc/sysconfig/zza"), """#! /usr/bin/true""")
         text_file(os_path(root, "/etc/sysconfig/zzb"), """#! /usr/bin/true""")
@@ -2778,20 +2747,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} start zza.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        if real:
-            self.assertFalse(greps(err, "Assertion failed on job for zza.service"))
-            self.assertEqual(end, EXIT_SUCCESS)
-        else:            
+        self.assertTrue(greps(err, "Assertion failed on job for zza.service"))
+        if not real:
             self.assertTrue(greps(err, "AssertPathIsSymbolicLink - not a symbolic link"))
-            self.assertEqual(end, EXIT_FAILURE)
+        self.assertEqual(end, EXIT_FAILURE)
         cmd = F"{systemctl} start zzb.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        if real:
-            self.assertEqual(end, EXIT_SUCCESS) # TODO?
-        else:
+        if not real:
             self.assertTrue(greps(err, "ConditionPathIsSymbolicLink - not a symbolic link"))
-            self.assertEqual(end, EXIT_FAILURE)
+        self.assertEqual(end, EXIT_SUCCESS)
         #
         os.unlink(os_path(root, "/etc/sysconfig/zza"))
         os.unlink(os_path(root, "/etc/sysconfig/zzb"))
@@ -2803,62 +2768,58 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} start zza.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        if real:
-            self.assertFalse(greps(err, "Assertion failed on job for zza.service"))
-            self.assertEqual(end, EXIT_FAILURE)
-        else:            
+        self.assertFalse(greps(err, "Assertion failed on job"))
+        if not real:
             self.assertFalse(greps(err, "AssertPathIsSymbolicLink - "))
-            self.assertEqual(end, EXIT_FAILURE)
+        self.assertEqual(end, EXIT_SUCCESS)
         cmd = F"{systemctl} start zzb.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        if real:
-            self.assertEqual(end, EXIT_SUCCESS) # TODO?
-        else:
+        if not real:
             self.assertFalse(greps(err, "ConditionPathIsSymbolicLink - "))
-            self.assertEqual(end, EXIT_FAILURE)
+        self.assertEqual(end, EXIT_SUCCESS)
         #
         os.unlink(os_path(root, "/etc/sysconfig/zzax"))
         os.unlink(os_path(root, "/etc/sysconfig/zzbx"))
         #
+        cmd = F"{systemctl} stop zza.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
         cmd = F"{systemctl} start zza.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        if real:
+        if not real:
             self.assertTrue(greps(err, "Assertion failed on job for zza.service"))
-            self.assertEqual(end, EXIT_FAILURE)
-        else:            
             self.assertTrue(greps(err, "AssertPathIsSymbolicLink - path not found"))
             self.assertEqual(end, EXIT_FAILURE)
+        else:
+            self.assertEqual(end, EXIT_SUCCESS) # TODO
         cmd = F"{systemctl} start zzb.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        if real:
-            self.assertEqual(end, EXIT_SUCCESS) # TODO?
-        else:
+        if not real:
             self.assertTrue(greps(err, "ConditionPathIsSymbolicLink - path not found"))
-            self.assertEqual(end, EXIT_FAILURE)
+        self.assertEqual(end, EXIT_SUCCESS)
         #
         os.mkdir(os_path(root, "/etc/sysconfig/zzax"))
         os.mkdir(os_path(root, "/etc/sysconfig/zzbx"))
         #
+        cmd = F"{systemctl} stop zza.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
         cmd = F"{systemctl} start zza.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        if real:
-            self.assertFalse(greps(err, "Assertion failed on job for zza.service"))
-            self.assertEqual(end, EXIT_FAILURE)
-        else:            
+        self.assertFalse(greps(err, "Assertion failed on job"))
+        if not real:
             self.assertFalse(greps(err, "AssertPathIsSymbolicLink - "))
-            self.assertEqual(end, EXIT_FAILURE)
+        self.assertEqual(end, EXIT_SUCCESS)
         cmd = F"{systemctl} start zzb.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        if real:
-            self.assertEqual(end, EXIT_SUCCESS) # TODO?
-        else:
+        if not real:
             self.assertFalse(greps(err, "ConditionPathIsSymbolicLink - "))
-            self.assertEqual(end, EXIT_FAILURE)
+        self.assertEqual(end, EXIT_SUCCESS)
         self.rm_zzfiles(root)
         self.rm_testdir()
         self.coverage()
@@ -2879,7 +2840,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             AssertPathIsDirectory=/etc/sysconfig/zza
             [Service]
             Type=simple
-            ExecStart=/usr/bin/false
+            ExecStart=/usr/bin/sleep 1
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(root, "/etc/systemd/system/zzb.service"), """
@@ -2888,7 +2849,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ConditionPathIsDirectory=/etc/sysconfig/zzb
             [Service]
             Type=simple
-            ExecStart=/usr/bin/false
+            ExecStart=/usr/bin/sleep 1
             [Install]
             WantedBy=multi-user.target""")
         cmd = F"{systemctl} daemon-reload"
@@ -2906,19 +2867,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} start zza.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        if real:
-            self.assertTrue(greps(err, "Assertion failed on job for zza.service"))
-        else:            
+        self.assertTrue(greps(err, "Assertion failed on job for zza.service"))
+        if not real:
             self.assertTrue(greps(err, "AssertPathIsDirectory - path not found"))
         self.assertEqual(end, EXIT_FAILURE)
         cmd = F"{systemctl} start zzb.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        if real:
-            self.assertEqual(end, EXIT_SUCCESS) # TODO?
-        else:
+        if not real:
             self.assertTrue(greps(err, "ConditionPathIsDirectory - path not found"))
-            self.assertEqual(end, EXIT_FAILURE)
+        self.assertEqual(end, EXIT_SUCCESS)
         #
         text_file(os_path(root, "/etc/sysconfig/zza"), """#! /usr/bin/true""")
         text_file(os_path(root, "/etc/sysconfig/zzb"), """#! /usr/bin/true""")
@@ -2926,20 +2884,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} start zza.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        if real:
-            self.assertFalse(greps(err, "Assertion failed on job for zza.service"))
-            self.assertEqual(end, EXIT_SUCCESS)
-        else:            
+        self.assertTrue(greps(err, "Assertion failed on job for zza.service"))
+        if not real:
             self.assertTrue(greps(err, "AssertPathIsDirectory - not a directory"))
-            self.assertEqual(end, EXIT_FAILURE)
+        self.assertEqual(end, EXIT_FAILURE)
         cmd = F"{systemctl} start zzb.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        if real:
-            self.assertEqual(end, EXIT_SUCCESS) # TODO?
-        else:
+        if not real:
             self.assertTrue(greps(err, "ConditionPathIsDirectory - not a directory"))
-            self.assertEqual(end, EXIT_FAILURE)
+        self.assertEqual(end, EXIT_SUCCESS)
         #
         os.unlink(os_path(root, "/etc/sysconfig/zza"))
         os.unlink(os_path(root, "/etc/sysconfig/zzb"))
@@ -2951,20 +2905,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} start zza.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        if real:
-            self.assertFalse(greps(err, "Assertion failed on job for zza.service"))
-            self.assertEqual(end, EXIT_FAILURE)
-        else:            
+        self.assertTrue(greps(err, "Assertion failed on job for zza.service"))
+        if not real:
             self.assertTrue(greps(err, "AssertPathIsDirectory - not a directory"))
-            self.assertEqual(end, EXIT_FAILURE)
+        self.assertEqual(end, EXIT_FAILURE)
         cmd = F"{systemctl} start zzb.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        if real:
-            self.assertEqual(end, EXIT_SUCCESS) # TODO?
-        else:
+        if not real:
             self.assertTrue(greps(err, "ConditionPathIsDirectory - not a directory"))
-            self.assertEqual(end, EXIT_FAILURE)
+        self.assertEqual(end, EXIT_SUCCESS)
         #
         os.unlink(os_path(root, "/etc/sysconfig/zzax"))
         os.unlink(os_path(root, "/etc/sysconfig/zzbx"))
@@ -2974,20 +2924,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} start zza.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        if real:
-            self.assertFalse(greps(err, "Assertion failed on job for zza.service"))
-            self.assertEqual(end, EXIT_FAILURE)
-        else:            
+        self.assertFalse(greps(err, "Assertion failed on job"))
+        if not real:
             self.assertFalse(greps(err, "AssertPathIsDirectory - "))
-            self.assertEqual(end, EXIT_FAILURE)
+        self.assertEqual(end, EXIT_SUCCESS)
         cmd = F"{systemctl} start zzb.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        if real:
-            self.assertEqual(end, EXIT_SUCCESS) # TODO?
-        else:
+        if not real:
             self.assertFalse(greps(err, "ConditionPathIsDirectory - "))
-            self.assertEqual(end, EXIT_FAILURE)
+        self.assertEqual(end, EXIT_SUCCESS)
         #
         os.unlink(os_path(root, "/etc/sysconfig/zza"))
         os.unlink(os_path(root, "/etc/sysconfig/zzb"))
@@ -2997,20 +2943,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} start zza.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        if real:
-            self.assertFalse(greps(err, "Assertion failed on job for zza.service"))
-            self.assertEqual(end, EXIT_FAILURE)
-        else:            
+        self.assertFalse(greps(err, "Assertion failed on job"))
+        if not real:
             self.assertFalse(greps(err, "AssertPathIsDirectory - "))
-            self.assertEqual(end, EXIT_FAILURE)
+        self.assertEqual(end, EXIT_SUCCESS)
         cmd = F"{systemctl} start zzb.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        if real:
-            self.assertEqual(end, EXIT_SUCCESS) # TODO?
-        else:
+        if not real:
             self.assertFalse(greps(err, "ConditionPathIsDirectory - "))
-            self.assertEqual(end, EXIT_FAILURE)
+        self.assertEqual(end, EXIT_SUCCESS)
         self.rm_zzfiles(root)
         self.rm_testdir()
         self.coverage()
@@ -3031,7 +2973,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             AssertDirectoryNotEmpty=/etc/sysconfig/zza
             [Service]
             Type=simple
-            ExecStart=/usr/bin/false
+            ExecStart=/usr/bin/sleep 1
             [Install]
             WantedBy=multi-user.target""")
         text_file(os_path(root, "/etc/systemd/system/zzb.service"), """
@@ -3040,7 +2982,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ConditionDirectoryNotEmpty=/etc/sysconfig/zzb
             [Service]
             Type=simple
-            ExecStart=/usr/bin/false
+            ExecStart=/usr/bin/sleep 1
             [Install]
             WantedBy=multi-user.target""")
         cmd = F"{systemctl} daemon-reload"
@@ -3058,19 +3000,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} start zza.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        if real:
-            self.assertTrue(greps(err, "Assertion failed on job for zza.service"))
-        else:            
+        self.assertTrue(greps(err, "Assertion failed on job for zza.service"))
+        if not real:
             self.assertTrue(greps(err, "AssertDirectoryNotEmpty - path not found"))
         self.assertEqual(end, EXIT_FAILURE)
         cmd = F"{systemctl} start zzb.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        if real:
-            self.assertEqual(end, EXIT_SUCCESS) # TODO?
-        else:
+        if not real:
             self.assertTrue(greps(err, "ConditionDirectoryNotEmpty - path not found"))
-            self.assertEqual(end, EXIT_FAILURE)
+        self.assertEqual(end, EXIT_SUCCESS)
         #
         text_file(os_path(root, "/etc/sysconfig/zza"), """#! /usr/bin/true""")
         text_file(os_path(root, "/etc/sysconfig/zzb"), """#! /usr/bin/true""")
@@ -3078,20 +3017,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} start zza.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        if real:
-            self.assertFalse(greps(err, "Assertion failed on job for zza.service"))
-            self.assertEqual(end, EXIT_SUCCESS)
-        else:            
+        self.assertTrue(greps(err, "Assertion failed on job for zza.service"))
+        if not real:
             self.assertTrue(greps(err, "AssertDirectoryNotEmpty - not a directory"))
-            self.assertEqual(end, EXIT_FAILURE)
+        self.assertEqual(end, EXIT_FAILURE)
         cmd = F"{systemctl} start zzb.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        if real:
-            self.assertEqual(end, EXIT_SUCCESS) # TODO?
-        else:
+        if not real:
             self.assertTrue(greps(err, "ConditionDirectoryNotEmpty - not a directory"))
-            self.assertEqual(end, EXIT_FAILURE)
+        self.assertEqual(end, EXIT_SUCCESS)
         #
         os.unlink(os_path(root, "/etc/sysconfig/zza"))
         os.unlink(os_path(root, "/etc/sysconfig/zzb"))
@@ -3103,20 +3038,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} start zza.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        if real:
-            self.assertFalse(greps(err, "Assertion failed on job for zza.service"))
-            self.assertEqual(end, EXIT_FAILURE)
-        else:            
+        self.assertTrue(greps(err, "Assertion failed on job for zza.service"))
+        if not real:
             self.assertTrue(greps(err, "AssertDirectoryNotEmpty - not a directory"))
-            self.assertEqual(end, EXIT_FAILURE)
+        self.assertEqual(end, EXIT_FAILURE)
         cmd = F"{systemctl} start zzb.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        if real:
-            self.assertEqual(end, EXIT_SUCCESS) # TODO?
-        else:
+        if not real:
             self.assertTrue(greps(err, "ConditionDirectoryNotEmpty - not a directory"))
-            self.assertEqual(end, EXIT_FAILURE)
+        self.assertEqual(end, EXIT_SUCCESS)
         #
         os.unlink(os_path(root, "/etc/sysconfig/zzax"))
         os.unlink(os_path(root, "/etc/sysconfig/zzbx"))
@@ -3126,20 +3057,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} start zza.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        if real:
-            self.assertFalse(greps(err, "Assertion failed on job for zza.service"))
-            self.assertEqual(end, EXIT_FAILURE)
-        else:            
+        self.assertTrue(greps(err, "Assertion failed on job for zza.service"))
+        if not real:
             self.assertTrue(greps(err, "AssertDirectoryNotEmpty - directory is empty"))
-            self.assertEqual(end, EXIT_FAILURE)
+        self.assertEqual(end, EXIT_FAILURE)
         cmd = F"{systemctl} start zzb.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        if real:
-            self.assertEqual(end, EXIT_SUCCESS) # TODO?
-        else:
+        if not real:
             self.assertTrue(greps(err, "ConditionDirectoryNotEmpty - directory is empty"))
-            self.assertEqual(end, EXIT_FAILURE)
+        self.assertEqual(end, EXIT_SUCCESS)
         #
         text_file(os_path(root, "/etc/sysconfig/zzax/zz1"), """#! /usr/bin/true""")
         text_file(os_path(root, "/etc/sysconfig/zzbx/zz1"), """#! /usr/bin/true""")
@@ -3147,20 +3074,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} start zza.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        if real:
-            self.assertFalse(greps(err, "Assertion failed on job for zza.service"))
-            self.assertEqual(end, EXIT_FAILURE)
-        else:            
+        self.assertFalse(greps(err, "Assertion failed on job"))
+        if not real:
             self.assertFalse(greps(err, "AssertDirectoryNotEmpty - "))
-            self.assertEqual(end, EXIT_FAILURE)
+        self.assertEqual(end, EXIT_SUCCESS)
         cmd = F"{systemctl} start zzb.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
-        if real:
-            self.assertEqual(end, EXIT_SUCCESS) # TODO?
-        else:
+        if not real:
             self.assertFalse(greps(err, "ConditionDirectoryNotEmpty - "))
-            self.assertEqual(end, EXIT_FAILURE)
+        self.assertEqual(end, EXIT_SUCCESS)
         self.rm_zzfiles(root)
         self.rm_testdir()
         self.coverage()
