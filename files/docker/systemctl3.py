@@ -2152,10 +2152,15 @@ class SystemctlLoadedUnits:
                 if found:
                     if "!" in mode:
                         logg.log(warn, "%s: %s - found %s files in: %s", unit, spec, found, filename)
+                        problems += [spec+"="+checkfile]
+                    else:
+                        logg.debug("%s: %s ....found [%s]", unit, spec, filepath)
                 else:
                     if "!" not in mode:
                         logg.log(warn, "%s: %s - no files found: %s", unit, spec, filename)
                         problems += [spec+"="+checkfile]
+                    else:
+                        logg.debug("%s: %s....notfound [%s]", unit, spec, filepath)
         for spec in ["ConditionPathExists", "ConditionPathIsDirectory", "ConditionPathIsSymbolicLink", "ConditionPathIsMountPoint",
                      "ConditionPathIsReadWrite", "ConditionDirectoryNotEmpty", "ConditionFileIsExecutable", "ConditionFileNotEmpty",
                      "AssertPathExists", "AssertPathIsDirectory", "AssertPathIsSymbolicLink", "AssertPathIsMountPoint",
