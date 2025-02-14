@@ -2071,7 +2071,7 @@ class SystemctlLoadedUnits:
             if status:
                 return status
         return None
-    def check_system_conditions(self, conf: SystemctlConf, section: str = Unit, warning: int = logging.WARNING) -> List[str]:
+    def check_env_conditions(self, conf: SystemctlConf, section: str = Unit, warning: int = logging.WARNING) -> List[str]:
         problems: List[str] = []
         unit = conf.name()
         for spec in ["ConditionEnvironment", "AssertEnvironment"]:
@@ -2087,16 +2087,19 @@ class SystemctlLoadedUnits:
                 value = os.environ.get(name)
                 if value is None:
                     if "!" not in mode:
-                        logg.log(warn, "%s: %s - environment variable %s not found", unit, spec, name)
+                        logg.log(warn, "%s: %s - $%s not found", unit, spec, name)
                         problems += [spec]
                 else:
                     if "!" in mode:
-                        logg.log(warn, "%s: %s - environment variable %s was found", unit, spec, name)
+                        logg.log(warn, "%s: %s - $%s was found", unit, spec, name)
                         problems += [spec]
                     elif wantvalue is not None and value != wantvalue:
-                        logg.log(warn, "%s: %s - environment variable %s wrong value - have %s want %s", unit, spec, name, value, wantvalue)
+                        logg.log(warn, "%s: %s - $%s wrong value - want '%s' have '%s'", unit, spec, name, wantvalue, value)
                         problems += [spec]
-        #
+        return problems
+    def check_system_conditions(self, conf: SystemctlConf, section: str = Unit, warning: int = logging.WARNING) -> List[str]:
+        problems: List[str] = []
+        unit = conf.name()
         import platform
         for spec in ["ConditionArchitecture", "AssertArchitecture"]:
             warn = logging.ERROR if "Assert" in spec else warning
@@ -3024,6 +3027,15 @@ class Systemctl:
             self.error |= NOT_FOUND
             return None
         return self.units.get_env(conf)
+    def system_exec_env(self) -> List[str]:
+        """ systemd -- show init environment parts """
+        empty: Dict[str, str] = {}
+        return list(self.each_system_exec_env({}))
+    def each_system_exec_env(self, env: Dict[str, str]) -> Iterator[str]:
+        """ systemd -- show init environment parts """
+        values = self.extend_exec_env(env)
+        for name in sorted(values):
+            yield "%s=%s" %(name, values[name])
     def remove_service_directories(self, conf: SystemctlConf, section: str = Service) -> bool:
         ok = True
         want_runtime_folders = self.units.get_RuntimeDirectory(conf, section)
@@ -3623,7 +3635,7 @@ class Systemctl:
             logg.debug(" start unit %s => %s", conf.name(), q_str(conf.filename()))
             return self.do_start_unit_from(conf)
     def do_start_unit_from(self, conf: SystemctlConf) -> bool:
-        blocked = self.units.check_system_conditions(conf, warning=logging.ERROR)
+        blocked = self.units.check_env_conditions(conf, warning=logging.ERROR)
         if blocked:
             logg.error("%s: %s system conditions have failed: can not start", conf.name(), len(blocked))
             asserts = [cond for cond in blocked if cond.startswith("Assert")]
@@ -3633,8 +3645,17 @@ class Systemctl:
             else: # original systemctl silently skips the unit without having them started
                 logg.info("%s was skipped due to an unmet condition (%s)", conf.name(), " and ".join(blocked))
                 return OK_CONDITION_FAILURE
+        impossible = self.units.check_system_conditions(conf, warning=logging.ERROR)
+        if impossible:
+            logg.error("%s: %s system conditions have failed: can not start", conf.name(), len(impossible))
+            asserts = [cond for cond in impossible if cond.startswith("Assert")]
+            if asserts:
+                logg.error("Assertion failed on job for %s", conf.name())
+                return False
+            else: # original systemctl silently skips the unit without having them started
+                logg.info("%s was skipped due to an unmet condition (%s)", conf.name(), " and ".join(impossible))
+                return OK_CONDITION_FAILURE
         missing = self.units.check_file_conditions(conf, warning=logging.ERROR)
-        logg.fatal("missing %s", missing)
         if missing:
             logg.error("%s: %s file conditions have failed: can not start", conf.name(), len(missing))
             asserts = [cond for cond in missing if cond.startswith("Assert")]
@@ -6926,6 +6947,8 @@ def runcommand(command: str, *modules: str) -> int:
         print_str(systemctl.set_default_modules(*modules))
     elif command in ["show"]:
         print_str_list(systemctl.show_modules(*modules))
+    elif command in ["show-environment"]:
+        print_str_list(systemctl.system_exec_env())
     elif command in ["start"]:
         exitcode = is_not_ok(systemctl.start_modules(*modules))
     elif command in ["status"]:
