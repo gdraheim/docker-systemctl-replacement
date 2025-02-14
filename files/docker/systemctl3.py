@@ -2183,64 +2183,72 @@ class SystemctlLoadedUnits:
                             if "!" not in mode:
                                 logg.log(warn, "%s: %s - not a file: %s", unit, spec, filename)
                                 problems += [spec+"="+checkfile]
-                        elif os.path.getsize(filepath):
+                        elif not os.path.getsize(filepath):
+                            if "!" not in mode:
+                                logg.log(warn, "%s: %s - file is empty: %s", unit, spec, filename)
+                                problems += [spec+"="+checkfile]
+                        else:
                             if "!" in mode:
                                 logg.log(warn, "%s: %s - file is not empty: %s", unit, spec, filename)
                                 problems += [spec+"="+checkfile]
-                        else:
-                            logg.log(warn, "%s: %s - file is empty: %s", unit, spec, filename)
-                            problems += [spec+"="+checkfile]
                     if "DirectoryNotEmpty" in spec:
                         if not os.path.isdir(filepath):
-                            if "!" in mode:
+                            if "!" not in mode:
                                 logg.log(warn, "%s: %s - not a directory: %s", unit, spec, filename)
                                 problems += [spec+"="+checkfile]
-                        elif os.listdir(filepath):
+                        elif not os.listdir(filepath):
+                            if "!" not in mode:
+                                logg.log(warn, "%s: %s - directory is empty: %s", unit, spec, filename)
+                                problems += [spec+"="+checkfile]
+                        else:
                             if "!" in mode:
                                 logg.log(warn, "%s: %s - directory is not empty: %s", unit, spec, filename)
                                 problems += [spec+"="+checkfile]
-                        else:
-                            logg.log(warn, "%s: %s - directory is empty: %s", unit, spec, filename)
-                            problems += [spec+"="+checkfile]
                     if "IsDirectory" in spec:
-                        if os.path.isdir(filepath):
+                        if not os.path.isdir(filepath):
+                            if "!" not in mode:
+                                logg.log(warn, "%s: %s - not a directory: %s", unit, spec, filename)
+                                problems += [spec+"="+checkfile]
+                        else:
                             if "!" in mode:
                                 logg.log(warn, "%s: %s - is a directory: %s", unit, spec, filename)
                                 problems += [spec+"="+checkfile]
-                        else:
-                            logg.log(warn, "%s: %s - not a directory: %s", unit, spec, filename)
-                            problems += [spec+"="+checkfile]
                     if "IsSymbolicLink" in spec:
-                        if os.path.islink(filepath):
-                            if "!" in mode:
-                                logg.log(warn, "%s: %s - is a symbolic link: %s", unit, spec, filename)
+                        if not os.path.islink(filepath):
+                            if "!" not in mode:
+                                logg.log(warn, "%s: %s - not a symbolic link: %s", unit, spec, filename)
                                 problems += [spec+"="+checkfile]
                         else:
-                            logg.log(warn, "%s: %s - not a symbolic link: %s", unit, spec, filename)
-                            problems += [spec+"="+checkfile]
+                            if "!" in mode:
+                                logg.log(warn, "%s: %s - not a symbolic link: %s", unit, spec, filename)
+                                problems += [spec+"="+checkfile]
                     if "IsMountPoint" in spec:
-                        if os.path.ismount(filepath):
+                        if not os.path.ismount(filepath):
+                            if "!" not in mode:
+                                logg.log(warn, "%s: %s - not a mount point: %s", unit, spec, filename)
+                                problems += [spec+"="+checkfile]
+                        else:
                             if "!" in mode:
                                 logg.log(warn, "%s: %s - is a mount point: %s", unit, spec, filename)
                                 problems += [spec+"="+checkfile]
-                        else:
-                            logg.log(warn, "%s: %s - not a mount point: %s", unit, spec, filename)
-                            problems += [spec+"="+checkfile]
                     if "IsReadWrite" in spec:
                         if not os.access(filepath, os.R_OK):
-                            logg.log(warn, "%s: %s - not readable: %s", unit, spec, filename)
-                            problems += [spec+"="+checkfile]
+                            if "!" not in mode:
+                                logg.log(warn, "%s: %s - not readable: %s", unit, spec, filename)
+                                problems += [spec+"="+checkfile]
                         elif not os.access(filepath, os.W_OK):
-                            logg.log(warn, "%s: %s - not writable: %s", unit, spec, filename)
-                            problems += [spec+"="+checkfile]
+                            if "!" not in mode:
+                                logg.log(warn, "%s: %s - not writable: %s", unit, spec, filename)
+                                problems += [spec+"="+checkfile]
                         else:
                             if "!" in mode:
                                 logg.log(warn, "%s: %s - is readwrite: %s", unit, spec, filename)
                                 problems += [spec+"="+checkfile]
                     if "IsExecutable" in spec:
                         if not os.access(filepath, os.X_OK):
-                            logg.log(warn, "%s: %s - not executable: %s", unit, spec, filename)
-                            problems += [spec+"="+checkfile]
+                            if "!" not in mode:
+                                logg.log(warn, "%s: %s - not executable: %s", unit, spec, filename)
+                                problems += [spec+"="+checkfile]
                         else:
                             if "!" in mode:
                                 logg.log(warn, "%s: %s - is executable: %s", unit, spec, filename)
