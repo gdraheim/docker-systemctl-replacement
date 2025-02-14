@@ -3198,7 +3198,198 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_zzfiles(root)
         self.rm_testdir()
         self.coverage()
-
+    def real_1521_condition(self) -> None:
+        self.test_1521_condition(True)
+    def test_1521_condition(self, real: bool = False) -> None:
+        """ check that file ConditionArchitecture work"""
+        vv = self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir, real)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
+        self.rm_zzfiles(root)
+        import platform
+        wanted = platform.machine().replace("_", "-")
+        unwanted = "mechanical-turk"
+        text_file(os_path(root, "/etc/systemd/system/zza.service"), F"""
+            [Unit]
+            Description=Testing A
+            AssertArchitecture={unwanted}
+            [Service]
+            Type=simple
+            ExecStart=/usr/bin/sleep 1
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"), F"""
+            [Unit]
+            Description=Testing B
+            ConditionArchitecture={unwanted}
+            [Service]
+            Type=simple
+            ExecStart=/usr/bin/sleep 1
+            [Install]
+            WantedBy=multi-user.target""")
+        cmd = F"{systemctl} daemon-reload"
+        out, end = output2(cmd)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = F"{systemctl} status zza.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        self.assertTrue(greps(out, "Loaded: loaded"))
+        cmd = F"{systemctl} status zzb.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        self.assertTrue(greps(out, "Loaded: loaded"))
+        #
+        cmd = F"{systemctl} start zza.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertTrue(greps(err, "Assertion failed on job for zza.service"))
+        if not real:
+            self.assertTrue(greps(err, "AssertArchitecture - want mechanical-turk - have x86-64"))
+        self.assertEqual(end, EXIT_FAILURE)
+        cmd = F"{systemctl} start zzb.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertFalse(greps(err, "Assertion failed on job"))
+        if not real:
+            self.assertTrue(greps(err, "ConditionArchitecture - want mechanical-turk - have x86-64"))
+        self.assertEqual(end, EXIT_SUCCESS)
+        #
+        text_file(os_path(root, "/etc/systemd/system/zza.service"), F"""
+            [Unit]
+            Description=Testing A
+            AssertArchitecture={wanted}
+            [Service]
+            Type=simple
+            ExecStart=/usr/bin/sleep 1
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"), F"""
+            [Unit]
+            Description=Testing B
+            ConditionArchitecture={wanted}
+            [Service]
+            Type=simple
+            ExecStart=/usr/bin/sleep 1
+            [Install]
+            WantedBy=multi-user.target""")
+        cmd = F"{systemctl} daemon-reload"
+        out, end = output2(cmd)
+       #
+        cmd = F"{systemctl} start zza.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertFalse(greps(err, "Assertion failed on job"))
+        if not real:
+            self.assertFalse(greps(err, "AssertArchitecture - "))
+        self.assertEqual(end, EXIT_SUCCESS)
+        cmd = F"{systemctl} start zzb.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertFalse(greps(err, "Assertion failed on job"))
+        if not real:
+            self.assertFalse(greps(err, "ConditionArchitecture - "))
+        self.assertEqual(end, EXIT_SUCCESS)
+        self.rm_zzfiles(root)
+        self.rm_testdir()
+    def real_1522_condition(self) -> None:
+        self.test_1522_condition(True)
+    def test_1522_condition(self, real: bool = False) -> None:
+        """ check that file ConditionHost work"""
+        vv = self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir, real)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
+        self.rm_zzfiles(root)
+        import platform
+        wanted = platform.node()
+        unwanted = "test1.example.com"
+        text_file(os_path(root, "/etc/systemd/system/zza.service"), F"""
+            [Unit]
+            Description=Testing A
+            AssertHost={unwanted}
+            [Service]
+            Type=simple
+            ExecStart=/usr/bin/sleep 1
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"), F"""
+            [Unit]
+            Description=Testing B
+            ConditionHost={unwanted}
+            [Service]
+            Type=simple
+            ExecStart=/usr/bin/sleep 1
+            [Install]
+            WantedBy=multi-user.target""")
+        cmd = F"{systemctl} daemon-reload"
+        out, end = output2(cmd)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = F"{systemctl} status zza.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        self.assertTrue(greps(out, "Loaded: loaded"))
+        cmd = F"{systemctl} status zzb.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        self.assertTrue(greps(out, "Loaded: loaded"))
+        #
+        cmd = F"{systemctl} start zza.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertTrue(greps(err, "Assertion failed on job for zza.service"))
+        if not real:
+            self.assertTrue(greps(err, "AssertHost - want test1.example.com - have localhost.localdomain"))
+        self.assertEqual(end, EXIT_FAILURE)
+        cmd = F"{systemctl} start zzb.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertFalse(greps(err, "Assertion failed on job"))
+        if not real:
+            self.assertTrue(greps(err, "ConditionHost - want test1.example.com - have localhost.localdomain"))
+        self.assertEqual(end, EXIT_SUCCESS)
+        #
+        text_file(os_path(root, "/etc/systemd/system/zza.service"), F"""
+            [Unit]
+            Description=Testing A
+            AssertHost={wanted}
+            [Service]
+            Type=simple
+            ExecStart=/usr/bin/sleep 1
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"), F"""
+            [Unit]
+            Description=Testing B
+            ConditionHost={wanted}
+            [Service]
+            Type=simple
+            ExecStart=/usr/bin/sleep 1
+            [Install]
+            WantedBy=multi-user.target""")
+        cmd = F"{systemctl} daemon-reload"
+        out, end = output2(cmd)
+       #
+        cmd = F"{systemctl} start zza.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertFalse(greps(err, "Assertion failed on job"))
+        if not real:
+            self.assertFalse(greps(err, "AssertHost - "))
+        self.assertEqual(end, EXIT_SUCCESS)
+        cmd = F"{systemctl} start zzb.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertFalse(greps(err, "Assertion failed on job"))
+        if not real:
+            self.assertFalse(greps(err, "ConditionHost - "))
+        self.assertEqual(end, EXIT_SUCCESS)
+        self.rm_zzfiles(root)
+        self.rm_testdir()
     #
     def test_2001_can_create_test_services(self) -> None:
         """ check that two unit files can be created for testing """
