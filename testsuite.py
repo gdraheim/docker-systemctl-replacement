@@ -11,7 +11,7 @@ __version__ = "2.0.1065"
 # The testcases 1000...4999 are using a --root=subdir environment
 # The testcases 5000...9999 will start a docker container to work.
 
-from typing import List, Tuple, Generator, Iterator, Union, Optional, TextIO
+from typing import List, Tuple, Generator, Iterator, Union, Optional, TextIO, Mapping
 
 import subprocess
 import os
@@ -226,28 +226,28 @@ def sx____(cmd: Union[str, List[str]], shell: bool = True) -> int:
     else:
         logg.info(": %s", " ".join([q_str(item) for item in cmd]))
     return subprocess.call(cmd, shell=shell)
-def output(cmd: Union[str, List[str]], shell: bool = True) -> str:
+def output(cmd: Union[str, List[str]], shell: bool = True, env: Optional[Mapping[str, str]] = None) -> str:
     if isinstance(cmd, string_types):
         logg.info(": %s", cmd)
     else:
         logg.info(": %s", " ".join([q_str(item) for item in cmd]))
-    run = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE)
+    run = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE, env=env)
     out, err = run.communicate()
     return decodes(out)
-def output2(cmd: Union[str, List[str]], shell: bool = True) -> Tuple[str, int]:
+def output2(cmd: Union[str, List[str]], shell: bool = True, env: Optional[Mapping[str, str]] = None) -> Tuple[str, int]:
     if isinstance(cmd, string_types):
         logg.info(": %s", cmd)
     else:
         logg.info(": %s", " ".join([q_str(item) for item in cmd]))
-    run = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE)
+    run = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE, env=env)
     out, err = run.communicate()
     return decodes(out), run.returncode
-def output3(cmd: Union[str, List[str]], shell: bool = True) -> Tuple[str, str, int]:
+def output3(cmd: Union[str, List[str]], shell: bool = True, env: Optional[Mapping[str, str]] = None) -> Tuple[str, str, int]:
     if isinstance(cmd, string_types):
         logg.info(": %s", cmd)
     else:
         logg.info(": %s", " ".join([q_str(item) for item in cmd]))
-    run = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    run = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
     out, err = run.communicate()
     return decodes(out), decodes(err), run.returncode
 
@@ -3387,6 +3387,249 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(err, "Assertion failed on job"))
         if not real:
             self.assertFalse(greps(err, "ConditionHost - "))
+        self.assertEqual(end, EXIT_SUCCESS)
+        self.rm_zzfiles(root)
+        self.rm_testdir()
+    def real_1531_condition(self) -> None:
+        self.test_1531_condition(True)
+    def test_1531_condition(self, real: bool = False) -> None:
+        """ check that file ConditionEnvironment work"""
+        vv = self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir, real)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
+        self.rm_zzfiles(root)
+        enabled = "LANG"
+        blocked = "BLOCKED"
+        text_file(os_path(root, "/etc/systemd/system/zza.service"), F"""
+            [Unit]
+            Description=Testing A
+            AssertEnvironment={blocked}
+            [Service]
+            Type=simple
+            ExecStart=/usr/bin/sleep 1
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"), F"""
+            [Unit]
+            Description=Testing B
+            ConditionEnvironment={blocked}
+            [Service]
+            Type=simple
+            ExecStart=/usr/bin/sleep 1
+            [Install]
+            WantedBy=multi-user.target""")
+        cmd = F"{systemctl} daemon-reload"
+        out, end = output2(cmd)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = F"{systemctl} status zza.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        self.assertTrue(greps(out, "Loaded: loaded"))
+        cmd = F"{systemctl} status zzb.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        self.assertTrue(greps(out, "Loaded: loaded"))
+        #
+        cmd = F"{systemctl} start zza.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertTrue(greps(err, "Assertion failed on job for zza.service"))
+        if not real:
+            self.assertTrue(greps(err, F"AssertEnvironment - \${blocked} not found"))
+        self.assertEqual(end, EXIT_FAILURE)
+        cmd = F"{systemctl} start zzb.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertFalse(greps(err, "Assertion failed on job"))
+        if not real:
+            self.assertTrue(greps(err, F"ConditionEnvironment - \${blocked} not found"))
+        self.assertEqual(end, EXIT_SUCCESS)
+        #
+        text_file(os_path(root, "/etc/systemd/system/zza.service"), F"""
+            [Unit]
+            Description=Testing A
+            AssertEnvironment={enabled}
+            [Service]
+            Type=simple
+            ExecStart=/usr/bin/sleep 1
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"), F"""
+            [Unit]
+            Description=Testing B
+            ConditionEnvironment={enabled}
+            [Service]
+            Type=simple
+            ExecStart=/usr/bin/sleep 1
+            [Install]
+            WantedBy=multi-user.target""")
+        cmd = F"{systemctl} daemon-reload"
+        out, end = output2(cmd)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        #
+        cmd = F"{systemctl} start zza.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertFalse(greps(err, "Assertion failed on job"))
+        if not real:
+            self.assertFalse(greps(err, "AssertEnvironment - "))
+        self.assertEqual(end, EXIT_SUCCESS)
+        cmd = F"{systemctl} start zzb.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertFalse(greps(err, "Assertion failed on job"))
+        if not real:
+            self.assertFalse(greps(err, "ConditionEnvironment - "))
+        self.assertEqual(end, EXIT_SUCCESS)
+        self.rm_zzfiles(root)
+        self.rm_testdir()
+    def real_1532_condition(self) -> None:
+        self.test_1532_condition(True)
+    def test_1532_condition(self, real: bool = False) -> None:
+        """ check that file ConditionEnvironment work"""
+        vv = self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir, real)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        if real: vv, systemctl = "", "/usr/bin/systemctl"
+        self.rm_zzfiles(root)
+        import platform
+        enabled = "LANG"
+        blocked = "BLOCKED"
+        text_file(os_path(root, "/etc/systemd/system/zza.service"), F"""
+            [Unit]
+            Description=Testing A
+            AssertEnvironment={blocked}=ok
+            [Service]
+            Type=simple
+            ExecStart=/usr/bin/sleep 1
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"), F"""
+            [Unit]
+            Description=Testing B
+            ConditionEnvironment={blocked}=ok
+            [Service]
+            Type=simple
+            ExecStart=/usr/bin/sleep 1
+            [Install]
+            WantedBy=multi-user.target""")
+        cmd = F"{systemctl} daemon-reload"
+        out, end = output2(cmd)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = F"{systemctl} status zza.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        self.assertTrue(greps(out, "Loaded: loaded"))
+        cmd = F"{systemctl} status zzb.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        self.assertTrue(greps(out, "Loaded: loaded"))
+        #
+        cmd = F"{systemctl} start zza.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertTrue(greps(err, "Assertion failed on job for zza.service"))
+        if not real:
+            self.assertTrue(greps(err, F"AssertEnvironment - \${blocked} not found"))
+        self.assertEqual(end, EXIT_FAILURE)
+        cmd = F"{systemctl} start zzb.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertFalse(greps(err, "Assertion failed on job"))
+        if not real:
+            self.assertTrue(greps(err, F"ConditionEnvironment - \${blocked} not found"))
+        self.assertEqual(end, EXIT_SUCCESS)
+        #
+        text_file(os_path(root, "/etc/systemd/system/zza.service"), F"""
+            [Unit]
+            Description=Testing A
+            AssertEnvironment={enabled}=ok
+            [Service]
+            Type=simple
+            ExecStart=/usr/bin/sleep 1
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"), F"""
+            [Unit]
+            Description=Testing B
+            ConditionEnvironment={enabled}=ok
+            [Service]
+            Type=simple
+            ExecStart=/usr/bin/sleep 1
+            [Install]
+            WantedBy=multi-user.target""")
+        cmd = F"{systemctl} daemon-reload"
+        out, end = output2(cmd)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        #
+        cmd = F"{systemctl} start zza.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        ## self.assertTrue(greps(err, "Assertion failed on job for zza.service"))
+        if not real:
+            self.assertTrue(greps(err, F"AssertEnvironment - \${enabled} wrong value - want 'ok'"))
+        self.assertEqual(end, EXIT_FAILURE)
+        cmd = F"{systemctl} start zzb.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertFalse(greps(err, "Assertion failed on job"))
+        if not real:
+            self.assertTrue(greps(err, F"ConditionEnvironment - \${enabled} wrong value - want 'ok'"))
+        self.assertEqual(end, EXIT_SUCCESS)
+        #
+        cmd = F"{systemctl} show-environment {vv}"
+        out, err, end = output3(cmd) 
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        correct="no"
+        for line in out.splitlines():
+            logg.info("     env %s", line.rstrip())
+            if line.startswith(F"{enabled}="):
+                 correct = line.split("=", 1)[1].rstrip()
+                 break
+        if correct in ['C']:
+            if not TODO:
+                logg.warning("LANG was found to be '%s' - but that's not being evaluated later", correct)
+                correct=os.environ.get("LANG", os.environ.get("LANGUAGE", os.environ.get('LC_TYPE')))  # type: ignore[arg-type]
+        text_file(os_path(root, "/etc/systemd/system/zza.service"), F"""
+            [Unit]
+            Description=Testing A
+            AssertEnvironment={enabled}={correct}
+            [Service]
+            Type=simple
+            ExecStart=/usr/bin/sleep 1
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"), F"""
+            [Unit]
+            Description=Testing B
+            ConditionEnvironment={enabled}={correct}
+            [Service]
+            Type=simple
+            ExecStart=/usr/bin/sleep 1
+            [Install]
+            WantedBy=multi-user.target""")
+        cmd = F"{systemctl} daemon-reload"
+        out, end = output2(cmd)
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        #
+        cmd = F"{systemctl} start zza.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertFalse(greps(err, "Assertion failed on job"))
+        if not real:
+            self.assertFalse(greps(err, "AssertEnvironment - "))
+        self.assertEqual(end, EXIT_SUCCESS)
+        cmd = F"{systemctl} start zzb.service {vv}"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
+        self.assertFalse(greps(err, "Assertion failed on job"))
+        if not real:
+            self.assertFalse(greps(err, "ConditionEnvironment - "))
         self.assertEqual(end, EXIT_SUCCESS)
         self.rm_zzfiles(root)
         self.rm_testdir()
