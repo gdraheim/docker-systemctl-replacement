@@ -2091,8 +2091,14 @@ class SystemctlLoadedUnits:
                         problems += [spec]
                 else:
                     if "!" in mode:
-                        logg.log(warn, "%s: %s - $%s was found", unit, spec, name)
-                        problems += [spec]
+                        if wantvalue is not None and value == wantvalue:
+                            logg.log(warn, "%s: %s - $%s wrong value - avoid '%s' have '%s'", unit, spec, name, wantvalue, value)
+                            problems += [spec]
+                        elif wantvalue is not None:
+                            logg.debug("%s: %s - $%s was found - ok as avoid '%s' have '%s'", unit, spec, name, wantvalue, value)
+                        else:
+                            logg.log(warn, "%s: %s - $%s was found", unit, spec, name)
+                            problems += [spec]
                     elif wantvalue is not None and value != wantvalue:
                         logg.log(warn, "%s: %s - $%s wrong value - want '%s' have '%s'", unit, spec, name, wantvalue, value)
                         problems += [spec]
@@ -2117,7 +2123,7 @@ class SystemctlLoadedUnits:
                         problems += [spec]
                 else:
                     if "!" in mode:
-                        logg.log(warn, "%s: %s - want %s - have %s", unit, spec, want, have)
+                        logg.log(warn, "%s: %s - avoid %s - have %s", unit, spec, want, have)
                         problems += [spec]
         for spec in ["ConditionHost", "AssertHost"]:
             warn = logging.ERROR if "Assert" in spec else warning
@@ -2135,7 +2141,7 @@ class SystemctlLoadedUnits:
                         problems += [spec]
                 else:
                     if "!" in mode:
-                        logg.log(warn, "%s: %s - want %s - have %s", unit, spec, want, have)
+                        logg.log(warn, "%s: %s - avoid %s - have %s", unit, spec, want, have)
                         problems += [spec]
         return problems
     def check_file_conditions(self, conf: SystemctlConf, section: str = Unit, warning: int = logging.WARNING) -> List[str]:
