@@ -5,7 +5,7 @@
 # pylint: disable=missing-function-docstring,unused-variable,unused-argument,unspecified-encoding,redefined-outer-name,using-constant-test,invalid-name
 # pylint: disable=fixme
 __copyright__ = "(C) Guido Draheim, licensed under the EUPL"""
-__version__ = "2.0.1065"
+__version__ = "2.0.1066"
 
 # NOTE:
 # The testcases 1000...4999 are using a --root=subdir environment
