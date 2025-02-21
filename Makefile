@@ -213,7 +213,7 @@ coverage: coverage3
 	$(PYTHON) -m coverage report && \
 	$(PYTHON) -m coverage annotate
 	- $(PYTHON) -m coverage xml -o tmp/coverage.xml
-	- $(PYTHON) -m coverage html -o tmp/htmlcov
+	- $(PYTHON) -m coverage html -d tmp/htmlcov
 	ls -l tmp/systemctl.py,cover
 coverage2: 
 	$(MAKE) tmp_systemctl_py_2

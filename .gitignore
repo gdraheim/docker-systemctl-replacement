@@ -17,4 +17,5 @@ dist
 *.egg-info
 .vscode/settings.json
 build
+TEST*.xml
 
