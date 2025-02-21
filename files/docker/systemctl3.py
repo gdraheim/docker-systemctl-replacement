@@ -252,22 +252,22 @@ def sock_type_str(value: int) -> str:
         return "SEQ"
     return "<?>" # pragma: no cover
 
-def yes_str(value: Union[str, bool, None]) -> str:
+def yes_str(value: Union[bool, None]) -> str:
     if value is True:
         return "yes"
     if not value:
         return "no"
-    return str(value)
+    return str(value) # pragma: no cover (is always bool)
 def nix_str(part: Union[str, int, float, None]) -> str:
     if not part: # "", False, None, 0
         return NIX
-    if part is True:
+    if part is True: # pragma: no cover (is never a bool)
         return ALL
     return str(part)
-def q_str(part: Union[str, int, None]) -> str:
+def q_str(part: Union[str, None]) -> str:
     if part is None:
         return NIX
-    if isinstance(part, int):
+    if isinstance(part, int): # pragma: no cover (is never int)
         return str(part)
     return "'%s'" % part
 def shell_cmd(cmd: List[str]) -> str:
@@ -328,33 +328,7 @@ def o77(part: str) -> str:
 def delayed(attempt: int, suffix: str = ".") -> str:
     if attempt < 10:
         return "%+i%s" % (attempt, suffix)
-    if attempt < 100:
-        return "%i%s" % (attempt, suffix)
-    if attempt < 1000 and suffix:
-        return "%i%s" % (attempt, suffix[1:])
     return "%i%s" % (attempt, suffix)
-def path44(filename: Optional[str]) -> str:
-    if not filename:
-        return "<none>"
-    x = filename.find("/", 8)
-    if len(filename) <= 40:
-        if "/" not in filename:
-            return ".../" + filename
-    elif len(filename) <= 44:
-        return filename
-    if 0 < x and x < 14:
-        out = filename[:x+1]
-        out += "..."
-    else:
-        out = filename[:10]
-        out += "..."
-    remain = len(filename) - len(out)
-    y = filename.find("/", remain)
-    if 0 < y and y < remain+5:
-        out += filename[y:]
-    else:
-        out += filename[remain:]
-    return out
 def fnmatched(text: str, *patterns: str) -> bool:
     if not patterns:
         return True
@@ -525,15 +499,6 @@ def expand_path(path: str, root: bool = False) -> str:
     XDG_RUNTIME_DIR=get_RUNTIME_DIR(root)
     return os.path.expanduser(path.replace("${", "{").format(**locals()))
 
-def shutil_chown(path: str, user: Optional[str], group: Optional[str]) -> None:
-    if user or group:
-        uid, gid = -1, -1
-        if user:
-            uid = pwd.getpwnam(user).pw_uid
-            gid = pwd.getpwnam(user).pw_gid
-        if group:
-            gid = grp.getgrnam(group).gr_gid
-        os.chown(path, uid, gid)
 def shutil_fchown(fileno: int, user: Optional[str], group: Optional[str]) -> None:
     if user or group:
         uid, gid = -1, -1
@@ -6804,8 +6769,8 @@ def print_begin(argv: List[str], args: List[str]) -> None:
     init = INIT1 and " --init" or ""
     logg.info("EXEC BEGIN %s %s%s%s", script, " ".join(args), system, init)
     if ROOT and not is_good_root(ROOT):
-        root44 = path44(ROOT)
-        logg.warning("the --root=%s should have atleast three levels /tmp/test_123/root", root44)
+        logg.warning("begin: the --root=x should have atleast three levels /tmp/test_123/root")
+        logg.warning("begin: but --root=%s ", ROOT)
 
 def print_begin2(args: List[str]) -> None:
     logg.debug("======= systemctl.py %s", " ".join(args))
