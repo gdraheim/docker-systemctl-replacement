@@ -40509,13 +40509,13 @@ if __name__ == "__main__":
     if opt.xmlresults:
         if os.path.exists(opt.xmlresults):
             os.remove(opt.xmlresults)
-        xmlresults = open(opt.xmlresults, "wb")
+        xmlresults = open(opt.xmlresults, "w")
         logg.info("xml results into %s", opt.xmlresults)
     if not logfile:
         if xmlresults:
             import xmlrunner # type: ignore[import-error] # pylint: disable=import-error
             TestRunner = xmlrunner.XMLTestRunner
-            testresult = TestRunner(xmlresults).run(suite)
+            testresult = TestRunner(xmlresults, verbosity=opt.verbose).run(suite)
         else:
             TestRunner = unittest.TextTestRunner
             testresult = TestRunner(verbosity=opt.verbose, failfast=opt.failfast).run(suite)
