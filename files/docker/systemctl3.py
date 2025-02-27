@@ -3005,7 +3005,6 @@ class Systemctl:
         return self.units.get_env(conf)
     def system_exec_env(self) -> List[str]:
         """ systemd -- show init environment parts """
-        empty: Dict[str, str] = {}
         return list(self.each_system_exec_env({}))
     def each_system_exec_env(self, env: Dict[str, str]) -> Iterator[str]:
         """ systemd -- show init environment parts """
