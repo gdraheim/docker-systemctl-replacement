@@ -160,7 +160,9 @@ DefaultTimeoutAbortSec: int = 3600 # officially it none (usually larget than Sto
 DefaultRestartSec: float = 0.1       # official value of 100ms
 DefaultStartLimitIntervalSec: int = 10 # official value
 DefaultStartLimitBurst: int = 5        # official value
-INITLOOPSLEEP: int = 5
+INITLOOPSLEEP = 5
+INITLOOPSLEEP2 = 2
+INITLOOPSLEEP3 = 1
 MAXLOCKWAIT: int = 0 # equals MAXTIMEOUT
 DEFAULT_PATH: str = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 RESET_LOCALE: str = """LANG LANGUAGE LC_CTYPE LC_NUMERIC LC_TIME LC_COLLATE LC_MONETARY LC_MESSAGES
@@ -2585,7 +2587,7 @@ class Systemctl:
         self._restart_failed_units = {}
         self._sockets = {}
         self._default_services = {}
-        self.loop_sleep = INITLOOPSLEEP
+        self.loop_sleep = INITLOOPSLEEP3 if INIT_MODE == 3 else INITLOOPSLEEP2 if INIT_MODE == 2 else INITLOOPSLEEP
         self.loop_lock = threading.Lock()
         self.units = SystemctlLoadedUnits()
     def get_unit_type(self, module: str) -> Optional[str]:
@@ -5748,6 +5750,7 @@ class Systemctl:
             The returncode will tell the number of warnings,
             and it is over 100 if it can not continue even
             for the relaxed systemctl.py style of execution. """
+        logg.debug("loop_sleep=%s", self.loop_sleep)
         errors = 0
         for unit in self.units.match_units():
             try:
