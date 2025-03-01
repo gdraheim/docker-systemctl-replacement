@@ -1240,6 +1240,39 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.rm_zzfiles(root)
         self.coverage()
+    def test_1048_systemctl_init_sets_loop_sleep(self) -> None:
+        """ we can use -c name=something to override internals """
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/zza.service"), """
+            [Unit]
+            Description=Testing A
+            [Service]
+            ExecStart=/bin/sleep 3
+        """)
+        #
+        cmd = F"{systemctl} daemon-reload -1 -vvv --now"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        self.assertEqual(lines(out), [])
+        self.assertEqual(end, 0)
+        self.assertTrue(greps(err, "loop_sleep=5"))
+        cmd = F"{systemctl} daemon-reload -11 -vvv --now"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        self.assertEqual(lines(out), [])
+        self.assertEqual(end, 0)
+        self.assertTrue(greps(err, "loop_sleep=2"))
+        cmd = F"{systemctl} daemon-reload -111 -vvv --now"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        self.assertEqual(lines(out), [])
+        self.assertEqual(end, 0)
+        self.assertTrue(greps(err, "loop_sleep=1"))
+        self.rm_testdir()
+        self.rm_zzfiles(root)
+        self.coverage()
     def test_1050_can_create_a_test_service(self) -> None:
         """ check that a unit file can be created for testing """
         testname = self.testname()
@@ -13887,9 +13920,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             new_stderr = os.open(log_stderr, os.O_WRONLY |os.O_CREAT |os.O_TRUNC)
             os.dup2(new_stdout, 1)
             os.dup2(new_stderr, 2)
-            systemctl_cmd = [_systemctl_py, "--root="+root, "--init", "--exit", "default", "-vv"]
+            systemctl_cmd = [_systemctl_py, "--root="+root, "-11", "--exit", "default", "-vv"]
             env = os.environ.copy()
-            systemctl_cmd += ["-c", "INITLOOPSLEEP=2"]
             os.execve(_systemctl_py, systemctl_cmd, env)
         time.sleep(2)
         logg.info("all services running [systemctl.py PID %s]", pid)
@@ -14013,9 +14045,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             new_stderr = os.open(log_stderr, os.O_WRONLY |os.O_CREAT |os.O_TRUNC)
             os.dup2(new_stdout, 1)
             os.dup2(new_stderr, 2)
-            systemctl_cmd = [_systemctl_py, "--root="+root, "start", "--init", "--exit", "zzb.service", "zzc.service", "-vv"]
+            systemctl_cmd = [_systemctl_py, "--root="+root, "start", "-11", "--exit", "zzb.service", "zzc.service", "-vv"]
             env = os.environ.copy()
-            systemctl_cmd += ["-c", "INITLOOPSLEEP=2"]
             os.execve(_systemctl_py, systemctl_cmd, env)
         time.sleep(3)
         logg.info("all services running [systemctl.py PID %s]", pid)

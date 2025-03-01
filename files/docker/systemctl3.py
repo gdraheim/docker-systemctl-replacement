@@ -5748,7 +5748,8 @@ class Systemctl:
             The returncode will tell the number of warnings,
             and it is over 100 if it can not continue even
             for the relaxed systemctl.py style of execution. """
-        logg.debug("loop_sleep=%s", self.loop_sleep)
+        if self._do_now:
+            logg.debug("loop_sleep=%s", self.loop_sleep)
         errors = 0
         for unit in self.units.match_units():
             try:
