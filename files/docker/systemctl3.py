@@ -3565,6 +3565,8 @@ class Systemctl:
         /// --now is like --exit when no services left
         /// --all is like --exit --exit when no procs left """
         init = self.init_mode
+        if self._now and not init:
+            logg.warning("no --init mode")
         if init and not self.exit_mode:
             if self._do_now:
                 self.exit_mode |= EXIT_NO_PROCS_LEFT
@@ -6823,7 +6825,7 @@ def runcommand(command: str, *modules: str) -> int:
     elif command in ["halt"]:
         exitcode = is_not_ok(systemctl.halt_target())
     elif command in ["init"]:
-        logg.fatal(" -- replace 'init' by 'start --init --exit' !!!")
+        logg.fatal(" -- replace 'init' by 'start --init --now' !!!")
         exitcode = EXIT_FAILURE
     elif command in ["is-active"]:
         print_str_list(systemctl.is_active_modules(*modules))

@@ -14014,7 +14014,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             new_stderr = os.open(log_stderr, os.O_WRONLY |os.O_CREAT |os.O_TRUNC)
             os.dup2(new_stdout, 1)
             os.dup2(new_stderr, 2)
-            systemctl_cmd = [_systemctl_py, "--root="+root, "init", "zzb.service", "zzc.service", "-vv"]
+            systemctl_cmd = [_systemctl_py, "--root="+root, "start", "--init", "--exit", "zzb.service", "zzc.service", "-vv"]
             env = os.environ.copy()
             systemctl_cmd += ["-c", "INITLOOPSLEEP=2"]
             os.execve(_systemctl_py, systemctl_cmd, env)
@@ -36020,7 +36020,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out2 = output(cmd)
         logg.info("\n>\n%s", out2)
         # .........................................vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-        cmd = F"{docker} commit -c 'CMD [\"/usr/bin/systemctl\",\"init\",\"zzc.service\"]'  {testname} {images}:{testname}"
+        cmd = F"{docker} commit -c 'CMD [\"/usr/bin/systemctl\",\"start\",\"--now\",\"zzc.service\"]'  {testname} {images}:{testname}"
         sh____(cmd)
         cmd = F"{docker} rm --force {testname}"
         sx____(cmd)
@@ -38212,7 +38212,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out2 = output(cmd)
         logg.info("\n>\n%s", out2)
         # .........................................vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-        cmd = F"{docker} commit -c 'CMD [\"/usr/bin/systemctl\",\"init\",\"zzc.service\",\"{cov_option}\"]'  {testname} {images}:{testname}"
+        cmd = F"{docker} commit -c 'CMD [\"/usr/bin/systemctl\",\"start\",\"--now\",\"zzc.service\",\"{cov_option}\"]'  {testname} {images}:{testname}"
         sh____(cmd)
         cmd = F"{docker} rm --force {testname}"
         sx____(cmd)
@@ -38318,7 +38318,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # sh____(cmd)
         out2 = output(cmd)
         logg.info("\n>\n%s", out2)
-        cmd = F"{docker} commit -c 'CMD [\"/usr/bin/systemctl\",\"init\",\"{cov_option}\"]'  {testname} {images}:{testname}"
+        cmd = F"{docker} commit -c 'CMD [\"/usr/bin/systemctl\",\"start\",\"--exit\",\"{cov_option}\"]'  {testname} {images}:{testname}"
         sh____(cmd)
         cmd = F"{docker} rm --force {testname}"
         sx____(cmd)
@@ -38461,7 +38461,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # sh____(cmd)
         out2 = output(cmd)
         logg.info("\n>\n%s", out2)
-        cmd = F"{docker} commit -c 'CMD [\"/usr/bin/systemctl\",\"init\",\"--all\",\"{cov_option}\"]'  {testname} {images}:{testname}"
+        cmd = F"{docker} commit -c 'CMD [\"/usr/bin/systemctl\",\"start\",\"--all\",\"{cov_option}\"]'  {testname} {images}:{testname}"
         sh____(cmd)
         cmd = F"{docker} rm --force {testname}"
         sx____(cmd)
@@ -38609,7 +38609,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # sh____(cmd)
         out2 = output(cmd)
         logg.info("\n>\n%s", out2)
-        cmd = F"{docker} commit -c 'CMD [\"/usr/bin/systemctl\",\"init\",\"zzc.service\",\"{cov_option}\"]'  {testname} {images}:{testname}"
+        cmd = F"{docker} commit -c 'CMD [\"/usr/bin/systemctl\",\"start\",\"--now\",\"zzc.service\",\"{cov_option}\"]'  {testname} {images}:{testname}"
         sh____(cmd)
         cmd = F"{docker} rm --force {testname}"
         sx____(cmd)
@@ -38745,7 +38745,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # sh____(cmd)
         out2 = output(cmd)
         logg.info("\n>\n%s", out2)
-        cmd = F"{docker} commit -c 'CMD [\"/usr/bin/systemctl\",\"init\",\"zzc.service\",\"{cov_option}\"]'  {testname} {images}:{testname}"
+        cmd = F"{docker} commit -c 'CMD [\"/usr/bin/systemctl\",\"start\",\"--now\",\"zzc.service\",\"{cov_option}\"]'  {testname} {images}:{testname}"
         sh____(cmd)
         cmd = F"{docker} rm --force {testname}"
         sx____(cmd)
@@ -39615,7 +39615,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{docker} exec {testname} bash -c 'echo TEST_OK > /var/www/html/index.html'"
         sh____(cmd)
         #
-        ## cmd = F"{docker} commit -c 'CMD [\"/usr/bin/systemctl\",\"init\",\"-vv\"]'  {testname} {images}:{testname}"
+        ## cmd = F"{docker} commit -c 'CMD [\"/usr/bin/systemctl\",\"start\",\"--now\",\"-vv\"]'  {testname} {images}:{testname}"
         # sh____(cmd)
         ## cmd = F"{docker} rm --force {testname}"
         # sx____(cmd)
