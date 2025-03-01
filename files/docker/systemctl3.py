@@ -6652,7 +6652,8 @@ class Systemctl:
         with open(sysconf_hosts, "w") as f:
             for line in lines:
                 f.write(line)
-    def help_list(self) -> Dict[str, str]:
+    def help_list(self, show_all: Optional[bool] = None) -> Dict[str, str]:
+        show_all = self._show_all if show_all is None else show_all
         help_docs: Dict[str, str] = {}
         for name in dir(self):
             method = getattr(self, name)
@@ -6662,7 +6663,7 @@ class Systemctl:
             if " -- " in doctext or " --- " in doctext:
                 firstword = doctext.strip().split(" ", 1)[0]
                 help_docs[firstword] = doctext
-            elif self._show_all and not name.startswith("_") and callable(method):
+            elif show_all and not name.startswith("_") and callable(method):
                 internal = "__" + name
                 help_docs[internal] = internal + " = " + doctext
         return help_docs
@@ -6672,8 +6673,8 @@ class Systemctl:
         lines: List[str] = []
         okay = True
         prog = os.path.basename(sys.argv[0])
-        help_docs = self.help_list()
         if not args:
+            help_docs = self.help_list()
             lines.append("%s command [options]..." % prog)
             lines.append("")
             lines.append("Commands:")
@@ -6681,15 +6682,16 @@ class Systemctl:
                 doc = help_docs[name]
                 firstline = doc.split("\n")[0]
                 lines.append(" " + firstline.strip())
-            return lines
-        for arg in args:
-            if arg not in help_docs:
-                print("error: no such command '%s'" % arg)
-                okay = False
-            else:
-                doc = help_docs[arg]
-                doc_text = doc.replace("\n", "\n\n", 1).strip()
-                lines.append("%s %s" % (prog, doc_text))
+        else:
+            help_docs = self.help_list(show_all = True)
+            for arg in args:
+                if arg not in help_docs:
+                    print("error: no such command '%s'" % arg)
+                    okay = False
+                else:
+                    doc = help_docs[arg]
+                    doc_text = doc.replace("\n", "\n\n", 1).strip()
+                    lines.append("%s %s" % (prog, doc_text))
         if not okay:
             self.help_modules()
             self.error |= NOT_OK
@@ -6708,6 +6710,7 @@ class Systemctl:
         """ version -- show systemd version details and features """
         return [self.systemd_version(), self.systemd_features()]
     def test_float(self) -> float:
+        """ return 'Unknown result type' """
         return 0. # "Unknown result type"
 
 def print_begin(argv: List[str], args: List[str]) -> None:
