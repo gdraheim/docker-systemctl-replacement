@@ -2561,7 +2561,7 @@ class Systemctl:
         self._full = DO_FULL
         self._no_ask_password = NO_ASK_PASSWORD
         self._no_legend = NO_LEGEND
-        self._now = DO_NOW
+        self._do_now = DO_NOW
         self._preset_mode = PRESET_MODE
         self._quiet = DO_QUIET
         self._root = ROOT
@@ -3565,7 +3565,7 @@ class Systemctl:
         /// --now is like --exit when no services left
         /// --all is like --exit --exit when no procs left """
         init = self.init_mode
-        if self._now and not init:
+        if self._do_now and not init:
             logg.warning("no --init mode")
         if init and not self.exit_mode:
             if self._do_now:
