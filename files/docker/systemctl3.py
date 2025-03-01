@@ -3560,8 +3560,25 @@ class Systemctl:
         return results
     def start_modules(self, *modules: str) -> bool:
         """ start [UNIT]... -- start these units
-        /// SPECIAL: with --now or --init it will
-            run the init-loop and stop the units afterwards """
+        /// SPECIAL: with --init it will run the init-loop and stop the units afterwards,
+            and when not units are given then the init-loop is simply run forever (aka 'init' proc).
+        /// --now is like --exit when no services left
+        /// --all is like --exit --exit when no procs left """
+        init = self.init_mode
+        if init and not self.exit_mode:
+            if self._do_now:
+                self.exit_mode |= EXIT_NO_PROCS_LEFT
+            if self._show_all:
+                self.exit_mode |= EXIT_NO_SERVICES_LEFT
+        if not modules and init:
+            reached = "stop"
+            if self.exit_mode & EXIT_NO_PROCS_LEFT:
+                reached = "no procs left"
+            if self.exit_mode & EXIT_NO_SERVICES_LEFT:
+                reached = "no services left"
+            logg.info(" [start] init loop until %s", reached)
+            result = self.init_loop_until_stop([])
+            return not not result  # pylint: disable=unnecessary-negation
         missing: List[str] = []
         units: List[str] = []
         for module in modules:
@@ -3575,7 +3592,6 @@ class Systemctl:
         if missing:
             logg.error("Unit %s not found.", " and ".join(missing))
             self.error |= NOT_FOUND
-        init = self.init_mode or self._do_now
         return self.start_units(units, init) and not missing
     def start_units(self, units: List[str], init: int = 0) -> bool:
         """ fails if any unit does not start
@@ -6179,53 +6195,6 @@ class Systemctl:
             msg = "Created symlink from %s -> %s" % (default_target_file, targetfile)
             logg.debug("%s", msg)
         return msg
-    def init_modules(self, *modules: str) -> bool:
-        """ init [UNIT].. -- init loop: '--init default' or '--init start UNIT*'
-        The systemctl init service will start the enabled 'default' services,
-        and then wait for any  zombies to be reaped. When a SIGINT is received
-        then a clean shutdown of the enabled services is ensured. A Control-C in
-        in interactive mode will also run 'stop' on all the enabled services. //
-        When a UNIT name is given then only that one is started instead of the
-        services in the 'default.target'. Using 'init UNIT' is better than
-        '--init start UNIT' because the UNIT is also stopped cleanly even when
-        it was never enabled in the system.
-        /// SPECIAL: when using --now then only the init-loop is started,
-        with the reap-zombies function and waiting for an interrupt.
-        (and no unit is started/stoppped wether given or not).
-        """
-        if self._do_now:
-            logg.debug(" [init] init --now")
-            result = self.init_loop_until_stop([])
-            return not not result  # pylint: disable=unnecessary-negation
-        if not modules:
-            logg.debug(" [init] --init default")
-            if self._do_now or self._show_all:
-                logg.debug("init default --now --all => no_more_procs")
-                self.exit_mode = EXIT_NO_PROCS_LEFT
-            return self.start_system_default(init = True)
-        #
-        # otherwise quit when all the init-services have died
-        logg.debug(" [init]  --init start")
-        self.exit_mode = EXIT_NO_SERVICES_LEFT
-        if self._do_now or self._show_all:
-            logg.debug("init services --now --all => no_more_procs")
-            self.exit_mode = EXIT_NO_PROCS_LEFT
-        missing: List[str] = []
-        units: List[str] = []
-        for module in modules:
-            matched = self.units.match_units(to_list(module))
-            if not matched:
-                missing.append(unit_of(module))
-                continue
-            for unit in matched:
-                if unit not in units:
-                    units += [unit]
-        if missing:
-            logg.error("Unit %s not found.", " and ".join(missing))
-            # self.error |= NOT_FOUND
-        self._default_services["systemctl-init.target"] = units
-        self.start_target_system("systemctl-init.target", init = True)
-        return not not units  # pylint: disable=unnecessary-negation
     def start_log_files(self, units: List[str]) -> None:
         self._log_file = {}
         self._log_hold = {}
@@ -6854,7 +6823,8 @@ def runcommand(command: str, *modules: str) -> int:
     elif command in ["halt"]:
         exitcode = is_not_ok(systemctl.halt_target())
     elif command in ["init"]:
-        exitcode = is_not_ok(systemctl.init_modules(*modules))
+        logg.fatal(" -- replace 'init' by 'start --init --exit' !!!")
+        exitcode = EXIT_FAILURE
     elif command in ["is-active"]:
         print_str_list(systemctl.is_active_modules(*modules))
     elif command in ["is-enabled"]:
