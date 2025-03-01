@@ -919,15 +919,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(out, "reload-or-try-restart"))
         self.assertTrue(greps(out, "no such command"))
         self.coverage()
-    def test_1009_systemctl_help_command_without_doc(self) -> None:
+    def test_1009_systemctl_help_command_for_internal(self) -> None:
         """ for a command without doc, 'help command' is empty """
         systemctl = cover() + _systemctl_py
-        cmd = F"{systemctl} help __test_float -vvvv"
+        cmd = F"{systemctl} help __test_float"
         out, err, end = output3(cmd)
         logg.info("%s\n%s\n%s", cmd, out, err)
         self.assertEqual(end, 0)
-        self.assertEqual(out.strip(), "")
-        self.assertTrue(greps(err, "__doc__ of __test_float is none"))
+        self.assertEqual(err.strip(), "")
+        self.assertTrue(greps(out, "__test_float = "))
         self.coverage()
     def test_1010_systemctl_daemon_reload(self) -> None:
         """ daemon-reload always succeeds (does nothing) """
