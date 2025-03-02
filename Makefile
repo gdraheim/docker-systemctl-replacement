@@ -9,9 +9,11 @@ UBUNTU=ubuntu:18.04
 PYTHON=python3
 PYTHON2 = python2
 PYTHON3 = python3
+PYTHON39 = python3.11
 PYTHON_VERSION = 3.7
 COVERAGE3 = $(PYTHON3) -m coverage
 TWINE = twine
+TWINE39 = twine-3.11
 GIT=git
 VERFILES = files/docker/systemctl3.py testsuite.py pyproject.toml
 
@@ -273,7 +275,7 @@ dockerfiles:
 
 src/systemctl.py:
 	test -d $(dir $@) || mkdir -v $(dir $@)
-	$(STRIPHINTS) files/docker/systemctl3.py --to-empty -o $@
+	$(PYTHON39) $(STRIPHINTS3) files/docker/systemctl3.py -o $@
 src/systemctl3.py:
 	cp files/docker/systemctl3.py $@
 src/README.md: README.md Makefile
@@ -292,10 +294,10 @@ build:
 	rm -rf build dist *.egg-info
 	$(MAKE) src-files
 	# pip install --root=~/local . -v
-	$(PYTHON3) -m build
+	$(PYTHON39) -m build
 	$(MAKE) src-remove
-	$(TWINE) check dist/*
-	: $(TWINE) upload dist/*
+	$(TWINE39) check dist/*
+	: $(TWINE39) upload dist/*
 
 ins install:
 	$(MAKE) src-files
@@ -332,19 +334,33 @@ pep style.d:
 	$(MAKE) files/docker/systemctl3.py.style
 	$(MAKE) testsuite.py.style
 
-https://github.com/nvbn/py-backwards
+# https://github.com/nvbn/py-backwards
 
 STRIPHINTS_GIT_URL = https://github.com/abarker/strip-hints.git
 STRIPHINTS_GIT = ../striphints
-STRIPHINTS = $(PYTHON3) $(STRIPHINTS_GIT)/bin/strip_hints.py
+STRIPHINTS = $(STRIPHINTS_GIT)/bin/strip_hints.py
 striphints.git:
 	set -ex ; if test -d $(STRIPHINTS_GIT); then cd $(STRIPHINTS_GIT) && git pull; else : \
 	; cd $(dir $(STRIPHINTS_GIT)) && git clone $(STRIPHINTS_GIT_URL) $(notdir $(STRIPHINTS_GIT)) \
 	; fi
 	echo "def test(a: str) -> str: return a" > tmp.striphints.py
-	python3 $(STRIPHINTS) --to-empty tmp.striphints.py | tee tmp.striphints.py.out
+	$(PYTHON3) $(STRIPHINTS) --to-empty tmp.striphints.py | tee tmp.striphints.py.out
 	test "def test(a )  : return a" = "`cat tmp.striphints.py.out`"
 	rm tmp.striphints.*
+
+STRIP_PYTHON3_GIT_URL = https://github.com/abarker/strip-hints.git
+STRIP_PYTHON3_GIT = ../strip_python3
+STRIPHINTS3 = $(STRIP_PYTHON3_GIT)/strip_python3.py
+striphints3.git:
+	set -ex ; if test -d $(STRIP_PYHTON3_GIT); then cd $(STRIP_PYTHON3_GIT) && git pull; else : \
+	; cd $(dir $(STRIPHINTS_GIT)) && git clone $(STRIP_PYTHON3_GIT_URL) $(notdir $(STRIP_PYTHON3_GIT)) \
+	; fi
+	echo "def test(a: str) -> str: return a" > tmp.striphints.py
+	$(PYTHON39) $(STRIPHINTS3) tmp.striphints.py -o tmp.striphints.py.out -vv
+	cat tmp.striphints.py.out | tr '\\\n' '|' && echo
+	test "def test(a):|    return a|" = "`cat tmp.striphints.py.out | tr '\\\\\\n' '|'`"
+	rm tmp.striphints.*
+
 
 MYPY = mypy
 MYPY_WITH = --strict --show-error-codes --show-error-context 
