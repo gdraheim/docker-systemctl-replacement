@@ -6780,21 +6780,6 @@ def print_str_dict(result: Union[None, Dict[str, str]]) -> None:
     if DEBUG_PRINTRESULT:
         logg.log(HINT, "EXEC END %i items", shown)
         logg.debug("    END %s", result)
-def print_str_dict_dict(result: Dict[str, Dict[str, str]]) -> None:
-    if result is None:
-        if DEBUG_PRINTRESULT:
-            logg.debug("    END %s", result)
-        return
-    shown = 0
-    for key in sorted(result):
-        element = result[key]
-        for name in sorted(element):
-            value = element[name]
-            print("%s [%s] %s" % (key, value, name))
-        shown += 1
-    if DEBUG_PRINTRESULT:
-        logg.log(HINT, "EXEC END %i items", shown)
-        logg.debug("    END %s", result)
 
 def runcommand(command: str, *modules: str) -> int:
     systemctl = Systemctl()
