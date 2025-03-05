@@ -710,19 +710,19 @@ class SystemctlConfData:
                 return None
             logg.warning("section %s does not exist", section)
             logg.warning("  have %s", self.sections())
-            raise AttributeError("section {} does not exist".format(section))
+            raise AttributeError(F"section {section} does not exist")
         if option not in self._conf[section]:
             if default is not None:
                 return default
             if allow_no_value:
                 return None
-            raise AttributeError("option {} in {} does not exist".format(option, section))
+            raise AttributeError(F"option {option} in {section} does not exist")
         if not self._conf[section][option]: # i.e. an empty list
             if default is not None:
                 return default
             if allow_no_value:
                 return None
-            raise AttributeError("option {} in {} is None".format(option, section))
+            raise AttributeError(F"option {option} in {section} is None")
         return self._conf[section][option][0] # the first line in the list of configs
     def getlist(self, section: str, option: str, default: Optional[List[str]] = None, allow_no_value: bool = False) -> List[str]:
         allow_no_value = allow_no_value or self._allow_no_value
@@ -733,13 +733,13 @@ class SystemctlConfData:
                 return []
             logg.warning("section %s does not exist", section)
             logg.warning("  have %s", self.sections())
-            raise AttributeError("section {} does not exist".format(section))
+            raise AttributeError(F"section {section} does not exist")
         if option not in self._conf[section]:
             if default is not None:
                 return default
             if allow_no_value:
                 return []
-            raise AttributeError("option {} in {} does not exist".format(option, section))
+            raise AttributeError(F"option {option} in {section} does not exist")
         return self._conf[section][option] # returns a list, possibly empty
     def filenames(self) -> List[str]:
         return self._files
@@ -2814,7 +2814,7 @@ class Systemctl:
                     if key == "MainPID" and str(value) == "0":
                         logg.warning("ignore writing MainPID=0")
                         continue
-                    content = "{}={}\n".format(key, str(value))
+                    content = F"{key}={value}\n"
                     logg.debug("writing to %s\n\t%s", status_file, content.strip())
                     f.write(content)
         except IOError as e:
@@ -5192,15 +5192,15 @@ class Systemctl:
             # pylint: disable=possibly-unused-variable
             filename = str(conf.filename())
             enabled = self.enabled_state(conf)
-            result += "\n    Loaded: {loaded} ({filename}, {enabled})".format(**locals())
+            result += F"\n    Loaded: {loaded} ({filename}, {enabled})"
             for path in conf.overrides():
-                result += "\n    Drop-In: {path}".format(**locals())
+                result += F"\n    Drop-In: {path}"
         else:
             result += "\n    Loaded: failed"
             return 3, result
         active = self.active_state(conf)
         substate = self.active_substate(conf)
-        result += "\n    Active: {} ({})".format(active, substate)
+        result += F"\n    Active: {active} ({substate})"
         if active == "active":
             return 0, result
         else:
@@ -5245,7 +5245,7 @@ class Systemctl:
                 return open(unit_file).read()
             logg.error("No files found for %s", unit)
         except OSError as e:
-            print("Unit {} is not-loaded: {}".format(unit, e))
+            print(F"Unit {unit} is not-loaded: {e}")
         self.error |= NOT_OK
         return None
     ##
@@ -6460,7 +6460,7 @@ class Systemctl:
     def reap_zombies_target(self) -> str:
         """ reap-zombies -- check to reap children (internal) """
         running = self.reap_zombies()
-        return "remaining {running} process".format(running = running)  # TODO: f-string
+        return F"remaining {running} process"  # with strip-python3 0.1.1092
     def reap_zombies(self) -> int:
         """ check to reap children """
         selfpid = os.getpid()
