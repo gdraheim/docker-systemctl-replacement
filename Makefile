@@ -5,7 +5,7 @@ DAY=%u
 # 'make version FOR=yesterday' or 'make version DAY=0'
 
 
-UBUNTU=ubuntu:18.04
+UBUNTU=ubuntu:24.04
 PYTHON=python3
 PYTHON2 = python2
 PYTHON3 = python3
@@ -144,8 +144,16 @@ check: check2024
 	@ echo please run 'make checks' now
 24 check2024: ; ./testsuite.py -vv --opensuse=15.6 --ubuntu=ubuntu:24.04 --centos=almalinux:9.3
 
-2/test_%:
+1/test_%:
 	$(MAKE) tmp_systemctl_py_2
+	docker rm -f testpython2
+	docker run -d --name=testpython2 testpython2 sleep 999
+	docker cp testsuite.py testpython2:/
+	docker cp tmp/systemctl.py testpython2:/tmp/
+	docker exec testpython2 ./testsuite.py -vv $(notdir $@) --sometime=666 \
+	  '--with=tmp/systemctl.py' --python=/usr/bin/python2
+
+2/test_%:
 	./testsuite.py -vv $(notdir $@) --sometime=666 \
 	  '--with=tmp/systemctl.py' --python=/usr/bin/python2
 3/test_%:
@@ -200,16 +208,6 @@ checks3_coverage:
 	./testsuite.py -vv --coverage \
 	  '--with=tmp/systemctl.py' --python=/usr/bin/python3
 
-2/test_%:
-	$(MAKE) tmp_systemctl_py_2
-	./testsuite.py -vv --coverage $(notdir $@) \
-	   '--with=tmp/systemctl.py' --python=/usr/bin/python2
-
-3/test_%: 
-	$(MAKE) tmp_systemctl_py_3
-	./testsuite.py -vv --coverage $(notdir $@) \
-	  '--with=tmp/systemctl.py' --python=/usr/bin/python3
-
 coverage: coverage3
 	$(PYTHON) -m coverage combine && \
 	$(PYTHON) -m coverage report && \
@@ -226,9 +224,11 @@ coverage3:
 	rm .coverage* ; ./testsuite.py -vv --coverage ${basetests} --xmlresults=TEST-systemctl-python3.xml \
 	  '--with=tmp/systemctl.py' --python=/usr/bin/python3
 
+p2: tmp_systemctl_py_2
+p3: tmp_systemctl_py_3
 tmp_systemctl_py_2:
 	@ test -d tmp || mkdir tmp
-	@ $(STRIPHINTS) files/docker/systemctl3.py --to-empty -o tmp/systemctl.py
+	@ $(PYTHON39) $(STRIPHINTS3) files/docker/systemctl3.py -o tmp/systemctl.py $V
 tmp_systemctl_py_3:
 	@ test -d tmp || mkdir tmp
 	@ cp files/docker/systemctl3.py tmp/systemctl.py
@@ -270,6 +270,14 @@ dockerfiles:
 	; cat ../docker-systemctl-images/$$dockerfile >> test-$$dockerfile \
 	; wc -l test-$$dockerfile \
 	; done
+
+testpython2:
+	: docker pull ubuntu:22.04
+	{ echo "FROM ubuntu:22.04" \
+	; echo "RUN apt-get update && apt-get install -y python2 python3 && python2 --version" \
+	; } > tmp.$@
+	docker build -f tmp.$@ -t $@ .
+
 
 ############## https://pypi.org/...
 
