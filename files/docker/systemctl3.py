@@ -302,8 +302,10 @@ def _commalist(value: Iterable[str]) -> Iterator[str]:
         for elem in val.strip().split(","):
             yield elem
 def int_mode(value: str) -> Optional[int]:
-    try: return int(value, 8)
-    except ValueError: return None # pragma: no cover
+    try: 
+        return int(value, 8)
+    except ValueError:
+        return None # pragma: no cover
 def unit_of(module: str) -> str:
     if "." not in module:
         return module + ".service"
@@ -394,7 +396,8 @@ def os_getlogin() -> str:
 
 def get_runtime_dir() -> str:
     explicit = os.environ.get("XDG_RUNTIME_DIR", "")
-    if explicit: return explicit
+    if explicit:
+        return explicit
     user = os_getlogin()
     return "/tmp/run-"+user
 def get_RUN(root: bool = False) -> str:  # pylint: disable=invalid-name
@@ -425,69 +428,83 @@ def get_PID_DIR(root: bool = False) -> str:  # pylint: disable=invalid-name
 def get_home() -> str:
     if NEVER: # pragma: no cover
         explicit = os.environ.get("HOME", "")   # >> On Unix, an initial ~ (tilde) is replaced by the
-        if explicit: return explicit            # environment variable HOME if it is set; otherwise
-        uid = os.geteuid()                      # the current users home directory is looked up in the
-        #                                       # password directory through the built-in module pwd.
+        if explicit:                            # environment variable HOME if it is set; otherwise
+            return explicit                     # the current users home directory is looked up in the
+        uid = os.geteuid()                      # password directory through the built-in module pwd.
         return pwd.getpwuid(uid).pw_name        # An initial ~user i looked up directly in the
     return os.path.expanduser("~")              # password directory. << from docs(os.path.expanduser)
 def get_HOME(root: bool = False) -> str:  # pylint: disable=invalid-name
-    if root: return "/root"
+    if root:
+        return "/root"
     return get_home()
 def get_USER_ID(root: bool = False) -> int:  # pylint: disable=invalid-name
     ID = 0  # pylint: disable=invalid-name
-    if root: return ID
+    if root:
+        return ID
     return os.geteuid()
 def get_USER(root: bool = False) -> str:  # pylint: disable=invalid-name
-    if root: return "root"
+    if root:
+        return "root"
     uid = os.geteuid()
     return pwd.getpwuid(uid).pw_name
 def get_GROUP_ID(root: bool = False) -> int:  # pylint: disable=invalid-name
     ID = 0  # pylint: disable=invalid-name
-    if root: return ID
+    if root:
+        return ID
     return os.getegid()
 def get_GROUP(root: bool = False) -> str:  # pylint: disable=invalid-name
-    if root: return "root"
+    if root:
+        return "root"
     gid = os.getegid()
     return grp.getgrgid(gid).gr_name
 def get_TMP(root: bool = False) -> str:  # pylint: disable=invalid-name
     TMP = "/tmp"  # pylint: disable=invalid-name
-    if root: return TMP
+    if root:
+        return TMP
     return os.environ.get("TMPDIR", os.environ.get("TEMP", os.environ.get("TMP", TMP)))
 def get_VARTMP(root: bool = False) -> str:  # pylint: disable=invalid-name
     VARTMP = "/var/tmp"  # pylint: disable=invalid-name
-    if root: return VARTMP
+    if root:
+        return VARTMP
     return os.environ.get("TMPDIR", os.environ.get("TEMP", os.environ.get("TMP", VARTMP)))
 def get_SHELL(root: bool = False) -> str:  # pylint: disable=invalid-name
     SHELL = "/bin/sh"  # pylint: disable=invalid-name
-    if root: return SHELL
+    if root:
+        return SHELL
     return os.environ.get("SHELL", SHELL)
 def get_RUNTIME_DIR(root: bool = False) -> str:  # pylint: disable=invalid-name
     RUN = "/run"  # pylint: disable=invalid-name
-    if root: return RUN
+    if root:
+        return RUN
     return os.environ.get("XDG_RUNTIME_DIR", get_runtime_dir())
 def get_CONFIG_HOME(root: bool = False) -> str:  # pylint: disable=invalid-name
     CONFIG = "/etc"  # pylint: disable=invalid-name
-    if root: return CONFIG
+    if root:
+        return CONFIG
     HOME = get_HOME(root)  # pylint: disable=invalid-name
     return os.environ.get("XDG_CONFIG_HOME", HOME + "/.config")
 def get_CACHE_HOME(root: bool = False) -> str:  # pylint: disable=invalid-name
     CACHE = "/var/cache"  # pylint: disable=invalid-name
-    if root: return CACHE
+    if root:
+        return CACHE
     HOME = get_HOME(root)  # pylint: disable=invalid-name
     return os.environ.get("XDG_CACHE_HOME", HOME + "/.cache")
 def get_DATA_HOME(root: bool = False) -> str:  # pylint: disable=invalid-name
     SHARE = "/usr/share"  # pylint: disable=invalid-name
-    if root: return SHARE
+    if root:
+        return SHARE
     HOME = get_HOME(root)  # pylint: disable=invalid-name
     return os.environ.get("XDG_DATA_HOME", HOME + "/.local/share")
 def get_LOG_DIR(root: bool = False) -> str:  # pylint: disable=invalid-name
     LOGDIR = "/var/log"  # pylint: disable=invalid-name
-    if root: return LOGDIR
+    if root:
+        return LOGDIR
     CONFIG = get_CONFIG_HOME(root)  # pylint: disable=invalid-name
     return os.path.join(CONFIG, "log")
 def get_VARLIB_HOME(root: bool = False) -> str:  # pylint: disable=invalid-name
     VARLIB = "/var/lib"  # pylint: disable=invalid-name
-    if root: return VARLIB
+    if root:
+        return VARLIB
     CONFIG = get_CONFIG_HOME(root)  # pylint: disable=invalid-name
     return CONFIG
 def expand_path(path: str, root: bool = False) -> str:
@@ -699,7 +716,8 @@ class SystemctlConfData:
             self._conf[section][option].append(value)
     def getstr(self, section: str, option: str, default: Optional[str] = None, allow_no_value: bool = False) -> str:
         done = self.get(section, option, nix_str(default), allow_no_value)
-        if done is None: return nix_str(default)
+        if done is None:
+            return nix_str(default)
         return done
     def get(self, section: str, option: str, default: Optional[str] = None, allow_no_value: bool = False) -> Optional[str]:
         allow_no_value = allow_no_value or self._allow_no_value
@@ -1278,11 +1296,13 @@ class SystemctlLoadedUnits:
         return self._user_mode
     def user_folder(self) -> str:
         for folder in self.user_folders():
-            if folder: return folder
+            if folder:
+                return folder
         raise FileNotFoundError("did not find any systemd/user folder")
     def system_folder(self) -> str:
         for folder in self.system_folders():
-            if folder: return folder
+            if folder:
+                return folder
         raise FileNotFoundError("did not find any systemd/system folder")
     def preset_folders(self) -> Iterable[str]:
         SYSTEMD_PRESET_PATH = self.get_SYSTEMD_PRESET_PATH()  # pylint: disable=invalid-name
@@ -1405,7 +1425,8 @@ class SystemctlLoadedUnits:
         self.unit_file() # scan all
         assert self._file_for_unit_sysd is not None
         assert self._file_for_unit_sysv is not None
-        if not filename: return None
+        if not filename:
+            return None
         if filename in self._file_for_unit_sysd.values():
             return False
         if filename in self._file_for_unit_sysv.values():
@@ -1467,7 +1488,8 @@ class SystemctlLoadedUnits:
     def load_sysd_unit_conf(self, module: Optional[str]) -> Optional[SystemctlConf]: # -> conf?
         """ read the unit file with a UnitConfParser (systemd) """
         path = self.unit_sysd_file(module)
-        if not path: return None
+        if not path:
+            return None
         assert self._loaded_file_sysd is not None
         if path in self._loaded_file_sysd:
             return self._loaded_file_sysd[path]
@@ -1493,7 +1515,8 @@ class SystemctlLoadedUnits:
     def load_sysv_unit_conf(self, module: Optional[str]) -> Optional[SystemctlConf]: # -> conf?
         """ read the unit file with a UnitConfParser (sysv) """
         path = self.unit_sysv_file(module)
-        if not path: return None
+        if not path:
+            return None
         assert self._loaded_file_sysv is not None
         if path in self._loaded_file_sysv:
             return self._loaded_file_sysv[path]
@@ -1646,7 +1669,8 @@ class SystemctlLoadedUnits:
         logg.debug("the [%s] requires %s", module, targets)
         return targets
     def get_InstallTarget(self, conf: SystemctlConf, default: Optional[str] = None) -> Optional[str]: # pylint: disable=invalid-name
-        if not conf: return default
+        if not conf:
+            return default
         return conf.get(Install, "WantedBy", default, True)
     def get_TimeoutStartSec(self, conf: SystemctlConf, section: str = Service) -> float: # pylint: disable=invalid-name
         timeout = conf.get(section, "TimeoutSec", nix_str(DefaultTimeoutStartSec))
@@ -1733,8 +1757,10 @@ class SystemctlLoadedUnits:
         """ expand %i %t and similar special vars. They are being expanded
             before any other expand_env takes place which handles shell-style
             $HOME references. """
-        def xx(arg: str) -> str: return unit_name_unescape(arg)
-        def yy(arg: str) -> str: return arg
+        def xx(arg: str) -> str:
+            return unit_name_unescape(arg)
+        def yy(arg: str) -> str:
+            return arg
         def get_confs(conf: SystemctlConf) -> Dict[str, str]:
             confs={"%": "%"}
             if conf is None: # pragma: no cover (is never null)
@@ -3332,7 +3358,8 @@ class Systemctl:
         return ok
     def clean_unit(self, unit: str, what: str = NIX) -> bool:
         conf = self.units.load_conf(unit)
-        if not conf: return False
+        if not conf:
+            return False
         return self.clean_unit_from(conf, what)
     def clean_unit_from(self, conf: SystemctlConf, what: str) -> bool:
         if self.is_active_from(conf):
@@ -3374,7 +3401,8 @@ class Systemctl:
         return result
     def log_unit(self, unit: str, lines: Optional[int] = None, follow: bool = False) -> int:
         conf = self.units.load_conf(unit)
-        if not conf: return -1
+        if not conf:
+            return -1
         return self.log_unit_from(conf, lines, follow)
     def log_unit_from(self, conf: SystemctlConf, lines: Optional[int] = None, follow: bool = False) -> int:
         cmd_args: List[Union[str, bytes]] = []
@@ -3628,8 +3656,10 @@ class Systemctl:
             return False
         return self.start_unit_from(conf)
     def start_unit_from(self, conf: SystemctlConf) -> bool:
-        if not conf: return False
-        if self.units.syntax_check(conf, conditions=False) > 100: return False
+        if not conf:
+            return False
+        if self.units.syntax_check(conf, conditions=False) > 100:
+            return False
         with waitlock(conf):
             logg.debug(" start unit %s => %s", conf.name(), q_str(conf.filename()))
             return self.do_start_unit_from(conf)
@@ -3680,7 +3710,8 @@ class Systemctl:
         env = self.units.get_env(conf)
         if not self._quiet:
             okee = self.units.exec_check(conf, env, Service, "Exec") # all...
-            if not okee and NO_RELOAD: return False
+            if not okee and NO_RELOAD:
+                return False
         service_directories = self.create_service_directories(conf)
         env.update(service_directories) # atleast sshd did check for /run/sshd
         # for StopPost on failure:
@@ -3930,7 +3961,8 @@ class Systemctl:
             return False
         return self.listen_unit_from(conf)
     def listen_unit_from(self, conf: SystemctlConf) -> bool:
-        if not conf: return False
+        if not conf:
+            return False
         with waitlock(conf):
             logg.debug(" listen unit %s => %s", conf.name(), q_str(conf.filename()))
             return self.do_listen_unit_from(conf)
@@ -3982,7 +4014,8 @@ class Systemctl:
         env = self.units.get_env(conf)
         if not self._quiet:
             okee = self.units.exec_check(conf, env, Socket, "Exec") # all...
-            if not okee and NO_RELOAD: return False
+            if not okee and NO_RELOAD:
+                return False
         if TRUE:
             for cmd in conf.getlist(Socket, "ExecStartPre", []):
                 exe, newcmd = self.units.expand_cmd(cmd, env, conf)
@@ -4286,7 +4319,8 @@ class Systemctl:
     def test_start_unit(self, unit: str) -> None:
         """ helper function to test the code that is normally forked off """
         conf = self.units.load_conf(unit)
-        if not conf: return None
+        if not conf:
+            return None
         env = self.units.get_env(conf)
         for cmd in conf.getlist(Service, "ExecStart", []):
             _xe, newcmd = self.units.expand_cmd(cmd, env, conf)
@@ -4327,8 +4361,10 @@ class Systemctl:
         return self.stop_unit_from(conf)
 
     def stop_unit_from(self, conf: SystemctlConf) -> bool:
-        if not conf: return False
-        if self.units.syntax_check(conf) > 100: return False
+        if not conf:
+            return False
+        if self.units.syntax_check(conf) > 100:
+            return False
         with waitlock(conf):
             logg.info(" stop unit %s => %s", conf.name(), q_str(conf.filename()))
             return self.do_stop_unit_from(conf)
@@ -4349,7 +4385,8 @@ class Systemctl:
         env = self.units.get_env(conf)
         if not self._quiet:
             okee = self.units.exec_check(conf, env, Service, "ExecStop")
-            if not okee and NO_RELOAD: return False
+            if not okee and NO_RELOAD:
+                return False
         service_directories = self.env_service_directories(conf)
         env.update(service_directories)
         returncode = 0
@@ -4480,7 +4517,8 @@ class Systemctl:
         env = self.units.get_env(conf)
         if not self._quiet:
             okee = self.units.exec_check(conf, env, Socket, "ExecStop")
-            if not okee and NO_RELOAD: return False
+            if not okee and NO_RELOAD:
+                return False
         if not accept:
             # we do not listen but have the service started right away
             done = self.do_stop_service_from(service_conf)
@@ -4551,8 +4589,10 @@ class Systemctl:
             return False
         return self.reload_unit_from(conf)
     def reload_unit_from(self, conf: SystemctlConf) -> bool:
-        if not conf: return False
-        if self.units.syntax_check(conf) > 100: return False
+        if not conf:
+            return False
+        if self.units.syntax_check(conf) > 100:
+            return False
         with waitlock(conf):
             logg.info(" reload unit %s => %s", conf.name(), q_str(conf.filename()))
             return self.do_reload_unit_from(conf)
@@ -4577,7 +4617,8 @@ class Systemctl:
         env = self.units.get_env(conf)
         if not self._quiet:
             okee = self.units.exec_check(conf, env, Service, "ExecReload")
-            if not okee and NO_RELOAD: return False
+            if not okee and NO_RELOAD:
+                return False
         initscript = conf.filename()
         if self.units.is_sysv_file(initscript):
             if initscript:
@@ -4655,8 +4696,10 @@ class Systemctl:
             return False
         return self.restart_unit_from(conf)
     def restart_unit_from(self, conf: SystemctlConf) -> bool:
-        if not conf: return False
-        if self.units.syntax_check(conf) > 100: return False
+        if not conf:
+            return False
+        if self.units.syntax_check(conf) > 100:
+            return False
         with waitlock(conf):
             if conf.name().endswith(".service"):
                 logg.info(" restart service %s => %s", conf.name(), q_str(conf.filename()))
@@ -4744,7 +4787,8 @@ class Systemctl:
         return self.reload_or_restart_unit_from(conf)
     def reload_or_restart_unit_from(self, conf: SystemctlConf) -> bool:
         """ do 'reload' if specified, otherwise do 'restart' """
-        if not conf: return False
+        if not conf:
+            return False
         with waitlock(conf):
             logg.info(" reload-or-restart unit %s => %s", conf.name(), q_str(conf.filename()))
             return self.do_reload_or_restart_unit_from(conf)
@@ -4837,7 +4881,8 @@ class Systemctl:
             return False
         return self.kill_unit_from(conf)
     def kill_unit_from(self, conf: SystemctlConf) -> bool:
-        if not conf: return False
+        if not conf:
+            return False
         with waitlock(conf):
             logg.info(" kill unit %s => %s", conf.name(), q_str(conf.filename()))
             return self.do_kill_unit_from(conf)
@@ -4969,10 +5014,12 @@ class Systemctl:
         return results
     def is_active_from(self, conf: SystemctlConf) -> bool:
         """ used in try-restart/other commands to check if needed. """
-        if not conf: return False
+        if not conf:
+            return False
         return self.active_state(conf) == "active"
     def active_pid_from(self, conf: SystemctlConf) -> Optional[int]:
-        if not conf: return False
+        if not conf:
+            return False
         pid = self.read_mainpid_from(conf)
         return self.is_active_pid(pid)
     def is_active_pid(self, pid: Optional[int]) -> Optional[int]:
@@ -5003,7 +5050,8 @@ class Systemctl:
     def get_active_service_from(self, conf: Optional[SystemctlConf]) -> str:
         """ returns 'active' 'inactive' 'failed' 'unknown' """
         # used in try-restart/other commands to check if needed.
-        if not conf: return "unknown"
+        if not conf:
+            return "unknown"
         pid_file = self.pid_file(conf)
         if pid_file: # application PIDFile
             if not os.path.exists(pid_file):
@@ -5054,7 +5102,8 @@ class Systemctl:
         return target_list
     def active_substate(self, conf: SystemctlConf) -> Optional[str]:
         """ returns 'running' 'exited' 'dead' 'failed' 'plugged' 'mounted' """
-        if not conf: return None
+        if not conf:
+            return None
         pid_file = self.pid_file(conf)
         if pid_file:
             if not os.path.exists(pid_file):
@@ -5106,7 +5155,8 @@ class Systemctl:
             return []
         return results
     def is_failed_from(self, conf: SystemctlConf) -> bool:
-        if conf is None: return True
+        if conf is None:
+            return True
         return self.active_state(conf) == "failed"
     def reset_failed_modules(self, *modules: str) -> bool:
         """ reset-failed [UNIT]... -- Reset failed state for all, one, or more units """
@@ -5138,8 +5188,10 @@ class Systemctl:
             return False
         return self.reset_failed_from(conf)
     def reset_failed_from(self, conf: SystemctlConf) -> bool:
-        if conf is None: return True
-        if not self.is_failed_from(conf): return False
+        if conf is None:
+            return True
+        if not self.is_failed_from(conf):
+            return False
         done = False
         status_file = self.status_file(conf)
         if status_file and os.path.exists(status_file):
@@ -5652,7 +5704,8 @@ class Systemctl:
             return False
     def mask_folder(self) -> str:
         for folder in self.mask_folders():
-            if folder: return folder
+            if folder:
+                return folder
         raise FileNotFoundError("did not find any systemd/system folder")
     def mask_folders(self) -> Iterable[str]:
         if self.units.user_mode():
