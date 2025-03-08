@@ -2484,6 +2484,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.test_1503_condition(True)
     def test_1503_condition(self, real: bool = False) -> None:
         """ check that file ConditionPathIsReadWrite work"""
+        if os.path.exists("/testsuite.py"):
+            self.skipTest("does not work in container")
         vv = self.begin()
         testname = self.testname()
         testdir = self.testdir()
@@ -2723,6 +2725,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.test_1509_condition(True)
     def test_1509_condition(self, real: bool = False) -> None:
         """ check that file IsMountPoint work"""
+        if os.path.exists("/testsuite.py"):
+            self.skipTest("does not work in container")
         vv = self.begin()
         testname = self.testname()
         testdir = self.testdir()
@@ -3427,6 +3431,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.test_1531_condition(True)
     def test_1531_condition(self, real: bool = False) -> None:
         """ check that file ConditionEnvironment work"""
+        if os.path.exists("/testsuite.py"):
+            self.skipTest("does not work in container")
         vv = self.begin()
         testname = self.testname()
         testdir = self.testdir()
@@ -3527,6 +3533,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.test_1532_condition(True)
     def test_1532_condition(self, real: bool = False) -> None:
         """ check that file ConditionEnvironment work"""
+        if os.path.exists("/testsuite.py"):
+            self.skipTest("does not work in container")
         vv = self.begin()
         testname = self.testname()
         testdir = self.testdir()
@@ -4182,6 +4190,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.test_1559_condition(True)
     def test_1559_condition(self, real: bool = False) -> None:
         """ check that file IsMountPoint work"""
+        if os.path.exists("/testsuite.py"):
+            self.skipTest("does not work in container")
         vv = self.begin()
         testname = self.testname()
         testdir = self.testdir()
@@ -4914,6 +4924,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.test_1581_condition(True)
     def test_1581_condition(self, real: bool = False) -> None:
         """ check that file ConditionEnvironment work"""
+        if os.path.exists("/testsuite.py"):
+            self.skipTest("does not work in container")
         vv = self.begin()
         testname = self.testname()
         testdir = self.testdir()
@@ -5017,6 +5029,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.test_1582_condition(True)
     def test_1582_condition(self, real: bool = False) -> None:
         """ check that file ConditionEnvironment work"""
+        if os.path.exists("/testsuite.py"):
+            self.skipTest("does not work in container")
         vv = self.begin()
         testname = self.testname()
         testdir = self.testdir()
