@@ -28215,8 +28215,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
-    def test_4900_unreadable_files_can_be_handled(self) -> None:
+    def test_4900_unreadable_files_can_be_handled(self, real: bool=False) -> None:
         """ a file may exist but it is unreadable"""
+        if not get_USER_ID(real):
+            self.skipTest("chmod does not make a file unreadable for the root user")
         self.begin()
         testname = self.testname()
         testdir = self.testdir()
