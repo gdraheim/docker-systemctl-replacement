@@ -1258,8 +1258,8 @@ class SystemctlLoadedUnits:
     _file_for_unit_sysv: Optional[Dict[str, str]]
     _file_for_unit_sysd: Optional[Dict[str, str]]
     _preset_file_list: Optional[Dict[str, PresetFile]]
-    def __init__(self) -> None:
-        self._root = ROOT
+    def __init__(self, root: str = NIX) -> None:
+        self._root = root or ROOT
         self._user_mode = USER_MODE
         self._user_getlogin = os_getlogin()
         self._extra_vars = EXTRA_VARS
@@ -1394,9 +1394,11 @@ class SystemctlLoadedUnits:
     def unit_file(self, module: Optional[str] = None) -> Optional[str]: # -> filename?
         """ file path for the given module (sysv or systemd) """
         path = self.unit_sysd_file(module)
-        if path is not None: return path
+        if path is not None:
+            return path
         path = self.unit_sysv_file(module)
-        if path is not None: return path
+        if path is not None:
+            return path
         return None
     def is_sysv_file(self, filename: Optional[str]) -> Optional[bool]:
         """ for routines that have a special treatment for init.d services """
@@ -1404,8 +1406,10 @@ class SystemctlLoadedUnits:
         assert self._file_for_unit_sysd is not None
         assert self._file_for_unit_sysv is not None
         if not filename: return None
-        if filename in self._file_for_unit_sysd.values(): return False
-        if filename in self._file_for_unit_sysv.values(): return True
+        if filename in self._file_for_unit_sysd.values():
+            return False
+        if filename in self._file_for_unit_sysv.values():
+            return True
         return None # not True
     def is_user_conf(self, conf: SystemctlConf) -> bool:
         if not conf: # pragma: no cover (is never null)
@@ -1708,7 +1712,8 @@ class SystemctlLoadedUnits:
         return self.get_Description(self.load_conf(unit)) or default
     def get_Description(self, conf: Optional[SystemctlConf], default: str = NIX) -> str: # -> text # pylint: disable=invalid-name
         """ Unit.Description could be empty sometimes """
-        if not conf: return default or ""
+        if not conf:
+            return default or ""
         description = conf.get(Unit, "Description", default)
         return self.expand_special(description, conf)
     def get_User(self, conf: SystemctlConf) -> Optional[str]: # pylint: disable=invalid-name
@@ -2150,6 +2155,7 @@ class SystemctlLoadedUnits:
                     continue
                 filepath = os_path(NIX if filename.startswith("//") else self._root, filename)
                 if not os.path.exists(filepath):
+                    logg.error("not found %s", filepath)
                     if "!" not in mode:
                         logg.log(warn, "%s: %s - path not found: %s", unit, spec, filename)
                         problems += [spec+"="+checkfile]
@@ -2587,7 +2593,7 @@ class Systemctl:
         self._default_services = {}
         self.loop_sleep = max(1, INITLOOPSLEEP // INIT_MODE) if INIT_MODE else INITLOOPSLEEP
         self.loop_lock = threading.Lock()
-        self.units = SystemctlLoadedUnits()
+        self.units = SystemctlLoadedUnits(self._root)
     def get_unit_type(self, module: str) -> Optional[str]:
         _nam, ext = os.path.splitext(module)
         if ext in [".service", ".socket", ".target"]:
@@ -6575,14 +6581,14 @@ class Systemctl:
         logg.info(" == echo == %s", line)
         return line
     def killall(self, *targets: str) -> bool:
-        mapping = {}
+        mapping: Dict[str, signal.Signals] = {}
         mapping[":3"] = signal.SIGQUIT
         mapping[":QUIT"] = signal.SIGQUIT
         mapping[":6"] = signal.SIGABRT
         mapping[":ABRT"] = signal.SIGABRT
         mapping[":9"] = signal.SIGKILL
         mapping[":KILL"] = signal.SIGKILL
-        sig = signal.SIGTERM
+        sig: signal.Signals = signal.SIGTERM
         for target in targets:
             if target.startswith(":"):
                 if target in mapping:
