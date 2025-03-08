@@ -144,16 +144,18 @@ check: check2024
 	@ echo please run 'make checks' now
 24 check2024: ; ./testsuite.py -vv --opensuse=15.6 --ubuntu=ubuntu:24.04 --centos=almalinux:9.3
 
+# native operating system does not have python2 anymore
 1/test_%:
 	$(MAKE) tmp_systemctl_py_2
 	docker rm -f testpython2
 	docker run -d --name=testpython2 testpython2 sleep 999
 	docker cp testsuite.py testpython2:/
+	docker cp reply.py testpython2:/
 	docker cp tmp/systemctl.py testpython2:/tmp/
 	docker exec testpython2 ./testsuite.py -vv $(notdir $@) --sometime=666 \
 	  '--with=tmp/systemctl.py' --python=/usr/bin/python2
-
 2/test_%:
+	$(MAKE) tmp_systemctl_py_2
 	./testsuite.py -vv $(notdir $@) --sometime=666 \
 	  '--with=tmp/systemctl.py' --python=/usr/bin/python2
 3/test_%:
@@ -226,9 +228,14 @@ coverage3:
 
 p2: tmp_systemctl_py_2
 p3: tmp_systemctl_py_3
+
+tmp/systemctl_2.py: files/docker/systemctl3.py $(STRIPHINTS3)
+	@ $(PYTHON39) $(STRIPHINTS3) files/docker/systemctl3.py -o $@ $V
+
 tmp_systemctl_py_2:
 	@ test -d tmp || mkdir tmp
-	@ $(PYTHON39) $(STRIPHINTS3) files/docker/systemctl3.py -o tmp/systemctl.py $V
+	@ $(MAKE) tmp/systemctl_2.py
+	@ cp tmp/systemctl_2.py tmp/systemctl.py
 tmp_systemctl_py_3:
 	@ test -d tmp || mkdir tmp
 	@ cp files/docker/systemctl3.py tmp/systemctl.py
