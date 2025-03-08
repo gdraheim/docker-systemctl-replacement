@@ -9597,6 +9597,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
+            AssertFileIsExecutable=//usr/bin/killall
             [Service]
             Type=simple
             ExecStart={bindir}/{testsleep} 111
@@ -9862,6 +9863,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
+            AssertFileIsExecutable=//usr/bin/killall
             [Service]
             Type=simple
             ExecStart={bindir}/{testsleep} 111
@@ -12224,6 +12226,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
+            AssertFileIsExecutable=//usr/bin/killall
             [Service]
             Type=simple
             EnvironmentFile=/etc/sysconfig/zzz.conf
@@ -12918,6 +12921,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Testing S
             After=foo.service
+            AssertFileIsExecutable=//usr/bin/killall
             [Service]
             Type=simple
             ExecStart={bindir}/{testsleep} 99
@@ -13001,6 +13005,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Testing S
             After=foo.service
+            AssertFileIsExecutable=//usr/bin/killall
             [Service]
             Type=simple
             ExecStart={bindir}/{testsleep} 99
@@ -13061,6 +13066,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Testing S
             After=foo.service
+            AssertFileIsExecutable=//usr/bin/killall
             [Service]
             Type=simple
             ExecStart={bindir}/{testsleep} 99
@@ -13121,6 +13127,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Testing S
             After=foo.service
+            AssertFileIsExecutable=//usr/bin/killall
             [Service]
             Type=simple
             ExecStart={bindir}/{testsleep} 99
@@ -13184,6 +13191,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Testing S
             After=foo.service
+            AssertFileIsExecutable=//usr/bin/killall
             [Service]
             Type=simple
             ExecStart={bindir}/{testsleep} 99
@@ -13246,6 +13254,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
+            AssertFileIsExecutable=//usr/bin/killall
             [Service]
             Type=simple
             ExecStart={bindir}/zzz.sh
@@ -13303,6 +13312,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
+            AssertFileIsExecutable=//usr/bin/killall
             [Service]
             Type=simple
             WorkingDirectory={workingdir}
@@ -13362,6 +13372,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
+            AssertFileIsExecutable=//usr/bin/killall
             [Service]
             Type=simple
             WorkingDirectory={workingdir}
@@ -13424,6 +13435,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
+            AssertFileIsExecutable=//usr/bin/killall
             [Service]
             Type=simple
             WorkingDirectory=-{workingdir}
@@ -13492,6 +13504,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
+            AssertFileIsExecutable=//usr/bin/killall
             [Service]
             Type=simple
             ExecStart={bindir}/{testsleep} 111
@@ -13730,6 +13743,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
+            AssertFileIsExecutable=//usr/bin/killall
             [Service]
             Type=simple
             ExecStart={bindir}/{testsleep} 111
@@ -15118,6 +15132,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Testing S
             After=foo.service
+            AssertFileIsExecutable=//usr/bin/killall
             [Service]
             Type=simple
             ExecStart={bindir}{testsleep} 99
@@ -15154,6 +15169,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Testing S
             After=foo.service
+            AssertFileIsExecutable=//usr/bin/killall
             [Service]
             Type=simple
             ExecStart={bindir}{testsleep} 99
@@ -15175,9 +15191,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
-    def real_3900_start_false_execpre(self) -> None:
-        self.test_3900_start_false_execpre(True)
-    def test_3900_start_false_execpre(self, real: bool = False) -> None:
+    def real_3910_start_false_execpre(self) -> None:
+        self.test_3910_start_false_execpre(True)
+    def test_3910_start_false_execpre(self, real: bool = False) -> None:
         """ check that a failed execpre is handled"""
         vv = self.begin()
         testname = self.testname()
@@ -15195,6 +15211,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Testing Z
             After=foo.service
+            AssertFileIsExecutable=//usr/bin/killall
             [Service]
             Type=simple
             ExecStartPre="/bin/false"
@@ -15246,9 +15263,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_zzfiles(root)
         self.coverage()
         self.end()
-    def real_3901_start_false_exec_simple(self) -> None:
-        self.test_3901_start_false_exec_simple(True)
-    def test_3901_start_false_exec_simple(self, real: bool = False) -> None:
+    def real_3911_start_false_exec_simple(self) -> None:
+        self.test_3911_start_false_exec_simple(True)
+    def test_3911_start_false_exec_simple(self, real: bool = False) -> None:
         """ check that a failed exec is handled"""
         vv = self.begin()
         testname = self.testname()
@@ -15266,6 +15283,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Testing Z
             After=foo.service
+            AssertFileIsExecutable=//usr/bin/killall
             [Service]
             Type=simple
             ExecStart="/bin/false"
@@ -15316,9 +15334,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_zzfiles(root)
         self.coverage()
         self.end()
-    def real_3902_start_false_exec_notify(self) -> None:
-        self.test_3902_start_false_exec_notify(True)
-    def test_3902_start_false_exec_notify(self, real: bool = False) -> None:
+    def real_3912_start_false_exec_notify(self) -> None:
+        self.test_3912_start_false_exec_notify(True)
+    def test_3912_start_false_exec_notify(self, real: bool = False) -> None:
         """ check that a failed exec is handled"""
         vv = self.begin()
         testname = self.testname()
@@ -15336,6 +15354,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Testing Z
             After=foo.service
+            AssertFileIsExecutable=//usr/bin/killall
             [Service]
             Type=notify
             ExecStart="/bin/false"
@@ -15387,9 +15406,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
-    def real_3903_start_false_exec_oneshot(self) -> None:
-        self.test_3903_start_false_exec_oneshot(True)
-    def test_3903_start_false_exec_oneshot(self, real: bool = False) -> None:
+    def real_3913_start_false_exec_oneshot(self) -> None:
+        self.test_3913_start_false_exec_oneshot(True)
+    def test_3913_start_false_exec_oneshot(self, real: bool = False) -> None:
         """ check that a failed exec is handled"""
         vv = self.begin()
         testname = self.testname()
@@ -15407,6 +15426,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Testing Z
             After=foo.service
+            AssertFileIsExecutable=//usr/bin/killall
             [Service]
             Type=oneshot
             ExecStart="/bin/false"
@@ -15458,9 +15478,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_zzfiles(root)
         self.coverage()
         self.end()
-    def real_3904_start_false_exec_forking(self) -> None:
-        self.test_3904_start_false_exec_forking(True)
-    def test_3904_start_false_exec_forking(self, real: bool = False) -> None:
+    def real_3914_start_false_exec_forking(self) -> None:
+        self.test_3914_start_false_exec_forking(True)
+    def test_3914_start_false_exec_forking(self, real: bool = False) -> None:
         """ check that a failed exec is handled"""
         vv = self.begin()
         testname = self.testname()
@@ -15478,6 +15498,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Testing Z
             After=foo.service
+            AssertFileIsExecutable=//usr/bin/killall
             [Service]
             Type=forking
             ExecStart="/bin/false"
@@ -19578,6 +19599,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Testing Z
             After=foo.service
+            AssertFileIsExecutable=//usr/bin/killall
             [Service]
             Type=simple
             ExecStart={bindir}/{testsleep} 99
@@ -19696,6 +19718,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Testing Z
             After=foo.service
+            AssertFileIsExecutable=//usr/bin/killall
             [Service]
             Type=simple
             ExecStart={bindir}/{testsleep} 99
@@ -35223,6 +35246,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         text_file(os_path(testdir, "zzz.service"), """
             [Unit]
             Description=Testing Z
+            AssertFileIsExecutable=//usr/bin/killall
             [Service]
             Type=simple
             ExecStart=/usr/bin/testsleep 111

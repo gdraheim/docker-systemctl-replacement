@@ -274,7 +274,7 @@ dockerfiles:
 testpython2:
 	: docker pull ubuntu:22.04
 	{ echo "FROM ubuntu:22.04" \
-	; echo "RUN apt-get update && apt-get install -y python2 python3 && python2 --version" \
+	; echo "RUN apt-get update && apt-get install -y python2 python3 psmisc && python2 --version" \
 	; } > tmp.$@
 	docker build -f tmp.$@ -t $@ .
 
@@ -358,7 +358,7 @@ striphints.git:
 
 STRIP_PYTHON3_GIT_URL = https://github.com/abarker/strip-hints.git
 STRIP_PYTHON3_GIT = ../strip_python3
-STRIPHINTS3 = $(STRIP_PYTHON3_GIT)/strip_python3.py
+STRIPHINTS3 = $(STRIP_PYTHON3_GIT)/src/strip_python3.py
 striphints3.git:
 	set -ex ; if test -d $(STRIP_PYHTON3_GIT); then cd $(STRIP_PYTHON3_GIT) && git pull; else : \
 	; cd $(dir $(STRIPHINTS_GIT)) && git clone $(STRIP_PYTHON3_GIT_URL) $(notdir $(STRIP_PYTHON3_GIT)) \
