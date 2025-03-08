@@ -4377,11 +4377,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
         if real or TODO:
-           self.assertFalse(greps(err, "Assertion failed on job"))
+            self.assertFalse(greps(err, "Assertion failed on job"))
         if not real:
             self.assertTrue(greps(err, "AssertPathIsSymbolicLink - not a symbolic link"))
         if real or TODO:
-           self.assertEqual(end, EXIT_SUCCESS)
+            self.assertEqual(end, EXIT_SUCCESS)
         cmd = F"{systemctl} start zzb.service {vv}"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, err, out)
@@ -15095,6 +15095,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.end()
     def test_3882_start_some_inaccessible(self, real: bool = False) -> None:
         """ check start some inaccessible unit fails okay"""
+        if not get_USER_ID(real):
+            self.skipTest("chmod does not make a file inaccessible for the root user")
         vv = self.begin()
         testname = self.testname()
         testdir = self.testdir()
