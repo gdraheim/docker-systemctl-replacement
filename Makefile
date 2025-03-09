@@ -229,13 +229,12 @@ coverage3:
 p2: tmp_systemctl_py_2
 p3: tmp_systemctl_py_3
 
-tmp/systemctl_2.py: files/docker/systemctl3.py $(STRIPHINTS3)
-	@ $(PYTHON39) $(STRIPHINTS3) files/docker/systemctl3.py -o $@ $V
 
 tmp_systemctl_py_2:
 	@ test -d tmp || mkdir tmp
 	@ $(MAKE) tmp/systemctl_2.py
 	@ cp tmp/systemctl_2.py tmp/systemctl.py
+	@ sed -i -e "s:/usr/bin/python3:/usr/bin/python:" -e "s:/env python3:/env python:" tmp/systemctl.py
 tmp_systemctl_py_3:
 	@ test -d tmp || mkdir tmp
 	@ cp files/docker/systemctl3.py tmp/systemctl.py
@@ -376,6 +375,8 @@ striphints3.git:
 	test "def test(a):|    return a|" = "`cat tmp.striphints.py.out | tr '\\\\\\n' '|'`"
 	rm tmp.striphints.*
 
+tmp/systemctl_2.py: files/docker/systemctl3.py $(STRIPHINTS3)
+	@ $(PYTHON39) $(STRIPHINTS3) files/docker/systemctl3.py -o $@ $V
 
 MYPY = mypy
 MYPY_WITH = --strict --show-error-codes --show-error-context 
