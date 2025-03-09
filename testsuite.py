@@ -604,10 +604,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not KEEP:
             sx____(F"{docker} stop -t 6 {testname}")
             sx____(F"{docker} rm -f {testname}")
-    def killall(self, what: str, wait: Optional[int] = None, sig: Optional[int] = None, but: Optional[List[str]] = None) -> None:
+    def killall(self, what: str, wait: Optional[int] = None, sig: Optional[int] = None, kill: Optional[int] = None, but: Optional[List[str]] = None) -> None:
         # logg.info("killall %s (but %s)", what, but)
         killed = 0
         if True:
+            sig = sig if sig is not None else signal.SIGINT
             for nextpid in os.listdir("/proc"):
                 try: pid = int(nextpid)
                 except: continue
@@ -617,8 +618,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                     if fnmatch(cmd, what):
                         found = [name for name in (but or []) if name in cmd]
                         if found: continue
-                        logg.info(" %s", F"kill {pid} # {cmd}")
-                        os.kill(pid, sig or signal.SIGINT)
+                        logg.info(" %s", F"kill -{sig} {pid} # {cmd}")
+                        os.kill(pid, sig)
                         killed += 1
                 except IOError as e:
                     if e.errno != errno.ENOENT:
@@ -626,7 +627,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 except Exception as e:
                     logg.info(" killing %s", e)
         for checking in range(int(wait or KILLWAIT)):
-            remaining = 0
+            remaining = []
             for nextpid in os.listdir("/proc"):
                 try: pid = int(nextpid)
                 except: continue
@@ -636,7 +637,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                     if fnmatch(cmd, what):
                         found = [name for name in (but or []) if name in cmd]
                         if found: continue
-                        remaining += 1
+                        remaining += [pid]
                 except IOError as e:
                     if e.errno != errno.ENOENT:
                         logg.info(" killing %s", e)
@@ -645,9 +646,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             if not remaining:
                 return
             if checking % 2 == 0:
-                logg.info("[%02is] remaining %s", checking, remaining)
+                logg.info("[%02is] %ix remaining %s", checking, len(remaining), remaining)
             time.sleep(1)
         if True:
+            kill = kill if kill is not None else signal.SIGKILL
             for nextpid in os.listdir("/proc"):
                 try: pid = int(nextpid)
                 except: continue
@@ -657,8 +659,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                     if fnmatch(cmd, what):
                         found = [name for name in (but or []) if name in cmd]
                         if found: continue
-                        logg.info(" %s", F"kill {pid} # {cmd}")
-                        os.kill(pid, sig or signal.SIGKILL)
+                        logg.info(" %s", F"kill -{kill} {pid} # {cmd}")
+                        os.kill(pid, kill)
                         killed += 1
                 except IOError as e:
                     if e.errno != errno.ENOENT:
@@ -16265,6 +16267,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         self.simple_service_functions("system", testname, testdir)
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -16275,6 +16278,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         self.simple_service_functions("user", testname, testdir)
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -16632,6 +16636,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         self.forking_service_functions("system", testname, testdir)
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -16644,6 +16649,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         self.forking_service_functions("user", testname, testdir)
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -16964,6 +16970,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         self.notify_service_functions("system", testname, testdir)
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -16979,6 +16986,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         self.notify_service_functions("user", testname, testdir)
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -17301,6 +17309,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         self.notify_service_functions_with_reload("system", testname, testdir)
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -17317,6 +17326,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         self.notify_service_functions_with_reload("user", testname, testdir)
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -17642,6 +17652,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         self.notify_service_functions_with_failed("system", testname, testdir)
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -17658,6 +17669,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         self.notify_service_functions_with_failed("user", testname, testdir)
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -17782,6 +17794,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         self.oneshot_service_functions("system", testname, testdir)
+        self.rm_killall()
         self.rm_testdir()
         self.end()
     def test_4041_oneshot_service_functions_user(self) -> None:
@@ -17793,6 +17806,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         self.oneshot_service_functions("user", testname, testdir)
+        self.rm_killall()
         self.rm_testdir()
         self.end()
     def oneshot_service_functions(self, system: str, testname: str, testdir: str) -> None:
@@ -18167,6 +18181,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(os.path.exists(os_path(root, "/var/tmp/test.2")))
         #
         logg.info("LOG\n%s", " "+reads(logfile).replace("\n", "\n "))
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -18179,6 +18194,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         self.oneshot_template_service_functions("system", testname, testdir)
+        self.rm_killall()
         self.rm_testdir()
         self.end()
     def test_4044_oneshot_template_service_functions_user(self) -> None:
@@ -18190,6 +18206,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         self.oneshot_template_service_functions("user", testname, testdir)
+        self.rm_killall()
         self.rm_testdir()
         self.end()
     def oneshot_template_service_functions(self, system: str, testname: str, testdir: str) -> None:
@@ -18685,6 +18702,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertNotEqual(ps6[0], ps7[0])
         #
         logg.info("LOG\n%s", " "+reads(logfile).replace("\n", "\n "))
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -18793,6 +18811,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top5 = top
         #
         logg.info("LOG\n%s", " "+reads(logfile).replace("\n", "\n "))
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -18902,6 +18921,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top5 = top
         #
         logg.info("LOG\n%s", " "+reads(logfile).replace("\n", "\n "))
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -18915,6 +18935,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         self.notify_service_functions_with_long_servicename("system", testname, testdir)
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -18929,6 +18950,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         self.notify_service_functions_with_long_servicename("user", testname, testdir)
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -19065,6 +19087,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         self.notify_service_functions_with_other_notify_dir("system", testname, testdir)
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -19079,6 +19102,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         self.notify_service_functions_with_other_notify_dir("user", testname, testdir)
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -19486,6 +19510,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             "run-start", "START-IT", "started", "fail-after-start",
             "run-stop-post", "STOP-POST"])
         #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -19603,6 +19628,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(os.path.exists(status_file))
         #
         logg.info("LOG\n%s", " "+reads(logfile).replace("\n", "\n "))
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -19722,6 +19748,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(os.path.exists(status_file))
         self.assertFalse(os.path.exists(pid_file))
         #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -19774,6 +19801,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("ERR => %s", err)
         self.assertTrue(greps(err, "boottime from the oldest entry in /proc"))
         #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -20078,8 +20106,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         else: self.assertEqual(out.strip(), "inactive")
         #
         # cleanup
-        kill_testsleep = F"{systemctl} __killall {testsleep}"
-        sx____(kill_testsleep)
+        self.rm_killall()
         self.rm_testdir()
         self.rm_zzfiles(root)
         self.coverage()
@@ -28021,6 +28048,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         log = reads(debug_log)
         logg.info("systemctl.debug.log>\n\t%s", oi22(log))
         #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -28060,9 +28088,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>(%s)\n%s\n%s", rc, i2(err), out)
         self.assertEqual(rc, 0)
         #
-        kill_testsleep = F"{systemctl} __killall {testsleepA}"
-        sx____(kill_testsleep)
-        #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -28103,9 +28129,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>(%s)\n%s\n%s", rc, i2(err), out)
         self.assertEqual(rc, 0)
         #
-        kill_testsleep = F"{systemctl} __killall {testsleepA}"
-        sx____(kill_testsleep)
-        #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -28145,9 +28169,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>(%s)\n%s\n%s", rc, i2(err), out)
         self.assertEqual(rc, 0)
         #
-        kill_testsleep = F"{systemctl} __killall {testsleepA}"
-        sx____(kill_testsleep)
-        #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -28189,9 +28211,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>(%s)\n%s\n%s", rc, i2(err), out)
         self.assertEqual(rc, 0)
         #
-        kill_testsleep = F"{systemctl} __killall {testsleepA}"
-        sx____(kill_testsleep)
-        #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -28232,9 +28252,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>(%s)\n%s\n%s", rc, i2(err), out)
         self.assertEqual(rc, 0)
         #
-        kill_testsleep = F"{systemctl} __killall {testsleepA}"
-        sx____(kill_testsleep)
-        #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -28366,6 +28384,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0) # always succeeds
         #
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -28412,6 +28431,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertNotEqual(end, 0)
+        self.rm_killall()
         self.rm_testdir()
         self.coverage()
         self.end()

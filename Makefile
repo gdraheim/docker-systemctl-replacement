@@ -131,29 +131,35 @@ tests: ; $(MAKE) "${basetests}"
 
 nightrun: checkall
 	$(MAKE) checks
-checkall: checkall2019
+checkall: checkall2025
 checkall2024:
-	$(MAKE) -j1 tests checkall2024.3
-checkall2024.3:
 	$(MAKE) -j1 9.3/tests   8.5/tests   7.9/tests
 	$(MAKE) -j1 24.04/tests 22.04/test2 18.04/tests
 	$(MAKE) -j1 15.6/tests  15.5/tests  15.4/tests  15.2/tests
+checkall2025:
+	$(MAKE) -j1 9.4/tests 
+	$(MAKE) -j1 24.04/tests 22.04/test2 20.04/tests
+	$(MAKE) -j1 15.6/tests  15.4/tests
 
 
-check: check2024
+check: check2025
 	@ echo please run 'make checks' now
 24 check2024: ; ./testsuite.py -vv --opensuse=15.6 --ubuntu=ubuntu:24.04 --centos=almalinux:9.3
+25 check2025: ; ./testsuite.py -vv --opensuse=15.6 --ubuntu=ubuntu:24.04 --centos=almalinux:9.4
 
 # native operating system does not have python2 anymore
 1/test_%:
 	$(MAKE) tmp_systemctl_py_2
 	docker rm -f testpython2
 	docker run -d --name=testpython2 testpython2 sleep 999
+	docker exec testpython2 mkdir -p $(PWD)/tmp
 	docker cp testsuite.py testpython2:/
 	docker cp reply.py testpython2:/
-	docker cp tmp/systemctl.py testpython2:/tmp/
-	docker exec testpython2 ./testsuite.py -vv $(notdir $@) --sometime=666 \
-	  '--with=tmp/systemctl.py' --python=/usr/bin/python2
+	docker cp tmp/systemctl.py testpython2:/$(PWD)/tmp/
+	docker exec testpython2 chmod +x /$(PWD)/tmp/systemctl.py
+	docker exec testpython2 /testsuite.py -vv $(notdir $@) --sometime=666 \
+	  '--with=/$(PWD)/tmp/systemctl.py' --python=/usr/bin/python2 $(COVERAGE1) $V
+	- test -z "$(COVERAGE1)" || docker cp testpython2:/.coverage .coverage.cov1
 2/test_%:
 	$(MAKE) tmp_systemctl_py_2
 	./testsuite.py -vv $(notdir $@) --sometime=666 \
@@ -181,10 +187,15 @@ check3:
 	./testsuite.py -vv \
 	  '--with=tmp/systemctl.py' --python=/usr/bin/python3
 
-checks: checks.1 checks.3 checks.4
-checks.1:
+checks: checks.0 checks.3 checks.4
+checks.0:
 	- rm .coverage* 
+checks.1:
+	: python2 needs to be executed in a container
+	$(MAKE) checks1_coverage
+	for i in .coverage*; do mv $$i $$i.cov1; done
 checks.2:
+	: python2 can not be checked locally anymore
 	$(MAKE) checks2_coverage
 	for i in .coverage*; do mv $$i $$i.cov2; done
 checks.3:
@@ -195,6 +206,12 @@ checks.4:
 	ls -l tmp/systemctl.py,cover
 	@ echo ".... are you ready for 'make checkall' ?"
 
+checks1:  
+	rm .coverage* ; $(MAKE) checks1_coverage
+checks1_coverage:
+	$(MAKE) tmp_systemctl_py_2
+	: $(MAKE) "1/test_[12345]" COVERAGE1=--coverage
+	$(MAKE) "1/test_[12345]" 
 checks2:  
 	rm .coverage* ; $(MAKE) checks2_coverage
 checks2_coverage:
@@ -234,7 +251,7 @@ tmp_systemctl_py_2:
 	@ test -d tmp || mkdir tmp
 	@ $(MAKE) tmp/systemctl_2.py
 	@ cp tmp/systemctl_2.py tmp/systemctl.py
-	@ sed -i -e "s:/usr/bin/python3:/usr/bin/python:" -e "s:/env python3:/env python:" tmp/systemctl.py
+	@ sed -i -e "s:/usr/bin/python3:/usr/bin/python2:" -e "s:/env python3:/env python2:" tmp/systemctl.py
 tmp_systemctl_py_3:
 	@ test -d tmp || mkdir tmp
 	@ cp files/docker/systemctl3.py tmp/systemctl.py
