@@ -82,7 +82,7 @@ NO_ASK_PASSWORD: bool = False
 PRESET_MODE: str = "all"
 DO_QUIET: bool = False
 ROOT: str = NIX
-SHOW_ALL: bool = False
+SHOW_ALL: int = 0
 USER_MODE: bool = False
 ONLY_WHAT: List[str] = []
 ONLY_TYPE: List[str] = []
@@ -2564,7 +2564,7 @@ class Systemctl:
     _preset_mode: str
     _quiet: bool
     _root: str
-    _show_all: bool
+    _show_all: int
     _unit_property: Optional[str]
     _unit_state: Optional[str]
     _unit_type: Optional[str]
@@ -5950,7 +5950,7 @@ class Systemctl:
             This is used internally to know the list of service to be started in the 'get-default'
             target runlevel when the container is started through default initialisation. It will
             ignore a number of services - use '--all' to show a longer list of services and
-            use '--all --force' if not even a minimal filter shall be used.
+            use '--all --all' if not even a minimal filter shall be used.
         """
         results: List[str] = []
         targets = modules or [self.get_default_target()]
@@ -5976,12 +5976,12 @@ class Systemctl:
         return self.target_enabled_services(target, sysv)
     def target_enabled_services(self, target: Optional[str] = None, sysv: str = "S") -> List[str]:
         """ get the default services for a target - this will ignore a number of services,
-            use '--all' and --force' to get more services.
+            use '--all' and '--all --all' to get more services.
         """
         igno = self.igno_centos + self.igno_opensuse + self.igno_ubuntu + self.igno_always
         if self._show_all:
             igno = self.igno_always
-            if self._force:
+            if self._show_all > 1:
                 igno = []
         logg.debug("ignored services filter for default.target:\n\t%s", igno)
         default_target = target or self.get_default_target()
@@ -6152,7 +6152,7 @@ class Systemctl:
             This will go through the enabled services in the default 'multi-user.target'.
             However some services are ignored as being known to be installation garbage
             from unintended services. Use '--all' so start all of the installed services
-            and with '--all --force' even those services that are otherwise wrong.
+            and with '--all --all' even those services that are otherwise wrong.
             /// SPECIAL: with --now or --init the init-loop is run and afterwards
                 a system_halt is performed with the enabled services to be stopped."""
         self.sysinit_status(SubState = "initializing")
@@ -6729,7 +6729,7 @@ class Systemctl:
         with open(sysconf_hosts, "w") as f:
             for line in lines:
                 f.write(line)
-    def help_list(self, show_all: Optional[bool] = None) -> Dict[str, str]:
+    def help_list(self, show_all: Optional[int] = None) -> Dict[str, str]:
         show_all = self._show_all if show_all is None else show_all
         help_docs: Dict[str, str] = {}
         for name in dir(self):
@@ -6760,7 +6760,7 @@ class Systemctl:
                 firstline = doc.split("\n")[0]
                 lines.append(" " + firstline.strip())
         else:
-            help_docs = self.help_list(show_all = True)
+            help_docs = self.help_list(show_all = 1)
             for arg in args:
                 if arg not in help_docs:
                     print("error: no such command '%s'" % arg)
@@ -7031,7 +7031,7 @@ def main() -> int:
                   help="Show only properties by this name")
     _o.add_option("--what", metavar="TYPE", action="append", dest="only_what", default=ONLY_WHAT,
                   help="Defines the service directories to be cleaned (configuration, state, cache, logs, runtime)")
-    _o.add_option("-a", "--all", action="store_true", dest="show_all", default=SHOW_ALL,
+    _o.add_option("-a", "--all", action="count", dest="show_all", default=SHOW_ALL,
                   help="Show all loaded units/properties, including dead empty ones. To list all units installed on the system, use the 'list-unit-files' command instead")
     _o.add_option("-l", "--full", action="store_true", default=DO_FULL,
                   help="Don't ellipsize unit names on output (never ellipsized)")
@@ -7114,7 +7114,7 @@ def main() -> int:
     PRESET_MODE = opt.preset_mode
     DO_QUIET = opt.quiet
     ROOT = opt.root
-    SHOW_ALL = opt.show_all
+    SHOW_ALL = int(opt.show_all)
     ONLY_STATE = opt.only_state
     ONLY_TYPE = opt.only_type
     ONLY_PROPERTY = opt.only_property

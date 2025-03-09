@@ -9058,7 +9058,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(len(lines(out)), 3)
         self.assertEqual(end, 0)
         #
-        cmd = F"{systemctl} default-services --all --force"
+        cmd = F"{systemctl} default-services --all --all"
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(len(lines(out)), 4)
