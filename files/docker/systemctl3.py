@@ -6158,6 +6158,8 @@ class Systemctl:
         self.sysinit_status(SubState = "initializing")
         logg.info("system default requested [init] %s", arg)
         init = self.init_mode or self._do_now
+        if not self.exit_mode and self._do_now:
+            self.exit_mode |= EXIT_NO_SERVICES_LEFT
         return self.start_system_default(init = init)
     def start_system_default(self, init: int = 0) -> bool:
         """ detect the default.target services and start them.
@@ -6457,12 +6459,14 @@ class Systemctl:
         result: Optional[str] = None
         #
         self.start_log_files(units)
-        logg.debug("start listen")
+        logg.debug("[init] start listen")
         listen = SystemctlListenThread(self)
-        logg.debug("starts listen")
+        logg.debug("[init] starts listen")
         listen.start()
-        logg.debug("started listen")
+        logg.debug("[init] started listen")
         self.sysinit_status(ActiveState = "active", SubState = "running")
+        logg.info("[init] running every %ss checking %s %s", self.loop_sleep,
+            "services" if EXIT_MODE & EXIT_NO_SERVICES_LEFT else "-", "procs" if EXIT_MODE & EXIT_NO_PROCS_LEFT else "-")
         lasttime = time.monotonic()
         while True:
             try:
@@ -6470,7 +6474,7 @@ class Systemctl:
                 if sleep_sec < YIELD:
                     sleep_sec = YIELD
                 if DEBUG_INITLOOP: # pragma: no cover
-                    logg.debug("WAIT init-loop (loop-sleep %ss) sleeping %ss", self.loop_sleep, sleep_sec)
+                    logg.debug("[init] WAIT (loop-sleep %ss) sleeping %ss", self.loop_sleep, sleep_sec)
                 sleeping = sleep_sec
                 while sleeping > 2:
                     time.sleep(1) # accept signals atleast every second
@@ -6482,13 +6486,13 @@ class Systemctl:
                 lasttime = time.monotonic()
                 self.loop_lock.acquire()
                 if DEBUG_INITLOOP: # pragma: no cover
-                    logg.debug("NEXT init-loop (after %ss)", sleep_sec)
+                    logg.debug("[init] NEXT (after %ss)", sleep_sec)
                 self.read_log_files(units)
                 if DEBUG_INITLOOP: # pragma: no cover
-                    logg.debug("reap zombies - check current processes")
-                running = self.reap_zombies()
+                    logg.debug("[init] reap zombies - check current processes")
+                running = self.reap_zombies(loop="init")
                 if DEBUG_INITLOOP: # pragma: no cover
-                    logg.debug("reap zombies - init-loop found %s running procs", running)
+                    logg.debug("[init-loop] reap zombies - found %s running procs", running)
                 if self.exit_mode & EXIT_NO_SERVICES_LEFT:
                     active = []
                     for unit in units:
@@ -6497,13 +6501,13 @@ class Systemctl:
                         if self.is_active_from(conf):
                             active.append(unit)
                     if not active:
-                        logg.info("no more services - exit init-loop")
+                        logg.info("[init] no more services - exit init-loop")
                         break
                     elif NEVER:
-                        logg.debug("active services - %s", " and ".join(active))
+                        logg.debug("[init] active services - %s", " and ".join(active))
                 if self.exit_mode & EXIT_NO_PROCS_LEFT:
                     if not running:
-                        logg.info("no more procs - exit init-loop")
+                        logg.info("[init] no more procs - exit init-loop")
                         break
                 if RESTART_FAILED_UNITS:
                     self.restart_failed_units(units)
@@ -6511,16 +6515,16 @@ class Systemctl:
             except KeyboardInterrupt as e:
                 if e.args and e.args[0] == "SIGQUIT":
                     # the original systemd puts a coredump on that signal.
-                    logg.info("SIGQUIT - enabling no more procs check")
+                    logg.info("[init] SIGQUIT - enabling no more procs check")
                     self.exit_mode |= EXIT_NO_PROCS_LEFT
                     continue
                 signal.signal(signal.SIGTERM, signal.SIG_DFL)
                 signal.signal(signal.SIGINT, signal.SIG_DFL)
-                logg.info("interrupted - exit init-loop")
+                logg.info("[init] interrupted - exit init-loop")
                 result = str(e) or "STOPPED"
                 break
             except Exception as e:
-                logg.info("interrupted - exception %s", e)
+                logg.info("[init] interrupted - exception %s", e)
                 raise
         self.sysinit_status(ActiveState = None, SubState = "degraded")
         try: self.loop_lock.release()
@@ -6530,13 +6534,13 @@ class Systemctl:
         self.read_log_files(units)
         self.read_log_files(units)
         self.stop_log_files(units)
-        logg.debug("done - init loop")
+        logg.debug("[init-loop] done")
         return result
     def reap_zombies_target(self) -> str:
         """ reap-zombies -- check to reap children (internal) """
         running = self.reap_zombies()
         return F"remaining {running} process"  # with strip-python3 0.1.1092
-    def reap_zombies(self) -> int:
+    def reap_zombies(self, loop: str = "loop") -> int:
         """ check to reap children """
         selfpid = os.getpid()
         running = 0
@@ -6561,10 +6565,10 @@ class Systemctl:
                     logg.warning("%s : %s", proc_status, e)
                     continue
                 if zombie and ppid == os.getpid():
-                    logg.info("reap zombie %s", pid)
+                    logg.info("[%s] reap zombie %s", loop, pid)
                     try: os.waitpid(pid, os.WNOHANG)
                     except OSError as e:
-                        logg.warning("reap zombie %s: %s", pid, e.strerror)
+                        logg.warning("[%s] reap zombie %s: %s", loop, pid, e.strerror)
             if os.path.isfile(proc_status):
                 if pid > 1:
                     running += 1
@@ -7095,7 +7099,7 @@ def main() -> int:
     _o.add_option("-6", "--ipv6", action="store_true", default=FORCE_IPV6,
                   help="..only keep ipv6 localhost in /etc/hosts")
     _o.add_option("-0", "--exit", action="count", default=0,
-                  help="..exit init-process when no services left")
+                  help="..exit init-process when no procs left (or -00 no services (start --now))")
     _o.add_option("-1", "--init", action="count", default=0,
                   help="..keep running as init-process (default if PID 1)")
     opt, args = _o.parse_args()

@@ -13951,7 +13951,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             new_stderr = os.open(log_stderr, os.O_WRONLY |os.O_CREAT |os.O_TRUNC)
             os.dup2(new_stdout, 1)
             os.dup2(new_stderr, 2)
-            systemctl_cmd = [_systemctl_py, "--root="+root, "-11", "--exit", "default", "-vv"]
+            systemctl_cmd = [_systemctl_py, "--root="+root, "-11", "--now", "default", "-vv"]
             env = os.environ.copy()
             os.execve(_systemctl_py, systemctl_cmd, env)
         time.sleep(2)
@@ -13971,8 +13971,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "^active"))
         self.assertFalse(greps(out, "inactive"))
         self.assertFalse(greps(out, "failed"))
-        for check in range(9):
-            time.sleep(3)
+        for check in range(20):
+            time.sleep(2)
             top = _recent(output(_top_list))
             logg.info("[%s] checking for testsleep procs: \n>>>\n%s",
                       check, greps(top, testsleep))
@@ -13983,6 +13983,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         self.assertFalse(greps(top, testsleep))
+        ###
+        txt_stdout = lines(open(log_stdout))
+        txt_stderr = lines(open(log_stderr))
+        logg.info("-- %s>\n\t%s", log_stdout, "\n\t".join(txt_stdout))
+        logg.info("-- %s>\n\t%s", log_stderr, "\n\t".join(txt_stderr))
+        ###
         cmd = F"{systemctl} is-active zzb.service zzc.service -vv"
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
@@ -14076,7 +14082,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             new_stderr = os.open(log_stderr, os.O_WRONLY |os.O_CREAT |os.O_TRUNC)
             os.dup2(new_stdout, 1)
             os.dup2(new_stderr, 2)
-            systemctl_cmd = [_systemctl_py, "--root="+root, "start", "-11", "--exit", "zzb.service", "zzc.service", "-vv"]
+            systemctl_cmd = [_systemctl_py, "--root="+root, "start", "-11", "--now", "zzb.service", "zzc.service", "-vv"]
             env = os.environ.copy()
             os.execve(_systemctl_py, systemctl_cmd, env)
         time.sleep(3)
@@ -14096,8 +14102,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "^active"))
         self.assertFalse(greps(out, "inactive"))
         self.assertFalse(greps(out, "failed"))
-        for check in range(9):
-            time.sleep(3)
+        for check in range(20):
+            time.sleep(2)
             top = _recent(output(_top_list))
             logg.info("[%s] checking for testsleep procs: \n>>>\n%s",
                       check, greps(top, testsleep))
