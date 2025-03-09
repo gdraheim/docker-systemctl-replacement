@@ -151,7 +151,7 @@ check: check2025
 1/test_%:
 	$(MAKE) tmp_systemctl_py_2
 	docker rm -f testpython2
-	docker run -d --name=testpython2 testpython2 sleep 999
+	docker run -d --name=testpython2 testpython2 sleep 9999
 	docker exec testpython2 mkdir -p $(PWD)/tmp
 	docker cp testsuite.py testpython2:/
 	docker cp reply.py testpython2:/
@@ -160,6 +160,7 @@ check: check2025
 	docker exec testpython2 /testsuite.py -vv $(notdir $@) --sometime=666 \
 	  '--with=/$(PWD)/tmp/systemctl.py' --python=/usr/bin/python2 $(COVERAGE1) $V
 	- test -z "$(COVERAGE1)" || docker cp testpython2:/.coverage .coverage.cov1
+	docker rm -f testpython2
 2/test_%:
 	$(MAKE) tmp_systemctl_py_2
 	./testsuite.py -vv $(notdir $@) --sometime=666 \
