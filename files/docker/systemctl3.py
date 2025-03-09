@@ -7145,7 +7145,7 @@ def main() -> int:
             if old is False or old is True:
                 logg.debug("yes %s=%s", nam, val)
                 globals()[nam] = (val in ("true", "True", "TRUE", "yes", "y", "Y", "YES", "1"))
-                logg.debug("... SHOW_ALL=%s", SHOW_ALL)
+                logg.debug("... DO_FULL=%s", DO_FULL)
             elif isinstance(old, float):
                 logg.debug("num %s=%s", nam, val)
                 globals()[nam] = float(val)

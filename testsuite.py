@@ -1150,12 +1150,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart=/bin/sleep 3
         """)
         #
-        cmd = F"{systemctl} daemon-reload -c SHOW_ALL=True -vvv"
+        cmd = F"{systemctl} daemon-reload -c DO_FULL=True -vvv"
         out, err, end = output3(cmd)
         logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
         self.assertEqual(lines(out), [])
         self.assertEqual(end, 0)
-        self.assertEqual(len(greps(err, "SHOW_ALL=True")), 2)
+        self.assertEqual(len(greps(err, "DO_FULL=True")), 2)
         self.rm_testdir()
         self.rm_zzfiles(root)
         self.coverage()
