@@ -94,8 +94,8 @@ FORCE_IPV6 = False
 INIT_MODE = 0
 INIT_LOOP = 1
 EXIT_MODE = 0
-EXIT_NO_SERVICES_LEFT = 1
-EXIT_NO_PROCS_LEFT = 2
+EXIT_NO_PROCS_LEFT = 1
+EXIT_NO_SERVICES_LEFT = 2
 
 # common default paths
 SYSD_SYSTEM_FOLDERS = [
@@ -3603,18 +3603,24 @@ class Systemctl:
             logg.warning("no --init mode")
         if init and not self.exit_mode:
             if self._do_now:
-                self.exit_mode |= EXIT_NO_PROCS_LEFT
-            if self._show_all:
                 self.exit_mode |= EXIT_NO_SERVICES_LEFT
+            if self._show_all:
+                self.exit_mode |= EXIT_NO_PROCS_LEFT
         if not modules and init:
-            reached = "stop"
-            if self.exit_mode & EXIT_NO_PROCS_LEFT:
-                reached = "no procs left"
-            if self.exit_mode & EXIT_NO_SERVICES_LEFT:
-                reached = "no services left"
-            logg.info(" [start] init loop until %s", reached)
-            result = self.init_loop_until_stop([])
-            return not not result  # pylint: disable=unnecessary-negation
+            target = "start"
+            if self.exit_mode:
+                # a plain init loop would return as nothing is running
+                logg.info(" [%s] default system", target)
+                return self.default_system()
+            else:
+                reached = "stop"
+                if self.exit_mode & EXIT_NO_PROCS_LEFT:
+                    reached = "no procs left!"
+                if self.exit_mode & EXIT_NO_SERVICES_LEFT:
+                    reached = "no services left!"
+                logg.info(" [%s] init loop until %s", target, reached)
+                result = self.init_loop_until_stop([]) 
+                return not not result  # pylint: disable=unnecessary-negation
         missing: List[str] = []
         units: List[str] = []
         for module in modules:
@@ -3635,8 +3641,16 @@ class Systemctl:
             stop the named units afterwards """
         self.wait_system()
         if init:
-            self._default_services["systemctl-start.target"] = units
-            self.start_target_system("systemctl-start.target", init = init)
+            target = "systemctl-start.target"
+            reached = "stop"
+            if self.exit_mode & EXIT_NO_PROCS_LEFT:
+                reached = "no procs left"
+            if self.exit_mode & EXIT_NO_SERVICES_LEFT:
+                reached = "no services left"
+            logg.info(" [%s] init loop until %s", target, reached)
+            self._default_services[target] = units
+            stopped = self.start_target_system(target, init = init)
+            logg.info(" [%s] stopped %s", target, stopped)
             return True
         done = True
         started_units = []
@@ -6476,15 +6490,17 @@ class Systemctl:
                 if DEBUG_INITLOOP: # pragma: no cover
                     logg.debug("reap zombies - init-loop found %s running procs", running)
                 if self.exit_mode & EXIT_NO_SERVICES_LEFT:
-                    active = False
+                    active = []
                     for unit in units:
                         conf = self.units.load_conf(unit)
                         if not conf: continue
                         if self.is_active_from(conf):
-                            active = True
+                            active.append(unit)
                     if not active:
                         logg.info("no more services - exit init-loop")
                         break
+                    elif NEVER:
+                        logg.debug("active services - %s", " and ".join(active))
                 if self.exit_mode & EXIT_NO_PROCS_LEFT:
                     if not running:
                         logg.info("no more procs - exit init-loop")
@@ -6495,8 +6511,8 @@ class Systemctl:
             except KeyboardInterrupt as e:
                 if e.args and e.args[0] == "SIGQUIT":
                     # the original systemd puts a coredump on that signal.
-                    logg.info("SIGQUIT - switch to no more procs check")
-                    self.exit_mode = EXIT_NO_PROCS_LEFT
+                    logg.info("SIGQUIT - enabling no more procs check")
+                    self.exit_mode |= EXIT_NO_PROCS_LEFT
                     continue
                 signal.signal(signal.SIGTERM, signal.SIG_DFL)
                 signal.signal(signal.SIGINT, signal.SIG_DFL)

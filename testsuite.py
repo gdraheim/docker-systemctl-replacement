@@ -38179,17 +38179,21 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out2 = output(cmd)
         logg.info("\n>\n%s", out2)
         #
+        # sh____(F"{docker} exec {testname} touch /var/log/systemctl.debug.log")
         cmd = F"{docker} commit -c 'CMD [\"/usr/bin/systemctl\",\"{cov_option}\"]'  {testname} {images}:{testname}"
         sh____(cmd)
         cmd = F"{docker} rm --force {testname}"
         sx____(cmd)
         cmd = F"{docker} run --detach --name {testname} {images}:{testname}"
         sh____(cmd)
-        time.sleep(3)
-        #
-        cmd = F"{docker} exec {testname} ps -eo pid,ppid,user,args"
-        top = output(cmd)
-        logg.info("\n>>>\n%s", top)
+        for attempt in range(3):
+            cmd = F"{docker} exec {testname} ps -eo pid,ppid,user,args"
+            top = output(cmd)
+            logg.info("\n>>>\n%s", top)
+            if greps(top, "testsleep"):
+                break
+            time.sleep(1)
+        # sh____(F"{docker} exec {testname} cat /var/log/systemctl.debug.log")
         self.assertTrue(greps(top, "testsleep 99"))
         self.assertTrue(greps(top, "testsleep 111"))
         #
@@ -38286,6 +38290,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # sh____(cmd)
         out2 = output(cmd)
         logg.info("\n>\n%s", out2)
+        sh____(F"{docker} exec {testname} touch /var/log/systemctl.debug.log")
         # .........................................vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
         cmd = F"{docker} commit -c 'CMD [\"/usr/bin/systemctl\",\"start\",\"--now\",\"zzc.service\",\"{cov_option}\"]'  {testname} {images}:{testname}"
         sh____(cmd)
@@ -38293,9 +38298,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd)
         cmd = F"{docker} run --detach --name {testname} {images}:{testname}"
         sh____(cmd)
-        time.sleep(3)
-        #
-        #
+        for attempt in range(3):
+            cmd = F"{docker} exec {testname} ps -eo pid,ppid,user,args"
+            top = output(cmd)
+            logg.info("\n>>>\n%s", top)
+            if greps(top, "testsleep"):
+                break
+            time.sleep(1)
+        sh____(F"{docker} exec {testname} cat /var/log/systemctl.debug.log")
         cmd = F"{docker} exec {testname} ps -eo pid,ppid,user,args"
         top = output(cmd)
         logg.info("\n>>>\n%s", top)
@@ -38374,8 +38384,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.prep_coverage(image, testname, cov_option)
         cmd = F"{docker} exec {testname} systemctl --version"
         sh____(cmd)
-        cmd = F"{docker} exec {testname} touch /var/log/systemctl.debug.log"
-        sh____(cmd)
         #
         cmd = F"{docker} exec {testname} mkdir -p /etc/systemd/system"
         sx____(cmd)
@@ -38389,21 +38397,21 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd)
         cmd = F"{docker} exec {testname} systemctl default-services -v"
         sh____(cmd)
-        cmd = F"{docker} exec {testname} touch /var/log/systemctl.debug.log {testdir}/systemctl.debug.log"
-        # sh____(cmd)
-        out2 = output(cmd)
-        logg.info("\n>\n%s", out2)
+        sh____(F"{docker} exec {testname} touch /var/log/systemctl.debug.log")
         cmd = F"{docker} commit -c 'CMD [\"/usr/bin/systemctl\",\"start\",\"--exit\",\"{cov_option}\"]'  {testname} {images}:{testname}"
         sh____(cmd)
         cmd = F"{docker} rm --force {testname}"
         sx____(cmd)
         cmd = F"{docker} run --detach --name {testname} {images}:{testname}"
         sh____(cmd)
-        time.sleep(2)
-        #
-        cmd = F"{docker} exec {testname} ps -eo pid,ppid,user,args"
-        top = output(cmd)
-        logg.info("\n>>>\n%s", top)
+        for attempt in range(3):
+            cmd = F"{docker} exec {testname} ps -eo pid,ppid,user,args"
+            top = output(cmd)
+            logg.info("\n>>>\n%s", top)
+            if greps(top, "testsleep"):
+                break
+            time.sleep(1)
+        sh____(F"{docker} exec {testname} cat /var/log/systemctl.debug.log")
         self.assertTrue(greps(top, "testsleep 111"))
         #
         # vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv status check now
@@ -38519,8 +38527,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd)
         cmd = F"{docker} exec {testname} systemctl --version"
         sh____(cmd)
-        cmd = F"{docker} exec {testname} touch /var/log/systemctl.debug.log"
-        sh____(cmd)
         #
         cmd = F"{docker} exec {testname} mkdir -p /etc/systemd/system"
         sx____(cmd)
@@ -38536,17 +38542,21 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # sh____(cmd)
         out2 = output(cmd)
         logg.info("\n>\n%s", out2)
+        sh____(F"{docker} exec {testname} touch /var/log/systemctl.debug.log")
         cmd = F"{docker} commit -c 'CMD [\"/usr/bin/systemctl\",\"start\",\"--all\",\"{cov_option}\"]'  {testname} {images}:{testname}"
         sh____(cmd)
         cmd = F"{docker} rm --force {testname}"
         sx____(cmd)
         cmd = F"{docker} run --detach --name {testname} {images}:{testname}"
         sh____(cmd)
-        time.sleep(2)
-        #
-        cmd = F"{docker} exec {testname} ps -eo pid,ppid,user,args"
-        top = output(cmd)
-        logg.info("\n>>>\n%s", top)
+        for attempt in range(3):
+            cmd = F"{docker} exec {testname} ps -eo pid,ppid,user,args"
+            top = output(cmd)
+            logg.info("\n>>>\n%s", top)
+            if greps(top, "testsleep"):
+                break
+            time.sleep(1)
+        sh____(F"{docker} exec {testname} cat /var/log/systemctl.debug.log")
         self.assertTrue(greps(top, "testsleep 111"))
         #
         cmd = F"{docker} inspect {testname}"
@@ -38665,8 +38675,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.prep_coverage(image, testname, cov_option)
         cmd = F"{docker} exec {testname} systemctl --version"
         sh____(cmd)
-        cmd = F"{docker} exec {testname} touch /var/log/systemctl.debug.log"
-        sh____(cmd)
         #
         cmd = F"{docker} exec {testname} mkdir -p /etc/systemd/system"
         sx____(cmd)
@@ -38684,17 +38692,21 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # sh____(cmd)
         out2 = output(cmd)
         logg.info("\n>\n%s", out2)
+        sh____(F"{docker} exec {testname} touch /var/log/systemctl.debug.log")
         cmd = F"{docker} commit -c 'CMD [\"/usr/bin/systemctl\",\"start\",\"--now\",\"zzc.service\",\"{cov_option}\"]'  {testname} {images}:{testname}"
         sh____(cmd)
         cmd = F"{docker} rm --force {testname}"
         sx____(cmd)
         cmd = F"{docker} run --detach --name {testname} {images}:{testname}"
         sh____(cmd)
-        time.sleep(2)
-        #
-        cmd = F"{docker} exec {testname} ps -eo pid,ppid,user,args"
-        top = output(cmd)
-        logg.info("\n>>>\n%s", top)
+        for attempt in range(3):
+            cmd = F"{docker} exec {testname} ps -eo pid,ppid,user,args"
+            top = output(cmd)
+            logg.info("\n>>>\n%s", top)
+            if greps(top, "testsleep"):
+                break
+            time.sleep(1)
+        sh____(F"{docker} exec {testname} cat /var/log/systemctl.debug.log")
         self.assertTrue(greps(top, "testsleep 111"))
         #
         # vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv status check now
@@ -38803,8 +38815,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.prep_coverage(image, testname, cov_option)
         cmd = F"{docker} exec {testname} systemctl --version"
         sh____(cmd)
-        cmd = F"{docker} exec {testname} touch /var/log/systemctl.debug.log"
-        sh____(cmd)
         #
         cmd = F"{docker} exec {testname} mkdir -p /etc/systemd/system"
         sx____(cmd)
@@ -38820,17 +38830,21 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # sh____(cmd)
         out2 = output(cmd)
         logg.info("\n>\n%s", out2)
+        sh____(F"{docker} exec {testname} touch /var/log/systemctl.debug.log")
         cmd = F"{docker} commit -c 'CMD [\"/usr/bin/systemctl\",\"start\",\"--now\",\"zzc.service\",\"{cov_option}\"]'  {testname} {images}:{testname}"
         sh____(cmd)
         cmd = F"{docker} rm --force {testname}"
         sx____(cmd)
         cmd = F"{docker} run --detach --name {testname} {images}:{testname}"
         sh____(cmd)
-        time.sleep(2)
-        #
-        cmd = F"{docker} exec {testname} ps -eo pid,ppid,user,args"
-        top = output(cmd)
-        logg.info("\n>>>\n%s", top)
+        for attempt in range(3):
+            cmd = F"{docker} exec {testname} ps -eo pid,ppid,user,args"
+            top = output(cmd)
+            logg.info("\n>>>\n%s", top)
+            if greps(top, "testsleep"):
+                break
+            time.sleep(1)
+        sh____(F"{docker} exec {testname} cat /var/log/systemctl.debug.log")
         self.assertTrue(greps(top, "testsleep 111"))
         #
         cmd = F"{docker} inspect {testname}"
@@ -39101,6 +39115,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # sh____(cmd)
         out2 = output(cmd)
         logg.info("\n>\n%s", out2)
+        # sh____(F"{docker} exec {testname} touch /var/log/systemctl.debug.log")
         # .........................................vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
         cmd = F"{docker} commit -c 'CMD [\"/usr/bin/systemctl\",\"{cov_option}\"]'  {testname} {images}:{testname}"
         sh____(cmd)
@@ -39370,6 +39385,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out2 = output(cmd)
         logg.info("\n>\n%s", out2)
         #
+        # sh____(F"{docker} exec {testname} touch /var/log/systemctl.debug.log")
         cmd = F"{docker} commit -c 'CMD [\"/usr/bin/systemctl\",\"{cov_option}\"]'  {testname} {images}:{testname}"
         sh____(cmd)
         cmd = F"{docker} rm --force {testname}"
