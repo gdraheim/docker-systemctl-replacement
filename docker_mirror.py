@@ -4,7 +4,7 @@
 __copyright__ = "(C) 2025 Guido Draheim"
 __contact__ = "https://github.com/gdraheim/docker-mirror-packages-repo"
 __license__ = "CC0 Creative Commons Zero (Public Domain)"
-__version__ = "1.7.7034"
+__version__ = "1.7.7101"
 
 from collections import OrderedDict, namedtuple
 import os.path
@@ -28,6 +28,7 @@ else:
 logg = logging.getLogger("mirror")
 IMAGESREPO = "localhost:5000/mirror-packages"
 DOCKER = "docker"
+NODETECT = False
 ADDHOSTS = False
 ADDEPEL = False
 UPDATES = False
@@ -272,6 +273,8 @@ class DockerMirrorPackagesRepo:
         return self.detect_etc_image(tempdir)
     def get_docker_latest_image(self, image):
         """ converts a shorthand version into the version string used on an image name. """
+        if not image:
+            return ""
         if image.startswith("centos:"):
             return self.get_centos_latest(image)
         if image.startswith("almalinux:"):
@@ -285,6 +288,8 @@ class DockerMirrorPackagesRepo:
         return ""
     def get_docker_latest_version(self, image):
         """ converts a shorthand version into the version string used on an image name. """
+        if not image:
+            return ""
         if image.startswith("centos:"):
             version = image[len("centos:"):]
             return self.get_centos_latest_version(version)
@@ -306,6 +311,8 @@ class DockerMirrorPackagesRepo:
             Effectivly when it is required to 'docker start centos:x.y' then do
             'docker start centos-repo:x.y' before and extend the original to 
             'docker start --add-host mirror...:centos-repo centos:x.y'. """
+        if not image:
+            return None
         if image.startswith("centos:"):
             return self.get_centos_docker_mirror(image)
         if image.startswith("almalinux:"):
@@ -324,6 +331,8 @@ class DockerMirrorPackagesRepo:
             'docker start --add-host mirror...:centos-repo centos:x.y'. """
         logg.info("mirrors for %s", image)
         mirrors = []
+        if not image:
+            return mirrors
         config = configparser.ConfigParser()
         configfile = os.path.expanduser(DOCKER_MIRROR_CONFIG)
         if os.path.exists(configfile):
@@ -804,7 +813,8 @@ class DockerMirrorPackagesRepo:
                                   "hosts": mirror.hosts}
         return json.dumps(data, indent=2)
     def starts(self, image=None):
-        image = self.detect(image)
+        if not NODETECT:
+            image = self.detect(image)
         logg.debug("starts image = %s", image)
         mirrors = self.start_containers(image)
         if LOCAL:
@@ -818,7 +828,8 @@ class DockerMirrorPackagesRepo:
         else:
             return json.dumps(mirrors, indent=2)
     def stops(self, image=None):
-        image = self.detect(image)
+        if not NODETECT:
+            image = self.detect(image)
         mirrors = self.stop_containers(image)
         if ADDHOSTS:
             names = sorted(mirrors.keys())
@@ -915,6 +926,8 @@ if __name__ == "__main__":
     cmdline.add_argument("-v", "--verbose", action="count", default=0, help="more logging")
     cmdline.add_argument("-a", "--add-hosts", "--add-host", action="store_true", default=ADDHOSTS,
                          help="show addhost options for 'docker run' [%(default)s]")
+    cmdline.add_argument("-n", "--no-detect", '--nodetect', action="store_true", default=NODETECT,
+                         help="skip implicit 'detect' during 'start' [%(default)s]")
     cmdline.add_argument("-D", "--docker", metavar="EXE", default=DOCKER,
                          help="use other docker exe or podman [%(default)s]")
     cmdline.add_argument("--imagesrepo", metavar="PREFIX", default=IMAGESREPO,
@@ -938,6 +951,7 @@ if __name__ == "__main__":
     logging.basicConfig(level=max(0, logging.WARNING - opt.verbose * 10))
     DOCKER = opt.docker
     IMAGESREPO = opt.imagesrepo
+    NODETECT = opt.no_detect
     ADDHOSTS = opt.add_hosts
     ADDEPEL = opt.epel  # centos epel-repo
     # UPDATES = opt.updates

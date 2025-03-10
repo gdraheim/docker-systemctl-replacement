@@ -16,6 +16,7 @@ TWINE = twine
 TWINE39 = twine-3.11
 GIT=git
 VERFILES = files/docker/systemctl3.py testsuite.py pyproject.toml
+CONTAINER = docker-systemctl-
 
 verfiles:
 	@ grep -l __version__ */*.??* */*/*.??* | { while read f; do echo $$f; done; } 
@@ -148,19 +149,34 @@ check: check2025
 25 check2025: ; ./testsuite.py -vv --opensuse=15.6 --ubuntu=ubuntu:24.04 --centos=almalinux:9.4
 
 # native operating system does not have python2 anymore
-1/test_%:
+27/test_%:
 	$(MAKE) tmp_systemctl_py_2
-	docker rm -f testpython2
-	docker run -d --name=testpython2 testpython2 sleep 9999
-	docker exec testpython2 mkdir -p $(PWD)/tmp
-	docker cp testsuite.py testpython2:/
-	docker cp reply.py testpython2:/
-	docker cp tmp/systemctl.py testpython2:/$(PWD)/tmp/
-	docker exec testpython2 chmod +x /$(PWD)/tmp/systemctl.py
-	docker exec testpython2 /testsuite.py -vv $(notdir $@) --sometime=666 \
+	docker rm -f $(CONTAINER)$(notdir $@)
+	docker run -d --name=$(CONTAINER)$(notdir $@) python$(dir $@)test sleep 9999
+	docker exec $(CONTAINER)$(notdir $@) mkdir -p $(PWD)/tmp
+	docker cp testsuite.py $(CONTAINER)$(notdir $@):/
+	docker cp reply.py $(CONTAINER)$(notdir $@):/
+	docker cp tmp/systemctl.py $(CONTAINER)$(notdir $@):/$(PWD)/tmp/
+	docker exec $(CONTAINER)$(notdir $@) chmod +x /$(PWD)/tmp/systemctl.py
+	docker exec $(CONTAINER)$(notdir $@) /testsuite.py -vv $(notdir $@) --sometime=666 \
 	  '--with=/$(PWD)/tmp/systemctl.py' --python=/usr/bin/python2 $(COVERAGE1) $V
-	- test -z "$(COVERAGE1)" || docker cp testpython2:/.coverage .coverage.cov1
-	docker rm -f testpython2
+	- test -z "$(COVERAGE1)" || docker cp $(CONTAINER)$(notdir $@):/.coverage .coverage.cov1
+	docker rm -f $(CONTAINER)$(notdir $@)
+36/test_%:
+	$(MAKE) tmp_systemctl_py_3
+	docker rm -f $(CONTAINER)$(notdir $@)
+	docker run -d --name=$(CONTAINER)$(notdir $@) python$(dir $@)test sleep 9999
+	docker exec $(CONTAINER)$(notdir $@) mkdir -p $(PWD)/tmp
+	docker cp testsuite.py $(CONTAINER)$(notdir $@):/
+	docker cp reply.py $(CONTAINER)$(notdir $@):/
+	docker cp tmp/systemctl.py $(CONTAINER)$(notdir $@):/$(PWD)/tmp/
+	docker exec $(CONTAINER)$(notdir $@) chmod +x /$(PWD)/tmp/systemctl.py
+	docker exec $(CONTAINER)$(notdir $@) /testsuite.py -vv $(notdir $@) --sometime=666 \
+	  '--with=/$(PWD)/tmp/systemctl.py' --python=/usr/bin/python3 $(COVERAGE1) $V
+	- test -z "$(COVERAGE1)" || docker cp $(CONTAINER)$(notdir $@):/.coverage .coverage.cov1
+	docker rm -f $(CONTAINER)$(notdir $@)
+
+
 2/test_%:
 	$(MAKE) tmp_systemctl_py_2
 	./testsuite.py -vv $(notdir $@) --sometime=666 \
@@ -191,10 +207,15 @@ check3:
 checks: checks.0 checks.3 checks.4
 checks.0:
 	- rm .coverage* 
-checks.1:
-	: python2 needs to be executed in a container
-	$(MAKE) checks1_coverage
-	for i in .coverage*; do mv $$i $$i.cov1; done
+checks.27:
+	: old python2 needs to be executed in a container
+	$(MAKE) checks27_coverage
+	for i in .coverage*; do mv $$i $$i.cov27; done
+checks.36:
+	: old python3 needs to be executed in a container
+	$(MAKE) checks36_coverage
+	for i in .coverage*; do mv $$i $$i.cov36; done
+
 checks.2:
 	: python2 can not be checked locally anymore
 	$(MAKE) checks2_coverage
@@ -207,12 +228,19 @@ checks.4:
 	ls -l tmp/systemctl.py,cover
 	@ echo ".... are you ready for 'make checkall' ?"
 
-checks1:  
-	rm .coverage* ; $(MAKE) checks1_coverage
-checks1_coverage:
+checks27:  
+	rm .coverage* ; $(MAKE) checks27_coverage
+checks27_coverage:
 	$(MAKE) tmp_systemctl_py_2
-	: $(MAKE) "1/test_[12345]" COVERAGE1=--coverage
-	$(MAKE) "1/test_[12345]" 
+	: $(MAKE) "27/test_[12345]" COVERAGE1=--coverage
+	$(MAKE) "27/test_[12345]" 
+checks36:  
+	rm .coverage* ; $(MAKE) checks27_coverage
+checks36_coverage:
+	$(MAKE) tmp_systemctl_py_2
+	: $(MAKE) "36/test_[12345]" COVERAGE1=--coverage
+	$(MAKE) "36/test_[12345]" 
+
 checks2:  
 	rm .coverage* ; $(MAKE) checks2_coverage
 checks2_coverage:
@@ -283,6 +311,7 @@ clean:
 copy:
 	cp -v ../docker-mirror-packages-repo/docker_mirror.py .
 	cp -v ../docker-mirror-packages-repo/docker_mirror.pyi .
+	cp -v ../docker-mirror-packages-repo/docker_local_image.py .
 
 dockerfiles:
 	for dockerfile in centos7-lamp-stack.dockerfile opensuse15-lamp-stack.dockerfile \
@@ -295,12 +324,22 @@ dockerfiles:
 	; wc -l test-$$dockerfile \
 	; done
 
-testpython2:
-	: docker pull ubuntu:22.04
-	{ echo "FROM ubuntu:22.04" \
-	; echo "RUN apt-get update && apt-get install -y python2 python3 psmisc && python2 --version" \
-	; } > tmp.$@
-	docker build -f tmp.$@ -t $@ .
+python27: python27/test
+python36: python36/test
+python39: python39/test
+python310: python310/test
+python311: python311/test
+python312: python312/test
+
+python27/test:  ; ./docker_local_image.py FROM ubuntu:22.04 INTO $@ INSTALL "python3 psmisc python2" TEST "python2 --version"
+python36/test:  ; ./docker_local_image.py FROM ubuntu:18.04 INTO $@ INSTALL "python3 psmisc" TEST "python3 --version"
+python310/test: ; ./docker_local_image.py FROM ubuntu:22.04 INTO $@ INSTALL "python3 psmisc" TEST "python3 --version"
+python312/test: ; ./docker_local_image.py FROM ubuntu:24.04 INTO $@ INSTALL "python3 psmisc" TEST "python3 --version"
+
+python27/test:  ; ./docker_local_image.py FROM opensuse/leap:15.6 INTO $@ INSTALL "python3 psmisc python2" TEST "python2 --version"
+python36/test:  ; ./docker_local_image.py FROM opensuse/leap:15.6 INTO $@ INSTALL "python3 psmisc" TEST "python3 --version"
+python39/test:  ; ./docker_local_image.py FROM opensuse/leap:15.5 INTO $@ INSTALL "python39 psmisc" SYMLINK /usr/bin/python3.9:python3 TEST "python3 --version" -vv
+python311/test: ; ./docker_local_image.py FROM opensuse/leap:15.6 INTO $@ INSTALL "python311 psmisc" SYMLINK /usr/bin/python3.11:python3 TEST "python3 --version"
 
 
 ############## https://pypi.org/...
