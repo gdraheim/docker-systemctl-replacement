@@ -310,11 +310,11 @@ def unit_of(module: str) -> str:
     if "." not in module:
         return module + ".service"
     return module
-def o22(part: str) -> str:
+def o33(part: str) -> str:
     if isinstance(part, stringtypes):
-        if len(part) <= 22:
+        if len(part) <= 33:
             return part
-        return part[:5] + "..." + part[-14:]
+        return part[:5] + "..." + part[-24:]
     return part # pragma: no cover (is always str)
 def o44(part: str) -> str:
     if isinstance(part, stringtypes):
@@ -2919,6 +2919,8 @@ class Systemctl:
     def get_boottime_from_old_proc(self) -> float:
         booted = time.time()
         for pid in os.listdir(_proc_pid_dir):
+            if not pid or not pid[0].isdigit():
+                continue
             proc = _proc_pid_stat.format(pid = pid)
             try:
                 if os.path.exists(proc):
@@ -2990,11 +2992,11 @@ class Systemctl:
         boottime = self.get_boottime()
         if filetime >= boottime:
             if DEBUG_BOOTTIME:
-                logg.debug("  file time: %s (%s)", datetime.datetime.fromtimestamp(filetime), o22(filename))
+                logg.debug("  file time: %s (%s)", datetime.datetime.fromtimestamp(filetime), o33(filename))
                 logg.debug("  boot time: %s (%s)", datetime.datetime.fromtimestamp(boottime), "status modified later")
             return False # OK
         if DEBUG_BOOTTIME:
-            logg.info("  file time: %s (%s)", datetime.datetime.fromtimestamp(filetime), o22(filename))
+            logg.info("  file time: %s (%s)", datetime.datetime.fromtimestamp(filetime), o33(filename))
             logg.info("  boot time: %s (%s)", datetime.datetime.fromtimestamp(boottime), "status TRUNCATED NOW")
         try:
             shutil_truncate(filename)
@@ -3503,7 +3505,7 @@ class Systemctl:
             socketfile = os.path.join(notify_folder, notify_name77)
             if len(socketfile) > 100:
                 socketfile = os.path.join(notify_folder, notify_name44)
-            pref = "zz.%i.%s" % (get_USER_ID(), o22(os.path.basename(notify_socket_folder)))
+            pref = "zz.%i.%s" % (get_USER_ID(), o33(os.path.basename(notify_socket_folder)))
             if len(socketfile) > 100:
                 socketfile = os.path.join(get_TMP(), pref, notify_name)
             if len(socketfile) > 100:
