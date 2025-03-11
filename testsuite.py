@@ -277,6 +277,8 @@ def lines4(textlines: Union[str, List[str], Iterator[str], TextIO]) -> List[str]
     for line in _lines4(textlines):
         linelist.append(line.rstrip())
     return linelist
+def sorted4(textlines: Union[str, List[str], Iterator[str], TextIO]) -> List[str]:
+    return list(sorted(_lines4(textlines)))
 def each_grep(pattern: str, textlines: Union[str, List[str], TextIO]) -> Iterator[str]:
     for line in _lines4(textlines):
         if re.search(pattern, line.rstrip()):
@@ -27565,11 +27567,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} default-services | sort"
         out = output(cmd)
         logg.info("\n>\n%s", out)
-        self.assertEqual(out.strip(), "zza.service\nzzb.service")
+        self.assertEqual(sorted4(out), ["zza.service","zzb.service"])
         cmd = F"{systemctl} default-services zzxx.target | sort"
         out = output(cmd)
         logg.info("\n>\n%s", out)
-        self.assertEqual(out.strip(), "zza.service\nzz@rsa.service")
+        self.assertEqual(sorted4(out), ["zz@rsa.service","zza.service"])
         #
         cmd = F"{systemctl} is-active zzxx.target"
         out = output(cmd)
