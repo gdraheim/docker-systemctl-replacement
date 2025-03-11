@@ -2844,23 +2844,23 @@ class Systemctl:
                 for key in sorted(conf.status):
                     value = conf.status[key]
                     if key == "MainPID" and str(value) == "0":
-                        logg.warning("ignore writing MainPID=0")
+                        logg.warning("[status] ignore writing MainPID=0")
                         continue
                     content = F"{key}={value}\n"
-                    logg.debug("writing to %s |%s", status_file, content.strip().replace("\n","|"))
+                    logg.debug("[status] writing to %s |%s", status_file, content.strip().replace("\n","|"))
                     f.write(content)
         except IOError as e:
-            logg.error("writing to %s >> %s << STATUS %s", status_file, e, status)
+            logg.error("[status] writing to %s >> %s << STATUS %s", status_file, e, status)
         return True
     def read_status_from(self, conf: SystemctlConf) -> Dict[str, str]:
         status_file = self.status_file(conf)
         status: Dict[str, str] = {}
         # if not status_file: return status
         if not os.path.isfile(status_file):
-            if DEBUG_STATUS: logg.debug("no status file: %s\n returning %s", status_file, status)
+            if DEBUG_STATUS: logg.debug("[status] no status file: %s\n returning %s", status_file, status)
             return status
         if self.truncate_old(status_file):
-            if DEBUG_STATUS: logg.debug("old status file: %s\n returning %s", status_file, status)
+            if DEBUG_STATUS: logg.debug("[status] old status file: %s\n returning %s", status_file, status)
             return status
         try:
             if DEBUG_STATUS: logg.debug("reading %s", status_file)
@@ -2873,10 +2873,10 @@ class Systemctl:
                             if key.strip():
                                 status[key.strip()] = value.strip()
                         else:  # pragma: no cover
-                            logg.warning("ignored %s", line.strip())
+                            logg.warning("[status] ignored %s", line.strip())
         except (OSError, ValueError) as e:
-            logg.warning("bad read of status file '%s'", status_file)
-            logg.debug("  bad read of status file >> %s", e)
+            logg.warning("[status] bad read of status file '%s'", status_file)
+            logg.debug("  [status] bad read of status file >> %s", e)
         return status
     def get_status_from(self, conf: SystemctlConf, name: str, default: Optional[str] = None) -> Optional[str]:
         if conf.status is None:
@@ -2961,7 +2961,7 @@ class Systemctl:
         now = time.time()
         started_time = now - (uptime_secs - started_secs)
         if DEBUG_BOOTTIME:
-            logg.debug("  BOOT 1. Proc has been running since: %s", datetime.datetime.fromtimestamp(started_time))
+            logg.debug("  BOOT 1. -> %s (/proc has been running)", datetime.datetime.fromtimestamp(started_time))
 
         # Variant 2:
         system_stat = _proc_sys_stat
@@ -2976,7 +2976,7 @@ class Systemctl:
 
         started_btime = system_btime + started_secs
         if DEBUG_BOOTTIME:
-            logg.debug("  BOOT 2. Proc has been running since: %s", datetime.datetime.fromtimestamp(started_btime))
+            logg.debug("  BOOT 2. -> %s (/proc has been running)", datetime.datetime.fromtimestamp(started_btime))
 
         # return started_time
         return started_btime
@@ -6606,17 +6606,18 @@ class Systemctl:
             state = self.is_system_running()
             if "init" in state:
                 if target in [SYSINIT_TARGET, "basic.target"]:
-                    logg.info("%s system not initialized - wait %s", delayed(attempt), target)
+                    logg.info("[wait] %s system not initialized - wait %s", delayed(attempt), target)
                     time.sleep(1)
                     continue
             if "start" in state or "stop" in state:
                 if target in ["basic.target"]:
-                    logg.info("%s system not running - wait %s", delayed(attempt), target)
+                    logg.info("[wait] %s system not running - wait %s", delayed(attempt), target)
                     time.sleep(1)
                     continue
             if "running" not in state:
-                logg.info("system is %s", state)
+                logg.info("[wait] %s system is %s", delayed(attempt), state)
             break
+        logg.info("[wait] --> system is %s", state)
     def is_running(self, conf: SystemctlConf) -> bool:
         status_file = self.status_file(conf)
         pid_file = self.pid_file(conf)
