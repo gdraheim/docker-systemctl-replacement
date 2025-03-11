@@ -28127,7 +28127,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(out, "")
         self.assertEqual(rc, 1)
         #
-        time.sleep(4)
+        for check in range(5):
+            time.sleep(1)
+            logg.info("[%s] wait for sleepB ------", check)
+            top = _recent(output(_top_list))
+            logg.info("\n>>>\n%s", top)
+            if greps(top, "sleepB"):
+                break
+        logg.info("[!] wait for sleepB ------")
         cmd = F"{systemctl} is-system-running"
         out, err, rc = output3(cmd)
         logg.info("\n>>>(%s)\n%s\n%s", rc, i2(err), out)
@@ -28145,7 +28152,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("trying to send a 'halt'")
         logg.info("kill daemon at %s", init.pid)
         result = self.kill(init.pid)
-        logg.info("kill daemon %s", result)
+        logg.info("kill daemon %s", "DONE" if result else "ERROR")
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         #
@@ -28160,12 +28167,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(rc, 1)
         #
         for attempt in range(10):
+            time.sleep(1)
+            logg.info("[%i] wait for sleepA and sleepB to die -----", attempt)
             top = _recent(output(_top_list))
             logg.info("\n>>>\n%s", top)
             if greps(top, "sleepA") or greps(top, "sleepB"):
-                time.sleep(1)
                 continue
             break
+        logg.info("[!] wait for sleepA and sleepB to die -----")
         # atleast 1sec per ExecStop upon Halt # TODO?
         logg.info("===================== time to stop the subprocesses: %ss", attempt)
         top = _recent(output(_top_list))

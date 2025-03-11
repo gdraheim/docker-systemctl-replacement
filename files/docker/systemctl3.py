@@ -6519,15 +6519,19 @@ class Systemctl:
                     continue
                 signal.signal(signal.SIGTERM, signal.SIG_DFL)
                 signal.signal(signal.SIGINT, signal.SIG_DFL)
-                logg.info("[init] interrupted - exit init-loop")
+                logg.info("[init] interrupted - exit init-loop >> %s", e)
                 result = str(e) or "STOPPED"
                 break
             except Exception as e:
                 logg.info("[init] interrupted >> %s", e)
                 raise
         self.sysinit_status(ActiveState = None, SubState = "degraded")
-        try: self.loop_lock.release()
-        except (OSError, RuntimeError): pass
+        try:
+            self.loop_lock.release() # may be already unlocked here
+        except (OSError, RuntimeError, threading.ThreadError) as e: 
+            logg.debug("[init] loop_lock release %s >> %s", type(e), e)
+        except Exception as e:
+            logg.error("[init] loop_lock release %s >> %s", type(e), e)
         listen.stop()
         listen.join(2)
         self.read_log_files(units)
