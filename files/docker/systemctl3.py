@@ -329,6 +329,8 @@ def o77(part: str) -> str:
         return part[:20] + "..." + part[-54:]
     return part # pragma: no cover (is always str)
 def delayed(attempt: int, suffix: str = ".") -> str:
+    if not attempt:
+        return "..%s" % (suffix)
     if attempt < 10:
         return "%+i%s" % (attempt, suffix)
     return "%i%s" % (attempt, suffix)
@@ -4437,7 +4439,7 @@ class Systemctl:
         elif runs in ["simple", "exec", "notify", "idle"]:
             status_file = self.status_file(conf)
             size = os.path.exists(status_file) and os.path.getsize(status_file)
-            logg.info("STATUS %s %s", status_file, size)
+            logg.debug("STATUS %s (%s bytes)", status_file, size)
             pid = 0
             for cmd in conf.getlist(Service, "ExecStop", []):
                 env["MAINPID"] = nix_str(self.read_mainpid_from(conf))
@@ -4910,7 +4912,7 @@ class Systemctl:
         timeout = self.units.get_TimeoutStopSec(conf)
         status_file = self.status_file(conf)
         size = os.path.exists(status_file) and os.path.getsize(status_file)
-        logg.info("STATUS %s %s", status_file, size)
+        logg.debug("STATUS %s (%s bytes)", status_file, size)
         mainpid = self.read_mainpid_from(conf)
         self.clean_status_from(conf) # clear RemainAfterExit and TimeoutStartSec
         if not mainpid:
@@ -5403,7 +5405,7 @@ class Systemctl:
                 missing.append(unit_of(module))
                 continue
             for unit in matched:
-                logg.info("matched %s", unit)  # ++
+                logg.debug("[enable] matched %s", unit)
                 if unit not in units:
                     units += [unit]
         if missing:
@@ -6606,18 +6608,17 @@ class Systemctl:
             state = self.is_system_running()
             if "init" in state:
                 if target in [SYSINIT_TARGET, "basic.target"]:
-                    logg.info("[wait] %s system not initialized - wait %s", delayed(attempt), target)
+                    logg.info("[%s] %s system not initialized - wait", target, delayed(attempt))
                     time.sleep(1)
                     continue
             if "start" in state or "stop" in state:
                 if target in ["basic.target"]:
-                    logg.info("[wait] %s system not running - wait %s", delayed(attempt), target)
+                    logg.info("[%s] %s system not running - wait", target, delayed(attempt))
                     time.sleep(1)
                     continue
             if "running" not in state:
-                logg.info("[wait] %s system is %s", delayed(attempt), state)
+                logg.info("[%s] %s system is %s -- ready", target, delayed(attempt), state)
             break
-        logg.info("[wait] --> system is %s", state)
     def is_running(self, conf: SystemctlConf) -> bool:
         status_file = self.status_file(conf)
         pid_file = self.pid_file(conf)
