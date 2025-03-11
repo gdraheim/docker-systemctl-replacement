@@ -151,30 +151,30 @@ check: check2025
 # native operating system does not have python2 anymore
 27/test_%:
 	$(MAKE) tmp_systemctl_py_2
-	docker rm -f $(CONTAINER)$(notdir $@)
-	docker run -d --name=$(CONTAINER)$(notdir $@) python$(dir $@)test sleep 9999
-	docker exec $(CONTAINER)$(notdir $@) mkdir -p $(PWD)/tmp
-	docker cp testsuite.py $(CONTAINER)$(notdir $@):/
-	docker cp reply.py $(CONTAINER)$(notdir $@):/
-	docker cp tmp/systemctl.py $(CONTAINER)$(notdir $@):/$(PWD)/tmp/
-	docker exec $(CONTAINER)$(notdir $@) chmod +x /$(PWD)/tmp/systemctl.py
-	docker exec $(CONTAINER)$(notdir $@) /testsuite.py -vv $(notdir $@) --sometime=666 \
+	docker rm -f $(CONTAINER)-python27
+	docker run -d --name=$(CONTAINER)-python27 python$(dir $@)test sleep 9999
+	docker exec $(CONTAINER)-python27 mkdir -p $(PWD)/tmp
+	docker cp testsuite.py $(CONTAINER)-python27:/
+	docker cp reply.py $(CONTAINER)-python27:/
+	docker cp tmp/systemctl.py $(CONTAINER)-python27:/$(PWD)/tmp/
+	docker exec $(CONTAINER)-python27 chmod +x /$(PWD)/tmp/systemctl.py
+	docker exec $(CONTAINER)-python27 /testsuite.py -vv $(notdir $@) --sometime=666 \
 	  '--with=/$(PWD)/tmp/systemctl.py' --python=/usr/bin/python2 $(COVERAGE1) $V
-	- test -z "$(COVERAGE1)" || docker cp $(CONTAINER)$(notdir $@):/.coverage .coverage.cov1
-	docker rm -f $(CONTAINER)$(notdir $@)
+	- test -z "$(COVERAGE1)" || docker cp $(CONTAINER)-python27:/.coverage .coverage.cov1
+	docker rm -f $(CONTAINER)-python27
 36/test_%:
 	$(MAKE) tmp_systemctl_py_3
-	docker rm -f $(CONTAINER)$(notdir $@)
-	docker run -d --name=$(CONTAINER)$(notdir $@) python$(dir $@)test sleep 9999
-	docker exec $(CONTAINER)$(notdir $@) mkdir -p $(PWD)/tmp
-	docker cp testsuite.py $(CONTAINER)$(notdir $@):/
-	docker cp reply.py $(CONTAINER)$(notdir $@):/
-	docker cp tmp/systemctl.py $(CONTAINER)$(notdir $@):/$(PWD)/tmp/
-	docker exec $(CONTAINER)$(notdir $@) chmod +x /$(PWD)/tmp/systemctl.py
-	docker exec $(CONTAINER)$(notdir $@) /testsuite.py -vv $(notdir $@) --sometime=666 \
+	docker rm -f $(CONTAINER)-python36
+	docker run -d --name=$(CONTAINER)-python36 python$(dir $@)test sleep 9999
+	docker exec $(CONTAINER)-python36 mkdir -p $(PWD)/tmp
+	docker cp testsuite.py $(CONTAINER)-python36:/
+	docker cp reply.py $(CONTAINER)-python36:/
+	docker cp tmp/systemctl.py $(CONTAINER)-python36:/$(PWD)/tmp/
+	docker exec $(CONTAINER)-python36 chmod +x /$(PWD)/tmp/systemctl.py
+	docker exec $(CONTAINER)-python36 /testsuite.py -vv $(notdir $@) --sometime=666 \
 	  '--with=/$(PWD)/tmp/systemctl.py' --python=/usr/bin/python3 $(COVERAGE1) $V
-	- test -z "$(COVERAGE1)" || docker cp $(CONTAINER)$(notdir $@):/.coverage .coverage.cov1
-	docker rm -f $(CONTAINER)$(notdir $@)
+	- test -z "$(COVERAGE1)" || docker cp $(CONTAINER)-python36:/.coverage .coverage.cov1
+	docker rm -f $(CONTAINER)-python36
 
 
 2/test_%:
@@ -281,6 +281,7 @@ tmp_systemctl_py_2:
 	@ $(MAKE) tmp/systemctl_2.py
 	@ cp tmp/systemctl_2.py tmp/systemctl.py
 	@ sed -i -e "s:/usr/bin/python3:/usr/bin/python2:" -e "s:/env python3:/env python2:" tmp/systemctl.py
+#	cp -v ../docker-systemctl-replacement-master/files/docker/systemctl.py tmp/systemctl.py
 tmp_systemctl_py_3:
 	@ test -d tmp || mkdir tmp
 	@ cp files/docker/systemctl3.py tmp/systemctl.py
