@@ -7834,15 +7834,18 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         self.rm_zzfiles(root)
+        bindir=os_path(root, F"/bin")
+        testsleep = self.testname("sleep")
+        copy_tool(_bin_sleep, F"{bindir}/{testsleep}")
         #
-        text_file(os_path(root, "/etc/systemd/system/zza.service"), """
+        text_file(os_path(root, "/etc/systemd/system/zza.service"), F"""
             [Unit]
             Description=Testing A""")
-        text_file(os_path(root, "/etc/systemd/system/zzb.service"), """
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
-            ExecStart=/bin/sleep 2
+            ExecStart={bindir}/{testsleep} 2
             [Install]
             WantedBy=multi-user.target""")
         cmd = F"{systemctl} daemon-reload"
@@ -7872,15 +7875,18 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         self.rm_zzfiles(root)
+        bindir=os_path(root, F"/bin")
+        testsleep = self.testname("sleep")
+        copy_tool(_bin_sleep, F"{bindir}/{testsleep}")
         #
-        text_file(os_path(root, "/etc/systemd/system/zza.service"), """
+        text_file(os_path(root, "/etc/systemd/system/zza.service"), F"""
             [Unit]
             Description=Testing A""")
-        text_file(os_path(root, "/etc/systemd/system/zzb.service"), """
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
-            ExecStart=/bin/sleep 2
+            ExecStart={bindir}/{testsleep} 2
             [Install]
             WantedBy=multi-user.target""")
         cmd = F"{systemctl} daemon-reload"
@@ -7945,15 +7951,18 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         self.rm_zzfiles(root)
+        bindir=os_path(root, F"/bin")
+        testsleep = self.testname("sleep")
+        copy_tool(_bin_sleep, F"{bindir}/{testsleep}")
         #
-        text_file(os_path(root, "/etc/systemd/system/zza.service"), """
+        text_file(os_path(root, "/etc/systemd/system/zza.service"), F"""
             [Unit]
             Description=Testing A""")
-        text_file(os_path(root, "/etc/systemd/system/zzb.service"), """
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
-            ExecStart=/bin/sleep 2
+            ExecStart={bindir}/{testsleep} 2
             [Install]
             WantedBy=multi-user.target""")
         cmd = F"{systemctl} daemon-reload"
@@ -8013,15 +8022,18 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         self.rm_zzfiles(root)
+        bindir=os_path(root, F"/bin")
+        testsleep = self.testname("sleep")
+        copy_tool(_bin_sleep, F"{bindir}/{testsleep}")
         #
-        text_file(os_path(root, "/etc/systemd/system/zza.service"), """
+        text_file(os_path(root, "/etc/systemd/system/zza.service"), F"""
             [Unit]
             Description=Testing A""")
-        text_file(os_path(root, "/etc/systemd/system/zzb.service"), """
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
-            ExecStart=/bin/sleep 2
+            ExecStart={bindir}/{testsleep} 2
             [Install]
             WantedBy=multi-user.target""")
         #
@@ -8076,21 +8088,24 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
-        text_file(os_path(root, "/etc/systemd/system/zza.service"), """
+        bindir=os_path(root, F"/bin")
+        testsleep = self.testname("sleep")
+        copy_tool(_bin_sleep, F"{bindir}/{testsleep}")
+        text_file(os_path(root, "/etc/systemd/system/zza.service"), F"""
             [Unit]
             Description=Testing A""")
-        text_file(os_path(root, "/etc/systemd/system/zzb.service"), """
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"), F"""
             [Unit]
             Description=Testing B
             [Service]
-            ExecStart=/bin/sleep 2
+            ExecStart={bindir}/{testsleep} 2
             [Install]
             WantedBy=multi-user.target""")
-        text_file(os_path(root, "/etc/systemd/system/zzc.service"), """
+        text_file(os_path(root, "/etc/systemd/system/zzc.service"), F"""
             [Unit]
             Description=Testing C
             [Service]
-            ExecStart=/bin/sleep 2
+            ExecStart={bindir}/{testsleep} 2
             [Install]
             WantedBy=multi-user.target""")
         #
@@ -8156,6 +8171,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, r"^disabled"))
         self.assertEqual(len(lines(out)), 2)
         #
+        self.rm_zzfiles(root)
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -8166,11 +8182,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
-        text_file(os_path(root, "/etc/systemd/system/zzc.service"), """
+        bindir=os_path(root, F"/bin")
+        testsleep = self.testname("sleep")
+        copy_tool(_bin_sleep, F"{bindir}/{testsleep}")
+        text_file(os_path(root, "/etc/systemd/system/zzc.service"), F"""
             [Unit]
             Description=Testing C
             [Service]
-            ExecStart=/bin/sleep 2
+            ExecStart={bindir}/{testsleep} 2
             [Install]
             WantedBy=multi-user.target""")
         #
@@ -8201,6 +8220,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 1)
         self.assertTrue(greps(err, "Unit zz-not-existing-service.service not found."))
         #
+        self.rm_zzfiles(root)
         self.rm_testdir()
         self.coverage()
         self.end()
@@ -8342,6 +8362,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 0)
         self.assertEqual(len(lines(out)), 0)
         #
+        self.rm_zzfiles(root)
         self.rm_testdir()
         self.coverage()
         self.end()
