@@ -23943,6 +23943,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{initsystemctl} -1"
         init = background(cmd)
         time.sleep(INITLOOPSLEEP+1)
+        ##
+        logdata = open(debug_log).read()
+        logg.info("debug.log>>\n%s", oi22(logdata, maxlines=55))
         #
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
@@ -23954,9 +23957,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         journal_a=output(cmd).strip().split("=", 1)[1]
         cmd = F"{systemctl} show zzb.service -p JournalFilePath"
         journal_b=output(cmd).strip().split("=", 1)[1]
-        ##
-        logdata = open(debug_log).read()
-        logg.info("debug.log>>\n%s", oi22(logdata, maxlines=55))
         ##
         logg.info("journal zza = %s", journal_a)
         logg.info("journal zzb = %s", journal_b)
