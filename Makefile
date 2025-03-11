@@ -331,15 +331,15 @@ python310: python310/test
 python311: python311/test
 python312: python312/test
 
-python27/test:  ; ./docker_local_image.py FROM ubuntu:22.04 INTO $@ INSTALL "python3 psmisc python2" TEST "python2 --version"
-python36/test:  ; ./docker_local_image.py FROM ubuntu:18.04 INTO $@ INSTALL "python3 psmisc" TEST "python3 --version"
+python27/tesT:  ; ./docker_local_image.py FROM ubuntu:22.04 INTO $@ INSTALL "python3 psmisc python2" TEST "python2 --version"
+python36/tesT:  ; ./docker_local_image.py FROM ubuntu:18.04 INTO $@ INSTALL "python3 psmisc" TEST "python3 --version"
 python310/test: ; ./docker_local_image.py FROM ubuntu:22.04 INTO $@ INSTALL "python3 psmisc" TEST "python3 --version"
 python312/test: ; ./docker_local_image.py FROM ubuntu:24.04 INTO $@ INSTALL "python3 psmisc" TEST "python3 --version"
 
-python27/test:  ; ./docker_local_image.py FROM opensuse/leap:15.6 INTO $@ INSTALL "python3 psmisc python2" TEST "python2 --version"
-python36/test:  ; ./docker_local_image.py FROM opensuse/leap:15.6 INTO $@ INSTALL "python3 psmisc" TEST "python3 --version"
-python39/test:  ; ./docker_local_image.py FROM opensuse/leap:15.5 INTO $@ INSTALL "python39 psmisc" SYMLINK /usr/bin/python3.9:python3 TEST "python3 --version" -vv
-python311/test: ; ./docker_local_image.py FROM opensuse/leap:15.6 INTO $@ INSTALL "python311 psmisc" SYMLINK /usr/bin/python3.11:python3 TEST "python3 --version"
+python27/test:  ; ./docker_local_image.py FROM opensuse/leap:15.6 INTO $@ INSTALL "python3 procps psmisc python2" TEST "python2 --version"
+python36/test:  ; ./docker_local_image.py FROM opensuse/leap:15.6 INTO $@ INSTALL "python3 procps psmisc" TEST "python3 --version"
+python39/test:  ; ./docker_local_image.py FROM opensuse/leap:15.5 INTO $@ INSTALL "python39 procps psmisc" SYMLINK /usr/bin/python3.9:python3 TEST "python3 --version" -vv
+python311/test: ; ./docker_local_image.py FROM opensuse/leap:15.6 INTO $@ INSTALL "python311 procps psmisc" SYMLINK /usr/bin/python3.11:python3 TEST "python3 --version"
 
 
 ############## https://pypi.org/...
