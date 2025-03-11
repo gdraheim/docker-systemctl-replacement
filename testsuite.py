@@ -19729,7 +19729,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         logg.info("== mark the status file as being too old")
         # status_file = os_path(root, "/run/zzz.service.status")
-        cmd = F"{systemctl} -p StatusFile show zzz.service"
+        cmd = F"{systemctl} -p StatusFilePath show zzz.service"
         status_file = output(cmd).split("=", 1)[1].strip()
         logg.info("status_file = %s", status_file)
         self.assertTrue(os.path.exists(status_file))
@@ -19838,7 +19838,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         time.sleep(2)
         logg.info("== mark the status file as being too old")
         # status_file = os_path(root, "/var/run/zzz.service.status")
-        cmd = F"{systemctl} -p StatusFile show zzz.service"
+        cmd = F"{systemctl} -p StatusFilePath show zzz.service"
         status_file = output(cmd).split("=", 1)[1].strip()
         logg.info("status_file = %s", status_file)
         self.assertTrue(os.path.exists(status_file))
