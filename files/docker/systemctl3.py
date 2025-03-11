@@ -302,7 +302,7 @@ def _commalist(value: Iterable[str]) -> Iterator[str]:
         for elem in val.strip().split(","):
             yield elem
 def int_mode(value: str) -> Optional[int]:
-    try: 
+    try:
         return int(value, 8)
     except ValueError:
         return None # pragma: no cover
@@ -3621,7 +3621,7 @@ class Systemctl:
                 if self.exit_mode & EXIT_NO_SERVICES_LEFT:
                     reached = "no services left!"
                 logg.info(" [%s] init loop until %s", target, reached)
-                result = self.init_loop_until_stop([]) 
+                result = self.init_loop_until_stop([])
                 return not not result  # pylint: disable=unnecessary-negation
         missing: List[str] = []
         units: List[str] = []
@@ -6282,13 +6282,13 @@ class Systemctl:
             conf = self.units.load_conf(unit)
             if not conf: continue
             if self.skip_journal_log(conf): continue
-            log_path = self.journal_log(conf)
+            log_file = self.journal_log(conf)
             try:
-                opened = os.open(log_path, os.O_RDONLY | os.O_NONBLOCK)
+                opened = os.open(log_file, os.O_RDONLY | os.O_NONBLOCK)
                 self._log_file[unit] = opened
                 self._log_hold[unit] = b""
             except OSError as e:
-                logg.error("can not open %s log: %s >> %s", unit, log_path, e)
+                logg.error("can not open %s log: %s >> %s", unit, log_file, e)
     def read_log_files(self, units: List[str]) -> None:
         self.print_log_files(units)
     def print_log_files(self, units: List[str], stdout: int = 1) -> int:
@@ -6530,7 +6530,7 @@ class Systemctl:
         self.sysinit_status(ActiveState = None, SubState = "degraded")
         try:
             self.loop_lock.release() # may be already unlocked here
-        except (OSError, RuntimeError, threading.ThreadError) as e: 
+        except (OSError, RuntimeError, threading.ThreadError) as e:
             logg.debug("[init] loop_lock release %s >> %s", type(e), e)
         except Exception as e:
             logg.error("[init] loop_lock release %s >> %s", type(e), e)

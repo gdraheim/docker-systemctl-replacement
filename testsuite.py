@@ -322,18 +322,19 @@ def i2(part: str, indent: str = "  ") -> str:
                 text += "\n"
             return text
     return part
-def o22(part: str) -> str:
-    return only22(part)
-def oi22(part: str) -> str:
-    return only22(part, indent="  ")
-def only22(part: str, indent: str = "") -> str:
+def o22(part: str, maxlines: int =22) -> str:
+    return only22(part, maxlines=maxlines)
+def oi22(part: str, maxlines: int = 22) -> str:
+    return only22(part, indent="  ", maxlines=maxlines)
+def only22(part: str, indent: str = "", maxlines: int = 22) -> str:
     if isinstance(part, string_types):
         if "\n" in part.strip():
             lines = part.strip().split("\n")
-            if len(lines) <= 22:
-                return part
-            skipped = len(lines) - 22 + 3
-            real = lines[:5] + ["...", F"... ({skipped} lines skipped)", "..."] + lines[-14:]
+            if len(lines) <= maxlines:
+                return indent+part.replace("\n", "\n"+indent)
+            skipped = len(lines) - maxlines + 3
+            lastlines = maxlines - 5 - 3
+            real = lines[:5] + ["...", F"... ({skipped} lines skipped)", "..."] + lines[-lastlines:]
             text = indent
             newline = "\n" + indent
             text += newline.join(real)
@@ -341,14 +342,15 @@ def only22(part: str, indent: str = "") -> str:
                 text += "\n"
             return text
     if isinstance(part, string_types):
-        if len(part) <= 22:
+        if len(part) <= maxlines:
             return part
         return part[:5] + "..." + part[-14:]
     if isinstance(part, list):
-        if len(part) <= 22:
+        if len(part) <= maxlines:
             return part
-        skipped = len(part) - 22 + 3
-        return part[:5] + ["...", F"... ({skipped} lines skipped)", "..."] + part[-14:]
+        skipped = len(part) - maxlines + 3
+        lastlines = maxlines - 5 - 3
+        return part[:5] + ["...", F"... ({skipped} lines skipped)", "..."] + part[-lastlines:]
     return part
 
 def get_USER_ID(root: bool = False) -> int:
@@ -480,7 +482,6 @@ def copy_file(filename: str, target: str) -> None:
 def copy_tool(filename: str, target: str) -> None:
     copy_file(filename, target)
     os.chmod(target, 0o755)
-
 def get_caller_name() -> str:
     currentframe = inspect.currentframe()
     if not currentframe: return "global"
@@ -23707,6 +23708,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "systemctl.*INITLOOPSLEEP"))
+        self.assertTrue(greps(top, testsleepA))
+        self.assertTrue(greps(top, testsleepB))
         #
         cmd = F"{systemctl} show zza.service -p JournalFilePath"
         journal_a=output(cmd).strip().split("=", 1)[1]
@@ -23822,6 +23825,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "systemctl.*INITLOOPSLEEP"))
+        self.assertTrue(greps(top, testsleepA))
+        self.assertTrue(greps(top, testsleepB))
         #
         cmd = F"{systemctl} show zza.service -p JournalFilePath"
         journal_a=output(cmd).strip().split("=", 1)[1]
@@ -23878,6 +23883,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testsleepA = self.testname("sleepA")
         testsleepB = self.testname("sleepB")
         bindir = os_path(root, "/usr/bin")
+        copy_tool(_bin_sleep, os_path(bindir, testsleepA))
+        copy_tool(_bin_sleep, os_path(bindir, testsleepB))
+        self.assertTrue(os.path.isfile("/bin/sh"))
         shell_file(os_path(testdir, "testsleepA.bin"), F"""
             #! /bin/sh
             echo starts testsleepA >&2
@@ -23912,8 +23920,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool(_bin_sleep, os_path(bindir, testsleepA))
-        copy_tool(_bin_sleep, os_path(bindir, testsleepB))
         copy_tool(os_path(testdir, "testsleepA.bin"), os_path(bindir, testsleepA + ".bin"))
         copy_tool(os_path(testdir, "testsleepB.bin"), os_path(bindir, testsleepB + ".bin"))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
@@ -23941,11 +23947,17 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "systemctl.*INITLOOPSLEEP"))
+        self.assertTrue(greps(top, testsleepA))
+        self.assertTrue(greps(top, testsleepB))
         #
         cmd = F"{systemctl} show zza.service -p JournalFilePath"
         journal_a=output(cmd).strip().split("=", 1)[1]
         cmd = F"{systemctl} show zzb.service -p JournalFilePath"
         journal_b=output(cmd).strip().split("=", 1)[1]
+        ##
+        logdata = open(debug_log).read()
+        logg.info("debug.log>>\n%s", oi22(logdata, maxlines=55))
+        ##
         logg.info("journal zza = %s", journal_a)
         logg.info("journal zzb = %s", journal_b)
         time.sleep(1)
