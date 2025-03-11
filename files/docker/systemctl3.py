@@ -4268,8 +4268,10 @@ class Systemctl:
                 if not os.path.exists(fdir):
                     os.makedirs(fdir)
                 out = open(fname, "a")
-        except OSError as e:
+        except (OSError, IOError) as e:
             msg += "\n%s >> %s" % (fname, e)
+        except Exception as e: # pylint: borad-exception-caught
+            msg += "\n%s >> %s >> %s" % (fname, type(e), e)
         if out is None:
             out = self.open_journal_log(conf)
             err = out
@@ -4291,8 +4293,10 @@ class Systemctl:
                 if not os.path.exists(fdir):
                     os.makedirs(fdir)
                 err = open(fname, "a")
-        except OSError as e:
+        except (OSError, IOError) as e:
             msg += "\n%s >> %s" % (fname, e)
+        except Exception as e:  # pylint: borad-exception-caught
+            msg += "\n%s >> %s >> %s" % (fname, type(e), e)
         if err is None:
             err = self.open_journal_log(conf)
         assert err is not None
