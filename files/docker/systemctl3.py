@@ -6538,7 +6538,7 @@ class Systemctl:
             self.loop_lock.release() # may be already unlocked here
         except (OSError, RuntimeError, threading.ThreadError) as e:
             logg.debug("[init] loop_lock release %s >> %s", type(e), e)
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             logg.error("[init] loop_lock release %s >> %s", type(e), e)
         listen.stop()
         listen.join(2)
