@@ -19954,9 +19954,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         vv = "-vv"
         systemctl = cover() + _systemctl_py + " --root=" + root
         if real: vv, systemctl = "", "/usr/bin/systemctl"
+        extrasleep = self.testname("testextrasleep")
         testsleep = self.testname("testsleep")
         testfail = self.testname("testfail.sh")
         bindir = os_path(root, "/usr/bin")
+        copy_tool(_bin_sleep, os_path(bindir, testsleep))
+        copy_tool(_bin_sleep, os_path(bindir, extrasleep))
         text_file(os_path(testdir, "zzz.service"), F"""
             [Unit]
             Description=Testing Z
@@ -19967,7 +19970,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStartPost=/bin/echo started $MAINPID
             ExecStop=/bin/kill $MAINPID
             ExecStopPost=/bin/echo stopped $MAINPID
-            ExecStopPost=/bin/sleep 2
+            ExecStopPost={bindir}/{extrasleep} 2
             [Install]
             WantedBy=multi-user.target
             """)
@@ -19981,7 +19984,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStartPost=/bin/echo started $MAINPID
             ExecStop=/bin/kill $MAINPID
             ExecStopPost=/bin/echo stopped $MAINPID
-            ExecStopPost=/bin/sleep 2
+            ExecStopPost={bindir}/{extrasleep} 2
             [Install]
             WantedBy=multi-user.target
             """)
@@ -19995,7 +19998,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStartPost=/bin/echo started $MAINPID
             ExecStop=/bin/kill $MAINPID
             ExecStopPost=/bin/echo stopped $MAINPID
-            ExecStopPost=/bin/sleep 2
+            ExecStopPost={bindir}/{extrasleep} 2
             [Install]
             WantedBy=multi-user.target
             """)
@@ -20010,7 +20013,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStartPost=/bin/echo started $MAINPID
             ExecStop=/bin/kill $MAINPID
             ExecStopPost=/bin/echo stopped $MAINPID
-            ExecStopPost=/bin/sleep 2
+            ExecStopPost={bindir}/{extrasleep} 2
             [Install]
             WantedBy=multi-user.target
             """)
@@ -20025,7 +20028,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStartPost=/bin/echo started $MAINPID
             ExecStop=/bin/kill $MAINPID
             ExecStopPost=/bin/echo stopped $MAINPID
-            ExecStopPost=/bin/sleep 2
+            ExecStopPost={bindir}/{extrasleep} 2
             [Install]
             WantedBy=multi-user.target
             """)
@@ -20034,7 +20037,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             {bindir}/{testsleep} $1
             exit 2
             """)
-        copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_tool(os_path(testdir, "testfail.sh"), os_path(bindir, testfail))
         copy_file(os_path(testdir, "zzz.service"), os_path(root, "/etc/systemd/system/zzz.service"))
         copy_file(os_path(testdir, "zze.service"), os_path(root, "/etc/systemd/system/zze.service"))
@@ -20105,10 +20107,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(out.strip(), "failed")
         #
         logg.info("== 'stop' shall clean an already exited service")
-        cmd = F"{systemctl} stop zze.service {vv}"
+        cmd = F"{systemctl} stop zze.service {vv} -vv"
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        if TODO or real: self.assertEqual(end, 0)
+        incontainer = not get_USER_ID()
+        if TODO or real or incontainer: self.assertEqual(end, 0)
         else: self.assertEqual(end, 1)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
@@ -20188,7 +20191,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} stop zzr.service {vv}"
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        if TODO or real: self.assertEqual(end, 0)
+        incontainer = not get_USER_ID()
+        if TODO or real or incontainer: self.assertEqual(end, 0)
         else: self.assertEqual(end, 1)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
@@ -20227,7 +20231,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} stop zzx.service {vv}"
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
-        if TODO or real: self.assertEqual(end, 0)
+        incontainer = not get_USER_ID()
+        if TODO or real or incontainer: self.assertEqual(end, 0)
         else: self.assertEqual(end, 1)
         top = _recent(output(_top_list))
         logg.info("\n>>>\n%s", top)
