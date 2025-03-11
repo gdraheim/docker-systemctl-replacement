@@ -4272,7 +4272,7 @@ class Systemctl:
                 out = open(fname, "a")
         except (OSError, IOError) as e:
             msg += "\n%s >> %s" % (fname, e)
-        except Exception as e: # pylint: borad-exception-caught
+        except Exception as e: # pylint: broad-exception-caught
             msg += "\n%s >> %s >> %s" % (fname, type(e), e)
         if out is None:
             out = self.open_journal_log(conf)
@@ -4297,7 +4297,7 @@ class Systemctl:
                 err = open(fname, "a")
         except (OSError, IOError) as e:
             msg += "\n%s >> %s" % (fname, e)
-        except Exception as e:  # pylint: borad-exception-caught
+        except Exception as e:  # pylint: broad-exception-caught
             msg += "\n%s >> %s >> %s" % (fname, type(e), e)
         if err is None:
             err = self.open_journal_log(conf)
