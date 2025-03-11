@@ -310,11 +310,11 @@ def unit_of(module: str) -> str:
     if "." not in module:
         return module + ".service"
     return module
-def o33(part: str) -> str:
+def o30(part: str) -> str:
     if isinstance(part, stringtypes):
-        if len(part) <= 33:
+        if len(part) <= 30:
             return part
-        return part[:5] + "..." + part[-24:]
+        return part[:5] + "..." + part[-21:]
     return part # pragma: no cover (is always str)
 def o44(part: str) -> str:
     if isinstance(part, stringtypes):
@@ -2992,11 +2992,11 @@ class Systemctl:
         boottime = self.get_boottime()
         if filetime >= boottime:
             if DEBUG_BOOTTIME:
-                logg.debug("  file time: %s (%s)", datetime.datetime.fromtimestamp(filetime), o33(filename))
+                logg.debug("  file time: %s (%s)", datetime.datetime.fromtimestamp(filetime), o30(filename))
                 logg.debug("  boot time: %s (%s)", datetime.datetime.fromtimestamp(boottime), "status modified later")
             return False # OK
         if DEBUG_BOOTTIME:
-            logg.info("  file time: %s (%s)", datetime.datetime.fromtimestamp(filetime), o33(filename))
+            logg.info("  file time: %s (%s)", datetime.datetime.fromtimestamp(filetime), o30(filename))
             logg.info("  boot time: %s (%s)", datetime.datetime.fromtimestamp(boottime), "status TRUNCATED NOW")
         try:
             shutil_truncate(filename)
@@ -3505,7 +3505,7 @@ class Systemctl:
             socketfile = os.path.join(notify_folder, notify_name77)
             if len(socketfile) > 100:
                 socketfile = os.path.join(notify_folder, notify_name44)
-            pref = "zz.%i.%s" % (get_USER_ID(), o33(os.path.basename(notify_socket_folder)))
+            pref = "zz.%i.%s" % (get_USER_ID(), o30(os.path.basename(notify_socket_folder)))
             if len(socketfile) > 100:
                 socketfile = os.path.join(get_TMP(), pref, notify_name)
             if len(socketfile) > 100:
@@ -4272,7 +4272,7 @@ class Systemctl:
                 out = open(fname, "a")
         except (OSError, IOError) as e:
             msg += "\n%s >> %s" % (fname, e)
-        except Exception as e: # pylint: broad-exception-caught
+        except Exception as e: # pylint: disable=broad-exception-caught
             msg += "\n%s >> %s >> %s" % (fname, type(e), e)
         if out is None:
             out = self.open_journal_log(conf)
@@ -4297,7 +4297,7 @@ class Systemctl:
                 err = open(fname, "a")
         except (OSError, IOError) as e:
             msg += "\n%s >> %s" % (fname, e)
-        except Exception as e:  # pylint: broad-exception-caught
+        except Exception as e:  # pylint: disable=broad-exception-caught
             msg += "\n%s >> %s >> %s" % (fname, type(e), e)
         if err is None:
             err = self.open_journal_log(conf)
