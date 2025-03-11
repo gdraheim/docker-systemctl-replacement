@@ -6814,16 +6814,19 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
-        text_file(os_path(root, "/etc/systemd/system/zza.service"), """
+        bindir=os_path(root, F"/bin")
+        testsleep = self.testname("sleep")
+        copy_tool(_bin_sleep, F"{bindir}/{testsleep}")
+        text_file(os_path(root, "/etc/systemd/system/zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
             TimeoutStartSec=29
             TimeoutStopSec=60
             RuntimeDirectory=foo/bar aaa
-            ExecStart=/bin/sleep 3
+            ExecStart={bindir}/{testsleep} 3
             """)
-        text_file(os_path(root, "/etc/systemd/system/zzb.service"), """
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -6831,7 +6834,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             TimeoutStopSec=60
             RuntimeDirectory=foo/bar bbb
             RuntimeDirectoryPreserve=yes
-            ExecStart=/bin/sleep 3
+            ExecStart={bindir}/{testsleep} 3
             """)
         path1 = os_path(root, "/run/foo/bar")
         path2 = os_path(root, "/run/aaa")
@@ -6925,6 +6928,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(os.path.isdir(path1))
         self.assertFalse(os.path.isdir(path2))
         #
+        self.rm_zzfiles(root)
         self.rm_testdir()
         self.coverage()
         ##
@@ -6934,14 +6938,17 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
-        text_file(os_path(root, "/etc/systemd/system/zza.service"), """
+        bindir=os_path(root, F"/bin")
+        testsleep = self.testname("sleep")
+        copy_tool(_bin_sleep, F"{bindir}/{testsleep}")
+        text_file(os_path(root, "/etc/systemd/system/zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
             TimeoutStartSec=29
             TimeoutStopSec=60
             StateDirectory=foo/bar aaa
-            ExecStart=/bin/sleep 3
+            ExecStart={bindir}/{testsleep} 3
             """)
         path1 = os_path(root, "/var/lib/foo/bar")
         path2 = os_path(root, "/var/lib/aaa")
@@ -7012,6 +7019,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(os.path.isdir(path1))
         self.assertFalse(os.path.isdir(path2))
         #
+        self.rm_zzfiles(root)
         self.rm_testdir()
         self.coverage()
         ##
@@ -7021,14 +7029,17 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
-        text_file(os_path(root, "/etc/systemd/system/zza.service"), """
+        bindir=os_path(root, F"/bin")
+        testsleep = self.testname("sleep")
+        copy_tool(_bin_sleep, F"{bindir}/{testsleep}")
+        text_file(os_path(root, "/etc/systemd/system/zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
             TimeoutStartSec=29
             TimeoutStopSec=60
             CacheDirectory=foo/bar aaa
-            ExecStart=/bin/sleep 3
+            ExecStart={bindir}/{testsleep} 3
             """)
         path1 = os_path(root, "/var/cache/foo/bar")
         path2 = os_path(root, "/var/cache/aaa")
@@ -7098,6 +7109,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(os.path.isdir(path1))
         self.assertFalse(os.path.isdir(path2))
         #
+        self.rm_zzfiles(root)
         self.rm_testdir()
         self.coverage()
     def test_2704_create_logs(self) -> None:
@@ -7106,14 +7118,17 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
-        text_file(os_path(root, "/etc/systemd/system/zza.service"), """
+        bindir=os_path(root, F"/bin")
+        testsleep = self.testname("sleep")
+        copy_tool(_bin_sleep, F"{bindir}/{testsleep}")
+        text_file(os_path(root, "/etc/systemd/system/zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
             TimeoutStartSec=29
             TimeoutStopSec=60
             LogsDirectory=foo/bar aaa
-            ExecStart=/bin/sleep 3
+            ExecStart={bindir}/{testsleep} 3
             """)
         path1 = os_path(root, "/var/log/foo/bar")
         path2 = os_path(root, "/var/log/aaa")
@@ -7184,6 +7199,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(os.path.isdir(path1))
         self.assertFalse(os.path.isdir(path2))
         #
+        self.rm_zzfiles(root)
         self.rm_testdir()
         self.coverage()
         ##
@@ -7193,14 +7209,17 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
-        text_file(os_path(root, "/etc/systemd/system/zza.service"), """
+        bindir=os_path(root, F"/bin")
+        testsleep = self.testname("sleep")
+        copy_tool(_bin_sleep, F"{bindir}/{testsleep}")
+        text_file(os_path(root, "/etc/systemd/system/zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
             TimeoutStartSec=29
             TimeoutStopSec=60
             ConfigurationDirectory=foo/bar aaa
-            ExecStart=/bin/sleep 3
+            ExecStart={bindir}/{testsleep} 3
             """)
         path1 = os_path(root, "/etc/foo/bar")
         path2 = os_path(root, "/etc/aaa")
@@ -7271,6 +7290,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(os.path.isdir(path1))
         self.assertFalse(os.path.isdir(path2))
         #
+        self.rm_zzfiles(root)
         self.rm_testdir()
         self.coverage()
         ##
@@ -7280,16 +7300,19 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
-        text_file(os_path(root, "/etc/systemd/system/zza.service"), """
+        bindir=os_path(root, F"/bin")
+        testsleep = self.testname("sleepA")
+        copy_tool(_bin_sleep, F"{bindir}/{testsleep}")
+        text_file(os_path(root, "/etc/systemd/system/zza.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
             TimeoutStartSec=29
             TimeoutStopSec=60
             ConfigurationDirectory=foo/bar aaa
-            ExecStart=/bin/sleep 3
+            ExecStart={bindir}/{testsleep} 3
             """)
-        text_file(os_path(root, "/etc/systemd/system/zzb.service"), """
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"), F"""
             [Unit]
             Description=Testing A
             [Service]
@@ -7297,7 +7320,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             TimeoutStopSec=60
             ConfigurationDirectory=foo/bar aaa
             ConfigurationDirectoryMode=0700
-            ExecStart=/bin/sleep 3
+            ExecStart={bindir}/{testsleep} 3
             """)
         path1 = os_path(root, "/etc/foo/bar")
         path2 = os_path(root, "/etc/aaa")
@@ -7366,6 +7389,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(os.path.isdir(path1))
         self.assertFalse(os.path.isdir(path2))
         #
+        self.rm_zzfiles(root)
         self.rm_testdir()
         self.coverage()
         ##
@@ -7376,6 +7400,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
+        bindir=os_path(root, F"/bin")
+        testsleep = self.testname("sleepA")
+        copy_tool(_bin_sleep, F"{bindir}/{testsleep}")
         this_user = get_USER()
         this_group = get_GROUP()
         text_file(os_path(root, "/etc/systemd/system/zza.service"), F"""
@@ -7386,7 +7413,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             TimeoutStopSec=60
             StateDirectory=foo/bar aaa
             User={this_user}
-            ExecStart=/bin/sleep 3
+            ExecStart={bindir}/{testsleep} 3
             """)
         text_file(os_path(root, "/etc/systemd/system/zzb.service"), F"""
             [Unit]
@@ -7396,7 +7423,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             TimeoutStopSec=60
             StateDirectory=foo/bar aaa
             Group={this_group}
-            ExecStart=/bin/sleep 3
+            ExecStart={bindir}/{testsleep} 3
             """)
         path1 = os_path(root, "/var/lib/foo/bar")
         path2 = os_path(root, "/var/lib/aaa")
@@ -7469,6 +7496,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("B = %s", B)
         self.assertEqual(A, B)
         #
+        self.rm_zzfiles(root)
         self.rm_testdir()
         self.coverage()
         ##
@@ -7479,6 +7507,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
+        bindir=os_path(root, F"/bin")
+        testsleep = self.testname("sleep")
+        copy_tool(_bin_sleep, F"{bindir}/{testsleep}")
         this_group = get_GROUP()
         last_group = get_LASTGROUP()
         text_file(os_path(root, "/etc/systemd/system/zza.service"), F"""
@@ -7487,7 +7518,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Service]
             StateDirectory=foo/bar aaa
             Group={this_group}
-            ExecStart=/bin/sleep 3
+            ExecStart={bindir}/{testsleep} 3
             """)
         text_file(os_path(root, "/etc/systemd/system/zzb.service"), F"""
             [Unit]
@@ -7495,7 +7526,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Service]
             StateDirectory=foo/bar aaa
             Group={last_group}
-            ExecStart=/bin/sleep 4
+            ExecStart={bindir}/{testsleep} 4
             """)
         path1 = os_path(root, "/var/lib/foo/bar")
         path2 = os_path(root, "/var/lib/aaa")
@@ -7572,6 +7603,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         else:
             self.assertEqual(A, B) # when "root"
         #
+        self.rm_zzfiles(root)
         self.rm_testdir()
         self.coverage()
         ##
@@ -7582,6 +7614,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         root = self.root(testdir)
         systemctl = cover() + _systemctl_py + " --root=" + root
+        bindir=os_path(root, F"/bin")
+        testsleep = self.testname("sleep")
+        copy_tool(_bin_sleep, F"{bindir}/{testsleep}")
         this_group = get_GROUP()
         last_group = get_LASTGROUP()
         text_file(os_path(root, "/etc/systemd/system/zza.service"), F"""
@@ -7590,7 +7625,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Service]
             ConfigurationDirectory=foo/bar aaa
             Group={this_group}
-            ExecStart=/bin/sleep 3
+            ExecStart={bindir}/{testsleep} 3
             """)
         text_file(os_path(root, "/etc/systemd/system/zzb.service"), F"""
             [Unit]
@@ -7598,7 +7633,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Service]
             ConfigurationDirectory=foo/bar aaa
             Group={last_group}
-            ExecStart=/bin/sleep 4
+            ExecStart={bindir}/{testsleep} 4
             """)
         path1 = os_path(root, "/etc/foo/bar")
         path2 = os_path(root, "/etc/aaa")
@@ -7672,6 +7707,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("B = %s", B)
         self.assertEqual(A, B) # no chown if directory did exist
         #
+        self.rm_zzfiles(root)
         self.rm_testdir()
         self.coverage()
         ##
