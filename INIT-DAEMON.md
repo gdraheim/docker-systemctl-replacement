@@ -66,9 +66,9 @@ of "systemctl -1 default", and upon receiving a SIGTERM from
 docker-stop it will run its "systemctl halt" implementation.
 
 Here "default" is the standard command to start all services 
-in the multi-user target. The new option "--init" (or the command 
-"init") will keep the script running as a zombie reaper. (NOTE: 
-if it is not PID-1 then it defaults "systemctl list-units").
+in the multi-user target. The new option "--init" (or just 
+"start --now") will keep the script running as a zombie reaper. 
+(NOTE:  if it is not PID-1 then it defaults "systemctl list-units").
 
 As a hint: the SystemD "systemctl enable" command will
 read the "WantedBy" of the referenced `*.service` script.
@@ -78,7 +78,7 @@ be in /etc/systemd/system/multi-user.target.wants/.
 
 The docker-systemctl-replacement knows about that and
 it is used. And as another hint: if you run the non-installed
-script as "systemctl.py init" then pressing Control-C will 
+script as "systemctl.py default -1" then pressing Control-C will 
 result in an interpretation of "systemctl halt" as well, so
 one can test the correct interpretion of the "wants".
 
@@ -110,16 +110,14 @@ run then one can exchange the "default" command with an
 explicit start list (and be sure to activate the continued 
 execution as an init process):
 
-    /usr/bin/systemctl init mongodb myapp
-
-(equivalent with `systemctl start --init mongodb myapp`)
+    /usr/bin/systemctl start --now mongodb myapp
 
 ## Remember the stop grace timeout
 
 Note that the docker daemon will send a SIGTERM to the PID 1
 of a docker container that will result in the stop-behaviour
-of the "systemctl init" loop. However the docker daemon will
-only wait 10 seconds by default and when the container has
+of the "systemctl start --init" loop. However the docker daemon 
+will only wait 10 seconds by default and when the container has
 not stopped completely it will send a SIGKILL to all the
 remaining processes in the container.
 
