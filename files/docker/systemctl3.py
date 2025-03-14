@@ -5941,7 +5941,7 @@ class Systemctl:
     #
     igno_centos = ["netconsole", "network"]
     igno_opensuse = ["raw", "pppoe", "*.local", "boot.*", "rpmconf*", "postfix*"]
-    igno_ubuntu = ["mount*", "umount*", "ondemand", "*.local"]
+    igno_ubuntu = ["mount*", "umount*", "ondemand", "*.local", "e2scrub_reap"]
     igno_always = ["network*", "dbus*", "systemd-*", "kdump*", "kmod*"]
     igno_always += ["purge-kernels.service", "after-local.service", "dm-event.*"] # as on opensuse
     igno_targets = ["remote-fs.target"]
