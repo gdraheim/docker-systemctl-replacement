@@ -40776,7 +40776,10 @@ if __name__ == "__main__":
                 continue
             testclass = globals()[classname]
             for method in sorted(dir(testclass)):
-                if "*" not in arg: arg += "*"
+                if arg.endswith("/"):
+                     arg = arg[:-1]
+                if "*" not in arg: 
+                     arg += "*"
                 if len(arg) > 2 and arg[1] == "_":
                     arg = "test" + arg[1:]
                 if fnmatch(method, arg):
