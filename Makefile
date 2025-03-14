@@ -52,7 +52,6 @@ COVERAGE=--coverage
 est_%: ; rm .coverage*; rm -rf tmp/tmp.t$(notdir $@) ; ./testsuite.py "t$(notdir $@)" $(VV) $V --coverage --keep
 test_%: ; ./testsuite.py "$(notdir $@)" $(VV) $V
 real_%: ; ./testsuite.py "$(notdir $@)" $(VV) $V
-st_%: ; $(MAKE) 2 && ./testsuite.py "te$(notdir $@)" $(VV) $V $(WITH2)
 
 test: ; $(MAKE) type && $(MAKE) tests && $(MAKE) coverage
 
@@ -61,27 +60,27 @@ test_%/todo:             ; ./testsuite.py   "$(dir $@)" -vv --todo
 test_%/15.6:             ; ./testsuite.py   "$(dir $@)" -vv $(FORCE) --image=opensuse/leap:$(notdir $@)
 test_%/15.4:             ; ./testsuite.py   "$(dir $@)" -vv $(FORCE) --image=opensuse/leap:$(notdir $@)
 test_%/15.3:             ; ./testsuite.py   "$(dir $@)" -vv $(FORCE) --image=opensuse/leap:$(notdir $@)
-15.2/test_%:             ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=opensuse/leap:15.2
-15.1/test_%:             ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=opensuse/leap:15.1
-15.0/test_%:             ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=opensuse/leap:15.0
-42.3/test_%:             ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=opensuse:42.3
-42.2/test_%:             ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=opensuse:42.2
+test_%/15.2:             ; ./testsuite.py   "$(dir $@)" -vv $(FORCE) --image=opensuse/leap:$(notdir $@)
+test_%/15.1:             ; ./testsuite.py   "$(dir $@)" -vv $(FORCE) --image=opensuse/leap:$(notdir $@)
+test_%/15.0:             ; ./testsuite.py   "$(dir $@)" -vv $(FORCE) --image=opensuse/leap:$(notdir $@)
+test_%/42.3:             ; ./testsuite.py   "$(dir $@)" -vv $(FORCE) --image=opensuse:$(notdir $@)
+test_%/42.2:             ; ./testsuite.py   "$(dir $@)" -vv $(FORCE) --image=opensuse:$(notdir $@)
 test_%/24.04:            ; ./testsuite.py   "$(dir $@)" -vv $(FORCE) --image=ubuntu:$(notdir $@)
 test_%/22.04:            ; ./testsuite.py   "$(dir $@)" -vv $(FORCE) --image=ubuntu:$(notdir $@)
 test_%/20.04:            ; ./testsuite.py   "$(dir $@)" -vv $(FORCE) --image=ubuntu:$(notdir $@)
-19.10/test_%:            ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=ubuntu:19.10
-18.04/test_%:            ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=ubuntu:18.04
-16.04/test_%:            ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=ubuntu:16.04
+test_%/19.10:            ; ./testsuite.py   "$(dir $@)" -vv $(FORCE) --image=ubuntu:$(notdir $@)
+test_%/19.04:            ; ./testsuite.py   "$(dir $@)" -vv $(FORCE) --image=ubuntu:$(notdir $@)
+test_%/16.04:            ; ./testsuite.py   "$(dir $@)" -vv $(FORCE) --image=ubuntu:$(notdir $@)
 test_%/9.4:              ; ./testsuite.py   "$(dir $@)" -vv $(FORCE) --image=almalinux:$(notdir $@)
 test_%/9.3:              ; ./testsuite.py   "$(dir $@)" -vv $(FORCE) --image=almalinux:$(notdir $@)
-9.1/test_%:              ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=almalinux:9.1
-8.1/test_%:              ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=centos:8.1.1911
-8.0/test_%:              ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=centos:8.0.1905
-7.7/test_%:              ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=centos:7.7.1908
-7.6/test_%:              ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=centos:7.6.1810
-7.5/test_%:              ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=centos:7.5.1804
-7.4/test_%:              ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=centos:7.4.1708
-7.3/test_%:              ; ./testsuite.py   "$(notdir $@)" -vv $(FORCE) --image=centos:7.3.1611
+test_%/9.1:              ; ./testsuite.py   "$(dir $@)" -vv $(FORCE) --image=almalinux:$(notdir $@)
+test_%/8.1:              ; ./testsuite.py   "$(dir $@)" -vv $(FORCE) --image=centos:8.1.1911
+test_%/8.0:              ; ./testsuite.py   "$(dir $@)" -vv $(FORCE) --image=centos:8.0.1905
+test_%/7.7:              ; ./testsuite.py   "$(dir $@)" -vv $(FORCE) --image=centos:7.7.1908
+test_%/7.6:              ; ./testsuite.py   "$(dir $@)" -vv $(FORCE) --image=centos:7.6.1810
+test_%/7.5:              ; ./testsuite.py   "$(dir $@)" -vv $(FORCE) --image=centos:7.5.1804
+test_%/7.4:              ; ./testsuite.py   "$(dir $@)" -vv $(FORCE) --image=centos:7.4.1708
+test_%/7.3:              ; ./testsuite.py   "$(dir $@)" -vv $(FORCE) --image=centos:7.3.1611
 
 basetests = test_[1234]
 test2list = st_[567]
@@ -91,47 +90,47 @@ tests: ; $(MAKE) "${basetests}"
 tests/15.6:  ; $(MAKE) "$(testslist)/$(notdir $@)"
 tests/15.5:  ; $(MAKE) "$(testslist)/$(notdir $@)"
 tests/15.4:  ; $(MAKE) "$(testslist)/$(notdir $@)"
-15.2/tests:  ; $(MAKE) "15.2/$(testslist)"
-15.1/tests:  ; $(MAKE) "15.1/$(testslist)"
-15.0/tests:  ; $(MAKE) "15.0/$(testslist)"
-42.3/tests:  ; $(MAKE) "42.3/$(testslist)"
-42.2/tests:  ; $(MAKE) "42.2/$(testslist)"
+tests/15.2:  ; $(MAKE) "$(testslist)/$(notdir $@)"
+tests/15.1:  ; $(MAKE) "$(testslist)/$(notdir $@)"
+tests/15.0:  ; $(MAKE) "$(testslist)/$(notdir $@)"
+tests/42.3:  ; $(MAKE) "$(testslist)/$(notdir $@)"
+tests/42.2:  ; $(MAKE) "$(testslist)/$(notdir $@)"
 tests/24.04: ; $(MAKE) "$(testslist)/$(notdir $@)"
 tests/22.04: ; $(MAKE) "$(testslist)/$(notdir $@)"
 tests/20.04: ; $(MAKE) "$(testslist)/$(notdir $@)"
-19.10/tests: ; $(MAKE) "19.10/$(testslist)"
-18.04/tests: ; $(MAKE) "18.04/$(testslist)"
-16.04/tests: ; $(MAKE) "16.04/$(testslist)"
+tests/19.10: ; $(MAKE) "$(testslist)/$(notdir $@)"
+tests/18.04: ; $(MAKE) "$(testslist)/$(notdir $@)"
+tests/16.04: ; $(MAKE) "$(testslist)/$(notdir $@)"
 tests/9.4:   ; $(MAKE) "$(testslist)/$(notdir $@)"
 tests/9.3:   ; $(MAKE) "$(testslist)/$(notdir $@)"
-9.1/tests:   ; $(MAKE) "9.1/$(testslist)"
-8.5/tests:   ; $(MAKE) "8.5/$(testslist)"
-8.1/tests:   ; $(MAKE) "8.1/$(testslist)"
-8.0/tests:   ; $(MAKE) "8.0/$(testslist)"
-7.9/tests:   ; $(MAKE) "7.9/$(testslist)"
-7.7/tests:   ; $(MAKE) "7.7/$(testslist)"
-7.6/tests:   ; $(MAKE) "7.6/$(testslist)"
-7.5/tests:   ; $(MAKE) "7.5/$(testslist)"
-7.4/tests:   ; $(MAKE) "7.4/$(testslist)"
-7.3/tests:   ; $(MAKE) "7.3/$(testslist)"
-15.2/test2:  ; $(MAKE) "15.2/$(test2list)"
-15.1/test2:  ; $(MAKE) "15.1/$(test2list)"
-15.0/test2:  ; $(MAKE) "15.0/$(test2list)"
-42.3/test2:  ; $(MAKE) "42.3/$(test2list)"
-42.2/test2:  ; $(MAKE) "42.2/$(test2list)"
-22.04/test2: ; $(MAKE) "22.04/$(test2list)"
-20.04/test2: ; $(MAKE) "20.04/$(test2list)"
-18.04/test2: ; $(MAKE) "18.04/$(test2list)"
-16.04/test2: ; $(MAKE) "16.04/$(test2list)"
-8.5/test2:   ; $(MAKE) "8.5/$(test2list)"
-8.1/test2:   ; $(MAKE) "8.1/$(test2list)"
-8.0/test2:   ; $(MAKE) "8.0/$(test2list)"
-7.9/test2:   ; $(MAKE) "7.9/$(test2list)"
-7.7/test2:   ; $(MAKE) "7.7/$(test2list)"
-7.6/test2:   ; $(MAKE) "7.6/$(test2list)"
-7.5/test2:   ; $(MAKE) "7.5/$(test2list)"
-7.4/test2:   ; $(MAKE) "7.4/$(test2list)"
-7.3/test2:   ; $(MAKE) "7.3/$(test2list)"
+tests/9.1:   ; $(MAKE) "$(testslist)/$(notdir $@)"
+tests/8.5:   ; $(MAKE) "$(testslist)/$(notdir $@)"
+tests/8.1:   ; $(MAKE) "$(testslist)/$(notdir $@)"
+tests/8.0:   ; $(MAKE) "$(testslist)/$(notdir $@)"
+tests/7.9:   ; $(MAKE) "$(testslist)/$(notdir $@)"
+tests/7.7:   ; $(MAKE) "$(testslist)/$(notdir $@)"
+tests/7.6:   ; $(MAKE) "$(testslist)/$(notdir $@)"
+tests/7.5:   ; $(MAKE) "$(testslist)/$(notdir $@)"
+tests/7.4:   ; $(MAKE) "$(testslist)/$(notdir $@)"
+tests/7.3:   ; $(MAKE) "$(testslist)/$(notdir $@)"
+test2/15.2:  ; $(MAKE) "$(test2list)/$(notdir $@)"
+test2/15.1:  ; $(MAKE) "$(test2list)/$(notdir $@)"
+test2/15.0:  ; $(MAKE) "$(test2list)/$(notdir $@)"
+test2/42.3:  ; $(MAKE) "$(test2list)/$(notdir $@)"
+test2/42.2:  ; $(MAKE) "$(test2list)/$(notdir $@)"
+test2/22.04: ; $(MAKE) "$(test2list)/$(notdir $@)"
+test2/20.04: ; $(MAKE) "$(test2list)/$(notdir $@)"
+test2/18.04: ; $(MAKE) "$(test2list)/$(notdir $@)"
+test2/16.04: ; $(MAKE) "$(test2list)/$(notdir $@)"
+test2/8.5:   ; $(MAKE) "$(test2list)/$(notdir $@)"
+test2/8.1:   ; $(MAKE) "$(test2list)/$(notdir $@)"
+test2/8.0:   ; $(MAKE) "$(test2list)/$(notdir $@)"
+test2/7.9:   ; $(MAKE) "$(test2list)/$(notdir $@)"
+test2/7.7:   ; $(MAKE) "$(test2list)/$(notdir $@)"
+test2/7.6:   ; $(MAKE) "$(test2list)/$(notdir $@)"
+test2/7.5:   ; $(MAKE) "$(test2list)/$(notdir $@)"
+test2/7.4:   ; $(MAKE) "$(test2list)/$(notdir $@)"
+test2/7.3:   ; $(MAKE) "$(test2list)/$(notdir $@)"
 
 nightrun: checkall
 	$(MAKE) checks
@@ -142,7 +141,7 @@ checkall2024:
 	$(MAKE) -j1 15.6/tests  15.5/tests  15.4/tests  15.2/tests
 checkall2025:
 	$(MAKE) -j1 tests/9.4
-	$(MAKE) -j1 tests/24.04 test2/22.04 tests/20.04
+	$(MAKE) -j1 tests/24.04 tests/22.04 tests/20.04
 	$(MAKE) -j1 tests/15.6  tests/15.4
 
 
@@ -254,12 +253,9 @@ tmp_ubuntu:
 	docker cp testsuite.py $(UBU):/root/ 
 	docker cp reply.py $(UBU):/root/ 
 UBU=test_ubuntu
-ubu/test_%:
+test_%/ubu:
 	$(MAKE) tmp_ubuntu
 	docker exec $(UBU) python3 /root/testsuite.py -C /root -vv $(notdir $@)
-ubu/st_%:
-	$(MAKE) tmp_ubuntu
-	docker exec $(UBU) python3 /root/testsuite.py -C /root -vv te$(notdir $@)
 
 clean:
 	- rm .coverage*
