@@ -145,10 +145,13 @@ checkall2025:
 	$(MAKE) -j1 tests/15.6  tests/15.4
 
 
-check: check2025
+MIRRORSDIR=/dock
+check: 
+	@ if test -d $(MIRRORSDIR); then $(MAKE) check2025 "OPTIONS=--failfast --localmirrors" \
+	; else $(MAKE) check2025 "OPTIONS=--failfast" ; fi
 	@ echo please run 'make checks' now
-24 check2024: ; ./testsuite.py -vv --opensuse=15.6 --ubuntu=ubuntu:24.04 --centos=almalinux:9.3
-25 check2025: ; ./testsuite.py -vv --opensuse=15.6 --ubuntu=ubuntu:24.04 --centos=almalinux:9.4
+24 check2024: ; ./testsuite.py -vv --opensuse=15.6 --ubuntu=ubuntu:24.04 --centos=almalinux:9.3 $(OPTIONS)
+25 check2025: ; ./testsuite.py -vv --opensuse=15.6 --ubuntu=ubuntu:24.04 --centos=almalinux:9.4 $(OPTIONS)
 
 # native operating system does not have python2 anymore
 test_%/27:

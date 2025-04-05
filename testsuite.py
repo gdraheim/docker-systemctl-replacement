@@ -63,6 +63,7 @@ TESTED_OS += ["ubuntu:14.04", "ubuntu:16.04", "ubuntu:18.04", "ubuntu:22.04", "u
 SAVETO = "localhost:5000/systemctl"
 IMAGES = "localhost:5000/systemctl/testing"
 IMAGE = ""
+LOCAL = 0
 CENTOS = "almalinux:9.4"
 UBUNTU = "ubuntu:24.04"
 OPENSUSE = "opensuse/leap:15.6"
@@ -746,9 +747,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                     logg.info("rm %s", item)
                     os.remove(item)
     def coverage(self, testname: Optional[str] = None) -> None:
+        if not COVERAGE:
+            return
         testname = testname or self.caller_testname()
         newcoverage = ".coverage."+testname
-        time.sleep(1)
+        time.sleep(1) # some background process may want to write data
         if os.path.isfile(".coverage"):
             # shutil.copy(".coverage", newcoverage)
             with open(".coverage", "rb") as inp:
@@ -816,7 +819,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def start_mirror(self, image: str) -> str:
         docker = _docker
         mirror = _mirror
-        cmd = F"{mirror} start {image} --add-hosts"
+        local = " --localmirrors" if LOCAL else ""
+        cmd = F"{mirror} start {image} --add-hosts{local}"
         out = output(cmd)
         return decodes(out).strip()
     def drop_container(self, name: str) -> None:
@@ -40700,6 +40704,8 @@ if __name__ == "__main__":
                   help="enable the skipped IMAGE and PYTHON versions [%default])")
     _o.add_option("-C", "--chdir", metavar="PATH", default="",
                   help="change directory before running tests {%default}")
+    _o.add_option("--local", "--localmirrors", action="count", default=LOCAL,
+                  help="fail if local mirror was not found [%default]")
     _o.add_option("--opensuse", metavar="NAME", default=OPENSUSE,
                   help="OPENSUSE=%default")
     _o.add_option("--ubuntu", metavar="NAME", default=UBUNTU,
@@ -40714,6 +40720,7 @@ if __name__ == "__main__":
     TODO = opt.todo
     KEEP = opt.keep
     #
+    LOCAL = int(opt.local)
     OPENSUSE = opt.opensuse
     UBUNTU = opt.ubuntu
     CENTOS = opt.centos
@@ -40777,9 +40784,9 @@ if __name__ == "__main__":
             testclass = globals()[classname]
             for method in sorted(dir(testclass)):
                 if arg.endswith("/"):
-                     arg = arg[:-1]
+                    arg = arg[:-1]
                 if "*" not in arg: 
-                     arg += "*"
+                    arg += "*"
                 if len(arg) > 2 and arg[1] == "_":
                     arg = "test" + arg[1:]
                 if fnmatch(method, arg):
