@@ -267,7 +267,8 @@ clean:
 copy:
 	cp -v ../docker-mirror-packages-repo/docker_mirror.py .
 	cp -v ../docker-mirror-packages-repo/docker_mirror.pyi .
-	cp -v ../docker-mirror-packages-repo/docker_local_image.py .
+	cp -v ../docker-mirror-packages-repo/docker_image.py .
+	@ grep __version__ docker_mirror.py | sed -e "s/__version__/: git commit -m 'docker_mirror/" -e "s/\$$/' docker*.py*/"
 
 dockerfiles:
 	for dockerfile in centos7-lamp-stack.dockerfile opensuse15-lamp-stack.dockerfile \
