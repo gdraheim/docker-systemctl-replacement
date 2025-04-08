@@ -113,6 +113,10 @@ def _recent(top_list: Union[str, List[str]]) -> str:
             result.append(" "+line)
     return "\n".join(result)
 
+def reply_py() -> str:
+    here = os.path.abspath(os.path.dirname(sys.argv[0]))
+    return os.path.join(here, "reply.py")
+
 def package_tool(image: str, checks: bool = False) -> str:
     if "opensuse" in image:
         if not checks:
@@ -769,8 +773,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if False and os.path.exists("/usr/bin/socat"):
             return "/usr/bin/socat"
         else:
-            here = os.path.abspath(os.path.dirname(sys.argv[0]))
-            return os.path.join(here, "reply.py")
+            return reply_py()
     def newpassword(self) -> str:
         out = "Password."
         out += random.choice(string.ascii_uppercase)
@@ -24037,8 +24040,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             """)
         text_file(os_path(testdir, "zza.txt"), """testing zzA""")
         text_file(os_path(testdir, "zzb.txt"), """testing zzB""")
-        copy_tool("reply.py", os_path(bindir, replyA))
-        copy_tool("reply.py", os_path(bindir, replyB))
+        copy_tool(reply_py(), os_path(bindir, replyA))
+        copy_tool(reply_py(), os_path(bindir, replyB))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
         copy_file(os_path(testdir, "zza.txt"), os_path(root, "/var/log/zza.txt"))
@@ -24132,8 +24135,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             """)
         text_file(os_path(testdir, "zza.txt"), """testing zzA""")
         text_file(os_path(testdir, "zzb.txt"), """testing zzB""")
-        copy_tool("reply.py", os_path(bindir, replyA))
-        copy_tool("reply.py", os_path(bindir, replyB))
+        copy_tool(reply_py(), os_path(bindir, replyA))
+        copy_tool(reply_py(), os_path(bindir, replyB))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
         copy_file(os_path(testdir, "zza.txt"), os_path(root, "/var/log/zza.txt"))
@@ -24227,8 +24230,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             """)
         text_file(os_path(testdir, "zza.txt"), """testing zzA""")
         text_file(os_path(testdir, "zzb.txt"), """testing zzB""")
-        copy_tool("reply.py", os_path(bindir, replyA))
-        copy_tool("reply.py", os_path(bindir, replyB))
+        copy_tool(reply.py(), os_path(bindir, replyA))
+        copy_tool(reply.py(), os_path(bindir, replyB))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
         copy_file(os_path(testdir, "zza.txt"), os_path(root, "/var/log/zza.txt"))
@@ -24316,7 +24319,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool("reply.py", os_path(bindir, replyA))
+        copy_tool(reply_py(), os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         cmd = F"{systemctl} enable zza.socket"
@@ -24402,7 +24405,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool("reply.py", os_path(bindir, replyA))
+        copy_tool(reply_py(), os_path(bindir, replyA))
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
@@ -24516,7 +24519,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool("reply.py", os_path(bindir, replyA))
+        copy_tool(reply_py(), os_path(bindir, replyA))
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
@@ -24643,7 +24646,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool("reply.py", os_path(bindir, replyA))
+        copy_tool(reply_py(), os_path(bindir, replyA))
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
@@ -24761,7 +24764,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool("reply.py", os_path(bindir, replyA))
+        copy_tool(reply_py(), os_path(bindir, replyA))
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
@@ -24879,7 +24882,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool("reply.py", os_path(bindir, replyA))
+        copy_tool(reply_py(), os_path(bindir, replyA))
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
@@ -24990,7 +24993,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool("reply.py", os_path(bindir, replyA))
+        copy_tool(reply_py(), os_path(bindir, replyA))
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
@@ -25116,7 +25119,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool("reply.py", os_path(bindir, replyA))
+        copy_tool(reply_py(), os_path(bindir, replyA))
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
@@ -25239,7 +25242,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool("reply.py", os_path(bindir, replyA))
+        copy_tool(reply_py(), os_path(bindir, replyA))
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
@@ -25362,7 +25365,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool("reply.py", os_path(bindir, replyA))
+        copy_tool(reply_py(), os_path(bindir, replyA))
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
@@ -25473,7 +25476,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool("reply.py", os_path(bindir, replyA))
+        copy_tool(reply_py(), os_path(bindir, replyA))
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
@@ -25581,7 +25584,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool("reply.py", os_path(bindir, replyA))
+        copy_tool(reply_py(), os_path(bindir, replyA))
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
@@ -25672,7 +25675,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool("reply.py", os_path(bindir, replyA))
+        copy_tool(reply_py(), os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         cmd = F"{systemctl} enable zza.socket"
@@ -25745,7 +25748,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool("reply.py", os_path(bindir, replyA))
+        copy_tool(reply_py(), os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         cmd = F"{systemctl} enable zza.socket"
@@ -25827,7 +25830,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool("reply.py", os_path(bindir, replyA))
+        copy_tool(reply_py(), os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         cmd = F"{systemctl} enable zza.socket"
@@ -25911,7 +25914,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool("reply.py", os_path(bindir, replyA))
+        copy_tool(reply_py(), os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         cmd = F"{systemctl} enable zza.socket"
@@ -26076,7 +26079,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool("reply.py", os_path(bindir, replyA))
+        copy_tool(reply_py(), os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         cmd = F"{systemctl} enable zza.socket"
@@ -26153,7 +26156,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool("reply.py", os_path(bindir, replyA))
+        copy_tool(reply_py(), os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         cmd = F"{systemctl} enable zza.socket"
@@ -26236,7 +26239,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool("reply.py", os_path(bindir, replyA))
+        copy_tool(reply_py(), os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         cmd = F"{systemctl} enable zza.socket"
@@ -26314,7 +26317,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool("reply.py", os_path(bindir, replyA))
+        copy_tool(reply_py(), os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         cmd = F"{systemctl} enable zza.socket"
@@ -26392,7 +26395,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool("reply.py", os_path(bindir, replyA))
+        copy_tool(reply_py(), os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         cmd = F"{systemctl} enable zza.socket"
@@ -26468,7 +26471,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool("reply.py", os_path(bindir, replyA))
+        copy_tool(reply_py(), os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         cmd = F"{systemctl} enable zza.socket"
@@ -26544,7 +26547,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool("reply.py", os_path(bindir, replyA))
+        copy_tool(reply_py(), os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         cmd = F"{systemctl} enable zza.socket"
@@ -26619,7 +26622,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool("reply.py", os_path(bindir, replyA))
+        copy_tool(reply_py(), os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         cmd = F"{systemctl} enable zza.socket"
@@ -26700,7 +26703,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool("reply.py", os_path(bindir, replyA))
+        copy_tool(reply_py(), os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         cmd = F"{systemctl} enable zza.socket"
@@ -26780,7 +26783,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool("reply.py", os_path(bindir, replyA))
+        copy_tool(reply_py(), os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         cmd = F"{systemctl} enable zza.socket"
@@ -26861,7 +26864,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool("reply.py", os_path(bindir, replyA))
+        copy_tool(reply_py(), os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         cmd = F"{systemctl} enable zza.socket"
@@ -26942,7 +26945,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool("reply.py", os_path(bindir, replyA))
+        copy_tool(reply_py(), os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         cmd = F"{systemctl} enable zza.socket"
@@ -27024,7 +27027,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool("reply.py", os_path(bindir, replyA))
+        copy_tool(reply_py(), os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         cmd = F"{systemctl} enable zza.socket"
@@ -27106,7 +27109,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool("reply.py", os_path(bindir, replyA))
+        copy_tool(reply_py(), os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         cmd = F"{systemctl} enable zza.socket"
@@ -27187,7 +27190,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool("reply.py", os_path(bindir, replyA))
+        copy_tool(reply_py(), os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         #
@@ -27234,7 +27237,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool("reply.py", os_path(bindir, replyA))
+        copy_tool(reply_py(), os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         #
@@ -27281,7 +27284,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool("reply.py", os_path(bindir, replyA))
+        copy_tool(reply_py(), os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         #
@@ -27328,7 +27331,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool("reply.py", os_path(bindir, replyA))
+        copy_tool(reply_py(), os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         #
@@ -27375,7 +27378,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool("reply.py", os_path(bindir, replyA))
+        copy_tool(reply_py(), os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         #
@@ -27422,7 +27425,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool("reply.py", os_path(bindir, replyA))
+        copy_tool(reply_py(), os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         #
@@ -27469,7 +27472,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool("reply.py", os_path(bindir, replyA))
+        copy_tool(reply_py(), os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         #
@@ -27516,7 +27519,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool("reply.py", os_path(bindir, replyA))
+        copy_tool(reply_py(), os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         #
