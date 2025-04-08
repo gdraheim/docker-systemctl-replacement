@@ -20,6 +20,8 @@ VERFILES = files/docker/systemctl3.py tests/dockertests3.py pyproject.toml
 CONTAINER = docker-systemctl
 LOCALMIRRORS=/dock
 
+LOCAL_PY = tests/localtests2.py
+LOCAL = $(PYTHON) $(LOCAL_PY) $(LOCAL_OPTIONS)
 TESTS_PY = tests/dockertests3.py
 TESTS = $(PYTHON) $(TESTS_PY) $(TESTS_OPTIONS)
 
@@ -47,45 +49,48 @@ help:
 
 alltests: CH CP UA DJ
 
-CH centos-httpd.dockerfile: ; $(TESTS) test_6001
-CP centos-postgres.dockerfile: ; $(TESTS) test_6002
-UA ubuntu-apache2.dockerfile: ; $(TESTS) test_6005
-DJ docker-jenkins: ; $(TESTS) test_900*
+CH centos-httpd.dockerfile: ; $(TESTS) test_36001
+CP centos-postgres.dockerfile: ; $(TESTS) test_36002
+UA ubuntu-apache2.dockerfile: ; $(TESTS) test_36005
+DJ docker-jenkins: ; $(TESTS) test_3900*
 
 VV=-vv
 COVERAGE=--coverage
-est_%: ; rm .coverage*; rm -rf tmp/tmp.t$(notdir $@) ; $(TESTS) "t$(notdir $@)" $(VV) $V --coverage --keep
-test_%: ; $(TESTS) "$(notdir $@)" $(VV) $V
-real_%: ; $(TESTS) "$(notdir $@)" $(VV) $V
+est_2%: ; rm .coverage*; rm -rf tmp/tmp.t$(notdir $@) ; $(TESTS) "t$(notdir $@)" $(VV) $V --coverage --keep
+test_2%: ; $(LOCAL) "$(notdir $@)" $(VV) $V
+real_2%: ; $(LOCAL) "$(notdir $@)" $(VV) $V
+est_3%: ; rm .coverage*; rm -rf tmp/tmp.t$(notdir $@) ; $(TESTS) "t$(notdir $@)" $(VV) $V --coverage --keep
+test_3%: ; $(TESTS) "$(notdir $@)" $(VV) $V
+real_3%: ; $(TESTS) "$(notdir $@)" $(VV) $V
 
 test: ; $(MAKE) type && $(MAKE) tests && $(MAKE) coverage
 
 WITH3 = --python=/usr/bin/python3 --with=files/docker/systemctl3.py
-test_%/todo:             ; $(TESTS)   "$(dir $@)" -vv --todo
-test_%/15.6:             ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=opensuse/leap:$(notdir $@)
-test_%/15.4:             ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=opensuse/leap:$(notdir $@)
-test_%/15.3:             ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=opensuse/leap:$(notdir $@)
-test_%/15.2:             ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=opensuse/leap:$(notdir $@)
-test_%/15.1:             ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=opensuse/leap:$(notdir $@)
-test_%/15.0:             ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=opensuse/leap:$(notdir $@)
-test_%/42.3:             ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=opensuse:$(notdir $@)
-test_%/42.2:             ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=opensuse:$(notdir $@)
-test_%/24.04:            ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=ubuntu:$(notdir $@)
-test_%/22.04:            ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=ubuntu:$(notdir $@)
-test_%/20.04:            ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=ubuntu:$(notdir $@)
-test_%/19.10:            ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=ubuntu:$(notdir $@)
-test_%/19.04:            ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=ubuntu:$(notdir $@)
-test_%/16.04:            ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=ubuntu:$(notdir $@)
-test_%/9.4:              ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=almalinux:$(notdir $@)
-test_%/9.3:              ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=almalinux:$(notdir $@)
-test_%/9.1:              ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=almalinux:$(notdir $@)
-test_%/8.1:              ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=centos:8.1.1911
-test_%/8.0:              ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=centos:8.0.1905
-test_%/7.7:              ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=centos:7.7.1908
-test_%/7.6:              ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=centos:7.6.1810
-test_%/7.5:              ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=centos:7.5.1804
-test_%/7.4:              ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=centos:7.4.1708
-test_%/7.3:              ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=centos:7.3.1611
+test_3%/todo:             ; $(TESTS)   "$(dir $@)" -vv --todo
+test_3%/15.6:             ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=opensuse/leap:$(notdir $@)
+test_3%/15.4:             ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=opensuse/leap:$(notdir $@)
+test_3%/15.3:             ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=opensuse/leap:$(notdir $@)
+test_3%/15.2:             ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=opensuse/leap:$(notdir $@)
+test_3%/15.1:             ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=opensuse/leap:$(notdir $@)
+test_3%/15.0:             ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=opensuse/leap:$(notdir $@)
+test_3%/42.3:             ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=opensuse:$(notdir $@)
+test_3%/42.2:             ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=opensuse:$(notdir $@)
+test_3%/24.04:            ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=ubuntu:$(notdir $@)
+test_3%/22.04:            ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=ubuntu:$(notdir $@)
+test_3%/20.04:            ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=ubuntu:$(notdir $@)
+test_3%/19.10:            ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=ubuntu:$(notdir $@)
+test_3%/19.04:            ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=ubuntu:$(notdir $@)
+test_3%/16.04:            ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=ubuntu:$(notdir $@)
+test_3%/9.4:              ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=almalinux:$(notdir $@)
+test_3%/9.3:              ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=almalinux:$(notdir $@)
+test_3%/9.1:              ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=almalinux:$(notdir $@)
+test_3%/8.1:              ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=centos:8.1.1911
+test_3%/8.0:              ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=centos:8.0.1905
+test_3%/7.7:              ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=centos:7.7.1908
+test_3%/7.6:              ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=centos:7.6.1810
+test_3%/7.5:              ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=centos:7.5.1804
+test_3%/7.4:              ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=centos:7.4.1708
+test_3%/7.3:              ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=centos:7.3.1611
 
 basetests = test_[1234]
 test2list = st_[567]
@@ -159,7 +164,7 @@ check:
 25 check2025: ; $(TESTS) -vv --opensuse=15.6 --ubuntu=ubuntu:24.04 --centos=almalinux:9.4 --docker=$(DOCKER) $(OPTIONS)
 
 # native operating system does not have python2 anymore
-test_%/27:
+test%/27:
 	$(MAKE) tmp_systemctl_py_2
 	test -z `$(DOCKER) ps -a -q -f name=$(CONTAINER)-python$(notdir $@)` || $(DOCKER) rm -f $(CONTAINER)-python$(notdir $@)
 	$(DOCKER) run -d --name=$(CONTAINER)-python$(notdir $@) $(CONTAINER)/test$(notdir $@) sleep 9999
@@ -167,10 +172,10 @@ test_%/27:
 	$(DOCKER) cp tests $(CONTAINER)-python$(notdir $@):/
 	$(DOCKER) cp tmp/systemctl.py $(CONTAINER)-python$(notdir $@):/$(PWD)/tmp/
 	$(DOCKER) exec $(CONTAINER)-python$(notdir $@) chmod +x /$(PWD)/tmp/systemctl.py
-	$(DOCKER) exec $(CONTAINER)-python$(notdir $@) /tests/testsuite.py -vv $(dir $@) --sometime=666 \
+	$(DOCKER) exec $(CONTAINER)-python$(notdir $@) /$(LOCAL_PY) $(LOCAL_OPTIONS) -vv $(dir $@) \
 	  '--with=/$(PWD)/tmp/systemctl.py' --python=/usr/bin/python2 $(COVERAGE1) $V
 	$(DOCKER) rm -f $(CONTAINER)-python$(notdir $@)
-test_%/36:
+test%/36:
 	$(MAKE) tmp_systemctl_py_3
 	test -z `docker ps -a -q -f name=$(CONTAINER)-python$(notdir $@)` || $(DOCKER) rm -f $(CONTAINER)-python$(notdir $@)
 	$(DOCKER) run -d --name=$(CONTAINER)-python$(notdir $@) $(CONTAINER)/test$(notdir $@) sleep 9999
@@ -178,7 +183,7 @@ test_%/36:
 	$(DOCKER) cp tests $(CONTAINER)-python$(notdir $@):/
 	$(DOCKER) cp tmp/systemctl.py $(CONTAINER)-python$(notdir $@):/$(PWD)/tmp/
 	$(DOCKER) exec $(CONTAINER)-python$(notdir $@) chmod +x /$(PWD)/tmp/systemctl.py
-	$(DOCKER) exec $(CONTAINER)-python$(notdir $@) /tests/testsuite.py -vv $(dir $@) --sometime=666 \
+	$(DOCKER) exec $(CONTAINER)-python$(notdir $@) /$(LOCAL_PY) $(LOCAL_OPTIONS) -vv $(dir $@) \
 	  '--with=/$(PWD)/tmp/systemctl.py' --python=/usr/bin/python3 $(COVERAGE1) $V
 	- test -z "$(COVERAGE1)" || $(DOCKER) cp $(CONTAINER)-python$(notdir):/.coverage .coverage.cov1
 	$(DOCKER) rm -f $(CONTAINER)-python$(notdir $@)
@@ -186,36 +191,34 @@ test_%/36:
 checks: checks27 checks36 coverage
 	: ready for make checkall
 
-checks27:  
-	$(MAKE) "test_[12345]/27" 
-checks36:  
-	$(MAKE) "test_[12345]/36" 
+checks27: ; $(MAKE) "test_/27" 
+checks36: ; $(MAKE) "test_/36" 
 
 check2:
 	$(MAKE) tmp_systemctl_py_2
-	$(TESTS) -vv \
+	$(LOCAL) -vv \
 	  '--with=tmp/systemctl.py' --python=/usr/bin/python2
 check3:
 	$(MAKE) tmp_systemctl_py_3
-	$(TESTS) -vv \
+	$(LOCAL) -vv \
 	  '--with=tmp/systemctl.py' --python=/usr/bin/python3
 
 test_%/2:
 	$(MAKE) tmp_systemctl_py_2
-	$(TESTS) -vv $(dir $@) --sometime=666 \
+	$(LOCAL) -vv $(dir $@) --sometime=666 \
 	  '--with=tmp/systemctl.py' --python=/usr/bin/python2
 test_%/3:
 	$(MAKE) tmp_systemctl_py_3
-	$(TESTS) -vv $(dir $@) --sometime=666 \
+	$(LOCAL) -vv $(dir $@) --sometime=666 \
 	  '--with=tmp/systemctl.py' --python=/usr/bin/python3
 
 est_%/2:
 	$(MAKE) tmp_systemctl_py_2
-	$(TESTS) -vv t$(dir $@) --sometime=666 --coverage \
+	$(LOCAL) -vv t$(dir $@) --sometime=666 --coverage \
 	  '--with=tmp/systemctl.py' --python=/usr/bin/python2
 est_%/3:
 	$(MAKE) tmp_systemctl_py_3
-	$(TESTS) -vv t$(dir $@) --sometime=666 --coverage \
+	$(LOCAL) -vv t$(dir $@) --sometime=666 --coverage \
 	  '--with=tmp/systemctl.py' --python=/usr/bin/python3
 
 
@@ -229,11 +232,11 @@ coverage: coverage3
 	ls -l tmp/systemctl.py,cover
 coverage2: 
 	$(MAKE) tmp_systemctl_py_2
-	rm .coverage* ; $(TESTS) -vv --coverage ${basetests} --xmlresults=TEST-systemctl-python2.xml \
+	rm .coverage* ; $(LOCAL) -vv --coverage ${basetests} --xmlresults=TEST-systemctl-python2.xml \
 	  '--with=tmp/systemctl.py' --python=/usr/bin/python2
 coverage3:
 	$(MAKE) tmp_systemctl_py_3
-	rm .coverage* ; $(TESTS) -vv --coverage ${basetests} --xmlresults=TEST-systemctl-python3.xml \
+	rm .coverage* ; $(LOCAL) -vv --coverage ${basetests} --xmlresults=TEST-systemctl-python3.xml \
 	  '--with=tmp/systemctl.py' --python=/usr/bin/python3
 
 p2: tmp_systemctl_py_2
@@ -261,7 +264,7 @@ tmp_ubuntu:
 UBU=test_ubuntu
 test_%/ubu:
 	$(MAKE) tmp_ubuntu
-	$(DOCKER) exec $(UBU) python3 /root/testsuite.py -C /root -vv $(notdir $@)
+	$(DOCKER) exec $(UBU) python3 /root/$(LOCAL_PY) $(LOCAL_OPTIONS) -C /root -vv $(notdir $@)
 
 clean:
 	- rm .coverage*
