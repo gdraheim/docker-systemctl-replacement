@@ -676,7 +676,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 except Exception as e:
                     logg.info(" killing %s", e)
     def rm_killall(self, testname: Optional[str] = None) -> None:
-        self.killall("*systemctl*.py *", 10, but = ["edit ", "testsuite.py "])
+        self.killall("*systemctl*.py *", 10, but = ["edit ", "localtests2.py ", "dockertests3.py "])
         testname = testname or self.caller_testname()
         self.killall(F"*/{testname}_*")
     def kill(self, pid: Union[str, int], wait: Optional[int] = None, sig: Optional[int] = None) -> bool:
@@ -906,7 +906,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     #
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     #
-    def test_1001_systemctl_testfile(self) -> None:
+    def test_31001_systemctl_testfile(self) -> None:
         """ the systemctl.py file to be tested does exist """
         testname = self.testname()
         testdir = self.testdir()
@@ -931,7 +931,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, r"systemd [234]\d\d"))
         self.assertFalse(greps(out, "via systemctl.py"))
         self.assertTrue(greps(out, "[+]SYSVINIT"))
-    def test_1005_systemctl_help_command(self) -> None:
+    def test_31005_systemctl_help_command(self) -> None:
         """ for any command, 'help command' shows the documentation """
         systemctl = cover() + _systemctl_py
         cmd = F"{systemctl} help list-unit-files"
@@ -942,7 +942,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "--type=service"))
         self.coverage()
     #
-    def test_5000_systemctl_py_inside_container(self) -> None:
+    def test_35000_systemctl_py_inside_container(self) -> None:
         """ check that we can run systemctl.py inside a docker container """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -979,7 +979,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         #
         self.assertTrue(greps(out, "systemctl.py"))
-    def test_5001_coverage_systemctl_py_inside_container(self) -> None:
+    def test_35001_coverage_systemctl_py_inside_container(self) -> None:
         """ check that we can run systemctl.py with coverage inside a docker container """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -1020,7 +1020,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         #
         self.assertTrue(greps(out, "systemctl.py"))
-    def test_5002_systemctl_py_enable_in_container(self) -> None:
+    def test_35002_systemctl_py_enable_in_container(self) -> None:
         """ check that we can enable services in a docker container """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -1088,7 +1088,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "zza.service.*static"))
         self.assertTrue(greps(out, "zzb.service.*disabled"))
         self.assertTrue(greps(out, "zzc.service.*enabled"))
-    def test_5003_systemctl_py_default_services_in_container(self) -> None:
+    def test_35003_systemctl_py_default_services_in_container(self) -> None:
         """ check that we can enable services in a docker container to have default-services"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -1168,7 +1168,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     #  compare the following with the test_4030 series
     #
     #
-    def test_5030_simple_service_functions_system(self) -> None:
+    def test_35030_simple_service_functions_system(self) -> None:
         """ check that we manage simple services in a root env
             with commands like start, restart, stop, etc"""
         self.begin()
@@ -1177,7 +1177,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.runuser_simple_service_functions("system", testname, testdir)
         self.rm_testdir()
         self.end(122)
-    def test_5031_runuser_simple_service_functions_user(self) -> None:
+    def test_35031_runuser_simple_service_functions_user(self) -> None:
         """ check that we manage simple services in a root env
             with commands like start, restart, stop, etc"""
         self.begin()
@@ -1596,7 +1596,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.save_coverage(testname)
         #
         self.rm_docker(testname)
-    def test_5032_runuser_forking_service_functions_system(self) -> None:
+    def test_35032_runuser_forking_service_functions_system(self) -> None:
         """ check that we manage forking services in a root env
             with basic run-service commands: start, stop, restart,
             reload, try-restart, reload-or-restart, kill and
@@ -1607,7 +1607,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.runuser_forking_service_functions("system", testname, testdir)
         self.rm_testdir()
         self.end()
-    def test_5033_runuser_forking_service_functions_user(self) -> None:
+    def test_35033_runuser_forking_service_functions_user(self) -> None:
         """ check that we manage forking services in a root env
             with basic run-service commands: start, stop, restart,
             reload, try-restart, reload-or-restart, kill and
@@ -1970,7 +1970,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.save_coverage(testname)
         #
         self.rm_docker(testname)
-    def test_5034_runuser_notify_service_functions_system(self) -> None:
+    def test_35034_runuser_notify_service_functions_system(self) -> None:
         """ check that we manage notify services in a root env
             with basic run-service commands: start, stop, restart,
             reload, try-restart, reload-or-restart, kill and
@@ -1981,7 +1981,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.runuser_notify_service_functions("system", testname, testdir)
         self.rm_testdir()
         self.end(188)
-    def test_5035_runuser_notify_service_functions_user(self) -> None:
+    def test_35035_runuser_notify_service_functions_user(self) -> None:
         """ check that we manage notify services in a root env
             with basic run-service commands: start, stop, restart,
             reload, try-restart, reload-or-restart, kill and
@@ -2355,7 +2355,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.save_coverage(testname)
         #
         self.rm_docker(testname)
-    def test_5036_runuser_notify_service_functions_with_reload(self) -> None:
+    def test_35036_runuser_notify_service_functions_with_reload(self) -> None:
         """ check that we manage notify services in a root env
             with basic run-service commands: start, stop, restart,
             reload, try-restart, reload-or-restart, kill and
@@ -2367,12 +2367,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         logg.error("too long")  # TODO
         self.end(200)
-    def test_5037_runuser_notify_service_functions_with_reload_user(self) -> None:
+    def test_35037_runuser_notify_service_functions_with_reload_user(self) -> None:
         """ check that we manage notify services in a root env
             with basic run-service commands: start, stop, restart,
             reload, try-restart, reload-or-restart, kill and
             reload-or-try-restart. (with ExecReload)"""
-        # test_5037 is triggering len(socketfile) > 100 | "new notify socketfile"
+        # test_35037 is triggering len(socketfile) > 100 | "new notify socketfile"
         self.begin()
         testname = self.testname()
         testdir = self.testdir()
@@ -2738,7 +2738,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.save_coverage(testname)
         #
         self.rm_docker(testname)
-    def test_5040_runuser_oneshot_service_functions(self) -> None:
+    def test_35040_runuser_oneshot_service_functions(self) -> None:
         """ check that we manage oneshot services in a root env
             with basic run-service commands: start, stop, restart,
             reload, try-restart, reload-or-restart, kill and
@@ -2749,7 +2749,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.runuser_oneshot_service_functions("system", testname, testdir)
         self.rm_testdir()
         self.end()
-    def test_5041_runuser_oneshot_service_functions_user(self) -> None:
+    def test_35041_runuser_oneshot_service_functions_user(self) -> None:
         """ check that we manage oneshot services in a root env
             with basic run-service commands: start, stop, restart,
             reload, try-restart, reload-or-restart, kill and
@@ -3020,7 +3020,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.save_coverage(testname)
         #
         self.rm_docker(testname)
-    def test_5042_runuser_oneshot_and_unknown_service_functions(self) -> None:
+    def test_35042_runuser_oneshot_and_unknown_service_functions(self) -> None:
         """ check that we manage multiple services even when some
             services are not actually known. Along with oneshot serivce
             with basic run-service commands: start, stop, restart,
@@ -3288,7 +3288,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_docker(testname)
         self.rm_testdir()
         self.end()
-    def test_5043_runuser_oneshot_template_service_functions(self) -> None:
+    def test_35043_runuser_oneshot_template_service_functions(self) -> None:
         """ check that we manage oneshot template services in a root env
             with basic run-service commands: start, stop, restart,
             reload, try-restart, reload-or-restart, kill and
@@ -3299,7 +3299,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.runuser_oneshot_template_service_functions("system", testname, testdir)
         self.rm_testdir()
         self.end()
-    def test_5044_runuser_oneshot_template_service_functions_user(self) -> None:
+    def test_35044_runuser_oneshot_template_service_functions_user(self) -> None:
         """ check that we manage oneshot template services in a root env
             with basic run-service commands: start, stop, restart,
             reload, try-restart, reload-or-restart, kill and
@@ -3596,7 +3596,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.save_coverage(testname)
         #
         self.rm_docker(testname)
-    def test_5045_runuser_sysv_service_functions(self) -> None:
+    def test_35045_runuser_sysv_service_functions(self) -> None:
         """ check that we manage SysV services in a root env
             with basic run-service commands: start, stop, restart,
             reload, try-restart, reload-or-restart, kill and
@@ -3937,11 +3937,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.end(188)
     #
     #
-    #  compare the following with the test_5030 series
+    #  compare the following with the test_35030 series
     #  as they are doing the same with usermode-only containers
     #
     #
-    def test_5100_usermode_keeps_running(self) -> None:
+    def test_35100_usermode_keeps_running(self) -> None:
         """ check that we manage simple services in a root env
             with commands like start, restart, stop, etc"""
         self.begin()
@@ -3950,7 +3950,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.usermode_keeps_running("system", testname, testdir)
         self.rm_testdir()
         self.end()
-    def test_5101_usermode_keeps_running_user(self) -> None:
+    def test_35101_usermode_keeps_running_user(self) -> None:
         """ check that we manage simple services in a root env
             with commands like start, restart, stop, etc"""
         self.begin()
@@ -4116,7 +4116,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.assertFalse(greps(err, "Error response from daemon"))
         self.assertEqual(out.strip(), "failed") # sleep did exit but not 'stop' requested
-    def test_5130_usermode_simple_service_functions_system(self) -> None:
+    def test_35130_usermode_simple_service_functions_system(self) -> None:
         """ check that we manage simple services in a root env
             with commands like start, restart, stop, etc"""
         self.begin()
@@ -4125,7 +4125,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.usermode_simple_service_functions("system", testname, testdir)
         self.rm_testdir()
         self.end(122)
-    def test_5131_simple_service_functions_user(self) -> None:
+    def test_35131_simple_service_functions_user(self) -> None:
         """ check that we manage simple services in a root env
             with commands like start, restart, stop, etc"""
         self.begin()
@@ -4560,7 +4560,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{docker} rmi {images}:{testname}"
         sx____(cmd)
         self.rm_docker(testname)
-    def test_5132_usermode_forking_service_functions_system(self) -> None:
+    def test_35132_usermode_forking_service_functions_system(self) -> None:
         """ check that we manage forking services in a root env
             with basic run-service commands: start, stop, restart,
             reload, try-restart, reload-or-restart, kill and
@@ -4571,7 +4571,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.usermode_forking_service_functions("system", testname, testdir)
         self.rm_testdir()
         self.end()
-    def test_5133_usermode_forking_service_functions_user(self) -> None:
+    def test_35133_usermode_forking_service_functions_user(self) -> None:
         """ check that we manage forking services in a root env
             with basic run-service commands: start, stop, restart,
             reload, try-restart, reload-or-restart, kill and
@@ -4950,7 +4950,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{docker} rmi {images}:{testname}"
         sx____(cmd)
         self.rm_docker(testname)
-    def test_5134_usermode_notify_service_functions_system(self) -> None:
+    def test_35134_usermode_notify_service_functions_system(self) -> None:
         """ check that we manage notify services in a root env
             with basic run-service commands: start, stop, restart,
             reload, try-restart, reload-or-restart, kill and
@@ -4962,7 +4962,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end(122)
-    def test_5135_usermode_notify_service_functions_user(self) -> None:
+    def test_35135_usermode_notify_service_functions_user(self) -> None:
         """ check that we manage notify services in a root env
             with basic run-service commands: start, stop, restart,
             reload, try-restart, reload-or-restart, kill and
@@ -5352,7 +5352,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{docker} rmi {images}:{testname}"
         sx____(cmd)
         self.rm_docker(testname)
-    def test_5136_usermode_notify_service_functions_with_reload(self) -> None:
+    def test_35136_usermode_notify_service_functions_with_reload(self) -> None:
         """ check that we manage notify services in a root env
             with basic run-service commands: start, stop, restart,
             reload, try-restart, reload-or-restart, kill and
@@ -5365,12 +5365,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.coverage()
         logg.error("too long")  # TODO
         self.end(200)
-    def test_5137_usermode_notify_service_functions_with_reload_user(self) -> None:
+    def test_35137_usermode_notify_service_functions_with_reload_user(self) -> None:
         """ check that we manage notify services in a root env
             with basic run-service commands: start, stop, restart,
             reload, try-restart, reload-or-restart, kill and
             reload-or-try-restart. (with ExecReload)"""
-        # test_5037 is triggering len(socketfile) > 100 | "new notify socketfile"
+        # test_35037 is triggering len(socketfile) > 100 | "new notify socketfile"
         self.begin()
         testname = self.testname()
         testdir = self.testdir()
@@ -5754,7 +5754,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{docker} rmi {images}:{testname}"
         sx____(cmd)
         self.rm_docker(testname)
-    def test_5140_usermode_oneshot_service_functions(self) -> None:
+    def test_35140_usermode_oneshot_service_functions(self) -> None:
         """ check that we manage oneshot services in a root env
             with basic run-service commands: start, stop, restart,
             reload, try-restart, reload-or-restart, kill and
@@ -5765,7 +5765,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.usermode_oneshot_service_functions("system", testname, testdir)
         self.rm_testdir()
         self.end()
-    def test_5141_usermode_oneshot_service_functions_user(self) -> None:
+    def test_35141_usermode_oneshot_service_functions_user(self) -> None:
         """ check that we manage oneshot services in a root env
             with basic run-service commands: start, stop, restart,
             reload, try-restart, reload-or-restart, kill and
@@ -6053,7 +6053,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{docker} rmi {images}:{testname}"
         sx____(cmd)
         self.rm_docker(testname)
-    def test_5142_usermode_oneshot_and_unknown_service_functions(self) -> None:
+    def test_35142_usermode_oneshot_and_unknown_service_functions(self) -> None:
         """ check that we manage multiple services even when some
             services are not actually known. Along with oneshot serivce
             with basic run-service commands: start, stop, restart,
@@ -6338,7 +6338,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_docker(testname)
         self.rm_testdir()
         self.end()
-    def test_5144_usermode_sysv_service_functions(self) -> None:
+    def test_35144_usermode_sysv_service_functions(self) -> None:
         """ check that we are disallowed to manage SysV services in a root env
             with basic run-service commands: start, stop, restart,
             reload, try-restart, reload-or-restart, kill and
@@ -6478,7 +6478,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.end()
     #
     #
-    def test_5230_bad_usermode_simple_service_functions_system(self) -> None:
+    def test_35230_bad_usermode_simple_service_functions_system(self) -> None:
         """ check that we are disallowed to manage simple services in a root env
             with commands like start, restart, stop, etc"""
         self.begin()
@@ -6487,7 +6487,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.bad_usermode_simple_service_functions("", testname, testdir)
         self.rm_testdir()
         self.end()
-    def test_5231_bad_simple_service_functions_user(self) -> None:
+    def test_35231_bad_simple_service_functions_user(self) -> None:
         """ check that we are disallowed to manage simple services in a root env
             with commands like start, restart, stop, etc"""
         self.begin()
@@ -6688,7 +6688,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{docker} rmi {images}:{testname}"
         sx____(cmd)
         self.rm_docker(testname)
-    def test_5232_bad_usermode_forking_service_functions_system(self) -> None:
+    def test_35232_bad_usermode_forking_service_functions_system(self) -> None:
         """ check that we are disallowed to manage forking services in a root env
             with basic run-service commands: start, stop, restart,
             reload, try-restart, reload-or-restart, kill and
@@ -6699,7 +6699,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.bad_usermode_forking_service_functions("", testname, testdir)
         self.rm_testdir()
         self.end()
-    def test_5233_bad_usermode_forking_service_functions_user(self) -> None:
+    def test_35233_bad_usermode_forking_service_functions_user(self) -> None:
         """ check that we are disallowed to manage forking services in a root env
             with basic run-service commands: start, stop, restart,
             reload, try-restart, reload-or-restart, kill and
@@ -6910,7 +6910,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.save_coverage(testname)
         #
         self.rm_docker(testname)
-    def test_5234_bad_usermode_notify_service_functions_system(self) -> None:
+    def test_35234_bad_usermode_notify_service_functions_system(self) -> None:
         """ check that we are disallowed to manage notify services in a root env
             with basic run-service commands: start, stop, restart,
             reload, try-restart, reload-or-restart, kill and
@@ -6922,7 +6922,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
-    def test_5235_bad_usermode_notify_service_functions_user(self) -> None:
+    def test_35235_bad_usermode_notify_service_functions_user(self) -> None:
         """ check that we are disallowed to manage notify services in a root env
             with basic run-service commands: start, stop, restart,
             reload, try-restart, reload-or-restart, kill and
@@ -7137,7 +7137,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{docker} rmi {images}:{testname}"
         sx____(cmd)
         self.rm_docker(testname)
-    def test_5236_bad_usermode_notify_service_functions_with_reload(self) -> None:
+    def test_35236_bad_usermode_notify_service_functions_with_reload(self) -> None:
         """ check that we manage notify services in a root env
             with basic run-service commands: start, stop, restart,
             reload, try-restart, reload-or-restart, kill and
@@ -7150,12 +7150,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.coverage()
         logg.error("too long")  # TODO
         self.end(200)
-    def test_5237_bad_usermode_notify_service_functions_with_reload_user(self) -> None:
+    def test_35237_bad_usermode_notify_service_functions_with_reload_user(self) -> None:
         """ check that we are disallowed to manage notify services in a root env
             with basic run-service commands: start, stop, restart,
             reload, try-restart, reload-or-restart, kill and
             reload-or-try-restart. (with ExecReload)"""
-        # test_5037 is triggering len(socketfile) > 100 | "new notify socketfile"
+        # test_35037 is triggering len(socketfile) > 100 | "new notify socketfile"
         self.begin()
         testname = self.testname()
         testdir = self.testdir()
@@ -7364,7 +7364,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{docker} rmi {images}:{testname}"
         sx____(cmd)
         self.rm_docker(testname)
-    def test_5240_bad_usermode_oneshot_service_functions(self) -> None:
+    def test_35240_bad_usermode_oneshot_service_functions(self) -> None:
         """ check that we are disallowed to manage oneshot services in a root env
             with basic run-service commands: start, stop, restart,
             reload, try-restart, reload-or-restart, kill and
@@ -7375,7 +7375,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.bad_usermode_oneshot_service_functions("", testname, testdir)
         self.rm_testdir()
         self.end()
-    def test_5241_bad_usermode_oneshot_service_functions_user(self) -> None:
+    def test_35241_bad_usermode_oneshot_service_functions_user(self) -> None:
         """ check that we are disallowed to manage oneshot services in a root env
             with basic run-service commands: start, stop, restart,
             reload, try-restart, reload-or-restart, kill and
@@ -7552,7 +7552,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{docker} rmi {images}:{testname}"
         sx____(cmd)
         self.rm_docker(testname)
-    def test_5290_bad_usermode_other_commands(self) -> None:
+    def test_35290_bad_usermode_other_commands(self) -> None:
         """ check that we are disallowed to manage oneshot services in a root env
             with other commands: enable, disable, mask, unmaks,..."""
         self.begin()
@@ -7561,7 +7561,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.bad_usermode_other_commands("", testname, testdir)
         self.rm_testdir()
         self.end()
-    def test_5291_bad_usermode_other_commands(self) -> None:
+    def test_35291_bad_usermode_other_commands(self) -> None:
         """ check that we are disallowed to manage oneshot services in a root env
             with other commands: enable, disable, mask, unmaks,..."""
         self.begin()
@@ -7715,7 +7715,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     #
     #
     #
-    def test_5430_systemctl_py_start_simple(self) -> None:
+    def test_35430_systemctl_py_start_simple(self) -> None:
         """ check that we can start simple services in a container"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -7803,7 +7803,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.rm_docker(testname)
         self.rm_testdir()
-    def test_5431_systemctl_py_start_extra_simple(self) -> None:
+    def test_35431_systemctl_py_start_extra_simple(self) -> None:
         """ check that we can start simple services in a container"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -7881,7 +7881,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.rm_docker(testname)
         self.rm_testdir()
-    def test_5432_systemctl_py_start_forking(self) -> None:
+    def test_35432_systemctl_py_start_forking(self) -> None:
         """ check that we can start forking services in a container w/ PIDFile"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -7983,7 +7983,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.rm_docker(testname)
         self.rm_testdir()
-    def test_5433_systemctl_py_start_forking_without_pid_file(self) -> None:
+    def test_35433_systemctl_py_start_forking_without_pid_file(self) -> None:
         """ check that we can start forking services in a container without PIDFile"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -8083,7 +8083,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.rm_docker(testname)
         self.rm_testdir()
-    def test_5435_systemctl_py_start_notify_by_timeout(self) -> None:
+    def test_35435_systemctl_py_start_notify_by_timeout(self) -> None:
         """ check that we can start simple services in a container w/ notify timeout"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -8169,7 +8169,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.rm_docker(testname)
         self.rm_testdir()
-    def test_5500_systemctl_py_run_default_services_in_container(self) -> None:
+    def test_35500_systemctl_py_run_default_services_in_container(self) -> None:
         """ check that we can enable services in a docker container to be run as default-services"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -8266,7 +8266,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.rm_docker(testname)
         self.rm_testdir()
-    def test_5520_systemctl_py_run_default_services_from_saved_container(self) -> None:
+    def test_35520_systemctl_py_run_default_services_from_saved_container(self) -> None:
         """ check that we can enable services in a docker container to be run as default-services
             after it has been restarted from a commit-saved container image (with --init default)"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -8390,7 +8390,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd)
         self.rm_docker(testname)
         self.rm_testdir()
-    def test_5530_systemctl_py_run_default_services_from_simple_saved_container(self) -> None:
+    def test_35530_systemctl_py_run_default_services_from_simple_saved_container(self) -> None:
         """ check that we can enable services in a docker container to be run as default-services
             after it has been restarted from a commit-saved container image (without any arg)"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -8497,7 +8497,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd)
         self.rm_docker(testname)
         self.rm_testdir()
-    def test_5533_systemctl_py_run_default_services_from_single_service_saved_container(self) -> None:
+    def test_35533_systemctl_py_run_default_services_from_single_service_saved_container(self) -> None:
         """ check that we can enable services in a docker container to be run as default-services
             after it has been restarted from a commit-saved container image"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -8604,7 +8604,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_docker(testname)
         self.rm_testdir()
 
-    def test_5600_systemctl_py_list_units_running(self) -> None:
+    def test_35600_systemctl_py_list_units_running(self) -> None:
         """ check that we can enable services in a docker container to be run as default-services
             after it has been restarted and that we can filter the list of services shown"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -8724,7 +8724,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_docker(testname)
         self.rm_testdir()
 
-    def test_5700_systemctl_py_restart_failed_units(self) -> None:
+    def test_35700_systemctl_py_restart_failed_units(self) -> None:
         """ check that we can enable services in a docker container to be run as default-services
             and failed units are going to be restarted"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -8934,7 +8934,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd)
         self.rm_docker(testname)
         self.rm_testdir()
-    def test_5881_set_user(self) -> None:
+    def test_35881_set_user(self) -> None:
         """ check that we can run a service with User= settings (for coverage) """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -9026,7 +9026,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_docker(testname)
         self.rm_testdir()
         self.end()
-    def test_5882_set_user_and_group(self) -> None:
+    def test_35882_set_user_and_group(self) -> None:
         """ check that we can run a service with User= Group= settings (for coverage) """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -9115,7 +9115,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_docker(testname)
         self.rm_testdir()
         self.end()
-    def test_5883_set_group(self) -> None:
+    def test_35883_set_group(self) -> None:
         """ check that we can run a service with Group= settings (for coverage) """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -9203,7 +9203,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_docker(testname)
         self.rm_testdir()
         self.end()
-    def test_5884_set_user_and_group_and_supp_group(self) -> None:
+    def test_35884_set_user_and_group_and_supp_group(self) -> None:
         """ check that we can run a service with User= Group= SupplementaryGroups= settings (for coverage) """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -9293,7 +9293,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_docker(testname)
         self.rm_testdir()
         self.end()
-    def test_5885_set_user_and_supp_group(self) -> None:
+    def test_35885_set_user_and_supp_group(self) -> None:
         """ check that we can run a service with User= SupplementaryGroups= extra (for coverage) """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -9382,7 +9382,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_docker(testname)
         self.rm_testdir()
         self.end()
-    def test_5886_set_user_and_new_group(self) -> None:
+    def test_35886_set_user_and_new_group(self) -> None:
         """ check that we can run a service with User= Group= settings (for coverage) """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -9473,7 +9473,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_docker(testname)
         self.rm_testdir()
         self.end()
-    def test_5887_set_new_group(self) -> None:
+    def test_35887_set_new_group(self) -> None:
         """ check that we can run a service with Group= settings (for coverage) """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -9563,7 +9563,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_docker(testname)
         self.rm_testdir()
         self.end()
-    def test_5888_set_user_and_new_group_and_supp_group(self) -> None:
+    def test_35888_set_user_and_new_group_and_supp_group(self) -> None:
         """ check that we can run a service with User= Group= SupplementaryGroups= settings (for coverage) """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -9655,7 +9655,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_docker(testname)
         self.rm_testdir()
         self.end()
-    def test_5889_set_user_and_new_supp_group(self) -> None:
+    def test_35889_set_user_and_new_supp_group(self) -> None:
         """ check that we can run a service with User= SupplementaryGroups= extra (for coverage) """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -9746,7 +9746,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_docker(testname)
         self.rm_testdir()
         self.end()
-    def test_5891_set_user(self) -> None:
+    def test_35891_set_user(self) -> None:
         """ check that we can run a service with User= settings (for coverage) """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -9840,7 +9840,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_docker(testname)
         self.rm_testdir()
         self.end()
-    def test_5892_set_user_and_group(self) -> None:
+    def test_35892_set_user_and_group(self) -> None:
         """ check that we can run a service with User= Group= settings (for coverage) """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -9931,7 +9931,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_docker(testname)
         self.rm_testdir()
         self.end()
-    def test_5893_set_group(self) -> None:
+    def test_35893_set_group(self) -> None:
         """ check that we can run a service with Group= settings (for coverage) """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -10021,7 +10021,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_docker(testname)
         self.rm_testdir()
         self.end()
-    def test_5894_set_user_and_group_and_supp_group(self) -> None:
+    def test_35894_set_user_and_group_and_supp_group(self) -> None:
         """ check that we can run a service with User= Group= SupplementaryGroups= settings (for coverage) """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -10113,7 +10113,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_docker(testname)
         self.rm_testdir()
         self.end()
-    def test_5895_set_user_and_supp_group(self) -> None:
+    def test_35895_set_user_and_supp_group(self) -> None:
         """ check that we can run a service with User= SupplementaryGroups= extra (for coverage) """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -10204,7 +10204,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_docker(testname)
         self.rm_testdir()
         self.end()
-    def test_5896_set_user_and_new_group(self) -> None:
+    def test_35896_set_user_and_new_group(self) -> None:
         """ check that we can run a service with User= Group= settings (for coverage) """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -10297,7 +10297,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_docker(testname)
         self.rm_testdir()
         self.end()
-    def test_5897_set_new_group(self) -> None:
+    def test_35897_set_new_group(self) -> None:
         """ check that we can run a service with Group= settings (for coverage) """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -10389,7 +10389,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_docker(testname)
         self.rm_testdir()
         self.end()
-    def test_5898_set_user_and_new_group_and_supp_group(self) -> None:
+    def test_35898_set_user_and_new_group_and_supp_group(self) -> None:
         """ check that we can run a service with User= Group= SupplementaryGroups= settings (for coverage) """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -10483,7 +10483,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_docker(testname)
         self.rm_testdir()
         self.end()
-    def test_5899_set_user_and_new_supp_group(self) -> None:
+    def test_35899_set_user_and_new_supp_group(self) -> None:
         """ check that we can run a service with User= SupplementaryGroups= extra (for coverage) """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -10577,7 +10577,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.end()
 
-    def test_6130_run_default_services_from_simple_saved_container(self) -> None:
+    def test_36130_run_default_services_from_simple_saved_container(self) -> None:
         """ check that we can enable services in a docker container to be run as default-services
             after it has been restarted from a commit-saved container image.
             This includes some corage on the init-services."""
@@ -10689,7 +10689,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd)
         self.rm_docker(testname)
         self.rm_testdir()
-    def test_6133_run_default_services_from_single_service_saved_container(self) -> None:
+    def test_36133_run_default_services_from_single_service_saved_container(self) -> None:
         """ check that we can enable services in a docker container to be run as default-services
             after it has been restarted from a commit-saved container image.
             This includes some corage on the init-services."""
@@ -10804,7 +10804,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd)
         self.rm_docker(testname)
         self.rm_testdir()
-    def test_6160_systemctl_py_init_default_halt_to_exit_container(self) -> None:
+    def test_36160_systemctl_py_init_default_halt_to_exit_container(self) -> None:
         """ check that we can 'halt' in a docker container to stop the service
             and to exit the PID 1 as the last part of the service."""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -10945,7 +10945,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd)
         self.rm_docker(testname)
         self.rm_testdir()
-    def test_6170_systemctl_py_init_all_stop_last_service_to_exit_container(self) -> None:
+    def test_36170_systemctl_py_init_all_stop_last_service_to_exit_container(self) -> None:
         """ check that we can 'stop <service>' in a docker container to stop the service
             being the last service and to exit the PID 1 as the last part of the service."""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -11095,7 +11095,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd)
         self.rm_docker(testname)
         self.rm_testdir()
-    def test_6180_systemctl_py_init_explicit_halt_to_exit_container(self) -> None:
+    def test_36180_systemctl_py_init_explicit_halt_to_exit_container(self) -> None:
         """ check that we can 'halt' in a docker container to stop the service
             and to exit the PID 1 as the last part of the service."""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -11235,7 +11235,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd)
         self.rm_docker(testname)
         self.rm_testdir()
-    def test_6190_systemctl_py_init_explicit_stop_last_service_to_exit_container(self) -> None:
+    def test_36190_systemctl_py_init_explicit_stop_last_service_to_exit_container(self) -> None:
         """ check that we can 'stop <service>' in a docker container to stop the service
             being the last service and to exit the PID 1 as the last part of the service."""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -11376,7 +11376,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd)
         self.rm_docker(testname)
         self.rm_testdir()
-    def test_6200_systemctl_py_switch_users_is_possible(self) -> None:
+    def test_36200_systemctl_py_switch_users_is_possible(self) -> None:
         """ check that we can put setuid/setgid definitions in a service
             specfile which also works on the pid file itself """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -11500,7 +11500,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd)
         self.rm_docker(testname)
         self.rm_testdir()
-    def test_6201_systemctl_py_switch_users_is_possible_from_saved_container(self) -> None:
+    def test_36201_systemctl_py_switch_users_is_possible_from_saved_container(self) -> None:
         """ check that we can put setuid/setgid definitions in a service
             specfile which also works on the pid file itself """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -11645,7 +11645,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd)
         self.rm_docker(testname)
         self.rm_testdir()
-    def test_6210_switch_users_and_workingdir_coverage(self) -> None:
+    def test_36210_switch_users_and_workingdir_coverage(self) -> None:
         """ check that we can put workingdir and setuid/setgid definitions in a service
             and code parts for that are actually executed (test case without fork before) """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -11781,7 +11781,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd)
         self.rm_docker(testname)
         self.rm_testdir()
-    def test_6600_systemctl_py_can_reap_zombies_in_a_container(self) -> None:
+    def test_36600_systemctl_py_can_reap_zombies_in_a_container(self) -> None:
         """ check that we can reap zombies in a container managed by systemctl.py"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -11925,7 +11925,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_docker(testname)
         self.rm_testdir()
 
-    def test_7001_centos_httpd(self) -> None:
+    def test_37001_centos_httpd(self) -> None:
         """ WHEN using a systemd-enabled CentOS 7,
             THEN we can create an image with an Apache HTTP service
                  being installed and enabled.
@@ -11993,7 +11993,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd)
         self.rm_docker(testname)
         self.rm_testdir()
-    def test_7002_centos_postgres(self) -> None:
+    def test_37002_centos_postgres(self) -> None:
         """ WHEN using a systemd-enabled CentOS 7,
             THEN we can create an image with an PostgreSql DB service
                  being installed and enabled.
@@ -12084,7 +12084,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd)
         self.rm_docker(testname)
         self.rm_testdir()
-    def test_7003_opensuse_syslog(self) -> None:
+    def test_37003_opensuse_syslog(self) -> None:
         """ WHEN using a systemd-enabled CentOS 7 ..."""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -12137,7 +12137,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd)
         self.rm_docker(testname)
         self.rm_testdir()
-    def test_7011_centos_httpd_socket_notify(self) -> None:
+    def test_37011_centos_httpd_socket_notify(self) -> None:
         """ WHEN using an image for a systemd-enabled CentOS 7,
             THEN we can create an image with an Apache HTTP service
                  being installed and enabled.
@@ -12229,7 +12229,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(debug_log, "wait [$]NOTIFY_SOCKET"))
         self.rm_docker(testname)
         self.rm_testdir()
-    def test_7020_ubuntu_apache2_with_saved_container(self) -> None:
+    def test_37020_ubuntu_apache2_with_saved_container(self) -> None:
         """ WHEN using a systemd enabled Ubuntu as the base image
             THEN we can create an image with an Apache HTTP service
                  being installed and enabled.
@@ -12295,7 +12295,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd)
         self.rm_docker(testname)
         self.rm_testdir()
-    def test_7502_centos_postgres_user_mode_container(self) -> None:
+    def test_37502_centos_postgres_user_mode_container(self) -> None:
         """ WHEN using a systemd-enabled CentOS 7,
             THEN we can create an image with an PostgreSql DB service
                  being installed and enabled.
@@ -12386,7 +12386,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_docker(testname)
         self.rm_testdir()
     # @unittest.expectedFailure
-    def test_8001_issue_1_start_mariadb_centos(self) -> None:
+    def test_38001_issue_1_start_mariadb_centos(self) -> None:
         """ issue 1: mariadb on centos does not start"""
         # this was based on the expectation that "yum install mariadb" would allow
         # for a "systemctl start mysql" which in fact it doesn't. Double-checking
@@ -12465,7 +12465,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.rm_docker(testname)
         self.rm_testdir()
-    def test_8002_issue_2_start_rsyslog_centos(self) -> None:
+    def test_38002_issue_2_start_rsyslog_centos(self) -> None:
         """ issue 2: rsyslog on centos does not start"""
         # this was based on a ";Requires=xy" line in the unit file
         # but our unit parser did not regard ";" as starting a comment
@@ -12521,7 +12521,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.rm_docker(testname)
         self.rm_testdir()
-    def test_8011_centos_httpd_socket_notify(self) -> None:
+    def test_38011_centos_httpd_socket_notify(self) -> None:
         """ start/restart behaviour if a httpd has failed - issue #11 """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -12613,7 +12613,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.rm_docker(testname)
         self.rm_testdir()
-    def test_8031_centos_nginx_restart(self) -> None:
+    def test_38031_centos_nginx_restart(self) -> None:
         """ start/restart behaviour if a nginx has failed - issue #31 """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -12701,7 +12701,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         self.rm_docker(testname)
         self.rm_testdir()
-    def test_8034_testing_mask_unmask(self) -> None:
+    def test_38034_testing_mask_unmask(self) -> None:
         """ Checking the issue 34 on Ubuntu """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -12787,7 +12787,7 @@ EnvironmentFile=-/etc/default/kubelet
 ExecStart=
 ExecStart=/usr/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_CONFIG_ARGS $KUBELET_KUBEADM_ARGS $KUBELET_EXTRA_ARGS
     """
-    def test_8051_systemctl_extra_conf_dirs(self) -> None:
+    def test_38051_systemctl_extra_conf_dirs(self) -> None:
         """ checking issue #51 on extra conf dirs """
         testdir = self.testdir()
         root = self.root(testdir)
@@ -12809,7 +12809,7 @@ ExecStart=/usr/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_CONFIG_ARGS $KUBELE
         self.assertTrue(greps(out, "KUBELET_KUBECONFIG_ARGS"))
         self.rm_testdir()
         self.coverage()
-    def test_8052_systemctl_extra_conf_dirs(self) -> None:
+    def test_38052_systemctl_extra_conf_dirs(self) -> None:
         """ checking issue #52 on extra conf dirs """
         testdir = self.testdir()
         root = self.root(testdir)
@@ -12831,7 +12831,7 @@ ExecStart=/usr/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_CONFIG_ARGS $KUBELE
         self.assertTrue(greps(out, "KUBELET_KUBECONFIG_ARGS"))
         self.rm_testdir()
         self.coverage()
-    def test_9531_centos7_lamp_stack(self) -> None:
+    def test_39531_centos7_lamp_stack(self) -> None:
         """ Check setup of Linux/Apache/Mariadb/Php on CentOs 7 with python2"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         python = _python or _python2
@@ -12885,7 +12885,7 @@ ExecStart=/usr/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_CONFIG_ARGS $KUBELE
         cmd = F"docker rmi {images}:{testname}"
         sx____(cmd)
         self.rm_testdir()
-    def test_9541_opensuse15_lamp_stack_php7(self) -> None:
+    def test_39541_opensuse15_lamp_stack_php7(self) -> None:
         """ Check setup of Linux/Apache/Mariadb/Php" on Opensuse later than 15.x"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         testname=self.testname()
@@ -12937,7 +12937,7 @@ ExecStart=/usr/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_CONFIG_ARGS $KUBELE
         cmd = F"docker rmi {images}:{testname}"
         sx____(cmd)
         self.rm_testdir()
-    def test_9999_drop_local_mirrors(self) -> None:
+    def test_39999_drop_local_mirrors(self) -> None:
         """ a helper when using images from https://github.com/gdraheim/docker-mirror-packages-repo"
             which create containers according to self.local_image(IMAGE) """
         docker = _docker
@@ -13070,7 +13070,7 @@ if __name__ == "__main__":
             for method in sorted(dir(testclass)):
                 if arg.endswith("/"):
                     arg = arg[:-1]
-                if "*" not in arg: 
+                if "*" not in arg:
                     arg += "*"
                 if len(arg) > 2 and arg[1] == "_":
                     arg = "test" + arg[1:]
