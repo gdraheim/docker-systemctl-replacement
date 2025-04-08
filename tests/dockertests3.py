@@ -113,7 +113,7 @@ def _recent(top_list: Union[str, List[str]]) -> str:
             result.append(" "+line)
     return "\n".join(result)
 
-def reply_py() -> str:
+def reply_tool() -> str:
     here = os.path.abspath(os.path.dirname(sys.argv[0]))
     return os.path.join(here, "reply.py")
 
@@ -773,7 +773,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if False and os.path.exists("/usr/bin/socat"):
             return "/usr/bin/socat"
         else:
-            return reply_py()
+            return reply_tool()
     def newpassword(self) -> str:
         out = "Password."
         out += random.choice(string.ascii_uppercase)
@@ -24040,8 +24040,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             """)
         text_file(os_path(testdir, "zza.txt"), """testing zzA""")
         text_file(os_path(testdir, "zzb.txt"), """testing zzB""")
-        copy_tool(reply_py(), os_path(bindir, replyA))
-        copy_tool(reply_py(), os_path(bindir, replyB))
+        reply = reply_tool()
+        copy_tool(reply, os_path(bindir, replyA))
+        copy_tool(reply, os_path(bindir, replyB))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
         copy_file(os_path(testdir, "zza.txt"), os_path(root, "/var/log/zza.txt"))
@@ -24135,8 +24136,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             """)
         text_file(os_path(testdir, "zza.txt"), """testing zzA""")
         text_file(os_path(testdir, "zzb.txt"), """testing zzB""")
-        copy_tool(reply_py(), os_path(bindir, replyA))
-        copy_tool(reply_py(), os_path(bindir, replyB))
+        reply = reply_tool()
+        copy_tool(reply, os_path(bindir, replyA))
+        copy_tool(reply, os_path(bindir, replyB))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
         copy_file(os_path(testdir, "zza.txt"), os_path(root, "/var/log/zza.txt"))
@@ -24230,8 +24232,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             """)
         text_file(os_path(testdir, "zza.txt"), """testing zzA""")
         text_file(os_path(testdir, "zzb.txt"), """testing zzB""")
-        copy_tool(reply_py(), os_path(bindir, replyA))
-        copy_tool(reply_py(), os_path(bindir, replyB))
+        reply = reply_tool()
+        copy_tool(reply, os_path(bindir, replyA))
+        copy_tool(reply, os_path(bindir, replyB))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
         copy_file(os_path(testdir, "zza.txt"), os_path(root, "/var/log/zza.txt"))
@@ -24319,7 +24322,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool(reply_py(), os_path(bindir, replyA))
+        reply = reply_tool()
+        copy_tool(reply, os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         cmd = F"{systemctl} enable zza.socket"
@@ -24345,7 +24349,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         oo = reads(debug_log.format(**locals())) # TODO
         logg.info("debug.log>>\n%s", oo)
         #
-        cmd = F"./reply.py sendUNIX -d foo -f {sockfile}"
+        cmd = F"{reply} sendUNIX -d foo -f {sockfile}"
         out, end = output2(cmd)
         self.assertEqual(end, 0)
         logg.info("send.log>>\n%s", out)
@@ -24405,7 +24409,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool(reply_py(), os_path(bindir, replyA))
+        reply = reply_tool()
+        copy_tool(reply, os_path(bindir, replyA))
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
@@ -24433,7 +24438,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         oo = reads(debug_log.format(**locals()))  # TODO
         logg.info("debug.log>>\n%s", oo)
         #
-        cmd = F"./reply.py sendUNIX -d foo -f {sockfile}"
+        cmd = F"{reply} sendUNIX -d foo -f {sockfile}"
         out, end = output2(cmd)
         self.assertEqual(end, 0)
         logg.info("send.log>>\n%s", out)
@@ -24443,7 +24448,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} start zza.socket -vvvv"
         sh____(cmd)
         #
-        cmd = F"./reply.py sendUNIX -d foo -f {sockfile}"
+        cmd = F"{reply} sendUNIX -d foo -f {sockfile}"
         out, end = output2(cmd)
         self.assertEqual(end, 0)
         logg.info("send.log>>\n%s", out)
@@ -24458,7 +24463,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{systemctl} stop zza.socket -vvvv"
         sh____(cmd)
         #
-        cmd = F"./reply.py sendUNIX -d foo -f {sockfile}"
+        cmd = F"{reply} sendUNIX -d foo -f {sockfile}"
         out, end = output2(cmd)
         self.assertEqual(end, 0)
         logg.info("send.log>>\n%s", out)
@@ -24519,7 +24524,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool(reply_py(), os_path(bindir, replyA))
+        reply = reply_tool()
+        copy_tool(reply, os_path(bindir, replyA))
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
@@ -24547,7 +24553,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         oo = reads(debug_log.format(**locals())) # TODO
         logg.info("debug.log>>\n%s", oo)
         #
-        cmd = F"./reply.py sendUNIX -d foo -f {sockfile}"
+        cmd = F"{reply} sendUNIX -d foo -f {sockfile}"
         out, end = output2(cmd)
         self.assertEqual(end, 0)
         logg.info("send.log>>\n%s", out)
@@ -24567,7 +24573,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(os.path.exists(zza_post))
         self.assertFalse(os.path.exists(zza_end))
         #
-        cmd = F"./reply.py sendUNIX -d foo -f {sockfile}"
+        cmd = F"{reply} sendUNIX -d foo -f {sockfile}"
         out, end = output2(cmd)
         self.assertEqual(end, 0)
         logg.info("send.log>>\n%s", out)
@@ -24585,7 +24591,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(os.path.exists(zza_post))
         self.assertTrue(os.path.exists(zza_end))
         #
-        cmd = F"./reply.py sendUNIX -d foo -f {sockfile}"
+        cmd = F"{reply} sendUNIX -d foo -f {sockfile}"
         out, end = output2(cmd)
         self.assertEqual(end, 0)
         logg.info("send.log>>\n%s", out)
@@ -24646,7 +24652,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool(reply_py(), os_path(bindir, replyA))
+        reply = reply_tool()
+        copy_tool(reply, os_path(bindir, replyA))
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
@@ -24684,7 +24691,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(os.path.exists(zza_post))
         self.assertFalse(os.path.exists(zza_end))
         #
-        cmd = F"./reply.py sendUNIX -d foo -f {sockfile}"
+        cmd = F"{reply} sendUNIX -d foo -f {sockfile}"
         out, end = output2(cmd)
         self.assertEqual(end, 0)
         logg.info("send.log>>\n%s", out)
@@ -24702,7 +24709,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(os.path.exists(zza_post))
         self.assertTrue(os.path.exists(zza_end))
         #
-        cmd = F"./reply.py sendUNIX -d foo -f {sockfile}"
+        cmd = F"{reply} sendUNIX -d foo -f {sockfile}"
         out, end = output2(cmd)
         self.assertEqual(end, 0)
         logg.info("send.log>>\n%s", out)
@@ -24764,7 +24771,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool(reply_py(), os_path(bindir, replyA))
+        reply = reply_tool()
+        copy_tool(reply, os_path(bindir, replyA))
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
@@ -24792,7 +24800,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         oo = reads(debug_log.format(**locals())) # TODO
         logg.info("debug.log>>\n%s", oo)
         #
-        cmd = F"./reply.py sendUNIX -d foo -f {sockfile}"
+        cmd = F"{reply} sendUNIX -d foo -f {sockfile}"
         out, end = output2(cmd)
         self.assertEqual(end, 0)
         logg.info("send.log>>\n%s", out)
@@ -24814,7 +24822,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(os.path.exists(zza_post))
         self.assertTrue(os.path.exists(zza_end))
         #
-        cmd = F"./reply.py sendUNIX -d foo -f {sockfile}"
+        cmd = F"{reply} sendUNIX -d foo -f {sockfile}"
         out, end = output2(cmd)
         self.assertEqual(end, 0)
         logg.info("send.log>>\n%s", out)
@@ -24882,7 +24890,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool(reply_py(), os_path(bindir, replyA))
+        reply = reply_tool()
+        copy_tool(reply, os_path(bindir, replyA))
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
@@ -24918,7 +24927,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             self.assertFalse(os.path.exists(zza_post))
             self.assertTrue(os.path.exists(zza_end))
         #
-        cmd = F"./reply.py sendUNIX -d foo -f {sockfile}"
+        cmd = F"{reply} sendUNIX -d foo -f {sockfile}"
         out, end = output2(cmd)
         self.assertEqual(end, 0)
         logg.info("send.log>>\n%s", out)
@@ -24993,7 +25002,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool(reply_py(), os_path(bindir, replyA))
+        reply = reply_tool()
+        copy_tool(reply, os_path(bindir, replyA))
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
@@ -25021,7 +25031,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         oo = reads(debug_log.format(**locals())) # TODO
         logg.info("debug.log>>\n%s", oo)
         #
-        cmd = F"./reply.py sendUNIX -d foo -f {sockfile}"
+        cmd = F"{reply} sendUNIX -d foo -f {sockfile}"
         out, end = output2(cmd)
         self.assertEqual(end, 0)
         logg.info("send.log>>\n%s", out)
@@ -25043,7 +25053,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(os.path.exists(zza_post))
         self.assertFalse(os.path.exists(zza_end))
         #
-        cmd = F"./reply.py sendUNIX -d foo -f {sockfile}"
+        cmd = F"{reply} sendUNIX -d foo -f {sockfile}"
         out, end = output2(cmd)
         self.assertEqual(end, 0)
         logg.info("send.log>>\n%s", out)
@@ -25119,7 +25129,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool(reply_py(), os_path(bindir, replyA))
+        reply = reply_tool()
+        copy_tool(reply, os_path(bindir, replyA))
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
@@ -25147,7 +25158,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         oo = reads(debug_log.format(**locals())) # TODO
         logg.info("debug.log>>\n%s", oo)
         #
-        cmd = F"./reply.py sendUNIX -d foo -f {sockfile}"
+        cmd = F"{reply} sendUNIX -d foo -f {sockfile}"
         out, end = output2(cmd)
         self.assertEqual(end, 0)
         logg.info("send.log>>\n%s", out)
@@ -25169,7 +25180,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(os.path.exists(zza_post))
         self.assertFalse(os.path.exists(zza_end))
         #
-        cmd = F"./reply.py sendUNIX -d foo -f {sockfile}"
+        cmd = F"{reply} sendUNIX -d foo -f {sockfile}"
         out, end = output2(cmd)
         self.assertEqual(end, 0)
         logg.info("send.log>>\n%s", out)
@@ -25242,7 +25253,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool(reply_py(), os_path(bindir, replyA))
+        reply = reply_tool()
+        copy_tool(reply, os_path(bindir, replyA))
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
@@ -25270,7 +25282,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         oo = reads(debug_log.format(**locals())) # TODO
         logg.info("debug.log>>\n%s", oo)
         #
-        cmd = F"./reply.py sendUNIX -d foo -f {sockfile}"
+        cmd = F"{reply} sendUNIX -d foo -f {sockfile}"
         out, end = output2(cmd)
         self.assertEqual(end, 0)
         logg.info("send.log>>\n%s", out)
@@ -25292,7 +25304,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(os.path.exists(zza_post))
         self.assertFalse(os.path.exists(zza_end))
         #
-        cmd = F"./reply.py sendUNIX -d foo -f {sockfile}"
+        cmd = F"{reply} sendUNIX -d foo -f {sockfile}"
         out, end = output2(cmd)
         self.assertEqual(end, 0)
         logg.info("send.log>>\n%s", out)
@@ -25365,7 +25377,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool(reply_py(), os_path(bindir, replyA))
+        reply = reply_tool()
+        copy_tool(reply, os_path(bindir, replyA))
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
@@ -25400,7 +25413,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(os.path.exists(zza_post))
         self.assertFalse(os.path.exists(zza_end))
         #
-        cmd = F"./reply.py sendUNIX -d foo -f {sockfile}"
+        cmd = F"{reply} sendUNIX -d foo -f {sockfile}"
         out, end = output2(cmd)
         self.assertEqual(end, 0)
         logg.info("send.log>>\n%s", out)
@@ -25476,7 +25489,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool(reply_py(), os_path(bindir, replyA))
+        reply = reply_tool()
+        copy_tool(reply, os_path(bindir, replyA))
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
@@ -25511,7 +25525,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(os.path.exists(zza_post))
         self.assertFalse(os.path.exists(zza_end))
         #
-        cmd = F"./reply.py sendUNIX -d foo -f {sockfile}"
+        cmd = F"{reply} sendUNIX -d foo -f {sockfile}"
         out, end = output2(cmd)
         self.assertEqual(end, 0)
         logg.info("send.log>>\n%s", out)
@@ -25584,7 +25598,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool(reply_py(), os_path(bindir, replyA))
+        reply = reply_tool()
+        copy_tool(reply, os_path(bindir, replyA))
         copy_tool(_bin_sleep, os_path(bindir, testsleep))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
@@ -25619,7 +25634,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(os.path.exists(zza_post))
         self.assertFalse(os.path.exists(zza_end))
         #
-        cmd = F"./reply.py sendUNIX -d foo -f {sockfile}"
+        cmd = F"{reply} sendUNIX -d foo -f {sockfile}"
         out, end = output2(cmd)
         self.assertEqual(end, 0)
         logg.info("send.log>>\n%s", out)
@@ -25675,7 +25690,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool(reply_py(), os_path(bindir, replyA))
+        reply = reply_tool()
+        copy_tool(reply, os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         cmd = F"{systemctl} enable zza.socket"
@@ -25698,7 +25714,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "systemctl.*listen"))
         #
-        cmd = F"./reply.py sendUNIX -d foo -f {sockfile}"
+        cmd = F"{reply} sendUNIX -d foo -f {sockfile}"
         out, end = output2(cmd)
         self.assertEqual(end, 0)
         logg.info("send.log>>\n%s", out)
@@ -25748,7 +25764,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool(reply_py(), os_path(bindir, replyA))
+        reply = reply_tool()
+        copy_tool(reply, os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         cmd = F"{systemctl} enable zza.socket"
@@ -25771,7 +25788,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "systemctl.*listen"))
         #
-        cmd = F"./reply.py sendUNIX -d foo -f {sockfile}"
+        cmd = F"{reply} sendUNIX -d foo -f {sockfile}"
         out, end = output2(cmd)
         # self.assertEqual(end, 0) # FIXME
         logg.info("send.log>>\n%s", out)
@@ -25830,7 +25847,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool(reply_py(), os_path(bindir, replyA))
+        reply = reply_tool()
+        copy_tool(reply, os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         cmd = F"{systemctl} enable zza.socket"
@@ -25853,7 +25871,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "systemctl.*listen"))
         #
-        cmd = F"./reply.py sendUNIX -d foo -f {sockfile}"
+        cmd = F"{reply} sendUNIX -d foo -f {sockfile}"
         out, end = output2(cmd)
         # self.assertEqual(end, 0) # FIXME
         logg.info("send.log>>\n%s", out)
@@ -25914,7 +25932,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool(reply_py(), os_path(bindir, replyA))
+        reply = reply_tool()
+        copy_tool(reply, os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         cmd = F"{systemctl} enable zza.socket"
@@ -25937,7 +25956,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "systemctl.*listen"))
         #
-        cmd = F"./reply.py sendUNIX -d foo -f {sockfile}"
+        cmd = F"{reply} sendUNIX -d foo -f {sockfile}"
         out, end = output2(cmd)
         # self.assertEqual(end, 0) # FIXME
         logg.info("send.log>>\n%s", out)
@@ -25998,7 +26017,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool("reply.py", os_path(bindir, replyA))
+        reply = reply_tool()
+        copy_tool(reply, os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         cmd = F"{systemctl} enable zza.socket"
@@ -26021,7 +26041,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "systemctl.*listen"))
         #
-        cmd = F"./reply.py sendUNIX -d foo -f {sockfile}"
+        cmd = F"{reply} sendUNIX -d foo -f {sockfile}"
         out, end = output2(cmd)
         # self.assertEqual(end, 0) # FIXME
         logg.info("send.log>>\n%s", out)
@@ -26079,7 +26099,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool(reply_py(), os_path(bindir, replyA))
+        reply = reply_tool()
+        copy_tool(reply, os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         cmd = F"{systemctl} enable zza.socket"
@@ -26156,7 +26177,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool(reply_py(), os_path(bindir, replyA))
+        reply = reply_tool()
+        copy_tool(reply, os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         cmd = F"{systemctl} enable zza.socket"
@@ -26185,7 +26207,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "systemctl.*listen"))
         #
-        cmd = F"./reply.py sendUNIX -d foo -f {sockfile}"
+        cmd = F"{reply} sendUNIX -d foo -f {sockfile}"
         out, end = output2(cmd)
         self.assertEqual(end, 0) # FIXME
         logg.info("send.log>>\n%s", out)
@@ -26239,7 +26261,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool(reply_py(), os_path(bindir, replyA))
+        reply = reply_tool()
+        copy_tool(reply, os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         cmd = F"{systemctl} enable zza.socket"
@@ -26317,7 +26340,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool(reply_py(), os_path(bindir, replyA))
+        reply = reply_tool()
+        copy_tool(reply, os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         cmd = F"{systemctl} enable zza.socket"
@@ -26395,7 +26419,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool(reply_py(), os_path(bindir, replyA))
+        reply = reply_tool()
+        copy_tool(reply, os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         cmd = F"{systemctl} enable zza.socket"
@@ -26418,7 +26443,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "systemctl.*listen"))
         #
-        cmd = F"./reply.py sendUDP -d foo -p {testport}"
+        cmd = F"{reply} sendUDP -d foo -p {testport}"
         out, end = output2(cmd)
         self.assertEqual(end, 0)
         logg.info("send.log>>\n%s", out)
@@ -26471,7 +26496,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool(reply_py(), os_path(bindir, replyA))
+        reply = reply_tool()
+        copy_tool(reply, os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         cmd = F"{systemctl} enable zza.socket"
@@ -26494,7 +26520,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "systemctl.*listen"))
         #
-        cmd = F"./reply.py sendTCP -d foo -p {testport}"
+        cmd = F"{reply} sendTCP -d foo -p {testport}"
         out, end = output2(cmd)
         self.assertEqual(end, 0)
         logg.info("send.log>>\n%s", out)
@@ -26547,7 +26573,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool(reply_py(), os_path(bindir, replyA))
+        reply = reply_tool()
+        copy_tool(reply, os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         cmd = F"{systemctl} enable zza.socket"
@@ -26570,7 +26597,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "systemctl.*listen"))
         #
-        cmd = F"./reply.py sendTCP -d foo -p {testport}"
+        cmd = F"{reply} sendTCP -d foo -p {testport}"
         out, end = output2(cmd)
         self.assertEqual(end, 0)
         logg.info("send.log>>\n%s", out)
@@ -26622,7 +26649,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool(reply_py(), os_path(bindir, replyA))
+        reply = reply_tool()
+        copy_tool(reply, os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         cmd = F"{systemctl} enable zza.socket"
@@ -26645,7 +26673,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "systemctl.*listen"))
         #
-        cmd = F"./reply.py sendUDP -d foo -p {testport}"
+        cmd = F"{reply} sendUDP -d foo -p {testport}"
         out, end = output2(cmd)
         self.assertEqual(end, 0)
         logg.info("send.log>>\n%s", out)
@@ -26703,7 +26731,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool(reply_py(), os_path(bindir, replyA))
+        reply = reply_tool()
+        copy_tool(reply, os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         cmd = F"{systemctl} enable zza.socket"
@@ -26726,7 +26755,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "systemctl.*listen"))
         #
-        cmd = F"./reply.py sendTCP -d foo -p {testport}"
+        cmd = F"{reply} sendTCP -d foo -p {testport}"
         out, end = output2(cmd)
         self.assertEqual(end, 0)
         logg.info("send.log>>\n%s", out)
@@ -26783,7 +26812,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool(reply_py(), os_path(bindir, replyA))
+        reply = reply_tool()
+        copy_tool(reply, os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         cmd = F"{systemctl} enable zza.socket"
@@ -26806,7 +26836,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "systemctl.*listen"))
         #
-        cmd = F"./reply.py sendTCP -d foo -p {testport} -a 127.0.0.1"
+        cmd = F"{reply} sendTCP -d foo -p {testport} -a 127.0.0.1"
         out, end = output2(cmd)
         self.assertEqual(end, 0)
         logg.info("send.log>>\n%s", out)
@@ -26864,7 +26894,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool(reply_py(), os_path(bindir, replyA))
+        reply = reply_tool()
+        copy_tool(reply, os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         cmd = F"{systemctl} enable zza.socket"
@@ -26887,7 +26918,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "systemctl.*listen"))
         #
-        cmd = F"./reply.py sendTCP4 -d foo -p {testport} -a 127.0.0.1"
+        cmd = F"{reply} sendTCP4 -d foo -p {testport} -a 127.0.0.1"
         out, end = output2(cmd)
         self.assertEqual(end, 0)
         logg.info("send.log>>\n%s", out)
@@ -26945,7 +26976,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool(reply_py(), os_path(bindir, replyA))
+        reply = reply_tool()
+        copy_tool(reply, os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         cmd = F"{systemctl} enable zza.socket"
@@ -26968,7 +27000,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "systemctl.*listen"))
         #
-        cmd = F"./reply.py sendTCP6 -d foo -p {testport} -a '::1'"
+        cmd = F"{reply} sendTCP6 -d foo -p {testport} -a '::1'"
         out, end = output2(cmd)
         self.assertEqual(end, 0)
         logg.info("send.log>>\n%s", out)
@@ -27027,7 +27059,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool(reply_py(), os_path(bindir, replyA))
+        reply = reply_tool()
+        copy_tool(reply, os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         cmd = F"{systemctl} enable zza.socket"
@@ -27050,7 +27083,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "systemctl.*listen"))
         #
-        cmd = F"./reply.py sendUDP -d foo -p {testport}"
+        cmd = F"{reply} sendUDP -d foo -p {testport}"
         out, end = output2(cmd)
         self.assertEqual(end, 0)
         logg.info("send.log>>\n%s", out)
@@ -27109,7 +27142,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool(reply_py(), os_path(bindir, replyA))
+        reply = reply_tool()
+        copy_tool(reply, os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         cmd = F"{systemctl} enable zza.socket"
@@ -27132,7 +27166,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("\n>>>\n%s", top)
         self.assertTrue(greps(top, "systemctl.*listen"))
         #
-        cmd = F"./reply.py sendTCP -d foo -p {testport} -a 127.0.0.1"
+        cmd = F"{reply} sendTCP -d foo -p {testport} -a 127.0.0.1"
         out, end = output2(cmd)
         self.assertEqual(end, 0)
         logg.info("send.log>>\n%s", out)
@@ -27190,7 +27224,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool(reply_py(), os_path(bindir, replyA))
+        reply = reply_tool()
+        copy_tool(reply, os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         #
@@ -27237,7 +27272,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool(reply_py(), os_path(bindir, replyA))
+        reply = reply_tool()
+        copy_tool(reply, os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         #
@@ -27284,7 +27320,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool(reply_py(), os_path(bindir, replyA))
+        reply = reply_tool()
+        copy_tool(reply, os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         #
@@ -27331,7 +27368,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool(reply_py(), os_path(bindir, replyA))
+        reply = reply_tool()
+        copy_tool(reply, os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         #
@@ -27378,7 +27416,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool(reply_py(), os_path(bindir, replyA))
+        reply = reply_tool()
+        copy_tool(reply, os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         #
@@ -27425,7 +27464,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool(reply_py(), os_path(bindir, replyA))
+        reply = reply_tool()
+        copy_tool(reply, os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         #
@@ -27472,7 +27512,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool(reply_py(), os_path(bindir, replyA))
+        reply = reply_tool()
+        copy_tool(reply, os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         #
@@ -27519,7 +27560,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Install]
             WantedBy=multi-user.target
             """)
-        copy_tool(reply_py(), os_path(bindir, replyA))
+        reply = reply_tool()
+        copy_tool(reply, os_path(bindir, replyA))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zza.socket"), os_path(root, "/etc/systemd/system/zza.socket"))
         #
