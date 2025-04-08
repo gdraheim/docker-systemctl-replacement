@@ -755,8 +755,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             return
         testname = testname or self.caller_testname()
         newcoverage = ".coverage."+testname
-        time.sleep(1) # some background process may want to write data
         if os.path.isfile(".coverage"):
+            time.sleep(1) # some background process may want to write data
             # shutil.copy(".coverage", newcoverage)
             with open(".coverage", "rb") as inp:
                 text = inp.read()
@@ -24230,8 +24230,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             """)
         text_file(os_path(testdir, "zza.txt"), """testing zzA""")
         text_file(os_path(testdir, "zzb.txt"), """testing zzB""")
-        copy_tool(reply.py(), os_path(bindir, replyA))
-        copy_tool(reply.py(), os_path(bindir, replyB))
+        copy_tool(reply_py(), os_path(bindir, replyA))
+        copy_tool(reply_py(), os_path(bindir, replyB))
         copy_file(os_path(testdir, "zza.service"), os_path(root, "/etc/systemd/system/zza.service"))
         copy_file(os_path(testdir, "zzb.service"), os_path(root, "/etc/systemd/system/zzb.service"))
         copy_file(os_path(testdir, "zza.txt"), os_path(root, "/var/log/zza.txt"))
