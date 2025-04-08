@@ -2,7 +2,6 @@
 # pylint: disable=line-too-long,missing-function-docstring,missing-class-docstring,consider-using-f-string,import-outside-toplevel
 # pylint: disable=too-many-lines,multiple-statements,unspecified-encoding,dangerous-default-value,unnecessary-lambda,superfluous-parens
 """ run 'systemctl start' and other systemctl commands based on available *.service descriptions without a systemd daemon running in the system """
-from __future__ import print_function
 import threading
 import grp
 import pwd
