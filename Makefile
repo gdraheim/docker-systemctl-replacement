@@ -6,6 +6,7 @@ DAY=%u
 
 
 UBUNTU=ubuntu:24.04
+DOCKER=docker
 PYTHON=python3
 PYTHON2 = python2
 PYTHON3 = python3
@@ -15,8 +16,12 @@ COVERAGE3 = $(PYTHON3) -m coverage
 TWINE = twine
 TWINE39 = twine-3.11
 GIT=git
-VERFILES = files/docker/systemctl3.py testsuite.py pyproject.toml
-CONTAINER = docker-systemctl-
+VERFILES = files/docker/systemctl3.py tests/dockertests3.py pyproject.toml
+CONTAINER = docker-systemctl
+LOCALMIRRORS=/dock
+
+TESTS_PY = tests/dockertests3.py
+TESTS = $(PYTHON) $(TESTS_PY) $(TESTS_OPTIONS)
 
 verfiles:
 	@ grep -l __version__ */*.??* */*/*.??* | { while read f; do echo $$f; done; } 
@@ -42,45 +47,45 @@ help:
 
 alltests: CH CP UA DJ
 
-CH centos-httpd.dockerfile: ; ./testsuite.py test_6001
-CP centos-postgres.dockerfile: ; ./testsuite.py test_6002
-UA ubuntu-apache2.dockerfile: ; ./testsuite.py test_6005
-DJ docker-jenkins: ; ./testsuite.py test_900*
+CH centos-httpd.dockerfile: ; $(TESTS) test_6001
+CP centos-postgres.dockerfile: ; $(TESTS) test_6002
+UA ubuntu-apache2.dockerfile: ; $(TESTS) test_6005
+DJ docker-jenkins: ; $(TESTS) test_900*
 
 VV=-vv
 COVERAGE=--coverage
-est_%: ; rm .coverage*; rm -rf tmp/tmp.t$(notdir $@) ; ./testsuite.py "t$(notdir $@)" $(VV) $V --coverage --keep
-test_%: ; ./testsuite.py "$(notdir $@)" $(VV) $V
-real_%: ; ./testsuite.py "$(notdir $@)" $(VV) $V
+est_%: ; rm .coverage*; rm -rf tmp/tmp.t$(notdir $@) ; $(TESTS) "t$(notdir $@)" $(VV) $V --coverage --keep
+test_%: ; $(TESTS) "$(notdir $@)" $(VV) $V
+real_%: ; $(TESTS) "$(notdir $@)" $(VV) $V
 
 test: ; $(MAKE) type && $(MAKE) tests && $(MAKE) coverage
 
 WITH3 = --python=/usr/bin/python3 --with=files/docker/systemctl3.py
-test_%/todo:             ; ./testsuite.py   "$(dir $@)" -vv --todo
-test_%/15.6:             ; ./testsuite.py   "$(dir $@)" -vv $(FORCE) --image=opensuse/leap:$(notdir $@)
-test_%/15.4:             ; ./testsuite.py   "$(dir $@)" -vv $(FORCE) --image=opensuse/leap:$(notdir $@)
-test_%/15.3:             ; ./testsuite.py   "$(dir $@)" -vv $(FORCE) --image=opensuse/leap:$(notdir $@)
-test_%/15.2:             ; ./testsuite.py   "$(dir $@)" -vv $(FORCE) --image=opensuse/leap:$(notdir $@)
-test_%/15.1:             ; ./testsuite.py   "$(dir $@)" -vv $(FORCE) --image=opensuse/leap:$(notdir $@)
-test_%/15.0:             ; ./testsuite.py   "$(dir $@)" -vv $(FORCE) --image=opensuse/leap:$(notdir $@)
-test_%/42.3:             ; ./testsuite.py   "$(dir $@)" -vv $(FORCE) --image=opensuse:$(notdir $@)
-test_%/42.2:             ; ./testsuite.py   "$(dir $@)" -vv $(FORCE) --image=opensuse:$(notdir $@)
-test_%/24.04:            ; ./testsuite.py   "$(dir $@)" -vv $(FORCE) --image=ubuntu:$(notdir $@)
-test_%/22.04:            ; ./testsuite.py   "$(dir $@)" -vv $(FORCE) --image=ubuntu:$(notdir $@)
-test_%/20.04:            ; ./testsuite.py   "$(dir $@)" -vv $(FORCE) --image=ubuntu:$(notdir $@)
-test_%/19.10:            ; ./testsuite.py   "$(dir $@)" -vv $(FORCE) --image=ubuntu:$(notdir $@)
-test_%/19.04:            ; ./testsuite.py   "$(dir $@)" -vv $(FORCE) --image=ubuntu:$(notdir $@)
-test_%/16.04:            ; ./testsuite.py   "$(dir $@)" -vv $(FORCE) --image=ubuntu:$(notdir $@)
-test_%/9.4:              ; ./testsuite.py   "$(dir $@)" -vv $(FORCE) --image=almalinux:$(notdir $@)
-test_%/9.3:              ; ./testsuite.py   "$(dir $@)" -vv $(FORCE) --image=almalinux:$(notdir $@)
-test_%/9.1:              ; ./testsuite.py   "$(dir $@)" -vv $(FORCE) --image=almalinux:$(notdir $@)
-test_%/8.1:              ; ./testsuite.py   "$(dir $@)" -vv $(FORCE) --image=centos:8.1.1911
-test_%/8.0:              ; ./testsuite.py   "$(dir $@)" -vv $(FORCE) --image=centos:8.0.1905
-test_%/7.7:              ; ./testsuite.py   "$(dir $@)" -vv $(FORCE) --image=centos:7.7.1908
-test_%/7.6:              ; ./testsuite.py   "$(dir $@)" -vv $(FORCE) --image=centos:7.6.1810
-test_%/7.5:              ; ./testsuite.py   "$(dir $@)" -vv $(FORCE) --image=centos:7.5.1804
-test_%/7.4:              ; ./testsuite.py   "$(dir $@)" -vv $(FORCE) --image=centos:7.4.1708
-test_%/7.3:              ; ./testsuite.py   "$(dir $@)" -vv $(FORCE) --image=centos:7.3.1611
+test_%/todo:             ; $(TESTS)   "$(dir $@)" -vv --todo
+test_%/15.6:             ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=opensuse/leap:$(notdir $@)
+test_%/15.4:             ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=opensuse/leap:$(notdir $@)
+test_%/15.3:             ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=opensuse/leap:$(notdir $@)
+test_%/15.2:             ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=opensuse/leap:$(notdir $@)
+test_%/15.1:             ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=opensuse/leap:$(notdir $@)
+test_%/15.0:             ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=opensuse/leap:$(notdir $@)
+test_%/42.3:             ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=opensuse:$(notdir $@)
+test_%/42.2:             ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=opensuse:$(notdir $@)
+test_%/24.04:            ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=ubuntu:$(notdir $@)
+test_%/22.04:            ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=ubuntu:$(notdir $@)
+test_%/20.04:            ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=ubuntu:$(notdir $@)
+test_%/19.10:            ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=ubuntu:$(notdir $@)
+test_%/19.04:            ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=ubuntu:$(notdir $@)
+test_%/16.04:            ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=ubuntu:$(notdir $@)
+test_%/9.4:              ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=almalinux:$(notdir $@)
+test_%/9.3:              ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=almalinux:$(notdir $@)
+test_%/9.1:              ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=almalinux:$(notdir $@)
+test_%/8.1:              ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=centos:8.1.1911
+test_%/8.0:              ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=centos:8.0.1905
+test_%/7.7:              ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=centos:7.7.1908
+test_%/7.6:              ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=centos:7.6.1810
+test_%/7.5:              ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=centos:7.5.1804
+test_%/7.4:              ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=centos:7.4.1708
+test_%/7.3:              ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=centos:7.3.1611
 
 basetests = test_[1234]
 test2list = st_[567]
@@ -145,69 +150,38 @@ checkall2025:
 	$(MAKE) -j1 tests/15.6  tests/15.4
 
 
-MIRRORSDIR=/dock
 check: 
-	@ if test -d $(MIRRORSDIR); then $(MAKE) check2025 "OPTIONS=--failfast --localmirrors" \
-	; else $(MAKE) check2025 "OPTIONS=--failfast" ; fi
+	@ if test -d $(LOCALMIRRORS); \
+	then $(MAKE) check2025 "OPTIONS=--failfast --localmirrors" ; \
+	else $(MAKE) check2025 "OPTIONS=--failfast" ; fi
 	@ echo please run 'make checks' now
-24 check2024: ; ./testsuite.py -vv --opensuse=15.6 --ubuntu=ubuntu:24.04 --centos=almalinux:9.3 $(OPTIONS)
-25 check2025: ; ./testsuite.py -vv --opensuse=15.6 --ubuntu=ubuntu:24.04 --centos=almalinux:9.4 $(OPTIONS)
+24 check2024: ; $(TESTS) -vv --opensuse=15.6 --ubuntu=ubuntu:24.04 --centos=almalinux:9.3 --docker=$(DOCKER) $(OPTIONS)
+25 check2025: ; $(TESTS) -vv --opensuse=15.6 --ubuntu=ubuntu:24.04 --centos=almalinux:9.4 --docker=$(DOCKER) $(OPTIONS)
 
 # native operating system does not have python2 anymore
 test_%/27:
 	$(MAKE) tmp_systemctl_py_2
-	docker rm -f $(CONTAINER)-python$(notdir $@)
-	docker run -d --name=$(CONTAINER)-python$(notdir $@) python$(notdir $@)/test sleep 9999
-	docker exec $(CONTAINER)-python$(notdir $@) mkdir -p $(PWD)/tmp
-	docker cp testsuite.py $(CONTAINER)-python$(notdir $@):/
-	docker cp reply.py $(CONTAINER)-python$(notdir $@):/
-	docker cp tmp/systemctl.py $(CONTAINER)-python$(notdir $@):/$(PWD)/tmp/
-	docker exec $(CONTAINER)-python$(notdir $@) chmod +x /$(PWD)/tmp/systemctl.py
-	docker exec $(CONTAINER)-python$(notdir $@) /testsuite.py -vv $(dir $@) --sometime=666 \
+	test -z `$(DOCKER) ps -a -q -f name=$(CONTAINER)-python$(notdir $@)` || $(DOCKER) rm -f $(CONTAINER)-python$(notdir $@)
+	$(DOCKER) run -d --name=$(CONTAINER)-python$(notdir $@) $(CONTAINER)/test$(notdir $@) sleep 9999
+	$(DOCKER) exec $(CONTAINER)-python$(notdir $@) mkdir -p $(PWD)/tmp
+	$(DOCKER) cp tests $(CONTAINER)-python$(notdir $@):/
+	$(DOCKER) cp tmp/systemctl.py $(CONTAINER)-python$(notdir $@):/$(PWD)/tmp/
+	$(DOCKER) exec $(CONTAINER)-python$(notdir $@) chmod +x /$(PWD)/tmp/systemctl.py
+	$(DOCKER) exec $(CONTAINER)-python$(notdir $@) /tests/testsuite.py -vv $(dir $@) --sometime=666 \
 	  '--with=/$(PWD)/tmp/systemctl.py' --python=/usr/bin/python2 $(COVERAGE1) $V
-	- test -z "$(COVERAGE1)" || docker cp $(CONTAINER)-python$(notdir $@):/.coverage .coverage.cov1
-	docker rm -f $(CONTAINER)-python$(notdir $@)
+	$(DOCKER) rm -f $(CONTAINER)-python$(notdir $@)
 test_%/36:
 	$(MAKE) tmp_systemctl_py_3
-	docker rm -f $(CONTAINER)-python$(notdir $@)
-	docker run -d --name=$(CONTAINER)-python36 python$(notdir $@)/test sleep 9999
-	docker exec $(CONTAINER)-python$(notdir $@) mkdir -p $(PWD)/tmp
-	docker cp testsuite.py $(CONTAINER)-python$(notdir $@):/
-	docker cp reply.py $(CONTAINER)-python$(notdir $@):/
-	docker cp tmp/systemctl.py $(CONTAINER)-python$(notdir $@):/$(PWD)/tmp/
-	docker exec $(CONTAINER)-python$(notdir $@) chmod +x /$(PWD)/tmp/systemctl.py
-	docker exec $(CONTAINER)-python$(notdir $@) /testsuite.py -vv $(dir $@) --sometime=666 \
+	test -z `docker ps -a -q -f name=$(CONTAINER)-python$(notdir $@)` || $(DOCKER) rm -f $(CONTAINER)-python$(notdir $@)
+	$(DOCKER) run -d --name=$(CONTAINER)-python$(notdir $@) $(CONTAINER)/test$(notdir $@) sleep 9999
+	$(DOCKER) exec $(CONTAINER)-python$(notdir $@) mkdir -p $(PWD)/tmp
+	$(DOCKER) cp tests $(CONTAINER)-python$(notdir $@):/
+	$(DOCKER) cp tmp/systemctl.py $(CONTAINER)-python$(notdir $@):/$(PWD)/tmp/
+	$(DOCKER) exec $(CONTAINER)-python$(notdir $@) chmod +x /$(PWD)/tmp/systemctl.py
+	$(DOCKER) exec $(CONTAINER)-python$(notdir $@) /tests/testsuite.py -vv $(dir $@) --sometime=666 \
 	  '--with=/$(PWD)/tmp/systemctl.py' --python=/usr/bin/python3 $(COVERAGE1) $V
-	- test -z "$(COVERAGE1)" || docker cp $(CONTAINER)-python$(notdir):/.coverage .coverage.cov1
-	docker rm -f $(CONTAINER)-python$(notdir $@)
-
-
-test_%/2:
-	$(MAKE) tmp_systemctl_py_2
-	./testsuite.py -vv $(dir $@) --sometime=666 \
-	  '--with=tmp/systemctl.py' --python=/usr/bin/python2
-test_%/3:
-	$(MAKE) tmp_systemctl_py_3
-	./testsuite.py -vv $(dir $@) --sometime=666 \
-	  '--with=tmp/systemctl.py' --python=/usr/bin/python3
-
-est_%/2:
-	$(MAKE) tmp_systemctl_py_2
-	./testsuite.py -vv t$(dir $@) --sometime=666 --coverage \
-	  '--with=tmp/systemctl.py' --python=/usr/bin/python2
-est_%/3:
-	$(MAKE) tmp_systemctl_py_3
-	./testsuite.py -vv t$(dir $@) --sometime=666 --coverage \
-	  '--with=tmp/systemctl.py' --python=/usr/bin/python3
-
-check2:
-	$(MAKE) tmp_systemctl_py_2
-	./testsuite.py -vv \
-	  '--with=tmp/systemctl.py' --python=/usr/bin/python2
-check3:
-	$(MAKE) tmp_systemctl_py_3
-	./testsuite.py -vv \
-	  '--with=tmp/systemctl.py' --python=/usr/bin/python3
+	- test -z "$(COVERAGE1)" || $(DOCKER) cp $(CONTAINER)-python$(notdir):/.coverage .coverage.cov1
+	$(DOCKER) rm -f $(CONTAINER)-python$(notdir $@)
 
 checks: checks27 checks36 coverage
 	: ready for make checkall
@@ -216,6 +190,35 @@ checks27:
 	$(MAKE) "test_[12345]/27" 
 checks36:  
 	$(MAKE) "test_[12345]/36" 
+
+check2:
+	$(MAKE) tmp_systemctl_py_2
+	$(TESTS) -vv \
+	  '--with=tmp/systemctl.py' --python=/usr/bin/python2
+check3:
+	$(MAKE) tmp_systemctl_py_3
+	$(TESTS) -vv \
+	  '--with=tmp/systemctl.py' --python=/usr/bin/python3
+
+test_%/2:
+	$(MAKE) tmp_systemctl_py_2
+	$(TESTS) -vv $(dir $@) --sometime=666 \
+	  '--with=tmp/systemctl.py' --python=/usr/bin/python2
+test_%/3:
+	$(MAKE) tmp_systemctl_py_3
+	$(TESTS) -vv $(dir $@) --sometime=666 \
+	  '--with=tmp/systemctl.py' --python=/usr/bin/python3
+
+est_%/2:
+	$(MAKE) tmp_systemctl_py_2
+	$(TESTS) -vv t$(dir $@) --sometime=666 --coverage \
+	  '--with=tmp/systemctl.py' --python=/usr/bin/python2
+est_%/3:
+	$(MAKE) tmp_systemctl_py_3
+	$(TESTS) -vv t$(dir $@) --sometime=666 --coverage \
+	  '--with=tmp/systemctl.py' --python=/usr/bin/python3
+
+
 
 coverage: coverage3
 	$(PYTHON) -m coverage combine && \
@@ -226,11 +229,11 @@ coverage: coverage3
 	ls -l tmp/systemctl.py,cover
 coverage2: 
 	$(MAKE) tmp_systemctl_py_2
-	rm .coverage* ; ./testsuite.py -vv --coverage ${basetests} --xmlresults=TEST-systemctl-python2.xml \
+	rm .coverage* ; $(TESTS) -vv --coverage ${basetests} --xmlresults=TEST-systemctl-python2.xml \
 	  '--with=tmp/systemctl.py' --python=/usr/bin/python2
 coverage3:
 	$(MAKE) tmp_systemctl_py_3
-	rm .coverage* ; ./testsuite.py -vv --coverage ${basetests} --xmlresults=TEST-systemctl-python3.xml \
+	rm .coverage* ; $(TESTS) -vv --coverage ${basetests} --xmlresults=TEST-systemctl-python3.xml \
 	  '--with=tmp/systemctl.py' --python=/usr/bin/python3
 
 p2: tmp_systemctl_py_2
@@ -247,18 +250,18 @@ tmp_systemctl_py_3:
 	@ test -d tmp || mkdir tmp
 	@ cp files/docker/systemctl3.py tmp/systemctl.py
 tmp_ubuntu:
-	if docker ps | grep $(UBU); then : ; else : \
-	; docker run --name $(UBU) -d $(UBUNTU) sleep 3333 \
-	; docker exec $(UBU) apt-get update -y --fix-missing \
-	; docker exec $(UBU) apt-get install -y --fix-broken --ignore-missing python3-coverage mypy \
+	if $(DOCKER) ps | grep $(UBU); then : ; else : \
+	; $(DOCKER) run --name $(UBU) -d $(UBUNTU) sleep 3333 \
+	; $(DOCKER) exec $(UBU) apt-get update -y --fix-missing \
+	; $(DOCKER) exec $(UBU) apt-get install -y --fix-broken --ignore-missing python3-coverage mypy \
 	; fi
-	docker cp files $(UBU):/root/
-	docker cp testsuite.py $(UBU):/root/ 
-	docker cp reply.py $(UBU):/root/ 
+	$(DOCKER) cp files $(UBU):/root/
+	$(DOCKER) cp testsuite.py $(UBU):/root/ 
+	$(DOCKER) cp reply.py $(UBU):/root/ 
 UBU=test_ubuntu
 test_%/ubu:
 	$(MAKE) tmp_ubuntu
-	docker exec $(UBU) python3 /root/testsuite.py -C /root -vv $(notdir $@)
+	$(DOCKER) exec $(UBU) python3 /root/testsuite.py -C /root -vv $(notdir $@)
 
 clean:
 	- rm .coverage*
@@ -268,10 +271,10 @@ clean:
 	- rm -rf .mypy_cache files/docker/.mypy_cache
 
 copy:
-	cp -v ../docker-mirror-packages-repo/docker_mirror.py .
-	cp -v ../docker-mirror-packages-repo/docker_mirror.pyi .
-	cp -v ../docker-mirror-packages-repo/docker_image.py .
-	@ grep __version__ docker_mirror.py | sed -e "s/__version__/: git commit -m 'docker_mirror/" -e "s/\$$/' docker*.py*/"
+	cp -v ../docker-mirror-packages-repo/docker_mirror.py tests/
+	cp -v ../docker-mirror-packages-repo/docker_mirror.pyi tests/
+	cp -v ../docker-mirror-packages-repo/docker_image.py tests/
+	@ grep __version__ tests/docker_mirror.py | sed -e "s|__version__|: git commit -m 'docker_mirror|" -e "s|\$$|' tests/docker*.py*|"
 
 dockerfiles:
 	for dockerfile in centos7-lamp-stack.dockerfile opensuse15-lamp-stack.dockerfile \
@@ -284,24 +287,27 @@ dockerfiles:
 	; wc -l test-$$dockerfile \
 	; done
 
-python27: python27/test
-python36: python36/test
-python39: python39/test
-python310: python310/test
-python311: python311/test
-python312: python312/test
+python27: $(CONTAINER)/test27
+python36: $(CONTAINER)/test36
+python39: $(CONTAINER)/test39
+python310: $(CONTAINER)/test310
+python311: $(CONTAINER)/test311
+python312: $(CONTAINER)/test312
 
-python27/testt: ; ./docker_local_image.py FROM ubuntu:22.04 INTO $@ INSTALL "python3 psmisc python2" TEST "python2 --version"
-python36/testt: ; ./docker_local_image.py FROM ubuntu:18.04 INTO $@ INSTALL "python3 psmisc" TEST "python3 --version"
-python310/test: ; ./docker_local_image.py FROM ubuntu:22.04 INTO $@ INSTALL "python3 psmisc" TEST "python3 --version"
-python312/test: ; ./docker_local_image.py FROM ubuntu:24.04 INTO $@ INSTALL "python3 psmisc" TEST "python3 --version"
+$(CONTAINER)/test27u: ; tests/docker_image.py --docker=$(DOCKER) $(OPTIONS) FROM ubuntu:22.04 INTO $@ INSTALL "python3 psmisc python2" TEST "python2 --version"
+$(CONTAINER)/test36u: ; tests/docker_image.py --docker=$(DOCKER) $(OPTIONS) FROM ubuntu:18.04 INTO $@ INSTALL "python3 psmisc" TEST "python3 --version"
+$(CONTAINER)/test310u: ; tests/docker_image.py --docker=$(DOCKER) $(OPTIONS) FROM ubuntu:22.04 INTO $@ INSTALL "python3 psmisc" TEST "python3 --version"
+$(CONTAINER)/test312u: ; tests/docker_image.py --docker=$(DOCKER) $(OPTIONS) FROM ubuntu:24.04 INTO $@ INSTALL "python3 psmisc" TEST "python3 --version"
 
-python27/test:  ; ./docker_local_image.py FROM opensuse/leap:15.6 INTO $@ INSTALL "python3 procps psmisc python2" TEST "python2 --version"
-python36/test:  ; ./docker_local_image.py FROM opensuse/leap:15.6 INTO $@ INSTALL "python3 procps psmisc" TEST "python3 --version"
-python39/test:  ; ./docker_local_image.py FROM opensuse/leap:15.5 INTO $@ INSTALL "python39 procps psmisc" SYMLINK /usr/bin/python3.9:python3 TEST "python3 --version" -vv
-python311/test: ; ./docker_local_image.py FROM opensuse/leap:15.6 INTO $@ INSTALL "python311 procps psmisc" SYMLINK /usr/bin/python3.11:python3 TEST "python3 --version"
+$(CONTAINER)/test27:  ; tests/docker_image.py --docker=$(DOCKER) $(OPTIONS) FROM opensuse/leap:15.6 INTO $@ INSTALL "python3 procps psmisc python2" TEST "python2 --version"
+$(CONTAINER)/test36:  ; tests/docker_image.py --docker=$(DOCKER) $(OPTIONS) FROM opensuse/leap:15.6 INTO $@ INSTALL "python3 procps psmisc" TEST "python3 --version"
+$(CONTAINER)/test39:  ; tests/docker_image.py --docker=$(DOCKER) $(OPTIONS) FROM opensuse/leap:15.5 INTO $@ INSTALL "python39 procps psmisc" SYMLINK /usr/bin/python3.9:python3 TEST "python3 --version" -vv
+$(CONTAINER)/test311: ; tests/docker_image.py --docker=$(DOCKER) $(OPTIONS) FROM opensuse/leap:15.6 INTO $@ INSTALL "python311 procps psmisc" SYMLINK /usr/bin/python3.11:python3 TEST "python3 --version"
 
-python: python27/test python36/test
+python: 
+	@ if test -d $(LOCALMIRRORS); \
+	then $(MAKE) $(CONTAINER)/test27 $(CONTAINER)/test36 OPTIONS=--localmirrors ; \
+	else $(MAKE) $(CONTAINER)/test27 $(CONTAINER)/test36; fi
 
 ############## https://pypi.org/...
 

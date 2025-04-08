@@ -1,5 +1,5 @@
 #! /usr/bin/python3
-# pylint: disable=line-too-long,missing-function-docstring,consider-using-f-string,import-outside-toplevel
+# pylint: disable=line-too-long,missing-function-docstring,missing-class-docstring,consider-using-f-string,import-outside-toplevel
 # pylint: disable=too-many-lines,multiple-statements,unspecified-encoding,dangerous-default-value,unnecessary-lambda,superfluous-parens
 """ run 'systemctl start' and other systemctl commands based on available *.service descriptions without a systemd daemon running in the system """
 from __future__ import print_function
@@ -22,7 +22,7 @@ import shlex
 import fnmatch
 import re
 
-from typing import Dict, Iterable, List, NoReturn, Optional, TextIO, Tuple, Type, Union, Match, Iterator
+from typing import Dict, Iterable, List, NoReturn, Optional, TextIO, Tuple, Type, Union, Match, Iterator, NamedTuple
 from types import TracebackType
 
 __copyright__: str = "(C) 2024-2025 Guido U. Draheim, licensed under the EUPL"
@@ -646,7 +646,12 @@ def checkprefix(cmd: str) -> Tuple[str, str]:
             return prefix, newcmd
     return prefix, NIX
 
-ExecMode = collections.namedtuple("ExecMode", ["mode", "check", "nouser", "noexpand", "argv0"])
+class ExecMode(NamedTuple):
+    mode: str
+    check: bool
+    nouser: bool
+    noexpand: bool
+    argv0: bool
 def exec_path(cmd: str) -> Tuple[ExecMode, str]:
     """ Hint: exec_path values are usually not moved by --root (while load_path are)"""
     prefix, newcmd = checkprefix(cmd)
@@ -656,7 +661,9 @@ def exec_path(cmd: str) -> Tuple[ExecMode, str]:
     argv0 = "@" in prefix
     mode = ExecMode(prefix, check, nouser, noexpand, argv0)
     return mode, newcmd
-LoadMode = collections.namedtuple("LoadMode", ["mode", "check"])
+class LoadMode(NamedTuple):
+    mode: str
+    check: bool
 def load_path(ref: str) -> Tuple[LoadMode, str]:
     """ Hint: load_path values are usually moved by --root (while exec_path are not)"""
     prefix, filename = "", ref
@@ -1060,7 +1067,10 @@ class waitlock:  # pylint: disable=invalid-name
         except OSError as e:
             logg.warning("oops >> %s", e)
 
-SystemctlWaitPID = collections.namedtuple("SystemctlWaitPID", ["pid", "returncode", "signal"])
+class SystemctlWaitPID(NamedTuple):
+    pid: Optional[int]
+    returncode: Optional[int]
+    signal: int
 
 def must_have_failed(waitpid: SystemctlWaitPID, cmd: List[str]) -> SystemctlWaitPID:
     # found to be needed on ubuntu:16.04 to match test result from ubuntu:18.04 and other distros
@@ -1089,7 +1099,13 @@ def subprocess_testpid(pid: int) -> SystemctlWaitPID:
     else:
         return SystemctlWaitPID(pid, None, 0)
 
-SystemctlUnitName = collections.namedtuple("SystemctlUnitName", ["fullname", "name", "prefix", "instance", "suffix", "component"])
+class SystemctlUnitName(NamedTuple):
+    fullname: str
+    name: str
+    prefix: str
+    instance: str
+    suffix: str
+    component: str
 
 def parse_unit(fullname: str) -> SystemctlUnitName: # -> object(prefix, instance, suffix, ...., name, component)
     name, suffix = fullname, ""
@@ -3486,7 +3502,9 @@ class Systemctl:
                     logg.debug("chdir workingdir '%s' >> %s", into, e)
                     return None
         return None
-    NotifySocket = collections.namedtuple("NotifySocket", ["socket", "socketfile"])
+    class NotifySocket(NamedTuple):
+        socket: socket.socket
+        socketfile: str
     def get_notify_socket_from(self, conf: SystemctlConf, socketfile: Optional[str] = None, debug: bool = False) -> str:
         """ creates a notify-socket for the (non-privileged) user """
         notify_socket_folder = expand_path(NOTIFY_SOCKET_FOLDER, conf.root_mode())
@@ -3534,10 +3552,10 @@ class Systemctl:
         notify.socket.settimeout(timeout or MAXTIMEOUT)
         result = ""
         try:
-            result, _addr = notify.socket.recvfrom(4096)
-            assert isinstance(result, bytes)
-            if result:
-                result = result.decode("utf-8")
+            _result, _addr = notify.socket.recvfrom(4096)
+            assert isinstance(_result, bytes)
+            if _result:
+                result = _result.decode("utf-8")
                 result_txt = result.replace("\n", "|")
                 result_len = len(result)
                 logg.debug("read_notify_socket(%s):%s", result_len, result_txt)
@@ -4651,7 +4669,7 @@ class Systemctl:
                 if not forkpid:
                     self.execve_from(conf, newcmd, env) # pragma: nocover
                 run = subprocess_waitpid(forkpid)
-                self.set_status_from(conf, "ExecReloadCode", run.returncode)
+                self.set_status_from(conf, "ExecReloadCode", nix_str(run.returncode))
                 if run.returncode:
                     self.write_status_from(conf, AS="failed")
                     return False
