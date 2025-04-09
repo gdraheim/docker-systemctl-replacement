@@ -11801,7 +11801,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         refresh = refresh_tool(image)
         sometime = SOMETIME or 188
         user = self.user()
-        testsleep = self.testname("sleep")
+        testsleep = self.testname("sleep").replace("test","")
         shell_file(os_path(testdir, "zzz.init"), F"""
             #! /bin/bash
             case "$1" in start)
