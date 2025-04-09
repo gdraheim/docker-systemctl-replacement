@@ -5,6 +5,7 @@ LABEL __copyright__="(C) Guido U. Draheim, licensed under the EUPL" \
 
 ENV GPG --no-gpg-checks
 ENV PG /var/lib/pgsql/data
+ENV TODO false
 ARG USERNAME=testuser_OK
 ARG PASSWORD=P@ssw0rd.013c864e44b8840ea76ec985dad7f09f
 ARG TESTUSER=testuser_11
@@ -19,8 +20,13 @@ RUN zypper $GPG search -s postgresql
 RUN zypper $GPG install -y postgresql-server postgresql-contrib
 COPY tmp/systemctl3.py /usr/bin/systemctl
 
+# initdb in postgresql16 does not respect the user from systemctl
+RUN $TODO || test -d $PG || mkdir -vp $PG && chown -v postgres $PG
+RUN $TODO || runuser postgres bash -c "initdb $PG"
+RUN $TODO || test -d /run/postgresql || mkdir -pv /run/postgresql && chown -v postgres /run/postgresql
+
 ## NOTE that PG=/var/lib/pgsql/data is created on the first 'start'
-RUN systemctl start postgresql ; sleep 2 \
+RUN systemctl start postgresql -vvv ; sleep 2 \
    ; echo "CREATE USER ${TESTUSER} LOGIN ENCRYPTED PASSWORD '${TESTPASS}'" | runuser -u postgres /usr/bin/psql \
    ; echo "CREATE USER ${USERNAME} LOGIN ENCRYPTED PASSWORD '${PASSWORD}'" | runuser -u postgres /usr/bin/psql \
    ; systemctl stop postgresql

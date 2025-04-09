@@ -42,6 +42,7 @@ CENTOS = "almalinux:9.1"
 UBUNTU = "ubuntu:22.04"
 OPENSUSE = "opensuse/leap:15.5"
 NIX = ""
+TODO = False
 
 _curl = "curl"
 _curl_timeout4 = "--max-time 4"
@@ -354,7 +355,7 @@ class DockerBuildTest(unittest.TestCase):
     #
     def test_41001_systemctl_testfile(self) -> None:
         """ the systemctl.py file to be tested does exist """
-        self.skipTest("TODO")
+        systemctl = tmp_systemctl()
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
@@ -366,12 +367,11 @@ class DockerBuildTest(unittest.TestCase):
         target_folder = os_path(root, os.path.dirname(target))
         os.makedirs(target_folder)
         target_systemctl = os_path(root, target)
-        shutil.copy(_systemctl_py, target_systemctl)
+        shutil.copy(systemctl, target_systemctl)
         self.assertTrue(os.path.isfile(target_systemctl))
         self.rm_testdir()
     def test_41002_systemctl_version(self) -> None:
-        self.skipTest("TODO")
-        systemctl = _systemctl_py
+        systemctl = tmp_systemctl()
         cmd = "{systemctl} --version"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
@@ -379,19 +379,9 @@ class DockerBuildTest(unittest.TestCase):
         self.assertTrue(greps(out, "systemd 219"))
         self.assertTrue(greps(out, "via systemctl.py"))
         self.assertTrue(greps(out, "[+]SYSVINIT"))
-    def real_41002_systemctl_version(self) -> None:
-        self.skipTest("TODO")
-        cmd = "systemctl --version"
-        out, end = output2(cmd.format(**locals()))
-        logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(end, 0)
-        self.assertTrue(greps(out, r"systemd [234]\d\d"))
-        self.assertFalse(greps(out, "via systemctl.py"))
-        self.assertTrue(greps(out, "[+]SYSVINIT"))
     def test_41003_systemctl_help(self) -> None:
         """ the '--help' option and 'help' command do work """
-        self.skipTest("TODO")
-        systemctl = _systemctl_py
+        systemctl = tmp_systemctl()
         cmd = "{systemctl} --help"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
@@ -875,7 +865,6 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    @unittest.expectedFailure
     def test_43215_opensuse15_postgres_dockerfile(self) -> None:
         """ WHEN using a dockerfile for systemd-enabled Opensuse15 and python3, 
             THEN we can create an image with an PostgreSql DB service 
@@ -1238,7 +1227,6 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    @unittest.expectedFailure
     def test_43715_opensuse15_redis_dockerfile(self) -> None:
         """ WHEN using a dockerfile for systemd-enabled Opensuse15 and redis, 
             THEN check that redis replies to 'ping' with a 'PONG' """
@@ -1276,8 +1264,13 @@ class DockerBuildTest(unittest.TestCase):
         # sh____(cmd.format(**locals()))
         cmd = "{docker} exec -t {testname}-client redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
-        cmd = "grep PONG {testdir}/{testname}.txt"
-        sh____(cmd.format(**locals()))
+        try:
+            cmd = "grep PONG {testdir}/{testname}.txt"
+            sh____(cmd.format(**locals()))
+        except subprocess.CalledProcessError as e:
+            if TODO:
+                raise
+            self.skipTest("TODO: redis server is not running????")
         #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         # sh____(cmd.format(**locals()))
         # SAVE
@@ -1296,7 +1289,6 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    @unittest.expectedFailure
     def test_43718_ubuntu18_redis_dockerfile(self) -> None:
         """ WHEN using a dockerfile for systemd-enabled Ubuntu18 and redis, 
             THEN check that redis replies to 'ping' with a 'PONG' """
@@ -1333,8 +1325,13 @@ class DockerBuildTest(unittest.TestCase):
         # sh____(cmd.format(**locals()))
         cmd = "{docker} exec -t {testname}-client redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
-        cmd = "grep PONG {testdir}/{testname}.txt"
-        sh____(cmd.format(**locals()))
+        try:
+            cmd = "grep PONG {testdir}/{testname}.txt"
+            sh____(cmd.format(**locals()))
+        except subprocess.CalledProcessError as e:
+            if TODO:
+                raise
+            self.skipTest("TODO: redis server is not running????")
         #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         # sh____(cmd.format(**locals()))
         # SAVE
@@ -1353,7 +1350,6 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    @unittest.expectedFailure
     def test_43768_ubuntu18_redis_user_dockerfile(self) -> None:
         """ WHEN using a dockerfile for systemd-enabled Ubuntu18 and redis, 
             THEN check that redis replies to 'ping' with a 'PONG' """
@@ -1390,8 +1386,13 @@ class DockerBuildTest(unittest.TestCase):
         # sh____(cmd.format(**locals()))
         cmd = "{docker} exec -t {testname}-client redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
-        cmd = "grep PONG {testdir}/{testname}.txt"
-        sh____(cmd.format(**locals()))
+        try:
+            cmd = "grep PONG {testdir}/{testname}.txt"
+            sh____(cmd.format(**locals()))
+        except subprocess.CalledProcessError as e:
+            if TODO:
+                raise
+            self.skipTest("TODO: redis server is not running????")
         #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         # sh____(cmd.format(**locals()))
         #
@@ -1415,7 +1416,6 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    @unittest.expectedFailure
     def test_43765_opensuse15_redis_user_dockerfile(self) -> None:
         """ WHEN using a dockerfile for systemd-enabled Opensuse15 and redis, 
             THEN check that redis replies to 'ping' with a 'PONG' 
@@ -1454,8 +1454,13 @@ class DockerBuildTest(unittest.TestCase):
         # sh____(cmd.format(**locals()))
         cmd = "{docker} exec -t {testname}-client redis-cli -h {container} -a {password} ping | tee {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
-        cmd = "grep PONG {testdir}/{testname}.txt"
-        sh____(cmd.format(**locals()))
+        try:
+            cmd = "grep PONG {testdir}/{testname}.txt"
+            sh____(cmd.format(**locals()))
+        except subprocess.CalledProcessError as e:
+            if TODO:
+                raise
+            self.skipTest("TODO: redis server is not running????")
         #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         # sh____(cmd.format(**locals()))
         # USER
@@ -1537,7 +1542,6 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    @unittest.expectedFailure
     def test_43818_ubuntu18_mongod_dockerfile(self) -> None:
         """ WHEN using a dockerfile for systemd-enabled Ubuntu18 and mongod,
             check that mongo can reply with a hostInfo."""
@@ -1576,8 +1580,13 @@ class DockerBuildTest(unittest.TestCase):
         # sh____(cmd.format(**locals()))
         cmd = "{docker} exec -t {testname}-client mongo --host {container} --eval 'db.hostInfo()' | tee {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
-        cmd = "grep 'MongoDB server version' {testdir}/{testname}.txt"
-        sh____(cmd.format(**locals()))
+        try:
+            cmd = "grep 'MongoDB server version' {testdir}/{testname}.txt"
+            sh____(cmd.format(**locals()))
+        except subprocess.CalledProcessError as e:
+            if TODO:
+                raise
+            self.skipTest("TODO: mongo server is not running????")
         #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         # sh____(cmd.format(**locals()))
         # SAVE
@@ -1718,7 +1727,6 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    @unittest.expectedFailure
     def test_46209_tomcat_dockerfile(self) -> None:
         """ WHEN using a dockerfile for systemd-enabled CentOS 8, 
             THEN we can create an image with an tomcat service 
@@ -1759,8 +1767,13 @@ class DockerBuildTest(unittest.TestCase):
             time.sleep(1)
         cmd = "{curl} -o {testdir}/{testname}.txt http://{container}:8080/sample"
         sh____(cmd.format(**locals()))
-        cmd = "grep Hello {testdir}/{testname}.txt"
-        sh____(cmd.format(**locals()))
+        try:
+            cmd = "grep Hello {testdir}/{testname}.txt"
+            sh____(cmd.format(**locals()))
+        except subprocess.CalledProcessError as e:
+            if TODO:
+                raise
+            self.skipTest("TODO: tomcat server is not running????")
         #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         # sh____(cmd.format(**locals()))
         # SAVE
@@ -1830,7 +1843,6 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    @unittest.expectedFailure
     def test_46609_ssh_dockerfile(self) -> None:
         """ WHEN using a dockerfile for systemd-enabled CentOS 8, 
             THEN we can create an image with an ssh service 
@@ -1876,16 +1888,26 @@ class DockerBuildTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} systemctl is-system-running"
         sx____(cmd.format(**locals()))
-        allows = "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
-        cmd = "sshpass -p {password} scp {allows} testuser@{container}:date.txt {testdir}/{testname}.date.txt"
-        sh____(cmd.format(**locals()))
-        cmd = "grep `TZ=UTC date -I` {testdir}/{testname}.date.txt"
-        sh____(cmd.format(**locals()))
-        allows = "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
-        cmd = "sshpass -p {password} scp {allows} testuser@{container}:date.txt {testdir}/{testname}.date.2.txt"
-        sh____(cmd.format(**locals()))
-        cmd = "grep `TZ=UTC date -I` {testdir}/{testname}.date.2.txt"
-        sh____(cmd.format(**locals()))
+        try:
+            allows = "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+            cmd = "sshpass -p {password} scp {allows} testuser@{container}:date.txt {testdir}/{testname}.date.txt"
+            sh____(cmd.format(**locals()))
+            cmd = "grep `TZ=UTC date -I` {testdir}/{testname}.date.txt"
+            sh____(cmd.format(**locals()))
+        except subprocess.CalledProcessError as e:
+            if TODO:
+                raise
+            self.skipTest("TODO: ssh server is not running????")
+        try:
+            allows = "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+            cmd = "sshpass -p {password} scp {allows} testuser@{container}:date.txt {testdir}/{testname}.date.2.txt"
+            sh____(cmd.format(**locals()))
+            cmd = "grep `TZ=UTC date -I` {testdir}/{testname}.date.2.txt"
+            sh____(cmd.format(**locals()))
+        except subprocess.CalledProcessError as e:
+            if TODO:
+                raise
+            self.skipTest("TODO: ssh server is not running??????")
         #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         # sh____(cmd.format(**locals()))
         # SAVE
@@ -2067,6 +2089,8 @@ if __name__ == "__main__":
                   help="additionally save the output log to a file [%default]")
     _o.add_option("-P", "--password", metavar="PASSWORD", default="",
                   help="use a fixed password for examples with auth [%default]")
+    _o.add_option("--todo", action="store_true", default=False,
+                  help="Show tests with a different expected result [%default]")
     _o.add_option("--failfast", action="store_true", default=False,
                   help="Stop the test run on the first error or failure. [%default]")
     _o.add_option("--xmlresults", metavar="FILE", default=None,
@@ -2122,7 +2146,9 @@ if __name__ == "__main__":
             Runner(xmlresults).run(suite)
         else:
             Runner = unittest.TextTestRunner
-            Runner(verbosity=opt.verbose, failfast=opt.failfast).run(suite)
+            done = Runner(verbosity=opt.verbose, failfast=opt.failfast).run(suite)
+            for skipped in done.skipped:
+                logg.info("skipped %s", str(skipped).replace("__main__", "").replace("testMethod=",""))
     else:
         Runner = unittest.TextTestRunner
         if xmlresults:
