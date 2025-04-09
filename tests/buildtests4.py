@@ -1,6 +1,8 @@
     #! /usr/bin/env python3
-# pylint: disable=line-too-long,too-many-lines,multiple-statements,unspecified-encoding,import-outside-toplevel,deprecated-module,invalid-name,bare-except
+# pylint: disable=line-too-long,too-many-lines,too-many-statements,too-many-locals,too-many-public-methods
+# pylint: disable=multiple-statements,unspecified-encoding,import-outside-toplevel,deprecated-module,invalid-name,bare-except
 # pylint: disable=unused-argument,unused-variable,possibly-unused-variable,missing-function-docstring,missing-class-docstring,consider-using-f-string,logging-format-interpolation
+# pylint: disable=consider-using-with,chained-comparison
 """ Testcases for docker-systemctl-replacement functionality """
 
 __copyright__ = "(C) Guido Draheim, licensed under the EUPL"""

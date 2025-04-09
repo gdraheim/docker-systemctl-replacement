@@ -1,6 +1,8 @@
 #! /usr/bin/python3
-# pylint: disable=line-too-long,missing-function-docstring,missing-class-docstring,consider-using-f-string,import-outside-toplevel
-# pylint: disable=too-many-lines,multiple-statements,unspecified-encoding,dangerous-default-value,unnecessary-lambda,superfluous-parens
+# pylint: disable=too-many-lines,line-too-long,too-many-branches,too-many-statements,too-many-public-methods,too-many-nested-blocks,too-many-locals,too-many-return-statements,too-many-instance-attributes,too-few-public-methods,too-many-arguments,too-many-positional-arguments,multiple-statements
+# pylint: disable=missing-function-docstring,missing-class-docstring,consider-using-f-string,consider-using-ternary,import-outside-toplevel
+# pylint: disable=no-else-return,no-else-break,unspecified-encoding,dangerous-default-value,unnecessary-lambda,unnecessary-comprehension,superfluous-parens
+# pylint: disable=fixme,redefined-argument-from-local,use-yield-from,chained-comparison,consider-using-in,consider-using-with.consider-using-min-builtin,consider-using-max-builtin,consider-using-get
 """ run 'systemctl start' and other systemctl commands based on available *.service descriptions without a systemd daemon running in the system """
 import threading
 import grp

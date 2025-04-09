@@ -362,6 +362,9 @@ show:
 ####### autopep8
 AUTOPEP8=autopep8
 AUTOPEP8_WITH=
+PYLINT = pylint
+PYLINT_OPTIONS =
+
 autopep8: ; $${PKG:-zypper} install -y python3-autopep8
 %.py.pep8: %.py
 	$(AUTOPEP8) $(AUTOPEP8_WITH) ${@:.pep8=} --in-place
@@ -373,12 +376,20 @@ autopep8: ; $${PKG:-zypper} install -y python3-autopep8
 	$(AUTOPEP8) $(AUTOPEP8_WITH) ${@:.style=} --diff
 %.pyi.style: %.pyi
 	$(AUTOPEP8) $(AUTOPEP8_WITH) ${@:.style=} --diff
+%.py.lint:
+	$(PYLINT) $(PYLINT_OPTIONS) $(@:.lint=)
+lint:
+	$(MAKE) files/docker/systemctl3.py.lint
+	$(MAKE) tests/localtests2.py.lint
+	$(MAKE) tests/dockertests3.py.lint
+	$(MAKE) tests/buildtests4.py.lint
+
 pep8 style:
 	$(MAKE) files/docker/systemctl3.py.pep8
-	$(MAKE) testsuite.py.pep8
+	$(MAKE) tests/localtests2.py.pep8
 pep style.d: 
 	$(MAKE) files/docker/systemctl3.py.style
-	$(MAKE) testsuite.py.style
+	$(MAKE) tests/localtests2.py.style
 
 # https://github.com/nvbn/py-backwards
 
