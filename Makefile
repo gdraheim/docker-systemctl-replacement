@@ -16,7 +16,7 @@ COVERAGE3 = $(PYTHON3) -m coverage
 TWINE = twine
 TWINE39 = twine-3.11
 GIT=git
-VERFILES = files/docker/systemctl3.py tests/dockertests3.py pyproject.toml
+VERFILES = files/docker/systemctl3.py tests/*tests*.py pyproject.toml
 CONTAINER = docker-systemctl
 LOCALMIRRORS=/dock
 
@@ -24,6 +24,8 @@ LOCAL_PY = tests/localtests2.py
 LOCAL = $(PYTHON) $(LOCAL_PY) $(LOCAL_OPTIONS)
 TESTS_PY = tests/dockertests3.py
 TESTS = $(PYTHON) $(TESTS_PY) $(TESTS_OPTIONS)
+BUILD_PY = tests/buildtests4.py
+BUILD = $(PYTHON) $(BUILD_PY) -C tests $(BUILD_OPTIONS)
 
 verfiles:
 	@ grep -l __version__ */*.??* */*/*.??* | { while read f; do echo $$f; done; } 
@@ -62,6 +64,7 @@ real_2%: ; $(LOCAL) "$(notdir $@)" $(VV) $V
 est_3%: ; rm .coverage*; rm -rf tmp/tmp.t$(notdir $@) ; $(TESTS) "t$(notdir $@)" $(VV) $V --coverage --keep
 test_3%: ; $(TESTS) "$(notdir $@)" $(VV) $V
 real_3%: ; $(TESTS) "$(notdir $@)" $(VV) $V
+test_4%: ; $(BUILD) "$(notdir $@)" $(VV) $V
 
 test: ; $(MAKE) type && $(MAKE) tests && $(MAKE) coverage
 
@@ -202,6 +205,8 @@ check3:
 	$(MAKE) tmp_systemctl_py_3
 	$(LOCAL) -vv \
 	  '--with=tmp/systemctl.py' --python=/usr/bin/python3
+check4:
+	$(BUILD) -vv
 
 test_%/2:
 	$(MAKE) tmp_systemctl_py_2
