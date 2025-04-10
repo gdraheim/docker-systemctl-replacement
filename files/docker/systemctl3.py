@@ -640,7 +640,7 @@ def _pid_zombie(pid: int) -> bool:
 def checkprefix(cmd: str) -> Tuple[str, str]:
     prefix = ""
     for i, c in enumerate(cmd):
-        if c in "-+!@:":
+        if c in "-+!@:|":
             prefix = prefix + c
         else:
             newcmd = cmd[i:]
