@@ -40,7 +40,7 @@ _top_list = "ps -eo etime,pid,ppid,args --sort etime,pid"
 
 SAVETO = "localhost:5000/systemctl"
 IMAGES = "localhost:5000/systemctl/image"
-CENTOS = "almalinux:9.1"
+CENTOS = "almalinux:9.4"
 UBUNTU = "ubuntu:22.04"
 OPENSUSE = "opensuse/leap:15.5"
 NIX = ""
@@ -400,8 +400,8 @@ class DockerBuildTest(unittest.TestCase):
         self.assertEqual(end, 0)
         self.assertFalse(greps(out, "--verbose"))
         self.assertTrue(greps(out, "reload-or-try-restart"))
-    def test_42009_httpd_dockerfile(self) -> None:
-        """ WHEN using a dockerfile for systemd-enabled CentOS 8 and python3, 
+    def test_42009_httpd_alma9_dockerfile(self) -> None:
+        """ WHEN using a dockerfile for systemd-enabled Almalinux and python3, 
             THEN we can create an image with an Apache HTTP service 
                  being installed and enabled.
             Without a special startup.sh script or container-cmd 
@@ -416,7 +416,7 @@ class DockerBuildTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
-        if not python.endswith("python3"): self.skipTest("using python3 on centos:8")
+        if not python.endswith("python3"): self.skipTest("using python3 on almalinux:9")
         testname = self.testname()
         testdir = self.testdir()
         name = "httpd-alma9"
@@ -452,8 +452,8 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_42049_httpd_not_user_dockerfile(self) -> None:
-        """ WHEN using a dockerfile for systemd-enabled CentOS 8 and python3, 
+    def test_42049_httpd_alma9_not_user_dockerfile(self) -> None:
+        """ WHEN using a dockerfile for systemd-enabled Almalinux and python3, 
             THEN we can create an image with an Apache HTTP service 
                  being installed and enabled.
              AND in this variant it runs under User=httpd right
@@ -463,7 +463,7 @@ class DockerBuildTest(unittest.TestCase):
         tmp_systemctl3()
         docker = _docker
         python = _python or _python3
-        if not python.endswith("python3"): self.skipTest("using python3 on centos:8")
+        if not python.endswith("python3"): self.skipTest("using python3 on almalinux:9")
         testname = self.testname()
         testdir = self.testdir()
         name = "httpd-alma9-not-user"
@@ -498,8 +498,8 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_42059_httpd_user_dockerfile(self) -> None:
-        """ WHEN using a dockerfile for systemd-enabled CentOS 8 and python3, 
+    def test_42059_httpd_alma9_user_dockerfile(self) -> None:
+        """ WHEN using a dockerfile for systemd-enabled Almalinux and python3, 
             THEN we can create an image with an Apache HTTP service 
                  being installed and enabled.
              AND in this variant it runs under User=httpd right
@@ -510,7 +510,7 @@ class DockerBuildTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
-        if not python.endswith("python3"): self.skipTest("using python3 on centos:8")
+        if not python.endswith("python3"): self.skipTest("using python3 on almalinux:9")
         testname = self.testname()
         testdir = self.testdir()
         name = "httpd-alma9-user"
@@ -708,7 +708,7 @@ class DockerBuildTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_42215_opensuse15_apache2_dockerfile(self) -> None:
-        """ WHEN using a dockerfile for systemd-enabled CentOS 8 and python3, 
+        """ WHEN using a dockerfile for systemd-enabled Opensuse and python3, 
             THEN we can create an image with an Apache HTTP service 
                  being installed and enabled.
             Without a special startup.sh script or container-cmd 
@@ -759,7 +759,7 @@ class DockerBuildTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_42315_opensuse15_nginx_dockerfile(self) -> None:
-        """ WHEN using a dockerfile for systemd-enabled CentOS 8 and python3, 
+        """ WHEN using a dockerfile for systemd-enabled Opensuse and python3, 
             THEN we can create an image with an NGINX HTTP service 
                  being installed and enabled.
             Without a special startup.sh script or container-cmd 
@@ -808,8 +808,8 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_43009_postgres_dockerfile(self) -> None:
-        """ WHEN using a dockerfile for systemd-enabled CentOS 8 and python3, 
+    def test_43009_postgres_alma9_dockerfile(self) -> None:
+        """ WHEN using a dockerfile for systemd-enabled Almalinux and python3, 
             THEN we can create an image with an PostgreSql DB service 
                  being installed and enabled.
             Without a special startup.sh script or container-cmd 
@@ -825,7 +825,7 @@ class DockerBuildTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
-        if not python.endswith("python3"): self.skipTest("using python3 on centos:8")
+        if not python.endswith("python3"): self.skipTest("using python3 on almalinux:9")
         testname = self.testname()
         testdir = self.testdir()
         name = "postgres-alma9"
@@ -1042,8 +1042,8 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_43459_postgres_user_dockerfile(self) -> None:
-        """ WHEN using a dockerfile for systemd-enabled CentOS 8 and python3,
+    def test_43459_postgres_alma9_user_dockerfile(self) -> None:
+        """ WHEN using a dockerfile for systemd-enabled Almalinux and python3,
             THEN we can create an image with an PostgreSql DB service 
                  being installed and enabled.
              AND in this variant it runs under User=postgres right
@@ -1054,7 +1054,7 @@ class DockerBuildTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
-        if not python.endswith("python3"): self.skipTest("using python3 on centos:8")
+        if not python.endswith("python3"): self.skipTest("using python3 on almalinux:9")
         testname = self.testname()
         testdir = self.testdir()
         name = "postgres-alma9-user"
@@ -1113,8 +1113,8 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_43509_redis_dockerfile(self) -> None:
-        """ WHEN using a dockerfile for systemd-enabled Centos8 and redis, 
+    def test_43509_redis_alma9_dockerfile(self) -> None:
+        """ WHEN using a dockerfile for systemd-enabled Almalinux and redis, 
             THEN check that redis replies to 'ping' with a 'PONG' """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
@@ -1179,8 +1179,8 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_43559_redis_user_dockerfile(self) -> None:
-        """ WHEN using a dockerfile for systemd-enabled Centos8 and redis, 
+    def test_43559_redis_alma9_user_dockerfile(self) -> None:
+        """ WHEN using a dockerfile for systemd-enabled Almalinux and redis, 
             THEN check that redis replies to 'ping' with a 'PONG' """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
@@ -1815,14 +1815,14 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_45109_lamp_stack(self) -> None:
-        """ Check setup of Linux/Apache/Mariadb/Php on CentOs 8 with python3"""
+    def test_45109_lamp_stack_alma9(self) -> None:
+        """ Check setup of Linux/Apache/Mariadb/Php on Almalinux with python3"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         tmp_systemctl3()
         docker = _docker
         curl = _curl
         python = _python or _python3
-        if not python.endswith("python3"): self.skipTest("using python3 on centos:7")
+        if not python.endswith("python3"): self.skipTest("using python3 on almalinux:9")
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
@@ -1937,8 +1937,8 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_46209_tomcat_dockerfile(self) -> None:
-        """ WHEN using a dockerfile for systemd-enabled CentOS 8, 
+    def test_46209_tomcat_alma9_dockerfile(self) -> None:
+        """ WHEN using a dockerfile for systemd-enabled Almalinux, 
             THEN we can create an image with an tomcat service 
                  being installed and enabled.
             Addtionally we do check an example application"""
@@ -1948,7 +1948,7 @@ class DockerBuildTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
-        if not python.endswith("python3"): self.skipTest("using python3 on centos:8")
+        if not python.endswith("python3"): self.skipTest("using python3 on almalinux:9")
         testname = self.testname()
         testdir = self.testdir()
         dockerfile = "tomcat-alma9.dockerfile"
@@ -2010,8 +2010,8 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_46409_cntlm_dockerfile(self) -> None:
-        """ WHEN using a dockerfile for systemd-enabled CentOS 8, 
+    def test_46409_cntlm_alma9_dockerfile(self) -> None:
+        """ WHEN using a dockerfile for systemd-enabled Almalinux, 
             THEN we can create an image with an cntlm service 
                  being installed and enabled.
             Addtionally we do check an example application"""
@@ -2022,7 +2022,7 @@ class DockerBuildTest(unittest.TestCase):
         curl = _curl
         max4 = _curl_timeout4
         python = _python or _python2
-        if python.endswith("python3"): self.skipTest("no python3 on centos:7")
+        if python.endswith("python3"): self.skipTest("no python3 on almalinux:9")
         testname = self.testname()
         testdir = self.testdir()
         dockerfile = "cntlm-alma9.dockerfile"
@@ -2065,8 +2065,8 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_46609_ssh_dockerfile(self) -> None:
-        """ WHEN using a dockerfile for systemd-enabled CentOS 8, 
+    def test_46609_ssh_alma9_dockerfile(self) -> None:
+        """ WHEN using a dockerfile for systemd-enabled Almalinux, 
             THEN we can create an image with an ssh service 
                  being installed and enabled.
             Addtionally we do check an example application"""
@@ -2077,7 +2077,7 @@ class DockerBuildTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
-        if not python.endswith("python3"): self.skipTest("using python3 on centos:8")
+        if not python.endswith("python3"): self.skipTest("using python3 on almalinux:9")
         testname = self.testname()
         testdir = self.testdir()
         dockerfile = "sshd-alma9.dockerfile"
