@@ -22,5 +22,5 @@ RUN grep -8 requirepass /etc/redis/redis.conf
 
 RUN touch /var/log/systemctl.debug.log
 RUN systemctl enable redis-server
-# CMD /usr/bin/systemctl
-CMD /usr/bin/systemctl -1 start redis-server
+CMD ["/usr/bin/systemctl"]
+# CMD /usr/bin/systemctl -1 start redis-server

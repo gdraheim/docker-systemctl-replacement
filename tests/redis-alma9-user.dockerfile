@@ -19,5 +19,5 @@ RUN sed -i "s/^bind .*/bind 0.0.0.0/" /etc/redis/redis.conf
 
 RUN touch /var/log/systemctl.debug.log
 RUN systemctl enable redis
-CMD /usr/bin/systemctl
+CMD ["/usr/bin/systemctl"]
 USER redis

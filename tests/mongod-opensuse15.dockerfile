@@ -5,7 +5,7 @@ LABEL __copyright__="(C) Guido Draheim, licensed under the EUPL" \
 EXPOSE 27017
 ENV GPG --no-gpg-checks
 
-RUN zypper $GPG install -r repo-oss -y python3
+RUN zypper $GPG install -r repo-oss -y python3 procps
 COPY tmp/systemctl3.py /usr/bin/systemctl
 
 RUN zypper addrepo "https://repo.mongodb.org/zypper/suse/15/mongodb-org/4.4/x86_64/" mongodb

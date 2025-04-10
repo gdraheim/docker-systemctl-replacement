@@ -5,7 +5,7 @@ LABEL __copyright__="(C) Guido Draheim, licensed under the EUPL" \
 EXPOSE 27017
 
 RUN apt-get update
-RUN apt-get install -y python3
+RUN apt-get install -y python3 procps
 COPY tmp/systemctl3.py /usr/bin/systemctl
 RUN test -L /bin/systemctl || ln -sf /usr/bin/systemctl /bin/systemctl
 
@@ -25,5 +25,5 @@ RUN sed -i -e "/PIDFile=/a\\" -e "RuntimeDirectory=mongodb" /lib/systemd/system/
 RUN systemctl enable mongod
 
 RUN touch /var/log/systemctl.debug.log
-# CMD /usr/bin/systemctl # FIXME
-CMD /usr/bin/systemctl init mongod
+CMD ["/usr/bin/systemctl"]
+# CMD /usr/bin/systemctl init mongod

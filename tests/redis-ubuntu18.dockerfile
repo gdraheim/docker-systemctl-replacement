@@ -6,7 +6,7 @@ EXPOSE 6379
 ARG PASSWORD Redis.Foo.1
 
 RUN apt-get update
-RUN apt-get install -y python3
+RUN apt-get install -y python3 procps
 COPY tmp/systemctl3.py /usr/bin/systemctl
 
 RUN apt-cache search redis
@@ -22,5 +22,5 @@ RUN grep -8 requirepass /etc/redis/redis.conf
 
 RUN touch /var/log/systemctl.debug.log
 RUN systemctl enable redis
-# CMD /usr/bin/systemctl
-CMD /usr/bin/systemctl -1 start redis
+CMD ["/usr/bin/systemctl"]
+# CMD ["/usr/bin/systemctl", "start", "redis"]

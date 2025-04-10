@@ -1140,15 +1140,13 @@ class DockerBuildTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
-        cmd = "sleep 2"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} run -d --name {testname}-client {images}:{testname} sleep 13"
-        sh____(cmd.format(**locals()))
-        for attempt in range(10):
+        for attempt in range(8):
             if not sx____(F"{docker} exec {testname} systemctl is-system-running # {attempt}."):
                 break
             time.sleep(1)
             continue
+        cmd = "{docker} run -d --name {testname}-client {images}:{testname} sleep 3"
+        sh____(cmd.format(**locals()))
         # cmd = "redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
         # sh____(cmd.format(**locals()))
         cmd = "{docker} exec -t {testname}-client redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
@@ -1161,6 +1159,8 @@ class DockerBuildTest(unittest.TestCase):
             cmd = "{docker} cp {testname}:/var/log/systemctl.debug.log {testdir}/systemctl.log"
             sh____(cmd.format(**locals()))
             sh____(F"cat {testdir}/systemctl.log")
+            cmd = "{docker} exec {testname} ps axu"
+            sx____(cmd.format(**locals()))
             raise
         # SAVE
         cmd = "{docker} stop {testname}-client"
@@ -1206,15 +1206,13 @@ class DockerBuildTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
-        cmd = "sleep 2"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} run -d --name {testname}-client {images}:{testname} sleep 13"
-        sh____(cmd.format(**locals()))
-        for attempt in range(10):
+        for attempt in range(8):
             if not sx____(F"{docker} exec {testname} systemctl is-system-running # {attempt}."):
                 break
             time.sleep(1)
             continue
+        cmd = "{docker} run -d --name {testname}-client {images}:{testname} sleep 3"
+        sh____(cmd.format(**locals()))
         # cmd = "redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
         # sh____(cmd.format(**locals()))
         cmd = "{docker} exec -t {testname}-client redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
@@ -1227,6 +1225,8 @@ class DockerBuildTest(unittest.TestCase):
             cmd = "{docker} cp {testname}:/var/log/systemctl.debug.log {testdir}/systemctl.log"
             sh____(cmd.format(**locals()))
             sh____(F"cat {testdir}/systemctl.log")
+            cmd = "{docker} exec {testname} ps axu"
+            sx____(cmd.format(**locals()))
             if TODO:
                 raise
             self.skipTest("TODO: redis server is not running?")
@@ -1280,15 +1280,13 @@ class DockerBuildTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
-        cmd = "sleep 2"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} run -d --name {testname}-client {images}:{testname} sleep 13"
-        sh____(cmd.format(**locals()))
-        for attempt in range(10):
+        for attempt in range(8):
             if not sx____(F"{docker} exec {testname} systemctl is-system-running # {attempt}."):
                 break
             time.sleep(1)
             continue
+        cmd = "{docker} run -d --name {testname}-client {images}:{testname} sleep 3"
+        sh____(cmd.format(**locals()))
         # cmd = "redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
         # sh____(cmd.format(**locals()))
         cmd = "{docker} exec -t {testname}-client redis-cli -h {container} -a {password} ping | tee {testdir}/{testname}.txt"
@@ -1301,6 +1299,8 @@ class DockerBuildTest(unittest.TestCase):
             cmd = "{docker} cp {testname}:/var/log/systemctl.debug.log {testdir}/systemctl.log"
             sh____(cmd.format(**locals()))
             sh____(F"cat {testdir}/systemctl.log")
+            cmd = "{docker} exec {testname} ps axu"
+            sx____(cmd.format(**locals()))
             raise
         # SAVE
         cmd = "{docker} stop {testname}-client"
@@ -1347,15 +1347,13 @@ class DockerBuildTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
-        cmd = "sleep 2"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} run -d --name {testname}-client {images}:{testname} sleep 13"
-        sh____(cmd.format(**locals()))
-        for attempt in range(10):
+        for attempt in range(8):
             if not sx____(F"{docker} exec {testname} systemctl is-system-running # {attempt}."):
                 break
             time.sleep(1)
             continue
+        cmd = "{docker} run -d --name {testname}-client {images}:{testname} sleep 3"
+        sh____(cmd.format(**locals()))
         # cmd = "redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
         # sh____(cmd.format(**locals()))
         cmd = "{docker} exec -t {testname}-client redis-cli -h {container} -a {password} ping | tee {testdir}/{testname}.txt"
@@ -1368,6 +1366,8 @@ class DockerBuildTest(unittest.TestCase):
             cmd = "{docker} cp {testname}:/var/log/systemctl.debug.log {testdir}/systemctl.log"
             sh____(cmd.format(**locals()))
             sh____(F"cat {testdir}/systemctl.log")
+            cmd = "{docker} exec {testname} ps axu"
+            sx____(cmd.format(**locals()))
             raise
         #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         # sh____(cmd.format(**locals()))
@@ -1416,15 +1416,13 @@ class DockerBuildTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
-        cmd = "sleep 2"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} run -d --name {testname}-client {images}:{testname} sleep 13"
-        sh____(cmd.format(**locals()))
-        for attempt in range(10):
+        for attempt in range(8):
             if not sx____(F"{docker} exec {testname} systemctl is-system-running # {attempt}."):
                 break
             time.sleep(1)
             continue
+        cmd = "{docker} run -d --name {testname}-client {images}:{testname} sleep 3"
+        sh____(cmd.format(**locals()))
         # cmd = "redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
         # sh____(cmd.format(**locals()))
         cmd = "{docker} exec -t {testname}-client redis-cli -h {container} -a {password} ping | tee {testdir}/{testname}.txt"
@@ -1437,6 +1435,8 @@ class DockerBuildTest(unittest.TestCase):
             cmd = "{docker} cp {testname}:/var/log/systemctl.debug.log {testdir}/systemctl.log"
             sh____(cmd.format(**locals()))
             sh____(F"cat {testdir}/systemctl.log")
+            cmd = "{docker} exec {testname} ps axu"
+            sx____(cmd.format(**locals()))
             raise
         #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         # sh____(cmd.format(**locals()))
@@ -1484,15 +1484,13 @@ class DockerBuildTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
-        cmd = "sleep 2"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} run -d --name {testname}-client {images}:{testname} sleep 13"
-        sh____(cmd.format(**locals()))
-        for attempt in range(10):
+        for attempt in range(8):
             if not sx____(F"{docker} exec {testname} systemctl is-system-running # {attempt}."):
                 break
             time.sleep(1)
             continue
+        cmd = "{docker} run -d --name {testname}-client {images}:{testname} sleep 3"
+        sh____(cmd.format(**locals()))
         # cmd = "redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
         # sh____(cmd.format(**locals()))
         cmd = "{docker} exec -t {testname}-client redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
@@ -1505,6 +1503,8 @@ class DockerBuildTest(unittest.TestCase):
             cmd = "{docker} cp {testname}:/var/log/systemctl.debug.log {testdir}/systemctl.log"
             sh____(cmd.format(**locals()))
             sh____(F"cat {testdir}/systemctl.log")
+            cmd = "{docker} exec {testname} ps axu"
+            sx____(cmd.format(**locals()))
             if TODO:
                 raise
             self.skipTest("TODO: redis server is not running????")
@@ -1558,17 +1558,19 @@ class DockerBuildTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
-        cmd = "sleep 2"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} run -d --name {testname}-client {images}:{testname} sleep 13"
-        sh____(cmd.format(**locals()))
-        for attempt in range(10):
+        for attempt in range(8):
             if not sx____(F"{docker} exec {testname} systemctl is-system-running # {attempt}."):
                 break
             time.sleep(1)
             continue
+        if attempt > 5:
+            cmd = "{docker} cp {testname}:/var/log/systemctl.debug.log {testdir}/systemctl.log"
+            sh____(cmd.format(**locals()))
+            sh____(F"cat {testdir}/systemctl.log")
         # cmd = "redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
         # sh____(cmd.format(**locals()))
+        cmd = "{docker} run -d --name {testname}-client {images}:{testname} sleep 3"
+        sh____(cmd.format(**locals()))
         cmd = "{docker} exec -t {testname}-client redis-cli -h {container} -a {password} ping | tee {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         try:
@@ -1579,6 +1581,8 @@ class DockerBuildTest(unittest.TestCase):
             cmd = "{docker} cp {testname}:/var/log/systemctl.debug.log {testdir}/systemctl.log"
             sh____(cmd.format(**locals()))
             sh____(F"cat {testdir}/systemctl.log")
+            cmd = "{docker} exec {testname} ps axu"
+            sx____(cmd.format(**locals()))
             if TODO:
                 raise
             self.skipTest("TODO: redis server is not running????")
@@ -1633,15 +1637,13 @@ class DockerBuildTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
-        cmd = "sleep 2"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} run -d --name {testname}-client {images}:{testname} sleep 13"
-        sh____(cmd.format(**locals()))
-        for attempt in range(10):
+        for attempt in range(8):
             if not sx____(F"{docker} exec {testname} systemctl is-system-running # {attempt}."):
                 break
             time.sleep(1)
             continue
+        cmd = "{docker} run -d --name {testname}-client {images}:{testname} sleep 3"
+        sh____(cmd.format(**locals()))
         # cmd = "redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
         # sh____(cmd.format(**locals()))
         cmd = "{docker} exec -t {testname}-client redis-cli -h {container} -a {password} ping | tee {testdir}/{testname}.txt"
@@ -1654,6 +1656,8 @@ class DockerBuildTest(unittest.TestCase):
             cmd = "{docker} cp {testname}:/var/log/systemctl.debug.log {testdir}/systemctl.log"
             sh____(cmd.format(**locals()))
             sh____(F"cat {testdir}/systemctl.log")
+            cmd = "{docker} exec {testname} ps axu"
+            sx____(cmd.format(**locals()))
             if TODO:
                 raise
             self.skipTest("TODO: redis server is not running????")
@@ -1724,6 +1728,8 @@ class DockerBuildTest(unittest.TestCase):
             cmd = "{docker} cp {testname}:/var/log/systemctl.debug.log {testdir}/systemctl.log"
             sh____(cmd.format(**locals()))
             sh____(F"cat {testdir}/systemctl.log")
+            cmd = "{docker} exec {testname} ps axu"
+            sx____(cmd.format(**locals()))
             raise
         # SAVE
         cmd = "{docker} stop {testname}-client"
@@ -1901,7 +1907,7 @@ class DockerBuildTest(unittest.TestCase):
         #
         container = self.ip_container(testname)
         # THEN
-        for attempt in range(10):
+        for attempt in range(8):
             time.sleep(1)
             cmd = "{curl} -o {testdir}/result.txt http://{container}/phpMyAdmin/"
             out, err, end = output3(cmd.format(**locals()))

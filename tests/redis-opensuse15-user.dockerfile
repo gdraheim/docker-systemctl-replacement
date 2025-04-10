@@ -6,7 +6,7 @@ ARG PASSWORD=P@ssw0rd.7702d0fa8c57c1a2aa87a6758f6c326d7de5
 EXPOSE 6379
 ENV GPG --no-gpg-checks
 
-RUN zypper $GPG install -r repo-oss -y python3
+RUN zypper $GPG install -r repo-oss -y python3 procps
 COPY tmp/systemctl3.py /usr/bin/systemctl
 RUN zypper $GPG install -r repo-oss -y redis
 COPY tmp/systemctl3.py /usr/bin/systemctl
@@ -21,10 +21,13 @@ RUN sed -i "s/^bind .*/bind 0.0.0.0/" /etc/redis/default.conf
 RUN sed -i "s/^#* *requirepass .*/requirepass $PASSWORD/" /etc/redis/default.conf
 
 RUN systemctl enable redis@default
-# RUN systemctl disable kbdsettings
+RUN systemctl disable kbdsettings || true
+RUN systemctl default-services
+# TODO: the enable-command did not put it into default-services
+RUN systemctl cat redis@.service
 
 RUN touch /var/log/systemctl.debug.log
-## CMD /usr/bin/systemctl  # FIXME
-CMD /usr/bin/systemctl -1 start redis@default
+# CMD ["/usr/bin/systemctl"]
+CMD ["/usr/bin/systemctl", "-1", "start", "redis@default"]
 USER redis
 
