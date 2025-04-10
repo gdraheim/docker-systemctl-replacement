@@ -1,5 +1,6 @@
 F= files/docker/systemctl3.py
-B= 2024
+ORIGYEAR=2016
+BASEYEAR=2024
 FOR=today
 DAY=%u
 # 'make version FOR=yesterday' or 'make version DAY=0'
@@ -30,14 +31,16 @@ BUILD = $(PYTHON) $(BUILD_PY) -C tests $(BUILD_OPTIONS)
 verfiles:
 	@ grep -l __version__ */*.??* */*/*.??* | { while read f; do echo $$f; done; } 
 
+# make version FOR=yesterday # "FOR=2 days ago" # FOR=tomorrow # "FOR=2 days"
 version:
 	@ grep -l __version__ $(VERFILES) | { while read f; do : \
-	; Y=`date +%Y -d "$(FOR)"` ; X=$$(expr $$Y - $B) \
+	; B="$(BASEYEAR)"; C=$$B; test -z "$(ORIGYEAR)" || C="$(ORIGYEAR)" \
+	; Y=`date +%Y -d "$(FOR)"` ; X=$$(expr $$Y - $$B) \
 	; D=`date +%W$(DAY) -d "$(FOR)"` ; sed -i \
 	-e "/^ *version = /s/[.]-*[0123456789][0123456789][0123456789]*/.$$X$$D/" \
 	-e "/^ *__version__/s/[.]-*[0123456789][0123456789][0123456789]*\"/.$$X$$D\"/" \
 	-e "/^ *__version__/s/[.]\\([0123456789]\\)\"/.\\1.$$X$$D\"/" \
-	-e "/^ *__copyright__/s/(C) [0123456789]*-[0123456789]*/(C) $B-$$Y/" \
+	-e "/^ *__copyright__/s/(C) [0123456789]*-[0123456789]*/(C) $$C-$$Y/" \
 	-e "/^ *__copyright__/s/(C) [0123456789]* /(C) $$Y /" \
 	$$f; done; }
 	@ grep ^__version__ $(VERFILES)
