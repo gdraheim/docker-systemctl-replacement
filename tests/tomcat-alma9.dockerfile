@@ -18,7 +18,8 @@ RUN sed -i -e "s|/usr/bin/python3|/usr/libexec/platform-python|" /usr/bin/system
 # RUN yum repolist
 
 RUN yum search $GPG $SSL tomcat
-RUN yum install $GPG $SSL -y tomcat tomcat-webapps
+RUN yum install $GPG $SSL -y tomcat tomcat-webapps 
+RUN yum install $GPG $SSL -y procps
 
 RUN systemctl enable tomcat
-CMD /usr/bin/systemctl
+CMD ["/usr/bin/systemctl"]

@@ -49,6 +49,7 @@ TODO = False
 _curl = "curl"
 _curl_timeout4 = "--max-time 4"
 _docker = "docker"
+_no_cache = False
 DOCKER_SOCKET = "/var/run/docker.sock"
 PSQL_TOOL = "/usr/bin/psql"
 RUNTIME = "/tmp/run-"
@@ -1956,8 +1957,9 @@ class DockerBuildTest(unittest.TestCase):
         saveto = SAVETO
         images = IMAGES
         psql = PSQL_TOOL
+        nocache = " --no-cache" if _no_cache else ""
         # WHEN
-        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}:{testname}{nocache}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
@@ -1965,19 +1967,29 @@ class DockerBuildTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
-        for attempt in range(30):
-            cmd = "{curl} -o {testdir}/{testname}.txt http://{container}:8080/sample/"
+        for attempt in range(8):
+            if not sx____(F"{docker} exec {testname} systemctl is-system-running # {attempt}."):
+                break
+            time.sleep(1)
+            continue
+        cmd = "{docker} exec {testname} ps axu"
+        sx____(cmd.format(**locals()))
+        # THEN
+        for attempt in range(10):
+            cmd = "{curl} -o {testdir}/{testname}.txt http://{container}:8080/"
             out, err, end = output3(cmd.format(**locals()))
             logg.info("(%s)=> %s\n%s", attempt, out, err)
-            filename = "{testdir}/{testname}.txt".format(**locals())
+            filename = F"{testdir}/{testname}.txt"
             if os.path.exists(filename):
                 txt = open(filename).read()
-                if txt.strip(): break
+                if txt.strip():
+                    logg.info("result:\n%s", txt)
+                    break
             time.sleep(1)
-        cmd = "{curl} -o {testdir}/{testname}.txt http://{container}:8080/sample"
+        cmd = "{curl} -o {testdir}/{testname}.txt http://{container}:8080/"
         sh____(cmd.format(**locals()))
         try:
-            cmd = "grep Hello {testdir}/{testname}.txt"
+            cmd = "grep Quick.Start {testdir}/{testname}.txt"
             sh____(cmd.format(**locals()))
         except subprocess.CalledProcessError as e:
             if TODO:
@@ -2298,6 +2310,8 @@ if __name__ == "__main__":
                   help="additionally save the output log to a file [%default]")
     _o.add_option("-P", "--password", metavar="PASSWORD", default="",
                   help="use a fixed password for examples with auth [%default]")
+    _o.add_option("-.", "--no-cache", action="store_true", default=False,
+                  help="run docker build --no-cache [%default]")
     _o.add_option("--todo", action="store_true", default=False,
                   help="Show tests with a different expected result [%default]")
     _o.add_option("--failfast", action="store_true", default=False,
@@ -2315,6 +2329,7 @@ if __name__ == "__main__":
     _mirror = opt.mirror
     _docker = opt.docker
     _password = opt.password
+    _no_cache = opt.no_cache
     #
     if opt.chdir:
         os.chdir(opt.chdir)
