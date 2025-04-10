@@ -17,5 +17,6 @@ RUN yum install $GPG $SSL -y redis
 RUN sed -i "s/^bind .*/bind 0.0.0.0/" /etc/redis/redis.conf
 # default was 'bind 127.0.0.1'
 
+RUN touch /var/log/systemctl.debug.log
 RUN systemctl enable redis
 CMD /usr/bin/systemctl

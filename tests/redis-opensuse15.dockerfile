@@ -4,6 +4,7 @@ LABEL __copyright__="(C) Guido Draheim, licensed under the EUPL" \
       __version__="1.5.8065"
 EXPOSE 6379
 ENV GPG --no-gpg-checks
+ARG PASSWORD Redis.Foo.1
 
 RUN zypper $GPG install -r repo-oss -y python3
 COPY tmp/systemctl3.py /usr/bin/systemctl
@@ -18,10 +19,11 @@ RUN runuser -u redis -- touch /var/log/redis/default.log
 
 RUN sed -i "s/^bind .*/bind 0.0.0.0/" /etc/redis/default.conf
 # default was 'bind 127.0.0.1'
+RUN sed -i "s/^..requirepass foo.*/requirepass $PASSWORD/" /etc/redis/default.conf
 
 RUN systemctl enable redis@default
 # RUN systemctl disable kbdsettings
 
-## RUN touch /var/log/systemctl.debug.log
-## CMD /usr/bin/systemctl  # FIXME
-CMD /usr/bin/systemctl init redis@default
+RUN touch /var/log/systemctl.debug.log
+# CMD /usr/bin/systemctl  
+CMD /usr/bin/systemctl -1 start redis@default

@@ -1,8 +1,9 @@
-FROM ubuntu:18.04
+FROM ubuntu:24.04
 
 LABEL __copyright__="(C) Guido Draheim, licensed under the EUPL" \
       __version__="1.5.8065"
 EXPOSE 6379
+ARG PASSWORD Redis.Foo.1
 
 RUN apt-get update
 RUN apt-get install -y python3
@@ -17,9 +18,10 @@ RUN chown redis /var/log # FIXME /var/log/journal(/redis.service.log)
 
 RUN sed -i "s/^bind .*/bind 0.0.0.0/" /etc/redis/redis.conf
 # default was 'bind 127.0.0.1'
+RUN sed -i "s/^..requirepass foo.*/requirepass $PASSWORD/" /etc/redis/redis.conf
 
 RUN touch /var/log/systemctl.debug.log
-RUN systemctl enable redis
+RUN systemctl enable redis-server
 #FIXME# CMD /usr/bin/systemctl
-CMD /usr/bin/systemctl -1 start redis
+CMD /usr/bin/systemctl -1 start redis-server
 USER redis

@@ -1088,7 +1088,7 @@ class DockerBuildTest(unittest.TestCase):
         uid = "postgres"
         cmd = "{docker} exec {testname} id -u {uid}"
         out = output(cmd.format(**locals()))
-        if out: uid = decodes(out).strip()
+        if out: uid = decodes_(out).strip()
         cmd = "{docker} exec {testname} ls {runtime}{uid}/run"
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} bash -c 'for i in 1 2 3 4 5 ; do wc -l {runtime}{uid}/run/postgresql.service.status && break; sleep 2; done'"
@@ -1142,16 +1142,26 @@ class DockerBuildTest(unittest.TestCase):
         # THEN
         cmd = "sleep 2"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} run -d --name {testname}-client {images}:{testname} sleep 3"
+        cmd = "{docker} run -d --name {testname}-client {images}:{testname} sleep 13"
         sh____(cmd.format(**locals()))
+        for attempt in range(10):
+            if not sx____(F"{docker} exec {testname} systemctl is-system-running # {attempt}."):
+                break
+            time.sleep(1)
+            continue
         # cmd = "redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
         # sh____(cmd.format(**locals()))
         cmd = "{docker} exec -t {testname}-client redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
-        cmd = "grep PONG {testdir}/{testname}.txt"
-        sh____(cmd.format(**locals()))
-        #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
-        # sh____(cmd.format(**locals()))
+        try:
+            cmd = "grep PONG {testdir}/{testname}.txt"
+            sh____(cmd.format(**locals()))
+        except subprocess.CalledProcessError as e:
+            logg.error("redis server is not running? %s", e)
+            cmd = "{docker} cp {testname}:/var/log/systemctl.debug.log {testdir}/systemctl.log"
+            sh____(cmd.format(**locals()))
+            sh____(F"cat {testdir}/systemctl.log")
+            raise
         # SAVE
         cmd = "{docker} stop {testname}-client"
         sh____(cmd.format(**locals()))
@@ -1198,16 +1208,28 @@ class DockerBuildTest(unittest.TestCase):
         # THEN
         cmd = "sleep 2"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} run -d --name {testname}-client {images}:{testname} sleep 3"
+        cmd = "{docker} run -d --name {testname}-client {images}:{testname} sleep 13"
         sh____(cmd.format(**locals()))
+        for attempt in range(10):
+            if not sx____(F"{docker} exec {testname} systemctl is-system-running # {attempt}."):
+                break
+            time.sleep(1)
+            continue
         # cmd = "redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
         # sh____(cmd.format(**locals()))
         cmd = "{docker} exec -t {testname}-client redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
-        cmd = "grep PONG {testdir}/{testname}.txt"
-        sh____(cmd.format(**locals()))
-        #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
-        # sh____(cmd.format(**locals()))
+        try:
+            cmd = "grep PONG {testdir}/{testname}.txt"
+            sh____(cmd.format(**locals()))
+        except subprocess.CalledProcessError as e:
+            logg.error("redis server is not running? %s", e)
+            cmd = "{docker} cp {testname}:/var/log/systemctl.debug.log {testdir}/systemctl.log"
+            sh____(cmd.format(**locals()))
+            sh____(F"cat {testdir}/systemctl.log")
+            if TODO:
+                raise
+            self.skipTest("TODO: redis server is not running?")
         #
         cmd = "{docker} exec {testname} ps axu"
         out, end = output2(cmd.format(**locals()))
@@ -1246,8 +1268,9 @@ class DockerBuildTest(unittest.TestCase):
         saveto = SAVETO
         images = IMAGES
         psql = PSQL_TOOL
+        password = self.newpassword()
         # WHEN
-        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}:{testname} --build-arg PASSWORD={password}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}-client"
         sx____(cmd.format(**locals()))
@@ -1259,22 +1282,26 @@ class DockerBuildTest(unittest.TestCase):
         # THEN
         cmd = "sleep 2"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} run -d --name {testname}-client {images}:{testname} sleep 3"
+        cmd = "{docker} run -d --name {testname}-client {images}:{testname} sleep 13"
         sh____(cmd.format(**locals()))
+        for attempt in range(10):
+            if not sx____(F"{docker} exec {testname} systemctl is-system-running # {attempt}."):
+                break
+            time.sleep(1)
+            continue
         # cmd = "redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
-        time.sleep(2)
         # sh____(cmd.format(**locals()))
-        cmd = "{docker} exec -t {testname}-client redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
+        cmd = "{docker} exec -t {testname}-client redis-cli -h {container} -a {password} ping | tee {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         try:
             cmd = "grep PONG {testdir}/{testname}.txt"
             sh____(cmd.format(**locals()))
         except subprocess.CalledProcessError as e:
-            if TODO:
-                raise
-            self.skipTest("TODO: redis server is not running????")
-        #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
-        # sh____(cmd.format(**locals()))
+            logg.error("redis server is not running? %s", e)
+            cmd = "{docker} cp {testname}:/var/log/systemctl.debug.log {testdir}/systemctl.log"
+            sh____(cmd.format(**locals()))
+            sh____(F"cat {testdir}/systemctl.log")
+            raise
         # SAVE
         cmd = "{docker} stop {testname}-client"
         sh____(cmd.format(**locals()))
@@ -1308,8 +1335,9 @@ class DockerBuildTest(unittest.TestCase):
         saveto = SAVETO
         images = IMAGES
         psql = PSQL_TOOL
+        password = self.newpassword()
         # WHEN
-        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}:{testname} --build-arg PASSWORD={password}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}-client"
         sx____(cmd.format(**locals()))
@@ -1321,19 +1349,95 @@ class DockerBuildTest(unittest.TestCase):
         # THEN
         cmd = "sleep 2"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} run -d --name {testname}-client {images}:{testname} sleep 3"
+        cmd = "{docker} run -d --name {testname}-client {images}:{testname} sleep 13"
         sh____(cmd.format(**locals()))
+        for attempt in range(10):
+            if not sx____(F"{docker} exec {testname} systemctl is-system-running # {attempt}."):
+                break
+            time.sleep(1)
+            continue
         # cmd = "redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
         # sh____(cmd.format(**locals()))
-        cmd = "{docker} exec -t {testname}-client redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
+        cmd = "{docker} exec -t {testname}-client redis-cli -h {container} -a {password} ping | tee {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         try:
             cmd = "grep PONG {testdir}/{testname}.txt"
             sh____(cmd.format(**locals()))
         except subprocess.CalledProcessError as e:
-            if TODO:
-                raise
-            self.skipTest("TODO: redis server is not running????")
+            logg.error("redis server is not running? %s", e)
+            cmd = "{docker} cp {testname}:/var/log/systemctl.debug.log {testdir}/systemctl.log"
+            sh____(cmd.format(**locals()))
+            sh____(F"cat {testdir}/systemctl.log")
+            raise
+        #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        # sh____(cmd.format(**locals()))
+        # SAVE
+        cmd = "{docker} stop {testname}-client"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} rm --force {testname}-client"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} stop {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} rm --force {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} rmi {saveto}/{savename}:latest"
+        sx____(cmd.format(**locals()))
+        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
+        self.rm_testdir()
+    def test_43724_ubuntu18_redis_dockerfile(self) -> None:
+        """ WHEN using a dockerfile for systemd-enabled Ubuntu18 and redis, 
+            THEN check that redis replies to 'ping' with a 'PONG' """
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
+        tmp_systemctl3()
+        docker = _docker
+        curl = _curl
+        python = _python or _python3
+        testname = self.testname()
+        testdir = self.testdir()
+        dockerfile = "redis-ubuntu24.dockerfile"
+        addhosts = ""  # FIXME# self.local_addhosts(dockerfile)
+        savename = docname(dockerfile)
+        saveto = SAVETO
+        images = IMAGES
+        psql = PSQL_TOOL
+        password = self.newpassword()
+        # WHEN
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}:{testname} --build-arg PASSWORD={password}"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} rm --force {testname}-client"
+        sx____(cmd.format(**locals()))
+        cmd = "{docker} rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "{docker} run -d --name {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        container = self.ip_container(testname)
+        # THEN
+        cmd = "sleep 2"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} run -d --name {testname}-client {images}:{testname} sleep 13"
+        sh____(cmd.format(**locals()))
+        for attempt in range(10):
+            if not sx____(F"{docker} exec {testname} systemctl is-system-running # {attempt}."):
+                break
+            time.sleep(1)
+            continue
+        # cmd = "redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
+        # sh____(cmd.format(**locals()))
+        cmd = "{docker} exec -t {testname}-client redis-cli -h {container} -a {password} ping | tee {testdir}/{testname}.txt"
+        sh____(cmd.format(**locals()))
+        try:
+            cmd = "grep PONG {testdir}/{testname}.txt"
+            sh____(cmd.format(**locals()))
+        except subprocess.CalledProcessError as e:
+            logg.error("redis server is not running? %s", e)
+            cmd = "{docker} cp {testname}:/var/log/systemctl.debug.log {testdir}/systemctl.log"
+            sh____(cmd.format(**locals()))
+            sh____(F"cat {testdir}/systemctl.log")
+            raise
         #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         # sh____(cmd.format(**locals()))
         # SAVE
@@ -1382,8 +1486,13 @@ class DockerBuildTest(unittest.TestCase):
         # THEN
         cmd = "sleep 2"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} run -d --name {testname}-client {images}:{testname} sleep 3"
+        cmd = "{docker} run -d --name {testname}-client {images}:{testname} sleep 13"
         sh____(cmd.format(**locals()))
+        for attempt in range(10):
+            if not sx____(F"{docker} exec {testname} systemctl is-system-running # {attempt}."):
+                break
+            time.sleep(1)
+            continue
         # cmd = "redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
         # sh____(cmd.format(**locals()))
         cmd = "{docker} exec -t {testname}-client redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
@@ -1392,11 +1501,87 @@ class DockerBuildTest(unittest.TestCase):
             cmd = "grep PONG {testdir}/{testname}.txt"
             sh____(cmd.format(**locals()))
         except subprocess.CalledProcessError as e:
+            logg.error("redis server is not running? %s", e)
+            cmd = "{docker} cp {testname}:/var/log/systemctl.debug.log {testdir}/systemctl.log"
+            sh____(cmd.format(**locals()))
+            sh____(F"cat {testdir}/systemctl.log")
             if TODO:
                 raise
             self.skipTest("TODO: redis server is not running????")
-        #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #
+        cmd = "{docker} exec {testname} ps axu"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertFalse(greps(out, "root"))
+        # SAVE
+        cmd = "{docker} stop {testname}-client"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} rm --force {testname}-client"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} stop {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} rm --force {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} rmi {saveto}/{savename}:latest"
+        sx____(cmd.format(**locals()))
+        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
+        self.rm_testdir()
+    def test_43774_ubuntu24_redis_user_dockerfile(self) -> None:
+        """ WHEN using a dockerfile for systemd-enabled Ubuntu18 and redis, 
+            THEN check that redis replies to 'ping' with a 'PONG' """
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
+        tmp_systemctl3()
+        docker = _docker
+        curl = _curl
+        python = _python or _python3
+        testname = self.testname()
+        testdir = self.testdir()
+        dockerfile = "redis-ubuntu24-user.dockerfile"
+        addhosts = ""  # FIXME# self.local_addhosts(dockerfile)
+        savename = docname(dockerfile)
+        saveto = SAVETO
+        images = IMAGES
+        psql = PSQL_TOOL
+        password = self.newpassword()
+        # WHEN
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --tag {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} rm --force {testname}-client"
+        sx____(cmd.format(**locals()))
+        cmd = "{docker} rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "{docker} run -d --name {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        container = self.ip_container(testname)
+        # THEN
+        cmd = "sleep 2"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} run -d --name {testname}-client {images}:{testname} sleep 13"
+        sh____(cmd.format(**locals()))
+        for attempt in range(10):
+            if not sx____(F"{docker} exec {testname} systemctl is-system-running # {attempt}."):
+                break
+            time.sleep(1)
+            continue
+        # cmd = "redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
         # sh____(cmd.format(**locals()))
+        cmd = "{docker} exec -t {testname}-client redis-cli -h {container} -a {password} ping | tee {testdir}/{testname}.txt"
+        sh____(cmd.format(**locals()))
+        try:
+            cmd = "grep PONG {testdir}/{testname}.txt"
+            sh____(cmd.format(**locals()))
+        except subprocess.CalledProcessError as e:
+            logg.error("redis server is not running? %s", e)
+            cmd = "{docker} cp {testname}:/var/log/systemctl.debug.log {testdir}/systemctl.log"
+            sh____(cmd.format(**locals()))
+            sh____(F"cat {testdir}/systemctl.log")
+            if TODO:
+                raise
+            self.skipTest("TODO: redis server is not running????")
         #
         cmd = "{docker} exec {testname} ps axu"
         out, end = output2(cmd.format(**locals()))
@@ -1450,8 +1635,13 @@ class DockerBuildTest(unittest.TestCase):
         # THEN
         cmd = "sleep 2"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} run -d --name {testname}-client {images}:{testname} sleep 3"
+        cmd = "{docker} run -d --name {testname}-client {images}:{testname} sleep 13"
         sh____(cmd.format(**locals()))
+        for attempt in range(10):
+            if not sx____(F"{docker} exec {testname} systemctl is-system-running # {attempt}."):
+                break
+            time.sleep(1)
+            continue
         # cmd = "redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
         # sh____(cmd.format(**locals()))
         cmd = "{docker} exec -t {testname}-client redis-cli -h {container} -a {password} ping | tee {testdir}/{testname}.txt"
@@ -1460,11 +1650,13 @@ class DockerBuildTest(unittest.TestCase):
             cmd = "grep PONG {testdir}/{testname}.txt"
             sh____(cmd.format(**locals()))
         except subprocess.CalledProcessError as e:
+            logg.error("redis server is not running? %s", e)
+            cmd = "{docker} cp {testname}:/var/log/systemctl.debug.log {testdir}/systemctl.log"
+            sh____(cmd.format(**locals()))
+            sh____(F"cat {testdir}/systemctl.log")
             if TODO:
                 raise
             self.skipTest("TODO: redis server is not running????")
-        #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
-        # sh____(cmd.format(**locals()))
         # USER
         cmd = "{docker} exec {testname} ps axu"
         out, end = output2(cmd.format(**locals()))
@@ -1524,10 +1716,15 @@ class DockerBuildTest(unittest.TestCase):
         # sh____(cmd.format(**locals()))
         cmd = "{docker} exec -t {testname}-client mongo --host {container} --eval 'db.hostInfo()' | tee {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
-        cmd = "grep 'MongoDB server version' {testdir}/{testname}.txt"
-        sh____(cmd.format(**locals()))
-        #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
-        # sh____(cmd.format(**locals()))
+        try:
+            cmd = "grep 'MongoDB server version' {testdir}/{testname}.txt"
+            sh____(cmd.format(**locals()))
+        except subprocess.CalledProcessError as e:
+            logg.error("redis server is not running? %s", e)
+            cmd = "{docker} cp {testname}:/var/log/systemctl.debug.log {testdir}/systemctl.log"
+            sh____(cmd.format(**locals()))
+            sh____(F"cat {testdir}/systemctl.log")
+            raise
         # SAVE
         cmd = "{docker} stop {testname}-client"
         sh____(cmd.format(**locals()))
@@ -1586,6 +1783,10 @@ class DockerBuildTest(unittest.TestCase):
             cmd = "grep 'MongoDB server version' {testdir}/{testname}.txt"
             sh____(cmd.format(**locals()))
         except subprocess.CalledProcessError as e:
+            logg.error("mongo server is not running? %s", e)
+            cmd = "{docker} cp {testname}:/var/log/systemctl.debug.log {testdir}/systemctl.log"
+            sh____(cmd.format(**locals()))
+            sh____(F"cat {testdir}/systemctl.log")
             if TODO:
                 raise
             self.skipTest("TODO: mongo server is not running????")
