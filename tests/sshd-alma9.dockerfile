@@ -32,4 +32,5 @@ RUN rpm -q --list openssh-clients
 RUN useradd -g nobody testuser
 RUN echo $PASSWORD | passwd --stdin testuser
 RUN TZ=UTC date -I > /home/testuser/date.txt
-CMD /usr/bin/systemctl
+RUN touch /var/log/systemctl.debug.log
+CMD ["/usr/bin/systemctl"]

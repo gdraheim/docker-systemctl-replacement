@@ -1992,11 +1992,12 @@ class DockerBuildTest(unittest.TestCase):
             cmd = "grep Quick.Start {testdir}/{testname}.txt"
             sh____(cmd.format(**locals()))
         except subprocess.CalledProcessError as e:
+            cmd = "{docker} cp {testname}:/var/log/systemctl.debug.log {testdir}/systemctl.log"
+            sh____(cmd.format(**locals()))
+            sh____(F"cat {testdir}/systemctl.log")
             if TODO:
                 raise
             self.skipTest("TODO: tomcat server is not running????")
-        #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
-        # sh____(cmd.format(**locals()))
         # SAVE
         cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
@@ -2101,14 +2102,13 @@ class DockerBuildTest(unittest.TestCase):
             logg.info("is-active => %s", out)
             time.sleep(1)
             if not end: break
-        cmd = "{docker} exec {testname} ps axu"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} systemctl is-system-running"
-        sx____(cmd.format(**locals()))
-        cmd = "sleep 2; {docker} exec {testname} ps axu"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} systemctl is-system-running"
-        sx____(cmd.format(**locals()))
+        for attempt in range(8):
+            cmd = "{docker} exec {testname} ps axu"
+            sx____(cmd.format(**locals()))
+            cmd = "{docker} exec {testname} systemctl is-system-running"
+            if not sx____(cmd.format(**locals())):
+                break
+            time.sleep(2)
         try:
             allows = "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
             cmd = "sshpass -p {password} scp {allows} testuser@{container}:date.txt {testdir}/{testname}.date.txt"
@@ -2116,6 +2116,9 @@ class DockerBuildTest(unittest.TestCase):
             cmd = "grep `TZ=UTC date -I` {testdir}/{testname}.date.txt"
             sh____(cmd.format(**locals()))
         except subprocess.CalledProcessError as e:
+            cmd = "{docker} cp {testname}:/var/log/systemctl.debug.log {testdir}/systemctl.log"
+            sh____(cmd.format(**locals()))
+            sh____(F"cat {testdir}/systemctl.log")
             if TODO:
                 raise
             self.skipTest("TODO: ssh server is not running????")
@@ -2126,6 +2129,9 @@ class DockerBuildTest(unittest.TestCase):
             cmd = "grep `TZ=UTC date -I` {testdir}/{testname}.date.2.txt"
             sh____(cmd.format(**locals()))
         except subprocess.CalledProcessError as e:
+            cmd = "{docker} cp {testname}:/var/log/systemctl.debug.log {testdir}/systemctl.log"
+            sh____(cmd.format(**locals()))
+            sh____(F"cat {testdir}/systemctl.log")
             if TODO:
                 raise
             self.skipTest("TODO: ssh server is not running??????")
