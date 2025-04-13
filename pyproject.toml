@@ -9,10 +9,10 @@ name = "docker-systemctl-replacement"
 version = "2.0.1144"
 description = "allows to deploy to systemd-controlled containers without starting an actual systemd daemon"
 readme = { "file" = "src/README.md", content-type = "text/markdown" }
-license = { file = "EUPL-LICENSE.md" }
+license = "EUPL-1.2"
+license-files = [ "EUPL-LICENSE.md" ]
 authors = [ { name = "Guido U. Draheim", "email" = "Guido.Draheim@gmx.de" }]
 classifiers = [
-   "License :: OSI Approved :: European Union Public Licence 1.2 (EUPL 1.2)",
    "Operating System :: POSIX :: Linux",
    "Environment :: Console",
    "Programming Language :: Python :: 3",
@@ -33,6 +33,7 @@ systemctl3 = "systemctl3:main"
 
 [tool.setuptools]
 script-files = ["src/systemctl.py"]
+package-dir = {"" = "src"}
 
 [tool.pycodestyle]
 max-line-length = 188 

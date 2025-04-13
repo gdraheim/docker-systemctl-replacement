@@ -5,6 +5,7 @@ Software
 *.png
 initialAdminPassword
 tmp.*
+*.tmp
 .coverage
 .coverage.*
 *,cover
@@ -12,10 +13,12 @@ tmp.*
 *.e
 *.bak
 .mypy_cache
-src
 dist
 *.egg-info
 .vscode/settings.json
+src/*-stubs
+src/README.md
+src/systemctl.py
+src/systemctl.pyi
 build
 TEST*.xml
-

@@ -17,7 +17,7 @@ COVERAGE3 = $(PYTHON3) -m coverage
 TWINE = twine
 TWINE39 = twine-3.11
 GIT=git
-VERFILES = files/docker/systemctl3.py tests/*tests*.py pyproject.toml
+VERFILES = src/systemctl3.py tests/*tests*.py pyproject.toml
 CONTAINER = docker-systemctl
 LOCALMIRRORS=/dock
 
@@ -46,11 +46,11 @@ version:
 	@ grep ^__version__ $(VERFILES)
 	@ grep ^version.= $(VERFILES)
 	@ $(GIT) add $(VERFILES) || true
-	@ ver=`cat files/docker/systemctl3.py | sed -e '/__version__/!d' -e 's/.*= *"//' -e 's/".*//' -e q` \
+	@ ver=`cat src/systemctl3.py | sed -e '/__version__/!d' -e 's/.*= *"//' -e 's/".*//' -e q` \
 	; echo "# $(GIT) commit -m v$$ver"
 
 help:
-	python files/docker/systemctl3.py help
+	python src/systemctl3.py help
 
 alltests: CH CP UA DJ
 
@@ -71,7 +71,7 @@ test_4%: ; $(BUILD) "$(notdir $@)" $(VV) $V
 
 test: ; $(MAKE) type && $(MAKE) tests && $(MAKE) coverage
 
-WITH3 = --python=/usr/bin/python3 --with=files/docker/systemctl3.py
+WITH3 = --python=/usr/bin/python3 --with=src/systemctl3.py
 test_3%/todo:             ; $(TESTS)   "$(dir $@)" -vv --todo
 test_3%/15.6:             ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=opensuse/leap:$(notdir $@)
 test_3%/15.4:             ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=opensuse/leap:$(notdir $@)
@@ -256,10 +256,9 @@ tmp_systemctl_py_2:
 	@ $(MAKE) tmp/systemctl_2.py
 	@ cp tmp/systemctl_2.py tmp/systemctl.py
 	@ sed -i -e "s:/usr/bin/python3:/usr/bin/python2:" -e "s:/env python3:/env python2:" tmp/systemctl.py
-#	cp -v ../docker-systemctl-replacement-master/files/docker/systemctl.py tmp/systemctl.py
 tmp_systemctl_py_3:
 	@ test -d tmp || mkdir tmp
-	@ cp files/docker/systemctl3.py tmp/systemctl.py
+	@ cp src/systemctl3.py tmp/systemctl.py
 tmp_ubuntu:
 	if $(DOCKER) ps | grep $(UBU); then : ; else : \
 	; $(DOCKER) run --name $(UBU) -d $(UBUNTU) sleep 3333 \
@@ -279,7 +278,7 @@ clean:
 	- rm -rf tmp/tmp.test_*
 	- rm -rf tmp/systemctl.py
 	- rm -rf tmp.* types/tmp.*
-	- rm -rf .mypy_cache files/docker/.mypy_cache
+	- rm -rf .mypy_cache src/.mypy_cache
 
 copy:
 	cp -v ../docker-mirror-packages-repo/docker_mirror.py tests/
@@ -319,48 +318,6 @@ python:
 	@ if test -d $(LOCALMIRRORS); \
 	then $(MAKE) $(CONTAINER)/test27 $(CONTAINER)/test36 OPTIONS=--localmirrors ; \
 	else $(MAKE) $(CONTAINER)/test27 $(CONTAINER)/test36; fi
-
-############## https://pypi.org/...
-
-src/systemctl.py:
-	test -d $(dir $@) || mkdir -v $(dir $@)
-	$(PYTHON39) $(STRIPHINTS3) files/docker/systemctl3.py -o $@
-src/systemctl3.py:
-	cp files/docker/systemctl3.py $@
-src/README.md: README.md Makefile
-	test -d $(dir $@) || mkdir -v $(dir $@)
-	cat README.md | sed -e "/\\/badge/d" -e /^---/q > $@
-
-.PHONY: build
-src-files:
-	$(MAKE) $(PARALLEL) src/README.md src/systemctl.py src/systemctl3.py
-src-remove:
-	- rm -v src/README.md src/systemctl.py src/systemctl3.py
-	- rmdir src
-
-PIP3 = pip3
-build:
-	rm -rf build dist *.egg-info
-	$(MAKE) src-files
-	# pip install --root=~/local . -v
-	$(PYTHON39) -m build
-	$(MAKE) src-remove
-	$(TWINE39) check dist/*
-	: $(TWINE39) upload dist/*
-
-ins install:
-	$(MAKE) src-files
-	$(PIP3) install --no-compile --user .
-	$(MAKE) src-remove
-	$(MAKE) show | sed -e "s|[.][.]/[.][.]/[.][.]/bin|$$HOME/.local/bin|"
-
-uns uninstall: 
-	test -d tmp || mkdir -v tmp
-	set -x; $(PIP3) uninstall -y `sed -e '/^name *=/!d' -e 's/name *= *"//' -e 's/".*//'  pyproject.toml`
-
-show:
-	@ $(PIP3) show --files `sed -e '/^name *=/!d' -e 's/name *= *"//' -e 's/".*//' pyproject.toml` \
-	| sed -e "s:[^ ]*/[.][.]/\\([a-z][a-z]*\\)/:~/.local/\\1/:"
 
 ####### autopep8
 AUTOPEP8=autopep8
@@ -410,19 +367,20 @@ striphints.git:
 
 STRIP_PYTHON3_GIT_URL = https://github.com/abarker/strip-hints.git
 STRIP_PYTHON3_GIT = ../strip_python3
-STRIPHINTS3 = $(STRIP_PYTHON3_GIT)/src/strip_python3.py
+STRIP_PYTHON3 = $(STRIP_PYTHON3_GIT)/src/strip_python3.py
+STRIPHINTS3 = $(PYTHON39) $(STRIP_PYTHON3) $(STRIP_PYHTON3_OPTIONS)
 striphints3.git:
 	set -ex ; if test -d $(STRIP_PYHTON3_GIT); then cd $(STRIP_PYTHON3_GIT) && git pull; else : \
 	; cd $(dir $(STRIPHINTS_GIT)) && git clone $(STRIP_PYTHON3_GIT_URL) $(notdir $(STRIP_PYTHON3_GIT)) \
 	; fi
 	echo "def test(a: str) -> str: return a" > tmp.striphints.py
-	$(PYTHON39) $(STRIPHINTS3) tmp.striphints.py -o tmp.striphints.py.out -vv
+	$(STRIPHINTS3) tmp.striphints.py -o tmp.striphints.py.out -vv
 	cat tmp.striphints.py.out | tr '\\\n' '|' && echo
 	test "def test(a):|    return a|" = "`cat tmp.striphints.py.out | tr '\\\\\\n' '|'`"
 	rm tmp.striphints.*
 
-tmp/systemctl_2.py: files/docker/systemctl3.py $(STRIPHINTS3)
-	@ $(PYTHON39) $(STRIPHINTS3) files/docker/systemctl3.py -o $@ $V
+tmp/systemctl_2.py: files/docker/systemctl3.py $(STRIP_PYTHON3)
+	@ $(STRIPHINTS3) files/docker/systemctl3.py -o $@ $V
 
 MYPY = mypy
 MYPY_WITH = --strict --show-error-codes --show-error-context 
@@ -433,6 +391,53 @@ mypy:
 	$(MAKE) striphints.git
 type:
 	$(MYPY) $(MYPY_WITH) $(MYPY_OPTIONS) files/docker/systemctl3.py
+
+############## https://pypi.org/...
+
+2: src/README.md src/systemctl.py
+src/systemctl.py: src/systemctl3.py $(STRIP_PYTHON3) Makefile
+	$(STRIPHINTS3) "$<" --stubs -o "$@" 
+src/README.md: README.md Makefile
+	cat "$<" | sed -e "/\\/badge/d" -e /^---/q > "$@"
+
+PIP3 = pip3-3.11
+
+.PHONY: build
+build:
+	- rm -rf build dist *.egg-info src/*.egg-info
+	$(MAKE) src/README.md && $(MAKE) src/systemctl.py
+	# pip install --root=~/local . -v
+	$(PYTHON39) -m build
+	ls src
+	rm src/README.md src/systemctl.py*
+	$(MAKE) fix-metadata-version
+	$(TWINE39) check dist/*
+	: $(TWINE39) upload dist/*
+
+fix-metadata-version:
+	ls dist/*
+	rm -rf dist.tmp; mkdir dist.tmp
+	cd dist.tmp; for z in ../dist/*; do case "$$z" in *.whl) unzip $$z ;; *) tar xzvf $$z;; esac \
+	; ( find . -name PKG-INFO ; find . -name METADATA ) | while read f; do echo FOUND $$f; sed -i -e "s/Metadata-Version: 2.4/Metadata-Version: 2.2/" $$f; done \
+	; case "$$z" in *.whl) zip -r $$z * ;; *) tar czvf $$z *;; esac ; ls -l $$z; done
+
+
+ins install:
+	- rm -rf build dist *.egg-info src/*.egg-info
+	$(MAKE) src/README.md && $(MAKE) src/systemctl.py
+	$(PIP3) install --no-compile --user .
+	ls src
+	rm src/README.md src/systemctl.py*
+	$(MAKE) show | sed -e "s|[.][.]/[.][.]/[.][.]/bin|$$HOME/.local/bin|"
+
+uns uninstall: 
+	test -d tmp || mkdir -v tmp
+	set -x; $(PIP3) uninstall -y `sed -e '/^name *=/!d' -e 's/name *= *"//' -e 's/".*//'  pyproject.toml`
+
+show:
+	@ $(PIP3) show --files `sed -e '/^name *=/!d' -e 's/name *= *"//' -e 's/".*//' pyproject.toml` \
+	| sed -e "s:[^ ]*/[.][.]/\\([a-z][a-z]*\\)/:~/.local/\\1/:"
+
 
 ####### box test
 box:

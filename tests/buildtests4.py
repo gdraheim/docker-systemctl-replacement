@@ -34,7 +34,7 @@ _opensuse14 = False
 _python2 = "/usr/bin/python"
 _python3 = "/usr/bin/python3"
 _python = ""
-_systemctl_py = "files/docker/systemctl3.py"
+_systemctl_py = "src/systemctl3.py"
 _top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* ' | grep -v -e ' ps ' -e ' grep ' -e 'kworker/'"
 _top_list = "ps -eo etime,pid,ppid,args --sort etime,pid"
 
