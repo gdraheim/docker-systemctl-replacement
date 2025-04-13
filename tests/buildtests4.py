@@ -179,7 +179,7 @@ def docname(path: str) -> str:
     return os.path.splitext(os.path.basename(path))[0]
 
 SYSTEMCTL=""
-_src_systemctl_py = "../files/docker/systemctl3.py" # pylint: disable=invalid-name
+_src_systemctl_py = "../src/systemctl3.py" # pylint: disable=invalid-name
 _tmp_systemctl2_py = "tmp/systemctl.py"  # pylint: disable=invalid-name
 _tmp_systemctl3_py = "tmp/systemctl3.py"  # pylint: disable=invalid-name
 STRIP_PYTHON3 = "../../strip_python3/src/strip_python3.py"

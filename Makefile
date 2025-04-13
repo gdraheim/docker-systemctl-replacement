@@ -67,7 +67,7 @@ real_2%: ; $(LOCAL) "$(notdir $@)" $(VV) $V
 est_3%: ; rm .coverage*; rm -rf tmp/tmp.t$(notdir $@) ; $(TESTS) "t$(notdir $@)" $(VV) $V --coverage --keep
 test_3%: ; $(TESTS) "$(notdir $@)" $(VV) $V
 real_3%: ; $(TESTS) "$(notdir $@)" $(VV) $V
-test_4%: ; $(BUILD) "$(notdir $@)" $(VV) $V
+test_4%: ; $(BUILD) "$(notdir $@)" $(VV) $V 
 
 test: ; $(MAKE) type && $(MAKE) tests && $(MAKE) coverage
 
@@ -135,7 +135,7 @@ tests: ; $(LOCAL) $(VV) $V
 
 test_8%/3.12:  ; tests/develtests8.py "$(dir $@)" $(VV) $(FORCE) --image=$(BASE$(subst .,,$(notdir $@))) --python=python$(notdir $@)
 test_8%/3.11:  ; tests/develtests8.py "$(dir $@)" $(VV) $(FORCE) --image=$(BASE$(subst .,,$(notdir $@))) --python=python$(notdir $@)
-check8:  ; $(MAKE) test_85/3.11
+check8:  ; $(MAKE) test_8*/3.11
 
 nightrun: checkall
 	$(MAKE) checks
@@ -194,8 +194,7 @@ check3:
 	$(MAKE) tmp_systemctl_py_3
 	$(LOCAL) -vv \
 	  '--with=tmp/systemctl.py' --python=/usr/bin/python3
-check4:
-	$(BUILD) -vv
+check4: ; $(MAKE) test_4*
 
 test_%/2:
 	$(MAKE) tmp_systemctl_py_2
