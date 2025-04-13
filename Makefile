@@ -1,4 +1,4 @@
-F= files/docker/systemctl3.py
+F= src/systemctl3.py
 ORIGYEAR=2016
 BASEYEAR=2024
 FOR=today
@@ -326,16 +326,16 @@ autopep8: ; $${PKG:-zypper} install -y python3-autopep8
 %.py.lint:
 	$(PYLINT) $(PYLINT_OPTIONS) $(@:.lint=)
 lint:
-	$(MAKE) files/docker/systemctl3.py.lint
+	$(MAKE) src/systemctl3.py.lint
 	$(MAKE) tests/localtests2.py.lint
 	$(MAKE) tests/dockertests3.py.lint
 	$(MAKE) tests/buildtests4.py.lint
 
 pep8 style:
-	$(MAKE) files/docker/systemctl3.py.pep8
+	$(MAKE) src/systemctl3.py.pep8
 	$(MAKE) tests/localtests2.py.pep8
 pep style.d: 
-	$(MAKE) files/docker/systemctl3.py.style
+	$(MAKE) src/systemctl3.py.style
 	$(MAKE) tests/localtests2.py.style
 
 # https://github.com/nvbn/py-backwards
@@ -366,8 +366,8 @@ striphints3.git:
 	test "def test(a):|    return a|" = "`cat tmp.striphints.py.out | tr '\\\\\\n' '|'`"
 	rm tmp.striphints.*
 
-tmp/systemctl_2.py: files/docker/systemctl3.py $(STRIP_PYTHON3)
-	@ $(STRIPHINTS3) files/docker/systemctl3.py -o $@ $V
+tmp/systemctl_2.py: src/systemctl3.py $(STRIP_PYTHON3)
+	@ $(STRIPHINTS3) src/systemctl3.py -o $@ $V
 
 MYPY = mypy
 MYPY_WITH = --strict --show-error-codes --show-error-context 
@@ -377,7 +377,7 @@ mypy:
 	zypper install -y python3-click python3-pathspec
 	$(MAKE) striphints.git
 type:
-	$(MYPY) $(MYPY_WITH) $(MYPY_OPTIONS) files/docker/systemctl3.py
+	$(MYPY) $(MYPY_WITH) $(MYPY_OPTIONS) src/systemctl3.py
 
 ############## https://pypi.org/...
 
@@ -434,6 +434,6 @@ show:
 ####### box test
 box:
 	docker rm -f $@ ; docker run -d --name $@ --rm=true centos:centos7 sleep 600
-	docker cp files/docker/systemctl.py box:/usr/bin/systemctl
+	docker cp src/systemctl.py box:/usr/bin/systemctl
 	docker exec box systemctl daemon-reload -vvv
 	@ echo : docker exec -it box bash

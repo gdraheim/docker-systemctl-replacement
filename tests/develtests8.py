@@ -556,7 +556,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "bin/systemctl3"))
         self.assertTrue(greps(out, "bin/journalctl3"))
         #
-        out = output(F"{docker} exec {testname} bash -c 'PATH=\$PATH:~/.local/bin;systemctl3 --version'")
+        out = output(F"{docker} exec {testname} bash -c 'PATH=\\$PATH:~/.local/bin;systemctl3 --version'")
         logg.info("systemctl3 --version\n%s", out)
         self.assertTrue(greps(out, "via systemctl.py"))
         #

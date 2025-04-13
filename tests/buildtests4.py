@@ -2322,8 +2322,6 @@ if __name__ == "__main__":
                   help="Show tests with a different expected result [%default]")
     _o.add_option("--failfast", action="store_true", default=False,
                   help="Stop the test run on the first error or failure. [%default]")
-    _o.add_option("--xmlresults", metavar="FILE", default=None,
-                  help="capture results as a junit xml file [%default]")
     opt, args = _o.parse_args()
     logging.basicConfig(level=logging.WARNING - opt.verbose * 5)
     #
@@ -2348,13 +2346,6 @@ if __name__ == "__main__":
         logfile.setFormatter(logging.Formatter("%(levelname)s:%(relativeCreated)d:%(message)s"))
         logging.getLogger().addHandler(logfile)
         logg.info("log diverted to %s", opt.logfile)
-    xmlresults = None
-    if opt.xmlresults:
-        if os.path.exists(opt.xmlresults):
-            os.remove(opt.xmlresults)
-        xmlresults = open(opt.xmlresults, "w")
-        logg.info("xml results into %s", opt.xmlresults)
-    #
     # unittest.main()
     suite = unittest.TestSuite()
     if not args: args = ["test_*"]
@@ -2369,19 +2360,10 @@ if __name__ == "__main__":
                 if fnmatch(method, arg):
                     suite.addTest(testclass(method))
     # select runner
+    Runner = unittest.TextTestRunner
     if not logfile:
-        if xmlresults:
-            import xmlrunner
-            Runner = xmlrunner.XMLTestRunner
-            Runner(xmlresults).run(suite)
-        else:
-            Runner = unittest.TextTestRunner
-            done = Runner(verbosity=opt.verbose, failfast=opt.failfast).run(suite)
-            for skipped in done.skipped:
-                logg.info("skipped %s", str(skipped).replace("__main__", "").replace("testMethod=",""))
+        done = Runner(verbosity=opt.verbose, failfast=opt.failfast).run(suite)
+        for skipped in done.skipped:
+            logg.info("skipped %s", str(skipped).replace("__main__", "").replace("testMethod=",""))
     else:
-        Runner = unittest.TextTestRunner
-        if xmlresults:
-            import xmlrunner
-            Runner = xmlrunner.XMLTestRunner
         Runner(logfile.stream, verbosity=opt.verbose).run(suite)
