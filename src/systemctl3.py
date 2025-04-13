@@ -5991,7 +5991,7 @@ class Systemctl:
         """ knows about systemctl-start and systemctl-init targets with their explicit list of services to start"""
         if target in self._default_services:
             units = self._default_services[target]
-            services = []
+            services: List[str] = []
             for unit in units:
                 if unit.endswith(".target"):
                     for target in self.units.get_target_list(unit):
