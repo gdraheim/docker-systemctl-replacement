@@ -71,91 +71,71 @@ test_4%: ; $(BUILD) "$(notdir $@)" $(VV) $V
 
 test: ; $(MAKE) type && $(MAKE) tests && $(MAKE) coverage
 
-WITH3 = --python=/usr/bin/python3 --with=src/systemctl3.py
-test_3%/todo:             ; $(TESTS)   "$(dir $@)" -vv --todo
-test_3%/15.6+3.11:             ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=opensuse/leap:$(patsubst %+3.11,%,$(notdir $@)) --python=python3.11
-test_3%/15.6:             ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=opensuse/leap:$(notdir $@)
-test_3%/15.4:             ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=opensuse/leap:$(notdir $@)
-test_3%/15.3:             ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=opensuse/leap:$(notdir $@)
-test_3%/15.2:             ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=opensuse/leap:$(notdir $@)
-test_3%/15.1:             ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=opensuse/leap:$(notdir $@)
-test_3%/15.0:             ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=opensuse/leap:$(notdir $@)
-test_3%/42.3:             ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=opensuse:$(notdir $@)
-test_3%/42.2:             ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=opensuse:$(notdir $@)
-test_3%/24.04:            ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=ubuntu:$(notdir $@)
-test_3%/22.04:            ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=ubuntu:$(notdir $@)
-test_3%/20.04:            ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=ubuntu:$(notdir $@)
-test_3%/19.10:            ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=ubuntu:$(notdir $@)
-test_3%/19.04:            ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=ubuntu:$(notdir $@)
-test_3%/16.04:            ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=ubuntu:$(notdir $@)
-test_3%/9.4:              ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=almalinux:$(notdir $@)
-test_3%/9.3:              ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=almalinux:$(notdir $@)
-test_3%/9.1:              ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=almalinux:$(notdir $@)
-test_3%/8.1:              ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=centos:8.1.1911
-test_3%/8.0:              ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=centos:8.0.1905
-test_3%/7.7:              ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=centos:7.7.1908
-test_3%/7.6:              ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=centos:7.6.1810
-test_3%/7.5:              ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=centos:7.5.1804
-test_3%/7.4:              ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=centos:7.4.1708
-test_3%/7.3:              ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=centos:7.3.1611
+BASE312 = opensuse/leap:15.6
+BASE311 = opensuse/leap:15.6
 
-basetests = test_[1234]
-test2list = st_[567]
-testslist = test_[567]
-tests: ; $(MAKE) "${basetests}"
+WITH3 = --python=/usr/bin/python3 --with=src/systemctl3.py
+test_3%/todo:             ; $(TESTS)   "$(dir $@)" $(VV) --todo
+test_3%/3.12:             ; $(TESTS)   "$(dir $@)" $(VV) $(FORCE) --image=$(BASE$(subst .,,$(notdir $@))) --python=python$(notdir $@)
+test_3%/3.11:             ; $(TESTS)   "$(dir $@)" $(VV) $(FORCE) --image=$(BASE$(subst .,,$(notdir $@))) --python=python$(notdir $@)
+test_3%/15.6:             ; $(TESTS)   "$(dir $@)" $(VV) $(FORCE) --image=opensuse/leap:$(notdir $@)
+test_3%/15.4:             ; $(TESTS)   "$(dir $@)" $(VV) $(FORCE) --image=opensuse/leap:$(notdir $@)
+test_3%/15.3:             ; $(TESTS)   "$(dir $@)" $(VV) $(FORCE) --image=opensuse/leap:$(notdir $@)
+test_3%/15.2:             ; $(TESTS)   "$(dir $@)" $(VV) $(FORCE) --image=opensuse/leap:$(notdir $@)
+test_3%/15.1:             ; $(TESTS)   "$(dir $@)" $(VV) $(FORCE) --image=opensuse/leap:$(notdir $@)
+test_3%/15.0:             ; $(TESTS)   "$(dir $@)" $(VV) $(FORCE) --image=opensuse/leap:$(notdir $@)
+test_3%/42.3:             ; $(TESTS)   "$(dir $@)" $(VV) $(FORCE) --image=opensuse:$(notdir $@)
+test_3%/42.2:             ; $(TESTS)   "$(dir $@)" $(VV) $(FORCE) --image=opensuse:$(notdir $@)
+test_3%/24.04:            ; $(TESTS)   "$(dir $@)" $(VV) $(FORCE) --image=ubuntu:$(notdir $@)
+test_3%/22.04:            ; $(TESTS)   "$(dir $@)" $(VV) $(FORCE) --image=ubuntu:$(notdir $@)
+test_3%/20.04:            ; $(TESTS)   "$(dir $@)" $(VV) $(FORCE) --image=ubuntu:$(notdir $@)
+test_3%/19.10:            ; $(TESTS)   "$(dir $@)" $(VV) $(FORCE) --image=ubuntu:$(notdir $@)
+test_3%/19.04:            ; $(TESTS)   "$(dir $@)" $(VV) $(FORCE) --image=ubuntu:$(notdir $@)
+test_3%/16.04:            ; $(TESTS)   "$(dir $@)" $(VV) $(FORCE) --image=ubuntu:$(notdir $@)
+test_3%/9.4:              ; $(TESTS)   "$(dir $@)" $(VV) $(FORCE) --image=almalinux:$(notdir $@)
+test_3%/9.3:              ; $(TESTS)   "$(dir $@)" $(VV) $(FORCE) --image=almalinux:$(notdir $@)
+test_3%/9.1:              ; $(TESTS)   "$(dir $@)" $(VV) $(FORCE) --image=almalinux:$(notdir $@)
+test_3%/8.1:              ; $(TESTS)   "$(dir $@)" $(VV) $(FORCE) --image=centos:8.1.1911
+test_3%/8.0:              ; $(TESTS)   "$(dir $@)" $(VV) $(FORCE) --image=centos:8.0.1905
+test_3%/7.7:              ; $(TESTS)   "$(dir $@)" $(VV) $(FORCE) --image=centos:7.7.1908
+test_3%/7.6:              ; $(TESTS)   "$(dir $@)" $(VV) $(FORCE) --image=centos:7.6.1810
+test_3%/7.5:              ; $(TESTS)   "$(dir $@)" $(VV) $(FORCE) --image=centos:7.5.1804
+test_3%/7.4:              ; $(TESTS)   "$(dir $@)" $(VV) $(FORCE) --image=centos:7.4.1708
+test_3%/7.3:              ; $(TESTS)   "$(dir $@)" $(VV) $(FORCE) --image=centos:7.3.1611
+
+tests/todo:             ; $(TESTS)    $(VV) --todo
+tests/3.12:             ; $(TESTS)    $(VV) $(FORCE) --image=$(BASE$(subst .,,$(notdir $@))) --python=python$(notdir $@)
+tests/3.11:             ; $(TESTS)    $(VV) $(FORCE) --image=$(BASE$(subst .,,$(notdir $@))) --python=python$(notdir $@)
+tests/15.6:             ; $(TESTS)    $(VV) $(FORCE) --image=opensuse/leap:$(notdir $@)
+tests/15.4:             ; $(TESTS)    $(VV) $(FORCE) --image=opensuse/leap:$(notdir $@)
+tests/15.3:             ; $(TESTS)    $(VV) $(FORCE) --image=opensuse/leap:$(notdir $@)
+tests/15.2:             ; $(TESTS)    $(VV) $(FORCE) --image=opensuse/leap:$(notdir $@)
+tests/15.1:             ; $(TESTS)    $(VV) $(FORCE) --image=opensuse/leap:$(notdir $@)
+tests/15.0:             ; $(TESTS)    $(VV) $(FORCE) --image=opensuse/leap:$(notdir $@)
+tests/42.3:             ; $(TESTS)    $(VV) $(FORCE) --image=opensuse:$(notdir $@)
+tests/42.2:             ; $(TESTS)    $(VV) $(FORCE) --image=opensuse:$(notdir $@)
+tests/24.04:            ; $(TESTS)    $(VV) $(FORCE) --image=ubuntu:$(notdir $@)
+tests/22.04:            ; $(TESTS)    $(VV) $(FORCE) --image=ubuntu:$(notdir $@)
+tests/20.04:            ; $(TESTS)    $(VV) $(FORCE) --image=ubuntu:$(notdir $@)
+tests/19.10:            ; $(TESTS)    $(VV) $(FORCE) --image=ubuntu:$(notdir $@)
+tests/19.04:            ; $(TESTS)    $(VV) $(FORCE) --image=ubuntu:$(notdir $@)
+tests/16.04:            ; $(TESTS)    $(VV) $(FORCE) --image=ubuntu:$(notdir $@)
+tests/9.4:              ; $(TESTS)    $(VV) $(FORCE) --image=almalinux:$(notdir $@)
+tests/9.3:              ; $(TESTS)    $(VV) $(FORCE) --image=almalinux:$(notdir $@)
+tests/9.1:              ; $(TESTS)    $(VV) $(FORCE) --image=almalinux:$(notdir $@)
+tests/8.1:              ; $(TESTS)    $(VV) $(FORCE) --image=centos:8.1.1911
+tests/8.0:              ; $(TESTS)    $(VV) $(FORCE) --image=centos:8.0.1905
+tests/7.7:              ; $(TESTS)    $(VV) $(FORCE) --image=centos:7.7.1908
+tests/7.6:              ; $(TESTS)    $(VV) $(FORCE) --image=centos:7.6.1810
+tests/7.5:              ; $(TESTS)    $(VV) $(FORCE) --image=centos:7.5.1804
+tests/7.4:              ; $(TESTS)    $(VV) $(FORCE) --image=centos:7.4.1708
+tests/7.3:              ; $(TESTS)    $(VV) $(FORCE) --image=centos:7.3.1611
+tests: ; $(LOCAL) $(VV) $V
 .PHONY: tests
-tests/15.6:  ; $(MAKE) "$(testslist)/$(notdir $@)"
-tests/15.5:  ; $(MAKE) "$(testslist)/$(notdir $@)"
-tests/15.4:  ; $(MAKE) "$(testslist)/$(notdir $@)"
-tests/15.2:  ; $(MAKE) "$(testslist)/$(notdir $@)"
-tests/15.1:  ; $(MAKE) "$(testslist)/$(notdir $@)"
-tests/15.0:  ; $(MAKE) "$(testslist)/$(notdir $@)"
-tests/42.3:  ; $(MAKE) "$(testslist)/$(notdir $@)"
-tests/42.2:  ; $(MAKE) "$(testslist)/$(notdir $@)"
-tests/24.04: ; $(MAKE) "$(testslist)/$(notdir $@)"
-tests/22.04: ; $(MAKE) "$(testslist)/$(notdir $@)"
-tests/20.04: ; $(MAKE) "$(testslist)/$(notdir $@)"
-tests/19.10: ; $(MAKE) "$(testslist)/$(notdir $@)"
-tests/18.04: ; $(MAKE) "$(testslist)/$(notdir $@)"
-tests/16.04: ; $(MAKE) "$(testslist)/$(notdir $@)"
-tests/9.4:   ; $(MAKE) "$(testslist)/$(notdir $@)"
-tests/9.3:   ; $(MAKE) "$(testslist)/$(notdir $@)"
-tests/9.1:   ; $(MAKE) "$(testslist)/$(notdir $@)"
-tests/8.5:   ; $(MAKE) "$(testslist)/$(notdir $@)"
-tests/8.1:   ; $(MAKE) "$(testslist)/$(notdir $@)"
-tests/8.0:   ; $(MAKE) "$(testslist)/$(notdir $@)"
-tests/7.9:   ; $(MAKE) "$(testslist)/$(notdir $@)"
-tests/7.7:   ; $(MAKE) "$(testslist)/$(notdir $@)"
-tests/7.6:   ; $(MAKE) "$(testslist)/$(notdir $@)"
-tests/7.5:   ; $(MAKE) "$(testslist)/$(notdir $@)"
-tests/7.4:   ; $(MAKE) "$(testslist)/$(notdir $@)"
-tests/7.3:   ; $(MAKE) "$(testslist)/$(notdir $@)"
-test2/15.2:  ; $(MAKE) "$(test2list)/$(notdir $@)"
-test2/15.1:  ; $(MAKE) "$(test2list)/$(notdir $@)"
-test2/15.0:  ; $(MAKE) "$(test2list)/$(notdir $@)"
-test2/42.3:  ; $(MAKE) "$(test2list)/$(notdir $@)"
-test2/42.2:  ; $(MAKE) "$(test2list)/$(notdir $@)"
-test2/22.04: ; $(MAKE) "$(test2list)/$(notdir $@)"
-test2/20.04: ; $(MAKE) "$(test2list)/$(notdir $@)"
-test2/18.04: ; $(MAKE) "$(test2list)/$(notdir $@)"
-test2/16.04: ; $(MAKE) "$(test2list)/$(notdir $@)"
-test2/8.5:   ; $(MAKE) "$(test2list)/$(notdir $@)"
-test2/8.1:   ; $(MAKE) "$(test2list)/$(notdir $@)"
-test2/8.0:   ; $(MAKE) "$(test2list)/$(notdir $@)"
-test2/7.9:   ; $(MAKE) "$(test2list)/$(notdir $@)"
-test2/7.7:   ; $(MAKE) "$(test2list)/$(notdir $@)"
-test2/7.6:   ; $(MAKE) "$(test2list)/$(notdir $@)"
-test2/7.5:   ; $(MAKE) "$(test2list)/$(notdir $@)"
-test2/7.4:   ; $(MAKE) "$(test2list)/$(notdir $@)"
-test2/7.3:   ; $(MAKE) "$(test2list)/$(notdir $@)"
 
 nightrun: checkall
 	$(MAKE) checks
 checkall: checkall2025
-checkall2024:
-	$(MAKE) -j1 9.3/tests   8.5/tests   7.9/tests
-	$(MAKE) -j1 24.04/tests 22.04/test2 18.04/tests
-	$(MAKE) -j1 15.6/tests  15.5/tests  15.4/tests  15.2/tests
 checkall2025:
 	$(MAKE) -j1 tests/9.4
 	$(MAKE) -j1 tests/24.04 tests/22.04 tests/20.04
