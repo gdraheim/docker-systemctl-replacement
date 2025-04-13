@@ -135,7 +135,7 @@ tests: ; $(LOCAL) $(VV) $V
 
 test_8%/3.12:  ; tests/develtests8.py "$(dir $@)" $(VV) $(FORCE) --image=$(BASE$(subst .,,$(notdir $@))) --python=python$(notdir $@)
 test_8%/3.11:  ; tests/develtests8.py "$(dir $@)" $(VV) $(FORCE) --image=$(BASE$(subst .,,$(notdir $@))) --python=python$(notdir $@)
-
+check8:  ; $(MAKE) test_85/3.11
 
 nightrun: checkall
 	$(MAKE) checks
