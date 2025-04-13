@@ -30,6 +30,7 @@ issues = "https://github.com/gdraheim/docker-systemctl-replacement/issues"
 
 [project.scripts]
 systemctl3 = "systemctl3:main"
+journalctl3 = "journalctl3:main"
 
 [tool.setuptools]
 script-files = ["src/systemctl.py"]
