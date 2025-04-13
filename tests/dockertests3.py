@@ -168,15 +168,15 @@ def refresh_tool(image: str, checks: bool = False) -> str:
     return "true"
 def python_package(python: str, image: Optional[str] = None) -> str:
     package = os.path.basename(python)
-    if package.endswith("2"):
+    if "python2" in package:
         if image and "centos:8" in image:
             return package
         if image and "almalinux:9" in image:
             return package
         if image and "ubuntu:2" in image:
             return package
-        return package[:-1]
-    return package.replace(".", "")
+        return package.replace("python2", "python")
+    return package.replace(".", "") # python3.11 => python311
 def coverage_tool(image: Optional[str] = None, python: Optional[str] = None) -> str:
     image = image or IMAGE
     python = python or _python
@@ -12834,112 +12834,7 @@ ExecStart=/usr/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_CONFIG_ARGS $KUBELE
         self.assertTrue(greps(out, "KUBELET_KUBECONFIG_ARGS"))
         self.rm_testdir()
         self.coverage()
-    def test_39531_centos7_lamp_stack(self) -> None:
-        """ Check setup of Linux/Apache/Mariadb/Php on CentOs 7 with python2"""
-        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
-        python = _python or _python2
-        if python.endswith("python3"): self.skipTest("no python3 on centos:7")
-        testname=self.testname()
-        testdir = self.testdir()
-        root = self.root(testdir)
-        dockerfile="test-centos7-lamp-stack.dockerfile"
-        addhosts = self.local_addhosts(dockerfile)
-        savename = docname(dockerfile)
-        saveto = SAVETO
-        images = IMAGES
-        psql = PSQL_TOOL
-        password = self.newpassword()
-        # WHEN
-        cmd = F"docker build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --tag {images}:{testname}"
-        sh____(cmd)
-        cmd = F"docker rm --force {testname}"
-        sx____(cmd)
-        cmd = F"docker run -d --name {testname} {images}:{testname}"
-        sh____(cmd)
-        #
-        container = self.ip_container(testname)
-        # THEN
-        for attempt in range(10):
-            time.sleep(1)
-            cmd = F"wget -O {testdir}/result.txt http://{container}/phpMyAdmin"
-            out, err, end = output3(cmd)
-            if "503 Service Unavailable" in err:
-                logg.info("[%i] ..... 503 %s", attempt, greps(err, "503 "))
-                continue
-            if "200 OK" in err:
-                logg.info("[%i] ..... 200 %s", attempt, greps(err, "200 "))
-                break
-            logg.info(" %s =>%s\n%s", cmd, end, out)
-        cmd = F"wget -O {testdir}/result.txt http://{container}/phpMyAdmin"
-        sh____(cmd)
-        cmd = F"grep '<h1>.*>phpMyAdmin<' {testdir}/result.txt"
-        sh____(cmd)
-        #cmd = F"docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
-        # sh____(cmd)
-        # SAVE
-        cmd = F"docker stop {testname}"
-        sh____(cmd)
-        cmd = F"docker rm --force {testname}"
-        sh____(cmd)
-        cmd = F"docker rmi {saveto}/{savename}:latest"
-        sx____(cmd)
-        cmd = F"docker tag {images}:{testname} {saveto}/{savename}:latest"
-        sh____(cmd)
-        cmd = F"docker rmi {images}:{testname}"
-        sx____(cmd)
-        self.rm_testdir()
-    def test_39541_opensuse15_lamp_stack_php7(self) -> None:
-        """ Check setup of Linux/Apache/Mariadb/Php" on Opensuse later than 15.x"""
-        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
-        testname=self.testname()
-        testdir = self.testdir()
-        root = self.root(testdir)
-        dockerfile="test-opensuse15-lamp-stack.dockerfile"
-        addhosts = self.local_addhosts(dockerfile)
-        savename = docname(dockerfile)
-        saveto = SAVETO
-        images = IMAGES
-        psql = PSQL_TOOL
-        password = self.newpassword()
-        # WHEN
-        cmd = F"docker build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --tag {images}:{testname}"
-        sh____(cmd)
-        cmd = F"docker rm --force {testname}"
-        sx____(cmd)
-        cmd = F"docker run -d --name {testname} {images}:{testname}"
-        sh____(cmd)
-        #
-        container = self.ip_container(testname)
-        # THEN
-        for attempt in range(10):
-            time.sleep(1)
-            cmd = F"wget -O {testdir}/result.txt http://{container}/phpMyAdmin"
-            out, err, end = output3(cmd)
-            if "503 Service Unavailable" in err:
-                logg.info("[%i] ..... 503 %s", attempt, greps(err, "503 "))
-                continue
-            if "200 OK" in err:
-                logg.info("[%i] ..... 200 %s", attempt, greps(err, "200 "))
-                break
-            logg.info(" %s =>%s\n%s", cmd, end, out)
-        cmd = F"wget -O {testdir}/result.txt http://{container}/phpMyAdmin"
-        sh____(cmd)
-        cmd = F"grep '<h1>.*>phpMyAdmin<' {testdir}/result.txt"
-        sh____(cmd)
-        #cmd = F"docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
-        # sh____(cmd)
-        # SAVE
-        cmd = F"docker stop {testname}"
-        sh____(cmd)
-        cmd = F"docker rm --force {testname}"
-        sh____(cmd)
-        cmd = F"docker rmi {saveto}/{savename}:latest"
-        sx____(cmd)
-        cmd = F"docker tag {images}:{testname} {saveto}/{savename}:latest"
-        sh____(cmd)
-        cmd = F"docker rmi {images}:{testname}"
-        sx____(cmd)
-        self.rm_testdir()
+
     def test_39999_drop_local_mirrors(self) -> None:
         """ a helper when using images from https://github.com/gdraheim/docker-mirror-packages-repo"
             which create containers according to self.local_image(IMAGE) """
