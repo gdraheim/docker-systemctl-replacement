@@ -73,6 +73,7 @@ test: ; $(MAKE) type && $(MAKE) tests && $(MAKE) coverage
 
 WITH3 = --python=/usr/bin/python3 --with=src/systemctl3.py
 test_3%/todo:             ; $(TESTS)   "$(dir $@)" -vv --todo
+test_3%/15.6+3.11:             ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=opensuse/leap:$(patsubst %+3.11,%,$(notdir $@)) --python=python3.11
 test_3%/15.6:             ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=opensuse/leap:$(notdir $@)
 test_3%/15.4:             ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=opensuse/leap:$(notdir $@)
 test_3%/15.3:             ; $(TESTS)   "$(dir $@)" -vv $(FORCE) --image=opensuse/leap:$(notdir $@)
@@ -178,7 +179,8 @@ test%/27:
 	$(DOCKER) cp tests $(CONTAINER)-python$(notdir $@):/
 	$(DOCKER) cp tmp/systemctl.py $(CONTAINER)-python$(notdir $@):/$(PWD)/tmp/
 	$(DOCKER) exec $(CONTAINER)-python$(notdir $@) chmod +x /$(PWD)/tmp/systemctl.py
-	$(DOCKER) exec $(CONTAINER)-python$(notdir $@) /$(LOCAL_PY) $(LOCAL_OPTIONS) -vv $(dir $@) \
+	[[ "$@" != test_1* ]] || : ignored "$@"
+	[[ "$@" != test_2* ]] || $(DOCKER) exec $(CONTAINER)-python$(notdir $@) /$(LOCAL_PY) $(LOCAL_OPTIONS) -vv $(dir $@) \
 	  '--with=/$(PWD)/tmp/systemctl.py' --python=/usr/bin/python2 $(COVERAGE1) $V
 	$(DOCKER) rm -f $(CONTAINER)-python$(notdir $@)
 test%/36:
@@ -197,8 +199,8 @@ test%/36:
 checks: checks27 checks36 coverage
 	: ready for make checkall
 
-checks27: ; $(MAKE) "test_/27" 
-checks36: ; $(MAKE) "test_/36" 
+checks27: ; $(MAKE) "test_2/27" 
+checks36: ; $(MAKE) "test_2/36" 
 
 check2:
 	$(MAKE) tmp_systemctl_py_2
@@ -312,7 +314,9 @@ $(CONTAINER)/test312u: ; tests/docker_image.py --docker=$(DOCKER) $(OPTIONS) FRO
 $(CONTAINER)/test27:  ; tests/docker_image.py --docker=$(DOCKER) $(OPTIONS) FROM opensuse/leap:15.6 INTO $@ INSTALL "python3 procps psmisc python2" TEST "python2 --version"
 $(CONTAINER)/test36:  ; tests/docker_image.py --docker=$(DOCKER) $(OPTIONS) FROM opensuse/leap:15.6 INTO $@ INSTALL "python3 procps psmisc" TEST "python3 --version"
 $(CONTAINER)/test39:  ; tests/docker_image.py --docker=$(DOCKER) $(OPTIONS) FROM opensuse/leap:15.5 INTO $@ INSTALL "python39 procps psmisc" SYMLINK /usr/bin/python3.9:python3 TEST "python3 --version" -vv
-$(CONTAINER)/test311: ; tests/docker_image.py --docker=$(DOCKER) $(OPTIONS) FROM opensuse/leap:15.6 INTO $@ INSTALL "python311 procps psmisc" SYMLINK /usr/bin/python3.11:python3 TEST "python3 --version"
+$(CONTAINER)/test311: ; tests/docker_image.py --docker=$(DOCKER) $(OPTIONS) FROM opensuse/leap:15.6 INTO $@ INSTALL "python311 python311-pip procps psmisc" SYMLINK /usr/bin/python3.11:python3 TEST "python3 --version"
+$(CONTAINER)/test312: ; tests/docker_image.py --docker=$(DOCKER) $(OPTIONS) FROM opensuse/leap:15.6 INTO $@ INSTALL "python312 python312-pip procps psmisc" SYMLINK /usr/bin/python3.12:python3 TEST "python3 --version"
+
 
 python: 
 	@ if test -d $(LOCALMIRRORS); \

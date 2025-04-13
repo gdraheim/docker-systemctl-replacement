@@ -176,7 +176,7 @@ def python_package(python: str, image: Optional[str] = None) -> str:
         if image and "ubuntu:2" in image:
             return package
         return package[:-1]
-    return package
+    return package.replace(".", "")
 def coverage_tool(image: Optional[str] = None, python: Optional[str] = None) -> str:
     image = image or IMAGE
     python = python or _python
@@ -970,6 +970,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd)
         cmd = F"{docker} cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        sh____(cmd)
+        cmd = F"{docker} exec {testname} sed -i 's:/usr/bin/env python.*:/usr/bin/env {python}:' /usr/bin/systemctl"
         sh____(cmd)
         cmd = F"{docker} exec {testname} systemctl --version"
         sh____(cmd)
