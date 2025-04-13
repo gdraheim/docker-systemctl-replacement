@@ -853,6 +853,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             We take the realpath of our develop systemctl.py on purpose here.
         """
         docker = _docker
+        python = _python
         testdir = self.testdir(testname, keep = True)
         cov_run = cover(image, append = "--parallel-mode")
         cov_option = cov_option or ""
@@ -865,6 +866,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             exec {cov_run} /{systemctl_py_run} "$@" -vv {cov_option}
             """)
         cmd = F"{docker} cp {systemctl_py} {testname}:/{systemctl_py_run}"
+        sh____(cmd)
+        cmd = F"{docker} exec {testname} sed -i 's:/usr/bin/env python.*:/usr/bin/env {python}:' /{systemctl_py_run}"
         sh____(cmd)
         cmd = F"{docker} cp {systemctl_sh} {testname}:/usr/bin/systemctl"
         sh____(cmd)

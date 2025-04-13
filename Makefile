@@ -133,6 +133,10 @@ tests/7.3:              ; $(TESTS)    $(VV) $(FORCE) --image=centos:7.3.1611
 tests: ; $(LOCAL) $(VV) $V
 .PHONY: tests
 
+test_8%/3.12:  ; tests/develtests8.py "$(dir $@)" $(VV) $(FORCE) --image=$(BASE$(subst .,,$(notdir $@))) --python=python$(notdir $@)
+test_8%/3.11:  ; tests/develtests8.py "$(dir $@)" $(VV) $(FORCE) --image=$(BASE$(subst .,,$(notdir $@))) --python=python$(notdir $@)
+
+
 nightrun: checkall
 	$(MAKE) checks
 checkall: checkall2025
@@ -392,7 +396,7 @@ src-clean ss:
 dist-clean dd:
 	- rm -rf build dist *.egg-info src/*.egg-info
 
-PIP3 = pip3-3.11
+PIP3 = $(PYTHON3) -m pip
 
 .PHONY: build
 build:
