@@ -8,10 +8,6 @@
 __copyright__ = "(C) Guido Draheim, licensed under the EUPL"""
 __version__ = "2.0.1144"
 
-# NOTE:
-# The testcases 1000...4999 are using a --root=subdir environment
-# The testcases 5000...9999 will start a docker container to work.
-
 from typing import List, Tuple, Generator, Iterator, Union, Optional, TextIO, Mapping
 
 import subprocess
