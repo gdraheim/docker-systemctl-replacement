@@ -395,21 +395,28 @@ type:
 ############## https://pypi.org/...
 
 2: src/README.md src/systemctl.py
-src/systemctl.py: src/systemctl3.py $(STRIP_PYTHON3) Makefile
-	$(STRIPHINTS3) "$<" --stubs -o "$@" 
+src/systemctl.py: src/systemctl3.py $(STRIP_PYTHON3)
+	$(STRIPHINTS3) "$<" --old-python --stubs -o "$@"
 src/README.md: README.md Makefile
 	cat "$<" | sed -e "/\\/badge/d" -e /^---/q > "$@"
+src-clean ss:
+	ls src
+	- rm -r src/*-stubs src/*.egg-info src/__pycache__
+	@ test ! -f src/README.md || rm -v src/README.md
+	@ test ! -f src/systemctl.py || rm -v src/systemctl.py* 
+	ls src
+dist-clean dd:
+	- rm -rf build dist *.egg-info src/*.egg-info
 
 PIP3 = pip3-3.11
 
 .PHONY: build
 build:
-	- rm -rf build dist *.egg-info src/*.egg-info
+	$(MAKE) dist-clean
 	$(MAKE) src/README.md && $(MAKE) src/systemctl.py
 	# pip install --root=~/local . -v
 	$(PYTHON39) -m build
-	ls src
-	rm src/README.md src/systemctl.py*
+	$(MAKE) src-clean
 	$(MAKE) fix-metadata-version
 	$(TWINE39) check dist/*
 	: $(TWINE39) upload dist/*
@@ -421,13 +428,11 @@ fix-metadata-version:
 	; ( find . -name PKG-INFO ; find . -name METADATA ) | while read f; do echo FOUND $$f; sed -i -e "s/Metadata-Version: 2.4/Metadata-Version: 2.2/" $$f; done \
 	; case "$$z" in *.whl) zip -r $$z * ;; *) tar czvf $$z *;; esac ; ls -l $$z; done
 
-
 ins install:
-	- rm -rf build dist *.egg-info src/*.egg-info
+	$(MAKE) dist-clean
 	$(MAKE) src/README.md && $(MAKE) src/systemctl.py
 	$(PIP3) install --no-compile --user .
-	ls src
-	rm src/README.md src/systemctl.py*
+	$(MAKE) src-clean
 	$(MAKE) show | sed -e "s|[.][.]/[.][.]/[.][.]/bin|$$HOME/.local/bin|"
 
 uns uninstall: 
