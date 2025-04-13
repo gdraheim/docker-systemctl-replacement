@@ -455,11 +455,6 @@ def path_proc_started(proc: str) -> float:
         # return started_time
         return started_btime
 
-def download(base_url: str, filename: str, into: str) -> None:
-    if not os.path.isdir(into):
-        os.makedirs(into)
-    if not os.path.exists(os.path.join(into, filename)):
-        sh____(F"cd {into} && wget {base_url}/{filename}")
 def text_file(filename: str, content: str) -> None:
     filedir = os.path.dirname(filename)
     if not os.path.isdir(filedir):
@@ -714,9 +709,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             time.sleep(1)
         logg.warning("not killed %s", pid)
         return False
-    def makedirs(self, path: str) -> None:
-        if not os.path.isdir(path):
-            os.makedirs(path)
     def real_folders(self) -> Generator[str, None, None]:
         yield "/etc/systemd/system"
         yield "/var/run/systemd/system"
