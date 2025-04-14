@@ -34,7 +34,7 @@ _opensuse14 = False
 _python2 = "/usr/bin/python"
 _python3 = "/usr/bin/python3"
 _python = ""
-_systemctl_py = "systemctl3/systemctl3.py"
+_systemctl_py = "systemctl2/systemctl3.py"
 _top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* ' | grep -v -e ' ps ' -e ' grep ' -e 'kworker/'"
 _top_list = "ps -eo etime,pid,ppid,args --sort etime,pid"
 
@@ -179,7 +179,7 @@ def docname(path: str) -> str:
     return os.path.splitext(os.path.basename(path))[0]
 
 SYSTEMCTL=""
-_src_systemctl_py = "../systemctl3/systemctl3.py" # pylint: disable=invalid-name
+_src_systemctl_py = "../systemctl2/systemctl3.py" # pylint: disable=invalid-name
 _tmp_systemctl2_py = "tmp/systemctl.py"  # pylint: disable=invalid-name
 _tmp_systemctl3_py = "tmp/systemctl3.py"  # pylint: disable=invalid-name
 STRIP_PYTHON3 = "../../strip_python3/strip3/strip_python3.py"

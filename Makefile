@@ -1,4 +1,4 @@
-F= src/systemctl3.py
+F= systemctl2/systemctl3.py
 ORIGYEAR=2016
 BASEYEAR=2024
 FOR=today
@@ -41,7 +41,7 @@ COVERAGE = $(PYTHON) -m coverage
 TWINE = twine-$(_36)
 TWINE39 = twine-$(_39)
 GIT=git
-VERFILES = systemctl3/systemctl3.py tests/*tests*.py pyproject.toml
+VERFILES = systemctl2/systemctl3.py tests/*tests*.py pyproject.toml
 CONTAINER = docker-systemctl
 LOCALMIRRORS=/dock
 UBUNTU=ubuntu:24.04
@@ -75,11 +75,11 @@ version:
 	@ grep ^__version__ $(VERFILES)
 	@ grep ^version.= $(VERFILES)
 	@ $(GIT) add $(VERFILES) || true
-	@ ver=`cat systemctl3/systemctl3.py | sed -e '/__version__/!d' -e 's/.*= *"//' -e 's/".*//' -e q` \
+	@ ver=`cat systemctl2/systemctl3.py | sed -e '/__version__/!d' -e 's/.*= *"//' -e 's/".*//' -e q` \
 	; echo "# $(GIT) commit -m v$$ver"
 
 help:
-	python systemctl3/systemctl3.py help
+	python systemctl2/systemctl3.py help
 
 alltests: CH CP UA DJ
 
@@ -103,7 +103,7 @@ test: ; $(MAKE) type && $(MAKE) tests && $(MAKE) coverage
 BASE312 = opensuse/leap:15.6
 BASE311 = opensuse/leap:15.6
 
-WITH3 = --python=/usr/bin/python3 --with=systemctl3/systemctl3.py
+WITH3 = --python=/usr/bin/python3 --with=systemctl2/systemctl3.py
 test_3%/todo:             ; $(TESTS)   "$(dir $@)" $(VV) --todo
 test_3%/3.12:             ; $(TESTS)   "$(dir $@)" $(VV) $(FORCE) --image=$(BASE$(subst .,,$(notdir $@))) --python=python$(notdir $@)
 test_3%/3.11:             ; $(TESTS)   "$(dir $@)" $(VV) $(FORCE) --image=$(BASE$(subst .,,$(notdir $@))) --python=python$(notdir $@)
@@ -274,7 +274,7 @@ tmp_systemctl_py_2:
 	@ sed -i -e "s:/usr/bin/python3:/usr/bin/python2:" -e "s:/env python3:/env python2:" tmp/systemctl.py
 tmp_systemctl_py_3:
 	@ test -d tmp || mkdir tmp
-	@ cp systemctl3/systemctl3.py tmp/systemctl.py
+	@ cp systemctl2/systemctl3.py tmp/systemctl.py
 tmp_ubuntu:
 	if $(DOCKER) ps | grep $(UBU); then : ; else : \
 	; $(DOCKER) run --name $(UBU) -d $(UBUNTU) sleep 3333 \
@@ -294,7 +294,7 @@ clean:
 	- rm -rf tmp/tmp.test_*
 	- rm -rf tmp/systemctl.py
 	- rm -rf tmp.* types/tmp.*
-	- rm -rf .mypy_cache systemctl3/.mypy_cache
+	- rm -rf .mypy_cache systemctl2/.mypy_cache
 
 copy:
 	cp -v ../docker-mirror-packages-repo/docker_mirror.py tests/
@@ -357,17 +357,17 @@ autopep8: ; $${PKG:-zypper} install -y python3-autopep8
 %.py.lint:
 	$(PYLINT) $(PYLINT_OPTIONS) $(@:.lint=)
 lint:
-	$(MAKE) systemctl3/systemctl3.py.lint
+	$(MAKE) systemctl2/systemctl3.py.lint
 	$(MAKE) tests/localtests2.py.lint
 	$(MAKE) tests/dockertests3.py.lint
 	$(MAKE) tests/buildtests4.py.lint
 	$(MAKE) tests/setuptests8.py.lint
 
 pep8 style:
-	$(MAKE) systemctl3/systemctl3.py.pep8
+	$(MAKE) systemctl2/systemctl3.py.pep8
 	$(MAKE) tests/localtests2.py.pep8
 pep style.d: 
-	$(MAKE) systemctl3/systemctl3.py.style
+	$(MAKE) systemctl2/systemctl3.py.style
 	$(MAKE) tests/localtests2.py.style
 
 # https://github.com/nvbn/py-backwards
@@ -398,8 +398,8 @@ striphints3.git:
 	test "def test(a):|    return a|" = "`cat tmp.striphints.py.out | tr '\\\\\\n' '|'`"
 	rm tmp.striphints.*
 
-tmp/systemctl_2.py: systemctl3/systemctl3.py $(STRIP_PYTHON3)
-	@ $(STRIPHINTS3) systemctl3/systemctl3.py -o $@ $V
+tmp/systemctl_2.py: systemctl2/systemctl3.py $(STRIP_PYTHON3)
+	@ $(STRIPHINTS3) systemctl2/systemctl3.py -o $@ $V
 
 MYPY = mypy
 MYPY_WITH = --strict --show-error-codes --show-error-context 
@@ -409,7 +409,7 @@ mypy:
 	zypper install -y python3-click python3-pathspec
 	$(MAKE) striphints.git
 type:
-	$(MYPY) $(MYPY_WITH) $(MYPY_OPTIONS) systemctl3/systemctl3.py
+	$(MYPY) $(MYPY_WITH) $(MYPY_OPTIONS) systemctl2/systemctl3.py
 
 ############## https://pypi.org/...
 si: setuptools/15.6
@@ -425,8 +425,8 @@ setuptools/15.6:
 # makes systemctl3 > 2.x to be usable with python3.6 but it can not be installed via pip.
 # Henceforth the "make build" diverts to a PYTHON39=python3.11 setup on opensuse15 systems.
 
-2: share/README.md systemctl3/systemctl.py
-systemctl3/systemctl.py: systemctl3/systemctl3.py $(STRIP_PYTHON3) Makefile
+2: share/README.md systemctl2/systemctl.py
+systemctl2/systemctl.py: systemctl2/systemctl3.py $(STRIP_PYTHON3) Makefile
 	: STRIPHINTS3 implies the usage of "PYTHON39=$(PYTHON39)"
 	$(STRIPHINTS3) "$<" --old-python -y -o "$@"
 share/README.md: README.md Makefile
@@ -434,9 +434,9 @@ share/README.md: README.md Makefile
 	cat "$<" | sed -e "/\\/badge/d" -e /^---/q > "$@"
 buildclean bb:
 	ls systemctl3
-	- rm -r systemctl3/*.egg-info src/__pycache__
+	- rm -r systemctl2/*.egg-info src/__pycache__
 	@ test ! -f share/README.md || rm -v share/README.md
-	@ test ! -f systemctl3/systemctl.py || rm -v systemctl3/systemctl.py* 
+	@ test ! -f systemctl2/systemctl.py || rm -v systemctl2/systemctl.py* 
 	ls systemctl3
 distclean dd:
 	- rm -rf build dist *.egg-info src/*.egg-info
@@ -454,7 +454,7 @@ PIP3 = $(PYTHON) -m pip
 build:  ; $(MAKE) build3 PYTHON=$(PYTHON39) TWINE=$(TWINE39)
 build3:
 	$(MAKE) distclean
-	$(MAKE) share/README.md && $(MAKE) systemctl3/systemctl.py
+	$(MAKE) share/README.md && $(MAKE) systemctl2/systemctl.py
 	# pip install --root=~/local . -v
 	$(PYTHON) -m build
 	$(MAKE) buildclean
@@ -465,7 +465,7 @@ build3:
 ins install: ;	$(MAKE) install3 PYTHON=$(PYTHON39)
 install3:
 	$(MAKE) distclean
-	$(MAKE) share/README.md && $(MAKE) systemctl3/systemctl.py
+	$(MAKE) share/README.md && $(MAKE) systemctl2/systemctl.py
 	$(PIP3) install --no-compile --user .
 	$(MAKE) buildclean
 	$(MAKE) show3 | sed -e "s|[.][.]/[.][.]/[.][.]/bin|$$HOME/.local/bin|"

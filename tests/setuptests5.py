@@ -32,7 +32,7 @@ logg = logging.getLogger("TESTING")
 _sed = "sed"
 _docker = "docker"
 _python = "/usr/bin/python3"
-_systemctl_py = "systemctl3/systemctl3.py"
+_systemctl_py = "systemctl2/systemctl3.py"
 _strip_python3_src = "../strip_python3/strip3"
 SKIP = True
 TODO = False
@@ -555,10 +555,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out = output(F"{docker} exec {testname} make -C setup show PYTHON={python} PYTHON39={python}")
         logg.info("make show\n%s", out)
         self.assertTrue(greps(out, F"Location:.*/{python}/site-packages"))
-        self.assertTrue(greps(out, "systemctl3/journalctl3.py"))
-        self.assertTrue(greps(out, "systemctl3/systemctl3.py"))
-        self.assertTrue(greps(out, "systemctl3/systemctl.py"))
-        self.assertTrue(greps(out, "systemctl3/systemctl.pyi"))
+        self.assertTrue(greps(out, "systemctl2/journalctl3.py"))
+        self.assertTrue(greps(out, "systemctl2/systemctl3.py"))
+        self.assertTrue(greps(out, "systemctl2/systemctl.py"))
+        self.assertTrue(greps(out, "systemctl2/systemctl.pyi"))
         self.assertTrue(greps(out, "bin/systemctl.py"))
         self.assertTrue(greps(out, "bin/systemctl3"))
         self.assertTrue(greps(out, "bin/journalctl3"))

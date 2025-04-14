@@ -37,7 +37,7 @@ _sed = "sed"
 _docker = "docker"
 _python = "/usr/bin/python3"
 _python2 = "/usr/bin/python"
-_systemctl_py = "systemctl3/systemctl3.py"
+_systemctl_py = "systemctl2/systemctl3.py"
 _bin_sleep="/bin/sleep"
 COVERAGE = "" # make it an image name = detect_local_system()
 SKIP = True
