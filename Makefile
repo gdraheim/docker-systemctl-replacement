@@ -451,10 +451,10 @@ fix-metadata-version:
 PIP3 = $(PYTHON) -m pip
 
 .PHONY: build
-build:  ; $(MAKE) build3 PYTHON=$(PYTHON39)
+build:  ; $(MAKE) build3 PYTHON=$(PYTHON39) TWINE=$(TWINE39)
 build3:
 	$(MAKE) distclean
-	$(MAKE) share/README.md && $(MAKE) systemctl/systemctl.py
+	$(MAKE) share/README.md && $(MAKE) systemctl3/systemctl.py
 	# pip install --root=~/local . -v
 	$(PYTHON) -m build
 	$(MAKE) buildclean
