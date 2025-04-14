@@ -6,7 +6,7 @@
 # pylint: disable=missing-function-docstring,unused-variable,unused-argument,unspecified-encoding,redefined-outer-name,using-constant-test,invalid-name
 # pylint: disable=fixme,consider-using-with,condition-evals-to-constant,chained-comparison
 __copyright__ = "(C) Guido Draheim, licensed under the EUPL"""
-__version__ = "2.1.1151"
+__version__ = "2.1.1152"
 
 from typing import List, Tuple, Generator, Iterator, Union, Optional, TextIO, Mapping
 
