@@ -161,6 +161,7 @@ tests/7.3:              ; $(TESTS)    $(VV) $(FORCE) --image=centos:7.3.1611
 tests: ; $(LOCAL) $(VV) $V
 .PHONY: tests
 
+test_4%/2: ; $(BUILD) "$(dir $@)" $(VV) $V --python=python$(notdir $@)
 test_4%/3: ; $(BUILD) "$(dir $@)" $(VV) $V --python=python$(notdir $@)
 test_4%/3.6: ; $(BUILD) "$(dir $@)" $(VV) $V --python=python$(notdir $@)
 test_4%/3.11: ; $(BUILD) "$(dir $@)" $(VV) $V --python=python$(notdir $@)
@@ -172,6 +173,7 @@ test_5%/3.11:  ; tests/setuptests5.py "$(dir $@)" $(VV) $(FORCE) --image=$(BASE$
 check5:  ; $(MAKE) test_5*/3.11
 check25: ; $(MAKE) test_5*/2
 
+check24: ; $(MAKE) test_4*/2
 check4: ; $(MAKE) test_4*/3
 
 nightrun: checkall

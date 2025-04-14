@@ -182,11 +182,13 @@ def docname(path: str) -> str:
 def python_package(python: str, image: Optional[str] = None) -> str:
     package = os.path.basename(python)
     if "python2" in package:
+        if image and "opensuse" in image:
+            return "python-base"
         if image and "centos:8" in image:
             return package
-        if image and "almalinux:9" in image:
+        if image and "almalinux" in image:
             return package
-        if image and "ubuntu:2" in image:
+        if image and "ubuntu" in image:
             return package
         return package.replace("python2", "python")
     if "python3.6" in package:
@@ -431,7 +433,7 @@ class DockerBuildTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
-        if "python3" not in python: self.skipTest("using python3 on almalinux:9")
+        if "python3" not in python: self.skipTest("using python3 for systemctl3.py")
         latest = LATEST or os.path.basename(python)
         testname = self.testname()
         testdir = self.testdir()
@@ -593,6 +595,7 @@ class DockerBuildTest(unittest.TestCase):
         tmp_systemctl()
         docker = _docker
         curl = _curl
+        python = _python or _python2
         testname = self.testname()
         testdir = self.testdir()
         dockerfile = "apache2-ubuntu16.dockerfile"
@@ -600,6 +603,7 @@ class DockerBuildTest(unittest.TestCase):
         savename = docname(dockerfile)
         saveto = SAVETO
         images = IMAGES
+        latest = LATEST or os.path.basename(python)
         # WHEN
         cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
@@ -644,11 +648,14 @@ class DockerBuildTest(unittest.TestCase):
         curl = _curl
         testname = self.testname()
         testdir = self.testdir()
+        python = _python or _python3
+        if "python3" not in python: self.skipTest("using python3 for systemctl3.py")
         dockerfile = "apache2-ubuntu18.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
         images = IMAGES
+        latest = LATEST or os.path.basename(python)
         # WHEN
         cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
@@ -691,6 +698,8 @@ class DockerBuildTest(unittest.TestCase):
         tmp_systemctl3()
         docker = _docker
         curl = _curl
+        python = _python or _python3
+        if "python3" not in python: self.skipTest("using python3 for systemctl3.py")
         testname = self.testname()
         testdir = self.testdir()
         dockerfile = "apache2-ubuntu22.dockerfile"
@@ -698,8 +707,64 @@ class DockerBuildTest(unittest.TestCase):
         savename = docname(dockerfile)
         saveto = SAVETO
         images = IMAGES
+        latest = LATEST or os.path.basename(python)
         # WHEN
         cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}/{testname}:{latest}"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "{docker} run -d --name {testname} {images}/{testname}:{latest}"
+        sh____(cmd.format(**locals()))
+        container = self.ip_container(testname)
+        # THEN
+        cmd = "sleep 5; {curl} -o {testdir}/{testname}.txt http://{container}"
+        sh____(cmd.format(**locals()))
+        cmd = "grep OK {testdir}/{testname}.txt"
+        sh____(cmd.format(**locals()))
+        #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        # sh____(cmd.format(**locals()))
+        # SAVE
+        cmd = "{docker} stop {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} rm --force {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} rmi {saveto}/{savename}:latest"
+        sx____(cmd.format(**locals()))
+        cmd = "{docker} tag {images}/{testname}:{latest} {saveto}/{savename}:latest"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} rmi {images}/{testname}:{latest}"
+        sx____(cmd.format(**locals()))
+        self.rm_testdir()
+    def test_42214_opensuse15_apache2_dockerfile(self) -> None:
+        """ WHEN using a dockerfile for systemd-enabled Opensuse and python2, 
+            THEN we can create an image with an Apache HTTP service 
+                 being installed and enabled.
+            Without a special startup.sh script or container-cmd 
+            one can just start the image and in the container
+            expecting that the service is started. Therefore,
+            WHEN we start the image as a docker container
+            THEN we can download the root html showing 'OK'
+            because the test script has placed an index.html
+            in the webserver containing that text. """
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        systemctl = tmp_systemctl()
+        docker = _docker
+        curl = _curl
+        python = _python or _python2
+        latest = LATEST or os.path.basename(python)
+        testname = self.testname()
+        testdir = self.testdir()
+        name = "apache2-opensuse-15"
+        dockerfile = F"{name}.dockerfile"
+        addhosts = self.local_addhosts(dockerfile)
+        savename = docname(dockerfile)
+        saveto = SAVETO
+        images = IMAGES
+        nocache = NOCACHE
+        python1 = "python" if "python2" in python else python
+        python2 = python_package(python, "opensuse")
+        # WHEN
+        cmd = "{docker} build . -f {dockerfile} {nocache} {addhosts} --tag {images}/{testname}:{latest} --build-arg PYTHON={python1} --build-arg PYTHON2={python2}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
@@ -742,6 +807,7 @@ class DockerBuildTest(unittest.TestCase):
         curl = _curl
         python = _python or _python3
         latest = LATEST or os.path.basename(python)
+        if "python3" not in python: self.skipTest("using python3 for systemctl3.py")
         testname = self.testname()
         testdir = self.testdir()
         name = "apache2-opensuse15"
@@ -795,6 +861,7 @@ class DockerBuildTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
+        if "python3" not in python: self.skipTest("using python3 for systemctl3.py")
         latest = LATEST or os.path.basename(python)
         testname = self.testname()
         testdir = self.testdir()
@@ -908,6 +975,7 @@ class DockerBuildTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
+        if "python3" not in python: self.skipTest("using python3 for systemctl3.py")
         latest = LATEST or os.path.basename(python)
         testname = self.testname()
         testdir = self.testdir()
@@ -967,6 +1035,7 @@ class DockerBuildTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
+        if "python3" not in python: self.skipTest("using python3 for systemctl3.py")
         latest = LATEST or os.path.basename(python)
         testname = self.testname()
         testdir = self.testdir()
@@ -1026,6 +1095,7 @@ class DockerBuildTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
+        if "python3" not in python: self.skipTest("using python3 for systemctl3.py")
         latest = LATEST or os.path.basename(python)
         testname = self.testname()
         testdir = self.testdir()
@@ -1149,6 +1219,7 @@ class DockerBuildTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
+        if "python3" not in python: self.skipTest("using python3 for systemctl3.py")
         latest = LATEST or os.path.basename(python)
         testname = self.testname()
         testdir = self.testdir()
@@ -1216,6 +1287,7 @@ class DockerBuildTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
+        if "python3" not in python: self.skipTest("using python3 for systemctl3.py")
         latest = LATEST or os.path.basename(python)
         testname = self.testname()
         testdir = self.testdir()
@@ -1290,6 +1362,7 @@ class DockerBuildTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
+        if "python3" not in python: self.skipTest("using python3 for systemctl3.py")
         latest = LATEST or os.path.basename(python)
         testname = self.testname()
         testdir = self.testdir()
@@ -1358,6 +1431,7 @@ class DockerBuildTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
+        if "python3" not in python: self.skipTest("using python3 for systemctl3.py")
         latest = LATEST or os.path.basename(python)
         testname = self.testname()
         testdir = self.testdir()
@@ -1428,6 +1502,7 @@ class DockerBuildTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
+        if "python3" not in python: self.skipTest("using python3 for systemctl3.py")
         latest = LATEST or os.path.basename(python)
         testname = self.testname()
         testdir = self.testdir()
@@ -1498,6 +1573,7 @@ class DockerBuildTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
+        if "python3" not in python: self.skipTest("using python3 for systemctl3.py")
         latest = LATEST or os.path.basename(python)
         testname = self.testname()
         testdir = self.testdir()
@@ -1572,6 +1648,7 @@ class DockerBuildTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
+        if "python3" not in python: self.skipTest("using python3 for systemctl3.py")
         latest = LATEST or os.path.basename(python)
         testname = self.testname()
         testdir = self.testdir()
@@ -1652,6 +1729,7 @@ class DockerBuildTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
+        if "python3" not in python: self.skipTest("using python3 for systemctl3.py")
         latest = LATEST or os.path.basename(python)
         testname = self.testname()
         testdir = self.testdir()
@@ -1727,6 +1805,7 @@ class DockerBuildTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
+        if "python3" not in python: self.skipTest("using python3 for systemctl3.py")
         latest = LATEST or os.path.basename(python)
         testname = self.testname()
         testdir = self.testdir()
@@ -1793,6 +1872,7 @@ class DockerBuildTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
+        if "python3" not in python: self.skipTest("using python3 for systemctl3.py")
         latest = LATEST or os.path.basename(python)
         testname = self.testname()
         testdir = self.testdir()
@@ -1925,6 +2005,8 @@ class DockerBuildTest(unittest.TestCase):
         systemctl = tmp_systemctl3()
         docker = _docker
         curl = _curl
+        python = _python or _python3
+        if "python3" not in python: self.skipTest("using python3 for systemctl3.py")
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
@@ -1935,6 +2017,7 @@ class DockerBuildTest(unittest.TestCase):
         saveto = SAVETO
         images = IMAGES
         psql = PSQL_TOOL
+        latest = LATEST or os.path.basename(python)
         password = self.newpassword()
         # WHEN
         cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --tag {images}/{testname}:{latest}"
@@ -2061,8 +2144,8 @@ class DockerBuildTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         max4 = _curl_timeout4
-        python = _python or _python2
-        if python.endswith("python3"): self.skipTest("no python3 on almalinux:9")
+        python = _python or _python3
+        if "python3" not in python: self.skipTest("no python3 on almalinux:9")
         latest = LATEST or os.path.basename(python)
         testname = self.testname()
         testdir = self.testdir()
@@ -2205,6 +2288,7 @@ class DockerBuildTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
+        if "python3" not in python: self.skipTest("using python3 for systemctl3.py")
         latest = LATEST or os.path.basename(python)
         testname = self.testname()
         testdir = self.testdir()
@@ -2276,6 +2360,7 @@ class DockerBuildTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
+        if "python3" not in python: self.skipTest("using python3 for systemctl3.py")
         latest = LATEST or os.path.basename(python)
         testname = self.testname()
         testdir = self.testdir()
