@@ -6,20 +6,46 @@ DAY=%u
 # 'make version FOR=yesterday' or 'make version DAY=0'
 
 
-UBUNTU=ubuntu:24.04
-DOCKER=docker
-PYTHON=python3
-PYTHON2 = python2
-PYTHON3 = python3
-PYTHON39 = python3.11
+_36=3
+_39=3
+ifeq ("$(wildcard /usr/bin/python3.11)","/usr/bin/python3.9")
+  _39=3.9
+endif
+ifeq ("$(wildcard /usr/bin/python3.11)","/usr/bin/python3.10")
+  _39=3.10
+endif
+ifeq ("$(wildcard /usr/bin/python3.11)","/usr/bin/python3.11")
+  _36=3.11
+  _39=3.11
+endif
+ifeq ("$(wildcard /usr/bin/python3.10)","/usr/bin/python3.10")
+  _36=3.10
+endif
+ifeq ("$(wildcard /usr/bin/python3.9)","/usr/bin/python3.9")
+  _36=3.9
+endif
+ifeq ("$(wildcard /usr/bin/python3.8)","/usr/bin/python3.8")
+  _36=3.8
+endif
+ifeq ("$(wildcard /usr/bin/python3.7)","/usr/bin/python3.7")
+  _36=3.7
+endif
+ifeq ("$(wildcard /usr/bin/python3.8)","/usr/bin/python3.6")
+  _36=3.6
+endif
+
+PYTHON=python$(_36)
+PYTHON39 = python$(_39)
 PYTHON_VERSION = 3.7
-COVERAGE3 = $(PYTHON3) -m coverage
-TWINE = twine
-TWINE39 = twine-3.11
+COVERAGE = $(PYTHON) -m coverage
+TWINE = twine-$(_36)
+TWINE39 = twine-$(_39)
 GIT=git
 VERFILES = systemctl3/systemctl3.py tests/*tests*.py pyproject.toml
 CONTAINER = docker-systemctl
 LOCALMIRRORS=/dock
+UBUNTU=ubuntu:24.04
+DOCKER=docker
 
 LOCAL_PY = tests/localtests2.py
 LOCAL = $(PYTHON) $(LOCAL_PY) $(LOCAL_OPTIONS)
@@ -27,6 +53,9 @@ TESTS_PY = tests/dockertests3.py
 TESTS = $(PYTHON) $(TESTS_PY) $(TESTS_OPTIONS)
 BUILD_PY = tests/buildtests4.py
 BUILD = $(PYTHON) $(BUILD_PY) -C tests $(BUILD_OPTIONS)
+
+echo:
+	echo PYTHON=$(PYTHON)
 
 verfiles:
 	@ grep -l __version__ */*.??* */*/*.??* | { while read f; do echo $$f; done; } 
@@ -133,9 +162,11 @@ tests/7.3:              ; $(TESTS)    $(VV) $(FORCE) --image=centos:7.3.1611
 tests: ; $(LOCAL) $(VV) $V
 .PHONY: tests
 
+test_5%/2:  ; tests/setuptests5.py "$(dir $@)" $(VV) $(FORCE) --image=$(BASE$(subst .,,$(notdir $@))) --python=python$(notdir $@)
 test_5%/3.12:  ; tests/setuptests5.py "$(dir $@)" $(VV) $(FORCE) --image=$(BASE$(subst .,,$(notdir $@))) --python=python$(notdir $@)
 test_5%/3.11:  ; tests/setuptests5.py "$(dir $@)" $(VV) $(FORCE) --image=$(BASE$(subst .,,$(notdir $@))) --python=python$(notdir $@)
 check5:  ; $(MAKE) test_5*/3.11
+check25: ; $(MAKE) test_5*/2
 
 nightrun: checkall
 	$(MAKE) checks
@@ -349,7 +380,7 @@ striphints.git:
 	; cd $(dir $(STRIPHINTS_GIT)) && git clone $(STRIPHINTS_GIT_URL) $(notdir $(STRIPHINTS_GIT)) \
 	; fi
 	echo "def test(a: str) -> str: return a" > tmp.striphints.py
-	$(PYTHON3) $(STRIPHINTS) --to-empty tmp.striphints.py | tee tmp.striphints.py.out
+	$(PYTHON) $(STRIPHINTS) --to-empty tmp.striphints.py | tee tmp.striphints.py.out
 	test "def test(a )  : return a" = "`cat tmp.striphints.py.out`"
 	rm tmp.striphints.*
 
@@ -397,19 +428,6 @@ buildclean bb:
 distclean dd:
 	- rm -rf build dist *.egg-info src/*.egg-info
 
-PIP3 = $(PYTHON39) -m pip
-
-.PHONY: build
-build:
-	$(MAKE) distclean
-	$(MAKE) share/README.md && $(MAKE) systemctl/systemctl.py
-	# pip install --root=~/local . -v
-	$(PYTHON39) -m build
-	$(MAKE) buildclean
-	$(MAKE) fix-metadata-version
-	$(TWINE39) check dist/*
-	: $(TWINE39) upload dist/*
-
 fix-metadata-version:
 	ls dist/*
 	rm -rf dist.tmp; mkdir dist.tmp
@@ -417,18 +435,37 @@ fix-metadata-version:
 	; ( find . -name PKG-INFO ; find . -name METADATA ) | while read f; do echo FOUND $$f; sed -i -e "s/Metadata-Version: 2.4/Metadata-Version: 2.2/" $$f; done \
 	; case "$$z" in *.whl) zip -r $$z * ;; *) tar czvf $$z *;; esac ; ls -l $$z; done
 
-ins install:
+PIP3 = $(PYTHON) -m pip
+
+.PHONY: build
+build:
+	: build requires python3.9 or later due to strip_python3.py usage
+	$(MAKE) builds PYTHON=$(PYTHON39)
+builds:
+	$(MAKE) distclean
+	$(MAKE) share/README.md && $(MAKE) systemctl/systemctl.py
+	# pip install --root=~/local . -v
+	$(PYTHON) -m build
+	$(MAKE) buildclean
+	$(MAKE) fix-metadata-version
+	$(TWINE) check dist/*
+	: $(TWINE) upload dist/*
+
+ins install: ;	$(MAKE) installs PYTHON=$(PYTHON39)
+installs:
 	$(MAKE) distclean
 	$(MAKE) share/README.md && $(MAKE) systemctl3/systemctl.py
 	$(PIP3) install --no-compile --user .
 	$(MAKE) buildclean
 	$(MAKE) show | sed -e "s|[.][.]/[.][.]/[.][.]/bin|$$HOME/.local/bin|"
 
-uns uninstall: 
+uns uninstall: ; $(MAKE) uninstalls PYTHON=$(PYTHON39)
+uninstalls:
 	test -d tmp || mkdir -v tmp
 	set -x; $(PIP3) uninstall -y `sed -e '/^name *=/!d' -e 's/name *= *"//' -e 's/".*//'  pyproject.toml`
 
-show:
+show: ;	$(MAKE) shows PYTHON=$(PYTHON39)
+shows:
 	@ $(PIP3) show --files `sed -e '/^name *=/!d' -e 's/name *= *"//' -e 's/".*//' pyproject.toml` \
 	| sed -e "s:[^ ]*/[.][.]/\\([a-z][a-z]*\\)/:~/.local/\\1/:"
 

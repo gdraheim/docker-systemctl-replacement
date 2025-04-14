@@ -32,7 +32,6 @@ logg = logging.getLogger("TESTING")
 _sed = "sed"
 _docker = "docker"
 _python = "/usr/bin/python3"
-_python2 = "/usr/bin/python"
 _systemctl_py = "systemctl3/systemctl3.py"
 _strip_python3_src = "../strip_python3/strip3"
 SKIP = True
@@ -473,8 +472,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
         image = self.local_image(IMAGE or IMAGEDEF)
-        if _python.endswith("python3") and "centos:7" in image:
-            if SKIP: self.skipTest("no python3 on centos:7")
+        if _python.endswith("python2"):
+            if SKIP: self.skipTest("running only for systemctl3.py")
         testname = self.testname()
         testdir = self.testdir()
         docker = _docker
@@ -529,7 +528,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd)
         cmd = F"{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
         sx____(cmd)
-        cmd = F"{docker} exec {testname} bash -c '{package} install -y {python_x}-pip {python_x}-setuptools {python_x}-wheel make'"
+        if python == "python2":
+            cmd = F"{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || ln -s python2.7 /usr/bin/{python}'"
+            sx____(cmd)
+        cmd = F"{docker} exec {testname} bash -c '{package} install -y make'"
+        sx____(cmd)
+        install = "source-install" if "python2" in python and "opensuse" in image else "install"
+        cmd = F"{docker} exec {testname} bash -c '{package} {install} -y {python_x}-pip {python_x}-setuptools {python_x}-setuptools-wheel'"
         sx____(cmd)
         cmd = F"{docker} exec {testname} mkdir /setup"
         sh____(cmd)
@@ -545,9 +550,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd)
         cmd = F"{docker} cp {_strip_python3_src} {testname}:/strip"
         sh____(cmd)
-        cmd = F"{docker} exec {testname} make -C setup ins PYTHON3={python} PYTHON39={python} STRIP_PYTHON3=/strip/strip_python3.py"
+        cmd = F"{docker} exec {testname} make -C setup ins PYTHON={python} PYTHON39={python} STRIP_PYTHON3=/strip/strip_python3.py"
         sh____(cmd)
-        out = output(F"{docker} exec {testname} make -C setup show PYTHON3={python} PYTHON39={python}")
+        out = output(F"{docker} exec {testname} make -C setup show PYTHON={python} PYTHON39={python}")
         logg.info("make show\n%s", out)
         self.assertTrue(greps(out, F"Location:.*/{python}/site-packages"))
         self.assertTrue(greps(out, "systemctl3/journalctl3.py"))
@@ -587,14 +592,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = F"{docker} exec {testname} bash -c '{package} install -y {python_x}-mypy'"
         sx____(cmd)
         out = output(F"{docker} exec {testname} {python} -m mypy --version")
-        logg.info("{python3} -m mypy --version\n%s", out)
+        logg.info("{python} -m mypy --version\n%s", out)
         if not greps(out, "mypy 1"):
             self.skipTest(F"no mypy available - {imagedef} - {python}")
-        cmd = F"{docker} exec {testname} bash -c '{{ echo \"import systemctl3.systemctl as app\"; echo \"app.main()\"; }} > testsystemctl.py'"
+        cmd = F"{docker} exec {testname} bash -c '{{ echo \"from systemctl3 import systemctl as app\"; echo \"app.main()\"; }} > testsystemctl.py'"
         sh____(cmd)
         cmd = F"{docker} exec {testname} bash -c '{python} -m mypy --strict testsystemctl.py'"
         sh____(cmd)
-        cmd = F"{docker} exec {testname} bash -c '{{ echo \"import systemctl3.systemctl3 as app\"; echo \"app.main()\"; }} > testsystemctl3.py'"
+        cmd = F"{docker} exec {testname} bash -c '{{ echo \"from systemctl3 import systemctl3 as app\"; echo \"app.main()\"; }} > testsystemctl3.py'"
         sh____(cmd)
         cmd = F"{docker} exec {testname} bash -c '{python} -m mypy --strict testsystemctl3.py'"
         sh____(cmd)
