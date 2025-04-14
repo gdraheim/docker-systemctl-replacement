@@ -29,12 +29,12 @@ repository = "https://github.com/gdraheim/docker-systemctl-replacement.git"
 issues = "https://github.com/gdraheim/docker-systemctl-replacement/issues"
 
 [project.scripts]
-systemctl3 = "systemctl3:main"
-journalctl3 = "journalctl3:main"
+systemctl3 = "systemctl3.systemctl3:main"
+journalctl3 = "systemctl3.journalctl3:main"
 
 [tool.setuptools]
-script-files = ["src/systemctl.py"]
-package-dir = {"" = "src"}
+script-files = ["systemctl3/systemctl.py"]
+package-dir = {"systemctl3" = "systemctl3"}
 
 [tool.pycodestyle]
 max-line-length = 188 

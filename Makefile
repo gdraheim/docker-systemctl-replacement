@@ -17,7 +17,7 @@ COVERAGE3 = $(PYTHON3) -m coverage
 TWINE = twine
 TWINE39 = twine-3.11
 GIT=git
-VERFILES = src/systemctl3.py tests/*tests*.py pyproject.toml
+VERFILES = systemcl3/systemctl3.py tests/*tests*.py pyproject.toml
 CONTAINER = docker-systemctl
 LOCALMIRRORS=/dock
 
@@ -46,11 +46,11 @@ version:
 	@ grep ^__version__ $(VERFILES)
 	@ grep ^version.= $(VERFILES)
 	@ $(GIT) add $(VERFILES) || true
-	@ ver=`cat src/systemctl3.py | sed -e '/__version__/!d' -e 's/.*= *"//' -e 's/".*//' -e q` \
+	@ ver=`cat systemctl3/systemctl3.py | sed -e '/__version__/!d' -e 's/.*= *"//' -e 's/".*//' -e q` \
 	; echo "# $(GIT) commit -m v$$ver"
 
 help:
-	python src/systemctl3.py help
+	python systemctl3/systemctl3.py help
 
 alltests: CH CP UA DJ
 
@@ -74,7 +74,7 @@ test: ; $(MAKE) type && $(MAKE) tests && $(MAKE) coverage
 BASE312 = opensuse/leap:15.6
 BASE311 = opensuse/leap:15.6
 
-WITH3 = --python=/usr/bin/python3 --with=src/systemctl3.py
+WITH3 = --python=/usr/bin/python3 --with=systemctl3/systemctl3.py
 test_3%/todo:             ; $(TESTS)   "$(dir $@)" $(VV) --todo
 test_3%/3.12:             ; $(TESTS)   "$(dir $@)" $(VV) $(FORCE) --image=$(BASE$(subst .,,$(notdir $@))) --python=python$(notdir $@)
 test_3%/3.11:             ; $(TESTS)   "$(dir $@)" $(VV) $(FORCE) --image=$(BASE$(subst .,,$(notdir $@))) --python=python$(notdir $@)
@@ -133,8 +133,8 @@ tests/7.3:              ; $(TESTS)    $(VV) $(FORCE) --image=centos:7.3.1611
 tests: ; $(LOCAL) $(VV) $V
 .PHONY: tests
 
-test_8%/3.12:  ; tests/develtests8.py "$(dir $@)" $(VV) $(FORCE) --image=$(BASE$(subst .,,$(notdir $@))) --python=python$(notdir $@)
-test_8%/3.11:  ; tests/develtests8.py "$(dir $@)" $(VV) $(FORCE) --image=$(BASE$(subst .,,$(notdir $@))) --python=python$(notdir $@)
+test_8%/3.12:  ; tests/setuptests8.py "$(dir $@)" $(VV) $(FORCE) --image=$(BASE$(subst .,,$(notdir $@))) --python=python$(notdir $@)
+test_8%/3.11:  ; tests/setuptests8.py "$(dir $@)" $(VV) $(FORCE) --image=$(BASE$(subst .,,$(notdir $@))) --python=python$(notdir $@)
 check8:  ; $(MAKE) test_8*/3.11
 
 nightrun: checkall
@@ -243,7 +243,7 @@ tmp_systemctl_py_2:
 	@ sed -i -e "s:/usr/bin/python3:/usr/bin/python2:" -e "s:/env python3:/env python2:" tmp/systemctl.py
 tmp_systemctl_py_3:
 	@ test -d tmp || mkdir tmp
-	@ cp src/systemctl3.py tmp/systemctl.py
+	@ cp systemctl3/systemctl3.py tmp/systemctl.py
 tmp_ubuntu:
 	if $(DOCKER) ps | grep $(UBU); then : ; else : \
 	; $(DOCKER) run --name $(UBU) -d $(UBUNTU) sleep 3333 \
@@ -263,7 +263,7 @@ clean:
 	- rm -rf tmp/tmp.test_*
 	- rm -rf tmp/systemctl.py
 	- rm -rf tmp.* types/tmp.*
-	- rm -rf .mypy_cache src/.mypy_cache
+	- rm -rf .mypy_cache systemctl3/.mypy_cache
 
 copy:
 	cp -v ../docker-mirror-packages-repo/docker_mirror.py tests/
@@ -326,16 +326,17 @@ autopep8: ; $${PKG:-zypper} install -y python3-autopep8
 %.py.lint:
 	$(PYLINT) $(PYLINT_OPTIONS) $(@:.lint=)
 lint:
-	$(MAKE) src/systemctl3.py.lint
+	$(MAKE) systemctl3/systemctl3.py.lint
 	$(MAKE) tests/localtests2.py.lint
 	$(MAKE) tests/dockertests3.py.lint
 	$(MAKE) tests/buildtests4.py.lint
+	$(MAKE) tests/setuptests8.py.lint
 
 pep8 style:
-	$(MAKE) src/systemctl3.py.pep8
+	$(MAKE) systemctl3/systemctl3.py.pep8
 	$(MAKE) tests/localtests2.py.pep8
 pep style.d: 
-	$(MAKE) src/systemctl3.py.style
+	$(MAKE) systemctl3/systemctl3.py.style
 	$(MAKE) tests/localtests2.py.style
 
 # https://github.com/nvbn/py-backwards
@@ -354,10 +355,10 @@ striphints.git:
 
 STRIP_PYTHON3_GIT_URL = https://github.com/abarker/strip-hints.git
 STRIP_PYTHON3_GIT = ../strip_python3
-STRIP_PYTHON3 = $(STRIP_PYTHON3_GIT)/src/strip_python3.py
-STRIPHINTS3 = $(PYTHON39) $(STRIP_PYTHON3) $(STRIP_PYHTON3_OPTIONS)
+STRIP_PYTHON3 = $(STRIP_PYTHON3_GIT)/strip3/strip_python3.py
+STRIPHINTS3 = $(PYTHON39) $(STRIP_PYTHON3) $(STRIP_PYTHON3_OPTIONS)
 striphints3.git:
-	set -ex ; if test -d $(STRIP_PYHTON3_GIT); then cd $(STRIP_PYTHON3_GIT) && git pull; else : \
+	set -ex ; if test -d $(STRIP_PYTHON3_GIT); then cd $(STRIP_PYTHON3_GIT) && git pull; else : \
 	; cd $(dir $(STRIPHINTS_GIT)) && git clone $(STRIP_PYTHON3_GIT_URL) $(notdir $(STRIP_PYTHON3_GIT)) \
 	; fi
 	echo "def test(a: str) -> str: return a" > tmp.striphints.py
@@ -366,8 +367,8 @@ striphints3.git:
 	test "def test(a):|    return a|" = "`cat tmp.striphints.py.out | tr '\\\\\\n' '|'`"
 	rm tmp.striphints.*
 
-tmp/systemctl_2.py: src/systemctl3.py $(STRIP_PYTHON3)
-	@ $(STRIPHINTS3) src/systemctl3.py -o $@ $V
+tmp/systemctl_2.py: systemctl3/systemctl3.py $(STRIP_PYTHON3)
+	@ $(STRIPHINTS3) systemctl3/systemctl3.py -o $@ $V
 
 MYPY = mypy
 MYPY_WITH = --strict --show-error-codes --show-error-context 
@@ -377,33 +378,34 @@ mypy:
 	zypper install -y python3-click python3-pathspec
 	$(MAKE) striphints.git
 type:
-	$(MYPY) $(MYPY_WITH) $(MYPY_OPTIONS) src/systemctl3.py
+	$(MYPY) $(MYPY_WITH) $(MYPY_OPTIONS) systemctl3/systemctl3.py
 
 ############## https://pypi.org/...
 
-2: src/README.md src/systemctl.py
-src/systemctl.py: src/systemctl3.py $(STRIP_PYTHON3)
-	$(STRIPHINTS3) "$<" --old-python --stubs -o "$@"
-src/README.md: README.md Makefile
+2: share/README.md systemctl3/systemctl.py
+systemctl3/systemctl.py: systemctl3/systemctl3.py $(STRIP_PYTHON3) Makefile
+	$(STRIPHINTS3) "$<" --old-python -y -o "$@"
+share/README.md: README.md Makefile
+	- test -d $(dir $@) || mkdir -v $(dir $@)
 	cat "$<" | sed -e "/\\/badge/d" -e /^---/q > "$@"
-src-clean ss:
-	ls src
-	- rm -r src/*-stubs src/*.egg-info src/__pycache__
-	@ test ! -f src/README.md || rm -v src/README.md
-	@ test ! -f src/systemctl.py || rm -v src/systemctl.py* 
-	ls src
-dist-clean dd:
+buildclean bb:
+	ls systemctl3
+	- rm -r systemctl3/*.egg-info src/__pycache__
+	@ test ! -f share/README.md || rm -v share/README.md
+	@ test ! -f systemctl3/systemctl.py || rm -v systemctl3/systemctl.py* 
+	ls systemctl3
+distclean dd:
 	- rm -rf build dist *.egg-info src/*.egg-info
 
-PIP3 = $(PYTHON3) -m pip
+PIP3 = $(PYTHON39) -m pip
 
 .PHONY: build
 build:
-	$(MAKE) dist-clean
-	$(MAKE) src/README.md && $(MAKE) src/systemctl.py
+	$(MAKE) distclean
+	$(MAKE) share/README.md && $(MAKE) systemctl/systemctl.py
 	# pip install --root=~/local . -v
 	$(PYTHON39) -m build
-	$(MAKE) src-clean
+	$(MAKE) buildclean
 	$(MAKE) fix-metadata-version
 	$(TWINE39) check dist/*
 	: $(TWINE39) upload dist/*
@@ -416,10 +418,10 @@ fix-metadata-version:
 	; case "$$z" in *.whl) zip -r $$z * ;; *) tar czvf $$z *;; esac ; ls -l $$z; done
 
 ins install:
-	$(MAKE) dist-clean
-	$(MAKE) src/README.md && $(MAKE) src/systemctl.py
+	$(MAKE) distclean
+	$(MAKE) share/README.md && $(MAKE) systemctl3/systemctl.py
 	$(PIP3) install --no-compile --user .
-	$(MAKE) src-clean
+	$(MAKE) buildclean
 	$(MAKE) show | sed -e "s|[.][.]/[.][.]/[.][.]/bin|$$HOME/.local/bin|"
 
 uns uninstall: 

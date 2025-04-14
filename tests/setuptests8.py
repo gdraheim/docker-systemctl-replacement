@@ -33,8 +33,8 @@ _sed = "sed"
 _docker = "docker"
 _python = "/usr/bin/python3"
 _python2 = "/usr/bin/python"
-_systemctl_py = "src/systemctl3.py"
-_strip_python3_src = "../strip_python3/src"
+_systemctl_py = "systemctl3/systemctl3.py"
+_strip_python3_src = "../strip_python3/strip3"
 SKIP = True
 TODO = False
 KEEP = 0
@@ -533,7 +533,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd)
         cmd = F"{docker} exec {testname} mkdir /setup"
         sh____(cmd)
-        cmd = F"{docker} cp src {testname}:/setup/"
+        cmd = F"{docker} cp systemctl3 {testname}:/setup/"
         sh____(cmd)
         cmd = F"{docker} cp Makefile {testname}:/setup/"
         sh____(cmd)
@@ -550,10 +550,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out = output(F"{docker} exec {testname} make -C setup show PYTHON3={python} PYTHON39={python}")
         logg.info("make show\n%s", out)
         self.assertTrue(greps(out, F"Location:.*/{python}/site-packages"))
-        self.assertTrue(greps(out, "journalctl3.py"))
-        self.assertTrue(greps(out, "systemctl3.py"))
-        self.assertTrue(greps(out, "systemctl.py"))
-        self.assertTrue(greps(out, "systemctl-stubs/__init__.pyi"))
+        self.assertTrue(greps(out, "systemctl3/journalctl3.py"))
+        self.assertTrue(greps(out, "systemctl3/systemctl3.py"))
+        self.assertTrue(greps(out, "systemctl3/systemctl.py"))
+        self.assertTrue(greps(out, "systemctl3/systemctl.pyi"))
         self.assertTrue(greps(out, "bin/systemctl.py"))
         self.assertTrue(greps(out, "bin/systemctl3"))
         self.assertTrue(greps(out, "bin/journalctl3"))
@@ -590,13 +590,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("{python3} -m mypy --version\n%s", out)
         if not greps(out, "mypy 1"):
             self.skipTest(F"no mypy available - {imagedef} - {python}")
-        cmd = F"{docker} exec {testname} bash -c '{{ echo \"import systemctl\"; echo \"systemctl.main()\"; }} > testsystemctl.py'"
+        cmd = F"{docker} exec {testname} bash -c '{{ echo \"import systemctl3.systemctl as app\"; echo \"app.main()\"; }} > testsystemctl.py'"
         sh____(cmd)
         cmd = F"{docker} exec {testname} bash -c '{python} -m mypy --strict testsystemctl.py'"
         sh____(cmd)
-        cmd = F"{docker} exec {testname} bash -c '{{ echo \"import systemctl3\"; echo \"systemctl3.main()\"; }} > testsystemctl3.py'"
+        cmd = F"{docker} exec {testname} bash -c '{{ echo \"import systemctl3.systemctl3 as app\"; echo \"app.main()\"; }} > testsystemctl3.py'"
         sh____(cmd)
-        cmd = F"{docker} exec {testname} bash -c '{python} -m mypy --strict testsystemctl3.py --follow-imports=silent --disable-error-code=import-untyped'"
+        cmd = F"{docker} exec {testname} bash -c '{python} -m mypy --strict testsystemctl3.py'"
         sh____(cmd)
         self.rm_docker(testname)
         self.rm_testdir()
