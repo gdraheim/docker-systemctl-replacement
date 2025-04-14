@@ -1,5 +1,5 @@
     #! /usr/bin/env python3
-# pylint: disable=line-too-long,too-many-lines,too-many-statements,too-many-locals,too-many-public-methods
+# pylint: disable=line-too-long,too-many-lines,too-many-statements,too-many-locals,too-many-public-methods,too-many-return-statements
 # pylint: disable=multiple-statements,unspecified-encoding,import-outside-toplevel,deprecated-module,invalid-name,bare-except
 # pylint: disable=unused-argument,unused-variable,possibly-unused-variable,missing-function-docstring,missing-class-docstring,consider-using-f-string,logging-format-interpolation
 # pylint: disable=consider-using-with,chained-comparison
@@ -2481,7 +2481,7 @@ if __name__ == "__main__":
         logg.info("log diverted to %s", opt.logfile)
     # unittest.main()
     suite = unittest.TestSuite()
-    if not args: 
+    if not args:
         args = ["test_*"]
     for arg in args:
         for classname in sorted(globals()):
@@ -2489,11 +2489,11 @@ if __name__ == "__main__":
                 continue
             testclass = globals()[classname]
             for method in sorted(dir(testclass)):
-                if arg.endswith("/"): 
+                if arg.endswith("/"):
                     arg = arg[:-1]
-                if "*" not in arg: 
+                if "*" not in arg:
                     arg += "*"
-                if arg.startswith("_"): 
+                if arg.startswith("_"):
                     arg = arg[1:]
                 if len(arg) > 2 and arg[1] == "_":
                     arg = "test_" + arg[2:]
