@@ -30,7 +30,7 @@ endif
 ifeq ("$(wildcard /usr/bin/python3.7)","/usr/bin/python3.7")
   _36=3.7
 endif
-ifeq ("$(wildcard /usr/bin/python3.8)","/usr/bin/python3.6")
+ifeq ("$(wildcard /usr/bin/python3.6)","/usr/bin/python3.6")
   _36=3.6
 endif
 
@@ -412,6 +412,18 @@ type:
 	$(MYPY) $(MYPY_WITH) $(MYPY_OPTIONS) systemctl3/systemctl3.py
 
 ############## https://pypi.org/...
+si: setuptools/15.6
+setuptools/15.6:
+	zypper install -y rpm-build
+	zypper source-install -y python-setuptools==67.7.2 python-setuptools-wheel==67.7.2
+	cd /usr/src/packages && rpmbuild -ba SPECS/python-setuptools.spec
+	cd /usr/src/packages && rpm -ivh RPMS/x86_64/python-setuptools*.rpm
+# on opensuse15 we see that python3.6 and python3.9 have setuptools at 44.2.1 which is not
+# good enough for pyproject.toml projects without any setup.py. python3.11 and python3.12
+# however are using setuptools 67.7.2 and 68.1.2 which is >= 61.0 being required. The
+# source-install rpm-build fails however as setuptools-67 require python-base >= 3.7. That
+# makes systemctl3 > 2.x to be usable with python3.6 but it can not be installed via pip.
+# Henceforth the "make build" diverts to a PYTHON39=python3.11 setup on opensuse15 systems.
 
 2: share/README.md systemctl3/systemctl.py
 systemctl3/systemctl.py: systemctl3/systemctl3.py $(STRIP_PYTHON3) Makefile
@@ -438,10 +450,8 @@ fix-metadata-version:
 PIP3 = $(PYTHON) -m pip
 
 .PHONY: build
-build:
-	: build requires python3.9 or later due to strip_python3.py usage
-	$(MAKE) builds PYTHON=$(PYTHON39)
-builds:
+build:  ; $(MAKE) build3 PYTHON=$(PYTHON39)
+build3:
 	$(MAKE) distclean
 	$(MAKE) share/README.md && $(MAKE) systemctl/systemctl.py
 	# pip install --root=~/local . -v
@@ -451,21 +461,21 @@ builds:
 	$(TWINE) check dist/*
 	: $(TWINE) upload dist/*
 
-ins install: ;	$(MAKE) installs PYTHON=$(PYTHON39)
-installs:
+ins install: ;	$(MAKE) install3 PYTHON=$(PYTHON39)
+install3:
 	$(MAKE) distclean
 	$(MAKE) share/README.md && $(MAKE) systemctl3/systemctl.py
 	$(PIP3) install --no-compile --user .
 	$(MAKE) buildclean
-	$(MAKE) show | sed -e "s|[.][.]/[.][.]/[.][.]/bin|$$HOME/.local/bin|"
+	$(MAKE) show3 | sed -e "s|[.][.]/[.][.]/[.][.]/bin|$$HOME/.local/bin|"
 
-uns uninstall: ; $(MAKE) uninstalls PYTHON=$(PYTHON39)
-uninstalls:
+uns uninstall: ; $(MAKE) uninstall3 PYTHON=$(PYTHON39)
+uninstall3:
 	test -d tmp || mkdir -v tmp
 	set -x; $(PIP3) uninstall -y `sed -e '/^name *=/!d' -e 's/name *= *"//' -e 's/".*//'  pyproject.toml`
 
-show: ;	$(MAKE) shows PYTHON=$(PYTHON39)
-shows:
+show: ;	$(MAKE) show3 PYTHON=$(PYTHON39)
+show3:
 	@ $(PIP3) show --files `sed -e '/^name *=/!d' -e 's/name *= *"//' -e 's/".*//' pyproject.toml` \
 	| sed -e "s:[^ ]*/[.][.]/\\([a-z][a-z]*\\)/:~/.local/\\1/:"
 
