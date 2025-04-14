@@ -468,7 +468,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     #
     #
-    def test_81000_systemctl_py_inside_container(self) -> None:
+    def test_51000_systemctl_py_inside_container(self) -> None:
         """ check that we can run systemctl.py inside a docker container """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -506,7 +506,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         #
         self.assertTrue(greps(out, "systemctl.py"))
-    def test_85000_systemctl_py_inside_container(self) -> None:
+    def test_55000_systemctl_py_inside_container(self) -> None:
         """ check that we can run systemctl.py inside a docker container """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -565,11 +565,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out = output(F"{docker} commit {testname} {images}:{testname}")
         self.rm_docker(testname)
         self.rm_testdir()
-    def test_85010_mypy_inside_container(self) -> None:
+    def test_55010_mypy_inside_container(self) -> None:
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
         imagedef = IMAGE or IMAGEDEF
-        image = self.local_image(F"{images}:test_85000")
+        image = self.local_image(F"{images}:test_55000")
         testname = self.testname()
         testdir = self.testdir()
         docker = _docker
@@ -603,7 +603,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
 
 
-    def test_89999_drop_local_mirrors(self) -> None:
+    def test_59999_drop_local_mirrors(self) -> None:
         """ a helper when using images from https://github.com/gdraheim/docker-mirror-packages-repo"
             which create containers according to self.local_image(IMAGE) """
         docker = _docker

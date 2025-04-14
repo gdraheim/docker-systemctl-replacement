@@ -17,7 +17,7 @@ COVERAGE3 = $(PYTHON3) -m coverage
 TWINE = twine
 TWINE39 = twine-3.11
 GIT=git
-VERFILES = systemcl3/systemctl3.py tests/*tests*.py pyproject.toml
+VERFILES = systemctl3/systemctl3.py tests/*tests*.py pyproject.toml
 CONTAINER = docker-systemctl
 LOCALMIRRORS=/dock
 
@@ -133,9 +133,9 @@ tests/7.3:              ; $(TESTS)    $(VV) $(FORCE) --image=centos:7.3.1611
 tests: ; $(LOCAL) $(VV) $V
 .PHONY: tests
 
-test_8%/3.12:  ; tests/setuptests8.py "$(dir $@)" $(VV) $(FORCE) --image=$(BASE$(subst .,,$(notdir $@))) --python=python$(notdir $@)
-test_8%/3.11:  ; tests/setuptests8.py "$(dir $@)" $(VV) $(FORCE) --image=$(BASE$(subst .,,$(notdir $@))) --python=python$(notdir $@)
-check8:  ; $(MAKE) test_8*/3.11
+test_5%/3.12:  ; tests/setuptests5.py "$(dir $@)" $(VV) $(FORCE) --image=$(BASE$(subst .,,$(notdir $@))) --python=python$(notdir $@)
+test_5%/3.11:  ; tests/setuptests5.py "$(dir $@)" $(VV) $(FORCE) --image=$(BASE$(subst .,,$(notdir $@))) --python=python$(notdir $@)
+check5:  ; $(MAKE) test_5*/3.11
 
 nightrun: checkall
 	$(MAKE) checks
