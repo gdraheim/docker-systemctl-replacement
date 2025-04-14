@@ -427,6 +427,7 @@ setuptools/15.6:
 
 2: share/README.md systemctl3/systemctl.py
 systemctl3/systemctl.py: systemctl3/systemctl3.py $(STRIP_PYTHON3) Makefile
+	: STRIPHINTS3 implies the usage of "PYTHON39=$(PYTHON39)"
 	$(STRIPHINTS3) "$<" --old-python -y -o "$@"
 share/README.md: README.md Makefile
 	- test -d $(dir $@) || mkdir -v $(dir $@)
