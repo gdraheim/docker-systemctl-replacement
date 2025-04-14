@@ -368,7 +368,7 @@ lint:
 	$(MAKE) tests/localtests2.py.lint
 	$(MAKE) tests/dockertests3.py.lint
 	$(MAKE) tests/buildtests4.py.lint
-	$(MAKE) tests/setuptests8.py.lint
+	$(MAKE) tests/setuptests5.py.lint
 
 pep8 style:
 	$(MAKE) systemctl2/systemctl3.py.pep8
