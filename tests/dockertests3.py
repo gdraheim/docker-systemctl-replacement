@@ -57,8 +57,8 @@ TESTED_OS += ["almalinux:9.1", "centos:7.5", "almalinux:9.3", "almalinux:9.4"]
 TESTED_OS += ["opensuse:42.2", "opensuse:42.3", "opensuse/leap:15.0", "opensuse/leap:15.1", "opensuse/leap:15.2", "opensuse/leap:15.5", "opensuse/leap:15.6"]
 TESTED_OS += ["ubuntu:14.04", "ubuntu:16.04", "ubuntu:18.04", "ubuntu:22.04", "ubuntu:24.04"]
 
-SAVETO = "localhost:5000/systemctl"
-IMAGES = "localhost:5000/systemctl/testing"
+SAVETO = "localhost:5000/systemctl2"
+IMAGES = "localhost:5000/systemctl"
 IMAGE = ""
 LOCAL = 0
 CENTOS = "almalinux:9.4"

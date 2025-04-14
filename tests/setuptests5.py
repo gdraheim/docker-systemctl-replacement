@@ -43,8 +43,8 @@ KILLWAIT = 20
 EXIT_SUCCESS = 0
 EXIT_FAILURE = 1
 
-SAVETO = "localhost:5000/systemctl"
-IMAGES = "localhost:5000/systemctl/testing"
+SAVETO = "localhost:5000/systemctl2"
+IMAGES = "localhost:5000/systemctl"
 IMAGE = ""
 LOCAL = 0
 CENTOS = "almalinux:9.4"
@@ -470,6 +470,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_50000_systemctl_py_inside_container(self) -> None:
         """ check that we can run systemctl.py inside a docker container """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        python = os.path.basename(_python)
         images = IMAGES
         image = self.local_image(IMAGE or IMAGEDEF)
         if _python.endswith("python2"):
@@ -479,7 +480,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         docker = _docker
         package = package_tool(image)
         refresh = refresh_tool(image)
-        python = os.path.basename(_python)
         python_x = python_package(_python, image)
         systemctl_py = _systemctl_py
         sometime = SOMETIME or 188
@@ -508,15 +508,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_51000_systemctl_py_inside_container(self) -> None:
         """ check that we can run systemctl.py inside a docker container """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        python = os.path.basename(_python)
         images = IMAGES
         image = self.local_image(IMAGE or IMAGEDEF)
         testname = self.testname()
         testdir = self.testdir()
         docker = _docker
+        python_x = python_package(_python, image)
         package = package_tool(image)
         refresh = refresh_tool(image)
-        python = os.path.basename(_python)
-        python_x = python_package(_python, image)
         systemctl_py = _systemctl_py
         sometime = SOMETIME or 188
         #
@@ -567,21 +567,21 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("systemctl3 --version\n%s", out)
         self.assertTrue(greps(out, "via systemctl.py"))
         #
-        out = output(F"{docker} commit {testname} {images}:{testname}")
+        out = output(F"{docker} commit {testname} {images}/{testname}:{python}")
         self.rm_docker(testname)
         self.rm_testdir()
     def test_51010_mypy_inside_container(self) -> None:
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        python = os.path.basename(_python)
         images = IMAGES
         imagedef = IMAGE or IMAGEDEF
-        image = self.local_image(F"{images}:test_51000")
+        image = self.local_image(F"{images}/test_51000:{python}")
         testname = self.testname()
         testdir = self.testdir()
         docker = _docker
+        python_x = python_package(_python, image)
         package = package_tool(image)
         refresh = refresh_tool(image)
-        python = os.path.basename(_python)
-        python_x = python_package(_python, image)
         systemctl_py = _systemctl_py
         sometime = SOMETIME or 188
         #
@@ -666,15 +666,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.localtest_inside_container(self.testname())
     def localtest_inside_container(self, testname: str) -> None:
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        python = os.path.basename(_python)
         images = IMAGES
         imagedef = IMAGE or IMAGEDEF
-        image = self.local_image(F"{images}:test_51000")
+        image = self.local_image(F"{images}/test_51000:{python}")
         testdir = self.testdir()
         docker = _docker
+        python_x = python_package(_python, image)
         package = package_tool(image)
         refresh = refresh_tool(image)
-        python = os.path.basename(_python)
-        python_x = python_package(_python, image)
         systemctl_py = _systemctl_py
         sometime = SOMETIME or 188
         #

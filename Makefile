@@ -96,7 +96,6 @@ real_2%: ; $(LOCAL) "$(notdir $@)" $(VV) $V
 est_3%: ; rm .coverage*; rm -rf tmp/tmp.t$(notdir $@) ; $(TESTS) "t$(notdir $@)" $(VV) $V --coverage --keep
 test_3%: ; $(TESTS) "$(notdir $@)" $(VV) $V
 real_3%: ; $(TESTS) "$(notdir $@)" $(VV) $V
-test_4%: ; $(BUILD) "$(notdir $@)" $(VV) $V 
 
 test: ; $(MAKE) type && $(MAKE) tests && $(MAKE) coverage
 
@@ -162,11 +161,18 @@ tests/7.3:              ; $(TESTS)    $(VV) $(FORCE) --image=centos:7.3.1611
 tests: ; $(LOCAL) $(VV) $V
 .PHONY: tests
 
+test_4%/3: ; $(BUILD) "$(dir $@)" $(VV) $V --python=python$(notdir $@)
+test_4%/3.6: ; $(BUILD) "$(dir $@)" $(VV) $V --python=python$(notdir $@)
+test_4%/3.11: ; $(BUILD) "$(dir $@)" $(VV) $V --python=python$(notdir $@)
+test_4%/3.12: ; $(BUILD) "$(dir $@)" $(VV) $V --python=python$(notdir $@)
+
 test_5%/2:  ; tests/setuptests5.py "$(dir $@)" $(VV) $(FORCE) --image=$(BASE$(subst .,,$(notdir $@))) --python=python$(notdir $@)
 test_5%/3.12:  ; tests/setuptests5.py "$(dir $@)" $(VV) $(FORCE) --image=$(BASE$(subst .,,$(notdir $@))) --python=python$(notdir $@)
 test_5%/3.11:  ; tests/setuptests5.py "$(dir $@)" $(VV) $(FORCE) --image=$(BASE$(subst .,,$(notdir $@))) --python=python$(notdir $@)
 check5:  ; $(MAKE) test_5*/3.11
 check25: ; $(MAKE) test_5*/2
+
+check4: ; $(MAKE) test_4*/3
 
 nightrun: checkall
 	$(MAKE) checks
@@ -225,7 +231,6 @@ check3:
 	$(MAKE) tmp_systemctl_py_3
 	$(LOCAL) -vv \
 	  '--with=tmp/systemctl.py' --python=/usr/bin/python3
-check4: ; $(MAKE) test_4*
 
 test_%/2:
 	$(MAKE) tmp_systemctl_py_2

@@ -38,18 +38,19 @@ _systemctl_py = "systemctl2/systemctl3.py"
 _top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* ' | grep -v -e ' ps ' -e ' grep ' -e 'kworker/'"
 _top_list = "ps -eo etime,pid,ppid,args --sort etime,pid"
 
-SAVETO = "localhost:5000/systemctl"
-IMAGES = "localhost:5000/systemctl/image"
+SAVETO = "localhost:5000/systemctl2"
+IMAGES = "localhost:5000/systemctl"
 CENTOS = "almalinux:9.4"
 UBUNTU = "ubuntu:22.04"
 OPENSUSE = "opensuse/leap:15.5"
 NIX = ""
+NOCACHE = "--no-cache"
+LATEST = NIX
 TODO = False
 
 _curl = "curl"
 _curl_timeout4 = "--max-time 4"
 _docker = "docker"
-_no_cache = False
 DOCKER_SOCKET = "/var/run/docker.sock"
 PSQL_TOOL = "/usr/bin/psql"
 RUNTIME = "/tmp/run-"
@@ -177,6 +178,20 @@ def os_path(root: Optional[str], path: str) -> str:
     return os.path.join(root, path)
 def docname(path: str) -> str:
     return os.path.splitext(os.path.basename(path))[0]
+
+def python_package(python: str, image: Optional[str] = None) -> str:
+    package = os.path.basename(python)
+    if "python2" in package:
+        if image and "centos:8" in image:
+            return package
+        if image and "almalinux:9" in image:
+            return package
+        if image and "ubuntu:2" in image:
+            return package
+        return package.replace("python2", "python")
+    if "python3.6" in package:
+        return "python3"
+    return package.replace(".", "") # python3.11 => python311
 
 SYSTEMCTL=""
 _src_systemctl_py = "../systemctl2/systemctl3.py" # pylint: disable=invalid-name
@@ -416,7 +431,8 @@ class DockerBuildTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
-        if not python.endswith("python3"): self.skipTest("using python3 on almalinux:9")
+        if "python3" not in python: self.skipTest("using python3 on almalinux:9")
+        latest = LATEST or os.path.basename(python)
         testname = self.testname()
         testdir = self.testdir()
         name = "httpd-alma9"
@@ -426,11 +442,11 @@ class DockerBuildTest(unittest.TestCase):
         saveto = SAVETO
         images = IMAGES
         # WHEN
-        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
@@ -447,9 +463,9 @@ class DockerBuildTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}/{testname}:{latest} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_42049_httpd_alma9_not_user_dockerfile(self) -> None:
@@ -463,7 +479,8 @@ class DockerBuildTest(unittest.TestCase):
         tmp_systemctl3()
         docker = _docker
         python = _python or _python3
-        if not python.endswith("python3"): self.skipTest("using python3 on almalinux:9")
+        if "python3" not in python: self.skipTest("using python3 on almalinux:9")
+        latest = LATEST or os.path.basename(python)
         testname = self.testname()
         testdir = self.testdir()
         name = "httpd-alma9-not-user"
@@ -473,11 +490,11 @@ class DockerBuildTest(unittest.TestCase):
         saveto = SAVETO
         images = IMAGES
         # WHEN
-        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run -d --name {testname} {images}:{testname} sleep 300"
+        cmd = "{docker} run -d --name {testname} {images}/{testname}:{latest} sleep 300"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         cmd = "{docker} exec {testname} systemctl start httpd --user"
@@ -495,7 +512,7 @@ class DockerBuildTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_42059_httpd_alma9_user_dockerfile(self) -> None:
@@ -510,7 +527,8 @@ class DockerBuildTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
-        if not python.endswith("python3"): self.skipTest("using python3 on almalinux:9")
+        if "python3" not in python: self.skipTest("using python3 on almalinux:9")
+        latest = LATEST or os.path.basename(python)
         testname = self.testname()
         testdir = self.testdir()
         name = "httpd-alma9-user"
@@ -520,11 +538,11 @@ class DockerBuildTest(unittest.TestCase):
         saveto = SAVETO
         images = IMAGES
         # WHEN
-        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run -d --name {testname} {images}:{testname} sleep 300"
+        cmd = "{docker} run -d --name {testname} {images}/{testname}:{latest} sleep 300"
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} systemctl start httpd --user"
         out, err, end = output3(cmd.format(**locals()))
@@ -533,7 +551,7 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rm -f {testname}"
         sh____(cmd.format(**locals()))
         #
-        cmd = "{docker} run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
@@ -555,9 +573,9 @@ class DockerBuildTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}/{testname}:{latest} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_42116_ubuntu16_apache2(self) -> None:
@@ -583,11 +601,11 @@ class DockerBuildTest(unittest.TestCase):
         saveto = SAVETO
         images = IMAGES
         # WHEN
-        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
@@ -604,9 +622,9 @@ class DockerBuildTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}/{testname}:{latest} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_42118_ubuntu18_apache2(self) -> None:
@@ -632,11 +650,11 @@ class DockerBuildTest(unittest.TestCase):
         saveto = SAVETO
         images = IMAGES
         # WHEN
-        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
@@ -653,9 +671,9 @@ class DockerBuildTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}/{testname}:{latest} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_42122_ubuntu22_apache2(self) -> None:
@@ -681,11 +699,11 @@ class DockerBuildTest(unittest.TestCase):
         saveto = SAVETO
         images = IMAGES
         # WHEN
-        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
@@ -702,9 +720,9 @@ class DockerBuildTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}/{testname}:{latest} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_42215_opensuse15_apache2_dockerfile(self) -> None:
@@ -723,6 +741,7 @@ class DockerBuildTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
+        latest = LATEST or os.path.basename(python)
         testname = self.testname()
         testdir = self.testdir()
         name = "apache2-opensuse15"
@@ -731,12 +750,14 @@ class DockerBuildTest(unittest.TestCase):
         savename = docname(dockerfile)
         saveto = SAVETO
         images = IMAGES
+        nocache = NOCACHE
+        python3 = python_package(python)
         # WHEN
-        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {nocache} {addhosts} --tag {images}/{testname}:{latest} --build-arg PYTHON={python} --build-arg PYTHON3={python3}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
@@ -753,9 +774,9 @@ class DockerBuildTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}/{testname}:{latest} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_42315_opensuse15_nginx_dockerfile(self) -> None:
@@ -774,6 +795,7 @@ class DockerBuildTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
+        latest = LATEST or os.path.basename(python)
         testname = self.testname()
         testdir = self.testdir()
         dockerfile = "nginx-opensuse15.dockerfile"
@@ -782,11 +804,11 @@ class DockerBuildTest(unittest.TestCase):
         saveto = SAVETO
         images = IMAGES
         # WHEN
-        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
@@ -803,9 +825,9 @@ class DockerBuildTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}/{testname}:{latest} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_43009_postgres_alma9_dockerfile(self) -> None:
@@ -825,7 +847,8 @@ class DockerBuildTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
-        if not python.endswith("python3"): self.skipTest("using python3 on almalinux:9")
+        if "python3" not in python: self.skipTest("using python3 on almalinux:9")
+        latest = LATEST or os.path.basename(python)
         testname = self.testname()
         testdir = self.testdir()
         name = "postgres-alma9"
@@ -838,11 +861,11 @@ class DockerBuildTest(unittest.TestCase):
         password = self.newpassword()
         testpass = "Test." + password
         # WHEN
-        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --build-arg TESTPASS={testpass} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --build-arg TESTPASS={testpass} --tag {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         cmd = "for i in 1 2 3 4 5 6 7 8 9; do echo -n \"[$i] \"; pg_isready -h {container} && break; sleep 2; done"
@@ -863,9 +886,9 @@ class DockerBuildTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}/{testname}:{latest} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_43215_opensuse15_postgres_dockerfile(self) -> None:
@@ -885,6 +908,7 @@ class DockerBuildTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
+        latest = LATEST or os.path.basename(python)
         testname = self.testname()
         testdir = self.testdir()
         dockerfile = "postgres-opensuse15.dockerfile"
@@ -896,11 +920,11 @@ class DockerBuildTest(unittest.TestCase):
         password = self.newpassword()
         testpass = "Pass." + password
         # WHEN
-        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --build-arg TESTPASS={testpass} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --build-arg TESTPASS={testpass} --tag {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         cmd = "for i in 1 2 3 4 5 6 7 8 9; do echo -n \"[$i] \"; pg_isready -h {container} && break; sleep 2; done"
@@ -921,9 +945,9 @@ class DockerBuildTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}/{testname}:{latest} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_43318_ubuntu18_postgres_dockerfile(self) -> None:
@@ -943,6 +967,7 @@ class DockerBuildTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
+        latest = LATEST or os.path.basename(python)
         testname = self.testname()
         testdir = self.testdir()
         dockerfile = "postgres-ubuntu18.dockerfile"
@@ -954,11 +979,11 @@ class DockerBuildTest(unittest.TestCase):
         password = self.newpassword()
         testpass = "Test." + password
         # WHEN
-        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --build-arg TESTPASS={testpass} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --build-arg TESTPASS={testpass} --tag {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         cmd = "for i in 1 2 3 4 5 6 7 8 9; do echo -n \"[$i] \"; pg_isready -h {container} && break; sleep 2; done"
@@ -979,9 +1004,9 @@ class DockerBuildTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}/{testname}:{latest} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_43322_ubuntu22_postgres_dockerfile(self) -> None:
@@ -1001,6 +1026,7 @@ class DockerBuildTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
+        latest = LATEST or os.path.basename(python)
         testname = self.testname()
         testdir = self.testdir()
         dockerfile = "postgres-ubuntu22.dockerfile"
@@ -1012,11 +1038,11 @@ class DockerBuildTest(unittest.TestCase):
         password = self.newpassword()
         testpass = "Test." + password
         # WHEN
-        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --build-arg TESTPASS={testpass} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --build-arg TESTPASS={testpass} --tag {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         cmd = "for i in 1 2 3 4 5 6 7 8 9; do echo -n \"[$i] \"; pg_isready -h {container} && break; sleep 2; done"
@@ -1037,9 +1063,9 @@ class DockerBuildTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}/{testname}:{latest} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_43459_postgres_alma9_user_dockerfile(self) -> None:
@@ -1054,7 +1080,8 @@ class DockerBuildTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
-        if not python.endswith("python3"): self.skipTest("using python3 on almalinux:9")
+        if "python3" not in python: self.skipTest("using python3 on almalinux:9")
+        latest = LATEST or os.path.basename(python)
         testname = self.testname()
         testdir = self.testdir()
         name = "postgres-alma9-user"
@@ -1068,11 +1095,11 @@ class DockerBuildTest(unittest.TestCase):
         password = self.newpassword()
         testpass = "Test." + password
         # WHEN
-        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --build-arg TESTPASS={testpass} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --build-arg TESTPASS={testpass} --tag {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         cmd = "for i in 1 2 3 4 5 6 7 8 9; do echo -n \"[$i] \"; pg_isready -h {container} && break; sleep 2; done"
@@ -1108,9 +1135,9 @@ class DockerBuildTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}/{testname}:{latest} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_43509_redis_alma9_dockerfile(self) -> None:
@@ -1122,6 +1149,7 @@ class DockerBuildTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
+        latest = LATEST or os.path.basename(python)
         testname = self.testname()
         testdir = self.testdir()
         dockerfile = "redis-alma9.dockerfile"
@@ -1131,13 +1159,13 @@ class DockerBuildTest(unittest.TestCase):
         images = IMAGES
         psql = PSQL_TOOL
         # WHEN
-        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}-client"
         sx____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
@@ -1146,7 +1174,7 @@ class DockerBuildTest(unittest.TestCase):
                 break
             time.sleep(1)
             continue
-        cmd = "{docker} run -d --name {testname}-client {images}:{testname} sleep 3"
+        cmd = "{docker} run -d --name {testname}-client {images}/{testname}:{latest} sleep 3"
         sh____(cmd.format(**locals()))
         # cmd = "redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
         # sh____(cmd.format(**locals()))
@@ -1174,9 +1202,9 @@ class DockerBuildTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}/{testname}:{latest} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_43559_redis_alma9_user_dockerfile(self) -> None:
@@ -1188,6 +1216,7 @@ class DockerBuildTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
+        latest = LATEST or os.path.basename(python)
         testname = self.testname()
         testdir = self.testdir()
         dockerfile = "redis-alma9-user.dockerfile"
@@ -1197,13 +1226,13 @@ class DockerBuildTest(unittest.TestCase):
         images = IMAGES
         psql = PSQL_TOOL
         # WHEN
-        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}-client"
         sx____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
@@ -1212,7 +1241,7 @@ class DockerBuildTest(unittest.TestCase):
                 break
             time.sleep(1)
             continue
-        cmd = "{docker} run -d --name {testname}-client {images}:{testname} sleep 3"
+        cmd = "{docker} run -d --name {testname}-client {images}/{testname}:{latest} sleep 3"
         sh____(cmd.format(**locals()))
         # cmd = "redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
         # sh____(cmd.format(**locals()))
@@ -1247,9 +1276,9 @@ class DockerBuildTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}/{testname}:{latest} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_43715_opensuse15_redis_dockerfile(self) -> None:
@@ -1261,6 +1290,7 @@ class DockerBuildTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
+        latest = LATEST or os.path.basename(python)
         testname = self.testname()
         testdir = self.testdir()
         dockerfile = "redis-opensuse15.dockerfile"
@@ -1271,13 +1301,13 @@ class DockerBuildTest(unittest.TestCase):
         psql = PSQL_TOOL
         password = self.newpassword()
         # WHEN
-        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}:{testname} --build-arg PASSWORD={password}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}/{testname}:{latest} --build-arg PASSWORD={password}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}-client"
         sx____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
@@ -1286,7 +1316,7 @@ class DockerBuildTest(unittest.TestCase):
                 break
             time.sleep(1)
             continue
-        cmd = "{docker} run -d --name {testname}-client {images}:{testname} sleep 3"
+        cmd = "{docker} run -d --name {testname}-client {images}/{testname}:{latest} sleep 3"
         sh____(cmd.format(**locals()))
         # cmd = "redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
         # sh____(cmd.format(**locals()))
@@ -1314,9 +1344,9 @@ class DockerBuildTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}/{testname}:{latest} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_43718_ubuntu18_redis_dockerfile(self) -> None:
@@ -1328,6 +1358,7 @@ class DockerBuildTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
+        latest = LATEST or os.path.basename(python)
         testname = self.testname()
         testdir = self.testdir()
         dockerfile = "redis-ubuntu18.dockerfile"
@@ -1338,13 +1369,13 @@ class DockerBuildTest(unittest.TestCase):
         psql = PSQL_TOOL
         password = self.newpassword()
         # WHEN
-        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}:{testname} --build-arg PASSWORD={password}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}/{testname}:{latest} --build-arg PASSWORD={password}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}-client"
         sx____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
@@ -1353,7 +1384,7 @@ class DockerBuildTest(unittest.TestCase):
                 break
             time.sleep(1)
             continue
-        cmd = "{docker} run -d --name {testname}-client {images}:{testname} sleep 3"
+        cmd = "{docker} run -d --name {testname}-client {images}/{testname}:{latest} sleep 3"
         sh____(cmd.format(**locals()))
         # cmd = "redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
         # sh____(cmd.format(**locals()))
@@ -1383,9 +1414,9 @@ class DockerBuildTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}/{testname}:{latest} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_43724_ubuntu18_redis_dockerfile(self) -> None:
@@ -1397,6 +1428,7 @@ class DockerBuildTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
+        latest = LATEST or os.path.basename(python)
         testname = self.testname()
         testdir = self.testdir()
         dockerfile = "redis-ubuntu24.dockerfile"
@@ -1407,13 +1439,13 @@ class DockerBuildTest(unittest.TestCase):
         psql = PSQL_TOOL
         password = self.newpassword()
         # WHEN
-        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}:{testname} --build-arg PASSWORD={password}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}/{testname}:{latest} --build-arg PASSWORD={password}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}-client"
         sx____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
@@ -1422,7 +1454,7 @@ class DockerBuildTest(unittest.TestCase):
                 break
             time.sleep(1)
             continue
-        cmd = "{docker} run -d --name {testname}-client {images}:{testname} sleep 3"
+        cmd = "{docker} run -d --name {testname}-client {images}/{testname}:{latest} sleep 3"
         sh____(cmd.format(**locals()))
         # cmd = "redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
         # sh____(cmd.format(**locals()))
@@ -1452,9 +1484,9 @@ class DockerBuildTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}/{testname}:{latest} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_43768_ubuntu18_redis_user_dockerfile(self) -> None:
@@ -1466,6 +1498,7 @@ class DockerBuildTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
+        latest = LATEST or os.path.basename(python)
         testname = self.testname()
         testdir = self.testdir()
         dockerfile = "redis-ubuntu18-user.dockerfile"
@@ -1475,13 +1508,13 @@ class DockerBuildTest(unittest.TestCase):
         images = IMAGES
         psql = PSQL_TOOL
         # WHEN
-        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}-client"
         sx____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
@@ -1490,7 +1523,7 @@ class DockerBuildTest(unittest.TestCase):
                 break
             time.sleep(1)
             continue
-        cmd = "{docker} run -d --name {testname}-client {images}:{testname} sleep 3"
+        cmd = "{docker} run -d --name {testname}-client {images}/{testname}:{latest} sleep 3"
         sh____(cmd.format(**locals()))
         # cmd = "redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
         # sh____(cmd.format(**locals()))
@@ -1525,9 +1558,9 @@ class DockerBuildTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}/{testname}:{latest} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_43774_ubuntu24_redis_user_dockerfile(self) -> None:
@@ -1539,6 +1572,7 @@ class DockerBuildTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
+        latest = LATEST or os.path.basename(python)
         testname = self.testname()
         testdir = self.testdir()
         dockerfile = "redis-ubuntu24-user.dockerfile"
@@ -1549,13 +1583,13 @@ class DockerBuildTest(unittest.TestCase):
         psql = PSQL_TOOL
         password = self.newpassword()
         # WHEN
-        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --tag {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}-client"
         sx____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
@@ -1570,7 +1604,7 @@ class DockerBuildTest(unittest.TestCase):
             sh____(F"cat {testdir}/systemctl.log")
         # cmd = "redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
         # sh____(cmd.format(**locals()))
-        cmd = "{docker} run -d --name {testname}-client {images}:{testname} sleep 3"
+        cmd = "{docker} run -d --name {testname}-client {images}/{testname}:{latest} sleep 3"
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec -t {testname}-client redis-cli -h {container} -a {password} ping | tee {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
@@ -1603,9 +1637,9 @@ class DockerBuildTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}/{testname}:{latest} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_43765_opensuse15_redis_user_dockerfile(self) -> None:
@@ -1618,6 +1652,7 @@ class DockerBuildTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
+        latest = LATEST or os.path.basename(python)
         testname = self.testname()
         testdir = self.testdir()
         dockerfile = "redis-opensuse15-user.dockerfile"
@@ -1628,13 +1663,13 @@ class DockerBuildTest(unittest.TestCase):
         psql = PSQL_TOOL
         password = self.newpassword()
         # WHEN
-        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --tag {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}-client"
         sx____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
@@ -1643,7 +1678,7 @@ class DockerBuildTest(unittest.TestCase):
                 break
             time.sleep(1)
             continue
-        cmd = "{docker} run -d --name {testname}-client {images}:{testname} sleep 3"
+        cmd = "{docker} run -d --name {testname}-client {images}/{testname}:{latest} sleep 3"
         sh____(cmd.format(**locals()))
         # cmd = "redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
         # sh____(cmd.format(**locals()))
@@ -1678,9 +1713,9 @@ class DockerBuildTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}/{testname}:{latest} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_43815_opensuse15_mongod_dockerfile(self) -> None:
@@ -1692,6 +1727,7 @@ class DockerBuildTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
+        latest = LATEST or os.path.basename(python)
         testname = self.testname()
         testdir = self.testdir()
         dockerfile = "mongod-opensuse15.dockerfile"
@@ -1701,19 +1737,19 @@ class DockerBuildTest(unittest.TestCase):
         images = IMAGES
         psql = PSQL_TOOL
         # WHEN
-        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}-client"
         sx____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
         cmd = "sleep 2"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} run -d --name {testname}-client {images}:{testname} sleep 3"
+        cmd = "{docker} run -d --name {testname}-client {images}/{testname}:{latest} sleep 3"
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec -t {testname}-client mongo --help"
         sh____(cmd.format(**locals()))
@@ -1743,9 +1779,9 @@ class DockerBuildTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}/{testname}:{latest} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_43818_ubuntu18_mongod_dockerfile(self) -> None:
@@ -1757,6 +1793,7 @@ class DockerBuildTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
+        latest = LATEST or os.path.basename(python)
         testname = self.testname()
         testdir = self.testdir()
         dockerfile = "mongod-ubuntu18.dockerfile"
@@ -1766,19 +1803,19 @@ class DockerBuildTest(unittest.TestCase):
         images = IMAGES
         psql = PSQL_TOOL
         # WHEN
-        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}-client"
         sx____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
         cmd = "sleep 2"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} run -d --name {testname}-client {images}:{testname} sleep 3"
+        cmd = "{docker} run -d --name {testname}-client {images}/{testname}:{latest} sleep 3"
         sh____(cmd.format(**locals()))
         cmd = "{docker} exec -t {testname}-client mongo --help"
         sh____(cmd.format(**locals()))
@@ -1810,9 +1847,9 @@ class DockerBuildTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}/{testname}:{latest} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_45109_lamp_stack_alma9(self) -> None:
@@ -1822,7 +1859,8 @@ class DockerBuildTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
-        if not python.endswith("python3"): self.skipTest("using python3 on almalinux:9")
+        if "python3" not in python: self.skipTest("using python3 on almalinux:9")
+        latest = LATEST or os.path.basename(python)
         testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
@@ -1835,11 +1873,11 @@ class DockerBuildTest(unittest.TestCase):
         psql = PSQL_TOOL
         password = self.newpassword()
         # WHEN
-        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --tag {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         #
         container = self.ip_container(testname)
@@ -1876,9 +1914,9 @@ class DockerBuildTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}/{testname}:{latest} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_45115_opensuse15_lamp_stack_php7(self) -> None:
@@ -1899,11 +1937,11 @@ class DockerBuildTest(unittest.TestCase):
         psql = PSQL_TOOL
         password = self.newpassword()
         # WHEN
-        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --tag {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         #
         container = self.ip_container(testname)
@@ -1932,9 +1970,9 @@ class DockerBuildTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}/{testname}:{latest} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_46209_tomcat_alma9_dockerfile(self) -> None:
@@ -1948,7 +1986,8 @@ class DockerBuildTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
-        if not python.endswith("python3"): self.skipTest("using python3 on almalinux:9")
+        if "python3" not in python: self.skipTest("using python3 on almalinux:9")
+        latest = LATEST or os.path.basename(python)
         testname = self.testname()
         testdir = self.testdir()
         dockerfile = "tomcat-alma9.dockerfile"
@@ -1957,13 +1996,14 @@ class DockerBuildTest(unittest.TestCase):
         saveto = SAVETO
         images = IMAGES
         psql = PSQL_TOOL
-        nocache = " --no-cache" if _no_cache else ""
+        nocache = NOCACHE
+        python3 = python_package(python)
         # WHEN
-        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}:{testname}{nocache}"
+        cmd = "{docker} build . -f {dockerfile} {nocache} {addhosts} --tag {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
@@ -2005,9 +2045,9 @@ class DockerBuildTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}/{testname}:{latest} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_46409_cntlm_alma9_dockerfile(self) -> None:
@@ -2023,6 +2063,7 @@ class DockerBuildTest(unittest.TestCase):
         max4 = _curl_timeout4
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on almalinux:9")
+        latest = LATEST or os.path.basename(python)
         testname = self.testname()
         testdir = self.testdir()
         dockerfile = "cntlm-alma9.dockerfile"
@@ -2032,11 +2073,11 @@ class DockerBuildTest(unittest.TestCase):
         images = IMAGES
         psql = PSQL_TOOL
         # WHEN
-        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
@@ -2060,9 +2101,9 @@ class DockerBuildTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}/{testname}:{latest} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_46609_ssh_alma9_dockerfile(self) -> None:
@@ -2077,7 +2118,8 @@ class DockerBuildTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
-        if not python.endswith("python3"): self.skipTest("using python3 on almalinux:9")
+        if "python3" not in python: self.skipTest("using python3 on almalinux:9")
+        latest = LATEST or os.path.basename(python)
         testname = self.testname()
         testdir = self.testdir()
         dockerfile = "sshd-alma9.dockerfile"
@@ -2088,11 +2130,11 @@ class DockerBuildTest(unittest.TestCase):
         psql = PSQL_TOOL
         password = self.newpassword()
         # WHEN
-        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --tag {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
@@ -2144,9 +2186,9 @@ class DockerBuildTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}/{testname}:{latest} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
         # logg.warning("centos-sshd is incomplete without .socket support in systemctl.py")
@@ -2163,6 +2205,7 @@ class DockerBuildTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
+        latest = LATEST or os.path.basename(python)
         testname = self.testname()
         testdir = self.testdir()
         dockerfile = "sshd-opensuse15.dockerfile"
@@ -2173,11 +2216,11 @@ class DockerBuildTest(unittest.TestCase):
         psql = PSQL_TOOL
         password = self.newpassword()
         # WHEN
-        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --tag {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
@@ -2214,9 +2257,9 @@ class DockerBuildTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}/{testname}:{latest} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
         # logg.warning("centos-sshd is incomplete without .socket support in systemctl.py")
@@ -2233,6 +2276,7 @@ class DockerBuildTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
+        latest = LATEST or os.path.basename(python)
         testname = self.testname()
         testdir = self.testdir()
         dockerfile = "sshd-ubuntu18.dockerfile"
@@ -2243,11 +2287,11 @@ class DockerBuildTest(unittest.TestCase):
         psql = PSQL_TOOL
         password = self.newpassword()
         # WHEN
-        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --tag {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
@@ -2284,9 +2328,9 @@ class DockerBuildTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}/{testname}:{latest} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
 
@@ -2316,8 +2360,10 @@ if __name__ == "__main__":
                   help="additionally save the output log to a file [%default]")
     _o.add_option("-P", "--password", metavar="PASSWORD", default="",
                   help="use a fixed password for examples with auth [%default]")
-    _o.add_option("-.", "--no-cache", action="store_true", default=False,
-                  help="run docker build --no-cache [%default]")
+    _o.add_option("--cache", action="store_true", default=False,
+                  help="never run docker build --no-cache [%default]")
+    _o.add_option("--latest", metavar="ver", default=LATEST,
+                  help="define latest instead of python [%default]")
     _o.add_option("--todo", action="store_true", default=False,
                   help="Show tests with a different expected result [%default]")
     _o.add_option("--failfast", action="store_true", default=False,
@@ -2333,7 +2379,9 @@ if __name__ == "__main__":
     _mirror = opt.mirror
     _docker = opt.docker
     _password = opt.password
-    _no_cache = opt.no_cache
+    LATEST = opt.latest
+    if opt.cache:
+        NOCACHE = NIX
     #
     if opt.chdir:
         os.chdir(opt.chdir)
@@ -2348,15 +2396,22 @@ if __name__ == "__main__":
         logg.info("log diverted to %s", opt.logfile)
     # unittest.main()
     suite = unittest.TestSuite()
-    if not args: args = ["test_*"]
+    if not args: 
+        args = ["test_*"]
     for arg in args:
         for classname in sorted(globals()):
             if not classname.endswith("Test"):
                 continue
             testclass = globals()[classname]
             for method in sorted(dir(testclass)):
-                if "*" not in arg: arg += "*"
-                if arg.startswith("_"): arg = arg[1:]
+                if arg.endswith("/"): 
+                    arg = arg[:-1]
+                if "*" not in arg: 
+                    arg += "*"
+                if arg.startswith("_"): 
+                    arg = arg[1:]
+                if len(arg) > 2 and arg[1] == "_":
+                    arg = "test_" + arg[2:]
                 if fnmatch(method, arg):
                     suite.addTest(testclass(method))
     # select runner
