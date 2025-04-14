@@ -468,7 +468,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     #
     #
-    def test_51000_systemctl_py_inside_container(self) -> None:
+    def test_50000_systemctl_py_inside_container(self) -> None:
         """ check that we can run systemctl.py inside a docker container """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -506,7 +506,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         #
         self.assertTrue(greps(out, "systemctl.py"))
-    def test_55000_systemctl_py_inside_container(self) -> None:
+    def test_51000_systemctl_py_inside_container(self) -> None:
         """ check that we can run systemctl.py inside a docker container """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -565,11 +565,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out = output(F"{docker} commit {testname} {images}:{testname}")
         self.rm_docker(testname)
         self.rm_testdir()
-    def test_55010_mypy_inside_container(self) -> None:
+    def test_51010_mypy_inside_container(self) -> None:
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
         imagedef = IMAGE or IMAGEDEF
-        image = self.local_image(F"{images}:test_55000")
+        image = self.local_image(F"{images}:test_51000")
         testname = self.testname()
         testdir = self.testdir()
         docker = _docker
@@ -601,6 +601,87 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_docker(testname)
         self.rm_testdir()
         #
+    def test_51011_localtest_inside_container(self) -> None:
+        self.localtest_inside_container(self.testname())
+    def test_51020_localtest_inside_container(self) -> None:
+        self.localtest_inside_container(self.testname())
+    def test_51021_localtest_inside_container(self) -> None:
+        self.localtest_inside_container(self.testname())
+    def test_51022_localtest_inside_container(self) -> None:
+        self.localtest_inside_container(self.testname())
+    def test_51030_localtest_inside_container(self) -> None:
+        self.localtest_inside_container(self.testname())
+    def test_51031_localtest_inside_container(self) -> None:
+        self.localtest_inside_container(self.testname())
+    def test_51040_localtest_inside_container(self) -> None:
+        self.localtest_inside_container(self.testname())
+    def test_51041_localtest_inside_container(self) -> None:
+        self.localtest_inside_container(self.testname())
+    def test_51042_localtest_inside_container(self) -> None:
+        self.localtest_inside_container(self.testname())
+    def test_51043_localtest_inside_container(self) -> None:
+        self.localtest_inside_container(self.testname())
+    def test_51044_localtest_inside_container(self) -> None:
+        self.localtest_inside_container(self.testname())
+    def test_51045_localtest_inside_container(self) -> None:
+        self.localtest_inside_container(self.testname())
+    def test_51046_localtest_inside_container(self) -> None:
+        self.localtest_inside_container(self.testname())
+    def test_51047_localtest_inside_container(self) -> None:
+        self.localtest_inside_container(self.testname())
+    def test_51048_localtest_inside_container(self) -> None:
+        self.localtest_inside_container(self.testname())
+    def test_51051_localtest_inside_container(self) -> None:
+        self.localtest_inside_container(self.testname())
+    def test_51052_localtest_inside_container(self) -> None:
+        self.localtest_inside_container(self.testname())
+    def test_51053_localtest_inside_container(self) -> None:
+        self.localtest_inside_container(self.testname())
+    def test_51055_localtest_inside_container(self) -> None:
+        self.localtest_inside_container(self.testname())
+    def test_51061_localtest_inside_container(self) -> None:
+        self.localtest_inside_container(self.testname())
+    def test_51062_localtest_inside_container(self) -> None:
+        self.localtest_inside_container(self.testname())
+    def test_51063_localtest_inside_container(self) -> None:
+        self.localtest_inside_container(self.testname())
+    def test_51070_localtest_inside_container(self) -> None:
+        self.localtest_inside_container(self.testname())
+    def test_51080_localtest_inside_container(self) -> None:
+        self.localtest_inside_container(self.testname())
+    def test_51090_localtest_inside_container(self) -> None:
+        self.localtest_inside_container(self.testname())
+    def test_51091_localtest_inside_container(self) -> None:
+        self.localtest_inside_container(self.testname())
+    def test_51092_localtest_inside_container(self) -> None:
+        self.localtest_inside_container(self.testname())
+    def test_51093_localtest_inside_container(self) -> None:
+        self.localtest_inside_container(self.testname())
+    def test_51099_localtest_inside_container(self) -> None:
+        self.localtest_inside_container(self.testname())
+    def localtest_inside_container(self, testname: str) -> None:
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        images = IMAGES
+        imagedef = IMAGE or IMAGEDEF
+        image = self.local_image(F"{images}:test_51000")
+        testdir = self.testdir()
+        docker = _docker
+        package = package_tool(image)
+        refresh = refresh_tool(image)
+        python = os.path.basename(_python)
+        python_x = python_package(_python, image)
+        systemctl_py = _systemctl_py
+        sometime = SOMETIME or 188
+        #
+        cmd = F"{docker} rm --force {testname}"
+        sx____(cmd)
+        cmd = F"{docker} run --detach --name={testname} {image} sleep {sometime}"
+        sh____(cmd)
+        test_name = testname.replace("test_5", "test_2")
+        cmd = F"{docker} exec {testname} {python} /tests/localtests2.py {test_name} --with=/root/.local/bin/systemctl3"
+        sh____(cmd)
+        self.rm_docker(testname)
+        self.rm_testdir()
 
 
     def test_59999_drop_local_mirrors(self) -> None:
