@@ -538,7 +538,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd)
         cmd = F"{docker} exec {testname} mkdir /setup"
         sh____(cmd)
-        cmd = F"{docker} cp systemctl3 {testname}:/setup/"
+        cmd = F"{docker} cp systemctl2 {testname}:/setup/"
         sh____(cmd)
         cmd = F"{docker} cp Makefile {testname}:/setup/"
         sh____(cmd)
@@ -595,11 +595,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("{python} -m mypy --version\n%s", out)
         if not greps(out, "mypy 1"):
             self.skipTest(F"no mypy available - {imagedef} - {python}")
-        cmd = F"{docker} exec {testname} bash -c '{{ echo \"from systemctl3 import systemctl as app\"; echo \"app.main()\"; }} > testsystemctl.py'"
+        cmd = F"{docker} exec {testname} bash -c '{{ echo \"from systemctl2 import systemctl as app\"; echo \"app.main()\"; }} > testsystemctl.py'"
         sh____(cmd)
         cmd = F"{docker} exec {testname} bash -c '{python} -m mypy --strict testsystemctl.py'"
         sh____(cmd)
-        cmd = F"{docker} exec {testname} bash -c '{{ echo \"from systemctl3 import systemctl3 as app\"; echo \"app.main()\"; }} > testsystemctl3.py'"
+        cmd = F"{docker} exec {testname} bash -c '{{ echo \"from systemctl2 import systemctl3 as app\"; echo \"app.main()\"; }} > testsystemctl3.py'"
         sh____(cmd)
         cmd = F"{docker} exec {testname} bash -c '{python} -m mypy --strict testsystemctl3.py'"
         sh____(cmd)

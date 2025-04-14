@@ -433,11 +433,11 @@ share/README.md: README.md Makefile
 	- test -d $(dir $@) || mkdir -v $(dir $@)
 	cat "$<" | sed -e "/\\/badge/d" -e /^---/q > "$@"
 buildclean bb:
-	ls systemctl3
+	ls systemctl2/
 	- rm -r systemctl2/*.egg-info src/__pycache__
 	@ test ! -f share/README.md || rm -v share/README.md
 	@ test ! -f systemctl2/systemctl.py || rm -v systemctl2/systemctl.py* 
-	ls systemctl3
+	ls systemctl2/
 distclean dd:
 	- rm -rf build dist *.egg-info src/*.egg-info
 
