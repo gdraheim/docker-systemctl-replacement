@@ -468,7 +468,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     #
     #
-    def test_85000_systemctl_py_inside_container(self) -> None:
+    def test_81000_systemctl_py_inside_container(self) -> None:
         """ check that we can run systemctl.py inside a docker container """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
@@ -506,13 +506,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         #
         self.assertTrue(greps(out, "systemctl.py"))
-    def test_85100_systemctl_py_inside_container(self) -> None:
+    def test_85000_systemctl_py_inside_container(self) -> None:
         """ check that we can run systemctl.py inside a docker container """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         images = IMAGES
         image = self.local_image(IMAGE or IMAGEDEF)
-        if _python.endswith("python3") and "centos:7" in image:
-            if SKIP: self.skipTest("no python3 on centos:7")
         testname = self.testname()
         testdir = self.testdir()
         docker = _docker
@@ -533,19 +531,23 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd)
         cmd = F"{docker} exec {testname} bash -c '{package} install -y {python_x}-pip {python_x}-setuptools {python_x}-wheel make'"
         sx____(cmd)
-        cmd = F"{docker} cp src {testname}:/"
+        cmd = F"{docker} exec {testname} mkdir /setup"
         sh____(cmd)
-        cmd = F"{docker} cp Makefile {testname}:/"
+        cmd = F"{docker} cp src {testname}:/setup/"
         sh____(cmd)
-        cmd = F"{docker} cp README.md {testname}:/"
+        cmd = F"{docker} cp Makefile {testname}:/setup/"
         sh____(cmd)
-        cmd = F"{docker} cp pyproject.toml {testname}:/"
+        cmd = F"{docker} cp README.md {testname}:/setup/"
+        sh____(cmd)
+        cmd = F"{docker} cp pyproject.toml {testname}:/setup/"
+        sh____(cmd)
+        cmd = F"{docker} cp tests {testname}:/"
         sh____(cmd)
         cmd = F"{docker} cp {_strip_python3_src} {testname}:/strip"
         sh____(cmd)
-        cmd = F"{docker} exec {testname} make ins PYTHON3={python} PYTHON39={python} STRIP_PYTHON3=/strip/strip_python3.py"
+        cmd = F"{docker} exec {testname} make -C setup ins PYTHON3={python} PYTHON39={python} STRIP_PYTHON3=/strip/strip_python3.py"
         sh____(cmd)
-        out = output(F"{docker} exec {testname} make show PYTHON3={python} PYTHON39={python}")
+        out = output(F"{docker} exec {testname} make -C setup show PYTHON3={python} PYTHON39={python}")
         logg.info("make show\n%s", out)
         self.assertTrue(greps(out, F"Location:.*/{python}/site-packages"))
         self.assertTrue(greps(out, "journalctl3.py"))
@@ -560,19 +562,42 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("systemctl3 --version\n%s", out)
         self.assertTrue(greps(out, "via systemctl.py"))
         #
+        out = output(F"{docker} commit {testname} {images}:{testname}")
+        self.rm_docker(testname)
+        self.rm_testdir()
+    def test_85010_mypy_inside_container(self) -> None:
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        images = IMAGES
+        imagedef = IMAGE or IMAGEDEF
+        image = self.local_image(F"{images}:test_85000")
+        testname = self.testname()
+        testdir = self.testdir()
+        docker = _docker
+        package = package_tool(image)
+        refresh = refresh_tool(image)
+        python = os.path.basename(_python)
+        python_x = python_package(_python, image)
+        systemctl_py = _systemctl_py
+        sometime = SOMETIME or 188
+        #
+        cmd = F"{docker} rm --force {testname}"
+        sx____(cmd)
+        cmd = F"{docker} run --detach --name={testname} {image} sleep {sometime}"
+        sh____(cmd)
         cmd = F"{docker} exec {testname} bash -c '{package} install -y {python_x}-mypy'"
         sx____(cmd)
         out = output(F"{docker} exec {testname} {python} -m mypy --version")
         logg.info("{python3} -m mypy --version\n%s", out)
-        if greps(out, "mypy 1"):
-            cmd = F"{docker} exec {testname} bash -c '{{ echo \"import systemctl\"; echo \"systemctl.main()\"; }} > testsystemctl.py'"
-            sh____(cmd)
-            cmd = F"{docker} exec {testname} bash -c '{python} -m mypy --strict testsystemctl.py'"
-            sh____(cmd)
-            cmd = F"{docker} exec {testname} bash -c '{{ echo \"import systemctl3\"; echo \"systemctl3.main()\"; }} > testsystemctl3.py'"
-            sh____(cmd)
-            cmd = F"{docker} exec {testname} bash -c '{python} -m mypy --strict testsystemctl3.py --follow-imports=silent --disable-error-code=import-untyped'"
-            sh____(cmd)
+        if not greps(out, "mypy 1"):
+            self.skipTest(F"no mypy available - {imagedef} - {python}")
+        cmd = F"{docker} exec {testname} bash -c '{{ echo \"import systemctl\"; echo \"systemctl.main()\"; }} > testsystemctl.py'"
+        sh____(cmd)
+        cmd = F"{docker} exec {testname} bash -c '{python} -m mypy --strict testsystemctl.py'"
+        sh____(cmd)
+        cmd = F"{docker} exec {testname} bash -c '{{ echo \"import systemctl3\"; echo \"systemctl3.main()\"; }} > testsystemctl3.py'"
+        sh____(cmd)
+        cmd = F"{docker} exec {testname} bash -c '{python} -m mypy --strict testsystemctl3.py --follow-imports=silent --disable-error-code=import-untyped'"
+        sh____(cmd)
         self.rm_docker(testname)
         self.rm_testdir()
         #
