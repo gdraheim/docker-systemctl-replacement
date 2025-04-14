@@ -16,6 +16,7 @@ tmp.*
 dist
 *.egg-info
 .vscode/settings.json
+share
 systemctl3/*-stubs
 systemctl3/README.md
 systemctl3/systemctl.py
