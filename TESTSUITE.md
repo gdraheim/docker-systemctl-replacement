@@ -60,7 +60,7 @@ There is an option --coverage on the testsuite which will use an
 install pycoverage (in /usr/bin/coverage2) tool to gather the
 testsuite coverage of the systemctl.py replacement script.
 
-The result will be in files/docker/systemctl.py,cover !
+The result will be in systemctl2/systemctl.py,cover !
 
 You can use "make check" to simply start all testscases including
 gathering the coverage. Note however that only the subdir-root

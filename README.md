@@ -85,7 +85,7 @@ shall be run on real virtual machines can be tested
 with docker containers. However in newer centos/ubuntu
 images you need to check for python first.
 
-    - copy: src="files/docker/systemctl.py" dest="/usr/bin/systemctl"
+    - copy: src="systemctl2/systemctl.py" dest="/usr/bin/systemctl"
     - package: name="python"
     - file: name="/run/systemd/system/" state="directory"
     - service: name="dbus.service" state="stopped"

@@ -58,9 +58,9 @@ In the [docker-systemctl-images](https://github.com/gdraheim/docker-systemctl-im
 examples we have a number of occasions that the script needs
 to be installed twice - before and after a package install.
 
-    COPY files/docker/systemctl.py /usr/bin/systemctl
+    COPY systemctl2/systemctl.py /usr/bin/systemctl
     RUN yum install -y postgresql-server postgresql-utils
-    COPY files/docker/systemctl.py /usr/bin/systemctl
+    COPY systemctl2/systemctl.py /usr/bin/systemctl
 
 That's because the package install (e.g. postgresql-server)
 has a dependency on the "systemd" package which will

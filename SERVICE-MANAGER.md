@@ -79,7 +79,7 @@ package installation. Or just do it firsthand.
       package: name="systemd" state="latest"
       when: "ansible_connection == 'docker'"
     - name: install systemctl.py
-      copy: src="files/docker/systemctl.py" dest="/usr/bin/systemctl"
+      copy: src="systemctl2/systemctl.py" dest="/usr/bin/systemctl"
       when: "ansible_connection == 'docker'"
 
 Note that such a setup will also work when using Ansible's 
@@ -118,7 +118,7 @@ extend the initial setup steps for systemctl.py - in order to make it
 work, you need to overwrite /usr/bin/systemctl and to install Python.
 
     - name: install systemctl.py
-      copy: src="files/docker/systemctl.py" dest="/usr/bin/systemctl"
+      copy: src="systemctl2/systemctl.py" dest="/usr/bin/systemctl"
       when: "ansible_connection == 'docker'"
     - name: install python for systemctl.py
       package: name="python"
@@ -164,7 +164,7 @@ that time then you would not need it.
       gather_facts: no
       pre_tasks:
       - name: install systemctl.py
-        copy: src="files/docker/systemctl.py" dest="/usr/bin/systemctl"
+        copy: src="systemctl2/systemctl.py" dest="/usr/bin/systemctl"
         when: "ansible_connection == 'docker'"
       - name: install python for systemctl.py
         package: name=python
