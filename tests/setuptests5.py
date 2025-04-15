@@ -537,8 +537,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if python in ["python2", "python3"]:
             cmd = F"{docker} exec {testname} bash -c '{package} install -y python39'"
             sx____(cmd)
-            python39="python3.9"
-            # it wont work anyway as setuptools is too old for distributed python2/python3 packages
+            python39="python39"
+        # setuptools is too old for distributed python2/python3 packages - need atleast python=python3.11 on opensuse 15.6
         cmd = F"{docker} exec {testname} bash -c '{package} install -y make'"
         sx____(cmd)
         install = "source-install" if "python2" in python and "opensuse" in image else "install"
