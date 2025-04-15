@@ -2098,9 +2098,11 @@ class DockerBuildTest(unittest.TestCase):
         #
         container = self.ip_container(testname)
         # THEN
+        phpmyadmin = "phpMyAdmin" # opensuse/leap:15.1
+        # phpmyadmin = "phpmyadmin"
         for attempt in range(8):
             time.sleep(1)
-            cmd = "{curl} -o {testdir}/result.txt http://{container}/phpMyAdmin/"
+            cmd = "{curl} -o {testdir}/result.txt http://{container}/{phpmyadmin}/"
             out, err, end = output3(cmd.format(**locals()))
             if "503 Service Unavailable" in err:
                 logg.info("[%i] ..... 503 %s", attempt, greps(err, "503 "))
@@ -2109,9 +2111,11 @@ class DockerBuildTest(unittest.TestCase):
                 logg.info("[%i] ..... 200 %s", attempt, greps(err, "200 "))
                 break
             logg.info(" %s =>%s\n%s", cmd, end, out)
-        cmd = "{curl} -o {testdir}/result.txt http://{container}/phpMyAdmin/"
+        cmd = "{curl} -o {testdir}/result.txt http://{container}/{phpmyadmin}/"
         sh____(cmd.format(**locals()))
-        cmd = "grep '<h1>.*>phpMyAdmin<' {testdir}/result.txt"
+        result = open(F"{testdir}/result.txt").read()
+        # logg.info("result:\n%s", result)
+        self.assertTrue(greps(result, '<h1>.*>phpMyAdmin<'))
         sh____(cmd.format(**locals()))
         #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         # sh____(cmd.format(**locals()))
