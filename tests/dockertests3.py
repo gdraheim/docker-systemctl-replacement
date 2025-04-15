@@ -34,18 +34,19 @@ import json
 string_types = (str, bytes)
 
 logg = logging.getLogger("TESTING")
+NIX = ""
+SKIP = True
+TODO = False
+KEEP = 0
+LONGER = 2
+KILLWAIT = 20
+COVERAGE = NIX # make it an image name = detect_local_system()
 _sed = "sed"
 _docker = "docker"
 _python = "/usr/bin/python3"
 _python2 = "/usr/bin/python"
 _systemctl_py = "systemctl2/systemctl3.py"
 _bin_sleep="/bin/sleep"
-COVERAGE = "" # make it an image name = detect_local_system()
-SKIP = True
-TODO = False
-KEEP = 0
-LONGER = 2
-KILLWAIT = 20
 
 TESTING_LISTEN = False
 EXIT_SUCCESS = 0
@@ -176,7 +177,7 @@ def python_package(python: str, image: Optional[str] = None) -> str:
 def coverage_tool(image: Optional[str] = None, python: Optional[str] = None) -> str:
     image = image or IMAGE
     python = python or _python
-    if python.endswith("3"):
+    if "python3" in python:
         return python + " -m coverage"
     else:
         if image and "centos:8" in image:
@@ -189,9 +190,12 @@ def coverage_run(image: Optional[str] = None, python: Optional[str] = None, appe
 def coverage_package(image: Optional[str] = None, python: Optional[str] = None) -> str:
     python = python or _python
     package = "python-coverage"
-    if python.endswith("3"):
-        package = "python3-coverage"
+    if "python3" in python:
+        python3 = python_package(python, image)
+        package = F"{python3}-coverage"
         if image and "centos:8" in image:
+            package = "platform-python-coverage"
+        if image and "almalinux:9" in image:
             package = "platform-python-coverage"
     else:
         if image and "centos:8" in image:

@@ -33,18 +33,19 @@ from glob import glob
 string_types = (str, bytes)
 
 logg = logging.getLogger("TESTING")
+NIX = ""
+SKIP = True
+TODO = False
+KEEP = 0
+LONGER = 2
+KILLWAIT = 20
 _sed = "sed"
 _docker = "docker"
 _python = "/usr/bin/python3"
 _python2 = "/usr/bin/python"
 _systemctl_py = "systemctl2/systemctl3.py"
 _bin_sleep="/bin/sleep"
-COVERAGE = "" # make it an image name = detect_local_system()
-SKIP = True
-TODO = False
-KEEP = 0
-LONGER = 2
-KILLWAIT = 20
+COVERAGE = NIX # an image name in dockertests3.py
 
 TESTING_LISTEN = False
 EXIT_SUCCESS = 0
@@ -156,7 +157,7 @@ def python_package(python: str, image: Optional[str] = None) -> str:
     return package
 def coverage_tool(image: Optional[str] = None, python: Optional[str] = None) -> str:
     python = python or _python
-    if python.endswith("3"):
+    if "python3" in python:
         return python + " -m coverage"
     return "coverage2"
 def coverage_run(image: Optional[str] = None, python: Optional[str] = None, append: Optional[str] = None) -> str:
@@ -166,7 +167,7 @@ def coverage_run(image: Optional[str] = None, python: Optional[str] = None, appe
 def coverage_package(image: Optional[str] = None, python: Optional[str] = None) -> str:
     python = python or _python
     package = "python-coverage"
-    if python.endswith("3"):
+    if "python3" in python:
         package = "python3-coverage"
         if image and "centos:8" in image:
             package = "platform-python-coverage"
@@ -7865,7 +7866,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             [Unit]
             Description=Testing B
             [Service]
-            ExecStart={dir}/{sleep} 2
+            ExecStart={bindir}/{sleep} 2
             [Install]
             WantedBy=multi-user.target""")
         cmd = F"{systemctl} daemon-reload"
@@ -7923,6 +7924,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         root = self.root(testdir, real)
         systemctl = cover() + _systemctl_py + " --root=" + root
+        logg.info("systemctl = %s", systemctl)
+        logg.info("cover(%s) = %s", COVERAGE, cover())
         if real: vv, systemctl = "", "/usr/bin/systemctl"
         self.rm_zzfiles(root)
         bindir =os_path(root, F"/bin")
@@ -28586,6 +28589,7 @@ if __name__ == "__main__":
         logg.info("log diverted to %s", opt.logfile)
     #
     if opt.coverage:
+        COVERAGE = "/"
         if opt.coverage > 1:
             if os.path.exists(".coverage"):
                 logg.info("rm .coverage")
