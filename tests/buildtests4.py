@@ -433,7 +433,7 @@ class DockerBuildTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
-        if "python3" not in python: self.skipTest("using python3 for systemctl3.py")
+        if not python.endswith("python3"): self.skipTest("using preinstalled python3 for almalinux:9")
         latest = LATEST or os.path.basename(python)
         testname = self.testname()
         testdir = self.testdir()
@@ -481,7 +481,7 @@ class DockerBuildTest(unittest.TestCase):
         tmp_systemctl3()
         docker = _docker
         python = _python or _python3
-        if "python3" not in python: self.skipTest("using python3 on almalinux:9")
+        if not python.endswith("python3"): self.skipTest("using preinstalled python3 for almalinux:9")
         latest = LATEST or os.path.basename(python)
         testname = self.testname()
         testdir = self.testdir()
@@ -529,7 +529,7 @@ class DockerBuildTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
-        if "python3" not in python: self.skipTest("using python3 on almalinux:9")
+        if not python.endswith("python3"): self.skipTest("using preinstalled python3 for almalinux:9")
         latest = LATEST or os.path.basename(python)
         testname = self.testname()
         testdir = self.testdir()
@@ -921,7 +921,7 @@ class DockerBuildTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
-        if "python3" not in python: self.skipTest("using python3 on almalinux:9")
+        if not python.endswith("python3"): self.skipTest("using preinstalled python3 for almalinux:9")
         latest = LATEST or os.path.basename(python)
         testname = self.testname()
         testdir = self.testdir()
@@ -1157,7 +1157,7 @@ class DockerBuildTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
-        if "python3" not in python: self.skipTest("using python3 on almalinux:9")
+        if not python.endswith("python3"): self.skipTest("using preinstalled python3 for almalinux:9")
         latest = LATEST or os.path.basename(python)
         testname = self.testname()
         testdir = self.testdir()
@@ -1226,7 +1226,7 @@ class DockerBuildTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
-        if "python3" not in python: self.skipTest("using python3 for systemctl3.py")
+        if not python.endswith("python3"): self.skipTest("using preinstalled python3 for almalinux:9")
         latest = LATEST or os.path.basename(python)
         testname = self.testname()
         testdir = self.testdir()
@@ -1294,7 +1294,7 @@ class DockerBuildTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
-        if "python3" not in python: self.skipTest("using python3 for systemctl3.py")
+        if not python.endswith("python3"): self.skipTest("using preinstalled python3 for almalinux:9")
         latest = LATEST or os.path.basename(python)
         testname = self.testname()
         testdir = self.testdir()
@@ -1946,7 +1946,7 @@ class DockerBuildTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
-        if "python3" not in python: self.skipTest("using python3 on almalinux:9")
+        if not python.endswith("python3"): self.skipTest("using preinstalled python3 for almalinux:9")
         latest = LATEST or os.path.basename(python)
         testname = self.testname()
         testdir = self.testdir()
@@ -2076,7 +2076,7 @@ class DockerBuildTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
-        if "python3" not in python: self.skipTest("using python3 on almalinux:9")
+        if not python.endswith("python3"): self.skipTest("using preinstalled python3 for almalinux:9")
         latest = LATEST or os.path.basename(python)
         testname = self.testname()
         testdir = self.testdir()
@@ -2152,7 +2152,7 @@ class DockerBuildTest(unittest.TestCase):
         curl = _curl
         max4 = _curl_timeout4
         python = _python or _python3
-        if "python3" not in python: self.skipTest("no python3 on almalinux:9")
+        if not python.endswith("python3"): self.skipTest("using preinstalled python3 for almalinux:9")
         latest = LATEST or os.path.basename(python)
         testname = self.testname()
         testdir = self.testdir()
@@ -2208,7 +2208,7 @@ class DockerBuildTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
-        if "python3" not in python: self.skipTest("using python3 on almalinux:9")
+        if not python.endswith("python3"): self.skipTest("using preinstalled python3 for almalinux:9")
         latest = LATEST or os.path.basename(python)
         testname = self.testname()
         testdir = self.testdir()
