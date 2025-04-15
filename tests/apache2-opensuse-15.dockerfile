@@ -21,4 +21,4 @@ RUN cp /usr/bin/systemctl.py /usr/bin/systemctl
 RUN echo TEST_OK > /srv/www/htdocs/index.html
 
 RUN systemctl enable apache2
-CMD /usr/bin/systemctl
+CMD ["/usr/bin/systemctl"]

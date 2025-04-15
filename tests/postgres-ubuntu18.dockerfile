@@ -38,4 +38,4 @@ RUN systemctl start $POSTGRES \
 
 RUN systemctl enable $POSTGRES
 RUN rm -f /etc/init.d/postgresql /etc/init.d/sysstat /etc/init.d/cron
-CMD /usr/bin/systemctl -1
+CMD ["/usr/bin/systemctl"]

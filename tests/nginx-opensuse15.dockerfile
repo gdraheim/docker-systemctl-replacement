@@ -13,4 +13,4 @@ COPY tmp/systemctl3.py /usr/bin/systemctl
 RUN echo TEST_OK > /srv/www/htdocs/index.html
 
 RUN systemctl enable nginx
-CMD /usr/bin/systemctl
+CMD ["/usr/bin/systemctl"]

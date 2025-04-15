@@ -30,4 +30,4 @@ RUN : \
         > /etc/systemd/system/cntlm.service.d/pidfile.conf
 
 RUN systemctl enable cntlm
-CMD /usr/bin/systemctl
+CMD ["/usr/bin/systemctl"]

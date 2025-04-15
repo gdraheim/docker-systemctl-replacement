@@ -17,4 +17,4 @@ RUN sed -i "s|^  bindIp:.*|  bindIp: 0.0.0.0|" /etc/mongod.conf
 RUN systemctl enable mongod
 
 RUN touch /var/log/systemctl.debug.log
-CMD /usr/bin/systemctl
+CMD ["/usr/bin/systemctl"]

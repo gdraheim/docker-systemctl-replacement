@@ -34,4 +34,4 @@ RUN systemctl start postgresql \
    ; systemctl stop postgresql
 
 RUN systemctl enable postgresql
-CMD /usr/bin/systemctl
+CMD ["/usr/bin/systemctl"]

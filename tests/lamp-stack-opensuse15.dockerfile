@@ -30,4 +30,4 @@ RUN sed -i -e "/'user'/s|=.*;|='${USERNAME}';|" \
 
 RUN systemctl enable mysql
 RUN systemctl enable apache2
-CMD /usr/bin/systemctl
+CMD ["/usr/bin/systemctl"]

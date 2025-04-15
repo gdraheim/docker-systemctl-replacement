@@ -72,4 +72,4 @@ RUN systemctl enable php-fpm
 
 RUN systemctl enable mariadb
 RUN systemctl enable httpd
-CMD /usr/bin/systemctl
+CMD ["/usr/bin/systemctl"]

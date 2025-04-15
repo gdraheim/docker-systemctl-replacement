@@ -34,5 +34,5 @@ RUN : \
   ; chown -R apache /var/www
 
 RUN systemctl enable httpd
-CMD /usr/bin/systemctl
+CMD ["/usr/bin/systemctl"]
 USER apache

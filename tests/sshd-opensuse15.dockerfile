@@ -17,4 +17,4 @@ RUN systemctl enable sshd
 RUN useradd -g users testuser -m
 RUN echo testuser:$PASSWORD | chpasswd
 RUN TZ=UTC date -I > /home/testuser/date.txt
-CMD /usr/bin/systemctl
+CMD ["/usr/bin/systemctl"]

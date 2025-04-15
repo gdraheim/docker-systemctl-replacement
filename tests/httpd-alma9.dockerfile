@@ -20,4 +20,4 @@ RUN cp /usr/bin/systemctl3.py /usr/bin/systemctl
 RUN echo TEST_OK > /var/www/html/index.html
 
 RUN systemctl enable httpd
-CMD /usr/bin/systemctl
+CMD ["/usr/bin/systemctl"]

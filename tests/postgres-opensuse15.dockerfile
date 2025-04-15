@@ -35,4 +35,4 @@ RUN sed -i -e "s/.*host.*ident/# &/" $PG/pg_hba.conf
 RUN echo "host all all ${ALLOWS} md5" >> $PG/pg_hba.conf
 
 RUN systemctl enable postgresql
-CMD /usr/bin/systemctl
+CMD ["/usr/bin/systemctl"]

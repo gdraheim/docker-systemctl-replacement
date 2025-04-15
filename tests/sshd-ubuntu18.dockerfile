@@ -20,4 +20,4 @@ RUN useradd -g nogroup testuser -m
 RUN echo testuser:$PASSWORD | chpasswd
 RUN cat /etc/passwd
 RUN TZ=UTC date -I > /home/testuser/date.txt
-CMD /usr/bin/systemctl -1
+CMD ["/usr/bin/systemctl"]
