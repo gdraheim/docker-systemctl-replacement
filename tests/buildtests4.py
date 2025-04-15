@@ -592,6 +592,7 @@ class DockerBuildTest(unittest.TestCase):
             because the test script has placed an index.html
             in the webserver containing that text. """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if not TODO: self.skipTest("ubuntu-16 end of life")
         tmp_systemctl()
         docker = _docker
         curl = _curl
@@ -2421,7 +2422,6 @@ class DockerBuildTest(unittest.TestCase):
                  being installed and enabled.
             Addtionally we do check an example application"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
-        if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
         if not os.path.exists("/usr/bin/sshpass"): self.skipTest("sshpass tool missing on host")
         tmp_systemctl3()
         docker = _docker
@@ -2432,6 +2432,75 @@ class DockerBuildTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         dockerfile = "sshd-ubuntu18.dockerfile"
+        addhosts = self.local_addhosts(dockerfile)
+        savename = docname(dockerfile)
+        saveto = SAVETO
+        images = IMAGES
+        psql = PSQL_TOOL
+        password = self.newpassword()
+        # WHEN
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --tag {images}/{testname}:{latest}"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "{docker} run -d --name {testname} {images}/{testname}:{latest}"
+        sh____(cmd.format(**locals()))
+        container = self.ip_container(testname)
+        # THEN
+        for attempt in range(9):
+            cmd = "{docker} exec {testname} /usr/bin/systemctl is-active ssh"
+            out, end = output2(cmd.format(**locals()))
+            logg.info("is-active => %s", out)
+            time.sleep(1)
+            if not end: break
+        cmd = "{docker} exec {testname} ps axu"
+        sx____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} systemctl is-system-running"
+        sx____(cmd.format(**locals()))
+        cmd = "sleep 2; {docker} exec {testname} ps axu"
+        sx____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} systemctl is-system-running"
+        sx____(cmd.format(**locals()))
+        allows = "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+        cmd = "sshpass -p {password} scp {allows} testuser@{container}:date.txt {testdir}/{testname}.date.txt"
+        sh____(cmd.format(**locals()))
+        cmd = "grep `TZ=UTC date -I` {testdir}/{testname}.date.txt"
+        sh____(cmd.format(**locals()))
+        allows = "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+        cmd = "sshpass -p {password} scp {allows} testuser@{container}:date.txt {testdir}/{testname}.date.2.txt"
+        sh____(cmd.format(**locals()))
+        cmd = "grep `TZ=UTC date -I` {testdir}/{testname}.date.2.txt"
+        sh____(cmd.format(**locals()))
+        #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        # sh____(cmd.format(**locals()))
+        # SAVE
+        cmd = "{docker} stop {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} rm --force {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} rmi {saveto}/{savename}:latest"
+        sx____(cmd.format(**locals()))
+        cmd = "{docker} tag {images}/{testname}:{latest} {saveto}/{savename}:latest"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} rmi {images}/{testname}:{latest}"
+        sx____(cmd.format(**locals()))
+        self.rm_testdir()
+    def test_46624_ubuntu24_ssh_dockerfile(self) -> None:
+        """ WHEN using a dockerfile for systemd-enabled Ubuntu 24, 
+            THEN we can create an image with an ssh service 
+                 being installed and enabled.
+            Addtionally we do check an example application"""
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if not os.path.exists("/usr/bin/sshpass"): self.skipTest("sshpass tool missing on host")
+        tmp_systemctl3()
+        docker = _docker
+        curl = _curl
+        python = _python or _python3
+        if "python3" not in python: self.skipTest("using python3 for systemctl3.py")
+        latest = LATEST or os.path.basename(python)
+        testname = self.testname()
+        testdir = self.testdir()
+        dockerfile = "sshd-ubuntu24.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
