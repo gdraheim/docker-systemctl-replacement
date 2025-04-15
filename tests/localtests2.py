@@ -7927,7 +7927,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_zzfiles(root)
         bindir =os_path(root, F"/bin")
         sleep = self.testname("sleep")
-        copy_tool(_bin_sleep, F"{dir}/{sleep}")
+        copy_tool(_bin_sleep, F"{bindir}/{sleep}")
         #
         text_file(os_path(root, "/etc/systemd/system/zza.service"), F"""
             [Unit]
