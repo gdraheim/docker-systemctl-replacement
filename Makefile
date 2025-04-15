@@ -176,16 +176,18 @@ test_5%/3.12:  ; tests/setuptests5.py "$(dir $@)" $(VV) $(FORCE) --image=$(BASE$
 test_5%/3.11:  ; tests/setuptests5.py "$(dir $@)" $(VV) $(FORCE) --image=$(BASE$(subst .,,$(notdir $@))) --python=python$(notdir $@)
 
 check5: ; $(MAKE) test_5*/s
-check25: ; $(MAKE) test_5*/2
-check35: ; $(MAKE) test_5*/3
-check45: ; $(MAKE) test_5*/3.11
-checks5: ; $(MAKE) check5 && $(MAKE) check25 && $(MAKE) check45
+check52: ; $(MAKE) test_5*/2
+check53: ; $(MAKE) test_5*/3
+check5311: ; $(MAKE) test_5*/3.11
+check5312: ; $(MAKE) test_5*/3.12
+checks5: ; $(MAKE) check5 && $(MAKE) check5311 && $(MAKE) check5312
 
 check4: ; $(MAKE) test_4*/s
-check24: ; $(MAKE) test_4*/2
-check34: ; $(MAKE) test_4*/3
-check44: ; $(MAKE) test_4*/3.11
-checks4: ; $(MAKE) check4 && $(MAKE) check24 && $(MAKE) check34
+check42: ; $(MAKE) test_4*/2
+check43: ; $(MAKE) test_4*/3
+check4311: ; $(MAKE) test_4*/3.11
+check4312: ; $(MAKE) test_4*/3.12
+checks4: ; $(MAKE) check4 && $(MAKE) check42 && $(MAKE) check43 && $(MAKE) check4311 && $(MAKE) check4312
 
 nightrun: checkall
 	$(MAKE) checks
@@ -273,15 +275,12 @@ check_3:
 	$(LOCAL) -vv \
 	  '--with=tmp/systemctl.py' --python=/usr/bin/python3
 
-coverage2: 
-	$(MAKE) tmp_systemctl_py_2
-	rm .coverage* ; $(LOCAL) -vv --coverage ${basetests} --xmlresults=TEST-systemctl-python2.xml \
-	  '--with=tmp/systemctl.py' --python=/usr/bin/python2
-coverage3:
-	$(MAKE) tmp_systemctl_py_3
-	rm .coverage* ; $(LOCAL) -vv --coverage ${basetests} --xmlresults=TEST-systemctl-python3.xml \
-	  '--with=tmp/systemctl.py' --python=/usr/bin/python3
-coverage: coverage3
+coverage0: ; rm .coverage* ; $(MAKE) tmp_systemctl_py_3
+coverage2: coverage0 ; $(LOCAL) -vv --coverage --python=$(PYTHON) --with=tmp/systemctl.py
+coverage3: coverage0 ; $(TESTS) -vv --coverage --python=$(PYTHON) --with=tmp/systemctl.py
+coverage: ; $(MAKE) -j1 _coverage
+_coverage: coverage0 coverage2 coverage3 coverages
+coverages:
 	$(PYTHON) -m coverage combine && \
 	$(PYTHON) -m coverage report && \
 	$(PYTHON) -m coverage annotate

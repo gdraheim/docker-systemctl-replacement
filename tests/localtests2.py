@@ -147,14 +147,18 @@ def refresh_tool(image: str, checks: bool = False) -> str:
 def python_package(python: str, image: Optional[str] = None) -> str:
     package = os.path.basename(python)
     if package.endswith("2"):
+        if image and "opensuse" in image:
+            return "python-base"
         if image and "centos:8" in image:
-            return package
-        if image and "almalinux:9" in image:
-            return package
+            return "python2"
+        if image and "almalinux" in image:
+            return "python2"
         if image and "ubuntu:2" in image:
-            return package
-        return package[:-1]
-    return package
+            return "python2"
+        return package.replace("python2", "python")
+    if "python3.6" in package:
+        return "python3"
+    return package.replace(".", "") # python3.11 => python311
 def coverage_tool(image: Optional[str] = None, python: Optional[str] = None) -> str:
     python = python or _python
     if "python3" in python:
@@ -168,7 +172,8 @@ def coverage_package(image: Optional[str] = None, python: Optional[str] = None) 
     python = python or _python
     package = "python-coverage"
     if "python3" in python:
-        package = "python3-coverage"
+        python3 = python_package(python, image)
+        package = F"{python3}-coverage"
         if image and "centos:8" in image:
             package = "platform-python-coverage"
     else:
