@@ -31,7 +31,7 @@ string_types = (str, bytes)
 logg = logging.getLogger("TESTING")
 _sed = "sed"
 _docker = "docker"
-_python = "/usr/bin/python3"
+_python = "/usr/bin/python3.11"
 _systemctl_py = "systemctl2/systemctl3.py"
 _strip_python3_src = "../strip_python3/strip3"
 SKIP = True
@@ -526,11 +526,19 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd)
         cmd = F"{docker} exec {testname} {refresh}"
         sh____(cmd)
-        cmd = F"{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x}'"
+        cmd = F"{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python_x} {python_x}-pip'"
         sx____(cmd)
+        cmd = F"{docker} exec {testname} {python} -m pip --version"
+        sh____(cmd) # pip must be installed by now
         if python == "python2":
             cmd = F"{docker} exec {testname} bash -c 'ls -l /usr/bin/{python} || ln -s python2.7 /usr/bin/{python}'"
             sx____(cmd)
+        python39 = python
+        if python in ["python2", "python3"]:
+            cmd = F"{docker} exec {testname} bash -c '{package} install -y python39'"
+            sx____(cmd)
+            python39="python3.9"
+            # it wont work anyway as setuptools is too old for distributed python2/python3 packages
         cmd = F"{docker} exec {testname} bash -c '{package} install -y make'"
         sx____(cmd)
         install = "source-install" if "python2" in python and "opensuse" in image else "install"
@@ -550,7 +558,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd)
         cmd = F"{docker} cp {_strip_python3_src} {testname}:/strip"
         sh____(cmd)
-        cmd = F"{docker} exec {testname} make -C setup ins PYTHON={python} PYTHON39={python} STRIP_PYTHON3=/strip/strip_python3.py"
+        cmd = F"{docker} exec {testname} make -C setup ins PYTHON={python} PYTHON39={python39} STRIP_PYTHON3=/strip/strip_python3.py"
         sh____(cmd)
         out = output(F"{docker} exec {testname} make -C setup show PYTHON={python} PYTHON39={python}")
         logg.info("make show\n%s", out)
