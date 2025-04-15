@@ -161,20 +161,29 @@ tests/7.3:              ; $(TESTS)    $(VV) $(FORCE) --image=centos:7.3.1611
 tests: ; $(LOCAL) $(VV) $V
 .PHONY: tests
 
+test_4%/s: ; $(BUILD) "$(dir $@)" $(VV) $V 
 test_4%/2: ; $(BUILD) "$(dir $@)" $(VV) $V --python=python$(notdir $@)
 test_4%/3: ; $(BUILD) "$(dir $@)" $(VV) $V --python=python$(notdir $@)
 test_4%/3.6: ; $(BUILD) "$(dir $@)" $(VV) $V --python=python$(notdir $@)
 test_4%/3.11: ; $(BUILD) "$(dir $@)" $(VV) $V --python=python$(notdir $@)
 test_4%/3.12: ; $(BUILD) "$(dir $@)" $(VV) $V --python=python$(notdir $@)
 
+test_5%/s:  ; tests/setuptests5.py "$(dir $@)" $(VV) $(FORCE)
 test_5%/2:  ; tests/setuptests5.py "$(dir $@)" $(VV) $(FORCE) --image=$(BASE$(subst .,,$(notdir $@))) --python=python$(notdir $@)
+test_5%/3:  ; tests/setuptests5.py "$(dir $@)" $(VV) $(FORCE) --image=$(BASE$(subst .,,$(notdir $@))) --python=python$(notdir $@)
 test_5%/3.12:  ; tests/setuptests5.py "$(dir $@)" $(VV) $(FORCE) --image=$(BASE$(subst .,,$(notdir $@))) --python=python$(notdir $@)
 test_5%/3.11:  ; tests/setuptests5.py "$(dir $@)" $(VV) $(FORCE) --image=$(BASE$(subst .,,$(notdir $@))) --python=python$(notdir $@)
-check5:  ; $(MAKE) test_5*/3.11
-check25: ; $(MAKE) test_5*/2
 
+checks5: ; $(MAKE) test_5*/s
+check25: ; $(MAKE) test_5*/2
+check35: ; $(MAKE) test_5*/3
+check45: ; $(MAKE) test_5*/3.11
+check5: ; $(MAKE) checks5 && $(MAKE) check25 && $(MAKE) check45
+
+checks4: ; $(MAKE) test_4*/s
 check24: ; $(MAKE) test_4*/2
-check4: ; $(MAKE) test_4*/3
+check34: ; $(MAKE) test_4*/3
+check44: ; $(MAKE) test_4*/3.11
 
 nightrun: checkall
 	$(MAKE) checks

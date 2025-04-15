@@ -598,14 +598,21 @@ class DockerBuildTest(unittest.TestCase):
         python = _python or _python2
         testname = self.testname()
         testdir = self.testdir()
-        dockerfile = "apache2-ubuntu16.dockerfile"
+        dockerfile = "apache2-ubuntu-16.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
         images = IMAGES
         latest = LATEST or os.path.basename(python)
+        python1 = os.path.basename(python) if "python3" in os.path.basename(python) else "python2"
+        python2 = python_package(python)
+        if not _python:
+            logg.info("python1 %s python2 %s", python1, python2)
+            assert python1 == "python2" # exe
+            assert python2 == "python" # pkg
+            logg.fatal("addhosts %s", addhosts)
         # WHEN
-        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}/{testname}:{latest}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}/{testname}:{latest} --build-arg PYTHON={python1} --build-arg PYTHON2={python2}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
