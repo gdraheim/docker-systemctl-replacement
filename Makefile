@@ -104,6 +104,7 @@ BASE311 = opensuse/leap:15.6
 
 WITH3 = --python=/usr/bin/python3 --with=systemctl2/systemctl3.py
 test_3%/todo:             ; $(TESTS)   "$(dir $@)" $(VV) --todo
+test_3%/s:                ; $(TESTS)   "$(dir $@)" $(VV)
 test_3%/3.12:             ; $(TESTS)   "$(dir $@)" $(VV) $(FORCE) --image=$(BASE$(subst .,,$(notdir $@))) --python=python$(notdir $@)
 test_3%/3.11:             ; $(TESTS)   "$(dir $@)" $(VV) $(FORCE) --image=$(BASE$(subst .,,$(notdir $@))) --python=python$(notdir $@)
 test_3%/15.6:             ; $(TESTS)   "$(dir $@)" $(VV) $(FORCE) --image=opensuse/leap:$(notdir $@)
@@ -174,16 +175,17 @@ test_5%/3:  ; tests/setuptests5.py "$(dir $@)" $(VV) $(FORCE) --image=$(BASE$(su
 test_5%/3.12:  ; tests/setuptests5.py "$(dir $@)" $(VV) $(FORCE) --image=$(BASE$(subst .,,$(notdir $@))) --python=python$(notdir $@)
 test_5%/3.11:  ; tests/setuptests5.py "$(dir $@)" $(VV) $(FORCE) --image=$(BASE$(subst .,,$(notdir $@))) --python=python$(notdir $@)
 
-checks5: ; $(MAKE) test_5*/s
+check5: ; $(MAKE) test_5*/s
 check25: ; $(MAKE) test_5*/2
 check35: ; $(MAKE) test_5*/3
 check45: ; $(MAKE) test_5*/3.11
-check5: ; $(MAKE) checks5 && $(MAKE) check25 && $(MAKE) check45
+checks5: ; $(MAKE) check5 && $(MAKE) check25 && $(MAKE) check45
 
-checks4: ; $(MAKE) test_4*/s
+check4: ; $(MAKE) test_4*/s
 check24: ; $(MAKE) test_4*/2
 check34: ; $(MAKE) test_4*/3
 check44: ; $(MAKE) test_4*/3.11
+checks4: ; $(MAKE) check4 && $(MAKE) check24 && $(MAKE) check34
 
 nightrun: checkall
 	$(MAKE) checks
@@ -192,15 +194,25 @@ checkall2025:
 	$(MAKE) -j1 tests/9.4
 	$(MAKE) -j1 tests/24.04 tests/22.04 tests/20.04
 	$(MAKE) -j1 tests/15.6  tests/15.4
+checks3:
+	$(MAKE) -j1 tests/9.4
+	$(MAKE) -j1 tests/24.04
+	$(MAKE) -j1 tests/15.6
 
-
-check: 
+checks: ; $(MAKE) checks2 checks3 checks4 checks5
+	@ echo please run 'make checkall' now
+check: ; $(MAKE) check2 check3 check4 check5
+	@ echo please run 'make checks' now
+check3:
 	@ if test -d $(LOCALMIRRORS); \
 	then $(MAKE) check2025 "OPTIONS=--failfast --localmirrors" ; \
 	else $(MAKE) check2025 "OPTIONS=--failfast" ; fi
-	@ echo please run 'make checks' now
 24 check2024: ; $(TESTS) -vv --opensuse=15.6 --ubuntu=ubuntu:24.04 --centos=almalinux:9.3 --docker=$(DOCKER) $(OPTIONS)
 25 check2025: ; $(TESTS) -vv --opensuse=15.6 --ubuntu=ubuntu:24.04 --centos=almalinux:9.4 --docker=$(DOCKER) $(OPTIONS)
+
+test_2%/2: ; $(MAKE) $(dir $@)27
+test_2%/3: ; $(MAKE) $(dir $@)36
+test_2%/3.11: ; $(MAKE) $(dir $@)311
 
 # native operating system does not have python2 anymore
 test%/27:
@@ -227,49 +239,40 @@ test%/36:
 	  '--with=/$(PWD)/tmp/systemctl.py' --python=/usr/bin/python3 $(COVERAGE1) $V
 	- test -z "$(COVERAGE1)" || $(DOCKER) cp $(CONTAINER)-python$(notdir):/.coverage .coverage.cov1
 	$(DOCKER) rm -f $(CONTAINER)-python$(notdir $@)
+test%/311:
+	$(MAKE) tmp_systemctl_py_3
+	test -z `docker ps -a -q -f name=$(CONTAINER)-python$(notdir $@)` || $(DOCKER) rm -f $(CONTAINER)-python$(notdir $@)
+	$(DOCKER) run -d --name=$(CONTAINER)-python$(notdir $@) $(CONTAINER)/test$(notdir $@) sleep 9999
+	$(DOCKER) exec $(CONTAINER)-python$(notdir $@) mkdir -p $(PWD)/tmp
+	$(DOCKER) cp tests $(CONTAINER)-python$(notdir $@):/
+	$(DOCKER) cp tmp/systemctl.py $(CONTAINER)-python$(notdir $@):/$(PWD)/tmp/
+	$(DOCKER) exec $(CONTAINER)-python$(notdir $@) chmod +x /$(PWD)/tmp/systemctl.py
+	$(DOCKER) exec $(CONTAINER)-python$(notdir $@) /$(LOCAL_PY) $(LOCAL_OPTIONS) -vv $(dir $@) \
+	  '--with=/$(PWD)/tmp/systemctl.py' --python=/usr/bin/python3 $(COVERAGE1) $V
+	- test -z "$(COVERAGE1)" || $(DOCKER) cp $(CONTAINER)-python$(notdir):/.coverage .coverage.cov1
+	$(DOCKER) rm -f $(CONTAINER)-python$(notdir $@)
 
-checks: checks27 checks36 coverage
+checks2: check2 check27 check36 coverage
 	: ready for make checkall
 
-checks27: ; $(MAKE) "test_2/27" 
-checks36: ; $(MAKE) "test_2/36" 
+# using local python3 at whatever version it just has
+check2: ; $(LOCAL) -vv
 
-check2:
+# new-style .... run local tests in a container for python2
+check27: ; $(MAKE) "test_2/27" 
+check36: ; $(MAKE) "test_2/36" 
+check311: ; $(MAKE) "test_2/311" 
+
+# old-style .... we do not have python2 on the local system
+check_2:
 	$(MAKE) tmp_systemctl_py_2
 	$(LOCAL) -vv \
 	  '--with=tmp/systemctl.py' --python=/usr/bin/python2
-check3:
+check_3:
 	$(MAKE) tmp_systemctl_py_3
 	$(LOCAL) -vv \
 	  '--with=tmp/systemctl.py' --python=/usr/bin/python3
 
-test_%/2:
-	$(MAKE) tmp_systemctl_py_2
-	$(LOCAL) -vv $(dir $@) --sometime=666 \
-	  '--with=tmp/systemctl.py' --python=/usr/bin/python2
-test_%/3:
-	$(MAKE) tmp_systemctl_py_3
-	$(LOCAL) -vv $(dir $@) --sometime=666 \
-	  '--with=tmp/systemctl.py' --python=/usr/bin/python3
-
-est_%/2:
-	$(MAKE) tmp_systemctl_py_2
-	$(LOCAL) -vv t$(dir $@) --sometime=666 --coverage \
-	  '--with=tmp/systemctl.py' --python=/usr/bin/python2
-est_%/3:
-	$(MAKE) tmp_systemctl_py_3
-	$(LOCAL) -vv t$(dir $@) --sometime=666 --coverage \
-	  '--with=tmp/systemctl.py' --python=/usr/bin/python3
-
-
-
-coverage: coverage3
-	$(PYTHON) -m coverage combine && \
-	$(PYTHON) -m coverage report && \
-	$(PYTHON) -m coverage annotate
-	- $(PYTHON) -m coverage xml -o tmp/coverage.xml
-	- $(PYTHON) -m coverage html -d tmp/htmlcov
-	ls -l tmp/systemctl.py,cover
 coverage2: 
 	$(MAKE) tmp_systemctl_py_2
 	rm .coverage* ; $(LOCAL) -vv --coverage ${basetests} --xmlresults=TEST-systemctl-python2.xml \
@@ -278,6 +281,13 @@ coverage3:
 	$(MAKE) tmp_systemctl_py_3
 	rm .coverage* ; $(LOCAL) -vv --coverage ${basetests} --xmlresults=TEST-systemctl-python3.xml \
 	  '--with=tmp/systemctl.py' --python=/usr/bin/python3
+coverage: coverage3
+	$(PYTHON) -m coverage combine && \
+	$(PYTHON) -m coverage report && \
+	$(PYTHON) -m coverage annotate
+	- $(PYTHON) -m coverage xml -o tmp/coverage.xml
+	- $(PYTHON) -m coverage html -d tmp/htmlcov
+	ls -l tmp/systemctl.py,cover
 
 p2: tmp_systemctl_py_2
 p3: tmp_systemctl_py_3
