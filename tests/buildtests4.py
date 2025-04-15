@@ -181,16 +181,16 @@ def docname(path: str) -> str:
 
 def python_package(python: str, image: Optional[str] = None) -> str:
     package = os.path.basename(python)
-    if "python2" in package:
+    if "python2" in package or "python" == package:
         if image and "opensuse" in image:
             return "python-base"
         if image and "centos:8" in image:
-            return package
+            return "python2"
         if image and "almalinux" in image:
-            return package
+            return "python2"
         if image and "ubuntu" in image:
-            return package
-        return package.replace("python2", "python")
+            return "python2"
+        return "python"
     if "python3.6" in package:
         return "python3"
     return package.replace(".", "") # python3.11 => python311
@@ -604,8 +604,8 @@ class DockerBuildTest(unittest.TestCase):
         saveto = SAVETO
         images = IMAGES
         latest = LATEST or os.path.basename(python)
-        python1 = os.path.basename(python) if "python3" in os.path.basename(python) else "python2"
-        python2 = python_package(python)
+        python1 = os.path.basename(python) if "python3" in python else "python2"
+        python2 = python_package(python, dockerfile)
         if not _python:
             logg.info("python1 %s python2 %s", python1, python2)
             assert python1 == "python2" # exe
@@ -665,6 +665,63 @@ class DockerBuildTest(unittest.TestCase):
         latest = LATEST or os.path.basename(python)
         # WHEN
         cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}/{testname}:{latest}"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "{docker} run -d --name {testname} {images}/{testname}:{latest}"
+        sh____(cmd.format(**locals()))
+        container = self.ip_container(testname)
+        # THEN
+        cmd = "sleep 5; {curl} -o {testdir}/{testname}.txt http://{container}"
+        sh____(cmd.format(**locals()))
+        cmd = "grep OK {testdir}/{testname}.txt"
+        sh____(cmd.format(**locals()))
+        #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        # sh____(cmd.format(**locals()))
+        # SAVE
+        cmd = "{docker} stop {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} rm --force {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} rmi {saveto}/{savename}:latest"
+        sx____(cmd.format(**locals()))
+        cmd = "{docker} tag {images}/{testname}:{latest} {saveto}/{savename}:latest"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} rmi {images}/{testname}:{latest}"
+        sx____(cmd.format(**locals()))
+        self.rm_testdir()
+    def test_42121_ubuntu22_apache2(self) -> None:
+        """ WHEN using a dockerfile for systemd enabled Ubuntu 22 with python2
+            THEN we can create an image with an Apache HTTP service 
+                 being installed and enabled.
+            Without a special startup.sh script or container-cmd 
+            one can just start the image and in the container
+            expecting that the service is started. Therefore,
+            WHEN we start the image as a docker container
+            THEN we can download the root html showing 'OK'
+            because the test script has placed an index.html
+            in the webserver containing that text. """
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        tmp_systemctl()
+        docker = _docker
+        curl = _curl
+        python = _python or _python2
+        testname = self.testname()
+        testdir = self.testdir()
+        dockerfile = "apache2-ubuntu-22.dockerfile"
+        addhosts = self.local_addhosts(dockerfile)
+        savename = docname(dockerfile)
+        saveto = SAVETO
+        images = IMAGES
+        latest = LATEST or os.path.basename(python)
+        python1 = os.path.basename(python) if "python3" in python else "python2"
+        python2 = python_package(python, dockerfile)
+        if not _python:
+            logg.info("python1 %s python2 %s", python1, python2)
+            assert python1 == "python2"
+            assert python2 == "python2"
+        # WHEN
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}/{testname}:{latest} --build-arg PYTHON={python1} --build-arg PYTHON2={python2}"
         sh____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
@@ -768,8 +825,12 @@ class DockerBuildTest(unittest.TestCase):
         saveto = SAVETO
         images = IMAGES
         nocache = NOCACHE
-        python1 = "python" if "python2" in python else python
-        python2 = python_package(python, "opensuse")
+        python1 = "python" if "python2" in python else os.path.basename(python)
+        python2 = python_package(python, dockerfile)
+        if not _python:
+            logg.info("python1 %s python2 %s", python1, python2)
+            assert python1 == "python"
+            assert python2 == "python2"
         # WHEN
         cmd = "{docker} build . -f {dockerfile} {nocache} {addhosts} --tag {images}/{testname}:{latest} --build-arg PYTHON={python1} --build-arg PYTHON2={python2}"
         sh____(cmd.format(**locals()))
@@ -824,7 +885,7 @@ class DockerBuildTest(unittest.TestCase):
         saveto = SAVETO
         images = IMAGES
         nocache = NOCACHE
-        python3 = python_package(python)
+        python3 = python_package(python, dockerfile)
         # WHEN
         cmd = "{docker} build . -f {dockerfile} {nocache} {addhosts} --tag {images}/{testname}:{latest} --build-arg PYTHON={python} --build-arg PYTHON3={python3}"
         sh____(cmd.format(**locals()))
@@ -2087,7 +2148,6 @@ class DockerBuildTest(unittest.TestCase):
         images = IMAGES
         psql = PSQL_TOOL
         nocache = NOCACHE
-        python3 = python_package(python)
         # WHEN
         cmd = "{docker} build . -f {dockerfile} {nocache} {addhosts} --tag {images}/{testname}:{latest}"
         sh____(cmd.format(**locals()))
