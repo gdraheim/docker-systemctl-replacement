@@ -99,6 +99,15 @@ real_3%: ; $(TESTS) "$(notdir $@)" $(VV) $V
 
 test: ; $(MAKE) type && $(MAKE) tests && $(MAKE) coverage
 
+test_1%: ; $(MAKE) $@/9
+test_1%/s:  ; python3 tests/unittests1.py "$(dir $@)" $(VV) $(FORCE) 
+test_1%/3:  ; $(PYTHON) tests/unittests1.py "$(dir $@)" $(VV) $(FORCE)
+test_1%/9:  ; $(PYTHON39) tests/unittests1.py "$(dir $@)" $(VV) $(FORCE)
+check1: ; $(MAKE) test_1*/s
+check13: ; $(MAKE) test_1*/3
+check19: ; $(MAKE) test_1*/9
+
+
 BASE312 = opensuse/leap:15.6
 BASE311 = opensuse/leap:15.6
 
@@ -162,14 +171,18 @@ tests/7.3:              ; $(TESTS)    $(VV) $(FORCE) --image=centos:7.3.1611
 tests: ; $(LOCAL) $(VV) $V
 .PHONY: tests
 
+test_4%: ; $(MAKE) $@/9
 test_4%/s: ; $(BUILD) "$(dir $@)" $(VV) $V 
+test_4%/9: ; $(BUILD) "$(dir $@)" $(VV) $V --python=python$(PYTHON39)
 test_4%/2: ; $(BUILD) "$(dir $@)" $(VV) $V --python=python$(notdir $@)
 test_4%/3: ; $(BUILD) "$(dir $@)" $(VV) $V --python=python$(notdir $@)
 test_4%/3.6: ; $(BUILD) "$(dir $@)" $(VV) $V --python=python$(notdir $@)
 test_4%/3.11: ; $(BUILD) "$(dir $@)" $(VV) $V --python=python$(notdir $@)
 test_4%/3.12: ; $(BUILD) "$(dir $@)" $(VV) $V --python=python$(notdir $@)
 
-test_5%/s:  ; tests/setuptests5.py "$(dir $@)" $(VV) $(FORCE)
+test_5%: ; $(MAKE) $@/9
+test_5%/s:  ; tests/setuptests5.py "$(dir $@)" $(VV) $(FORCE) 
+test_5%/9:  ; tests/setuptests5.py "$(dir $@)" $(VV) $(FORCE) --python=python$(PYTHON39)
 test_5%/2:  ; tests/setuptests5.py "$(dir $@)" $(VV) $(FORCE) --image=$(BASE$(subst .,,$(notdir $@))) --python=python$(notdir $@)
 test_5%/3:  ; tests/setuptests5.py "$(dir $@)" $(VV) $(FORCE) --image=$(BASE$(subst .,,$(notdir $@))) --python=python$(notdir $@)
 test_5%/3.12:  ; tests/setuptests5.py "$(dir $@)" $(VV) $(FORCE) --image=$(BASE$(subst .,,$(notdir $@))) --python=python$(notdir $@)

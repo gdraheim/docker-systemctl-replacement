@@ -246,13 +246,13 @@ def sock_type_str(value: int) -> str:
         return "UDP"
     if value == socket.SOCK_STREAM:
         return "TCP"
-    if value == socket.SOCK_RAW: # pragma: no cover
+    if value == socket.SOCK_RAW:
         return "RAW"
-    if value == socket.SOCK_RDM: # pragma: no cover
+    if value == socket.SOCK_RDM:
         return "RDM"
-    if value == socket.SOCK_SEQPACKET: # pragma: no cover
+    if value == socket.SOCK_SEQPACKET:
         return "SEQ"
-    return "<?>" # pragma: no cover
+    return "<?>" 
 
 def yes_str(value: Union[bool, None]) -> str:
     if value is True:
@@ -266,22 +266,19 @@ def nix_str(part: Union[str, int, float, None]) -> str:
     if part is True: # pragma: no cover (is never a bool)
         return ALL
     return str(part)
-def q_str(part: Union[str, None]) -> str:
+def q_str(part: Union[str, int, None]) -> str:
     if part is None:
         return NIX
-    if isinstance(part, int): # pragma: no cover (is never int)
+    if isinstance(part, int):
         return str(part)
     return "'%s'" % part
 def shell_cmd(cmd: List[str]) -> str:
     return " ".join([q_str(part) for part in cmd])
 def to_int_if(value: Optional[str], default: Optional[int] = None) -> Optional[int]:
-    if not value:
+    if value is None:
         return default
-    try:
-        return int(value)
-    except ValueError:
-        return default
-def to_int(value: str, default: int = 0) -> int:
+    return to_int(value)
+def to_int(value: Union[str, int], default: int = 0) -> int:
     try:
         return int(value)
     except ValueError:
