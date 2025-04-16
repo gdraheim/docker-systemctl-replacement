@@ -298,6 +298,8 @@ def _commalist(value: Iterable[str]) -> Iterator[str]:
         if not val:
             continue
         for elem in val.strip().split(","):
+            if not elem.strip():
+                continue
             yield elem
 def int_mode(value: str) -> Optional[int]:
     try:
@@ -312,7 +314,7 @@ def o30(part: str) -> str:
     if isinstance(part, stringtypes):
         if len(part) <= 30:
             return part
-        return part[:5] + "..." + part[-21:]
+        return part[:6] + "..." + part[-21:]
     return part # pragma: no cover (is always str)
 def o44(part: str) -> str:
     if isinstance(part, stringtypes):
