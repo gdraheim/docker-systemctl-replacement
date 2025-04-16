@@ -16,7 +16,7 @@ logg = logging.getLogger(os.path.basename(__file__))
 
 TMPSYSTEMCTL = os.environ.get("TMPSYSTEMCTL", "")
 
-sys.path.append(os.curdir)
+sys.path = [os.curdir] + sys.path
 if not TMPSYSTEMCTL:
     from systemctl2 import systemctl3 as app # pylint: disable=wrong-import-position,import-error,no-name-in-module
 else:

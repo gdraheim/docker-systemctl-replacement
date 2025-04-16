@@ -314,7 +314,7 @@ tmp_systemctl_py_2:
 	@ sed -i -e "s:/usr/bin/python3:/usr/bin/python2:" -e "s:/env python3:/env python2:" tmp/systemctl.py
 tmp_systemctl_py_3:
 	@ test -d tmp || mkdir tmp
-	@ cp systemctl2/systemctl3.py tmp/systemctl.py
+	@ cp -v systemctl2/systemctl3.py tmp/systemctl.py
 tmp_ubuntu:
 	if $(DOCKER) ps | grep $(UBU); then : ; else : \
 	; $(DOCKER) run --name $(UBU) -d $(UBUNTU) sleep 3333 \
