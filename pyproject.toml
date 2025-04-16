@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "docker_systemctl_replacement"
-version = "2.1.1152"
+version = "2.1.1153"
 description = "allows to deploy to systemd-controlled containers without starting an actual systemd daemon"
 readme = { "file" = "share/README.md", content-type = "text/markdown" }
 license = "EUPL-1.2"
