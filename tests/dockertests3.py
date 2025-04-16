@@ -567,6 +567,26 @@ def detect_local_system() -> str:
     out = output(cmd)
     return decodes(out).strip()
 
+def rm_repo_container() -> None:
+    docker = _docker
+    containers = output(F"{docker} ps -a -f name=repo")
+    for line in lines4(containers):
+        found = re.search("\\b(opensuse-repo-\\d[.\\d]*)\\b", line)
+        if found:
+            container = found.group(1)
+            logg.info("     ---> drop %s", container)
+            sx____(F"{docker} rm -f {container}")
+        found = re.search("\\b(centos-repo-\\d[.\\d]*)\\b", line)
+        if found:
+            container = found.group(1)
+            logg.info("     ---> drop %s", container)
+            sx____(F"{docker} rm -f {container}")
+        found = re.search("\\b(ubuntu-repo-\\d[.\\d]*)\\b", line)
+        if found:
+            container = found.group(1)
+            logg.info("     ---> drop %s", container)
+            sx____(F"{docker} rm -f {container}")
+
 ############ the real testsuite ##############
 
 class DockerSystemctlReplacementTest(unittest.TestCase):
@@ -906,6 +926,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     #
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     #
+    def test_30000_rm_repo_container(self) -> None:
+        rm_repo_container()
     def test_31001_systemctl_testfile(self) -> None:
         """ the systemctl.py file to be tested does exist """
         testname = self.testname()
@@ -923,7 +945,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(os.path.isfile(target_systemctl))
         self.rm_testdir()
         self.coverage()
-    def real_1002_systemctl_version(self) -> None:
+    def real_31002_systemctl_version(self) -> None:
         cmd = F"systemctl --version"
         out, end = output2(cmd)
         logg.info(" %s =>%s\n%s", cmd, end, out)
@@ -12837,24 +12859,7 @@ ExecStart=/usr/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_CONFIG_ARGS $KUBELE
     def test_39999_drop_local_mirrors(self) -> None:
         """ a helper when using images from https://github.com/gdraheim/docker-mirror-packages-repo"
             which create containers according to self.local_image(IMAGE) """
-        docker = _docker
-        containers = output(F"{docker} ps -a")
-        for line in lines4(containers):
-            found = re.search("\\b(opensuse-repo-\\d[.\\d]*)\\b", line)
-            if found:
-                container = found.group(1)
-                logg.info("     ---> drop %s", container)
-                sx____(F"{docker} rm -f {container}")
-            found = re.search("\\b(centos-repo-\\d[.\\d]*)\\b", line)
-            if found:
-                container = found.group(1)
-                logg.info("     ---> drop %s", container)
-                sx____(F"{docker} rm -f {container}")
-            found = re.search("\\b(ubuntu-repo-\\d[.\\d]*)\\b", line)
-            if found:
-                container = found.group(1)
-                logg.info("     ---> drop %s", container)
-                sx____(F"{docker} rm -f {container}")
+        rm_repo_container()
 
 if __name__ == "__main__":
     from optparse import OptionParser  # pylint: disable=deprecated-module
