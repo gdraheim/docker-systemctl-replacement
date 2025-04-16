@@ -14,8 +14,13 @@ from fnmatch import fnmatchcase as fnmatch
 
 logg = logging.getLogger(os.path.basename(__file__))
 
+TMPSYSTEMCTL = os.environ.get("TMPSYSTEMCTL", "")
+
 sys.path.append(os.curdir)
-from systemctl2 import systemctl3 as app # pylint: disable=wrong-import-position,import-error,no-name-in-module
+if not TMPSYSTEMCTL:
+    from systemctl2 import systemctl3 as app # pylint: disable=wrong-import-position,import-error,no-name-in-module
+else:
+    from tmp import systemctl as app # type: ignore[no-redef]
 
 TODO = 0
 VV = "-vv"

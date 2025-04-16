@@ -47,6 +47,7 @@ LOCALMIRRORS=/dock
 UBUNTU=ubuntu:24.04
 DOCKER=docker
 
+UNITS_PY = tests/unittests1.py
 LOCAL_PY = tests/localtests2.py
 LOCAL = $(PYTHON) $(LOCAL_PY) $(LOCAL_OPTIONS)
 TESTS_PY = tests/dockertests3.py
@@ -100,9 +101,9 @@ real_3%: ; $(TESTS) "$(notdir $@)" $(VV) $V
 test: ; $(MAKE) type && $(MAKE) tests && $(MAKE) coverage
 
 test_1%: ; $(MAKE) $@/9
-test_1%/s:  ; python3 tests/unittests1.py "$(dir $@)" $(VV) $(FORCE) 
-test_1%/3:  ; $(PYTHON) tests/unittests1.py "$(dir $@)" $(VV) $(FORCE)
-test_1%/9:  ; $(PYTHON39) tests/unittests1.py "$(dir $@)" $(VV) $(FORCE)
+test_1%/s:  ; python3 $(UNITS_PY) $(UNITS_OPTIONS) "$(dir $@)" $(VV) $(FORCE) 
+test_1%/3:  ; $(PYTHON) $(UNITS_PY) $(UNITS_OPTIONS) "$(dir $@)" $(VV) $(FORCE)
+test_1%/9:  ; $(PYTHON39) $(UNITS_PY) $(UNITS_OPTIONS) "$(dir $@)" $(VV) $(FORCE)
 check1: ; $(MAKE) test_1*/s
 check13: ; $(MAKE) test_1*/3
 check19: ; $(MAKE) test_1*/9
@@ -289,10 +290,11 @@ check_3:
 	  '--with=tmp/systemctl.py' --python=/usr/bin/python3
 
 coverage0: ; rm .coverage* ; $(MAKE) tmp_systemctl_py_3
-coverage2: coverage0 ; $(LOCAL) -vv --coverage --python=$(PYTHON) --with=tmp/systemctl.py
-coverage3: coverage0 ; $(TESTS) -vv --coverage --python=$(PYTHON) --with=tmp/systemctl.py
+coverage1: coverage0 ; TMPSYSTEMCTL="y" $(PYTHON) -m coverage run $(UNITS_PY) $(UNITS_OPTIONS) $(VV) && mv .coverage .coverage.test_1000
+coverage2: coverage0 ; $(LOCAL) $(VV) --coverage --python=$(PYTHON) --with=tmp/systemctl.py
+coverage3: coverage0 ; $(TESTS) $(VV) --coverage --python=$(PYTHON) --with=tmp/systemctl.py
 coverage: ; $(MAKE) -j1 _coverage
-_coverage: coverage0 coverage2 coverage3 coverages
+_coverage: coverage0 coverage1 coverage2 coverage3 coverages
 coverages:
 	$(PYTHON) -m coverage combine && \
 	$(PYTHON) -m coverage report && \

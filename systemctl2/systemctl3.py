@@ -252,7 +252,7 @@ def sock_type_str(value: int) -> str:
         return "RDM"
     if value == socket.SOCK_SEQPACKET:
         return "SEQ"
-    return "<?>" 
+    return "<?>"
 
 def yes_str(value: Union[bool, None]) -> str:
     if value is True:
