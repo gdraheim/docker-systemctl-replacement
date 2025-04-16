@@ -203,6 +203,19 @@ class AppUnitTest(unittest.TestCase):
         self.assertEqual(b2, ["a", "b"])
         self.assertEqual(c1, ["a", "b", "c"])
         self.assertEqual(c2, ["a", "b", "c"])
+    def test_1190(self) -> None:
+        n = app.fnmatched("a")
+        z = app.fnmatched("a", "")
+        x = app.fnmatched("a", "", "b")
+        a = app.fnmatched("a", "a")
+        b = app.fnmatched("a", "b")
+        c = app.fnmatched("a", "b", "a")
+        self.assertTrue(n)
+        self.assertTrue(z)
+        self.assertTrue(x)
+        self.assertTrue(a)
+        self.assertFalse(b)
+        self.assertTrue(c)
     def test_1201(self) -> None:
         import socket # pylint: disable=import-outside-toplevel
         want = "UDP"

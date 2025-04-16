@@ -338,6 +338,8 @@ def fnmatched(text: str, *patterns: str) -> bool:
     if not patterns:
         return True
     for pattern in patterns:
+        if not pattern:
+            return True
         if fnmatch.fnmatchcase(text, pattern):
             return True
     return False
