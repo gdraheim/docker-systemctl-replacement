@@ -385,15 +385,6 @@ def get_exist_path(paths: List[str]) -> Optional[str]:
             return p
     return None
 
-def get_PAGER() -> List[str]:  # pylint: disable=invalid-name
-    PAGER = os.environ.get("PAGER", "less")  # pylint: disable=possibly-unused-variable,invalid-name
-    pager = os.environ.get("SYSTEMD_PAGER", "{PAGER}").format(**locals())
-    options = os.environ.get("SYSTEMD_LESS", "FRSXMK") # see 'man timedatectl'
-    if not pager: pager = "cat"
-    if "less" in pager and options:
-        return [pager, "-" + options]
-    return [pager]
-
 def os_getlogin() -> str:
     """ NOT using os.getlogin() """
     return pwd.getpwuid(os.geteuid()).pw_name
