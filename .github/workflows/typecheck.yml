@@ -10,19 +10,12 @@ on:
 jobs:
   mypy:
     name: mypy typehints check
-    runs-on: 'ubuntu-20.04'
+    runs-on: '24.04'
     steps:
     - name: checkout software
       uses: actions/checkout@v2
       with:
         path: software
-    - name: checkout retype
-      uses: actions/checkout@v2
-      with:
-        path: retype
-        repository: ambv/retype
-        ref: fe1a22f31d9a1e84da2311f86830d807015d1bf0
-      # ref: 17.12.0
     - name: 'refresh install'
       run: |
         sudo apt-get update --fix-missing
