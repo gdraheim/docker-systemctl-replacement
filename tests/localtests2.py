@@ -28545,6 +28545,346 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.coverage()
         self.end()
+    def test_29111(self) -> None:
+        """ try to strip_python3 to split the script"""
+        orig = "systemctl2/systemctl3.py"
+        strip = "../strip_python3/strip3/strip_python3.py"
+        if not os.path.isfile(strip):
+            self.skipTest("orig strip_python3 not found")
+        vv = self.begin()
+        python = _python
+        if "." not in python:
+            for ver in ("3.9", "3.10", "3.11", "3.12", "3.13", "3.14", "3.15"):
+                if os.path.exists(F"/usr/bin/python{ver}"):
+                    logg.warning("override python=%s", F"/usr/bin/python{ver}")
+                    python = F"/usr/bin/python{ver}"
+                    break
+        tmp = self.testdir()
+        sh____(F"{python} {strip} -3 {orig} -o {tmp}/systemctl.py {vv}")
+        self.assertTrue(os.path.exists(F"{tmp}/systemctl.py"))
+        self.assertTrue(os.path.exists(F"{tmp}/systemctl.pyi"))
+        script = lines4(open(F"{tmp}/systemctl.py").read())
+        # logg.info("script = %s", script)
+        self.assertTrue(greps(script, "dict"))
+        self.assertFalse(greps(script, "from typing"))
+        sh____(F"cat {orig} | sed -e \"s/\\\"/\'/g\" > {tmp}/systemctl3.py")
+        sh____(F"cat {tmp}/systemctl.py | sed -e \"s/\\\"/\'/g\" > {tmp}/systemctl2.py")
+        sh____(F"{python} {strip} --remove-comments --pretty {orig} -o {tmp}/systemctl2.py")
+        sx____(F"diff -bU0 --minimal --speed-large-files {tmp}/systemctl2.py {tmp}/systemctl3.py")
+        self.rm_testdir()
+        self.end()
+    def test_29112(self) -> None:
+        """ try to strip_python3 to split the script"""
+        orig = "systemctl2/systemctl3.py"
+        strip = "../strip_python3/strip3/strip_python3.py"
+        if not os.path.isfile(strip):
+            self.skipTest("orig strip_python3 not found")
+        vv = self.begin()
+        python = _python
+        if "." not in python:
+            for ver in ("3.9", "3.10", "3.11", "3.12", "3.13", "3.14", "3.15"):
+                if os.path.exists(F"/usr/bin/python{ver}"):
+                    logg.warning("override python=%s", F"/usr/bin/python{ver}")
+                    python = F"/usr/bin/python{ver}"
+                    break
+        tmp = self.testdir()
+        sh____(F"{python} {strip} --remove-comments -3 {orig} -o {tmp}/systemctl.py {vv}")
+        self.assertTrue(os.path.exists(F"{tmp}/systemctl.py"))
+        self.assertTrue(os.path.exists(F"{tmp}/systemctl.pyi"))
+        script = lines4(open(F"{tmp}/systemctl.py").read())
+        # logg.info("script = %s", script)
+        self.assertTrue(greps(script, "dict"))
+        self.assertFalse(greps(script, "from typing"))
+        sh____(F"{python} {strip} --remove-comments --pretty {orig} -o {tmp}/systemctl2.py")
+        sx____(F"diff -bU0 --minimal --speed-large-files {tmp}/systemctl2.py {tmp}/systemctl.py")
+        self.rm_testdir()
+        self.end()
+    def test_29113(self) -> None:
+        """ try to strip_python3 to split the script"""
+        orig = "systemctl2/systemctl3.py"
+        strip = "../strip_python3/strip3/strip_python3.py"
+        if not os.path.isfile(strip):
+            self.skipTest("orig strip_python3 not found")
+        vv = self.begin()
+        python = _python
+        if "." not in python:
+            for ver in ("3.9", "3.10", "3.11", "3.12", "3.13", "3.14", "3.15"):
+                if os.path.exists(F"/usr/bin/python{ver}"):
+                    logg.warning("override python=%s", F"/usr/bin/python{ver}")
+                    python = F"/usr/bin/python{ver}"
+                    break
+        tmp = self.testdir()
+        sh____(F"{python} {strip} --remove-comments -3 {orig} -o {tmp}/systemctl.py {vv}")
+        self.assertTrue(os.path.exists(F"{tmp}/systemctl.py"))
+        self.assertTrue(os.path.exists(F"{tmp}/systemctl.pyi"))
+        script = lines4(open(F"{tmp}/systemctl.py").read())
+        # logg.info("script = %s", script)
+        self.assertTrue(greps(script, "dict"))
+        self.assertFalse(greps(script, "from typing"))
+        sh____(F"{python} {strip} --remove-comments --remove-typehints --pretty {orig} -o {tmp}/systemctl2.py")
+        sx____(F"diff -bu --minimal --speed-large-files {tmp}/systemctl2.py {tmp}/systemctl.py")
+        self.rm_testdir()
+        self.end()
+    def test_29114(self) -> None:
+        """ try to strip_python3 to split the script"""
+        orig = "systemctl2/systemctl3.py"
+        strip = "../strip_python3/strip3/strip_python3.py"
+        if not os.path.isfile(strip):
+            self.skipTest("orig strip_python3 not found")
+        vv = self.begin()
+        python = _python
+        if "." not in python:
+            for ver in ("3.9", "3.10", "3.11", "3.12", "3.13", "3.14", "3.15"):
+                if os.path.exists(F"/usr/bin/python{ver}"):
+                    logg.warning("override python=%s", F"/usr/bin/python{ver}")
+                    python = F"/usr/bin/python{ver}"
+                    break
+        tmp = self.testdir()
+        sh____(F"{python} {strip} --remove-comments -3 {orig} -o {tmp}/systemctl.py {vv}")
+        self.assertTrue(os.path.exists(F"{tmp}/systemctl.py"))
+        self.assertTrue(os.path.exists(F"{tmp}/systemctl.pyi"))
+        script = lines4(open(F"{tmp}/systemctl.py").read())
+        # logg.info("script = %s", script)
+        self.assertTrue(greps(script, "dict"))
+        self.assertFalse(greps(script, "from typing"))
+        sh____(F"{python} {strip} --remove-comments --remove-typehints --pretty {orig} -o {tmp}/systemctl2.py")
+        #
+        patch=F"""
+        --- {tmp}/systemctl2.py.orig\n+++ {tmp}/systemctl2.py"""
+
+
+        text_file(F"{tmp}/fromfuture.patch", patch+"""
+        @@ -1,0 +2,2 @@
+        +from __future__ import division, print_function
+        +from collections import namedtuple
+        """)
+        sh____(F"patch -p0 < {tmp}/fromfuture.patch")
+        text_file(F"{tmp}/xrange.patch", patch+"""
+        @@ -20,0 +23,2 @@
+        +if sys.version_info < (3, 0):
+        +    range = xrange
+        """)
+        sh____(F"patch -p0 < {tmp}/xrange.patch")
+        text_file(F"{tmp}/monotonic.patch", patch+"""
+        @@ -22,0 +28,6 @@
+        +if sys.version_info >= (3, 3):
+        +    time_monotonic = time.monotonic
+        +else:
+        +
+        +    def time_monotonic():
+        +        return time.time()
+        """)
+        sh____(F"patch -p0 < {tmp}/monotonic.patch")
+        text_file(F"{tmp}/callable.patch", patch+"""
+        @@ -28,0 +32,4 @@
+        +if sys.version_info >= (3, 0) and sys.version_info < (3, 2):
+        +
+        +    def callable(x):
+        +        return hasattr(x, '__call__')
+        """)
+        sh____(F"patch -p0 < {tmp}/callable.patch")
+        text_file(F"{tmp}/execmode.patch", patch+"""
+        @@ -595,3 +609 @@
+        -
+        -class ExecMode(NamedTuple):
+        -    pass
+        +ExecMode = namedtuple('ExecMode', ['mode', 'check', 'nouser', 'noexpand', 'argv0'])
+        """)
+        sh____(F"patch -p0 < {tmp}/execmode.patch")
+        text_file(F"{tmp}/systemctlwaitpid.patch", patch+"""
+        @@ -1019,3 +1031 @@
+        -
+        -class SystemctlWaitPID(NamedTuple):
+        -    pass
+        +SystemctlWaitPID = namedtuple('SystemctlWaitPID', ['pid', 'returncode', 'signal'])
+        """)
+        sh____(F"patch -p0 < {tmp}/systemctlwaitpid.patch")
+        text_file(F"{tmp}/loadmode.patch", patch+"""
+        @@ -608,3 +620 @@
+        -
+        -class LoadMode(NamedTuple):
+        -    pass
+        +LoadMode = namedtuple('LoadMode', ['mode', 'check'])
+        """)
+        sh____(F"patch -p0 < {tmp}/loadmode.patch")
+        text_file(F"{tmp}/format04.patch", patch+"""
+        @@ -686 +696 @@
+        -            raise AttributeError(f'section {section} does not exist')
+        +            raise AttributeError('section {} does not exist'.format(section))
+        """)
+        sh____(F"patch -p0 < {tmp}/format04.patch")
+        text_file(F"{tmp}/format05.patch", patch+"""
+        @@ -692 +702 @@
+        -            raise AttributeError(f'option {option} in {section} does not exist')
+        +            raise AttributeError('option {} in {} does not exist'.format(option, section))
+        """)
+        sh____(F"patch -p0 < {tmp}/format05.patch")
+        text_file(F"{tmp}/format06.patch", patch+"""
+        @@ -698 +708 @@
+        -            raise AttributeError(f'option {option} in {section} is None')
+        +            raise AttributeError('option {} in {} is None'.format(option, section))
+        """)
+        sh____(F"patch -p0 < {tmp}/format06.patch")
+        text_file(F"{tmp}/format07.patch", patch+"""
+        @@ -710 +720 @@
+        -            raise AttributeError(f'section {section} does not exist')
+        +            raise AttributeError('section {} does not exist'.format(section))
+        """)
+        sh____(F"patch -p0 < {tmp}/format07.patch")
+        text_file(F"{tmp}/format08.patch", patch+"""
+        @@ -716 +726 @@
+        -            raise AttributeError(f'option {option} in {section} does not exist')
+        +            raise AttributeError('option {} in {} does not exist'.format(option, section))
+        """)
+        sh____(F"patch -p0 < {tmp}/format08.patch")
+        text_file(F"{tmp}/systemctlunitname.patch", patch+"""
+        @@ -1047,3 +1055 @@
+        -
+        -class SystemctlUnitName(NamedTuple):
+        -    pass
+        +SystemctlUnitName = namedtuple('SystemctlUnitName', ['fullname', 'name', 'prefix', 'instance', 'suffix', 'component'])
+        """)
+        sh____(F"patch -p0 < {tmp}/systemctlunitname.patch")
+        text_file(F"{tmp}/vararg09.patch", patch+"""
+        @@ -2278 +2284 @@
+        -    def syntax_check(self, conf, *, conditions=True):
+        +    def syntax_check(self, conf, conditions=True):
+        """)
+        sh____(F"patch -p0 < {tmp}/vararg09.patch")
+        text_file(F"{tmp}/monotonic05.patch", patch+"""
+        @@ -2534 +2540 @@
+        -        started = time.monotonic()
+        +        started = time_monotonic()
+        """)
+        sh____(F"patch -p0 < {tmp}/monotonic05.patch")
+        text_file(F"{tmp}/monotonic06.patch", patch+"""
+        @@ -2537 +2543 @@
+        -                sleep_sec = self.systemctl.loop_sleep - (time.monotonic() - started)
+        +                sleep_sec = self.systemctl.loop_sleep - (time_monotonic() - started)
+        """)
+        sh____(F"patch -p0 < {tmp}/monotonic06.patch")
+        text_file(F"{tmp}/monotonic07.patch", patch+"""
+        @@ -2543 +2549 @@
+        -                    sleeping = self.systemctl.loop_sleep - (time.monotonic() - started)
+        +                    sleeping = self.systemctl.loop_sleep - (time_monotonic() - started)
+        """)
+        sh____(F"patch -p0 < {tmp}/monotonic07.patch")
+        text_file(F"{tmp}/format09.patch", patch+"""
+        @@ -2851 +2857 @@
+        -                    content = f'{key}={value}\\n'
+        +                    content = '{}={}\\n'.format(key, value)
+        """)
+        sh____(F"patch -p0 < {tmp}/format09.patch")
+        text_file(F"{tmp}/notifysocket.patch", patch+"""
+        @@ -3513,2 +3519 @@
+        -
+        -    class NotifySocket(NamedTuple):
+        +    NotifySocket = namedtuple('NotifySocket', ['socket', 'socketfile'])
+        """)
+        sh____(F"patch -p0 < {tmp}/notifysocket.patch")
+        text_file(F"{tmp}/monotonic08.patch", patch+"""
+        @@ -4956 +4961 @@
+        -        started = time.monotonic()
+        +        started = time_monotonic()
+        """)
+        sh____(F"patch -p0 < {tmp}/monotonic08.patch")
+        text_file(F"{tmp}/monotonic09.patch", patch+"""
+        @@ -5000 +5005 @@
+        -            if time.monotonic() > started + timeout:
+        +            if time_monotonic() > started + timeout:
+        """)
+        sh____(F"patch -p0 < {tmp}/monotonic09.patch")
+        text_file(F"{tmp}/format16.patch", patch+"""
+        @@ -5317 +5322 @@
+        -            result += f'\\n    Loaded: {loaded} ({filename}, {enabled})'
+        +            result += '\\n    Loaded: {} ({}, {})'.format(loaded, filename, enabled)
+        """)
+        sh____(F"patch -p0 < {tmp}/format16.patch")
+        text_file(F"{tmp}/format17.patch", patch+"""
+        @@ -5319 +5324 @@
+        -                result += f'\\n    Drop-In: {path}'
+        +                result += '\\n    Drop-In: {}'.format(path)
+        """)
+        sh____(F"patch -p0 < {tmp}/format17.patch")
+        text_file(F"{tmp}/format18.patch", patch+"""
+        @@ -5325 +5330 @@
+        -        result += f'\\n    Active: {active} ({substate})'
+        +        result += '\\n    Active: {} ({})'.format(active, substate)
+        """)
+        sh____(F"patch -p0 < {tmp}/format18.patch")
+        text_file(F"{tmp}/format19.patch", patch+"""
+        @@ -5372 +5377 @@
+        -            print(f'Unit {unit} is not-loaded: {e}')
+        +            print('Unit {} is not-loaded: {}'.format(unit, e))
+        """)
+        sh____(F"patch -p0 < {tmp}/format19.patch")
+        text_file(F"{tmp}/monotonic12.patch", patch+"""
+        @@ -6594 +6599 @@
+        -                lasttime = time.monotonic()
+        +                lasttime = time_monotonic()
+        """)
+        sh____(F"patch -p0 < {tmp}/monotonic12.patch")
+        text_file(F"{tmp}/monotonic13.patch", patch+"""
+        @@ -6468 +6473 @@
+        -            now = time.monotonic()
+        +            now = time_monotonic()
+        """)
+        sh____(F"patch -p0 < {tmp}/monotonic13.patch")
+        text_file(F"{tmp}/monotonic14.patch", patch+"""
+        @@ -6508 +6513 @@
+        -                                interval = time.monotonic() - oldest
+        +                                interval = time_monotonic() - oldest
+        """)
+        sh____(F"patch -p0 < {tmp}/monotonic14.patch")
+        text_file(F"{tmp}/monotonic15.patch", patch+"""
+        @@ -6531 +6536 @@
+        -        now = time.monotonic()
+        +        now = time_monotonic()
+        """)
+        sh____(F"patch -p0 < {tmp}/monotonic15.patch")
+        text_file(F"{tmp}/monotonic16.patch", patch+"""
+        @@ -6551 +6556 @@
+        -                        self._restarted_unit[unit].append(time.monotonic())
+        +                        self._restarted_unit[unit].append(time_monotonic())
+        """)
+        sh____(F"patch -p0 < {tmp}/monotonic16.patch")
+        text_file(F"{tmp}/monotonic17.patch", patch+"""
+        @@ -6578 +6583 @@
+        -        lasttime = time.monotonic()
+        +        lasttime = time_monotonic()
+        """)
+        sh____(F"patch -p0 < {tmp}/monotonic17.patch")
+        text_file(F"{tmp}/monotonic18.patch", patch+"""
+        @@ -6581 +6586 @@
+        -                sleep_sec = self.loop_sleep - (time.monotonic() - lasttime)
+        +                sleep_sec = self.loop_sleep - (time_monotonic() - lasttime)
+        """)
+        sh____(F"patch -p0 < {tmp}/monotonic18.patch")
+        text_file(F"{tmp}/monotonic19.patch", patch+"""
+        @@ -6589 +6594 @@
+        -                    sleeping = self.loop_sleep - (time.monotonic() - lasttime)
+        +                    sleeping = self.loop_sleep - (time_monotonic() - lasttime)
+        """)
+        sh____(F"patch -p0 < {tmp}/monotonic19.patch")
+        text_file(F"{tmp}/remaining_process.patch", patch+"""
+        @@ -6655 +6660 @@
+        -        return f'remaining {running} process'
+        +        return 'remaining {} process'.format(running)
+        """)
+        sh____(F"patch -p0 < {tmp}/remaining_process.patch")
+        text_file(F"{tmp}/fix_strip3.patch", patch+"""
+        @@ -20,0 +21,2 @@
+        +import re
+        +from types import TracebackType
+        @@ -33,2 +34,0 @@
+        -import re
+        -from types import TracebackType
+        """)
+        sh____(F"patch -p0 < {tmp}/fix_strip3.patch")
+        #
+        sh____(F"diff -bU0 --minimal --speed-large-files {tmp}/systemctl2.py {tmp}/systemctl.py")
+        self.rm_testdir()
+        self.end()
 
 if __name__ == "__main__":
     from optparse import OptionParser  # pylint: disable=deprecated-module
