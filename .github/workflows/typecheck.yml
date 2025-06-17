@@ -21,7 +21,7 @@ jobs:
         sudo apt-get update --fix-missing
     - name: 'install python3 mypy'
       run: |
-        sudo apt-get install --fix-broken --ignore-missing python3-typed-ast mypy
+        sudo apt-get install --fix-broken --ignore-missing mypy
     - name: 'show mypy directories'
       run: |
         find . -type d
