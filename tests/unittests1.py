@@ -4,7 +4,7 @@
 """ testing functions directly in strip_python3 module """
 
 __copyright__ = "(C) Guido Draheim, licensed under the EUPL"""
-__version__ = "2.1.1153"
+__version__ = "2.1.1242"
 
 import sys
 import unittest
