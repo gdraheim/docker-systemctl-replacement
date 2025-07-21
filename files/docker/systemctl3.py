@@ -2148,9 +2148,9 @@ class Systemctl:
         try:
             for real_line in env_part.split("\n"):
                 line = real_line.strip()
-                for found in re.finditer(r'\s*("[\w_]+=[^"]*"|[\w_]+=\S*)', line):
+                for found in re.finditer(r'\s*("[\w_]+=[^"]*"|\'[\w_]+=[^\']*\'|[\w_]+=\S*)', line):
                     part = found.group(1)
-                    if part.startswith('"'):
+                    if part.startswith('"') or part.startswith("'"):
                         part = part[1:-1]
                     name, value = part.split("=", 1)
                     yield name, value

@@ -2744,7 +2744,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.coverage()
     def test_2150_have_environment_with_multiple_parts(self) -> None:
         """ check that the result of 'environment UNIT' can
-            list the assignements that are crammed into one line."""
+            list the assignments that are crammed into one line."""
         # https://www.freedesktop.org/software/systemd/man/systemd.exec.html#Environment=
         testname = self.testname()
         testdir = self.testdir()
@@ -2760,9 +2760,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Description=Testing B
             [Service]
             EnvironmentFile=/etc/sysconfig/zzb.conf
-            Environment="VAR1=word1 word2" VAR2=word3 "VAR3=$word 5 6"
+            Environment="VAR1=word1 word2" VAR2=word3 "VAR3=$word 5 6" 'VAR4=7 8'
+            Environment='VAR5='
+            Environment='VAR6=9 10'
             ExecStart=/usr/bin/printf $DEF1 $DEF2 \
-                                $VAR1 $VAR2 $VAR3
+                                $VAR1 $VAR2 $VAR3 \
+                                $VAR4 $VAR5
             [Install]
             WantedBy=multi-user.target""")
         cmd = "{systemctl} environment zzb.service -vv"
@@ -2775,6 +2778,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, r"^VAR1=word1 word2"))
         self.assertTrue(greps(out, r"^VAR2=word3"))
         self.assertTrue(greps(out, r"^VAR3=\$word 5 6"))
+        self.assertTrue(greps(out, r"^VAR4=7 8"))
+        self.assertTrue(greps(out, r"^VAR5="))
+        self.assertTrue(greps(out, r"^VAR6=9 10"))
         a_lines = len(lines(out))
         #
         self.rm_testdir()
