@@ -14,5 +14,6 @@ tmp.*
 .mypy_cache
 src
 dist
+build
 *.egg-info
 .vscode/settings.json
