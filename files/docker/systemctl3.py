@@ -386,7 +386,8 @@ def get_PAGER() -> List[str]:
     PAGER = os.environ.get("PAGER", "less")
     pager = os.environ.get("SYSTEMD_PAGER", "{PAGER}").format(**locals())
     options = os.environ.get("SYSTEMD_LESS", "FRSXMK") # see 'man timedatectl'
-    if not pager: pager = "cat"
+    if not pager:
+        pager = "cat"
     if "less" in pager and options:
         return [pager, "-" + options]
     return [pager]
@@ -1325,28 +1326,32 @@ class SystemctlUnitFiles:
     def preset_folders(self) -> Iterable[str]:
         SYSTEMD_PRESET_PATH = self.get_SYSTEMD_PRESET_PATH()
         for path in SYSTEMD_PRESET_PATH.split(":"):
-            if path.strip(): yield expand_path(path.strip())
+            if path.strip():
+                yield expand_path(path.strip())
         if SYSTEMD_PRESET_PATH.endswith(":"):
             for p in _preset_folders:
                 yield expand_path(p.strip())
     def init_folders(self) -> Iterable[str]:
         SYSTEMD_SYSVINIT_PATH = self.get_SYSTEMD_SYSVINIT_PATH()
         for path in SYSTEMD_SYSVINIT_PATH.split(":"):
-            if path.strip(): yield expand_path(path.strip())
+            if path.strip():
+                yield expand_path(path.strip())
         if SYSTEMD_SYSVINIT_PATH.endswith(":"):
             for p in _init_folders:
                 yield expand_path(p.strip())
     def user_folders(self) -> Iterable[str]:
         SYSTEMD_UNIT_PATH = self.get_SYSTEMD_UNIT_PATH()
         for path in SYSTEMD_UNIT_PATH.split(":"):
-            if path.strip(): yield expand_path(path.strip())
+            if path.strip():
+                yield expand_path(path.strip())
         if SYSTEMD_UNIT_PATH.endswith(":"):
             for p in _user_folders:
                 yield expand_path(p.strip())
     def system_folders(self) -> Iterable[str]:
         SYSTEMD_UNIT_PATH = self.get_SYSTEMD_UNIT_PATH()
         for path in SYSTEMD_UNIT_PATH.split(":"):
-            if path.strip(): yield expand_path(path.strip())
+            if path.strip():
+                yield expand_path(path.strip())
         if SYSTEMD_UNIT_PATH.endswith(":"):
             for p in _system_folders:
                 yield expand_path(p.strip())
@@ -1677,7 +1682,8 @@ class SystemctlUnitFiles:
     def get_target_list(self, module: str) -> List[str]:
         """ the Requires= in target units are only accepted if known """
         target = module
-        if "." not in target: target += ".target"
+        if "." not in target:
+            target += ".target"
         targets = [target]
         conf = self.get_target_conf(module)
         requires = conf.get(Unit, "Requires", "")
@@ -2382,7 +2388,8 @@ class SystemctlUnitFiles:
         if conf.getlist(Service, "ExecStopPre", []):  # pragma: no cover
             logg.error(" %s: there no such thing as an %s ExecStopPre (ignored)", unit, section)
         for env_file in conf.getlist(Service, "EnvironmentFile", []):
-            if env_file.startswith("-"): continue
+            if env_file.startswith("-"):
+                continue
             if not os.path.isfile(os_path(self._root, self.expand_special(env_file, conf))):
                 logg.error(" %s: Failed to load environment files: %s", unit, env_file)
                 errors += 101
@@ -2453,7 +2460,8 @@ class SystemctlUnitFiles:
             return True
         if TRUE:
             filename = strE(conf.filename())
-            if len(filename) > 44: filename = o44(filename)
+            if len(filename) > 44: 
+                filename = o44(filename)
             logg.error(" !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
             if abspath:
                 logg.error(" The SystemD ExecXY commands must always be absolute paths by definition.")
@@ -2848,8 +2856,10 @@ class Systemctl:
         if TRUE:
             for key in sorted(status.keys()):
                 value = status[key]
-                if key.upper() == "AS": key = "ActiveState"
-                if key.upper() == "EXIT": key = "ExecMainCode"
+                if key.upper() == "AS":
+                    key = "ActiveState"
+                if key.upper() == "EXIT":
+                    key = "ExecMainCode"
                 if value is None:
                     try: del conf.status[key]
                     except KeyError: pass
@@ -2871,16 +2881,19 @@ class Systemctl:
     def read_status_from(self, conf: SystemctlConf) -> Dict[str, str]:
         status_file = self.get_status_file_from(conf)
         status: Dict[str, str] = {}
-        # if not status_file: 
+        # if not status_file:
         #   return status
         if not os.path.isfile(status_file):
-            if DEBUG_STATUS: logg.debug("[status] no status file: %s\n returning %s", status_file, status)
+            if DEBUG_STATUS:
+                logg.debug("[status] no status file: %s\n returning %s", status_file, status)
             return status
         if self.truncate_old(status_file):
-            if DEBUG_STATUS: logg.debug("[status] old status file: %s\n returning %s", status_file, status)
+            if DEBUG_STATUS:
+                logg.debug("[status] old status file: %s\n returning %s", status_file, status)
             return status
         try:
-            if DEBUG_STATUS: logg.debug("reading %s", status_file)
+            if DEBUG_STATUS:
+                logg.debug("reading %s", status_file)
             with open(status_file) as f:
                 for line in f:
                     if line.strip():
@@ -3069,7 +3082,8 @@ class Systemctl:
         if not keepRuntimeDirectory:
             root = conf.root_mode()
             for name in nameRuntimeDirectory.split(" "):
-                if not name.strip(): continue
+                if not name.strip():
+                    continue
                 RUN = get_RUNTIME_DIR(root)
                 path = os.path.join(RUN, name)
                 dirpath = os_path(self._root, path)
@@ -3118,7 +3132,8 @@ class Systemctl:
         nameConfigurationDirectory = self.unitfiles.get_ConfigurationDirectory(conf, section)
         root = conf.root_mode()
         for name in nameRuntimeDirectory.split(" "):
-            if not name.strip(): continue
+            if not name.strip():
+                continue
             RUN = get_RUNTIME_DIR(root)
             path = os.path.join(RUN, name)
             if which in ["all", "runtime", ""]:
@@ -3130,28 +3145,32 @@ class Systemctl:
                         var_dirpath = os_path(self._root, var_path)
                         self.do_rm_tree(var_dirpath)
         for name in nameStateDirectory.split(" "):
-            if not name.strip(): continue
+            if not name.strip():
+                continue
             DAT = get_VARLIB_HOME(root)
             path = os.path.join(DAT, name)
             if which in ["all", "state"]:
                 dirpath = os_path(self._root, path)
                 ok = self.do_rm_tree(dirpath) and ok
         for name in nameCacheDirectory.split(" "):
-            if not name.strip(): continue
+            if not name.strip():
+                continue
             CACHE = get_CACHE_HOME(root)
             path = os.path.join(CACHE, name)
             if which in ["all", "cache", ""]:
                 dirpath = os_path(self._root, path)
                 ok = self.do_rm_tree(dirpath) and ok
         for name in nameLogsDirectory.split(" "):
-            if not name.strip(): continue
+            if not name.strip():
+                continue
             LOGS = get_LOG_DIR(root)
             path = os.path.join(LOGS, name)
             if which in ["all", "logs"]:
                 dirpath = os_path(self._root, path)
                 ok = self.do_rm_tree(dirpath) and ok
         for name in nameConfigurationDirectory.split(" "):
-            if not name.strip(): continue
+            if not name.strip():
+                continue
             CONFIG = get_CONFIG_HOME(root)
             path = os.path.join(CONFIG, name)
             if which in ["all", "configuration", ""]:
@@ -3168,27 +3187,32 @@ class Systemctl:
         nameConfigurationDirectory = self.unitfiles.get_ConfigurationDirectory(conf, section)
         root = conf.root_mode()
         for name in nameRuntimeDirectory.split(" "):
-            if not name.strip(): continue
+            if not name.strip():
+                continue
             RUN = get_RUNTIME_DIR(root)
             path = os.path.join(RUN, name)
             envs["RUNTIME_DIRECTORY"] = path
         for name in nameStateDirectory.split(" "):
-            if not name.strip(): continue
+            if not name.strip():
+                continue
             DAT = get_VARLIB_HOME(root)
             path = os.path.join(DAT, name)
             envs["STATE_DIRECTORY"] = path
         for name in nameCacheDirectory.split(" "):
-            if not name.strip(): continue
+            if not name.strip():
+                continue
             CACHE = get_CACHE_HOME(root)
             path = os.path.join(CACHE, name)
             envs["CACHE_DIRECTORY"] = path
         for name in nameLogsDirectory.split(" "):
-            if not name.strip(): continue
+            if not name.strip():
+                continue
             LOGS = get_LOG_DIR(root)
             path = os.path.join(LOGS, name)
             envs["LOGS_DIRECTORY"] = path
         for name in nameConfigurationDirectory.split(" "):
-            if not name.strip(): continue
+            if not name.strip():
+                continue
             CONFIG = get_CONFIG_HOME(root)
             path = os.path.join(CONFIG, name)
             envs["CONFIGURATION_DIRECTORY"] = path
@@ -3210,7 +3234,8 @@ class Systemctl:
         user = self.unitfiles.get_User(conf)
         group = self.unitfiles.get_Group(conf)
         for name in nameRuntimeDirectory.split(" "):
-            if not name.strip(): continue
+            if not name.strip():
+                continue
             RUN = get_RUNTIME_DIR(root)
             path = os.path.join(RUN, name)
             logg.debug("RuntimeDirectory %s", path)
@@ -3235,7 +3260,8 @@ class Systemctl:
                         except OSError as e:
                             logg.debug("var symlink %s >> %s", var_dirpath, e)
         for name in nameStateDirectory.split(" "):
-            if not name.strip(): continue
+            if not name.strip():
+                continue
             DAT = get_VARLIB_HOME(root)
             path = os.path.join(DAT, name)
             logg.debug("StateDirectory %s", path)
@@ -3243,7 +3269,8 @@ class Systemctl:
             self.chown_service_directory(path, user, group)
             envs["STATE_DIRECTORY"] = path
         for name in nameCacheDirectory.split(" "):
-            if not name.strip(): continue
+            if not name.strip():
+                continue
             CACHE = get_CACHE_HOME(root)
             path = os.path.join(CACHE, name)
             logg.debug("CacheDirectory %s", path)
@@ -3251,7 +3278,8 @@ class Systemctl:
             self.chown_service_directory(path, user, group)
             envs["CACHE_DIRECTORY"] = path
         for name in nameLogsDirectory.split(" "):
-            if not name.strip(): continue
+            if not name.strip():
+                continue
             LOGS = get_LOG_DIR(root)
             path = os.path.join(LOGS, name)
             logg.debug("LogsDirectory %s", path)
@@ -3259,7 +3287,8 @@ class Systemctl:
             self.chown_service_directory(path, user, group)
             envs["LOGS_DIRECTORY"] = path
         for name in nameConfigurationDirectory.split(" "):
-            if not name.strip(): continue
+            if not name.strip():
+                continue
             CONFIG = get_CONFIG_HOME(root)
             path = os.path.join(CONFIG, name)
             logg.debug("ConfigurationDirectory %s", path)
@@ -3868,7 +3897,8 @@ class Systemctl:
             pid_file = self.pid_file_from(conf)
             for cmd in conf.getlist(Service, "ExecStart", []):
                 exe, newcmd = self.unitfiles.expand_cmd(cmd, env, conf)
-                if not newcmd: continue
+                if not newcmd:
+                    continue
                 logg.info("%s start %s", runs, shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid: # pragma: no cover
@@ -4222,12 +4252,18 @@ class Systemctl:
         std_out = conf.get(Service, "StandardOutput", DefaultStandardOutput)
         std_err = conf.get(Service, "StandardError", DefaultStandardError)
         out, err = False, False
-        if std_out in ["null"]: out = True
-        if std_out.startswith("file:"): out = True
-        if std_err in ["inherit"]: std_err = std_out
-        if std_err in ["null"]: err = True
-        if std_err.startswith("file:"): err = True
-        if std_err.startswith("append:"): err = True
+        if std_out in ["null"]:
+            out = True
+        if std_out.startswith("file:"):
+            out = True
+        if std_err in ["inherit"]:
+            std_err = std_out
+        if std_err in ["null"]:
+            err = True
+        if std_err.startswith("file:"):
+            err = True
+        if std_err.startswith("append:"):
+            err = True
         return out and err
     def dup2_journal_log(self, conf: SystemctlConf) -> None:
         out: Optional[TextIO]
@@ -5239,8 +5275,10 @@ class Systemctl:
         result = ""
         for unit in units:
             status1, result1 = self.status_unit(unit)
-            if status1: status = status1
-            if result: result += "\n\n"
+            if status1:
+                status = status1
+            if result:
+                result += "\n\n"
             result += result1
         if status:
             self.error |= NOT_OK | NOT_ACTIVE # 3
@@ -5337,16 +5375,19 @@ class Systemctl:
         found = 0
         for unit in units:
             status = self.unitfiles.get_preset_of_unit(unit)
-            if not status: continue
+            if not status:
+                continue
             found += 1
             if status.startswith("enable"):
-                if self._preset_mode == "disable": continue
+                if self._preset_mode == "disable":
+                    continue
                 logg.info("preset enable %s", unit)
                 if not self.enable_unit(unit):
                     logg.warning("failed to enable %s", unit)
                     fails += 1
             if status.startswith("disable"):
-                if self._preset_mode == "enable": continue
+                if self._preset_mode == "enable":
+                    continue
                 logg.info("preset disable %s", unit)
                 if not self.disable_unit(unit):
                     logg.warning("failed to disable %s", unit)
@@ -5850,7 +5891,8 @@ class Systemctl:
         logg.debug("show --property=%s", ",".join(self._only_property))
         result: List[str] = []
         for unit in units:
-            if result: result += [""]
+            if result:
+                result += [""]
             for var, value in self.show_unit_items(unit):
                 if self._only_property:
                     if var not in self._only_property:
@@ -6024,7 +6066,8 @@ class Systemctl:
             if os.path.isdir(folder):
                 for unit in sorted(os.listdir(folder)):
                     path = os.path.join(folder, unit)
-                    if os.path.isdir(path): continue
+                    if os.path.isdir(path):
+                        continue
                     if self._ignored_unit(unit, igno):
                         continue # ignore
                     if unit.endswith(unit_kind):
@@ -6041,7 +6084,8 @@ class Systemctl:
             if os.path.isdir(folder):
                 for unit in sorted(os.listdir(folder)):
                     path = os.path.join(folder, unit)
-                    if os.path.isdir(path): continue
+                    if os.path.isdir(path):
+                        continue
                     if self._ignored_unit(unit, igno):
                         continue # ignore
                     if unit.endswith(unit_kind):
@@ -6064,7 +6108,8 @@ class Systemctl:
             if os.path.isdir(folder):
                 for unit in sorted(os.listdir(folder)):
                     path = os.path.join(folder, unit)
-                    if os.path.isdir(path): continue
+                    if os.path.isdir(path):
+                        continue
                     if self._ignored_unit(unit, igno):
                         continue # ignore
                     if unit.endswith(unit_type):
@@ -6079,7 +6124,8 @@ class Systemctl:
             if os.path.isdir(folder):
                 for unit in sorted(os.listdir(folder)):
                     path = os.path.join(folder, unit)
-                    if os.path.isdir(path): continue
+                    if os.path.isdir(path):
+                        continue
                     if self._ignored_unit(unit, igno):
                         continue # ignore
                     if unit.endswith(unit_type):
@@ -6098,7 +6144,8 @@ class Systemctl:
                 continue
             for unit in sorted(os.listdir(folder)):
                 path = os.path.join(folder, unit)
-                if os.path.isdir(path): continue
+                if os.path.isdir(path):
+                    continue
                 m = re.match(sysv+r"\d\d(.*)", unit)
                 if m:
                     service = m.group(1)
@@ -6285,8 +6332,10 @@ class Systemctl:
         self._log_hold = {}
         for unit in units:
             conf = self.unitfiles.load_conf(unit)
-            if not conf: continue
-            if self.skip_journal_log(conf): continue
+            if not conf:
+                continue
+            if self.skip_journal_log(conf):
+                continue
             log_path = self.get_journal_log_from(conf)
             try:
                 opened = os.open(log_path, os.O_RDONLY | os.O_NONBLOCK)
@@ -6304,11 +6353,13 @@ class Systemctl:
                 new_text = b""
                 while True:
                     buf = os.read(self._log_file[unit], BUFSIZE)
-                    if not buf: break
+                    if not buf:
+                        break
                     new_text += buf
                     continue
                 text = self._log_hold[unit] + new_text
-                if not text: continue
+                if not text:
+                    continue
                 lines = text.split(b"\n")
                 if not text.endswith(b"\n"):
                     self._log_hold[unit] = lines[-1]
@@ -6355,7 +6406,8 @@ class Systemctl:
             now = time.monotonic()
             try:
                 conf = self.unitfiles.load_conf(unit)
-                if not conf: continue
+                if not conf:
+                    continue
                 restartPolicy = conf.get(Service, "Restart", "no")
                 if restartPolicy in ["no", "on-success"]:
                     logg.debug("[%s] [%s] Current NoCheck (Restart=%s)", me, unit, restartPolicy)
@@ -6436,7 +6488,8 @@ class Systemctl:
             restart_done.append(unit)
             try:
                 conf = self.unitfiles.load_conf(unit)
-                if not conf: continue
+                if not conf:
+                    continue
                 isUnitState = self.get_active_from(conf)
                 isUnitFailed = isUnitState in ["failed"]
                 logg.debug("[%s] [%s] Restart Status: %s (%s)", me, unit, isUnitState, isUnitFailed)
@@ -6503,7 +6556,8 @@ class Systemctl:
                     active = []
                     for unit in units:
                         conf = self.unitfiles.load_conf(unit)
-                        if not conf: continue
+                        if not conf:
+                            continue
                         if self.is_active_from(conf):
                             active.append(unit)
                     if not active:
@@ -6568,9 +6622,11 @@ class Systemctl:
                     with open(proc_status) as f:
                         for line in f:
                             m = re.match(r"State:\s*Z.*", line)
-                            if m: zombie = True
+                            if m:
+                                zombie = True
                             m = re.match(r"PPid:\s*(\d+)", line)
-                            if m: ppid = int(m.group(1))
+                            if m:
+                                ppid = int(m.group(1))
                 except IOError as e:
                     logg.warning("%s >> %s", proc_status, e)
                     continue
@@ -6686,25 +6742,33 @@ class Systemctl:
                         cmdline = _proc_pid_cmdline.format(**locals())
                         with open(cmdline) as f:
                             cmd = f.read().split("\0")
-                        if DEBUG_KILLALL: logg.debug("cmdline %s", cmd)
+                        if DEBUG_KILLALL:
+                            logg.debug("cmdline %s", cmd)
                         found = None
                         cmd_exe = os.path.basename(cmd[0])
-                        if DEBUG_KILLALL: logg.debug("cmd.exe '%s'", cmd_exe)
-                        if fnmatch.fnmatchcase(cmd_exe, target): found = "exe"
+                        if DEBUG_KILLALL:
+                            logg.debug("cmd.exe '%s'", cmd_exe)
+                        if fnmatch.fnmatchcase(cmd_exe, target):
+                            found = "exe"
                         if len(cmd) > 1 and cmd_exe.startswith("python"):
                             nonoption = 1 # atleast skip over '-u' unbuffered
                             while nonoption < len(cmd) and cmd[nonoption].startswith("-"): nonoption += 1
                             cmd_arg = os.path.basename(cmd[nonoption])
-                            if DEBUG_KILLALL: logg.debug("cmd.arg '%s'", cmd_arg)
-                            if fnmatch.fnmatchcase(cmd_arg, target): found = "arg"
+                            if DEBUG_KILLALL:
+                                logg.debug("cmd.arg '%s'", cmd_arg)
+                            if fnmatch.fnmatchcase(cmd_arg, target):
+                                found = "arg"
                             if cmd_exe.startswith("coverage") or cmd_arg.startswith("coverage"):
                                 x = cmd.index("--")
                                 if x > 0 and x+1 < len(cmd):
                                     cmd_run = os.path.basename(cmd[x+1])
-                                    if DEBUG_KILLALL: logg.debug("cmd.run '%s'", cmd_run)
-                                    if fnmatch.fnmatchcase(cmd_run, target): found = "run"
+                                    if DEBUG_KILLALL:
+                                        logg.debug("cmd.run '%s'", cmd_run)
+                                    if fnmatch.fnmatchcase(cmd_run, target):
+                                        found = "run"
                         if found:
-                            if DEBUG_KILLALL: logg.debug("%s found %s %s", found, pid, [c for c in cmd])
+                            if DEBUG_KILLALL:
+                                logg.debug("%s found %s %s", found, pid, [c for c in cmd])
                             if pid != os.getpid():
                                 logg.debug(" kill -%s %s # %s", sig, pid, target)
                                 os.kill(pid, sig)
