@@ -7068,10 +7068,10 @@ def main() -> int:
     INIT_MODE = opt.init or _pid in [1, 0]
     EXIT_MODE = int(opt.exit)
     _user_mode = opt.user
-    if os.geteuid() and _pid in [1, 0]:
-        _user_mode = True
     if opt.system:
         _user_mode = False # override --user
+    elif os.geteuid() and _pid in [1, 0]:
+        _user_mode = True
     #
     for setting in opt.config:
         nam, val = setting, "1"
