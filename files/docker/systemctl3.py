@@ -5673,12 +5673,12 @@ class Systemctl:
         dev_null = _dev_null
         if TRUE:
             _f = self._force and "-f" or ""
-            logg.debug("%s", F"ln -s {_f} {dev_null} '{target}'")
+            logg.debug("ln -s %s %s %s", _f, dev_null, strQ(target))
         if self._force and os.path.islink(target):
             os.remove(target)
         if not os.path.exists(target):
             os.symlink(dev_null, target)
-            logg.info("%s", F"Created symlink {target} -> {dev_null}")
+            logg.info("Created symlink %s -> %s", strQ(target), dev_null)
             return True
         elif os.path.islink(target):
             logg.debug("mask symlink does already exist: %s", target)
@@ -5739,7 +5739,7 @@ class Systemctl:
         target = os.path.join(folder, os.path.basename(unit_file))
         if TRUE:
             _f = self._force and "-f" or ""
-            logg.info("%s", F"rm {_f} '{target}'")
+            logg.info("rm %s %s", _f, strQ(target))
         if os.path.islink(target):
             os.remove(target)
             return True
@@ -5794,15 +5794,14 @@ class Systemctl:
                 conf = self.unitfiles.get_conf(unit)
             except OSError as e:
                 filename = conf.filename() if conf else unit
-                logg.error("%s: can not read unit file %s >> %s",
-                           unit, strQ(filename), e)
+                logg.error("%s: can not read unit file %s >> %s", unit, strQ(filename), e)
                 continue
             errors += self.unitfiles.syntax_check(conf)
         if errors:
             logg.warning(" (%s) found %s problems", errors, errors % 100)
         return True # errors
     def show_modules(self, *modules: str) -> List[str]:
-        """ show [PATTERN]... -- Show properties of one or more units
+        """ show [UNIT]... -- Show properties of one or more units
            Show properties of one or more units (or the manager itself).
            If no argument is specified, properties of the manager will be
            shown. If a unit name is specified, properties of the unit is
