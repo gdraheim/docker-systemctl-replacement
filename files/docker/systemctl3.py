@@ -6692,7 +6692,7 @@ class Systemctl:
                     except Exception as e:  # pylint: disable=broad-exception-caught
                         logg.error("kill -%s %s >> %s", sig, pid, e)
         return True
-    def force_ipv4(self, *args: str) -> None:
+    def force_ipv4(self) -> None:
         """ only ipv4 localhost in /etc/hosts """
         logg.debug("checking hosts sysconf for '::1 localhost'")
         lines: List[str] = []
@@ -6708,7 +6708,7 @@ class Systemctl:
         with open(sysconf_hosts, "w") as f:
             for line in lines:
                 f.write(line)
-    def force_ipv6(self, *args: str) -> None:
+    def force_ipv6(self) -> None:
         """ only ipv4 localhost in /etc/hosts """
         logg.debug("checking hosts sysconf for '127.0.0.1 localhost'")
         lines: List[str] = []
