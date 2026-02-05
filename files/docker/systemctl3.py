@@ -1,7 +1,7 @@
 #! /usr/bin/python3
 # pylint: disable=too-many-lines,line-too-long,too-many-branches,too-many-statements,too-many-public-methods,too-many-nested-blocks,too-many-locals,too-many-return-statements,too-many-instance-attributes,too-few-public-methods,too-many-arguments,too-many-positional-arguments,multiple-statements
 # pylint: disable=missing-function-docstring,missing-class-docstring,consider-using-f-string,consider-using-ternary,import-outside-toplevel
-# pylint: disable=no-else-return,no-else-break,unspecified-encoding,unnecessary-lambda,unnecessary-comprehension,superfluous-parens
+# pylint: disable=no-else-return,no-else-break,unspecified-encoding,unnecessary-lambda,unnecessary-comprehension,use-yield-from,superfluous-parens
 # pylint: disable=fixme,redefined-argument-from-local,chained-comparison,consider-using-in,consider-using-with.consider-using-min-builtin,consider-using-max-builtin,consider-using-get
 # pylint: disable=invalid-name,redefined-outer-name,possibly-unused-variable,unnecessary-negation,unused-argument,consider-using-dict-items,consider-using-enumerate
 # pylint: disable=unused-variable,protected-access
