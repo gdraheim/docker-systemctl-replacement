@@ -392,6 +392,7 @@ autopep8: ; $${PKG:-zypper} install -y python3-autopep8
 
 lint:
 	$(MAKE) files/docker/systemctl3.py.lint
+	$(MAKE) tests/testsuite.py.lint
 pep8 style:
 	$(MAKE) files/docker/systemctl3.py.pep8
 	$(MAKE) types/systemctl3.pyi.pep8
