@@ -6483,15 +6483,17 @@ class Systemctl:
                 if DEBUG_INITLOOP: # pragma: no cover
                     logg.debug("[init] reap zombies - init-loop found %s running procs", running)
                 if self.exit_mode & EXIT_NO_SERVICES_LEFT:
-                    active = False
+                    active = []
                     for unit in units:
                         conf = self.unitfiles.load_conf(unit)
                         if not conf: continue
                         if self.is_active_from(conf):
-                            active = True
+                            active.append(unit)
                     if not active:
                         logg.info("[init] no more services - exit init-loop")
                         break
+                    elif NEVER:
+                        logg.debug("[init] active services - %s", " and ".join(active))
                 if self.exit_mode & EXIT_NO_PROCS_LEFT:
                     if not running:
                         logg.info("[init] no more procs - exit init-loop")
