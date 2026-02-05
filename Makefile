@@ -41,7 +41,10 @@ help:
 	python files/docker/systemctl3.py help
 
 alltests: CH CP UA DJ
-TESTS = tests/testsuite.py
+TESTS_PY = tests/testsuite.py
+TESTS = $(PYTHON) $(TESTS_PY) $(TESTS_OPTIONS)
+BUILD_PY = tests/buildtests.py
+BUILD = $(PYTHON) $(BUILD_PY) -C tests $(BUILD_OPTIONS)
 
 CH centos-httpd.dockerfile: ; $(TESTS) test_6001
 CP centos-postgres.dockerfile: ; $(TESTS) test_6002
@@ -100,6 +103,17 @@ todo/test_%:             ; $(TESTS)   "$(notdir $@)" -vv --todo
 7.5/st_%:   ; $(MAKE) 2 && $(TESTS) "te$(notdir $@)" -vv $(FORCE) --image=centos:7.5.1804    $(WITH2)
 7.4/st_%:   ; $(MAKE) 2 && $(TESTS) "te$(notdir $@)" -vv $(FORCE) --image=centos:7.4.1708    $(WITH2)
 7.3/st_%:   ; $(MAKE) 2 && $(TESTS) "te$(notdir $@)" -vv $(FORCE) --image=centos:7.3.1611    $(WITH2)
+
+
+builds testsbuilds: ; $(BUILD) $(VV) $V --python=$(PYTHON39)
+t_%: ; $(MAKE) $@/9
+t_%/s: ; $(BUILD) "tes$(dir $@)" $(VV) $V 
+t_%/9: ; $(BUILD) "tes$(dir $@)" $(VV) $V --python=python$(PYTHON39)
+t_%/2: ; $(BUILD) "tes$(dir $@)" $(VV) $V --python=python$(notdir $@)
+t_%/3: ; $(BUILD) "tes$(dir $@)" $(VV) $V --python=python$(notdir $@)
+t_%/3.6: ; $(BUILD) "tes$(dir $@)" $(VV) $V --python=python$(notdir $@)
+t_%/3.11: ; $(BUILD) "tes$(dir $@)" $(VV) $V --python=python$(notdir $@)
+t_%/3.12: ; $(BUILD) "tes$(dir $@)" $(VV) $V --python=python$(notdir $@)
 
 basetests = test_[1234]
 test2list = st_[567]
@@ -274,14 +288,13 @@ coverage: coverage3
 	- $(PYTHON) -m coverage xml -o tmp/coverage.xml
 	- $(PYTHON) -m coverage html -o tmp/htmlcov
 	ls -l tmp/systemctl.py,cover
-coverage2: 
-	$(MAKE) tmp_systemctl_py_2
-	rm .coverage* ; $(TESTS) -vv --coverage ${basetests} --xmlresults=TEST-systemctl-python2.xml \
+coverage2: coverage0
+	$(TESTS) -vv --coverage ${basetests} --xmlresults=TEST-systemctl-python2.xml \
 	  '--with=tmp/systemctl.py' --python=/usr/bin/python2
-coverage3:
-	$(MAKE) tmp_systemctl_py_3
-	rm .coverage* ; $(TESTS) -vv --coverage ${basetests} --xmlresults=TEST-systemctl-python3.xml \
+coverage3: coverage0
+	$(TESTS) -vv --coverage ${basetests} --xmlresults=TEST-systemctl-python3.xml \
 	  '--with=tmp/systemctl.py' --python=/usr/bin/python3
+coverage0: ; rm .coverage* ; $(MAKE) tmp/systemctl.py
 
 tmp_systemctl_py_2:
 	@ test -d tmp || mkdir tmp
