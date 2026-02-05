@@ -294,6 +294,8 @@ def _commalist(value: Iterable[str]) -> Iterator[str]:
         if not val:
             continue
         for elem in val.strip().split(","):
+            if not elem.strip():
+                continue
             yield elem
 def int_mode(value: str) -> Optional[int]:
     try:
@@ -368,7 +370,7 @@ def os_path(root: Optional[str], path: str) -> str:
     else:
         if DEBUG_STATUS:
             logg.debug("adding _root prefix to path being not absolute: %s", path)
-    return os.path.join(root, path)
+        return os.path.join(root, path)
 def path_replace_extension(path: str, old: str, new: str) -> str:
     if path.endswith(old):
         path = path[:-len(old)]
