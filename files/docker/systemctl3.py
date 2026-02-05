@@ -3,7 +3,7 @@
 # pylint: disable=missing-function-docstring,missing-class-docstring,consider-using-f-string,consider-using-ternary,import-outside-toplevel
 # pylint: disable=no-else-return,no-else-break,unspecified-encoding,dangerous-default-value,unnecessary-lambda,unnecessary-comprehension,superfluous-parens
 # pylint: disable=fixme,redefined-argument-from-local,use-yield-from,chained-comparison,consider-using-in,consider-using-with.consider-using-min-builtin,consider-using-max-builtin,consider-using-get
-# pylint: disable=invalid-name,broad-exception-raised,redefined-outer-name,possibly-unused-variable,unnecessary-negation,using-constant-test,unused-argument,consider-using-dict-items,consider-using-enumerate
+# pylint: disable=invalid-name,redefined-outer-name,possibly-unused-variable,unnecessary-negation,using-constant-test,unused-argument,consider-using-dict-items,consider-using-enumerate
 # pylint: disable=unused-variable,protected-access,logging-format-interpolation,logging-not-lazy
 """ run 'systemctl start' and other systemctl commands based on available *.service descriptions without a systemd daemon running in the system """
 from typing import Callable, Dict, Iterator, Iterable, List, NoReturn, Optional, TextIO, Tuple, Type, Union, Match, NamedTuple
@@ -793,7 +793,7 @@ class SystemctlConfigParser(SystemctlConfData):
                     logg.error("the '.include' syntax is deprecated. Use x.service.d/ drop-in files!")
                     includefile = re.sub(r'^\.include[ ]*', '', line).rstrip()
                     if not os.path.isfile(includefile):
-                        raise Exception("tried to include file that doesn't exist: %s" % includefile)
+                        raise FileNotFoundError("tried to include file that doesn't exist: %s" % includefile)
                     self.read_sysd(includefile)
                     continue
                 if line.startswith("["):
@@ -805,7 +805,7 @@ class SystemctlConfigParser(SystemctlConfData):
                 m = re.match(r"(\w+) *=(.*)", line)
                 if not m:
                     logg.warning("bad ini line: %s", line)
-                    raise Exception("bad ini line")
+                    raise ValueError("bad ini line")
                 name, text = m.group(1), m.group(2).strip()
                 if text.endswith("\\") or text.endswith("\\\n"):
                     nextline = True
@@ -1386,11 +1386,11 @@ class Systemctl:
     def user_folder(self) -> str:
         for folder in self.user_folders():
             if folder: return folder
-        raise Exception("did not find any systemd/user folder")
+        raise FileNotFoundError("did not find any systemd/user folder")
     def system_folder(self) -> str:
         for folder in self.system_folders():
             if folder: return folder
-        raise Exception("did not find any systemd/system folder")
+        raise FileNotFoundError("did not find any systemd/system folder")
     def preset_folders(self) -> Iterable[str]:
         SYSTEMD_PRESET_PATH = self.get_SYSTEMD_PRESET_PATH()
         for path in SYSTEMD_PRESET_PATH.split(":"):
@@ -5002,7 +5002,7 @@ class Systemctl:
     def mask_folder(self) -> str:
         for folder in self.mask_folders():
             if folder: return folder
-        raise Exception("did not find any systemd/system folder")
+        raise FileNotFoundError("did not find any systemd/system folder")
     def mask_folders(self) -> Iterable[str]:
         if self.user_mode():
             for folder in self.user_folders():
