@@ -5342,7 +5342,7 @@ class Systemctl:
             logg.warning("preset-all makes no sense in --user mode")
             return True
         units = self.unitfiles.match_units()
-        return self.preset_units(units) # FIXME
+        return self.preset_units([unit for unit in units if fnmatched(unit, *modules)])
     def enablefolders(self, wanted: str) -> Iterable[str]:
         if self.unitfiles.user_mode():
             for folder in self.unitfiles.user_folders():
