@@ -5221,11 +5221,13 @@ class Systemctl:
             for the relaxed systemctl.py style of execution. """
         errors = 0
         for unit in self.match_units():
+            conf = None
             try:
                 conf = self.get_unit_conf(unit)
             except Exception as e:
+                filename = conf.filename() if conf else unit
                 logg.error("%s: can not read unit file %s\n\t%s",
-                           unit, strQ(conf.filename()), e)
+                           unit, strQ(filename), e)
                 continue
             errors += self.syntax_check(conf)
         if errors:
