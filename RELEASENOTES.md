@@ -1,4 +1,4 @@
-RELEASE 1.5
+RELEASE 1.5 - now switching to 1.7
 
 The release branch 1.4 has been stable for a long time. Nethertheless there
 is still much room for improvement which is also shown by the hundreds of
@@ -61,21 +61,30 @@ will not be merged soon but the foundation is there where the Python code
 and C/C++ code represent the same logic with the same variables and
 the same function names and types.
 
-UPCOMING RELEASE 2.0
+RELEASE 1.7
 
 Python2 can not be installed on Ubuntu24.04 and AlmaLinux 9.3 (202311). 
 The RHEL7 distribution runs out of support by June 2024 (with some
 extended support till 2026). As such the Python2 development in this
-project will be dropped at the end of 2024. This will see a switch
-to version 2.x by 2025. Note that the code will not change and it
-can still be used with python2 and the testbuilds.py will still test
-it until 2026 - however the current two versions systemctl.py and
-systemctl3.py will be dropped in the git repo to just systemctl.py
-being run by python3.
+project will be mostly dropped after 2024. The developments for a 2.x
+version in 2025 were never released however. Instead the project picked 
+up some of the changes in 2025 merging them into a 1.7 release 
+series (version 1.6 is another branch that was never released). 
 
-The switch to a RELEASE 2.0 does also allow to reset the BASEYEAR
-of the versioning scheme. It is close to running out of numbers.
+The release 1.7 is taking advantage of the strip_python3 project 
+that had been developed during 2025 as a side-project. The
+strip_python3 tool allows to use modern python3 features (syntax and
+library parts) during development replacing them with compatible older 
+features for shipping to pypi.org. That way systemctl.py can be installed 
+on very old systems. Additionally, a back-to-python2 output script can 
+be tested on the developer side to actually work as expected. As such
+python2 does still get minimal support - the easiest way to get a
+python2 systemctl.py is by dowloading the pypi package using "pip".
 
-
-
-
+As a consequence, the systemctl3.pyi typehints file is gone, just as 
+the systemctl.py python2 script has been removed from the git repo. 
+Instead there is only systemctl3.py that includes typehints - that makes 
+for a minimum  python version of python3.6 if systemctl3.py is being used 
+unmodified  (not handled by strip_python3). By 2026 even python3.9 has 
+been out of maintenance, so expect that features up to that version will
+picked up.
