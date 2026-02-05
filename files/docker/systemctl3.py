@@ -3,7 +3,7 @@
 # pylint: disable=missing-function-docstring,missing-class-docstring,consider-using-f-string,consider-using-ternary,import-outside-toplevel
 # pylint: disable=no-else-return,no-else-break,unspecified-encoding,dangerous-default-value,unnecessary-lambda,unnecessary-comprehension,superfluous-parens
 # pylint: disable=fixme,redefined-argument-from-local,use-yield-from,chained-comparison,consider-using-in,consider-using-with.consider-using-min-builtin,consider-using-max-builtin,consider-using-get
-# pylint: disable=invalid-name,bare-except,broad-exception-caught,broad-exception-raised,redefined-outer-name,possibly-unused-variable,unnecessary-negation,using-constant-test,unused-argument,consider-using-dict-items,consider-using-enumerate
+# pylint: disable=invalid-name,broad-exception-caught,broad-exception-raised,redefined-outer-name,possibly-unused-variable,unnecessary-negation,using-constant-test,unused-argument,consider-using-dict-items,consider-using-enumerate
 # pylint: disable=unused-variable,protected-access,logging-format-interpolation,logging-not-lazy
 """ run 'systemctl start' and other systemctl commands based on available *.service descriptions without a systemd daemon running in the system """
 from typing import Callable, Dict, Iterator, Iterable, List, NoReturn, Optional, TextIO, Tuple, Type, Union, Match, NamedTuple
@@ -267,13 +267,13 @@ def to_intN(value: Optional[str], default: Optional[int] = None) -> Optional[int
         return default
     try:
         return int(value)
-    except:
-        return default
+    except ValueError:
+        return default # pragma: no cover
 def to_int(value: str, default: int = 0) -> int:
     try:
         return int(value)
-    except:
-        return default
+    except ValueError:
+        return default # pragma: no cover
 def to_list(value: Union[str, List[str], Tuple[str], Tuple[str, ...], None]) -> List[str]:
     if not value:
         return []
@@ -291,8 +291,10 @@ def _commalist(value: Iterable[str]) -> Iterator[str]:
         for elem in val.strip().split(","):
             yield elem
 def int_mode(value: str) -> Optional[int]:
-    try: return int(value, 8)
-    except: return None # pragma: no cover
+    try:
+        return int(value, 8)
+    except ValueError:
+        return None # pragma: no cover
 def unit_of(module: str) -> str:
     if "." not in module:
         return module + ".service"
@@ -1110,19 +1112,19 @@ def time_to_seconds(text: str, maximum: float) -> float:
             return maximum
         if item.endswith("m"):
             try: value += 60 * int(item[:-1])
-            except: pass # pragma: no cover
+            except ValueError: pass # pragma: no cover
         if item.endswith("min"):
             try: value += 60 * int(item[:-3])
-            except: pass # pragma: no cover
+            except ValueError: pass # pragma: no cover
         elif item.endswith("ms"):
             try: value += int(item[:-2]) / 1000.
-            except: pass # pragma: no cover
+            except ValueError: pass # pragma: no cover
         elif item.endswith("s"):
             try: value += int(item[:-1])
-            except: pass # pragma: no cover
+            except ValueError: pass # pragma: no cover
         elif item:
             try: value += int(item)
-            except: pass # pragma: no cover
+            except ValueError: pass # pragma: no cover
     if value > maximum:
         return maximum
     if not value and text.strip() == "0":
@@ -1978,8 +1980,8 @@ class Systemctl:
                                 status[key.strip()] = value.strip()
                         else:  # pragma: no cover
                             logg.warning("ignored %s", line.strip())
-        except:
-            logg.warning("bad read of status file '%s'", status_file)
+        except (OSError, ValueError) as e:
+            logg.warning("bad read of status file '%s' >> %s", status_file, e)
         return status
     def get_status_from(self, conf: SystemctlConf, name: str, default: Optional[str] = None) -> Optional[str]:
         if conf.status is None:
@@ -6179,8 +6181,12 @@ class Systemctl:
                 logg.info("interrupted - exception %s", e)
                 raise
         self.sysinit_status(ActiveState = None, SubState = "degraded")
-        try: self.loop.release()
-        except: pass
+        try:
+            self.loop.release() # may be already unlocked here
+        except (OSError, RuntimeError, threading.ThreadError) as e:
+            logg.debug("[init] loop_lock release %s >> %s", type(e), e)
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            logg.error("[init] loop_lock release %s >> %s", type(e), e)
         listen.stop()
         listen.join(2)
         self.read_log_files(units)
@@ -6290,7 +6296,7 @@ class Systemctl:
                                 if line.startswith("PPid:"):
                                     ppid_text = line[len("PPid:"):].strip()
                                     try: ppid = int(ppid_text)
-                                    except: continue
+                                    except ValueError: continue
                                     if ppid in pidlist and pid not in pids:
                                         pids += [pid]
                     except IOError as e:
