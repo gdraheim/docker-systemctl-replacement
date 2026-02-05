@@ -5175,12 +5175,12 @@ class Systemctl:
         """ is-failed [UNIT]... -- check if these units are in failes state
         implements True if any is-active = True """
         units: List[str] = []
+        missing: List[str] = []
         results: List[str] = []
         for module in modules:
             units = self.unitfiles.match_units(to_list(module))
             if not units:
-                logg.error("Unit %s not found.", unit_of(module))
-                # self.error |= NOT_FOUND
+                missing.append(unit_of(module))
                 results += ["inactive"]
                 continue
             for unit in units:
@@ -5190,6 +5190,9 @@ class Systemctl:
                     active = "inactive"
                 results += [active]
                 break
+        if missing:
+            logg.error("Unit %s not found.", " and ".join(missing))
+            # self.error |= NOT_FOUND
         if "failed" in results:
             self.error = 0
         else:
