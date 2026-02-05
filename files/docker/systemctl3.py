@@ -32,6 +32,8 @@ __version__: str = "1.7.1055"
 import logging
 logg: logging.Logger = logging.getLogger("systemctl")
 
+NIX = ""
+ALL = "*"
 DEBUG_AFTER: bool = False
 DEBUG_STATUS: bool = False
 DEBUG_BOOTTIME: bool = False
@@ -248,11 +250,13 @@ def strYes(value: Union[str, bool, None]) -> str:
     return str(value)
 def strE(part: Union[str, int, float, None]) -> str:
     if not part:
-        return ""
+        return NIX
+    if part is True: # pragma: no cover (is never a bool)
+        return ALL
     return str(part)
 def strQ(part: Union[str, int, None]) -> str:
     if part is None:
-        return ""
+        return NIX
     if isinstance(part, int):
         return str(part)
     return "'%s'" % part
