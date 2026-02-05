@@ -1,4 +1,5 @@
 #! /usr/bin/python3
+#pylint: disable=multiple-statements,line-too-long,missing-module-docstring,invalid-name
 
 import argparse
 import os
@@ -25,7 +26,7 @@ if args.lines: cmd += [ "-n", str(args.lines) ]
 if args.no_pager: cmd += [ "--no-pager" ]
 if args.system: cmd += [ "--system" ]
 elif args.user: cmd += [ "--user" ]
-if args.root: cmd += [ "--root", start(args.root) ]
+if args.root: cmd += [ "--root", args.root ]
 if args.x: cmd += [ "-vvv" ]
 
 os.execvp(cmd[0], cmd)
