@@ -3,9 +3,9 @@
 # pylint: disable=missing-function-docstring,missing-class-docstring,consider-using-f-string,consider-using-ternary,import-outside-toplevel
 # pylint: disable=no-else-return,no-else-break,unspecified-encoding,dangerous-default-value,unnecessary-lambda,unnecessary-comprehension,superfluous-parens
 # pylint: disable=fixme,redefined-argument-from-local,use-yield-from,chained-comparison,consider-using-in,consider-using-with.consider-using-min-builtin,consider-using-max-builtin,consider-using-get
-# pylint: disable=invalid-name,bare-except
+# pylint: disable=invalid-name,bare-except,broad-exception-caught,broad-exception-raised,redefined-outer-name,possibly-unused-variable,logging-format-interpolation,unnecessary-negation,using-constant-test,unused-argument,consider-using-dict-items,consider-using-enumerate
 """ run 'systemctl start' and other systemctl commands based on available *.service descriptions without a systemd daemon running in the system """
-from typing import Callable, Dict, Iterator, Iterable, List, NoReturn, Optional, TextIO, Tuple, Type, Union
+from typing import Callable, Dict, Iterator, Iterable, List, NoReturn, Optional, TextIO, Tuple, Type, Union, Match
 import threading
 import grp
 import pwd
@@ -745,9 +745,9 @@ class SystemctlConfigParser(SystemctlConfData):
         of the line.  """
     # def __init__(self, defaults=None, dict_type=None, allow_no_value=False):
     #   SystemctlConfData.__init__(self, defaults, dict_type, allow_no_value)
-    def read(self, filename: str) -> SystemctlConfigParser:
+    def read(self, filename: str) -> "SystemctlConfigParser": # FIXME: Self in python3.11
         return self.read_sysd(filename)
-    def read_sysd(self, filename: str) -> SystemctlConfigParser:
+    def read_sysd(self, filename: str) -> "SystemctlConfigParser": # FIXME: Self in python3.11
         initscript = False
         initinfo = False
         section = "GLOBAL"
@@ -799,7 +799,7 @@ class SystemctlConfigParser(SystemctlConfData):
             if nextline:
                 self.set(section, name, text)
         return self
-    def read_sysv(self, filename: str) -> SystemctlConfigParser:
+    def read_sysv(self, filename: str) -> "SystemctlConfigParser":
         """ an LSB header is scanned and converted to (almost)
             equivalent settings of a SystemD ini-style input """
         initscript = False
@@ -6666,7 +6666,7 @@ def runcommand(command: str, *modules: str) -> int:
     return exitcode
 
 if __name__ == "__main__":
-    import optparse
+    import optparse # pylint: disable=deprecated-module # not anymore
     _o = optparse.OptionParser("%prog [options] command [name...]",
                                epilog="use 'help' command for more information")
     _o.add_option("--version", action="store_true",
