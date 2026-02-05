@@ -6119,11 +6119,11 @@ class Systemctl:
         result: Optional[str] = None
         #
         self.start_log_files(units)
-        logg.debug("start listen")
+        logg.debug("[init] start listen")
         listen = SystemctlListenThread(self)
-        logg.debug("starts listen")
+        logg.debug("[nit] starts listen")
         listen.start()
-        logg.debug("started listen")
+        logg.debug("[init] started listen")
         self.sysinit_status(ActiveState = "active", SubState = "running")
         timestamp = time.time()
         while True:
@@ -6144,13 +6144,13 @@ class Systemctl:
                 timestamp = time.time()
                 self.loop.acquire()
                 if DEBUG_INITLOOP: # pragma: no cover
-                    logg.debug("NEXT InitLoop (after %ss)", sleep_sec)
+                    logg.debug("[init] NEXT (after %ss)", sleep_sec)
                 self.read_log_files(units)
                 if DEBUG_INITLOOP: # pragma: no cover
-                    logg.debug("reap zombies - check current processes")
+                    logg.debug("[init] reap zombies - check current processes")
                 running = self.reap_zombies()
                 if DEBUG_INITLOOP: # pragma: no cover
-                    logg.debug("reap zombies - init-loop found %s running procs", running)
+                    logg.debug("[init] reap zombies - init-loop found %s running procs", running)
                 if self.doExitWhenNoMoreServices:
                     active = False
                     for unit in units:
@@ -6159,11 +6159,11 @@ class Systemctl:
                         if self.is_active_from(conf):
                             active = True
                     if not active:
-                        logg.info("no more services - exit init-loop")
+                        logg.info("[init] no more services - exit init-loop")
                         break
                 if self.doExitWhenNoMoreProcs:
                     if not running:
-                        logg.info("no more procs - exit init-loop")
+                        logg.info("[init] no more procs - exit init-loop")
                         break
                 if RESTART_FAILED_UNITS:
                     self.restart_failed_units(units)
@@ -6171,12 +6171,12 @@ class Systemctl:
             except KeyboardInterrupt as e:
                 if e.args and e.args[0] == "SIGQUIT":
                     # the original systemd puts a coredump on that signal.
-                    logg.info("SIGQUIT - switch to no more procs check")
+                    logg.info("[init] SIGQUIT - switch to no more procs check")
                     self.doExitWhenNoMoreProcs = True
                     continue
                 signal.signal(signal.SIGTERM, signal.SIG_DFL)
                 signal.signal(signal.SIGINT, signal.SIG_DFL)
-                logg.info("interrupted - exit init-loop")
+                logg.info("[init] interrupted - exit init-loop")
                 result = str(e) or "STOPPED"
                 break
             except Exception as e: # pylint: disable=broad-exception-caught # FIXME: level up
@@ -6194,7 +6194,7 @@ class Systemctl:
         self.read_log_files(units)
         self.read_log_files(units)
         self.stop_log_files(units)
-        logg.debug("done - init loop")
+        logg.debug("[init] done - init loop")
         return result
     def reap_zombies_target(self) -> str:
         """ -- check to reap children (internal) """
