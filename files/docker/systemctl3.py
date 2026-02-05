@@ -6280,14 +6280,14 @@ class Systemctl:
         logg.info(" == echo == %s", line)
         return line
     def killall(self, *targets: str) -> bool:
-        mapping = {}
+        mapping: Dict[str, signal.Signals] = {}
         mapping[":3"] = signal.SIGQUIT
         mapping[":QUIT"] = signal.SIGQUIT
         mapping[":6"] = signal.SIGABRT
         mapping[":ABRT"] = signal.SIGABRT
         mapping[":9"] = signal.SIGKILL
         mapping[":KILL"] = signal.SIGKILL
-        sig = signal.SIGTERM
+        sig: signal.Signals = signal.SIGTERM
         for target in targets:
             if target.startswith(":"):
                 if target in mapping:
