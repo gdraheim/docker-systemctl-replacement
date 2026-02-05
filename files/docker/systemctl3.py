@@ -431,14 +431,17 @@ def get_home() -> str:
         return pwd.getpwuid(uid).pw_name        # An initial ~user i looked up directly in the
     return os.path.expanduser("~")              # password directory. << from docs(os.path.expanduser)
 def get_HOME(root: bool = False) -> str:
-    if root: return "/root"
+    if root:
+        return "/root"
     return get_home()
 def get_USER_ID(root: bool = False) -> int:
     ID = 0
-    if root: return ID
+    if root:
+        return ID
     return os.geteuid()
 def get_USER(root: bool = False) -> str:
-    if root: return "root"
+    if root:
+        return "root"
     uid = os.geteuid()
     return pwd.getpwuid(uid).pw_name
 def get_GROUP_ID(root: bool = False) -> int:
@@ -446,48 +449,58 @@ def get_GROUP_ID(root: bool = False) -> int:
     if root: return ID
     return os.getegid()
 def get_GROUP(root: bool = False) -> str:
-    if root: return "root"
+    if root:
+        return "root"
     gid = os.getegid()
     return grp.getgrgid(gid).gr_name
 def get_TMP(root: bool = False) -> str:
     TMP = "/tmp"
-    if root: return TMP
+    if root:
+        return TMP
     return os.environ.get("TMPDIR", os.environ.get("TEMP", os.environ.get("TMP", TMP)))
 def get_VARTMP(root: bool = False) -> str:
     VARTMP = "/var/tmp"
-    if root: return VARTMP
+    if root:
+        return VARTMP
     return os.environ.get("TMPDIR", os.environ.get("TEMP", os.environ.get("TMP", VARTMP)))
 def get_SHELL(root: bool = False) -> str:
     SHELL = "/bin/sh"
-    if root: return SHELL
+    if root:
+        return SHELL
     return os.environ.get("SHELL", SHELL)
 def get_RUNTIME_DIR(root: bool = False) -> str:
     RUN = "/run"
-    if root: return RUN
+    if root:
+        return RUN
     return os.environ.get("XDG_RUNTIME_DIR", get_runtime_dir())
 def get_CONFIG_HOME(root: bool = False) -> str:
     CONFIG = "/etc"
-    if root: return CONFIG
+    if root:
+        return CONFIG
     HOME = get_HOME(root)
     return os.environ.get("XDG_CONFIG_HOME", HOME + "/.config")
 def get_CACHE_HOME(root: bool = False) -> str:
     CACHE = "/var/cache"
-    if root: return CACHE
+    if root:
+        return CACHE
     HOME = get_HOME(root)
     return os.environ.get("XDG_CACHE_HOME", HOME + "/.cache")
 def get_DATA_HOME(root: bool = False) -> str:
     SHARE = "/usr/share"
-    if root: return SHARE
+    if root:
+        return SHARE
     HOME = get_HOME(root)
     return os.environ.get("XDG_DATA_HOME", HOME + "/.local/share")
 def get_LOG_DIR(root: bool = False) -> str:
     LOGDIR = "/var/log"
-    if root: return LOGDIR
+    if root:
+        return LOGDIR
     CONFIG = get_CONFIG_HOME(root)
     return os.path.join(CONFIG, "log")
 def get_VARLIB_HOME(root: bool = False) -> str:
     VARLIB = "/var/lib"
-    if root: return VARLIB
+    if root:
+        return VARLIB
     CONFIG = get_CONFIG_HOME(root)
     return CONFIG
 def expand_path(path: str, root: bool = False) -> str:
@@ -620,7 +633,7 @@ def _pid_zombie(pid: int) -> bool:
 def checkprefix(cmd: str) -> Tuple[str, str]:
     prefix = ""
     for i, c in enumerate(cmd):
-        if c in "-+!@:":
+        if c in "-+!@:|":
             prefix = prefix + c
         else:
             newcmd = cmd[i:]
@@ -2535,7 +2548,7 @@ class SystemctlListenThread(threading.Thread):
                 if DEBUG_INITLOOP: # pragma: no cover
                     logg.debug("[%s] listen: poll (%s)", me, len(accepting))
                 for sock_fileno, event in accepting:
-                    for sock in sockelist:
+                    for sock in socketlist:
                         if sock.fileno() == sock_fileno:
                             if not self.stopped.is_set():
                                 if self.systemctl.loop.acquire():
