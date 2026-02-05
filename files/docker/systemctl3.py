@@ -79,7 +79,7 @@ _no_ask_password: bool = False
 _preset_mode: str = "all"
 _quiet: bool = False
 _root: str = NIX
-_show_all: bool = False
+_show_all: int = 0
 _user_mode: bool = False
 _only_what: List[str] = []
 _only_type: List[str] = []
@@ -2580,7 +2580,7 @@ class Systemctl:
     _preset_mode: str
     _quiet: bool
     _root: str
-    _show_all: bool
+    _show_all: int
     _unit_property: Optional[str]
     _unit_state: Optional[str]
     _unit_type: Optional[str]
@@ -7025,7 +7025,7 @@ def main() -> int:
                   help="Show only properties by this name")
     _o.add_option("--what", metavar="TYPE", action="append", dest="only_what", default=_only_what,
                   help="Defines the service directories to be cleaned (configuration, state, cache, logs, runtime)")
-    _o.add_option("-a", "--all", action="store_true", dest="show_all", default=_show_all,
+    _o.add_option("-a", "--all", action="count", dest="show_all", default=_show_all,
                   help="Show all loaded units/properties, including dead empty ones. To list all units installed on the system, use the 'list-unit-files' command instead")
     _o.add_option("-l", "--full", action="store_true", default=_full,
                   help="Don't ellipsize unit names on output (never ellipsized)")
@@ -7090,7 +7090,7 @@ def main() -> int:
                   help="..only keep ipv6 localhost in /etc/hosts")
     _o.add_option("-0", "--exit", action="count", default=0,
                   help="..exit init-process when no procs left (or -00 no services (start --now))")
-    _o.add_option("-1", "--init", action="store_true", default=False,
+    _o.add_option("-1", "--init", action="count", default=0,
                   help="..keep running as init-process (default if PID 1)")
     opt, args = _o.parse_args()
     logging.basicConfig(level = max(0, logging.FATAL - 10 * opt.verbose))
@@ -7108,7 +7108,7 @@ def main() -> int:
     _preset_mode = opt.preset_mode
     _quiet = opt.quiet
     _root = opt.root
-    _show_all = opt.show_all
+    _show_all = int(opt.show_all)
     _only_state = opt.only_state
     _only_type = opt.only_type
     _only_property = opt.only_property
