@@ -3,8 +3,8 @@
 # pylint: disable=missing-function-docstring,missing-class-docstring,consider-using-f-string,consider-using-ternary,import-outside-toplevel
 # pylint: disable=no-else-return,no-else-break,unspecified-encoding,dangerous-default-value,unnecessary-lambda,unnecessary-comprehension,superfluous-parens
 # pylint: disable=fixme,redefined-argument-from-local,use-yield-from,chained-comparison,consider-using-in,consider-using-with.consider-using-min-builtin,consider-using-max-builtin,consider-using-get
-# pylint: disable=invalid-name,redefined-outer-name,possibly-unused-variable,unnecessary-negation,using-constant-test,unused-argument,consider-using-dict-items,consider-using-enumerate
-# pylint: disable=unused-variable,protected-access,logging-format-interpolation,logging-not-lazy
+# pylint: disable=invalid-name,redefined-outer-name,possibly-unused-variable,unnecessary-negation,unused-argument,consider-using-dict-items,consider-using-enumerate
+# pylint: disable=unused-variable,protected-access
 """ run 'systemctl start' and other systemctl commands based on available *.service descriptions without a systemd daemon running in the system """
 from typing import Callable, Dict, Iterator, Iterable, List, NoReturn, Optional, TextIO, Tuple, Type, Union, Match, NamedTuple
 import threading
@@ -423,11 +423,11 @@ def get_PID_DIR(root: bool = False) -> str:
         return os.path.join(get_RUN(root), "run") # compat with older systemctl.py
 
 def get_home() -> str:
-    if False: # pragma: no cover
+    if NEVER: # pragma: no cover
         explicit = os.environ.get("HOME", "")   # >> On Unix, an initial ~ (tilde) is replaced by the
-        if explicit: return explicit            # environment variable HOME if it is set; otherwise
-        uid = os.geteuid()                      # the current users home directory is looked up in the
-        #                                       # password directory through the built-in module pwd.
+        if explicit:                            # environment variable HOME if it is set; otherwise
+            return explicit                     # the current users home directory is looked up in the
+        uid = os.geteuid()                      # password directory through the built-in module pwd.
         return pwd.getpwuid(uid).pw_name        # An initial ~user i looked up directly in the
     return os.path.expanduser("~")              # password directory. << from docs(os.path.expanduser)
 def get_HOME(root: bool = False) -> str:
@@ -715,21 +715,21 @@ class SystemctlConfData:
                 return default
             if allow_no_value:
                 return None
-            logg.warning("section {} does not exist".format(section))
-            logg.warning("  have {}".format(self.sections()))
-            raise AttributeError("section {} does not exist".format(section))
+            logg.warning("section %s does not exist", section)
+            logg.warning("  have %s", self.sections())
+            raise AttributeError(F"section {section} does not exist")
         if option not in self._conf[section]:
             if default is not None:
                 return default
             if allow_no_value:
                 return None
-            raise AttributeError("option {} in {} does not exist".format(option, section))
+            raise AttributeError(F"option {option} in {section} does not exist")
         if not self._conf[section][option]: # i.e. an empty list
             if default is not None:
                 return default
             if allow_no_value:
                 return None
-            raise AttributeError("option {} in {} is None".format(option, section))
+            raise AttributeError(F"option {option} in {section} is None")
         return self._conf[section][option][0] # the first line in the list of configs
     def getlist(self, section: str, option: str, default: Optional[List[str]] = None, allow_no_value: bool = False) -> List[str]:
         allow_no_value = allow_no_value or self._allow_no_value
@@ -738,15 +738,15 @@ class SystemctlConfData:
                 return default
             if allow_no_value:
                 return []
-            logg.warning("section {} does not exist".format(section))
-            logg.warning("  have {}".format(self.sections()))
-            raise AttributeError("section {} does not exist".format(section))
+            logg.warning("section %s does not exist", section)
+            logg.warning("  have %s", self.sections())
+            raise AttributeError(F"section {section} does not exist")
         if option not in self._conf[section]:
             if default is not None:
                 return default
             if allow_no_value:
                 return []
-            raise AttributeError("option {} in {} does not exist".format(option, section))
+            raise AttributeError(F"option {option} in {section} does not exist")
         return self._conf[section][option] # returns a list, possibly empty
     def filenames(self) -> List[str]:
         return self._files
@@ -2835,7 +2835,7 @@ class Systemctl:
                     if key == "MainPID" and str(value) == "0":
                         logg.warning("[status] ignore writing MainPID=0")
                         continue
-                    content = "{}={}\n".format(key, str(value))
+                    content = F"{key}={str(value)}\n"
                     logg.debug("[status] writing to %s\n\t%s", status_file, content.strip())
                     f.write(content)
         except IOError as e:
@@ -2951,7 +2951,7 @@ class Systemctl:
         now = time.time()
         started_time = now - (uptime_secs - started_secs)
         if DEBUG_BOOTTIME:
-            logg.debug("  BOOT 1. Proc has been running since: %s" % (datetime.datetime.fromtimestamp(started_time)))
+            logg.debug("  BOOT 1. Proc has been running since: %s", datetime.datetime.fromtimestamp(started_time))
 
         # Variant 2:
         system_stat = _proc_sys_stat
@@ -2966,7 +2966,7 @@ class Systemctl:
 
         started_btime = system_btime + started_secs
         if DEBUG_BOOTTIME:
-            logg.debug("  BOOT 2. Proc has been running since: %s" % (datetime.datetime.fromtimestamp(started_btime)))
+            logg.debug("  BOOT 2. Proc has been running since: %s", datetime.datetime.fromtimestamp(started_btime))
 
         # return started_time
         return started_btime
@@ -5187,15 +5187,15 @@ class Systemctl:
         if loaded:
             filename = str(conf.filename())
             enabled = self.enabled_from(conf)
-            result += "\n    Loaded: {loaded} ({filename}, {enabled})".format(**locals())
+            result += F"\n    Loaded: {loaded} ({filename}, {enabled})"
             for path in conf.overrides():
-                result += "\n    Drop-In: {path}".format(**locals())
+                result += F"\n    Drop-In: {path}"
         else:
             result += "\n    Loaded: failed"
             return 3, result
         active = self.get_active_from(conf)
         substate = self.get_substate_from(conf)
-        result += "\n    Active: {} ({})".format(active, substate)
+        result += F"\n    Active: {active} ({substate})"
         if active == "active":
             return 0, result
         else:
@@ -5240,7 +5240,7 @@ class Systemctl:
                 return open(unit_file).read()
             logg.error("No files found for %s", unit)
         except OSError as e:
-            print("Unit {} is not-loaded >> {}".format(unit, e))
+            print(F"Unit {unit} is not-loaded >> {e}")
         self.error |= NOT_OK
         return None
     ##
@@ -5376,7 +5376,7 @@ class Systemctl:
         symlink = os.path.join(folder, conf.name())
         if TRUE:
             _f = self._force and "-f" or ""
-            logg.info("ln -s {_f} '{source}' '{symlink}'".format(**locals()))
+            logg.info("%s", F"ln -s {_f} '{source}' '{symlink}'")
         if self._force and os.path.islink(symlink):
             os.remove(target)
         if not os.path.islink(symlink):
@@ -5475,7 +5475,7 @@ class Systemctl:
             if os.path.exists(symlink):
                 try:
                     _f = self._force and "-f" or ""
-                    logg.info("rm {_f} '{symlink}'".format(**locals()))
+                    logg.info("%s", F"rm {_f} '{symlink}'")
                     if os.path.islink(symlink) or self._force:
                         os.remove(symlink)
                 except OSError as e:
@@ -5623,12 +5623,12 @@ class Systemctl:
         dev_null = _dev_null
         if TRUE:
             _f = self._force and "-f" or ""
-            logg.debug("ln -s {_f} {dev_null} '{target}'".format(**locals()))
+            logg.debug("%s", F"ln -s {_f} {dev_null} '{target}'")
         if self._force and os.path.islink(target):
             os.remove(target)
         if not os.path.exists(target):
             os.symlink(dev_null, target)
-            logg.info("Created symlink {target} -> {dev_null}".format(**locals()))
+            logg.info("%s", F"Created symlink {target} -> {dev_null}")
             return True
         elif os.path.islink(target):
             logg.debug("mask symlink does already exist: %s", target)
@@ -5687,7 +5687,7 @@ class Systemctl:
         target = os.path.join(folder, os.path.basename(unit_file))
         if TRUE:
             _f = self._force and "-f" or ""
-            logg.info("rm {_f} '{target}'".format(**locals()))
+            logg.info("%s", F"rm {_f} '{target}'")
         if os.path.islink(target):
             os.remove(target)
             return True
@@ -6473,7 +6473,7 @@ class Systemctl:
     def reap_zombies_target(self) -> str:
         """ -- check to reap children (internal) """
         running = self.reap_zombies()
-        return "remaining {running} process".format(**locals())
+        return F"remaining {running} process"
     def reap_zombies(self) -> int:
         """ check to reap children """
         selfpid = os.getpid()
