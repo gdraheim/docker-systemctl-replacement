@@ -897,7 +897,7 @@ class SystemctlConf:
         self._user_mode = _user_mode
     def root_mode(self) -> bool:
         return not self._user_mode
-    def loaded(self) -> str:
+    def is_loaded(self) -> str:
         files = self.data.filenames()
         if self.masked:
             return "masked"
@@ -1626,7 +1626,7 @@ class Systemctl:
             attributes are empty and loaded() is False """
         data = UnitConfParser()
         data.set(Unit, "Description", description or ("NOT-FOUND " + str(module)))
-        # assert(not data.loaded())
+        # assert(not data.is_loaded())
         conf = SystemctlConf(data, module)
         conf._root = self._root
         return conf
@@ -4509,7 +4509,7 @@ class Systemctl:
     def status_unit(self, unit: str) -> Tuple[int, str]:
         conf = self.get_unit_conf(unit)
         result = "%s - %s" % (unit, self.get_description_from(conf))
-        loaded = conf.loaded()
+        loaded = conf.is_loaded()
         if loaded:
             filename = str(conf.filename())
             enabled = self.enabled_from(conf)
@@ -5104,7 +5104,7 @@ class Systemctl:
         mark = mark or ""
         deps = self.get_dependencies_unit(unit)
         conf = self.get_unit_conf(unit)
-        if not conf.loaded():
+        if not conf.is_loaded():
             if not self._show_all:
                 return
             yield "%s(%s): %s" % (indent, unit, mark)
@@ -5201,12 +5201,12 @@ class Systemctl:
             if dep in unit_order:
                 continue
             conf = self.get_unit_conf(dep)
-            if conf.loaded():
+            if conf.is_loaded():
                 deps_conf.append(conf)
         for unit in unit_order:
             deps[unit] = ["Requested"]
             conf = self.get_unit_conf(unit)
-            if conf.loaded():
+            if conf.is_loaded():
                 deps_conf.append(conf)
         result: List[Tuple[str, str]] = []
         sortlist = conf_sortedAfter(deps_conf, cmp=compareAfter)
@@ -5480,7 +5480,7 @@ class Systemctl:
         for entry in self.each_unit_items(unit, conf):
             yield entry
     def each_unit_items(self, unit: str, conf: SystemctlConf) -> Iterable[Tuple[str, str]]:
-        loaded = conf.loaded()
+        loaded = conf.is_loaded()
         if not loaded:
             loaded = "not-loaded"
             if "NOT-FOUND" in self.get_description_from(conf):
