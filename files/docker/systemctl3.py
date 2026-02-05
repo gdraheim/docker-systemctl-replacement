@@ -88,6 +88,9 @@ _only_property: List[str] = []
 FORCE_IPV4 = False
 FORCE_IPV6 = False
 INIT_MODE = False
+EXIT_MODE = 0
+EXIT_NO_PROCS_LEFT = 1
+EXIT_NO_SERVICES_LEFT = 2
 
 # common default paths
 _system_folders: List[str] = [
@@ -161,8 +164,6 @@ ResetLocale: List[str] = ["LANG", "LANGUAGE", "LC_CTYPE", "LC_NUMERIC", "LC_TIME
 LocaleConf="/etc/locale.conf"
 DefaultListenBacklog=2
 
-ExitWhenNoMoreServices: bool = False
-ExitWhenNoMoreProcs: bool = False
 DefaultUnit: str = os.environ.get("SYSTEMD_DEFAULT_UNIT", "default.target") # systemd.exe --unit=default.target
 DefaultTarget: str = os.environ.get("SYSTEMD_DEFAULT_TARGET", "multi-user.target") # DefaultUnit fallback
 # LogLevel = os.environ.get("SYSTEMD_LOG_LEVEL", "info") # systemd.exe --log-level
@@ -2559,8 +2560,7 @@ class Systemctl:
     _journal_log_folder: str
     _default_target: str
     _sysinit_target: Optional[SystemctlConf]
-    _user_mode: bool
-    _user_getlogin: str
+    exit_mode: int
     _log_file: Dict[str, int]
     _log_hold: Dict[str, bytes]
     _boottime: Optional[float]
@@ -2594,10 +2594,7 @@ class Systemctl:
         self._preset_file_list = None # /etc/systemd/system-preset/* => file content
         self._default_target = DefaultTarget
         self._sysinit_target = None # stores a UnitConf()
-        self.doExitWhenNoMoreProcs = ExitWhenNoMoreProcs or False
-        self.doExitWhenNoMoreServices = ExitWhenNoMoreServices or False
-        self._user_mode = _user_mode
-        self._user_getlogin = os_getlogin()
+        self.exit_mode = EXIT_MODE or 0
         self._log_file = {} # init-loop
         self._log_hold = {} # init-loop
         self._boottime = None # cache self.get_boottime()
@@ -6147,14 +6144,14 @@ class Systemctl:
             # like 'systemctl --init default'
             if self._now or self._show_all:
                 logg.debug("init default --now --all => no_more_procs")
-                self.doExitWhenNoMoreProcs = True
+                self.exit_mode = EXIT_NO_PROCS_LEFT
             return self.start_system_default(init = True)
         #
         # otherwise quit when all the init-services have died
-        self.doExitWhenNoMoreServices = True
+        self.exit_mode = EXIT_NO_SERVICES_LEFT
         if self._now or self._show_all:
             logg.debug("init services --now --all => no_more_procs")
-            self.doExitWhenNoMoreProcs = True
+            self.exit_mode = EXIT_NO_PROCS_LEFT
         found_all = True
         units: List[str] = []
         for module in modules:
@@ -6389,7 +6386,7 @@ class Systemctl:
                 running = self.reap_zombies()
                 if DEBUG_INITLOOP: # pragma: no cover
                     logg.debug("[init] reap zombies - init-loop found %s running procs", running)
-                if self.doExitWhenNoMoreServices:
+                if self.exit_mode & EXIT_NO_SERVICES_LEFT:
                     active = False
                     for unit in units:
                         conf = self.unitfiles.load_conf(unit)
@@ -6399,7 +6396,7 @@ class Systemctl:
                     if not active:
                         logg.info("[init] no more services - exit init-loop")
                         break
-                if self.doExitWhenNoMoreProcs:
+                if self.exit_mode & EXIT_NO_PROCS_LEFT:
                     if not running:
                         logg.info("[init] no more procs - exit init-loop")
                         break
@@ -6410,7 +6407,7 @@ class Systemctl:
                 if e.args and e.args[0] == "SIGQUIT":
                     # the original systemd puts a coredump on that signal.
                     logg.info("[init] SIGQUIT - switch to no more procs check")
-                    self.doExitWhenNoMoreProcs = True
+                    self.exit_mode = EXIT_NO_PROCS_LEFT
                     continue
                 signal.signal(signal.SIGTERM, signal.SIG_DFL)
                 signal.signal(signal.SIGINT, signal.SIG_DFL)
@@ -7013,6 +7010,8 @@ def main() -> int:
                   help="..only keep ipv4 localhost in /etc/hosts")
     _o.add_option("-6", "--ipv6", action="store_true", default=FORCE_IPV6,
                   help="..only keep ipv6 localhost in /etc/hosts")
+    _o.add_option("-0", "--exit", action="count", default=0,
+                  help="..exit init-process when no procs left (or -00 no services (start --now))")
     _o.add_option("-1", "--init", action="store_true", default=False,
                   help="..keep running as init-process (default if PID 1)")
     opt, args = _o.parse_args()
@@ -7042,6 +7041,7 @@ def main() -> int:
     # being PID 1 (or 0) in a container will imply --init
     _pid = os.getpid()
     INIT_MODE = opt.init or _pid in [1, 0]
+    EXIT_MODE = int(opt.exit)
     _user_mode = opt.user
     if os.geteuid() and _pid in [1, 0]:
         _user_mode = True
