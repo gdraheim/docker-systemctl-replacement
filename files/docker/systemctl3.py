@@ -859,28 +859,6 @@ class SystemctlConfigParser(SystemctlConfData):
 # UnitConfParser = ConfigParser.RawConfigParser
 UnitConfParser = SystemctlConfigParser
 
-class SystemctlSocket:
-    def __init__(self, conf: SystemctlConf, sock: socket.socket, skip: bool = False) -> None:
-        self.conf = conf
-        self.sock = sock
-        self.skip = skip
-    def fileno(self) -> int:
-        return self.sock.fileno()
-    def listen(self, backlog: Optional[int] = None) -> None:
-        if backlog is None:
-            backlog = DefaultListenBacklog
-        dgram = (self.sock.type == socket.SOCK_DGRAM)
-        if not dgram and not self.skip:
-            self.sock.listen(backlog)
-    def name(self) -> str:
-        return self.conf.name()
-    def addr(self) -> str:
-        stream = self.conf.get(Socket, "ListenStream", "")
-        dgram = self.conf.get(Socket, "ListenDatagram", "")
-        return stream or dgram
-    def close(self) -> None:
-        self.sock.close()
-
 class SystemctlConf:
     data: SystemctlConfData
     env: Dict[str, str]
@@ -938,6 +916,28 @@ class SystemctlConf:
             if value[0] in "TtYy123456789":
                 return True
         return False
+
+class SystemctlSocket:
+    def __init__(self, conf: SystemctlConf, sock: socket.socket, skip: bool = False) -> None:
+        self.conf = conf
+        self.sock = sock
+        self.skip = skip
+    def fileno(self) -> int:
+        return self.sock.fileno()
+    def listen(self, backlog: Optional[int] = None) -> None:
+        if backlog is None:
+            backlog = DefaultListenBacklog
+        dgram = (self.sock.type == socket.SOCK_DGRAM)
+        if not dgram and not self.skip:
+            self.sock.listen(backlog)
+    def name(self) -> str:
+        return self.conf.name()
+    def addr(self) -> str:
+        stream = self.conf.get(Socket, "ListenStream", "")
+        dgram = self.conf.get(Socket, "ListenDatagram", "")
+        return stream or dgram
+    def close(self) -> None:
+        self.sock.close()
 
 class PresetFile:
     _files: List[str]
