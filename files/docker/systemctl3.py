@@ -184,6 +184,7 @@ EXPAND_VARS_MAXDEPTH: int = 20
 EXPAND_KEEP_VARS: bool = True
 RESTART_FAILED_UNITS: bool = True
 ACTIVE_IF_ENABLED = False
+OK_CONDITION_FAILURE = True
 
 TAIL_CMDS = ["/bin/tail", "/usr/bin/tail", "/usr/local/bin/tail"]
 LESS_CMDS = ["/bin/less", "/usr/bin/less", "/usr/local/bin/less"]
@@ -3635,6 +3636,36 @@ class Systemctl:
             logg.debug(" start unit %s => %s", conf.name(), strQ(conf.filename()))
             return self.do_start_unit_from(conf)
     def do_start_unit_from(self, conf: SystemctlConf) -> bool:
+        blocked = self.unitfiles.check_env_conditions(conf, warning=logging.ERROR)
+        if blocked:
+            logg.error("%s: %s system conditions have failed: can not start", conf.name(), len(blocked))
+            asserts = [cond for cond in blocked if cond.startswith("Assert")]
+            if asserts:
+                logg.error("Assertion failed on job for %s", conf.name())
+                return False
+            else: # original systemctl silently skips the unit without having them started
+                logg.info("%s was skipped due to an unmet condition (%s)", conf.name(), " and ".join(blocked))
+                return OK_CONDITION_FAILURE
+        impossible = self.unitfiles.check_system_conditions(conf, warning=logging.ERROR)
+        if impossible:
+            logg.error("%s: %s system conditions have failed: can not start", conf.name(), len(impossible))
+            asserts = [cond for cond in impossible if cond.startswith("Assert")]
+            if asserts:
+                logg.error("Assertion failed on job for %s", conf.name())
+                return False
+            else: # original systemctl silently skips the unit without having them started
+                logg.info("%s was skipped due to an unmet condition (%s)", conf.name(), " and ".join(impossible))
+                return OK_CONDITION_FAILURE
+        missing = self.unitfiles.check_file_conditions(conf, warning=logging.ERROR)
+        if missing:
+            logg.error("%s: %s file conditions have failed: can not start", conf.name(), len(missing))
+            asserts = [cond for cond in missing if cond.startswith("Assert")]
+            if asserts:
+                logg.error("Assertion failed on job for %s", conf.name())
+                return False
+            else: # original systemctl silently skips the unit without having them started
+                logg.info("%s was skipped due to an unmet condition (%s)", conf.name(), " and ".join(missing))
+                return OK_CONDITION_FAILURE
         if conf.name().endswith(".service"):
             return self.do_start_service_from(conf)
         elif conf.name().endswith(".socket"):
