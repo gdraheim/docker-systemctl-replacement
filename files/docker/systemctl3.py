@@ -6480,8 +6480,8 @@ def print_begin(argv: List[str], args: List[str]) -> None:
     init = INIT_MODE and " --init" or ""
     logg.info("EXEC BEGIN %s %s%s%s", script, " ".join(args), system, init)
     if _root and not is_good_root(_root):
-        root44 = path44(_root)
-        logg.warning("the --root=%s should have atleast three levels /tmp/test_123/root", root44)
+        logg.warning("begin: the --root=x should have atleast three levels /tmp/test_123/root")
+        logg.warning("begin: but --root=%s ", _root)
 
 def print_begin2(args: List[str]) -> None:
     logg.debug("======= systemctl.py %s", " ".join(args))
