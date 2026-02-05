@@ -174,7 +174,9 @@ PROC_MAX_DEPTH: int = 100
 EXPAND_VARS_MAXDEPTH: int = 20
 EXPAND_KEEP_VARS: bool = True
 RESTART_FAILED_UNITS: bool = True
-ACTIVE_IF_ENABLED=False
+ACTIVE_IF_ENABLED = False
+FORCE_IPV4 = False
+FORCE_IPV6 = False
 
 TAIL_CMDS = ["/bin/tail", "/usr/bin/tail", "/usr/local/bin/tail"]
 LESS_CMDS = ["/bin/less", "/usr/bin/less", "/usr/local/bin/less"]
@@ -6745,9 +6747,9 @@ if __name__ == "__main__":
                   help="..override settings in the syntax of 'Environment='")
     _o.add_option("-v", "--verbose", action="count", default=0,
                   help="..increase debugging information level")
-    _o.add_option("-4", "--ipv4", action="store_true", default=False,
+    _o.add_option("-4", "--ipv4", action="store_true", default=FORCE_IPV4,
                   help="..only keep ipv4 localhost in /etc/hosts")
-    _o.add_option("-6", "--ipv6", action="store_true", default=False,
+    _o.add_option("-6", "--ipv6", action="store_true", default=FORCE_IPV6,
                   help="..only keep ipv6 localhost in /etc/hosts")
     _o.add_option("-1", "--init", action="store_true", default=False,
                   help="..keep running as init-process (default if PID 1)")
