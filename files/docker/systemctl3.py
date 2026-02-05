@@ -479,15 +479,6 @@ def expand_path(path: str, root: bool = False) -> str:
     XDG_RUNTIME_DIR=get_RUNTIME_DIR(root)
     return os.path.expanduser(path.replace("${", "{").format(**locals()))
 
-def shutil_chown(path: str, user: Optional[str], group: Optional[str]) -> None:
-    if user or group:
-        uid, gid = -1, -1
-        if user:
-            uid = pwd.getpwnam(user).pw_uid
-            gid = pwd.getpwnam(user).pw_gid
-        if group:
-            gid = grp.getgrnam(group).gr_gid
-        os.chown(path, uid, gid)
 def shutil_fchown(fileno: int, user: Optional[str], group: Optional[str]) -> None:
     if user or group:
         uid, gid = -1, -1
