@@ -2631,7 +2631,7 @@ class Systemctl:
         self._restarted_unit = {}
         self._restart_failed_units = {}
         self._sockets = {}
-        self.loop = threading.Lock()
+        self.loop_lock = threading.Lock()
         self.unitfiles = SystemctlUnitFiles(self._root)
     def get_unit_type(self, module: str) -> Optional[str]:
         name, ext = os.path.splitext(module)
@@ -6473,7 +6473,7 @@ class Systemctl:
                         break
                 time.sleep(sleeping) # remainder waits less that 2 seconds
                 lasttime = time.monotonic()
-                self.loop.acquire()
+                self.loop_lock.acquire()
                 if DEBUG_INITLOOP: # pragma: no cover
                     logg.debug("[init] NEXT (after %ss)", sleep_sec)
                 self.read_log_files(units)
@@ -6498,7 +6498,7 @@ class Systemctl:
                         break
                 if RESTART_FAILED_UNITS:
                     self.restart_failed_units(units)
-                self.loop.release()
+                self.loop_lock.release()
             except KeyboardInterrupt as e:
                 if e.args and e.args[0] == "SIGQUIT":
                     # the original systemd puts a coredump on that signal.
@@ -6515,7 +6515,7 @@ class Systemctl:
                 raise
         self.sysinit_status(ActiveState = None, SubState = "degraded")
         try:
-            self.loop.release() # may be already unlocked here
+            self.loop_lock.release() # may be already unlocked here
         except (OSError, RuntimeError, threading.ThreadError) as e:
             logg.debug("[init] loop_lock release %s >> %s", type(e), e)
         except Exception as e:  # pylint: disable=broad-exception-caught
