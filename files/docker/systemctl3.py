@@ -4815,9 +4815,9 @@ class Systemctl:
                     logg.info("rm {_f} '{symlink}'".format(**locals()))
                     if os.path.islink(symlink) or self._force:
                         os.remove(symlink)
-                except IOError as e:
-                    logg.error("disable %s: %s", symlink, e)
                 except OSError as e:
+                    logg.error("disable %s: %s", symlink, e)
+                except IOError as e: # pylint: disable=duplicate-except # same as OSError after python3.3
                     logg.error("disable %s: %s", symlink, e)
         return True
     def disable_unit_sysv(self, unit_file: str) -> bool:
