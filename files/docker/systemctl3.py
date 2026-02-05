@@ -2825,23 +2825,23 @@ class Systemctl:
                 for key in sorted(conf.status):
                     value = conf.status[key]
                     if key == "MainPID" and str(value) == "0":
-                        logg.warning("ignore writing MainPID=0")
+                        logg.warning("[status] ignore writing MainPID=0")
                         continue
                     content = "{}={}\n".format(key, str(value))
-                    logg.debug("writing to %s\n\t%s", status_file, content.strip())
+                    logg.debug("[status] writing to %s\n\t%s", status_file, content.strip())
                     f.write(content)
         except IOError as e:
-            logg.error("writing STATUS %s >> %s\n\t to status file %s", status, e, status_file)
+            logg.error("[status] writing STATUS %s >> %s\n\t to status file %s", status, e, status_file)
         return True
     def read_status_from(self, conf: SystemctlConf) -> Dict[str, str]:
         status_file = self.get_status_file_from(conf)
         status: Dict[str, str] = {}
         # if not status_file: return status
         if not os.path.isfile(status_file):
-            if DEBUG_STATUS: logg.debug("no status file: %s\n returning %s", status_file, status)
+            if DEBUG_STATUS: logg.debug("[status] no status file: %s\n returning %s", status_file, status)
             return status
         if self.truncate_old(status_file):
-            if DEBUG_STATUS: logg.debug("old status file: %s\n returning %s", status_file, status)
+            if DEBUG_STATUS: logg.debug("[status] old status file: %s\n returning %s", status_file, status)
             return status
         try:
             if DEBUG_STATUS: logg.debug("reading %s", status_file)
@@ -2854,9 +2854,9 @@ class Systemctl:
                             if key.strip():
                                 status[key.strip()] = value.strip()
                         else:  # pragma: no cover
-                            logg.warning("ignored %s", line.strip())
+                            logg.warning("[status] ignored %s", line.strip())
         except (OSError, ValueError) as e:
-            logg.warning("bad read of status file '%s' >> %s", status_file, e)
+            logg.warning("[status] bad read of status file '%s' >> %s", status_file, e)
         return status
     def get_status_from(self, conf: SystemctlConf, name: str, default: Optional[str] = None) -> Optional[str]:
         if conf.status is None:
