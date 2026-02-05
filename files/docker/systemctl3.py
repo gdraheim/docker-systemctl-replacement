@@ -177,6 +177,7 @@ RESTART_FAILED_UNITS: bool = True
 ACTIVE_IF_ENABLED = False
 FORCE_IPV4 = False
 FORCE_IPV6 = False
+INIT_MODE = False
 
 TAIL_CMDS = ["/bin/tail", "/usr/bin/tail", "/usr/local/bin/tail"]
 LESS_CMDS = ["/bin/less", "/usr/bin/less", "/usr/local/bin/less"]
@@ -1319,7 +1320,7 @@ class Systemctl:
         self._extra_vars = _extra_vars
         self._force = _force
         self._full = _full
-        self._init = _init
+        self._init = INIT_MODE
         self._no_ask_password = _no_ask_password
         self._no_legend = _no_legend
         self._now = _now
@@ -6444,7 +6445,7 @@ class Systemctl:
 def print_begin(argv: List[str], args: List[str]) -> None:
     script = os.path.realpath(argv[0])
     system = _user_mode and " --user" or " --system"
-    init = _init and " --init" or ""
+    init = INIT_MODE and " --init" or ""
     logg.info("EXEC BEGIN %s %s%s%s", script, " ".join(args), system, init)
     if _root and not is_good_root(_root):
         root44 = path44(_root)
@@ -6778,7 +6779,7 @@ if __name__ == "__main__":
     FORCE_IPV6 = opt.ipv6
     # being PID 1 (or 0) in a container will imply --init
     _pid = os.getpid()
-    _init = opt.init or _pid in [1, 0]
+    INIT_MODE = opt.init or _pid in [1, 0]
     _user_mode = opt.user
     if os.geteuid() and _pid in [1, 0]:
         _user_mode = True
@@ -6838,7 +6839,7 @@ if __name__ == "__main__":
     if opt.version:
         args = ["version"]
     if not args:
-        if _init:
+        if INIT_MODE:
             args = ["default"]
         else:
             args = ["list-units"]
