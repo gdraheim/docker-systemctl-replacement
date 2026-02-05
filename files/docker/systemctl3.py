@@ -2846,10 +2846,10 @@ class Systemctl:
         notify.socket.settimeout(timeout or DefaultMaximumTimeout)
         result = ""
         try:
-            result, client_address = notify.socket.recvfrom(4096)
-            assert isinstance(result, bytes)
+            data, addr = notify.socket.recvfrom(4096)
+            assert isinstance(data, bytes)
             if result:
-                result = result.decode("utf-8")
+                result = data.decode("utf-8")
                 result_txt = result.replace("\n", "|")
                 result_len = len(result)
                 logg.debug("read_notify_socket(%s):%s", result_len, result_txt)
@@ -3910,7 +3910,7 @@ class Systemctl:
                 if not forkpid:
                     self.execve_from(conf, newcmd, env) # pragma: nocover
                 run = subprocess_waitpid(forkpid)
-                self.set_status_from(conf, "ExecReloadCode", run.returncode)
+                self.set_status_from(conf, "ExecReloadCode", strE(run.returncode))
                 if run.returncode:
                     self.write_status_from(conf, AS="failed")
                     return False
