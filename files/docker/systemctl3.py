@@ -6077,7 +6077,7 @@ class Systemctl:
             folders += [self.rc5_root_folder()]
         for folder in folders:
             if not os.path.isdir(folder):
-                logg.warning("non-existent %s", folder)
+                logg.debug("non-existent %s", folder)
                 continue
             for unit in sorted(os.listdir(folder)):
                 path = os.path.join(folder, unit)
