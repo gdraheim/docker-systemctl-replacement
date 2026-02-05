@@ -6879,6 +6879,8 @@ def runcommand(command: str, *modules: str) -> int:
         print_str(systemctl.set_default_modules(*modules))
     elif command in ["show"]:
         print_str_list(systemctl.show_modules(*modules))
+    elif command in ["show-environment"]:
+        print_str_list(systemctl.system_exec_env())
     elif command in ["start"]:
         exitcode = is_not_ok(systemctl.start_modules(*modules))
     elif command in ["status"]:
@@ -6952,7 +6954,7 @@ def main() -> int:
     global _now, _preset_mode, _quiet, _root, _show_all, _only_state, _only_type, _only_property, _only_what
     global DefaultMaximumTimeout, INIT_MODE, EXIT_MODE, _user_mode, FORCE_IPV4, FORCE_IPV6
     import optparse # pylint: disable=deprecated-module # not anymore
-    _o = optparse.OptionParser("%prog [options] command [name...]",
+    _o = optparse.OptionParser("%prog [options] command [name...]", description=__doc__.strip(),
                                epilog="use 'help' command for more information")
     _o.add_option("--version", action="store_true",
                   help="Show package version")
