@@ -31,9 +31,6 @@ __version__: str = "1.7.1054"
 import logging
 logg: logging.Logger = logging.getLogger("systemctl")
 
-if sys.version[0] == '3':
-    basestring = str
-
 DEBUG_AFTER: bool = False
 DEBUG_STATUS: bool = False
 DEBUG_BOOTTIME: bool = False
@@ -293,19 +290,19 @@ def unit_of(module: str) -> str:
         return module + ".service"
     return module
 def o22(part: str) -> str:
-    if isinstance(part, basestring):
+    if isinstance(part, str):
         if len(part) <= 22:
             return part
         return part[:5] + "..." + part[-14:]
     return part # pragma: no cover (is always str)
 def o44(part: str) -> str:
-    if isinstance(part, basestring):
+    if isinstance(part, str):
         if len(part) <= 44:
             return part
         return part[:10] + "..." + part[-31:]
     return part # pragma: no cover (is always str)
 def o77(part: str) -> str:
-    if isinstance(part, basestring):
+    if isinstance(part, str):
         if len(part) <= 77:
             return part
         return part[:20] + "..." + part[-54:]
@@ -6807,7 +6804,7 @@ if __name__ == "__main__":
                 logg.debug("int %s=%s", nam, val)
                 globals()[nam] = int(val)
                 logg.debug("... InitLoopSleep=%s", InitLoopSleep)
-            elif isinstance(old, basestring):
+            elif isinstance(old, str):
                 logg.debug("str %s=%s", nam, val)
                 globals()[nam] = val.strip()
                 logg.debug("... SysInitTarget=%s", SysInitTarget)
