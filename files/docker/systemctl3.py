@@ -1216,7 +1216,7 @@ def conf_sortedAfter(conflist: Iterable[SystemctlConf], cmp: Callable[[Systemctl
     return [item.conf for item in sortedlist]
 
 class SystemctlListenThread(threading.Thread):
-    def __init__(self, systemctl: Systemctl) -> None:
+    def __init__(self, systemctl: "Systemctl") -> None:
         threading.Thread.__init__(self, name="listen")
         self.systemctl = systemctl
         self.stopped = threading.Event()
