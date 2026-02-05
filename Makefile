@@ -1,6 +1,6 @@
 F= files/docker/systemctl.py
 ORIGYEAR=2016
-BASEYEAR=2017
+BASEYEAR=2025
 FOR=today
 # 'make version FOR=yesterday' or 'make version DAY=0'
 
@@ -14,7 +14,7 @@ PYTHON_VERSION = 3.9
 COVERAGE3 = $(PYTHON3) -m coverage
 TWINE = twine
 GIT=git
-VERFILES = files/docker/systemctl.py files/docker/systemctl3.py tests/testsuite.py setup.cfg
+VERFILES = files/docker/systemctl3.py tests/testsuite.py setup.cfg
 
 verfiles:
 	@ grep -l __version__ */*.??* */*/*.??* | { while read f; do echo $$f; done; } 
@@ -23,7 +23,7 @@ version:
 	@ grep -l __version__ $(VERFILES) | { while read f; do : \
 	; B="$(BASEYEAR)"; C=$$B; test -z "$(ORIGYEAR)" || C="$(ORIGYEAR)" \
 	; Y=`date +%Y -d "$(FOR)"` ; X=$$(expr $$Y - $$B) \
-	; W=`date +%W -d "$(FOR)"` ; W=`echo "$$W" | sed -e s/05/06/` \
+	; W=`date +%W -d "$(FOR)"` \
 	; D=`date +%u -d "$(FOR)"` ; sed -i \
 	-e "/^ *version = /s/[.]-*[0123456789][0123456789][0123456789]*/.$$X$$W$$D/" \
 	-e "/^ *__version__/s/[.]-*[0123456789][0123456789][0123456789]*\"/.$$X$$W$$D\"/" \
