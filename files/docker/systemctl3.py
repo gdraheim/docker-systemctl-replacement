@@ -6,7 +6,7 @@
 # pylint: disable=invalid-name,bare-except,broad-exception-caught,broad-exception-raised,redefined-outer-name,possibly-unused-variable,unnecessary-negation,using-constant-test,unused-argument,consider-using-dict-items,consider-using-enumerate
 # pylint: disable=unused-variable,protected-access,logging-format-interpolation,logging-not-lazy
 """ run 'systemctl start' and other systemctl commands based on available *.service descriptions without a systemd daemon running in the system """
-from typing import Callable, Dict, Iterator, Iterable, List, NoReturn, Optional, TextIO, Tuple, Type, Union, Match
+from typing import Callable, Dict, Iterator, Iterable, List, NoReturn, Optional, TextIO, Tuple, Type, Union, Match, NamedTuple
 import threading
 import grp
 import pwd
@@ -623,7 +623,12 @@ def checkprefix(cmd: str) -> Tuple[str, str]:
             return prefix, newcmd
     return prefix, ""
 
-ExecMode = collections.namedtuple("ExecMode", ["mode", "check", "nouser", "noexpand", "argv0"])
+class ExecMode(NamedTuple):
+    mode: str
+    check: bool
+    nouser: bool
+    noexpand: bool
+    argv0: bool
 def exec_path(cmd: str) -> Tuple[ExecMode, str]:
     """ Hint: exec_path values are usually not moved by --root (while load_path are)"""
     prefix, newcmd = checkprefix(cmd)
@@ -633,7 +638,9 @@ def exec_path(cmd: str) -> Tuple[ExecMode, str]:
     argv0 = "@" in prefix
     mode = ExecMode(prefix, check, nouser, noexpand, argv0)
     return mode, newcmd
-LoadMode = collections.namedtuple("LoadMode", ["mode", "check"])
+class LoadMode(NamedTuple):
+    mode: str
+    check: bool
 def load_path(ref: str) -> Tuple[LoadMode, str]:
     """ Hint: load_path values are usually moved by --root (while exec_path are not)"""
     prefix, filename = "", ref
@@ -1034,7 +1041,10 @@ class waitlock:
         except Exception as e:
             logg.warning("oops, %s", e)
 
-SystemctlWaitPID = collections.namedtuple("SystemctlWaitPID", ["pid", "returncode", "signal"])
+class SystemctlWaitPID(NamedTuple):
+    pid: Optional[int]
+    returncode: Optional[int]
+    signal: int
 
 def must_have_failed(waitpid: SystemctlWaitPID, cmd: List[str]) -> SystemctlWaitPID:
     # found to be needed on ubuntu:16.04 to match test result from ubuntu:18.04 and other distros
@@ -1063,7 +1073,13 @@ def subprocess_testpid(pid: int) -> SystemctlWaitPID:
     else:
         return SystemctlWaitPID(pid, None, 0)
 
-SystemctlUnitName = collections.namedtuple("SystemctlUnitName", ["fullname", "name", "prefix", "instance", "suffix", "component"])
+class SystemctlUnitName(NamedTuple):
+    fullname: str
+    name: str
+    prefix: str
+    instance: str
+    suffix: str
+    component: str
 
 def parse_unit(fullname: str) -> SystemctlUnitName: # -> object(prefix, instance, suffix, ...., name, component)
     name, suffix = fullname, ""
@@ -2780,7 +2796,9 @@ class Systemctl:
                     logg.debug("chdir workingdir '%s': %s", into, e)
                     return None
         return None
-    NotifySocket = collections.namedtuple("NotifySocket", ["socket", "socketfile"])
+    class NotifySocket(NamedTuple):
+        socket: socket.socket
+        socketfile: str
     def get_notify_socket_from(self, conf: SystemctlConf, socketfile: Optional[str] = None, debug: bool = False) -> str:
         """ creates a notify-socket for the (non-privileged) user """
         notify_socket_folder = expand_path(_notify_socket_folder, conf.root_mode())
