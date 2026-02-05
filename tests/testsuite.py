@@ -5,6 +5,7 @@
 # pylint: disable=bare-except,broad-exception-caught,pointless-statement,multiple-statements,f-string-without-interpolation,import-outside-toplevel,no-else-return
 # pylint: disable=missing-function-docstring,unused-variable,unused-argument,unspecified-encoding,redefined-outer-name,using-constant-test,invalid-name
 # pylint: disable=fixme,consider-using-with,consider-using-get,condition-evals-to-constant,chained-comparison
+# pylint: disable=redefined-outer-name,unused-variable,bare-except,broad-exception-caught,pointless-statement,using-constant-test,logging-not-lazy,logging-format-interpolation,consider-using-f-string,possibly-unused-variable
 
 __copyright__ = "(C) Guido Draheim, licensed under the EUPL"""
 __version__ = "1.7.1054"
@@ -13,7 +14,7 @@ __version__ = "1.7.1054"
 # The testcases 1000...4999 are using a --root=subdir environment
 # The testcases 5000...9999 will start a docker container to work.
 
-from typing import List, Dict, Tuple, Generator, Union, Optional, TextIO
+from typing import List, Tuple, Generator, Union, Optional, TextIO
 
 import subprocess
 import os
@@ -24,7 +25,6 @@ import datetime
 import unittest
 import shutil
 import inspect
-import types
 import string
 import random
 import logging
@@ -65,7 +65,7 @@ TESTED_OS += ["ubuntu:14.04", "ubuntu:16.04", "ubuntu:18.04", "ubuntu:22.04"]
 SAVETO = "localhost:5000/systemctl"
 IMAGES = "localhost:5000/systemctl/testing"
 IMAGE = ""
-CENTOS = "almalinux:9.4" 
+CENTOS = "almalinux:9.4"
 UBUNTU = "ubuntu:18.04"
 OPENSUSE = "opensuse/leap:15.2"
 SOMETIME = ""
@@ -362,7 +362,7 @@ def get_GROUP(root: bool = False) -> str:
     if root: return "root"
     import grp
     gid = os.getegid()
-    import grp
+    import grp # pylint: disable=reimported
     return grp.getgrgid(gid).gr_name
 def get_LASTGROUP_ID(root: bool = False) -> int:
     if root: return 0 # only there is
@@ -371,7 +371,7 @@ def get_LASTGROUP_ID(root: bool = False) -> int:
     for gid in os.getgroups():
         if gid != current:
             lastgid = gid
-    return gid
+    return lastgid
 def get_LASTGROUP(root: bool = False) -> str:
     if root: return "root" # only there is
     gid = get_LASTGROUP_ID(root)
@@ -380,7 +380,7 @@ def get_LASTGROUP(root: bool = False) -> str:
 
 def beep() -> None:
     if os.name == "nt":
-        import winsound # type: ignore[import]
+        import winsound # type: ignore[import] # pylint: disable=import-error
         frequency = 2500
         duration = 1000
         winsound.Beep(frequency, duration) # type: ignore[attr-defined]
@@ -560,6 +560,7 @@ def detect_local_system() -> str:
 ############ the real testsuite ##############
 
 class DockerSystemctlReplacementTest(unittest.TestCase):
+    """ testcases for systemctl.py """
     def caller_testname(self) -> str:
         name = get_caller_caller_name()
         x1 = name.find("_")
@@ -790,7 +791,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             if m:
                 image = m.group(1)
                 break
-            m = re.match("[Ff][Rr][Oo][Mm] *(\w[^ ]*)", line)
+            m = re.match("[Ff][Rr][Oo][Mm] *(\\w[^ ]*)", line)
             if m:
                 image = m.group(1).strip()
                 break
@@ -828,7 +829,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         print("                 # {local_image}".format(**locals()))
         print("  {docker} exec -it {name} bash".format(**locals()))
     def begin(self) -> str:
-        self._started = time.time()
+        self._started = time.time() # pylint: disable=attribute-defined-outside-init
         logg.info("[[%s]]", datetime.datetime.fromtimestamp(self._started).strftime("%H:%M:%S"))
         return "-vv"
     def end(self, maximum: int = 99) -> None:
@@ -36436,8 +36437,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         # check the subprocess
         m = re.search(r"(?m)^(\S+)\s+(\d+)\s+(\d+)\s+(\S+.*sleep 111.*)$", top)
-        if m:
-            state, pid, ppid, args = m.groups()
+        assert m
+        state, pid, ppid, args = m.groups()
         logg.info(" - sleep state = %s", state)
         logg.info(" - sleep pid = %s", pid)
         logg.info(" - sleep ppid = %s", ppid)
@@ -36766,7 +36767,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         # CHECK
         debug_log = lines(open(testdir+"/systemctl.debug.log"))
-        if len(greps(debug_log, "Oops, ")):
+        if greps(debug_log, "Oops, "):
             self.assertTrue(greps(debug_log, "Service directory option not supported: PrivateTmp=yes"))
             self.assertTrue(greps(debug_log, "unsupported directory settings. You need to create those before using the service."))
             self.assertGreater(len(greps(debug_log, " ERROR ")), 2)
@@ -37515,9 +37516,9 @@ ExecStart=/usr/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_CONFIG_ARGS $KUBELE
                 sx____("{docker} rm -f {container}".format(**locals()))
 
 if __name__ == "__main__":
-    from optparse import OptionParser
+    from optparse import OptionParser # pylint: disable=deprecated-module # not anymore
     _o = OptionParser("%prog [options] test*",
-                      epilog=__doc__.strip().split("\n")[0])
+                      epilog=__doc__.strip().split("\n", 1)[0])
     _o.add_option("-v", "--verbose", action="count", default=0,
                   help="increase logging level [%default]")
     _o.add_option("--with", metavar="FILE", dest="systemctl_py", default=_systemctl_py,
