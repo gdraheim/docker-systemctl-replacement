@@ -51,12 +51,12 @@ logging.addLevelName(HINT, "HINT")
 logging.addLevelName(NOTE, "NOTE")
 logging.addLevelName(DONE, "DONE")
 
-def logg_debug_flock(formats: str, *args: Union[str, int]) -> None:
+def logg_debug_flock(msg: str, *args: Union[str, int]) -> None:
     if DEBUG_FLOCK:
-        logg.debug(formats, *args) # pragma: no cover
-def logg_debug_after(formats: str, *args: Union[str, int]) -> None:
+        logg.debug(msg, *args) # pragma: no cover
+def logg_debug_after(msg: str, *args: Union[str, int]) -> None:
     if DEBUG_AFTER:
-        logg.debug(formats, *args) # pragma: no cover
+        logg.debug(msg, *args) # pragma: no cover
 
 NOT_A_PROBLEM: int = 0   # FOUND_OK
 NOT_OK: int = 1          # FOUND_ERROR
@@ -75,13 +75,16 @@ _no_legend: bool = False
 _no_ask_password: bool = False
 _preset_mode: str = "all"
 _quiet: bool = False
-_root: str = ""
+_root: str = NIX
 _show_all: bool = False
 _user_mode: bool = False
 _only_what: List[str] = []
 _only_type: List[str] = []
 _only_state: List[str] = []
 _only_property: List[str] = []
+FORCE_IPV4 = False
+FORCE_IPV6 = False
+INIT_MODE = False
 
 # common default paths
 _system_folders: List[str] = [
@@ -177,9 +180,6 @@ EXPAND_VARS_MAXDEPTH: int = 20
 EXPAND_KEEP_VARS: bool = True
 RESTART_FAILED_UNITS: bool = True
 ACTIVE_IF_ENABLED = False
-FORCE_IPV4 = False
-FORCE_IPV6 = False
-INIT_MODE = False
 
 TAIL_CMDS = ["/bin/tail", "/usr/bin/tail", "/usr/local/bin/tail"]
 LESS_CMDS = ["/bin/less", "/usr/bin/less", "/usr/local/bin/less"]
