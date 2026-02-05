@@ -1,7 +1,7 @@
 #! /usr/bin/python3
 # pylint: disable=too-many-lines,line-too-long,too-many-branches,too-many-statements,too-many-public-methods,too-many-nested-blocks,too-many-locals,too-many-return-statements,too-many-instance-attributes,too-few-public-methods,too-many-arguments,too-many-positional-arguments,multiple-statements
 # pylint: disable=missing-function-docstring,missing-class-docstring,consider-using-f-string,consider-using-ternary,import-outside-toplevel
-# pylint: disable=no-else-return,no-else-break,unspecified-encoding,dangerous-default-value,unnecessary-lambda,unnecessary-comprehension,superfluous-parens
+# pylint: disable=no-else-return,no-else-break,unspecified-encoding,unnecessary-lambda,unnecessary-comprehension,superfluous-parens
 # pylint: disable=fixme,redefined-argument-from-local,chained-comparison,consider-using-in,consider-using-with.consider-using-min-builtin,consider-using-max-builtin,consider-using-get
 # pylint: disable=invalid-name,redefined-outer-name,possibly-unused-variable,unnecessary-negation,unused-argument,consider-using-dict-items,consider-using-enumerate
 # pylint: disable=unused-variable,protected-access
@@ -1984,7 +1984,8 @@ class SystemctlUnitFiles:
         return self._list_dependencies(unit, "", indent)
     def list_all_dependencies(self, unit: str, indent: Optional[str] = None) -> Iterable[str]:
         return self._list_dependencies(unit, "notloaded+restrict", indent)
-    def _list_dependencies(self, unit: str, show: str = NIX, indent: Optional[str] = None, mark: Optional[str] = None, loop: List[str] = []) -> Iterable[str]:
+    def _list_dependencies(self, unit: str, show: str = NIX, indent: Optional[str] = None, mark: Optional[str] = None, loop: Optional[List[str]] =  None) -> Iterable[str]:
+        loop = loop if loop else []
         mapping: Dict[str, str] = {}
         mapping["Requires"] = "required to start"
         mapping["Wants"] = "wanted to start"
@@ -6001,7 +6002,8 @@ class Systemctl:
         logg.debug("ignored services filter for default.target:\n\t%s", igno)
         default_target = target or self.get_default_target()
         return self.enabled_target_services(default_target, sysv, igno)
-    def enabled_target_services(self, target: str, sysv: str = "S", igno: List[str] = []) -> List[str]:
+    def enabled_target_services(self, target: str, sysv: str = "S", igno: Optional[List[str]] = None) -> List[str]:
+        igno = igno if igno else []
         units: List[str] = []
         if self.unitfiles.user_mode():
             targetlist = self.unitfiles.get_target_list(target)
@@ -6058,7 +6060,8 @@ class Systemctl:
                     if unit not in units:
                         units.append(unit)
         return units
-    def enabled_target_user_local_units(self, target: str, unit_kind: str = ".service", igno: List[str] = []) -> List[str]:
+    def enabled_target_user_local_units(self, target: str, unit_kind: str = ".service", igno: Optional[List[str]] = None) -> List[str]:
+        igno = igno if igno else []
         units: List[str] = []
         for basefolder in self.unitfiles.user_folders():
             if not basefolder:
@@ -6076,7 +6079,8 @@ class Systemctl:
                     if unit.endswith(unit_kind):
                         units.append(unit)
         return units
-    def enabled_target_user_system_units(self, target: str, unit_kind: str = ".service", igno: List[str] = []) -> List[str]:
+    def enabled_target_user_system_units(self, target: str, unit_kind: str = ".service", igno: Optional[List[str]] = None) -> List[str]:
+        igno = igno if igno else []
         units: List[str] = []
         for basefolder in self.unitfiles.system_folders():
             if not basefolder:
@@ -6100,7 +6104,8 @@ class Systemctl:
                         else:
                             units.append(unit)
         return units
-    def enabled_target_installed_system_units(self, target: str, unit_type: str = ".service", igno: List[str] = []) -> List[str]:
+    def enabled_target_installed_system_units(self, target: str, unit_type: str = ".service", igno: Optional[List[str]] = None) -> List[str]:
+        igno = igno if igno else []
         units: List[str] = []
         for basefolder in self.unitfiles.system_folders():
             if not basefolder:
@@ -6118,7 +6123,8 @@ class Systemctl:
                     if unit.endswith(unit_type):
                         units.append(unit)
         return units
-    def enabled_target_configured_system_units(self, target: str, unit_type: str = ".service", igno: List[str] = []) -> List[str]:
+    def enabled_target_configured_system_units(self, target: str, unit_type: str = ".service", igno: Optional[List[str]] = None) -> List[str]:
+        igno = igno if igno else []
         units: List[str] = []
         if TRUE:
             folder = self.default_enablefolder(target)
@@ -6134,7 +6140,8 @@ class Systemctl:
                     if unit.endswith(unit_type):
                         units.append(unit)
         return units
-    def enabled_target_sysv_units(self, target: str, sysv: str = "S", igno: List[str] = []) -> List[str]:
+    def enabled_target_sysv_units(self, target: str, sysv: str = "S", igno: Optional[List[str]] = None) -> List[str]:
+        igno = igno if igno else []
         units: List[str] = []
         folders: List[str] = []
         if target in ["multi-user.target", DefaultUnit]:
