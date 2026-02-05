@@ -72,7 +72,7 @@ _force: bool = False
 _full: bool = False
 _log_lines = 0
 _no_pager = False
-_now: bool = False
+_now: int = 0
 _no_reload = False
 _no_legend: bool = False
 _no_ask_password: bool = False
@@ -88,7 +88,7 @@ _only_property: List[str] = []
 LOG_BUFSIZE = 8192
 FORCE_IPV4 = False
 FORCE_IPV6 = False
-INIT_MODE = False
+INIT_MODE = 0
 EXIT_MODE = 0
 EXIT_NO_PROCS_LEFT = 1
 EXIT_NO_SERVICES_LEFT = 2
@@ -2574,10 +2574,9 @@ class Systemctl:
     _extra_vars: List[str]
     _force: bool
     _full: bool
-    _init: bool
     _no_ask_password: bool
     _no_legend: bool
-    _now: bool
+    _now: int
     _preset_mode: str
     _quiet: bool
     _root: str
@@ -2591,6 +2590,7 @@ class Systemctl:
     _default_target: str
     _sysinit_target: Optional[SystemctlConf]
     exit_mode: int
+    init_mode: int
     _log_file: Dict[str, int]
     _log_hold: Dict[str, bytes]
     _boottime: Optional[float]
@@ -2605,7 +2605,6 @@ class Systemctl:
         self._extra_vars = _extra_vars
         self._force = _force
         self._full = _full
-        self._init = INIT_MODE
         self._no_ask_password = _no_ask_password
         self._no_legend = _no_legend
         self._now = _now
@@ -2625,6 +2624,7 @@ class Systemctl:
         self._default_target = DefaultTarget
         self._sysinit_target = None # stores a UnitConf()
         self.exit_mode = EXIT_MODE or 0
+        self.init_mode = INIT_MODE or 0
         self._log_file = {} # init-loop
         self._log_hold = {} # init-loop
         self._boottime = None # cache self.get_boottime()
@@ -3625,9 +3625,9 @@ class Systemctl:
         if missing:
             logg.error("Unit %s not found.", " and ".join(missing))
             self.error |= NOT_FOUND
-        init = self._now or self._init
+        init = self._now or self.init_mode
         return self.start_units(units, init) and not missing
-    def start_units(self, units: List[str], init: Optional[bool] = None) -> bool:
+    def start_units(self, units: List[str], init: Optional[int] = None) -> bool:
         """ fails if any unit does not start
         /// SPECIAL: may run the init-loop and
             stop the named units afterwards """
@@ -6110,9 +6110,9 @@ class Systemctl:
                 a system_halt is performed with the enabled services to be stopped."""
         self.sysinit_status(SubState = "initializing")
         logg.info("system default requested - %s", arg)
-        init = self._now or self._init
+        init = self._now or self.init_mode
         return self.start_system_default(init = init)
-    def start_system_default(self, init: bool = False) -> bool:
+    def start_system_default(self, init: int = 0) -> bool:
         """ detect the default.target services and start them.
             When --init is given then the init-loop is run and
             the services are stopped again by 'systemctl halt'."""
@@ -6125,7 +6125,7 @@ class Systemctl:
             logg.info("init-loop %s", sig)
             self.stop_system_default()
         return not not services
-    def start_target_system(self, target: str, init: bool = False) -> List[str]:
+    def start_target_system(self, target: str, init: int = False) -> List[str]:
         services = self.target_default_services(target, "S")
         self.sysinit_status(SubState = "starting")
         self.start_units(services)
@@ -6788,8 +6788,8 @@ class Systemctl:
 def print_begin(argv: List[str], args: List[str]) -> None:
     script = os.path.realpath(argv[0])
     system = _user_mode and " --user" or " --system"
-    init = INIT_MODE and " --init" or ""
-    logg.info("EXEC BEGIN %s %s%s%s", script, " ".join(args), system, init)
+    init = INIT_MODE and " --init" or 0
+    logg.info("EXEC BEGIN %s %s%s(%s)", script, " ".join(args), system, init)
     if _root and not is_good_root(_root):
         logg.warning("begin: the --root=x should have atleast three levels /tmp/test_123/root")
         logg.warning("begin: but --root=%s ", _root)
@@ -7041,7 +7041,7 @@ def main() -> int:
                   help="Who to send signal to (ignored)")
     _o.add_option("-s", "--signal", metavar="SIG",
                   help="Which signal to send (ignored)")
-    _o.add_option("--now", action="store_true", default=_now,
+    _o.add_option("--now", action="count", default=_now,
                   help="Start or stop unit in addition to enabling or disabling it")
     _o.add_option("-q", "--quiet", action="store_true", default=_quiet,
                   help="Suppress output")
@@ -7104,7 +7104,7 @@ def main() -> int:
     _no_reload = opt.no_reload
     _no_legend = opt.no_legend
     _no_ask_password = opt.no_ask_password
-    _now = opt.now
+    _now = int(opt.now)
     _preset_mode = opt.preset_mode
     _quiet = opt.quiet
     _root = opt.root
@@ -7117,13 +7117,13 @@ def main() -> int:
     FORCE_IPV4 = opt.ipv4
     FORCE_IPV6 = opt.ipv6
     # being PID 1 (or 0) in a container will imply --init
-    _pid = os.getpid()
-    INIT_MODE = opt.init or _pid in [1, 0]
+    pid1 = os.getpid()
+    INIT_MODE = int(opt.init) or [1, 0].count(pid1)
     EXIT_MODE = int(opt.exit)
     _user_mode = opt.user
     if opt.system:
         _user_mode = False # override --user
-    elif os.geteuid() and _pid in [1, 0]:
+    elif os.geteuid() and [1, 0].count(pid1):
         _user_mode = True
     #
     for setting in opt.config:
