@@ -521,7 +521,7 @@ def shutil_setuid(user: Optional[str] = None, group: Optional[str] = None, xgrou
             os.setgroups(groups)
             logg.debug("setgroups %s < (%s)", groups, group)
         except OSError as e: # pragma: no cover (it will occur in non-root mode anyway)
-            logg.debug("setgroups %s < (%s) : %s", groups, group, e)
+            logg.debug("setgroups %s < (%s) >> %s", groups, group, e)
     if user:
         pw = pwd.getpwnam(user)
         gid = pw.pw_gid
@@ -541,7 +541,7 @@ def shutil_setuid(user: Optional[str] = None, group: Optional[str] = None, xgrou
             os.setgroups(groups)
             logg.debug("setgroups %s > %s ", groups, groupnames)
         except OSError as e: # pragma: no cover (it will occur in non-root mode anyway)
-            logg.debug("setgroups %s > %s : %s", groups, groupnames, e)
+            logg.debug("setgroups %s > %s >> %s", groups, groupnames, e)
         uid = pw.pw_uid
         os.setuid(uid)
         logg.debug("setuid %s for user %s", uid, strQ(user))
@@ -615,7 +615,7 @@ def _pid_zombie(pid: int) -> bool:
                     return "Z" in line
     except IOError as e:
         if e.errno != errno.ENOENT:
-            logg.error("%s (%s): %s", check, e.errno, e)
+            logg.error("%s (%s) >> %s", check, e.errno, e)
         return False
     return False
 
@@ -996,7 +996,7 @@ class waitlock:
             if not os.path.isdir(folder):
                 os.makedirs(folder)
         except OSError as e:
-            logg.warning("oops, %s", e)
+            logg.warning("oops >> %s", e)
     def lockfile(self) -> str:
         unit = ""
         if self.conf:
@@ -1029,7 +1029,7 @@ class waitlock:
                     continue
             logg.error("[%s] not able to get the lock to %s", os.getpid(), lockname)
         except OSError as e:
-            logg.warning("[%s] oops %s, %s", os.getpid(), str(type(e)), e)
+            logg.warning("[%s] oops %s >> %s", os.getpid(), str(type(e)), e)
         # TODO# raise Exception("no lock for %s", self.unit or "global")
         return False
     def __exit__(self, exc: Optional[Type[BaseException]], value: Optional[BaseException], traceback: Optional[TracebackType]) -> None:
@@ -1045,7 +1045,7 @@ class waitlock:
             os.close(self.opened) # implies an unlock but that has happend like 6 seconds later
             self.opened = -1
         except OSError as e:
-            logg.warning("oops, %s", e)
+            logg.warning("oops >> %s", e)
 
 class SystemctlWaitPID(NamedTuple):
     pid: Optional[int]
@@ -1286,14 +1286,14 @@ class SystemctlListenThread(threading.Thread):
                                     logg.debug("[%s] listen: accept %s :%s", me, sock.name(), sock_fileno)
                                     self.systemctl.do_accept_socket_from(sock.conf, sock.sock)
             except Exception as e:
-                logg.info("[%s] listen: interrupted - exception %s", me, e)
+                logg.info("[%s] listen: interrupted >> %s", me, e)
                 raise
         for sock in self.systemctl._sockets.values():
             try:
                 listen.unregister(sock)
                 sock.close()
             except OSError as e:
-                logg.warning("[%s] listen: close socket: %s", me, e)
+                logg.warning("[%s] listen: close socket >> %s", me, e)
         return
 
 class Systemctl:
@@ -1740,7 +1740,7 @@ class Systemctl:
                 active[unit] = self.get_active_from(conf)
                 substate[unit] = self.get_substate_from(conf) or "unknown"
             except OSError as e:
-                logg.warning("list-units: %s", e)
+                logg.warning("list-units >> %s", e)
             if self._only_state:
                 if result[unit] in self._only_state:
                     pass
@@ -1779,7 +1779,7 @@ class Systemctl:
                 result[unit] = conf
                 enabled[unit] = self.enabled_from(conf)
             except OSError as e:
-                logg.warning("list-units: %s", e)
+                logg.warning("list-units >> %s", e)
         return [(unit, enabled[unit]) for unit in sorted(result) if result[unit]]
     def each_target_file(self) -> Iterable[Tuple[str, str]]:
         folders = self.system_folders()
@@ -1856,7 +1856,7 @@ class Systemctl:
                         pid = to_intN(line.strip())
                         break
         except (OSError, ValueError) as e:
-            logg.warning("bad read of pid file '%s': %s", pid_file, e)
+            logg.warning("bad read of pid file '%s' >> %s", pid_file, e)
         return pid
     def wait_pid_file(self, pid_file: str, timeout: Optional[int] = None) -> Optional[int]: # -> pid?
         """ wait some seconds for the pid file to appear and return the pid """
@@ -1902,7 +1902,7 @@ class Systemctl:
             try:
                 os.remove(pid_file)
             except OSError as e:
-                logg.warning("while rm %s: %s", pid_file, e)
+                logg.warning("while rm %s >> %s", pid_file, e)
         self.write_status_from(conf, MainPID=None)
     def get_status_file(self, unit: str) -> str: # for testing
         conf = self.get_unit_conf(unit)
@@ -1956,7 +1956,7 @@ class Systemctl:
                     logg.debug("writing to %s\n\t%s", status_file, content.strip())
                     f.write(content)
         except IOError as e:
-            logg.error("writing STATUS %s: %s\n\t to status file %s", status, e, status_file)
+            logg.error("writing STATUS %s >> %s\n\t to status file %s", status, e, status_file)
         return True
     def read_status_from(self, conf: SystemctlConf) -> Dict[str, str]:
         status_file = self.get_status_file_from(conf)
@@ -2015,7 +2015,7 @@ class Systemctl:
                     # return os.path.getmtime(proc) # did sometimes change
                     return self.path_proc_started(proc)
             except OSError as e: # pragma: no cover
-                logg.warning("boottime - could not access %s: %s", proc, e)
+                logg.warning("boottime - could not access %s >> %s", proc, e)
         if DEBUG_BOOTTIME:
             logg.debug(" boottime from the oldest entry in /proc [nothing in %s..%s]", pid1, pid_max)
         return self.get_boottime_from_old_proc()
@@ -2030,7 +2030,7 @@ class Systemctl:
                     if ctime < booted:
                         booted = ctime
             except OSError as e: # pragma: no cover
-                logg.warning("could not access %s: %s", proc, e)
+                logg.warning("could not access %s >> %s", proc, e)
         return booted
 
     # Use uptime, time process running in ticks, and current time to determine process boot time
@@ -2104,7 +2104,7 @@ class Systemctl:
         try:
             shutil_truncate(filename)
         except OSError as e:
-            logg.warning("while truncating: %s", e)
+            logg.warning("while truncating >> %s", e)
         return True # truncated
     def getsize(self, filename: str) -> int:
         if filename is None: # pragma: no cover (is never null)
@@ -2116,7 +2116,7 @@ class Systemctl:
         try:
             return os.path.getsize(filename)
         except OSError as e:
-            logg.warning("while reading file size: %s\n of %s", e, filename)
+            logg.warning("while reading file size >> %s\n of %s", e, filename)
             return 0
     #
     def read_env_file(self, env_file: str) -> Iterable[Tuple[str, str]]: # -> generate[ (name,value) ]
@@ -2148,7 +2148,7 @@ class Systemctl:
                         yield m.group(1), m.group(2)
                         continue
         except OSError as e:
-            logg.info("while reading %s: %s", env_file, e)
+            logg.info("while reading %s >> %s", env_file, e)
     def read_env_part(self, env_part: str) -> Iterable[Tuple[str, str]]: # -> generate[ (name, value) ]
         """ Environment=<name>=<value> is being scanned """
         # systemd Environment= spec says it is a space-separated list of
@@ -2166,7 +2166,7 @@ class Systemctl:
                     name, value = part.split("=", 1)
                     yield name, value
         except OSError as e:
-            logg.info("while reading %s: %s", env_part, e)
+            logg.info("while reading %s >> %s", env_part, e)
     def command_of_unit(self, unit: str) -> Union[None, List[str]]:
         """ [UNIT]. -- show service settings (experimental)
             or use -p VarName to show another property than 'ExecStart' """
@@ -2371,19 +2371,19 @@ class Systemctl:
                     try:
                         os.remove(filepath)
                     except OSError as e: # pragma: no cover
-                        logg.debug("not removed file: %s (%s)", filepath, e)
+                        logg.debug("not removed file: %s >> %s", filepath, e)
                         ok = False
                 for item in dirnames:
                     dir_path = os.path.join(dirpath, item)
                     try:
                         os.rmdir(dir_path)
                     except OSError as e: # pragma: no cover
-                        logg.debug("not removed dir: %s (%s)", dir_path, e)
+                        logg.debug("not removed dir: %s >> %s", dir_path, e)
                         ok = False
             try:
                 os.rmdir(path)
             except OSError as e:
-                logg.debug("not removed top dir: %s (%s)", path, e)
+                logg.debug("not removed top dir: %s >> %s", path, e)
                 ok = False # pragma: no cover
         logg.debug("%s rm_tree %s", ok and "done" or "fail", path)
         return ok
@@ -2534,7 +2534,7 @@ class Systemctl:
                         try:
                             os.symlink(dirpath, var_dirpath)
                         except OSError as e:
-                            logg.debug("var symlink %s\n\t%s", var_dirpath, e)
+                            logg.debug("var symlink %s >> %s", var_dirpath, e)
         for name in nameStateDirectory.split(" "):
             if not name.strip(): continue
             DAT = get_VARLIB_HOME(root)
@@ -2577,14 +2577,14 @@ class Systemctl:
                 os.makedirs(dirpath)
                 logg.info("created directory path: %s", dirpath)
             except OSError as e: # pragma: no cover
-                logg.debug("errors directory path: %s\n\t%s", dirpath, e)
+                logg.debug("errors directory path: %s >> %s", dirpath, e)
                 ok = False
             filemode = int_mode(mode)
             if filemode:
                 try:
                     os.chmod(dirpath, filemode)
                 except OSError as e: # pragma: no cover
-                    logg.debug("errors directory path: %s\n\t%s", dirpath, e)
+                    logg.debug("errors directory path: %s >> %s", dirpath, e)
                     ok = False
         else:
             logg.debug("path did already exist: %s", dirpath)
@@ -2615,7 +2615,7 @@ class Systemctl:
                     logg.info("changed %s:%s %s", user, group, ok)
                     return ok
                 except OSError as e:
-                    logg.info("oops %s\n\t%s", dirpath, e)
+                    logg.info("oops %s >> %s", dirpath, e)
             else:
                 logg.debug("untouched %s", dirpath)
         return True
@@ -2633,19 +2633,19 @@ class Systemctl:
                 try:
                     os.chown(filepath, uid, gid)
                 except OSError as e: # pragma: no cover
-                    logg.debug("could not set %s:%s on %s\n\t%s", user, group, filepath, e)
+                    logg.debug("could not set %s:%s on %s >> %s", user, group, filepath, e)
                     ok = False
             for item in dirnames:
                 dir_path = os.path.join(dirpath, item)
                 try:
                     os.chown(dir_path, uid, gid)
                 except OSError as e: # pragma: no cover
-                    logg.debug("could not set %s:%s on %s\n\t%s", user, group, dir_path, e)
+                    logg.debug("could not set %s:%s on %s >> %s", user, group, dir_path, e)
                     ok = False
         try:
             os.chown(path, uid, gid)
         except OSError as e: # pragma: no cover
-            logg.debug("could not set %s:%s on %s\n\t%s", user, group, path, e)
+            logg.debug("could not set %s:%s on %s >> %s", user, group, path, e)
             ok = False
         if not ok:
             logg.debug("could not chown %s:%s service directory %s", user, group, path)
@@ -2796,10 +2796,10 @@ class Systemctl:
                 return False
             except OSError as e:
                 if mode.check:
-                    logg.error("chdir workingdir '%s': %s", into, e)
+                    logg.error("chdir workingdir '%s' >> %s", into, e)
                     return into
                 else:
-                    logg.debug("chdir workingdir '%s': %s", into, e)
+                    logg.debug("chdir workingdir '%s' >> %s", into, e)
                     return None
         return None
     class NotifySocket(NamedTuple):
@@ -2843,7 +2843,7 @@ class Systemctl:
             if os.path.exists(socketfile):
                 os.unlink(socketfile)
         except OSError as e:
-            logg.warning("error %s: %s", socketfile, e)
+            logg.warning("error %s >> %s", socketfile, e)
         sock = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
         sock.bind(socketfile)
         os.chmod(socketfile, 0o777) # the service my run under some User=setting
@@ -2861,7 +2861,7 @@ class Systemctl:
                 logg.debug("read_notify_socket(%s):%s", result_len, result_txt)
         except socket.timeout as e:
             if timeout > 2:
-                logg.debug("socket.timeout %s", e)
+                logg.debug("socket.timeout >> %s", e)
         return result
     def wait_notify_socket(self, notify: NotifySocket, timeout: float, pid: Optional[int] = None, pid_file: Optional[str] = None) -> Dict[str, str]:
         if not os.path.exists(notify.socketfile):
@@ -2912,7 +2912,7 @@ class Systemctl:
         try:
             notify.socket.close()
         except OSError as e:
-            logg.debug("socket.close %s", e)
+            logg.debug("socket.close >> %s", e)
         return results
     def start_modules(self, *modules: str) -> bool:
         """ [UNIT]... -- start these units
@@ -3424,7 +3424,7 @@ class Systemctl:
             if symlinks:
                 logg.warning("%s: symlinks for socket not implemented (%s)", conf.name(), path)
         except OSError as e:
-            logg.error("%s: create socket failed [%s]: %s", conf.name(), path, e)
+            logg.error("%s: create socket failed [%s] >> %s", conf.name(), path, e)
             sock.close()
             return None
         return sock
@@ -3435,7 +3435,7 @@ class Systemctl:
             sock.bind(('', int(port)))
             logg.info("%s: bound socket at %s %s:%s", conf.name(), strINET(inet), "*", port)
         except OSError as e:
-            logg.error("%s: create socket failed (%s:%s): %s", conf.name(), "*", port, e)
+            logg.error("%s: create socket failed (%s:%s) >> %s", conf.name(), "*", port, e)
             sock.close()
             return None
         return sock
@@ -3446,7 +3446,7 @@ class Systemctl:
             sock.bind((addr, int(port)))
             logg.info("%s: bound socket at %s %s:%s", conf.name(), strINET(inet), addr, port)
         except OSError as e:
-            logg.error("%s: create socket failed (%s:%s): %s", conf.name(), addr, port, e)
+            logg.error("%s: create socket failed (%s:%s) >> %s", conf.name(), addr, port, e)
             sock.close()
             return None
         return sock
@@ -3457,7 +3457,7 @@ class Systemctl:
             sock.bind((addr, int(port)))
             logg.info("%s: bound socket at %s [%s]:%s", conf.name(), strINET(inet), addr, port)
         except OSError as e:
-            logg.error("%s: create socket failed ([%s]:%s): %s", conf.name(), addr, port, e)
+            logg.error("%s: create socket failed ([%s]:%s) >> %s", conf.name(), addr, port, e)
             sock.close()
             return None
         return sock
@@ -3570,7 +3570,7 @@ class Systemctl:
                     os.makedirs(fdir)
                 err = open(fname, "a")
         except (OSError, IOError) as e:
-            msg += "\n%s: %s" % (fname, e)
+            msg += "\n%s >> %s" % (fname, e)
         if err is None:
             err = self.open_journal_log(conf)
         assert err is not None
@@ -3608,7 +3608,7 @@ class Systemctl:
                 os.execve(cmd[0], cmd, env)
                 sys.exit(11) # pragma: no cover (can not be reached / bug like mypy#8401)
         except (OSError, RuntimeError) as e:
-            logg.error("(%s): %s", shell_cmd(cmd), e)
+            logg.error("(%s) >> %s", shell_cmd(cmd), e)
             sys.exit(1)
     def test_start_unit(self, unit: str) -> None:
         """ helper function to test the code that is normally forked off """
@@ -4463,7 +4463,7 @@ class Systemctl:
                 done = True
                 logg.debug("done rm %s", status_file)
             except OSError as e:
-                logg.error("while rm %s: %s", status_file, e)
+                logg.error("while rm %s >> %s", status_file, e)
         pid_file = self.pid_file_from(conf)
         if pid_file and os.path.exists(pid_file):
             try:
@@ -4471,7 +4471,7 @@ class Systemctl:
                 done = True
                 logg.debug("done rm %s", pid_file)
             except OSError as e:
-                logg.error("while rm %s: %s", pid_file, e)
+                logg.error("while rm %s >> %s", pid_file, e)
         return done
     def status_modules(self, *modules: str) -> str:
         """ [UNIT]... check the status of these units.
@@ -4566,7 +4566,7 @@ class Systemctl:
                 return open(unit_file).read()
             logg.error("No files found for %s", unit)
         except OSError as e:
-            print("Unit {} is not-loaded: {}".format(unit, e))
+            print("Unit {} is not-loaded >> {}".format(unit, e))
         self.error |= NOT_OK
         return None
     ##
@@ -4842,9 +4842,9 @@ class Systemctl:
                     if os.path.islink(symlink) or self._force:
                         os.remove(symlink)
                 except OSError as e:
-                    logg.error("disable %s: %s", symlink, e)
+                    logg.error("disable %s >> %s", symlink, e)
                 except IOError as e: # pylint: disable=duplicate-except # same as OSError after python3.3
-                    logg.error("disable %s: %s", symlink, e)
+                    logg.error("disable %s >> %s", symlink, e)
         return True
     def disable_unit_sysv(self, unit_file: str) -> bool:
         rc3 = self._disable_unit_sysv(unit_file, self.rc3_root_folder())
@@ -5252,7 +5252,7 @@ class Systemctl:
                 conf = self.get_unit_conf(unit)
             except OSError as e:
                 filename = conf.filename() if conf else unit
-                logg.error("%s: can not read unit file %s\n\t%s",
+                logg.error("%s: can not read unit file %s >> %s",
                            unit, strQ(filename), e)
                 continue
             errors += self.syntax_check(conf)
@@ -5830,7 +5830,7 @@ class Systemctl:
         try:
             os.kill(1, signal.SIGQUIT) # exit init-loop on no_more_procs
         except OSError as e:
-            logg.warning("SIGQUIT to init-loop on PID-1: %s", e)
+            logg.warning("SIGQUIT to init-loop on PID-1 >> %s", e)
         return done
     def system_get_default(self) -> str:
         """ get current default run-level"""
@@ -5933,7 +5933,7 @@ class Systemctl:
                 self._log_file[unit] = opened
                 self._log_hold[unit] = b""
             except OSError as e:
-                logg.error("can not open %s log: %s\n\t%s", unit, log_path, e)
+                logg.error("can not open %s log: %s >> %s", unit, log_path, e)
     def read_log_files(self, units: List[str]) -> None:
         self.print_log_files(units)
     def print_log_files(self, units: List[str], stdout: int = 1) -> int:
@@ -5973,7 +5973,7 @@ class Systemctl:
                     if self._log_file[unit]:
                         os.close(self._log_file[unit])
             except OSError as e:
-                logg.error("can not close log: %s\n\t%s", unit, e)
+                logg.error("can not close log: %s >> %s", unit, e)
         self._log_file = {}
         self._log_hold = {}
 
@@ -6064,14 +6064,14 @@ class Systemctl:
                             unit = "" # dropped out
                             continue
                     except OSError as e:
-                        logg.error("[%s] burst exception %s", unit, e)
+                        logg.error("[%s] burst exception >> %s", unit, e)
                 if unit: # not dropped out
                     if unit not in self._restart_failed_units:
                         self._restart_failed_units[unit] = now + restartSec
                         logg.debug("[%s] [%s] restart scheduled in %+.3fs",
                                    me, unit, (self._restart_failed_units[unit] - now))
             except Exception as e: # pylint: disable=broad-exception-caught
-                logg.error("[%s] [%s] An error occurred while restart checking: %s", me, unit, e)
+                logg.error("[%s] [%s] An error occurred while restart checking >> %s", me, unit, e)
         if not self._restart_failed_units:
             self.error |= NOT_OK
             return []
@@ -6099,7 +6099,7 @@ class Systemctl:
                     if unit in self._restarted_unit:
                         self._restarted_unit[unit].append(time.time())
             except Exception as e: # pylint: disable=broad-exception-caught
-                logg.error("[%s] [%s] An error occurred while restarting: %s", me, unit, e)
+                logg.error("[%s] [%s] An error occurred while restarting >> %s", me, unit, e)
         for unit in restart_done:
             if unit in self._restart_failed_units:
                 del self._restart_failed_units[unit]
@@ -6222,7 +6222,7 @@ class Systemctl:
                             m = re.match(r"PPid:\s*(\d+)", line)
                             if m: ppid = int(m.group(1))
                 except IOError as e:
-                    logg.warning("%s : %s", proc_status, e)
+                    logg.warning("%s >> %s", proc_status, e)
                     continue
                 if zombie and ppid == os.getpid():
                     logg.info("reap zombie %s", pid)
@@ -6302,7 +6302,7 @@ class Systemctl:
                                     if ppid in pidlist and pid not in pids:
                                         pids += [pid]
                     except IOError as e:
-                        logg.warning("%s : %s", proc_status, e)
+                        logg.warning("%s >> %s", proc_status, e)
                         continue
             if len(pids) != len(pidlist):
                 pidlist = pids[:]
