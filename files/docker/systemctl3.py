@@ -4167,7 +4167,7 @@ class Systemctl:
             logg.info(" kill unit %s => %s", conf.name(), strQ(conf.filename()))
             return self.do_kill_unit_from(conf)
     def do_kill_unit_from(self, conf: SystemctlConf) -> bool:
-        started = time.time()
+        started = time.monotonic()
         doSendSIGKILL = self.get_SendSIGKILL(conf)
         doSendSIGHUP = self.get_SendSIGHUP(conf)
         useKillMode = self.get_KillMode(conf)
@@ -4213,7 +4213,7 @@ class Systemctl:
                     break
             if dead:
                 break
-            if time.time() > started + timeout:
+            if time.monotonic() > started + timeout:
                 logg.info("service PIDs not stopped after %s", timeout)
                 break
             time.sleep(1) # until TimeoutStopSec
@@ -6004,7 +6004,7 @@ class Systemctl:
         maximum = maximum or DefaultStartLimitIntervalSec
         restartDelay = MinimumYield
         for unit in units:
-            now = time.time()
+            now = time.monotonic()
             try:
                 conf = self.load_unit_conf(unit)
                 if not conf: continue
@@ -6048,7 +6048,7 @@ class Systemctl:
                                        me, unit, ["%.3fs" % (t - now) for t in restarted])
                             while len(restarted):
                                 oldest = restarted[0]
-                                interval = time.time() - oldest
+                                interval = time.monotonic() - oldest
                                 if interval > limitSecs:
                                     restarted = restarted[1:]
                                     continue
@@ -6077,7 +6077,7 @@ class Systemctl:
             return []
         # NOTE: this function is only called from InitLoop when "running"
         # let's check if any of the restart_units has its restartSec expired
-        now = time.time()
+        now = time.monotonic()
         restart_done: List[str] = []
         logg.debug("[%s] Restart checking  %s",
                    me, ["%+.3fs" % (t - now) for t in self._restart_failed_units.values()])
@@ -6097,7 +6097,7 @@ class Systemctl:
                     self.restart_unit(unit)
                     logg.debug("[%s] [%s] --- has been restarted.", me, unit)
                     if unit in self._restarted_unit:
-                        self._restarted_unit[unit].append(time.time())
+                        self._restarted_unit[unit].append(time.monotonic())
             except Exception as e: # pylint: disable=broad-exception-caught
                 logg.error("[%s] [%s] An error occurred while restarting >> %s", me, unit, e)
         for unit in restart_done:
