@@ -7001,6 +7001,8 @@ def main() -> int:
     _o.add_option("--no-warn", action="store_true",
                   help="Do not generate certain warnings (ignored)")
     #
+    _o.add_option("--maxtimeout", metavar="SEC", default=DefaultMaximumTimeout,
+                  help="..override max timeout [%default]")
     _o.add_option("-c", "--config", metavar="NAME=VAL", action="append", default=[],
                   help="..override internal variables (InitLoopSleep,SysInitTarget) {%default}")
     _o.add_option("-e", "--extra-vars", "--environment", metavar="NAME=VAL", action="append", default=[],
@@ -7034,6 +7036,7 @@ def main() -> int:
     _only_type = opt.only_type
     _only_property = opt.only_property
     _only_what = opt.only_what
+    DefaultMaximumTimeout = to_int(opt.maxtimeout)
     FORCE_IPV4 = opt.ipv4
     FORCE_IPV6 = opt.ipv6
     # being PID 1 (or 0) in a container will imply --init
