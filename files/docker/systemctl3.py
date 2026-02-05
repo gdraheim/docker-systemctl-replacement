@@ -337,8 +337,17 @@ def os_path(root: Optional[str], path: str) -> str:
         return path
     if is_good_root(root) and path.startswith(root):
         return path
-    while path.startswith(os.path.sep):
-        path = path[1:]
+    if path.startswith(os.path.sep):
+        path1 = path[1:]
+        if path1.startswith(os.path.sep):
+            if DEBUG_STATUS:
+                logg.debug("path starting with '//' is not moved to _root: %s", path)
+            return path # real systemd accepts //paths as well
+        else:
+            return os.path.join(root, path1)
+    else:
+        if DEBUG_STATUS:
+            logg.debug("adding _root prefix to path being not absolute: %s", path)
     return os.path.join(root, path)
 def path_replace_extension(path: str, old: str, new: str) -> str:
     if path.endswith(old):
