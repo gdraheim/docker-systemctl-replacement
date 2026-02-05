@@ -2817,7 +2817,7 @@ class Systemctl:
             os.makedirs(dirpath)
         if conf.status is None:
             conf.status = self.read_status_from(conf)
-        if True:
+        if TRUE:
             for key in sorted(status.keys()):
                 value = status[key]
                 if key.upper() == "AS": key = "ActiveState"
@@ -3657,7 +3657,7 @@ class Systemctl:
         # for StopPost on failure:
         returncode = 0
         service_result = "success"
-        if True:
+        if TRUE:
             if runs in ["simple", "exec", "forking", "notify", "idle"]:
                 env["MAINPID"] = strE(self.read_mainpid_from(conf))
             for cmd in conf.getlist(Service, "ExecStartPre", []):
@@ -3697,7 +3697,7 @@ class Systemctl:
                     break
                 logg.info("%s start done (%s) <-%s>", runs,
                           run.returncode or "OK", run.signal or "")
-            if True:
+            if TRUE:
                 self.set_status_from(conf, "ExecMainCode", strE(returncode))
                 active = returncode and "failed" or "active"
                 self.write_status_from(conf, AS=active)
@@ -3956,7 +3956,7 @@ class Systemctl:
         if not self._quiet:
             okee = self.unitfiles.exec_check(conf, env, Socket, "Exec") # all...
             if not okee and _no_reload: return False
-        if True:
+        if TRUE:
             for cmd in conf.getlist(Socket, "ExecStartPre", []):
                 exe, newcmd = self.unitfiles.expand_cmd(cmd, env, conf)
                 logg.info(" pre-start %s", shell_cmd(newcmd))
@@ -4342,7 +4342,7 @@ class Systemctl:
                     returncode = run.returncode
                     service_result = "failed"
                     break
-            if True:
+            if TRUE:
                 if returncode:
                     self.set_status_from(conf, "ExecStopCode", strE(returncode))
                     self.write_status_from(conf, AS="failed")
@@ -4351,7 +4351,7 @@ class Systemctl:
         # fallback Stop => Kill for ["simple","notify","forking"]
         elif not conf.getlist(Service, "ExecStop", []):
             logg.info("no ExecStop => systemctl kill")
-            if True:
+            if TRUE:
                 self.do_kill_unit_from(conf)
                 self.clean_pid_file_from(conf)
                 self.clean_status_from(conf) # "inactive"
@@ -5268,7 +5268,7 @@ class Systemctl:
         if self.unitfiles.user_mode():
             for folder in self.unitfiles.user_folders():
                 yield self.default_enablefolder(wanted, folder)
-        if True:
+        if TRUE:
             for folder in self.unitfiles.system_folders():
                 yield self.default_enablefolder(wanted, folder)
     def enablefolder(self, wanted: str) -> str:
@@ -5343,7 +5343,7 @@ class Systemctl:
             logg.debug("%s has no real file", conf.name())
             return False
         symlink = os.path.join(folder, conf.name())
-        if True:
+        if TRUE:
             _f = self._force and "-f" or ""
             logg.info("ln -s {_f} '{source}' '{symlink}'".format(**locals()))
         if self._force and os.path.islink(symlink):
@@ -5590,7 +5590,7 @@ class Systemctl:
             os.makedirs(folder)
         target = os.path.join(folder, os.path.basename(unit_file))
         dev_null = _dev_null
-        if True:
+        if TRUE:
             _f = self._force and "-f" or ""
             logg.debug("ln -s {_f} {dev_null} '{target}'".format(**locals()))
         if self._force and os.path.islink(target):
@@ -5613,7 +5613,7 @@ class Systemctl:
         if self.unitfiles.user_mode():
             for folder in self.unitfiles.user_folders():
                 yield folder
-        if True:
+        if TRUE:
             for folder in self.unitfiles.system_folders():
                 yield folder
     def unmask_modules(self, *modules: str) -> bool:
@@ -5654,7 +5654,7 @@ class Systemctl:
         if self._root:
             folder = os_path(self._root, folder)
         target = os.path.join(folder, os.path.basename(unit_file))
-        if True:
+        if TRUE:
             _f = self._force and "-f" or ""
             logg.info("rm {_f} '{target}'".format(**locals()))
         if os.path.islink(target):
@@ -5969,7 +5969,7 @@ class Systemctl:
         return units
     def enabled_target_configured_system_units(self, target: str, unit_type: str = ".service", igno: List[str] = []) -> List[str]:
         units: List[str] = []
-        if True:
+        if TRUE:
             folder = self.default_enablefolder(target)
             if self._root:
                 folder = os_path(self._root, folder)
