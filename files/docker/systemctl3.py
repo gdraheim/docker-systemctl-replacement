@@ -397,7 +397,8 @@ def os_getlogin() -> str:
 
 def get_runtime_dir() -> str:
     explicit = os.environ.get("XDG_RUNTIME_DIR", "")
-    if explicit: return explicit
+    if explicit:
+        return explicit
     user = os_getlogin()
     return "/tmp/run-"+user
 def get_RUN(root: bool = False) -> str:
@@ -449,7 +450,8 @@ def get_USER(root: bool = False) -> str:
     return pwd.getpwuid(uid).pw_name
 def get_GROUP_ID(root: bool = False) -> int:
     ID = 0
-    if root: return ID
+    if root:
+        return ID
     return os.getegid()
 def get_GROUP(root: bool = False) -> str:
     if root:
@@ -722,7 +724,8 @@ class SystemctlConfData:
             self._conf[section][option].append(value)
     def getstr(self, section: str, option: str, default: Optional[str] = None, allow_no_value: bool = False) -> str:
         done = self.get(section, option, strE(default), allow_no_value)
-        if done is None: return strE(default)
+        if done is None:
+            return strE(default)
         return done
     def get(self, section: str, option: str, default: Optional[str] = None, allow_no_value: bool = False) -> Optional[str]:
         allow_no_value = allow_no_value or self._allow_no_value
@@ -2835,7 +2838,8 @@ class Systemctl:
         """ if a status_file is known then path is created and the
             give status is written as the only content. """
         status_file = self.get_status_file_from(conf)
-        # if not status_file: return False
+        # if not status_file:
+        #     return False
         dirpath = os.path.dirname(os.path.abspath(status_file))
         if not os.path.isdir(dirpath):
             os.makedirs(dirpath)
@@ -2867,7 +2871,8 @@ class Systemctl:
     def read_status_from(self, conf: SystemctlConf) -> Dict[str, str]:
         status_file = self.get_status_file_from(conf)
         status: Dict[str, str] = {}
-        # if not status_file: return status
+        # if not status_file: 
+        #   return status
         if not os.path.isfile(status_file):
             if DEBUG_STATUS: logg.debug("[status] no status file: %s\n returning %s", status_file, status)
             return status
@@ -3374,7 +3379,8 @@ class Systemctl:
         return ok
     def clean_unit(self, unit: str, what: str = NIX) -> bool:
         conf = self.unitfiles.load_conf(unit)
-        if not conf: return False
+        if not conf:
+            return False
         return self.clean_unit_from(conf, what)
     def clean_unit_from(self, conf: SystemctlConf, what: str) -> bool:
         if self.is_active_from(conf):
@@ -3416,7 +3422,8 @@ class Systemctl:
         return result
     def log_unit(self, unit: str, lines: Optional[int] = None, follow: bool = False) -> int:
         conf = self.unitfiles.load_conf(unit)
-        if not conf: return -1
+        if not conf:
+            return -1
         return self.log_unit_from(conf, lines, follow)
     def log_unit_from(self, conf: SystemctlConf, lines: Optional[int] = None, follow: bool = False) -> int:
         cmd_args: List[Union[str, bytes]] = []
@@ -3656,8 +3663,10 @@ class Systemctl:
             return False
         return self.start_unit_from(conf)
     def start_unit_from(self, conf: SystemctlConf) -> bool:
-        if not conf: return False
-        if self.unitfiles.syntax_check(conf) > 100: return False
+        if not conf:
+            return False
+        if self.unitfiles.syntax_check(conf) > 100:
+            return False
         with waitlock(conf):
             logg.debug(" start unit %s => %s", conf.name(), strQ(conf.filename()))
             return self.do_start_unit_from(conf)
@@ -3708,7 +3717,8 @@ class Systemctl:
         env = self.unitfiles.get_env(conf)
         if not self._quiet:
             okee = self.unitfiles.exec_check(conf, env, Service, "Exec") # all...
-            if not okee and _no_reload: return False
+            if not okee and _no_reload:
+                return False
         service_directories = self.create_service_directories(conf)
         env.update(service_directories) # atleast sshd did check for /run/sshd
         # for StopPost on failure:
@@ -4699,8 +4709,10 @@ class Systemctl:
             return False
         return self.restart_unit_from(conf)
     def restart_unit_from(self, conf: SystemctlConf) -> bool:
-        if not conf: return False
-        if self.unitfiles.syntax_check(conf) > 100: return False
+        if not conf:
+            return False
+        if self.unitfiles.syntax_check(conf) > 100:
+            return False
         with waitlock(conf):
             if conf.name().endswith(".service"):
                 logg.info(" restart service %s => %s", conf.name(), strQ(conf.filename()))
@@ -4882,7 +4894,8 @@ class Systemctl:
             return False
         return self.kill_unit_from(conf)
     def kill_unit_from(self, conf: SystemctlConf) -> bool:
-        if not conf: return False
+        if not conf:
+            return False
         with waitlock(conf):
             logg.info(" kill unit %s => %s", conf.name(), strQ(conf.filename()))
             return self.do_kill_unit_from(conf)
@@ -5047,7 +5060,8 @@ class Systemctl:
     def get_active_service_from(self, conf: Optional[SystemctlConf]) -> str:
         """ returns 'active' 'inactive' 'failed' 'unknown' """
         # used in try-restart/other commands to check if needed.
-        if not conf: return "unknown"
+        if not conf:
+            return "unknown"
         pid_file = self.pid_file_from(conf)
         if pid_file: # application PIDFile
             if not os.path.exists(pid_file):
@@ -5098,7 +5112,8 @@ class Systemctl:
         return target_list
     def get_substate_from(self, conf: SystemctlConf) -> Optional[str]:
         """ returns 'running' 'exited' 'dead' 'failed' 'plugged' 'mounted' """
-        if not conf: return None
+        if not conf:
+            return None
         pid_file = self.pid_file_from(conf)
         if pid_file:
             if not os.path.exists(pid_file):
@@ -5147,7 +5162,8 @@ class Systemctl:
             return []
         return results
     def is_failed_from(self, conf: SystemctlConf) -> bool:
-        if conf is None: return True
+        if conf is None:
+            return True
         return self.get_active_from(conf) == "failed"
     def reset_failed_modules(self, *modules: str) -> bool:
         """ reset-failed [UNIT]... -- Reset failed state for all, one, or more units """
@@ -5175,8 +5191,10 @@ class Systemctl:
             return False
         return self.reset_failed_from(conf)
     def reset_failed_from(self, conf: SystemctlConf) -> bool:
-        if conf is None: return True
-        if not self.is_failed_from(conf): return False
+        if conf is None:
+            return True
+        if not self.is_failed_from(conf):
+            return False
         done = False
         status_file = self.get_status_file_from(conf)
         if status_file and os.path.exists(status_file):
