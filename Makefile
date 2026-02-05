@@ -9,7 +9,8 @@ UBUNTU=ubuntu:18.04
 PYTHON=python3
 PYTHON2 = python2
 PYTHON3 = python3
-PYTHON_VERSION = 3.7
+PYTHON39 = python3.9
+PYTHON_VERSION = 3.9
 COVERAGE3 = $(PYTHON3) -m coverage
 TWINE = twine
 GIT=git
@@ -38,12 +39,6 @@ version:
 
 help:
 	python files/docker/systemctl3.py help
-2:
-	cp -v files/docker/systemctl3.py files/docker/systemctl.py
-	sed -i -e "s|/usr/bin/python3|/usr/bin/python2|" files/docker/systemctl.py
-	sed -i -e "s|type hints are provide.*|generated from systemctl3.py - do not change|" files/docker/systemctl.py
-	$(GIT) add files/docker/systemctl.py || true
-	diff -U1 files/docker/systemctl3.py files/docker/systemctl.py || true
 
 alltests: CH CP UA DJ
 TESTS = tests/testsuite.py
@@ -61,7 +56,7 @@ st_%: ; $(MAKE) 2 && $(TESTS) "te$(notdir $@)" -vv $(WITH2)
 
 test: ; $(MAKE) type && $(MAKE) tests && $(MAKE) coverage
 
-WITH2 = --python=/usr/bin/python2 --with=files/docker/systemctl.py
+WITH2 = --python=/usr/bin/python2 --with=tmp/systemctl.py
 WITH3 = --python=/usr/bin/python3 --with=files/docker/systemctl3.py
 todo/test_%:             ; $(TESTS)   "$(notdir $@)" -vv --todo
 15.6/test_%:             ; $(TESTS)   "$(notdir $@)" -vv $(FORCE) --image=opensuse/leap:15.6
@@ -78,6 +73,7 @@ todo/test_%:             ; $(TESTS)   "$(notdir $@)" -vv --todo
 19.10/test_%:            ; $(TESTS)   "$(notdir $@)" -vv $(FORCE) --image=ubuntu:19.10
 18.04/test_%:            ; $(TESTS)   "$(notdir $@)" -vv $(FORCE) --image=ubuntu:18.04
 16.04/test_%:            ; $(TESTS)   "$(notdir $@)" -vv $(FORCE) --image=ubuntu:16.04
+9.4/test_%:              ; $(TESTS)   "$(notdir $@)" -vv $(FORCE) --image=almalinux:9.4
 9.3/test_%:              ; $(TESTS)   "$(notdir $@)" -vv $(FORCE) --image=almalinux:9.3
 9.1/test_%:              ; $(TESTS)   "$(notdir $@)" -vv $(FORCE) --image=almalinux:9.1
 8.1/test_%:              ; $(TESTS)   "$(notdir $@)" -vv $(FORCE) --image=centos:8.1.1911
@@ -334,11 +330,6 @@ dockerfiles:
 
 ############## https://pypi.org/...
 
-src/systemctl.py:
-	test -d $(dir $@) || mkdir -v $(dir $@)
-	cp files/docker/systemctl3.py $@
-src/systemctl.pyi:
-	cp types/systemctl3.pyi $@
 src/README.md: README.md Makefile
 	test -d $(dir $@) || mkdir -v $(dir $@)
 	cat README.md | sed -e "/\\/badge/d" -e /^---/q > $@
@@ -403,32 +394,45 @@ pep style.d:
 	$(MAKE) testsuite.py.style
 
 ####### strip-hints
+STRIPHINTS_GIT_URL = https://github.com/abarker/strip-hints.git
 STRIP_HINTS = ../strip-hints
-strip-hints:
-	set -ex ; if test -d $(STRIP_HINTS); then cd $(STRIP_HINTS) && git pull; else \
-	cd $(dir $(STRIP_HINTS)) && git clone git@github.com:abarker/strip-hints.git $(notdir $(STRIP_HINTS)) ; fi
-	python3 $(STRIP_HINTS)/bin/strip_hints.py --only-test-for-changes files/docker/systemctl3.py
-st strip:
-	python3 $(STRIP_HINTS)/bin/strip_hints.py --to-empty tmp.files/docker/systemctl3.py > tmp.files/docker/systemctl.py
-	diff -U0 files/docker/systemctl.py tmp.files/docker/systemctl.py
+STRIP_HINTS_PY = $(STRIP_HINTS)/bin/strip_hints.py
+striphints.git:
+	set -ex ; if test -d $(STRIPHINTS_GIT); then cd $(STRIPHINTS_GIT) && git pull; else : \
+	; cd $(dir $(STRIPHINTS_GIT)) && git clone $(STRIPHINTS_GIT_URL) $(notdir $(STRIPHINTS_GIT)) \
+	; fi
+	echo "def test(a: str) -> str: return a" > tmp.striphints.py
+	$(PYTHON) $(STRIPHINTS) --to-empty tmp.striphints.py | tee tmp.striphints.py.out
+	test "def test(a )  : return a" = "`cat tmp.striphints.py.out`"
+	rm tmp.striphints.*
 
-PY_BACKWARDS = ../py-backwards
-py-backwards:
-	set -ex ; if test -d $(PY_BACKWARDS); then cd $(PY_BACKWARDS) && git pull; else \
-	cd $(dir $(PY_BACKWARDS)) && git clone git@github.com:nvbn/py-backwards.git $(notdir $(PY_BACKWARDS)) ; fi
-	python3 $(PY_BACKWARDS)/py_backwards/main.py -e main --version
+STRIP_PYTHON3_GIT_URL = https://github.com/gdraheim/strip_python3
+STRIP_PYTHON3_GIT = ../strip_python3
+STRIP_PYTHON3_PY = $(STRIP_PYTHON3_GIT)/strip3/strip_python3.py
+STRIPHINTS3 = $(PYTHON39) $(STRIP_PYTHON3_PY) $(STRIP_PYTHON3_OPTIONS)
+striphints3.git:
+	set -ex ; if test -d $(STRIP_PYTHON3_GIT); then cd $(STRIP_PYTHON3_GIT) && git pull; else : \
+	; cd $(dir $(STRIPHINTS_GIT)) && git clone $(STRIP_PYTHON3_GIT_URL) $(notdir $(STRIP_PYTHON3_GIT)) \
+	; fi
+	echo "def test(a: str) -> str: return a" > tmp.striphints.py
+	$(STRIPHINTS3) tmp.striphints.py -o tmp.striphints.py.out -vv
+	cat tmp.striphints.py.out | tr '\\\n' '|' && echo
+	test "def test(a):|    return a|" = "`cat tmp.striphints.py.out | tr '\\\\\\n' '|'`"
+	rm tmp.striphints.*
 
-https://github.com/nvbn/py-backwards
+src/systemctl.py: files/docker/systemctl3.py $(STRIP_PYTHON3_PY) Makefile
+	@ $(STRIPHINTS3) $< -o $@ $V --old-python --make-pyi
+	chmod +x $@
 
-####### retype + stubgen
-PY_RETYPE = ../retype
-RETYPE = $(PY_RETYPE)/retype.py
-RETYPE_WITH= --traceback
-py-retype:
-	set -ex ; if test -d $(PY_RETYPE); then cd $(PY_RETYPE) && git pull; else : \
-	; cd $(dir $(PY_RETYPE)) && git clone git@github.com:ambv/retype.git $(notdir $(PY_RETYPE)) \
-	; cd $(PY_RETYPE) && git checkout 17.12.0 ; fi
-	python3 $(PY_RETYPE)/retype.py --version
+strip: tmp/systemctl_2.py
+tmp/systemctl_2.py: files/docker/systemctl3.py $(STRIP_PYTHON3_PY) Makefile
+	@ $(STRIPHINTS3) $< -o $@ $V --old-python
+	chmod +x $@
+
+2: tmp/systemctl.py
+tmp/systemctl.py: files/docker/systemctl3.py $(STRIP_PYTHON3_PY) Makefile
+	@ $(STRIPHINTS3) $< -o $@ $V --run-python=python2
+	chmod +x $@
 
 MYPY = mypy
 MYPY_WITH = --strict --show-error-codes --show-error-context 
@@ -438,24 +442,8 @@ mypy:
 	zypper install -y python3-click python3-pathspec
 	cd .. && git clone git@github.com:ambv/retype.git
 	cd ../retype && git checkout 17.12.0
-stub:
-	stubgen -o tmp.types --include-private files/docker/systemctl3.py
-stub.:
-	stubgen -o tmp.types --include-private files/docker/systemctl3.py
-	sed -i -e "/^basestring = str/d" -e "/xrange = range/d" tmp.types/systemctl3.pyi
-	sed -i -e "/^EXEC_SPAWN/d" -e "/^_notify_socket_folder/d" tmp.types/systemctl3.pyi
-	diff -U1 types/systemctl3.pyi tmp.types/systemctl3.pyi | head -20
-type.:
-	python3 $(RETYPE) $(RETYPE_WITH) files/docker/systemctl3.py -t tmp.files/docker
-	stubgen -o tmp.types --include-private tmp.files/docker/systemctl3.py
-	sed -i -e "/^basestring = str/d" -e "/xrange = range/d" tmp.types/systemctl3.pyi
-	sed -i -e "/^EXEC_SPAWN/d" -e "/^_notify_socket_folder/d" tmp.types/systemctl3.pyi
-	diff -U1 types/systemctl3.pyi tmp.types/systemctl3.pyi | head -20
-	$(MYPY) $(MYPY_WITH) $(MYPY_OPTIONS) tmp.files/docker/systemctl3.py 2>&1 | head -20
-type:
-	python3 $(RETYPE) $(RETYPE_WITH) files/docker/systemctl3.py -t tmp.files/docker
-	sed -i -e "/# [|]/d" tmp.files/docker/systemctl3.py
-	$(MYPY) $(MYPY_WITH) $(MYPY_OPTIONS) tmp.files/docker/systemctl3.py
+
+type:; $(MYPY) $(MYPY_WITH) $(MYPY_OPTIONS) files/docker/systemctl3.py
 ttype:; $(MYPY) $(MYPY_WITH) $(MYPY_OPTIONS) testsuite.py
 
 ####### box test
