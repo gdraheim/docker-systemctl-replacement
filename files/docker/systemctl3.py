@@ -2493,7 +2493,7 @@ class SystemctlUnitFiles:
 
 class SystemctlListenThread(threading.Thread):
     """ support LISTEN modules """
-    def __init__(self, systemctl: "Systemctl") -> None:
+    def __init__(self, systemctl: 'Systemctl') -> None:
         threading.Thread.__init__(self, name="listen")
         self.systemctl = systemctl
         self.stopped = threading.Event()
@@ -2505,12 +2505,13 @@ class SystemctlListenThread(threading.Thread):
         me = os.getpid()
         if DEBUG_INITLOOP: # pragma: no cover
             logg.info("[%s] listen: new thread", me)
-        if not self.systemctl._sockets:
+        socketlist = self.systemctl.socketlist()
+        if not socketlist:
             return
         if DEBUG_INITLOOP: # pragma: no cover
             logg.info("[%s] listen: start thread", me)
         listen = select.poll()
-        for sock in self.systemctl._sockets.values():
+        for sock in socketlist:
             listen.register(sock, READ_ONLY)
             sock.listen()
             logg.debug("[%s] listen: %s :%s", me, sock.name(), sock.addr())
@@ -2534,7 +2535,7 @@ class SystemctlListenThread(threading.Thread):
                 if DEBUG_INITLOOP: # pragma: no cover
                     logg.debug("[%s] listen: poll (%s)", me, len(accepting))
                 for sock_fileno, event in accepting:
-                    for sock in self.systemctl._sockets.values():
+                    for sock in sockelist:
                         if sock.fileno() == sock_fileno:
                             if not self.stopped.is_set():
                                 if self.systemctl.loop.acquire():
@@ -2543,7 +2544,7 @@ class SystemctlListenThread(threading.Thread):
             except Exception as e:
                 logg.info("[%s] listen: interrupted >> %s", me, e)
                 raise
-        for sock in self.systemctl._sockets.values():
+        for sock in socketlist:
             try:
                 listen.unregister(sock)
                 sock.close()
@@ -3940,7 +3941,8 @@ class Systemctl:
             return False
         return self.listen_unit_from(conf)
     def listen_unit_from(self, conf: SystemctlConf) -> bool:
-        if not conf: return False
+        if not conf:
+            return False
         with waitlock(conf):
             logg.debug(" listen unit %s => %s", conf.name(), strQ(conf.filename()))
             return self.do_listen_unit_from(conf)
@@ -3992,16 +3994,17 @@ class Systemctl:
         env = self.unitfiles.get_env(conf)
         if not self._quiet:
             okee = self.unitfiles.exec_check(conf, env, Socket, "Exec") # all...
-            if not okee and _no_reload: return False
+            if not okee and _no_reload:
+                return False
         if TRUE:
             for cmd in conf.getlist(Socket, "ExecStartPre", []):
                 exe, newcmd = self.unitfiles.expand_cmd(cmd, env, conf)
-                logg.info(" pre-start %s", shell_cmd(newcmd))
+                logg.info("%s pre-start %s", runs, shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
                     self.execve_from(conf, newcmd, env) # pragma: no cover
                 run = subprocess_waitpid(forkpid)
-                logg.debug(" pre-start done (%s) <-%s>",
+                logg.debug("%s pre-start done (%s) <-%s>", runs,
                            run.returncode or "OK", run.signal or "")
                 if run.returncode and exe.check:
                     logg.error("the ExecStartPre control process exited with error code")
@@ -4036,25 +4039,27 @@ class Systemctl:
             env["SERVICE_RESULT"] = service_result
             for cmd in conf.getlist(Socket, "ExecStopPost", []):
                 exe, newcmd = self.unitfiles.expand_cmd(cmd, env, conf)
-                logg.info("post-fail %s", shell_cmd(newcmd))
+                logg.info("%s post-fail %s", runs, shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
                     self.execve_from(conf, newcmd, env) # pragma: no cover
                 run = subprocess_waitpid(forkpid)
-                logg.debug("post-fail done (%s) <-%s>",
+                logg.debug("%s post-fail done (%s) <-%s>", runs,
                            run.returncode or "OK", run.signal or "")
             return False
         else:
             for cmd in conf.getlist(Socket, "ExecStartPost", []):
                 exe, newcmd = self.unitfiles.expand_cmd(cmd, env, conf)
-                logg.info("post-start %s", shell_cmd(newcmd))
+                logg.info("%s post-start %s", runs, shell_cmd(newcmd))
                 forkpid = os.fork()
                 if not forkpid:
                     self.execve_from(conf, newcmd, env) # pragma: no cover
                 run = subprocess_waitpid(forkpid)
-                logg.debug("post-start done (%s) <-%s>",
+                logg.debug("%s post-start done (%s) <-%s>", runs,
                            run.returncode or "OK", run.signal or "")
             return True
+    def socketlist(self) -> List[SystemctlSocket]:
+        return list(self._sockets.values())
     def create_socket(self, conf: SystemctlConf) -> Optional[socket.socket]:
         unsupported = ["ListenUSBFunction", "ListenMessageQueue", "ListenNetlink"]
         unsupported += ["ListenSpecial", "ListenFIFO", "ListenSequentialPacket"]
@@ -4129,9 +4134,9 @@ class Systemctl:
         sock = socket.socket(socket.AF_INET, inet)
         try:
             sock.bind(('', int(port)))
-            logg.info("%s: bound socket at %s %s:%s", conf.name(), strINET(inet), "*", port)
+            logg.info("%s: bound socket at %s %s:%s", conf.name(), strINET(inet), ALL, port)
         except OSError as e:
-            logg.error("%s: create socket failed (%s:%s) >> %s", conf.name(), "*", port, e)
+            logg.error("%s: create socket failed (%s:%s) >> %s", conf.name(), ALL, port, e)
             sock.close()
             return None
         return sock
@@ -4171,11 +4176,11 @@ class Systemctl:
             if name in env:
                 del env[name]
         locale = {}
-        path = env.get("LOCALE_CONF", LocaleConf)
-        parts = path.split(os.pathsep)
-        for part in parts:
-            if os.path.isfile(part):
-                for var, val in self.unitfiles.read_env_file("-"+part):
+        localepath = env.get("LOCALE_CONF", LocaleConf)
+        localeparts = localepath.split(os.pathsep)
+        for filename in localeparts:
+            if os.path.isfile(filename):
+                for var, val in read_env_file(filename, self._root):
                     locale[var] = val
                     env[var] = val
         if "LANG" not in locale:
@@ -4296,7 +4301,8 @@ class Systemctl:
     def test_start_unit(self, unit: str) -> None:
         """ helper function to test the code that is normally forked off """
         conf = self.unitfiles.load_conf(unit)
-        if not conf: return None
+        if not conf:
+            return None
         env = self.unitfiles.get_env(conf)
         for cmd in conf.getlist(Service, "ExecStart", []):
             exe, newcmd = self.unitfiles.expand_cmd(cmd, env, conf)
@@ -4336,8 +4342,10 @@ class Systemctl:
         return self.stop_unit_from(conf)
 
     def stop_unit_from(self, conf: SystemctlConf) -> bool:
-        if not conf: return False
-        if self.unitfiles.syntax_check(conf) > 100: return False
+        if not conf:
+            return False
+        if self.unitfiles.syntax_check(conf) > 100:
+            return False
         with waitlock(conf):
             logg.info(" stop unit %s => %s", conf.name(), strQ(conf.filename()))
             return self.do_stop_unit_from(conf)
@@ -4358,7 +4366,8 @@ class Systemctl:
         env = self.unitfiles.get_env(conf)
         if not self._quiet:
             okee = self.unitfiles.exec_check(conf, env, Service, "ExecStop")
-            if not okee and _no_reload: return False
+            if not okee and _no_reload:
+                return False
         service_directories = self.env_service_directories(conf)
         env.update(service_directories)
         returncode = 0
@@ -4489,7 +4498,8 @@ class Systemctl:
         env = self.unitfiles.get_env(conf)
         if not self._quiet:
             okee = self.unitfiles.exec_check(conf, env, Socket, "ExecStop")
-            if not okee and _no_reload: return False
+            if not okee and _no_reload:
+                return False
         if not accept:
             # we do not listen but have the service started right away
             done = self.do_stop_service_from(service_conf)
@@ -4517,7 +4527,6 @@ class Systemctl:
             return True
         if not self.is_active_pid(pid):
             return True
-        logg.info("wait for PID %s to vanish (%ss)", pid, timeout)
         for attempt in range(int(timeout)):
             time.sleep(1) # until TimeoutStopSec
             logg.debug("%s wait for PID %s to vanish (%ss)", delayed(attempt), pid, timeout)
@@ -4560,8 +4569,10 @@ class Systemctl:
             return False
         return self.reload_unit_from(conf)
     def reload_unit_from(self, conf: SystemctlConf) -> bool:
-        if not conf: return False
-        if self.unitfiles.syntax_check(conf) > 100: return False
+        if not conf:
+            return False
+        if self.unitfiles.syntax_check(conf) > 100:
+            return False
         with waitlock(conf):
             logg.info(" reload unit %s => %s", conf.name(), strQ(conf.filename()))
             return self.do_reload_unit_from(conf)
@@ -4586,7 +4597,8 @@ class Systemctl:
         env = self.unitfiles.get_env(conf)
         if not self._quiet:
             okee = self.unitfiles.exec_check(conf, env, Service, "ExecReload")
-            if not okee and _no_reload: return False
+            if not okee and _no_reload:
+                return False
         initscript = conf.filename()
         if self.unitfiles.is_sysv_file(initscript):
             status_file = self.get_status_file_from(conf)
@@ -4717,7 +4729,7 @@ class Systemctl:
                 return self.do_restart_unit_from(conf)
         return True
     def reload_or_restart_modules(self, *modules: str) -> bool:
-        """ reload-or-restart [UNIT]... -- reload-or-restart these units """
+        """ reload-or-restart [UNIT]... -- reload or restart these units """
         found_all = True
         units: List[str] = []
         for module in modules:
@@ -4751,7 +4763,8 @@ class Systemctl:
         return self.reload_or_restart_unit_from(conf)
     def reload_or_restart_unit_from(self, conf: SystemctlConf) -> bool:
         """ do 'reload' if specified, otherwise do 'restart' """
-        if not conf: return False
+        if not conf:
+            return False
         with waitlock(conf):
             logg.info(" reload-or-restart unit %s => %s", conf.name(), strQ(conf.filename()))
             return self.do_reload_or_restart_unit_from(conf)
@@ -4767,7 +4780,7 @@ class Systemctl:
             logg.info("found service without ExecReload -> 'restart'")
             return self.do_restart_unit_from(conf)
     def reload_or_try_restart_modules(self, *modules: str) -> bool:
-        """ reload-or-try-restart [UNIT]... -- reload-or-try-restart these units """
+        """ reload-or-try-restart [UNIT]... -- reload or try-restart these units """
         found_all = True
         units: List[str] = []
         for module in modules:
@@ -4971,10 +4984,12 @@ class Systemctl:
         return results
     def is_active_from(self, conf: SystemctlConf) -> bool:
         """ used in try-restart/other commands to check if needed. """
-        if not conf: return False
+        if not conf:
+            return False
         return self.get_active_from(conf) == "active"
     def active_pid_from(self, conf: SystemctlConf) -> Optional[int]:
-        if not conf: return False
+        if not conf:
+            return False
         pid = self.read_mainpid_from(conf)
         return self.is_active_pid(pid)
     def is_active_pid(self, pid: Optional[int]) -> Optional[int]:
@@ -5292,7 +5307,7 @@ class Systemctl:
                     fails += 1
         return not fails and not not found
     def preset_all_modules(self, *modules: str) -> bool:
-        """ 'preset' all services
+        """ preset-all -- run 'preset' on all services
         enable or disable services according to *.preset files
         """
         if self.unitfiles.user_mode():
@@ -5382,7 +5397,7 @@ class Systemctl:
         symlink = os.path.join(folder, conf.name())
         if TRUE:
             _f = self._force and "-f" or ""
-            logg.info("%s", F"ln -s {_f} '{source}' '{symlink}'")
+            logg.info("ln -s %s %s %s", _f, strQ(source), strQ(symlink))
         if self._force and os.path.islink(symlink):
             os.remove(target)
         if not os.path.islink(symlink):
@@ -5413,10 +5428,10 @@ class Systemctl:
             os.makedirs(rc_folder)
         # do not double existing entries
         for found in os.listdir(rc_folder):
-            m = re.match(r"S\d\d(.*)", found)
+            m = re.match(r"S\d\d(.*)", found) # match start files
             if m and m.group(1) == name:
                 nameS = found
-            m = re.match(r"K\d\d(.*)", found)
+            m = re.match(r"K\d\d(.*)", found) # match stop files
             if m and m.group(1) == name:
                 nameK = found
         target = os.path.join(rc_folder, nameS)
@@ -5481,12 +5496,10 @@ class Systemctl:
             if os.path.exists(symlink):
                 try:
                     _f = self._force and "-f" or ""
-                    logg.info("%s", F"rm {_f} '{symlink}'")
+                    logg.info("rm %s %s", _f, strQ(symlink))
                     if os.path.islink(symlink) or self._force:
                         os.remove(symlink)
-                except OSError as e:
-                    logg.error("disable %s >> %s", symlink, e)
-                except IOError as e: # pylint: disable=duplicate-except # same as OSError after python3.3
+                except (OSError, IOError) as e:
                     logg.error("disable %s >> %s", symlink, e)
         return True
     def disable_unit_sysv(self, unit_file: str) -> bool:
@@ -5500,10 +5513,10 @@ class Systemctl:
         nameK = "K50"+name
         # do not forget the existing entries
         for found in os.listdir(rc_folder):
-            m = re.match(r"S\d\d(.*)", found)
+            m = re.match(r"S\d\d(.*)", found) # match start files
             if m and m.group(1) == name:
                 nameS = found
-            m = re.match(r"K\d\d(.*)", found)
+            m = re.match(r"K\d\d(.*)", found) # match stop files
             if m and m.group(1) == name:
                 nameK = found
         target = os.path.join(rc_folder, nameS)
@@ -5644,7 +5657,8 @@ class Systemctl:
             return False
     def mask_folder(self) -> str:
         for folder in self.mask_folders():
-            if folder: return folder
+            if folder:
+                return folder
         raise FileNotFoundError("did not find any systemd/system folder")
     def mask_folders(self) -> Iterable[str]:
         if self.unitfiles.user_mode():
@@ -5735,7 +5749,7 @@ class Systemctl:
         """
         return self.unitfiles.list_start_dependencies_units(list(modules))
     def daemon_reload_target(self) -> bool:
-        """ reload does will only check the service files here.
+        """ daemon-reload reload does will only check the service files here.
             The returncode will tell the number of warnings,
             and it is over 100 if it can not continue even
             for the relaxed systemctl.py style of execution. """
@@ -5851,7 +5865,7 @@ class Systemctl:
     #
     igno_centos = ["netconsole", "network"]
     igno_opensuse = ["raw", "pppoe", "*.local", "boot.*", "rpmconf*", "postfix*"]
-    igno_ubuntu = ["mount*", "umount*", "ondemand", "*.local"]
+    igno_ubuntu = ["mount*", "umount*", "ondemand", "*.local", "e2scrub_reap"]
     igno_always = ["network*", "dbus*", "systemd-*", "kdump*", "kmod*"]
     igno_always += ["purge-kernels.service", "after-local.service", "dm-event.*"] # as on opensuse
     igno_targets = ["remote-fs.target"]
@@ -5863,7 +5877,7 @@ class Systemctl:
                 return True # ignore
         return False
     def default_services_modules(self, *modules: str) -> List[str]:
-        """ show the default services
+        """ default-services -- show the default services
             This is used internally to know the list of service to be started in the 'get-default'
             target runlevel when the container is started through default initialisation. It will
             ignore a number of services - use '--all' to show a longer list of services and
@@ -6052,7 +6066,7 @@ class Systemctl:
                     units.append(unit)
         return units
     def default_system(self, arg: bool = True) -> bool:
-        """ start units for default system level
+        """ default -- start units for default system level
             This will go through the enabled services in the default 'multi-user.target'.
             However some services are ignored as being known to be installation garbage
             from unintended services. Use '--all' so start all of the installed services
@@ -6094,7 +6108,7 @@ class Systemctl:
             at the end of a 'systemctl --init default' loop."""
         target = self.get_default_target()
         services = self.stop_target_system(target)
-        logg.info("%s system is down", target)
+        logg.info("[%s] system is down", target)
         return not not services
     def stop_target_system(self, target: str) -> List[str]:
         services = self.target_default_services(target, "K")
@@ -6116,7 +6130,7 @@ class Systemctl:
         units = [service for service in services if self.is_running_unit(service)]
         return self.reload_units(units)
     def halt_target(self, arg: bool = True) -> bool:
-        """ stop units from default system level """
+        """ halt -- stop units from default system level """
         logg.info("system halt requested - %s", arg)
         done = self.stop_system_default()
         try:
@@ -6133,14 +6147,14 @@ class Systemctl:
         targets_folder = self.get_targets_folder()
         return os.path.join(targets_folder, DefaultUnit)
     def get_default_target(self, default_target: Optional[str] = None) -> str:
-        """ get current default run-level"""
+        """ get-default -- get current default run-level"""
         current = default_target or self._default_target
         default_target_file = self.get_default_target_file()
         if os.path.islink(default_target_file):
             current = os.path.basename(os.readlink(default_target_file))
         return current
     def set_default_modules(self, *modules: str) -> str:
-        """ set current default run-level"""
+        """set-default [UNIT] -- set current default run-level"""
         if not modules:
             logg.debug(".. no runlevel given")
             self.error |= NOT_OK
