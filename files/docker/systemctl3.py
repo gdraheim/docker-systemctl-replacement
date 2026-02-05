@@ -317,28 +317,6 @@ def o77(part: str) -> str:
             return part
         return part[:20] + "..." + part[-54:]
     return part # pragma: no cover (is always str)
-def path44(filename: Optional[str]) -> str:
-    if not filename:
-        return "<none>"
-    x = filename.find("/", 8)
-    if len(filename) <= 40:
-        if "/" not in filename:
-            return ".../" + filename
-    elif len(filename) <= 44:
-        return filename
-    if 0 < x and x < 14:
-        out = filename[:x+1]
-        out += "..."
-    else:
-        out = filename[:10]
-        out += "..."
-    remain = len(filename) - len(out)
-    y = filename.find("/", remain)
-    if 0 < y and y < remain+5:
-        out += filename[y:]
-    else:
-        out += filename[remain:]
-    return out
 
 def unit_name_escape(text: str) -> str:
     # https://www.freedesktop.org/software/systemd/man/systemd.unit.html#id-1.6
