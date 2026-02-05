@@ -6121,27 +6121,27 @@ class Systemctl:
         self.start_log_files(units)
         logg.debug("[init] start listen")
         listen = SystemctlListenThread(self)
-        logg.debug("[nit] starts listen")
+        logg.debug("[init] starts listen")
         listen.start()
         logg.debug("[init] started listen")
         self.sysinit_status(ActiveState = "active", SubState = "running")
-        timestamp = time.time()
+        lasttime = time.monotonic()
         while True:
             try:
                 if DEBUG_INITLOOP: # pragma: no cover
                     logg.debug("DONE InitLoop (sleep %ss)", InitLoopSleep)
-                sleep_sec = InitLoopSleep - (time.time() - timestamp)
+                sleep_sec = InitLoopSleep - (time.monotonic() - lasttime)
                 if sleep_sec < MinimumYield:
                     sleep_sec = MinimumYield
                 sleeping = sleep_sec
                 while sleeping > 2:
                     time.sleep(1) # accept signals atleast every second
-                    sleeping = InitLoopSleep - (time.time() - timestamp)
+                    sleeping = InitLoopSleep - (time.monotonic() - lasttime)
                     if sleeping < MinimumYield:
                         sleeping = MinimumYield
                         break
                 time.sleep(sleeping) # remainder waits less that 2 seconds
-                timestamp = time.time()
+                lasttime = time.monotonic()
                 self.loop.acquire()
                 if DEBUG_INITLOOP: # pragma: no cover
                     logg.debug("[init] NEXT (after %ss)", sleep_sec)
