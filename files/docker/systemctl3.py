@@ -5970,7 +5970,7 @@ class Systemctl:
         the interval ('-c InitLoopSleep=1') or have it indirectly shorter from the
         service descriptor's RestartSec ("RestartSec=2s").
         """
-        global InitLoopSleep
+        global InitLoopSleep # pylint: disable=global-statement # FIXME
         me = os.getpid()
         maximum = maximum or DefaultStartLimitIntervalSec
         restartDelay = MinimumYield
