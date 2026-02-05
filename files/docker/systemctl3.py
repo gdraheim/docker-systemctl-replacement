@@ -874,6 +874,7 @@ class SystemctlConfigParser(SystemctlConfData):
 UnitConfParser = SystemctlConfigParser
 
 class SystemctlConf:
+    """ status of loaded *.service descriptors (and other unit files) from the system environment """
     data: SystemctlConfData
     env: Dict[str, str]
     status: Optional[Dict[str, str]]
@@ -2626,10 +2627,10 @@ class Systemctl:
         return self.get_unit_section(conf.name(), default)
     def list_service_units(self, *modules: str) -> List[Tuple[str, str, str]]: # -> [ (unit,loaded+active+substate,description) ]
         """ show all the service units """
-        result = {}
-        active = {}
-        substate = {}
-        description = {}
+        result: Dict[str, str] = {}
+        active: Dict[str, str] = {}
+        substate: Dict[str, str] = {}
+        description: Dict[str, str] = {}
         for unit in self.unitfiles.match_units(to_list(modules)):
             result[unit] = "not-found"
             active[unit] = "inactive"
@@ -2654,7 +2655,7 @@ class Systemctl:
                     del result[unit]
         return [(unit, result[unit] + " " + active[unit] + " " + substate[unit], description[unit]) for unit in sorted(result)]
     def list_units_modules(self, *modules: str) -> List[Tuple[str, str, str]]: # -> [ (unit,loaded,description) ]
-        """ [PATTERN]... -- List loaded units.
+        """ list-units [PATTERN]... -- List loaded units.
         If one or more PATTERNs are specified, only units matching one of
         them are shown. NOTE: This is the default command."""
         hint = "To show all installed unit files use 'systemctl list-unit-files'."
@@ -2703,7 +2704,7 @@ class Systemctl:
         """ show all the basic loading state of services """
         return self.unitfiles.list_all()
     def list_unit_files_modules(self, *modules: str) -> List[Tuple[str, str]]: # -> [ (unit,enabled) ]
-        """[PATTERN]... -- List installed unit files
+        """ list-unit-files [PATTERN]... -- List installed unit files
         List installed unit files and their enablement state (as reported
         by is-enabled). If one or more PATTERNs are specified, only units
         whose filename (just the last component of the path) matches one of
@@ -3008,7 +3009,7 @@ class Systemctl:
             return 0
     #
     def command_of_unit(self, unit: str) -> Union[None, List[str]]:
-        """ [UNIT]. -- show service settings (experimental)
+        """ command [UNIT]. -- show service settings (experimental)
             or use -p VarName to show another property than 'ExecStart' """
         found: List[str]
         conf = self.unitfiles.load_conf(unit)
@@ -3023,7 +3024,7 @@ class Systemctl:
             return found
         return conf.getlist(Service, "ExecStart")
     def environment_of_unit(self, unit: str) -> Union[None, Dict[str, str]]:
-        """ [UNIT]. -- show environment parts """
+        """ environment [UNIT]. -- show environment parts """
         conf = self.unitfiles.load_conf(unit)
         if conf is None:
             logg.error("Unit %s could not be found.", unit)
@@ -3327,7 +3328,7 @@ class Systemctl:
             logg.debug("could not chown %s:%s service directory %s", user, group, path)
         return ok
     def clean_modules(self, *modules: str) -> bool:
-        """ [UNIT]... -- remove the state directories
+        """ clean [UNIT]... -- remove the state directories
         /// it recognizes --what=all or any of configuration, state, cache, logs, runtime
             while an empty value (the default) removes cache and runtime directories"""
         found_all = True
@@ -3363,7 +3364,7 @@ class Systemctl:
             return False
         return self.clean_service_directories(conf, what)
     def log_modules(self, *modules: str) -> bool:
-        """ [UNIT]... -- start 'less' on the log files for the services
+        """ logs [UNIT]... -- start 'less' on the log files for the services
         /// use '-f' to follow and '-n lines' to limit output using 'tail',
             using '--no-pager' just does a full 'cat'"""
         found_all = True
@@ -3589,7 +3590,7 @@ class Systemctl:
             logg.debug("socket.close >> %s", e)
         return results
     def start_modules(self, *modules: str) -> bool:
-        """ [UNIT]... -- start these units
+        """ start [UNIT]... -- start these units
         /// SPECIAL: with --now or --init it will
             run the init-loop and stop the units afterwards """
         found_all = True
@@ -3895,7 +3896,7 @@ class Systemctl:
                            run.returncode or "OK", run.signal or "")
             return True
     def listen_modules(self, *modules: str) -> bool:
-        """ [UNIT]... -- listen socket units"""
+        """ listen [UNIT]... -- listen socket units"""
         found_all = True
         units: List[str] = []
         for module in modules:
@@ -4302,7 +4303,7 @@ class Systemctl:
             self.execve_from(conf, newcmd, env)
         return None
     def stop_modules(self, *modules: str) -> bool:
-        """ [UNIT]... -- stop these units """
+        """ stop [UNIT]... -- stop these units """
         found_all = True
         units: List[str] = []
         for module in modules:
@@ -4526,7 +4527,7 @@ class Systemctl:
         logg.info("%s wait for PID %s failed", delayed(int(timeout)), pid)
         return False
     def reload_modules(self, *modules: str) -> bool:
-        """ [UNIT]... -- reload these units """
+        """ reload [UNIT]... -- reload these units """
         self.wait_system()
         found_all = True
         units: List[str] = []
@@ -4631,7 +4632,7 @@ class Systemctl:
             logg.error("unsupported run type '%s'", runs)
             return False
     def restart_modules(self, *modules: str) -> bool:
-        """ [UNIT]... -- restart these units """
+        """ restart [UNIT]... -- restart these units """
         found_all = True
         units: List[str] = []
         for module in modules:
@@ -4679,7 +4680,7 @@ class Systemctl:
         self.do_stop_unit_from(conf)
         return self.do_start_unit_from(conf)
     def try_restart_modules(self, *modules: str) -> bool:
-        """ [UNIT]... -- try-restart these units """
+        """ try-restart [UNIT]... -- try-restart these units """
         found_all = True
         units: List[str] = []
         for module in modules:
@@ -4716,7 +4717,7 @@ class Systemctl:
                 return self.do_restart_unit_from(conf)
         return True
     def reload_or_restart_modules(self, *modules: str) -> bool:
-        """ [UNIT]... -- reload-or-restart these units """
+        """ reload-or-restart [UNIT]... -- reload-or-restart these units """
         found_all = True
         units: List[str] = []
         for module in modules:
@@ -4766,7 +4767,7 @@ class Systemctl:
             logg.info("found service without ExecReload -> 'restart'")
             return self.do_restart_unit_from(conf)
     def reload_or_try_restart_modules(self, *modules: str) -> bool:
-        """ [UNIT]... -- reload-or-try-restart these units """
+        """ reload-or-try-restart [UNIT]... -- reload-or-try-restart these units """
         found_all = True
         units: List[str] = []
         for module in modules:
@@ -4809,7 +4810,7 @@ class Systemctl:
         else:
             return self.do_restart_unit_from(conf)
     def kill_modules(self, *modules: str) -> bool:
-        """ [UNIT]... -- kill these units """
+        """ kill [UNIT]... -- kill these units """
         found_all = True
         units: List[str] = []
         for module in modules:
@@ -4926,7 +4927,7 @@ class Systemctl:
                 return False
         return not pid_exists(pid) or pid_zombie(pid)
     def is_active_modules(self, *modules: str) -> List[str]:
-        """ [UNIT].. -- check if these units are in active state
+        """ is-active [UNIT].. -- check if these units are in active state
         implements True if all is-active = True """
         # systemctl returns multiple lines, one for each argument
         #   "active" when is_active
@@ -5078,7 +5079,7 @@ class Systemctl:
         else:
             return "dead"
     def is_failed_modules(self, *modules: str) -> List[str]:
-        """ [UNIT]... -- check if these units are in failes state
+        """ is-failed [UNIT]... -- check if these units are in failes state
         implements True if any is-active = True """
         units: List[str] = []
         results: List[str] = []
@@ -5107,7 +5108,7 @@ class Systemctl:
         if conf is None: return True
         return self.get_active_from(conf) == "failed"
     def reset_failed_modules(self, *modules: str) -> bool:
-        """ [UNIT]... -- Reset failed state for all, one, or more units """
+        """ reset-failed [UNIT]... -- Reset failed state for all, one, or more units """
         units: List[str] = []
         status = True
         for module in modules:
@@ -5153,7 +5154,7 @@ class Systemctl:
                 logg.error("while rm %s >> %s", pid_file, e)
         return done
     def status_modules(self, *modules: str) -> str:
-        """ [UNIT]... check the status of these units.
+        """ status [UNIT]... check the status of these units.
         """
         found_all = True
         units: List[str] = []
@@ -5206,7 +5207,7 @@ class Systemctl:
         else:
             return 3, result
     def cat_modules(self, *modules: str) -> str:
-        """ [UNIT]... show the *.system file for these"
+        """ cat [UNIT]... show the *.system file for these"
         """
         found_all = True
         units: List[str] = []
@@ -5251,7 +5252,7 @@ class Systemctl:
     ##
     ##
     def preset_modules(self, *modules: str) -> bool:
-        """ [UNIT]... -- set 'enabled' when in *.preset
+        """ preset [UNIT]... -- set 'enabled' when in *.preset
         """
         if self.unitfiles.user_mode():
             logg.warning("preset makes no sense in --user mode")
@@ -5321,7 +5322,7 @@ class Systemctl:
             wanted = wanted + ".wants"
         return os.path.join(basefolder, wanted)
     def enable_modules(self, *modules: str) -> bool:
-        """ [UNIT]... -- enable these units """
+        """ enable [UNIT]... -- enable these units """
         found_all = True
         units: List[str] = []
         for module in modules:
@@ -5426,7 +5427,7 @@ class Systemctl:
             os.symlink(unit_file, target)
         return True
     def disable_modules(self, *modules: str) -> bool:
-        """ [UNIT]... -- disable these units """
+        """ disable [UNIT]... -- disable these units """
         found_all = True
         units: List[str] = []
         for module in modules:
@@ -5519,7 +5520,7 @@ class Systemctl:
             return True
         return False
     def is_enabled_modules(self, *modules: str) -> List[str]:
-        """ [UNIT]... -- check if these units are enabled
+        """ is-enabled [UNIT]... -- check if these units are enabled
         returns True if any of them is enabled."""
         found_all = True
         units: List[str] = []
@@ -5586,7 +5587,7 @@ class Systemctl:
             return "static"
         return "disabled"
     def mask_modules(self, *modules: str) -> bool:
-        """ [UNIT]... -- mask non-startable units """
+        """ mask [UNIT]... -- mask non-startable units """
         found_all = True
         units: List[str] = []
         for module in modules:
@@ -5653,7 +5654,7 @@ class Systemctl:
             for folder in self.unitfiles.system_folders():
                 yield folder
     def unmask_modules(self, *modules: str) -> bool:
-        """ [UNIT]... -- unmask non-startable units """
+        """ unmask [UNIT]... -- unmask non-startable units """
         found_all = True
         units: List[str] = []
         for module in modules:
@@ -5703,7 +5704,7 @@ class Systemctl:
             logg.warning("target is not a symlink: %s", target)
             return True
     def list_dependencies_modules(self, *modules: str) -> List[str]:
-        """ [UNIT]... show the dependency tree"
+        """ list-dependencies [UNIT]... show the dependency tree"
         """
         found_all = True
         units: List[str] = []
@@ -5730,7 +5731,7 @@ class Systemctl:
             result += [line]
         return result
     def list_start_dependencies_modules(self, *modules: str) -> List[Tuple[str, str]]:
-        """ [UNIT]... show the dependency tree (experimental)"
+        """ list-start-dependencies [UNIT]... show the dependency tree (experimental)"
         """
         return self.unitfiles.list_start_dependencies_units(list(modules))
     def daemon_reload_target(self) -> bool:
@@ -5753,7 +5754,7 @@ class Systemctl:
             logg.warning(" (%s) found %s problems", errors, errors % 100)
         return True # errors
     def show_modules(self, *modules: str) -> List[str]:
-        """ [PATTERN]... -- Show properties of one or more units
+        """ show [PATTERN]... -- Show properties of one or more units
            Show properties of one or more units (or the manager itself).
            If no argument is specified, properties of the manager will be
            shown. If a unit name is specified, properties of the unit is
@@ -5794,7 +5795,7 @@ class Systemctl:
                 result += ["%s=%s" % (var, value)]
         return result
     def show_unit_items(self, unit: str) -> Iterable[Tuple[str, str]]:
-        """ [UNIT]... -- show properties of a unit.
+        """ __show_unit_items [UNIT] -- show properties of a unit.
         """
         logg.info("try read unit %s", unit)
         conf = self.unitfiles.get_conf(unit)
@@ -6168,7 +6169,7 @@ class Systemctl:
             logg.debug("%s", msg)
         return msg
     def init_modules(self, *modules: str) -> bool:
-        """ [UNIT*] -- init loop: '--init default' or '--init start UNIT*'
+        """ init [UNIT*] -- init loop: '--init default' or '--init start UNIT*'
         The systemctl init service will start the enabled 'default' services,
         and then wait for any  zombies to be reaped. When a SIGINT is received
         then a clean shutdown of the enabled services is ensured. A Control-C in
@@ -6476,7 +6477,7 @@ class Systemctl:
         logg.debug("[init] done - init loop")
         return result
     def reap_zombies_target(self) -> str:
-        """ -- check to reap children (internal) """
+        """ reap-zombies -- check to reap children (internal) """
         running = self.reap_zombies()
         return F"remaining {running} process"
     def reap_zombies(self) -> int:
