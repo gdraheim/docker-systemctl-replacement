@@ -3,7 +3,8 @@
 # pylint: disable=missing-function-docstring,missing-class-docstring,consider-using-f-string,consider-using-ternary,import-outside-toplevel
 # pylint: disable=no-else-return,no-else-break,unspecified-encoding,dangerous-default-value,unnecessary-lambda,unnecessary-comprehension,superfluous-parens
 # pylint: disable=fixme,redefined-argument-from-local,use-yield-from,chained-comparison,consider-using-in,consider-using-with.consider-using-min-builtin,consider-using-max-builtin,consider-using-get
-# pylint: disable=invalid-name,bare-except,broad-exception-caught,broad-exception-raised,redefined-outer-name,possibly-unused-variable,logging-format-interpolation,unnecessary-negation,using-constant-test,unused-argument,consider-using-dict-items,consider-using-enumerate
+# pylint: disable=invalid-name,bare-except,broad-exception-caught,broad-exception-raised,redefined-outer-name,possibly-unused-variable,unnecessary-negation,using-constant-test,unused-argument,consider-using-dict-items,consider-using-enumerate
+# pylint: disable=unused-variable,protected-access,logging-format-interpolation,logging-not-lazy
 """ run 'systemctl start' and other systemctl commands based on available *.service descriptions without a systemd daemon running in the system """
 from typing import Callable, Dict, Iterator, Iterable, List, NoReturn, Optional, TextIO, Tuple, Type, Union, Match
 import threading
@@ -949,7 +950,7 @@ class PresetFile:
         if self._files:
             return self._files[-1]
         return None
-    def read(self, filename: str) -> PresetFile:
+    def read(self, filename: str) -> "PresetFile": # FIXME: Self in python3.11
         self._files.append(filename)
         with open(filename) as f:
             for line in f:
