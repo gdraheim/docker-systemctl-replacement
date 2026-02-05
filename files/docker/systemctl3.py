@@ -6125,7 +6125,7 @@ class Systemctl:
         listen.start()
         logg.debug("[init] started listen")
         self.sysinit_status(ActiveState = "active", SubState = "running")
-        lasttime = time.monotonic()
+        lasttime= time.monotonic()
         while True:
             try:
                 if DEBUG_INITLOOP: # pragma: no cover
@@ -6539,21 +6539,6 @@ def print_str_dict(result: Union[None, Dict[str, str]]) -> None:
     if DebugPrintResult:
         logg.log(HINT, "EXEC END %i items", shown)
         logg.debug("    END %s", result)
-def print_str_dict_dict(result: Dict[str, Dict[str, str]]) -> None:
-    if result is None:
-        if DebugPrintResult:
-            logg.debug("    END %s", result)
-        return
-    shown = 0
-    for key in sorted(result):
-        element = result[key]
-        for name in sorted(element):
-            value = element[name]
-            print("%s [%s] %s" % (key, value, name))
-        shown += 1
-    if DebugPrintResult:
-        logg.log(HINT, "EXEC END %i items", shown)
-        logg.debug("    END %s", result)
 
 def runcommand(command: str, *modules: str) -> int:
     systemctl = Systemctl()
@@ -6701,7 +6686,11 @@ def runcommand(command: str, *modules: str) -> int:
     exitcode |= systemctl.error
     return exitcode
 
-if __name__ == "__main__":
+def main() -> int:
+    # pylint: disable=global-statement
+    global _extra_vars, _force, _full, _log_lines, _no_pager, _no_reload, _no_legend, _no_ask_password
+    global _now, _preset_mode, _quiet, _root, _show_all, _only_state, _only_type, _only_property, _only_what
+    global DefaultMaximumTimeout, INIT_MODE, EXIT_MODE, _user_mode, FORCE_IPV4, FORCE_IPV6
     import optparse # pylint: disable=deprecated-module # not anymore
     _o = optparse.OptionParser("%prog [options] command [name...]",
                                epilog="use 'help' command for more information")
@@ -6882,4 +6871,7 @@ if __name__ == "__main__":
         modules.remove("service")
     except ValueError:
         pass
-    sys.exit(runcommand(command, *modules))
+    return runcommand(command, *modules)
+
+if __name__ == "__main__":
+    sys.exit(main())
