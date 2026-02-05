@@ -932,6 +932,7 @@ class SystemctlConf:
         return False
 
 class SystemctlSocket:
+    """ support for Socket unit descriptors """
     def __init__(self, conf: SystemctlConf, sock: socket.socket, skip: bool = False) -> None:
         self.conf = conf
         self.sock = sock
@@ -954,6 +955,7 @@ class SystemctlSocket:
         self.sock.close()
 
 class PresetFile:
+    """ scanning *.preset files to adjust the *.service default status """
     _files: List[str]
     _lines: List[str]
     def __init__(self) -> None:
@@ -982,6 +984,7 @@ class PresetFile:
 
 ## with waitlock(conf): self.start()
 class waitlock:
+    """ with-statement for mutex on modules - allowing to run multiple systemctl units in parallel, or guarding the global lock."""
     conf: SystemctlConf
     opened: int
     lockfolder: str
@@ -2488,6 +2491,7 @@ class SystemctlUnitFiles:
         return newcmd
 
 class SystemctlListenThread(threading.Thread):
+    """ support LISTEN modules """
     def __init__(self, systemctl: "Systemctl") -> None:
         threading.Thread.__init__(self, name="listen")
         self.systemctl = systemctl
@@ -2547,6 +2551,7 @@ class SystemctlListenThread(threading.Thread):
         return
 
 class Systemctl:
+    """ emulation for systemctl commands """
     error: int
     _extra_vars: List[str]
     _force: bool
@@ -6516,6 +6521,7 @@ class Systemctl:
         assert self._sysinit_target is not None
         return self._sysinit_target
     def is_system_running(self) -> str:
+        """ is-system-running -- show sysinit status (substate) """
         conf = self.sysinit_target()
         if not self.is_running_unit_from(conf):
             time.sleep(MinimumYield)
@@ -6666,69 +6672,46 @@ class Systemctl:
         with open(sysconf_hosts, "w") as f:
             for line in lines:
                 f.write(line)
+    def help_list(self, show_all: Optional[int] = None) -> Dict[str, str]:
+        show_all = self._show_all if show_all is None else show_all
+        help_docs: Dict[str, str] = {}
+        for name in dir(self):
+            method = getattr(self, name)
+            doctext = getattr(method, "__doc__")
+            if not doctext:
+                continue
+            if " -- " in doctext or " --- " in doctext:
+                firstword = doctext.strip().split(" ", 1)[0]
+                help_docs[firstword] = doctext
+            elif show_all and not name.startswith("_") and callable(method):
+                internal = "__" + name
+                help_docs[internal] = internal + " = " + doctext
+        return help_docs
     def help_modules(self, *args: str) -> List[str]:
-        """[command] -- show this help
+        """help [command] -- show this help
         """
         lines: List[str] = []
         okay = True
         prog = os.path.basename(sys.argv[0])
         if not args:
-            argz = {}
-            for name in dir(self):
-                arg = None
-                if name.startswith("system_"):
-                    arg = name[len("system_"):].replace("_", "-")
-                if name.startswith("show_"):
-                    arg = name[len("show_"):].replace("_", "-")
-                if name.endswith("_of_unit"):
-                    arg = name[:-len("_of_unit")].replace("_", "-")
-                if name.endswith("_modules"):
-                    arg = name[:-len("_modules")].replace("_", "-")
-                if arg:
-                    argz[arg] = name
+            help_docs = self.help_list()
             lines.append("%s command [options]..." % prog)
             lines.append("")
             lines.append("Commands:")
-            for arg in sorted(argz):
-                name = argz[arg]
-                method = getattr(self, name)
-                doc = "..."
-                doctext = getattr(method, "__doc__")
-                if doctext:
-                    doc = doctext
-                elif not self._show_all:
-                    continue # pragma: no cover
+            for name in sorted(help_docs):
+                doc = help_docs[name]
                 firstline = doc.split("\n")[0]
-                doc_text = firstline.strip()
-                if "--" not in firstline:
-                    doc_text = "-- " + doc_text
-                lines.append(" %s %s" % (arg, firstline.strip()))
-            return lines
-        for arg in args:
-            arg = arg.replace("-", "_")
-            func1 = getattr(self.__class__, arg+"_modules", None)
-            func2 = getattr(self.__class__, arg+"_of_unit", None)
-            func3 = getattr(self.__class__, "show_"+arg, None)
-            func4 = getattr(self.__class__, "system_"+arg, None)
-            func5 = None
-            if arg.startswith("__"):
-                func5 = getattr(self.__class__, arg[2:], None)
-            func = func1 or func2 or func3 or func4 or func5
-            if func is None:
-                print("error: no such command '%s'" % arg)
-                okay = False
-            else:
-                doc_text = "..."
-                doc = getattr(func, "__doc__", "")
-                if doc:
-                    doc_text = doc.replace("\n", "\n\n", 1).strip()
-                    if "--" not in doc_text:
-                        doc_text = "-- " + doc_text
+                lines.append(" " + firstline.strip())
+        else:
+            help_docs = self.help_list(show_all = 1)
+            for arg in args:
+                if arg not in help_docs:
+                    print("error: no such command '%s'" % arg)
+                    okay = False
                 else:
-                    func_name = arg # FIXME
-                    logg.debug("__doc__ of %s is none", func_name)
-                    if not self._show_all: continue
-                lines.append("%s %s %s" % (prog, arg, doc_text))
+                    doc = help_docs[arg]
+                    doc_text = doc.replace("\n", "\n\n", 1).strip()
+                    lines.append("%s %s" % (prog, doc_text))
         if not okay:
             self.help_modules()
             self.error |= NOT_OK
@@ -6744,8 +6727,10 @@ class Systemctl:
         features3 = " -ACL -XZ -LZ4 -SECCOMP -BLKID -ELFUTILS -KMOD -IDN"
         return features1+features2+features3
     def version_info(self) -> List[str]:
+        """ version -- show systemd version details and features """
         return [self.systemd_version(), self.systemd_features()]
     def test_float(self) -> float:
+        """ return 'Unknown result type' """
         return 0. # "Unknown result type"
 
 def print_begin(argv: List[str], args: List[str]) -> None:
