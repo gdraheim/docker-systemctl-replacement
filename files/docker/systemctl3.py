@@ -85,6 +85,7 @@ _only_what: List[str] = []
 _only_type: List[str] = []
 _only_state: List[str] = []
 _only_property: List[str] = []
+LOG_BUFSIZE = 8192
 FORCE_IPV4 = False
 FORCE_IPV6 = False
 INIT_MODE = False
@@ -6279,7 +6280,7 @@ class Systemctl:
     def read_log_files(self, units: List[str]) -> None:
         self.print_log_files(units)
     def print_log_files(self, units: List[str], stdout: int = 1) -> int:
-        BUFSIZE=8192
+        BUFSIZE = LOG_BUFSIZE
         printed = 0
         for unit in units:
             if unit in self._log_file:
