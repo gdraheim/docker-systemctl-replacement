@@ -8,7 +8,7 @@
 # pylint: disable=redefined-outer-name,unused-variable,bare-except,broad-exception-caught,pointless-statement,using-constant-test,logging-not-lazy,logging-format-interpolation,consider-using-f-string,possibly-unused-variable
 
 __copyright__ = "(C) Guido Draheim, licensed under the EUPL"""
-__version__ = "1.7.1055"
+__version__ = "1.7.1056"
 
 # NOTE:
 # The testcases 1000...4999 are using a --root=subdir environment
