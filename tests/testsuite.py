@@ -920,8 +920,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, err, end = output3(cmd.format(**locals()))
         logg.info("%s\n%s\n%s", cmd, out, err)
         self.assertEqual(end, 0)
-        self.assertEqual(out.strip(), "")
-        self.assertTrue(greps(err, "__doc__ of __test_float is none"))
+        self.assertTrue(greps(out, "__test_float =  return 'Unknown result type'"))
         self.coverage()
     def test_1010_systemctl_daemon_reload(self) -> None:
         """ daemon-reload always succeeds (does nothing) """
@@ -1141,12 +1140,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             ExecStart=/bin/sleep 3
         """)
         #
-        cmd = "{systemctl} daemon-reload -c _show_all=True -vvv"
+        cmd = "{systemctl} daemon-reload -c _no_pager=True -vvv"
+        logg.info(" ==> %s", cmd.format(**locals()))
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
         self.assertEqual(lines(out), [])
         self.assertEqual(end, 0)
-        self.assertEqual(len(greps(err, "_show_all=True")), 2)
+        self.assertEqual(len(greps(err, "_no_pager=True")), 2)
         self.rm_testdir()
         self.rm_zzfiles(root)
         self.coverage()

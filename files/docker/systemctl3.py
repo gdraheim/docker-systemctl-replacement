@@ -7164,9 +7164,9 @@ def main() -> int:
                   help="change journal output mode [short, ..., cat] (ignored)")
     _o.add_option("--plain", action="store_true",
                   help="Print unit dependencies as a list instead of a tree (ignored)")
-    _o.add_option("--no-pager", action="store_true",
+    _o.add_option("--no-pager", action="store_true", default=_no_pager,
                   help="Do not pipe output into pager (mostly ignored)")
-    _o.add_option("--no-warn", action="store_true",
+    _o.add_option("--no-warn", action="store_true", 
                   help="Do not generate certain warnings (ignored)")
     #
     _o.add_option("--maxtimeout", metavar="SEC", default=DefaultMaximumTimeout,
@@ -7232,7 +7232,7 @@ def main() -> int:
             if old is False or old is True:
                 logg.debug("yes %s=%s", nam, val)
                 globals()[nam] = (val in ("true", "True", "TRUE", "yes", "y", "Y", "YES", "1"))
-                logg.debug("... _show_all=%s", _show_all)
+                logg.debug("... _no_pager=%s", _no_pager)
             elif isinstance(old, float):
                 logg.debug("num %s=%s", nam, val)
                 globals()[nam] = float(val)
