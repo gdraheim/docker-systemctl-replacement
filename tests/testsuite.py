@@ -11525,7 +11525,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if real:
             self.assertTrue(greps(err, "No files found for zz-unknown.service."))
         else:
-            self.assertTrue(greps(err, "Unit zz-unknown.service could not be found."))
+            self.assertTrue(greps(err, "Unit zz-unknown.service not found."))
         #
         self.rm_zzfiles(root)
         self.rm_testdir()
@@ -11547,7 +11547,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
         self.assertEqual(end, 4)
-        self.assertTrue(greps(err, "Unit zz-unknown.service could not be found."))
+        self.assertTrue(greps(err, "Unit zz-unknown.service not found."))
         #
         self.rm_zzfiles(root)
         self.rm_testdir()
@@ -11572,7 +11572,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if real:
             self.assertTrue(greps(err, "Failed to preset unit: Unit file zz-unknown.service does not exist."))
         if not real:
-            self.assertTrue(greps(err, "Unit zz-unknown.service could not be found."))
+            self.assertTrue(greps(err, "Unit zz-unknown.service not found."))
         #
         self.rm_zzfiles(root)
         self.rm_testdir()
@@ -11619,7 +11619,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
         self.assertEqual(end, 0)
         if not real:
-            self.assertTrue(greps(err, "Unit zz-unknown.service could not be found."))
+            self.assertTrue(greps(err, "Unit zz-unknown.service not found."))
             self.assertTrue(greps(out, "Description=NOT-FOUND zz-unknown.service"))
             self.assertTrue(greps(out, "UnitFileState=static"))
         self.assertTrue(greps(out, "Id=zz-unknown.service"))
@@ -11648,7 +11648,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
         self.assertEqual(end, 4)
         if not real:
-            self.assertTrue(greps(err, "Unit zz-unknown.service could not be found."))
+            self.assertTrue(greps(err, "Unit zz-unknown.service not found."))
         #
         self.rm_zzfiles(root)
         self.rm_testdir()
@@ -12009,7 +12009,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
         self.assertEqual(end, 1)
-        # self.assertTrue(greps(err, "Unit zz-unknown.service could not be found."))
+        # self.assertTrue(greps(err, "Unit zz-unknown.service not found."))
         #
         self.rm_zzfiles(root)
         self.rm_testdir()
@@ -12047,7 +12047,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{systemctl} __show_unit_items zz-unknown.service {vv}"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s \n%s\n%s", cmd, end, err, out)
-        # self.assertTrue(greps(err, "Unit zz-unknown.service could not be found."))
+        # self.assertTrue(greps(err, "Unit zz-unknown.service not found."))
         self.assertTrue(greps(out, "Description.*NOT-FOUND zz-unknown.service"))
         self.assertTrue(greps(out, "UnitFileState.*static"))
         self.assertTrue(greps(out, "Id.*zz-unknown.service"))
