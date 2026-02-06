@@ -10945,7 +10945,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             os.dup2(new_stderr, 2)
             systemctl_cmd = [_systemctl_py, "--root="+root, "--init", "default", "-vv"]
             env = os.environ.copy()
-            systemctl_cmd += ["-c", "ExitWhenNoMoreServices=yes"]
+            systemctl_cmd += ["-00"] # -c "ExitWhenNoMoreServices=yes"
             systemctl_cmd += ["-c", "InitLoopSleep=2"]
             os.execve(_systemctl_py, systemctl_cmd, env)
         time.sleep(2)

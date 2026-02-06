@@ -125,6 +125,10 @@ real_5%: ; $(TESTS) "$(notdir $@)" -vv
 real_6%: ; $(TESTS) "$(notdir $@)" -vv
 real_7%: ; $(TESTS) "$(notdir $@)" -vv
 real_8%: ; $(TESTS) "$(notdir $@)" -vv
+t1: ; $(MAKE) test_1*
+t2: ; $(MAKE) test_2*
+t3: ; $(MAKE) test_3*
+t4: ; $(MAKE) test_4*
 
 localtestlist = test_[1234]
 dockertestlist = test_[567]
