@@ -397,6 +397,15 @@ show3:
 	@ $(PIP3) show --files `sed -e '/^name *=/!d' -e 's/name *= *"//' -e 's/".*//' pyproject.toml` \
 	| sed -e "s:[^ ]*/[.][.]/\\([a-z][a-z]*\\)/:~/.local/\\1/:"
 
+tag:
+	@ ver=`sed -e '/^version *=/!d' -e 's/version *= *"//' -e 's/".*//' pyproject.toml` \
+	; rev=`$(GIT) rev-parse --short HEAD` \
+	; if test -f tmp.changes.txt \
+        ; then echo ": ${GIT} tag -F tmp.changes.txt v$$ver $$rev" \
+	; elif test -f RELEASENOTES.md \
+        ; then echo ": ${GIT} tag -F RELEASENOTES.md v$$ver $$rev" \
+        ; else echo ": ${GIT} tag v$$ver $$rev"; fi 
+
 fix-metadata-version:
 	ls dist/*
 	rm -rf dist.tmp; mkdir dist.tmp
