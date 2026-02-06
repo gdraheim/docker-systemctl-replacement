@@ -3050,7 +3050,7 @@ class Systemctl:
         found: List[str]
         conf = self.unitfiles.load_conf(unit)
         if conf is None:
-            logg.error("Unit %s could not be found.", unit)
+            logg.error("Unit %s not found.", unit)
             self.error |= NOT_FOUND
             return None
         if self._only_property:
@@ -3063,7 +3063,7 @@ class Systemctl:
         """ environment [UNIT]. -- show environment parts """
         conf = self.unitfiles.load_conf(unit)
         if conf is None:
-            logg.error("Unit %s could not be found.", unit)
+            logg.error("Unit %s not found.", unit)
             self.error |= NOT_FOUND
             return None
         return self.unitfiles.get_env(conf)
