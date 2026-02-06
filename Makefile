@@ -4,17 +4,17 @@ BASEYEAR=2025
 FOR=today
 # 'make version FOR=yesterday' or 'make version DAY=0'
 
+-include Make_detect_py.mk
 
 UBUNTU=ubuntu:18.04
 PYTHON=python3
 PYTHON2 = python2
 PYTHON3 = python3
-PYTHON39 = python3.9
+PYTHON39 = python$(PY39)
 PYTHON_VERSION = 3.9
 COVERAGE3 = $(PYTHON3) -m coverage
-TWINE = twine
 GIT=git
-VERFILES = files/docker/systemctl3.py tests/testsuite.py setup.cfg
+VERFILES = files/docker/systemctl3.py tests/testsuite.py pyproject.toml
 
 verfiles:
 	@ grep -l __version__ */*.??* */*/*.??* | { while read f; do echo $$f; done; } 
@@ -346,42 +346,63 @@ dockerfiles:
 src/README.md: README.md Makefile
 	test -d $(dir $@) || mkdir -v $(dir $@)
 	cat README.md | sed -e "/\\/badge/d" -e /^---/q > $@
-setup.py: Makefile
-	{ echo '#!/usr/bin/env python3' \
-	; echo 'import setuptools' \
-	; echo 'setuptools.setup()' ; } > setup.py
-	chmod +x setup.py
-setup.py.tmp: Makefile
-	echo "import setuptools ; setuptools.setup()" > setup.py
+
+src/py.typed: files/docker/py.typed
+	cp $< $@
+src/systemctl3.py: files/docker/systemctl3.py
+	cp $< $@
+src/journalctl3.py: files/docker/journalctl3.py
+	cp $< $@
+
+buildclean bb:
+	- rm -r src/*.egg-info src/__pycache__
+	@ test ! -f src/README.md || rm -v src/README.md
+	@ test ! -f src/systemctl.py || rm -v src/systemctl.py* 
+	@ test ! -f src/systemctl3.py || rm -v src/systemctl3.py* 
+	@ test ! -f src/journalctl.py || rm -v src/journalctl.py* 
+	@ test ! -f src/py.typed || rm -v src/py.*
+distclean dd:
+	- rm -rf build dist *.egg-info src/*.egg-info
+
+PIP3 = $(PYTHON3) -m pip
+TWINE3 = $(PYTHON3) -m twine
 
 .PHONY: build
-src-files:
-	$(MAKE) $(PARALLEL) setup.py src/README.md src/systemctl.py src/systemctl.pyi
-src-remove:
-	- rm -v setup.py src/README.md src/systemctl.py src/systemctl.pyi
-	- rmdir src
-
-build:
-	rm -rf build dist *.egg-info
-	$(MAKE) src-files
+build:  ; $(MAKE) build3 PYTHON3=$(PYTHON39)
+build3:
+	$(MAKE) distclean
+	$(MAKE) src/README.md src/systemctl.py src/systemctl3.py src/journalctl.py src/journalctl3.py src/py.typed
 	# pip install --root=~/local . -v
-	$(PYTHON3) setup.py sdist
-	$(MAKE) src-remove
-	$(TWINE) check dist/*
-	: $(TWINE) upload dist/*
+	$(PYTHON3) -m build
+	$(MAKE) buildclean
+	$(MAKE) fix-metadata-version
+	$(TWINE3) check dist/*
+	: $(TWINE3) upload dist/*
 
-ins install:
-	$(MAKE) src-files
-	$(PYTHON3) -m pip install --no-compile --user .
-	$(MAKE) src-remove
-	$(MAKE) show | sed -e "s|[.][.]/[.][.]/[.][.]/bin|$$HOME/.local/bin|"
-show:
-	test -d tmp || mkdir -v tmp
-	cd tmp && $(PYTHON3) -m pip show -f $$(sed -e '/^name *=/!d' -e 's/.*= *//' ../setup.cfg)
-uns uninstall: 
-	test -d tmp || mkdir -v tmp
-	cd tmp && $(PYTHON3) -m pip uninstall -v --yes $$(sed -e '/^name *=/!d' -e 's/.*= *//' ../setup.cfg)
+ins install: ;	$(MAKE) install3 PYTHON3=$(PYTHON39)
+install3:
+	$(MAKE) distclean
+	$(MAKE) src/README.md src/systemctl.py src/systemctl3.py src/journalctl.py src/journalctl3.py src/py.typed
+	$(PIP3) install --no-compile --user .
+	$(MAKE) buildclean
+	$(MAKE) show3 | sed -e "s|[.][.]/[.][.]/[.][.]/bin|$$HOME/.local/bin|"
 
+uns uninstall: ; $(MAKE) uninstall3 PYTHON3=$(PYTHON39)
+uninstall3:
+	test -d tmp || mkdir -v tmp
+	set -x; $(PIP3) uninstall -y `sed -e '/^name *=/!d' -e 's/name *= *"//' -e 's/".*//'  pyproject.toml`
+
+show: ;	$(MAKE) show3 PYTHON3=$(PYTHON39)
+show3:
+	@ $(PIP3) show --files `sed -e '/^name *=/!d' -e 's/name *= *"//' -e 's/".*//' pyproject.toml` \
+	| sed -e "s:[^ ]*/[.][.]/\\([a-z][a-z]*\\)/:~/.local/\\1/:"
+
+fix-metadata-version:
+	ls dist/*
+	rm -rf dist.tmp; mkdir dist.tmp
+	cd dist.tmp; for z in ../dist/*; do case "$$z" in *.whl) unzip $$z ;; *) tar xzvf $$z;; esac \
+	; ( find . -name PKG-INFO ; find . -name METADATA ) | while read f; do echo FOUND $$f; sed -i -e "s/Metadata-Version: 2.4/Metadata-Version: 2.2/" $$f; done \
+	; case "$$z" in *.whl) zip -r $$z * ;; *) tar czvf $$z *;; esac ; ls -l $$z; done
 
 ####### autopep8
 AUTOPEP8=autopep8
@@ -443,6 +464,9 @@ striphints3.git:
 	rm tmp.striphints.*
 
 src/systemctl.py: files/docker/systemctl3.py $(STRIP_PYTHON3_PY) Makefile
+	@ $(STRIPHINTS3) $< -o $@ $V --old-python --make-pyi
+	chmod +x $@
+src/journalctl.py: files/docker/journalctl3.py $(STRIP_PYTHON3_PY) Makefile
 	@ $(STRIPHINTS3) $< -o $@ $V --old-python --make-pyi
 	chmod +x $@
 

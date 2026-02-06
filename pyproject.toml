@@ -1,0 +1,72 @@
+# __version__
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "docker_systemctl_replacement"
+version = "1.7.1057"
+description = "allows to deploy to systemd-controlled containers without starting an actual systemd daemon"
+readme = { "file" = "share/README.md", content-type = "text/markdown" }
+license = "EUPL-1.2"
+license-files = [ "EUPL-LICENSE.md" ]
+authors = [ { name = "Guido U. Draheim", "email" = "Guido.Draheim@gmx.de" }]
+classifiers = [
+   "Operating System :: POSIX :: Linux",
+   "Environment :: Console",
+   "Programming Language :: Python :: 3",
+   "Topic :: System :: System Administration",
+   "Typing :: Typed"
+]
+
+[project.optional-dependencies]
+dev = [ "build" ]
+
+[project.urls]
+homepage = "https://github.com/gdraheim/docker-systemctl-replacement"
+repository = "https://github.com/gdraheim/docker-systemctl-replacement.git"
+issues = "https://github.com/gdraheim/docker-systemctl-replacement/issues"
+
+[project.scripts]
+"systemctl.py" = "systemctl2.systemctl:main"
+"systemctl3.py" = "systemctl2.systemctl3:main"
+"journalctl.py" = "systemctl2.journalctl:main"
+"journalctl3.py" = "systemctl2.journalctl3:main"
+
+[tool.setuptools]
+package-dir = {"systemctl2" = "src"}
+
+[tool.pycodestyle]
+max-line-length = 188 
+ignore = "E301,E302,E305,E306,E701,E401,E225,E226,E251,E261"
+# E301 Add missing blank line. (expected 1 blank line, found 0)
+# E302 Add missing 2 blank lines. (expected 2 blank lines, found 0)
+# E305 - (expected 2 blank lines after end of function or class)
+# E306 - (expected 1 blank line before a nested definition)
+# E701 Put colon-separated compound statement on separate lines. (multiple statements on one line (colon))
+# E401 Put imports on separate lines. (multiple imports on one line)
+# E225 Fix missing whitespace around operator. (missing whitespace around operator)
+# E226 (missing whitespace around arithmetic operator)
+# E251 Remove whitespace around parameter '=' sign. (unexpected spaces around keyword / parameter equals)
+# E261 Fix spacing after comment hash. (at least two spaces before inline comment)
+
+[tool.mypy]
+## strict = true # not allowed in setup.cfg
+warn_unused_configs = true
+disallow_subclassing_any = true
+disallow_any_generics = true
+disallow_untyped_calls = true
+disallow_untyped_defs = true 
+disallow_incomplete_defs = true 
+check_untyped_defs = true
+disallow_untyped_decorators = true 
+no_implicit_optional = true 
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_return_any = true
+##
+disallow_any_unimported = true
+# disallow_any_expr = true
+disallow_any_decorated = true
+disallow_any_explicit = true
