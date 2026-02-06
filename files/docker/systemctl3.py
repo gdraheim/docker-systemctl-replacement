@@ -5207,20 +5207,23 @@ class Systemctl:
         return self.get_active_from(conf) == "failed"
     def reset_failed_modules(self, *modules: str) -> bool:
         """ reset-failed [UNIT]... -- Reset failed state for all, one, or more units """
+        missing: List[str] = []
         units: List[str] = []
         status = True
         for module in modules:
             units = self.unitfiles.match_units(to_list(module))
             if not units:
-                logg.error("Unit %s not found.", unit_of(module))
-                # self.error |= NOT_FOUND
-                return False
+                missing.append(unit_of(module))
+                continue
             for unit in units:
                 if not self.reset_failed_unit(unit):
                     logg.error("Unit %s could not be reset.", unit_of(module))
                     status = False
                 break
-        return status
+        if missing:
+            logg.error("Unit %s not found.", " and ".join(missing))
+            # self.error |= NOT_FOUND
+        return status # and not missing
     def reset_failed_unit(self, unit: str) -> bool:
         conf = self.unitfiles.load_conf(unit)
         if not conf:
