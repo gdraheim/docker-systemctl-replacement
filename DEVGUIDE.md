@@ -123,7 +123,7 @@ examples in tests that are run by `testbuilds.py`.
 * `make style`
 * `make install` # locally (`make ins`)
 * `make uninstall` # locally (`make uns`)
-* `make checks`
+* `make checks` # localtests and dockertests
 * `make builds`
 * `make coverage`
   * update `README.md` with the result percentage

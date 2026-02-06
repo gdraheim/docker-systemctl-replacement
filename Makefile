@@ -51,14 +51,6 @@ CP centos-postgres.dockerfile: ; $(TESTS) test_6002
 UA ubuntu-apache2.dockerfile: ; $(TESTS) test_6005
 DJ docker-jenkins: ; $(TESTS) test_900*
 
-COVERAGE=--coverage
-est_%: ; rm .coverage*; rm -rf tmp/tmp.t$(notdir $@) ; $(TESTS) "t$(notdir $@)" -vv --coverage --keep
-test_%: ; $(TESTS) "$(notdir $@)" -vv
-real_%: ; $(TESTS) "$(notdir $@)" -vv
-st_%: ; $(MAKE) 2 && $(TESTS) "te$(notdir $@)" -vv $(WITH2)
-
-test: ; $(MAKE) type && $(MAKE) tests && $(MAKE) coverage
-
 WITH2 = --python=/usr/bin/python2 --with=tmp/systemctl.py
 WITH3 = --python=/usr/bin/python3 --with=files/docker/systemctl3.py
 todo/test_%:             ; $(TESTS)   "$(notdir $@)" -vv --todo
@@ -104,8 +96,7 @@ todo/test_%:             ; $(TESTS)   "$(notdir $@)" -vv --todo
 7.4/st_%:   ; $(MAKE) 2 && $(TESTS) "te$(notdir $@)" -vv $(FORCE) --image=centos:7.4.1708    $(WITH2)
 7.3/st_%:   ; $(MAKE) 2 && $(TESTS) "te$(notdir $@)" -vv $(FORCE) --image=centos:7.3.1611    $(WITH2)
 
-
-builds testsbuilds: ; $(BUILD) $(VV) $V --python=$(PYTHON39)
+builds testbuilds: ; $(BUILD) $(VV) $V --python=$(PYTHON39)
 t_%: ; $(MAKE) $@/9
 t_%/s: ; $(BUILD) "tes$(dir $@)" $(VV) $V 
 t_%/9: ; $(BUILD) "tes$(dir $@)" $(VV) $V --python=python$(PYTHON39)
@@ -115,53 +106,75 @@ t_%/3.6: ; $(BUILD) "tes$(dir $@)" $(VV) $V --python=python$(notdir $@)
 t_%/3.11: ; $(BUILD) "tes$(dir $@)" $(VV) $V --python=python$(notdir $@)
 t_%/3.12: ; $(BUILD) "tes$(dir $@)" $(VV) $V --python=python$(notdir $@)
 
-basetests = test_[1234]
-test2list = st_[567]
-testslist = test_[567]
-tests: ; $(MAKE) "${basetests}"
-.PHONY: tests
+COVERAGE=--coverage
+est_%: ; rm .coverage*; rm -rf tmp/tmp.t$(notdir $@) ; $(TESTS) "t$(notdir $@)" -vv --coverage --keep
+st_%: ; $(MAKE) 2 && $(TESTS) "te$(notdir $@)" -vv $(WITH2)
+test_1%: ; $(TESTS) "$(notdir $@)" -vv
+test_2%: ; $(TESTS) "$(notdir $@)" -vv
+test_3%: ; $(TESTS) "$(notdir $@)" -vv
+test_4%: ; $(TESTS) "$(notdir $@)" -vv
+test_5%: ; $(TESTS) "$(notdir $@)" -vv
+test_6%: ; $(TESTS) "$(notdir $@)" -vv
+test_7%: ; $(TESTS) "$(notdir $@)" -vv
+test_8%: ; $(TESTS) "$(notdir $@)" -vv
+test_9%: ; $(BUILD) "$(notdir $@)" -vv
+real_1%: ; $(TESTS) "$(notdir $@)" -vv
+real_2%: ; $(TESTS) "$(notdir $@)" -vv
+real_3%: ; $(TESTS) "$(notdir $@)" -vv
+real_4%: ; $(TESTS) "$(notdir $@)" -vv
+real_5%: ; $(TESTS) "$(notdir $@)" -vv
+real_6%: ; $(TESTS) "$(notdir $@)" -vv
+real_7%: ; $(TESTS) "$(notdir $@)" -vv
+real_8%: ; $(TESTS) "$(notdir $@)" -vv
+
+localtestlist = test_[1234]
+dockertestlist = test_[567]
+dockertestlist2 = st_[567]
+local testlocal: ; $(MAKE) "${localtestlist}"
 15.6/tests:  ; $(MAKE) "15.6/$(testslist)"
-15.5/tests:  ; $(MAKE) "15.5/$(testslist)"
-15.4/tests:  ; $(MAKE) "15.4/$(testslist)"
-15.2/tests:  ; $(MAKE) "15.2/$(testslist)"
-15.1/tests:  ; $(MAKE) "15.1/$(testslist)"
-15.0/tests:  ; $(MAKE) "15.0/$(testslist)"
-42.3/tests:  ; $(MAKE) "42.3/$(testslist)"
-42.2/tests:  ; $(MAKE) "42.2/$(testslist)"
-22.04/tests: ; $(MAKE) "22.04/$(testslist)"
-20.04/tests: ; $(MAKE) "20.04/$(testslist)"
-19.10/tests: ; $(MAKE) "19.10/$(testslist)"
-18.04/tests: ; $(MAKE) "18.04/$(testslist)"
-16.04/tests: ; $(MAKE) "16.04/$(testslist)"
-9.3/tests:   ; $(MAKE) "9.3/$(testslist)"
-9.1/tests:   ; $(MAKE) "9.1/$(testslist)"
-8.5/tests:   ; $(MAKE) "8.5/$(testslist)"
-8.1/tests:   ; $(MAKE) "8.1/$(testslist)"
-8.0/tests:   ; $(MAKE) "8.0/$(testslist)"
-7.9/tests:   ; $(MAKE) "7.9/$(testslist)"
-7.7/tests:   ; $(MAKE) "7.7/$(testslist)"
-7.6/tests:   ; $(MAKE) "7.6/$(testslist)"
-7.5/tests:   ; $(MAKE) "7.5/$(testslist)"
-7.4/tests:   ; $(MAKE) "7.4/$(testslist)"
-7.3/tests:   ; $(MAKE) "7.3/$(testslist)"
-15.2/test2:  ; $(MAKE) "15.2/$(test2list)"
-15.1/test2:  ; $(MAKE) "15.1/$(test2list)"
-15.0/test2:  ; $(MAKE) "15.0/$(test2list)"
-42.3/test2:  ; $(MAKE) "42.3/$(test2list)"
-42.2/test2:  ; $(MAKE) "42.2/$(test2list)"
-22.04/test2: ; $(MAKE) "22.04/$(test2list)"
-20.04/test2: ; $(MAKE) "20.04/$(test2list)"
-18.04/test2: ; $(MAKE) "18.04/$(test2list)"
-16.04/test2: ; $(MAKE) "16.04/$(test2list)"
-8.5/test2:   ; $(MAKE) "8.5/$(test2list)"
-8.1/test2:   ; $(MAKE) "8.1/$(test2list)"
-8.0/test2:   ; $(MAKE) "8.0/$(test2list)"
-7.9/test2:   ; $(MAKE) "7.9/$(test2list)"
-7.7/test2:   ; $(MAKE) "7.7/$(test2list)"
-7.6/test2:   ; $(MAKE) "7.6/$(test2list)"
-7.5/test2:   ; $(MAKE) "7.5/$(test2list)"
-7.4/test2:   ; $(MAKE) "7.4/$(test2list)"
-7.3/test2:   ; $(MAKE) "7.3/$(test2list)"
+15.5/tests:  ; $(MAKE) "15.5/$(dockertestlist)"
+15.4/tests:  ; $(MAKE) "15.4/$(dockertestlist)"
+15.2/tests:  ; $(MAKE) "15.2/$(dockertestlist)"
+15.1/tests:  ; $(MAKE) "15.1/$(dockertestlist)"
+15.0/tests:  ; $(MAKE) "15.0/$(dockertestlist)"
+42.3/tests:  ; $(MAKE) "42.3/$(dockertestlist)"
+42.2/tests:  ; $(MAKE) "42.2/$(dockertestlist)"
+22.04/tests: ; $(MAKE) "22.04/$(dockertestlist)"
+20.04/tests: ; $(MAKE) "20.04/$(dockertestlist)"
+19.10/tests: ; $(MAKE) "19.10/$(dockertestlist)"
+18.04/tests: ; $(MAKE) "18.04/$(dockertestlist)"
+16.04/tests: ; $(MAKE) "16.04/$(dockertestlist)"
+9.4/tests:   ; $(MAKE) "9.4/$(dockertestlist)"
+9.3/tests:   ; $(MAKE) "9.3/$(dockertestlist)"
+9.1/tests:   ; $(MAKE) "9.1/$(dockertestlist)"
+8.5/tests:   ; $(MAKE) "8.5/$(dockertestlist)"
+8.1/tests:   ; $(MAKE) "8.1/$(dockertestlist)"
+8.0/tests:   ; $(MAKE) "8.0/$(dockertestlist)"
+7.9/tests:   ; $(MAKE) "7.9/$(dockertestlist)"
+7.7/tests:   ; $(MAKE) "7.7/$(dockertestlist)"
+7.6/tests:   ; $(MAKE) "7.6/$(dockertestlist)"
+7.5/tests:   ; $(MAKE) "7.5/$(dockertestlist)"
+7.4/tests:   ; $(MAKE) "7.4/$(dockertestlist)"
+7.3/tests:   ; $(MAKE) "7.3/$(dockertestlist)"
+# python2 has been phased out by newer distros
+15.2/test2:  ; $(MAKE) "15.2/$(dockertestlist2)"
+15.1/test2:  ; $(MAKE) "15.1/$(dockertestlist2)"
+15.0/test2:  ; $(MAKE) "15.0/$(dockertestlist2)"
+42.3/test2:  ; $(MAKE) "42.3/$(dockertestlist2)"
+42.2/test2:  ; $(MAKE) "42.2/$(dockertestlist2)"
+22.04/test2: ; $(MAKE) "22.04/$(dockertestlist2)"
+20.04/test2: ; $(MAKE) "20.04/$(dockertestlist2)"
+18.04/test2: ; $(MAKE) "18.04/$(dockertestlist2)"
+16.04/test2: ; $(MAKE) "16.04/$(dockertestlist2)"
+8.5/test2:   ; $(MAKE) "8.5/$(dockertestlist2)"
+8.1/test2:   ; $(MAKE) "8.1/$(dockertestlist2)"
+8.0/test2:   ; $(MAKE) "8.0/$(dockertestlist2)"
+7.9/test2:   ; $(MAKE) "7.9/$(dockertestlist2)"
+7.7/test2:   ; $(MAKE) "7.7/$(dockertestlist2)"
+7.6/test2:   ; $(MAKE) "7.6/$(dockertestlist2)"
+7.5/test2:   ; $(MAKE) "7.5/$(dockertestlist2)"
+7.4/test2:   ; $(MAKE) "7.4/$(dockertestlist2)"
+7.3/test2:   ; $(MAKE) "7.3/$(dockertestlist2)"
 
 nightrun: checkall
 	$(MAKE) checks
@@ -271,16 +284,6 @@ checks3_coverage:
 	$(TESTS) -vv --coverage \
 	  '--with=tmp/systemctl.py' --python=/usr/bin/python3
 
-2/test_%:
-	$(MAKE) tmp_systemctl_py_2
-	$(TESTS) -vv --coverage $(notdir $@) \
-	   '--with=tmp/systemctl.py' --python=/usr/bin/python2
-
-3/test_%: 
-	$(MAKE) tmp_systemctl_py_3
-	$(TESTS) -vv --coverage $(notdir $@) \
-	  '--with=tmp/systemctl.py' --python=/usr/bin/python3
-
 coverage: coverage3
 	$(PYTHON) -m coverage combine && \
 	$(PYTHON) -m coverage report && \
@@ -309,8 +312,8 @@ tmp_ubuntu:
 	; docker exec $(UBU) apt-get install -y --fix-broken --ignore-missing python3-coverage mypy \
 	; fi
 	docker cp files $(UBU):/root/
-	docker cp testsuite.py $(UBU):/root/ 
-	docker cp reply.py $(UBU):/root/ 
+	docker cp tests/testsuite.py $(UBU):/root/ 
+	docker cp tests/reply.py $(UBU):/root/ 
 UBU=test_ubuntu
 ubu/test_%:
 	$(MAKE) tmp_ubuntu

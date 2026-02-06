@@ -27,9 +27,9 @@ jobs:
     - name: 'install unittest-xml-reporting'
       run: |
         pip3 install unittest-xml-reporting
-    - name: 'make tests (testsuite.py without coverage)'
+    - name: 'make testlocal (testsuite.py without coverage (and docker))'
       run: |
-        make tests -C software || true
+        make testlocal -C software || true
     - name: 'find xml'
       run: |
         find . -name '*.xml'
