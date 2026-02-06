@@ -7,7 +7,6 @@ FOR=today
 -include Make_detect_py.mk
 
 UBUNTU=ubuntu:18.04
-PYTHON=python3
 PYTHON2 = python2
 PYTHON3 = python3
 PYTHON39 = python$(PY39)
@@ -38,13 +37,13 @@ version:
 	; echo "# $(GIT) commit -m v$$ver"
 
 help:
-	python files/docker/systemctl3.py help
+	$(PYTHON3) files/docker/systemctl3.py help
 
 alltests: CH CP UA DJ
 TESTS_PY = tests/testsuite.py
-TESTS = $(PYTHON) $(TESTS_PY) $(TESTS_OPTIONS)
+TESTS = $(PYTHON3) $(TESTS_PY) $(TESTS_OPTIONS)
 BUILD_PY = tests/buildtests.py
-BUILD = $(PYTHON) $(BUILD_PY) -C tests $(BUILD_OPTIONS)
+BUILD = $(PYTHON3) $(BUILD_PY) -C tests $(BUILD_OPTIONS)
 
 CH centos-httpd.dockerfile: ; $(TESTS) test_6001
 CP centos-postgres.dockerfile: ; $(TESTS) test_6002
@@ -99,7 +98,7 @@ todo/test_%:             ; $(TESTS)   "$(notdir $@)" -vv --todo
 builds testbuilds: ; $(BUILD) $(VV) $V --python=$(PYTHON39)
 t_%: ; $(MAKE) $@/9
 t_%/s: ; $(BUILD) "tes$(dir $@)" $(VV) $V 
-t_%/9: ; $(BUILD) "tes$(dir $@)" $(VV) $V --python=python$(PYTHON39)
+t_%/9: ; $(BUILD) "tes$(dir $@)" $(VV) $V --python=$(PYTHON39)
 t_%/2: ; $(BUILD) "tes$(dir $@)" $(VV) $V --python=python$(notdir $@)
 t_%/3: ; $(BUILD) "tes$(dir $@)" $(VV) $V --python=python$(notdir $@)
 t_%/3.6: ; $(BUILD) "tes$(dir $@)" $(VV) $V --python=python$(notdir $@)
@@ -228,39 +227,9 @@ check: check2023
 17 check2017: ; $(TESTS) -vv --opensuse=42.3 --ubuntu=ubuntu:16.04 --centos=centos:7.4
 16 check2016: ; $(TESTS) -vv --opensuse=42.2 --ubuntu=ubuntu:16.04 --centos=centos:7.3
 
-2/test_%:
-	$(MAKE) tmp_systemctl_py_2
-	$(TESTS) -vv $(notdir $@) --sometime=666 \
-	  '--with=tmp/systemctl.py' --python=/usr/bin/python2
-3/test_%:
-	$(MAKE) tmp_systemctl_py_3
-	$(TESTS) -vv $(notdir $@) --sometime=666 \
-	  '--with=tmp/systemctl.py' --python=/usr/bin/python3
-
-2/est_%:
-	$(MAKE) tmp_systemctl_py_2
-	$(TESTS) -vv t$(notdir $@) --sometime=666 --coverage \
-	  '--with=tmp/systemctl.py' --python=/usr/bin/python2
-3/est_%:
-	$(MAKE) tmp_systemctl_py_3
-	$(TESTS) -vv t$(notdir $@) --sometime=666 --coverage \
-	  '--with=tmp/systemctl.py' --python=/usr/bin/python3
-
-check2:
-	$(MAKE) tmp_systemctl_py_2
-	$(TESTS) -vv \
-	  '--with=tmp/systemctl.py' --python=/usr/bin/python2
-check3:
-	$(MAKE) tmp_systemctl_py_3
-	$(TESTS) -vv \
-	  '--with=tmp/systemctl.py' --python=/usr/bin/python3
-
 checks: checks.1 checks.3 checks.4
 checks.1:
 	- rm .coverage* 
-checks.2:
-	$(MAKE) checks2_coverage
-	for i in .coverage*; do mv $$i $$i.cov2; done
 checks.3:
 	$(MAKE) checks3_coverage
 	for i in .coverage*; do mv $$i $$i.cov3; done
@@ -285,11 +254,11 @@ checks3_coverage:
 	  '--with=tmp/systemctl.py' --python=/usr/bin/python3
 
 coverage: coverage3
-	$(PYTHON) -m coverage combine && \
-	$(PYTHON) -m coverage report && \
-	$(PYTHON) -m coverage annotate
-	- $(PYTHON) -m coverage xml -o tmp/coverage.xml
-	- $(PYTHON) -m coverage html -o tmp/htmlcov
+	$(PYTHON3) -m coverage combine && \
+	$(PYTHON3) -m coverage report && \
+	$(PYTHON3) -m coverage annotate
+	- $(PYTHON3) -m coverage xml -o tmp/coverage.xml
+	- $(PYTHON3) -m coverage html -o tmp/htmlcov
 	ls -l tmp/systemctl.py,cover
 coverage2: coverage0
 	$(TESTS) -vv --coverage ${basetests} --xmlresults=TEST-systemctl-python2.xml \
