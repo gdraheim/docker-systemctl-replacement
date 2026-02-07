@@ -27833,8 +27833,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         log = lines(open(debug_log))
         logg.info("systemctl.debug.log>\n\t%s", "\n\t".join(log[-20:]))
         #
-        self.assertTrue(greps(log, ".zzb.service. set InitLoopSleep from 5s to 2 .caused by RestartSec=2.000s"))
-        self.assertFalse(greps(log, "zza.service.*set InitLoopSleep"))
+        self.assertTrue(greps(log, ".zzb.service. set loop_sleep from 5s to 2 .caused by RestartSec=2.000s"))
+        self.assertFalse(greps(log, "zza.service.*set loop_sleep"))
         #
         logg.info("kill daemon at %s", init.pid)
         self.assertTrue(self.kill(init.pid))
@@ -27917,8 +27917,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         log = lines(open(debug_log))
         logg.info("systemctl.debug.log>\n\t%s", "\n\t".join(log[-20:]))
         #
-        self.assertTrue(greps(log, ".zza.service. set InitLoopSleep from 5s to 2"))
-        self.assertTrue(greps(log, ".zzb.service. set InitLoopSleep from 2s to 1 .caused by RestartSec=0!"))
+        self.assertTrue(greps(log, ".zza.service. set loop_sleep from 5s to 2"))
+        self.assertTrue(greps(log, ".zzb.service. set loop_sleep from 2s to 1 .caused by RestartSec=0!"))
         #
         logg.info("kill daemon at %s", init.pid)
         self.assertTrue(self.kill(init.pid))
