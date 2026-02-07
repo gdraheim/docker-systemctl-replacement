@@ -1245,6 +1245,39 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.rm_zzfiles(root)
         self.coverage()
+    def test_1048_systemctl_init_sets_loop_sleep(self) -> None:
+        """ we can use -c name=something to override internals """
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/zza.service"), """
+            [Unit]
+            Description=Testing A
+            [Service]
+            ExecStart=/bin/sleep 3
+        """)
+        #
+        cmd = F"{systemctl} daemon-reload -1 -vvv --now"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        self.assertEqual(lines(out), [])
+        self.assertEqual(end, 0)
+        self.assertTrue(greps(err, "loop_sleep=5"))
+        cmd = F"{systemctl} daemon-reload -11 -vvv --now"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        self.assertEqual(lines(out), [])
+        self.assertEqual(end, 0)
+        self.assertTrue(greps(err, "loop_sleep=2"))
+        cmd = F"{systemctl} daemon-reload -111 -vvv --now"
+        out, err, end = output3(cmd)
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        self.assertEqual(lines(out), [])
+        self.assertEqual(end, 0)
+        self.assertTrue(greps(err, "loop_sleep=1"))
+        self.rm_testdir()
+        self.rm_zzfiles(root)
+        self.coverage()
     def test_1050_can_create_a_test_service(self) -> None:
         """ check that a unit file can be created for testing """
         testname = self.testname()

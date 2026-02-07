@@ -2546,13 +2546,13 @@ class SystemctlListenThread(threading.Thread):
         timestamp = time.time()
         while not self.stopped.is_set():
             try:
-                sleep_sec = InitLoopSleep - (time.time() - timestamp)
+                sleep_sec = self.systemctl.loop_sleep - (time.time() - timestamp)
                 if sleep_sec < MinimumYield:
                     sleep_sec = MinimumYield
                 sleeping = sleep_sec
                 while sleeping > 2:
                     time.sleep(1) # accept signals atleast every second
-                    sleeping = InitLoopSleep - (time.time() - timestamp)
+                    sleeping = self.systemctl.loop_sleep - (time.time() - timestamp)
                     if sleeping < MinimumYield:
                         sleeping = MinimumYield
                         break
@@ -2609,7 +2609,8 @@ class Systemctl:
     _restarted_unit: Dict[str, List[float]]
     _restart_failed_units: Dict[str, float]
     _sockets: Dict[str, SystemctlSocket]
-    loop: threading.Lock
+    loop_sleep: int
+    loop_lock: threading.Lock
     unitfiles: SystemctlUnitFiles
     def __init__(self) -> None:
         self.error = NOT_A_PROBLEM # program exitcode or process returncode
@@ -2643,6 +2644,7 @@ class Systemctl:
         self._restarted_unit = {}
         self._restart_failed_units = {}
         self._sockets = {}
+        self.loop_sleep = max(1, InitLoopSleep // INIT_MODE) if INIT_MODE else InitLoopSleep
         self.loop_lock = threading.Lock()
         self.unitfiles = SystemctlUnitFiles(self._root)
     def get_unit_type(self, module: str) -> Optional[str]:
@@ -5853,6 +5855,8 @@ class Systemctl:
             The returncode will tell the number of warnings,
             and it is over 100 if it can not continue even
             for the relaxed systemctl.py style of execution. """
+        if self._now:
+            logg.debug("loop_sleep=%s", self.loop_sleep)
         errors = 0
         for unit in self.unitfiles.match_units():
             conf = None
@@ -6411,7 +6415,6 @@ class Systemctl:
         the interval ('-c InitLoopSleep=1') or have it indirectly shorter from the
         service descriptor's RestartSec ("RestartSec=2s").
         """
-        global InitLoopSleep # pylint: disable=global-statement # FIXME
         me = os.getpid()
         maximum = maximum or DefaultStartLimitIntervalSec
         restartDelay = MinimumYield
@@ -6427,16 +6430,16 @@ class Systemctl:
                     continue
                 restartSec = self.unitfiles.get_RestartSec(conf)
                 if restartSec == 0:
-                    if InitLoopSleep > 1:
-                        logg.warning("[%s] set InitLoopSleep from %ss to 1 (caused by RestartSec=0!)",
-                                     unit, InitLoopSleep)
-                        InitLoopSleep = 1
-                elif restartSec > 0.9 and restartSec < InitLoopSleep:
+                    if self.loop_sleep > 1:
+                        logg.warning("[%s] set loop_sleep from %ss to 1 (caused by RestartSec=0!)",
+                                     unit, self.loop_sleep)
+                        self.loop_sleep = 1
+                elif restartSec > 0.9 and restartSec < self.loop_sleep:
                     restartSleep = int(restartSec + 0.2)
-                    if restartSleep < InitLoopSleep:
-                        logg.warning("[%s] set InitLoopSleep from %ss to %s (caused by RestartSec=%.3fs)",
-                                     unit, InitLoopSleep, restartSleep, restartSec)
-                        InitLoopSleep = restartSleep
+                    if restartSleep < self.loop_sleep:
+                        logg.warning("[%s] set loop_sleep from %ss to %s (caused by RestartSec=%.3fs)",
+                                     unit, self.loop_sleep, restartSleep, restartSec)
+                        self.loop_sleep = restartSleep
                 isUnitState = self.get_active_from(conf)
                 isUnitFailed = isUnitState in ["failed"]
                 logg.debug("[%s] [%s] Current Status: %s (%s)", me, unit, isUnitState, isUnitFailed)
@@ -6543,14 +6546,14 @@ class Systemctl:
         while True:
             try:
                 if DEBUG_INITLOOP: # pragma: no cover
-                    logg.debug("DONE InitLoop (sleep %ss)", InitLoopSleep)
-                sleep_sec = InitLoopSleep - (time.monotonic() - lasttime)
+                    logg.debug("DONE InitLoop (sleep %ss)", self.loop_sleep)
+                sleep_sec = self.loop_sleep - (time.monotonic() - lasttime)
                 if sleep_sec < MinimumYield:
                     sleep_sec = MinimumYield
                 sleeping = sleep_sec
                 while sleeping > 2:
                     time.sleep(1) # accept signals atleast every second
-                    sleeping = InitLoopSleep - (time.monotonic() - lasttime)
+                    sleeping = self.loop_sleep - (time.monotonic() - lasttime)
                     if sleeping < MinimumYield:
                         sleeping = MinimumYield
                         break
