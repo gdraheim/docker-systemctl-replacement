@@ -1496,76 +1496,6 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_9315_opensuse15_redis_dockerfile(self) -> None:
-        """ WHEN using a dockerfile for systemd-enabled Opensuse15 and redis, 
-            THEN check that redis replies to 'ping' with a 'PONG' """
-        systemctl = tmp_systemctl3()
-        if not systemctl: self.skipTest("no python3 systemctl.py")
-        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
-        if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
-        docker = _docker
-        curl = _curl
-        python = _python or _python3
-        if "python3" not in python: self.skipTest("using python3 for systemctl3.py")
-        latest = LATEST or os.path.basename(python)
-        testname = self.testname()
-        testdir = self.testdir()
-        dockerfile = "redis-opensuse15.dockerfile"
-        addhosts = self.local_addhosts(dockerfile)
-        savename = docname(dockerfile)
-        saveto = SAVETO
-        images = IMAGES
-        psql = PSQL_TOOL
-        password = self.newpassword()
-        # WHEN
-        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}/{testname}:{latest} --build-arg PASSWORD={password}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} rm --force {testname}-client"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} rm --force {testname}"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} run -d --name {testname} {images}/{testname}:{latest}"
-        sh____(cmd.format(**locals()))
-        container = self.ip_container(testname)
-        # THEN
-        for attempt in range(8):
-            if not sx____(F"{docker} exec {testname} systemctl is-system-running # {attempt}."):
-                break
-            time.sleep(1)
-            continue
-        cmd = "{docker} run -d --name {testname}-client {images}/{testname}:{latest} sleep 3"
-        sh____(cmd.format(**locals()))
-        # cmd = "redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
-        # sh____(cmd.format(**locals()))
-        cmd = "{docker} exec -t {testname}-client redis-cli -h {container} -a {password} ping | tee {testdir}/{testname}.txt"
-        sh____(cmd.format(**locals()))
-        try:
-            cmd = "grep PONG {testdir}/{testname}.txt"
-            sh____(cmd.format(**locals()))
-        except subprocess.CalledProcessError as e:
-            logg.error("redis server is not running? %s", e)
-            cmd = "{docker} cp {testname}:/var/log/systemctl.debug.log {testdir}/systemctl.log"
-            sh____(cmd.format(**locals()))
-            sh____(F"cat {testdir}/systemctl.log")
-            cmd = "{docker} exec {testname} ps axu"
-            sx____(cmd.format(**locals()))
-            raise
-        # SAVE
-        cmd = "{docker} stop {testname}-client"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} rm --force {testname}-client"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} stop {testname}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} rm --force {testname}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} rmi {saveto}/{savename}:latest"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} tag {images}/{testname}:{latest} {saveto}/{savename}:latest"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} rmi {images}/{testname}:{latest}"
-        sx____(cmd.format(**locals()))
-        self.rm_testdir()
     def test_9318_ubuntu18_redis_dockerfile(self) -> None:
         """ WHEN using a dockerfile for systemd-enabled Ubuntu18 and redis, 
             THEN check that redis replies to 'ping' with a 'PONG' """
@@ -1694,6 +1624,76 @@ class DockerBuildTest(unittest.TestCase):
             raise
         #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         # sh____(cmd.format(**locals()))
+        # SAVE
+        cmd = "{docker} stop {testname}-client"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} rm --force {testname}-client"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} stop {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} rm --force {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} rmi {saveto}/{savename}:latest"
+        sx____(cmd.format(**locals()))
+        cmd = "{docker} tag {images}/{testname}:{latest} {saveto}/{savename}:latest"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} rmi {images}/{testname}:{latest}"
+        sx____(cmd.format(**locals()))
+        self.rm_testdir()
+    def test_9345_opensuse15_redis_dockerfile(self) -> None:
+        """ WHEN using a dockerfile for systemd-enabled Opensuse15 and redis, 
+            THEN check that redis replies to 'ping' with a 'PONG' """
+        systemctl = tmp_systemctl3()
+        if not systemctl: self.skipTest("no python3 systemctl.py")
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
+        docker = _docker
+        curl = _curl
+        python = _python or _python3
+        if "python3" not in python: self.skipTest("using python3 for systemctl3.py")
+        latest = LATEST or os.path.basename(python)
+        testname = self.testname()
+        testdir = self.testdir()
+        dockerfile = "redis-opensuse15.dockerfile"
+        addhosts = self.local_addhosts(dockerfile)
+        savename = docname(dockerfile)
+        saveto = SAVETO
+        images = IMAGES
+        psql = PSQL_TOOL
+        password = self.newpassword()
+        # WHEN
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}/{testname}:{latest} --build-arg PASSWORD={password}"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} rm --force {testname}-client"
+        sx____(cmd.format(**locals()))
+        cmd = "{docker} rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "{docker} run -d --name {testname} {images}/{testname}:{latest}"
+        sh____(cmd.format(**locals()))
+        container = self.ip_container(testname)
+        # THEN
+        for attempt in range(8):
+            if not sx____(F"{docker} exec {testname} systemctl is-system-running # {attempt}."):
+                break
+            time.sleep(1)
+            continue
+        cmd = "{docker} run -d --name {testname}-client {images}/{testname}:{latest} sleep 3"
+        sh____(cmd.format(**locals()))
+        # cmd = "redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
+        # sh____(cmd.format(**locals()))
+        cmd = "{docker} exec -t {testname}-client redis-cli -h {container} -a {password} ping | tee {testdir}/{testname}.txt"
+        sh____(cmd.format(**locals()))
+        try:
+            cmd = "grep PONG {testdir}/{testname}.txt"
+            sh____(cmd.format(**locals()))
+        except subprocess.CalledProcessError as e:
+            logg.error("redis server is not running? %s", e)
+            cmd = "{docker} cp {testname}:/var/log/systemctl.debug.log {testdir}/systemctl.log"
+            sh____(cmd.format(**locals()))
+            sh____(F"cat {testdir}/systemctl.log")
+            cmd = "{docker} exec {testname} ps axu"
+            sx____(cmd.format(**locals()))
+            raise
         # SAVE
         cmd = "{docker} stop {testname}-client"
         sh____(cmd.format(**locals()))
@@ -1867,7 +1867,7 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_9365_opensuse15_redis_user_dockerfile(self) -> None:
+    def test_9385_opensuse15_redis_user_dockerfile(self) -> None:
         """ WHEN using a dockerfile for systemd-enabled Opensuse15 and redis, 
             THEN check that redis replies to 'ping' with a 'PONG' 
             AND that AUTH works along with a USER process"""
@@ -1929,74 +1929,6 @@ class DockerBuildTest(unittest.TestCase):
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertFalse(greps(out, "root"))
-        # SAVE
-        cmd = "{docker} stop {testname}-client"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} rm --force {testname}-client"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} stop {testname}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} rm --force {testname}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} rmi {saveto}/{savename}:latest"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} tag {images}/{testname}:{latest} {saveto}/{savename}:latest"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} rmi {images}/{testname}:{latest}"
-        sx____(cmd.format(**locals()))
-        self.rm_testdir()
-    def test_9415_opensuse15_mongod_dockerfile(self) -> None:
-        """ WHEN using a dockerfile for systemd-enabled Opensuse15 and mongod, 
-            check that mongo can reply witha  hostInfo."""
-        systemctl = tmp_systemctl3()
-        if not systemctl: self.skipTest("no python3 systemctl.py")
-        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
-        if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
-        docker = _docker
-        curl = _curl
-        python = _python or _python3
-        if "python3" not in python: self.skipTest("using python3 for systemctl3.py")
-        latest = LATEST or os.path.basename(python)
-        testname = self.testname()
-        testdir = self.testdir()
-        dockerfile = "mongod-opensuse15.dockerfile"
-        addhosts = self.local_addhosts(dockerfile)
-        savename = docname(dockerfile)
-        saveto = SAVETO
-        images = IMAGES
-        psql = PSQL_TOOL
-        # WHEN
-        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}/{testname}:{latest}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} rm --force {testname}-client"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} rm --force {testname}"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} run -d --name {testname} {images}/{testname}:{latest}"
-        sh____(cmd.format(**locals()))
-        container = self.ip_container(testname)
-        # THEN
-        cmd = "sleep 2"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} run -d --name {testname}-client {images}/{testname}:{latest} sleep 3"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} exec -t {testname}-client mongo --help"
-        sh____(cmd.format(**locals()))
-        # cmd = "mongo --host {container} --eval 'db.hostInfo()' | tee {testdir}/{testname}.txt"
-        # sh____(cmd.format(**locals()))
-        cmd = "{docker} exec -t {testname}-client mongo --host {container} --eval 'db.hostInfo()' | tee {testdir}/{testname}.txt"
-        sh____(cmd.format(**locals()))
-        try:
-            cmd = "grep 'MongoDB server version' {testdir}/{testname}.txt"
-            sh____(cmd.format(**locals()))
-        except subprocess.CalledProcessError as e:
-            logg.error("redis server is not running? %s", e)
-            cmd = "{docker} cp {testname}:/var/log/systemctl.debug.log {testdir}/systemctl.log"
-            sh____(cmd.format(**locals()))
-            sh____(F"cat {testdir}/systemctl.log")
-            cmd = "{docker} exec {testname} ps axu"
-            sx____(cmd.format(**locals()))
-            raise
         # SAVE
         cmd = "{docker} stop {testname}-client"
         sh____(cmd.format(**locals()))
@@ -2083,6 +2015,74 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
+    def test_9445_opensuse15_mongod_dockerfile(self) -> None:
+        """ WHEN using a dockerfile for systemd-enabled Opensuse15 and mongod, 
+            check that mongo can reply witha  hostInfo."""
+        systemctl = tmp_systemctl3()
+        if not systemctl: self.skipTest("no python3 systemctl.py")
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
+        docker = _docker
+        curl = _curl
+        python = _python or _python3
+        if "python3" not in python: self.skipTest("using python3 for systemctl3.py")
+        latest = LATEST or os.path.basename(python)
+        testname = self.testname()
+        testdir = self.testdir()
+        dockerfile = "mongod-opensuse15.dockerfile"
+        addhosts = self.local_addhosts(dockerfile)
+        savename = docname(dockerfile)
+        saveto = SAVETO
+        images = IMAGES
+        psql = PSQL_TOOL
+        # WHEN
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}/{testname}:{latest}"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} rm --force {testname}-client"
+        sx____(cmd.format(**locals()))
+        cmd = "{docker} rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "{docker} run -d --name {testname} {images}/{testname}:{latest}"
+        sh____(cmd.format(**locals()))
+        container = self.ip_container(testname)
+        # THEN
+        cmd = "sleep 2"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} run -d --name {testname}-client {images}/{testname}:{latest} sleep 3"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} exec -t {testname}-client mongo --help"
+        sh____(cmd.format(**locals()))
+        # cmd = "mongo --host {container} --eval 'db.hostInfo()' | tee {testdir}/{testname}.txt"
+        # sh____(cmd.format(**locals()))
+        cmd = "{docker} exec -t {testname}-client mongo --host {container} --eval 'db.hostInfo()' | tee {testdir}/{testname}.txt"
+        sh____(cmd.format(**locals()))
+        try:
+            cmd = "grep 'MongoDB server version' {testdir}/{testname}.txt"
+            sh____(cmd.format(**locals()))
+        except subprocess.CalledProcessError as e:
+            logg.error("redis server is not running? %s", e)
+            cmd = "{docker} cp {testname}:/var/log/systemctl.debug.log {testdir}/systemctl.log"
+            sh____(cmd.format(**locals()))
+            sh____(F"cat {testdir}/systemctl.log")
+            cmd = "{docker} exec {testname} ps axu"
+            sx____(cmd.format(**locals()))
+            raise
+        # SAVE
+        cmd = "{docker} stop {testname}-client"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} rm --force {testname}-client"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} stop {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} rm --force {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} rmi {saveto}/{savename}:latest"
+        sx____(cmd.format(**locals()))
+        cmd = "{docker} tag {images}/{testname}:{latest} {saveto}/{savename}:latest"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} rmi {images}/{testname}:{latest}"
+        sx____(cmd.format(**locals()))
+        self.rm_testdir()
     def test_9709_lamp_stack_alma9(self) -> None:
         """ Check setup of Linux/Apache/Mariadb/Php on Almalinux with python3"""
         systemctl = tmp_systemctl3()
@@ -2151,7 +2151,7 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_9715_opensuse15_lamp_stack_php7(self) -> None:
+    def test_9745_opensuse15_lamp_stack_php7(self) -> None:
         """ Check setup of Linux/Apache/Mariadb/Php" on Opensuse later than 15.x"""
         systemctl = tmp_systemctl3()
         if not systemctl: self.skipTest("no python3 systemctl.py")
@@ -2436,80 +2436,6 @@ class DockerBuildTest(unittest.TestCase):
         self.rm_testdir()
         # logg.warning("centos-sshd is incomplete without .socket support in systemctl.py")
         # logg.warning("the scp call will succeed only once - the sshd is dead after that")
-    def test_9915_opensuse15_ssh_dockerfile(self) -> None:
-        """ WHEN using a dockerfile for systemd-enabled OpenSuse 15, 
-            THEN we can create an image with an ssh service 
-                 being installed and enabled.
-            Addtionally we do check an example application"""
-        systemctl = tmp_systemctl3()
-        if not systemctl: self.skipTest("no python3 systemctl.py")
-        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
-        if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
-        if not os.path.exists("/usr/bin/sshpass"): self.skipTest("sshpass tool missing on host")
-        docker = _docker
-        curl = _curl
-        python = _python or _python3
-        if "python3" not in python: self.skipTest("using python3 for systemctl3.py")
-        latest = LATEST or os.path.basename(python)
-        testname = self.testname()
-        testdir = self.testdir()
-        dockerfile = "sshd-opensuse15.dockerfile"
-        addhosts = self.local_addhosts(dockerfile)
-        savename = docname(dockerfile)
-        saveto = SAVETO
-        images = IMAGES
-        psql = PSQL_TOOL
-        password = self.newpassword()
-        # WHEN
-        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASS={password} --tag {images}/{testname}:{latest}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} rm --force {testname}"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} run -d --name {testname} {images}/{testname}:{latest}"
-        sh____(cmd.format(**locals()))
-        container = self.ip_container(testname)
-        # THEN
-        for attempt in range(9):
-            cmd = "{docker} exec {testname} /usr/bin/systemctl is-active sshd"
-            out, end = output2(cmd.format(**locals()))
-            logg.info("is-active => %s", out)
-            time.sleep(1)
-            if not end: break
-        cmd = "{docker} exec {testname} ps axu"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} systemctl is-system-running"
-        sx____(cmd.format(**locals()))
-        cmd = "sleep 2; {docker} exec {testname} ps axu"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} systemctl is-system-running"
-        sx____(cmd.format(**locals()))
-        v=F"{_verbose}"
-        allows = "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o PubkeyAuthentication=no"
-        cmd = "sshpass -p {password} scp {v} {allows} testuser@{container}:date.txt {testdir}/{testname}.date.txt"
-        sh____(cmd.format(**locals()))
-        cmd = "grep `TZ=UTC date -I` {testdir}/{testname}.date.txt"
-        sh____(cmd.format(**locals()))
-        allows = "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o PubkeyAuthentication=no"
-        cmd = "sshpass -p {password} scp {v} {allows} testuser@{container}:date.txt {testdir}/{testname}.date.2.txt"
-        sh____(cmd.format(**locals()))
-        cmd = "grep `TZ=UTC date -I` {testdir}/{testname}.date.2.txt"
-        sh____(cmd.format(**locals()))
-        #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
-        # sh____(cmd.format(**locals()))
-        # SAVE
-        cmd = "{docker} stop {testname}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} rm --force {testname}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} rmi {saveto}/{savename}:latest"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} tag {images}/{testname}:{latest} {saveto}/{savename}:latest"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} rmi {images}/{testname}:{latest}"
-        sx____(cmd.format(**locals()))
-        self.rm_testdir()
-        # logg.warning("centos-sshd is incomplete without .socket support in systemctl.py")
-        # logg.warning("the scp call will succeed only once - the sshd is dead after that")
     def test_9918_ubuntu18_ssh_dockerfile(self) -> None:
         """ WHEN using a dockerfile for systemd-enabled Ubuntu 18, 
             THEN we can create an image with an ssh service 
@@ -2652,6 +2578,80 @@ class DockerBuildTest(unittest.TestCase):
         cmd = "{docker} rmi {images}/{testname}:{latest}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
+    def test_9945_opensuse15_ssh_dockerfile(self) -> None:
+        """ WHEN using a dockerfile for systemd-enabled OpenSuse 15, 
+            THEN we can create an image with an ssh service 
+                 being installed and enabled.
+            Addtionally we do check an example application"""
+        systemctl = tmp_systemctl3()
+        if not systemctl: self.skipTest("no python3 systemctl.py")
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
+        if not os.path.exists("/usr/bin/sshpass"): self.skipTest("sshpass tool missing on host")
+        docker = _docker
+        curl = _curl
+        python = _python or _python3
+        if "python3" not in python: self.skipTest("using python3 for systemctl3.py")
+        latest = LATEST or os.path.basename(python)
+        testname = self.testname()
+        testdir = self.testdir()
+        dockerfile = "sshd-opensuse15.dockerfile"
+        addhosts = self.local_addhosts(dockerfile)
+        savename = docname(dockerfile)
+        saveto = SAVETO
+        images = IMAGES
+        psql = PSQL_TOOL
+        password = self.newpassword()
+        # WHEN
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASS={password} --tag {images}/{testname}:{latest}"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "{docker} run -d --name {testname} {images}/{testname}:{latest}"
+        sh____(cmd.format(**locals()))
+        container = self.ip_container(testname)
+        # THEN
+        for attempt in range(9):
+            cmd = "{docker} exec {testname} /usr/bin/systemctl is-active sshd"
+            out, end = output2(cmd.format(**locals()))
+            logg.info("is-active => %s", out)
+            time.sleep(1)
+            if not end: break
+        cmd = "{docker} exec {testname} ps axu"
+        sx____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} systemctl is-system-running"
+        sx____(cmd.format(**locals()))
+        cmd = "sleep 2; {docker} exec {testname} ps axu"
+        sx____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} systemctl is-system-running"
+        sx____(cmd.format(**locals()))
+        v=F"{_verbose}"
+        allows = "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o PubkeyAuthentication=no"
+        cmd = "sshpass -p {password} scp {v} {allows} testuser@{container}:date.txt {testdir}/{testname}.date.txt"
+        sh____(cmd.format(**locals()))
+        cmd = "grep `TZ=UTC date -I` {testdir}/{testname}.date.txt"
+        sh____(cmd.format(**locals()))
+        allows = "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o PubkeyAuthentication=no"
+        cmd = "sshpass -p {password} scp {v} {allows} testuser@{container}:date.txt {testdir}/{testname}.date.2.txt"
+        sh____(cmd.format(**locals()))
+        cmd = "grep `TZ=UTC date -I` {testdir}/{testname}.date.2.txt"
+        sh____(cmd.format(**locals()))
+        #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        # sh____(cmd.format(**locals()))
+        # SAVE
+        cmd = "{docker} stop {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} rm --force {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} rmi {saveto}/{savename}:latest"
+        sx____(cmd.format(**locals()))
+        cmd = "{docker} tag {images}/{testname}:{latest} {saveto}/{savename}:latest"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} rmi {images}/{testname}:{latest}"
+        sx____(cmd.format(**locals()))
+        self.rm_testdir()
+        # logg.warning("centos-sshd is incomplete without .socket support in systemctl.py")
+        # logg.warning("the scp call will succeed only once - the sshd is dead after that")
 
 if __name__ == "__main__":
     from optparse import OptionParser
