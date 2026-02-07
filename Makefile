@@ -95,7 +95,7 @@ todo/test_%:             ; $(TESTS)   "$(notdir $@)" $(VV) --todo
 
 # testbuilds run with a stripped systemctl.py variant to cover both python2/python3 example (meanwhile testing strip_python3 to work correctly)
 builds testbuilds: ; $(MAKE) tmp/systemctl.py tmp/systemctl3.py; $(BUILD) $(VV) $V $E --systemctl=tmp/systemctl.py --systemctl3=tmp/systemctl3.py
-build3 testonly3: ; (BUILD) $(VV) $V $E # defaults to files/docker/systemctl3.py # skipping python2 tests and the stripping tool
+build3 testonly3: ; $(BUILD) $(VV) $V $E # defaults to files/docker/systemctl3.py # skipping python2 tests and the stripping tool
 local3: ; $(MAKE) builds3 E=--local
 t_%: ; $(MAKE) $@/s
 t_%/s: ; $(MAKE) tmp/systemctl.py tmp/systemctl3.py; $(BUILD) "tes$(dir $@)" $(VV) $V $E --systemctl=tmp/systemctl.py --systemctl3=tmp/systemctl3.py
