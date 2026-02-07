@@ -1,4 +1,4 @@
-#! /usr/bin/python3
+#! /usr/bin/env python3
 #pylint: disable=multiple-statements,line-too-long,missing-module-docstring,invalid-name
 
 import argparse
